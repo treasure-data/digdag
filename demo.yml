@@ -1,0 +1,40 @@
+wf1:
+  name: "myworkflow"
+  meta:
+    owner: frsyuki
+    created_at: "2015-09-11"
+
+  params:
+    td_production:
+      apikey: ...
+      database: ...
+
+  +simple_grouping:
+    +load:
+      sh>: echo "embulk..."
+    +analyze:
+      parallel: true
+      +make_pv:
+        sh>: echo "CREATE TABLE pv AS SELECT ..."
+        <<use: td_production
+      +make_users:
+        sh>: echo "CREATE TABLE users AS SELECT ..."
+        <<use: td_production
+      +make_joined:
+        after: [+make_pv, +make_users]
+        sh>: echo "CREATE TABLE joined AS SELECT ..."
+        <<use: td_production
+    +dump:
+      sh>: echo "select * from joined"
+      <<use: td_production
+
+  +subtask_example:
+    +split:
+      py>: tasks.SplitFiles
+      count: 3
+    +print:
+      py>: tasks.PrintFiles
+
+  +report:
+    sh>: echo "done"
+
