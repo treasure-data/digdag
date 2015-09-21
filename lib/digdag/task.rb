@@ -107,7 +107,7 @@ module Digdag
         @state[:retry_count] = @retry_count + 1
         interval = [@initial_retry_wait * (2 ** @retry_count), @max_retry_wait].min
         @state[:last_run_at] = Time.now.to_s
-        #@state[:last_error] = error.to_s
+        @state[:last_error] = error.to_s
         return @state, interval
       end
     end

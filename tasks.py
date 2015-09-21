@@ -53,6 +53,7 @@ class SplitFiles(BaseTask):
         for i in range(self.count):
             path = "tmp/out." + str(i)
             paths.append(path)
+            self.outputs.append({"file": path})
 
         self.carry_params["paths"] = paths
 
@@ -61,8 +62,6 @@ class CheckFiles(BaseTask):
         for path in self.params["paths"]:
             if not os.path.isfile(path):
                 raise Exception("File not built: " + path)
-            self.outputs.append({"file": path})
-        return True
 
 class PrintFiles(BaseTask):
     def run(self):

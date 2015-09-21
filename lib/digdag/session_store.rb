@@ -147,10 +147,17 @@ module Digdag
 
         if error
           if error.is_a?(RetryLaterError)
-            st.plan_retry_later!(state_params, carry_params, error.cause, error.interval)  # error.cause can be nil
+            retry_at = st.plan_retry_later!(state_params, carry_params, error.cause, error.interval)
+            cause = error.cause  # error.cause can be nil
           else
             st.plan_failed!(state_params, carry_params, error)
+            retry_at = nil
+            cause = error
           end
+          if cause
+            add_error_tasks(st, cause, retry_at)
+          end
+
         else
           st = find(task_id)
           if subtask_config && !subtask_config.empty?
@@ -323,7 +330,7 @@ module Digdag
     private
 
     def add_session_tasks(root_parent_id, root_upstream_ids, session_id, tasks, options={})
-      if root_parent_id && !options[:no_delete_existent]
+      if root_parent_id && !options.delete(:no_delete_existent)
         # delete previously submitted subtasks
         @session_tasks.each_with_index do |st,i|
           if collect_is_child_of(st, root_parent_id)
@@ -347,10 +354,26 @@ module Digdag
           state: :blocked,
           state_params: {},
           carry_params: {},
+          ignore_parent_error: options[:ignore_parent_error],
         })
         @session_tasks << session_task
         index_id_map[task.index] = session_task.id
         session_task
+      end
+    end
+
+    def add_error_tasks(st, error, retry_at)
+      error_config = Config.new(st.config).param(:error, :hash, default: {})  # TODO parse at WorkflowCompiler?
+      unless error_config.empty?
+        error_params = (error_config[:params] ||= {})
+        error_params[:error_message] = error.to_s
+        # TODO backtrace
+        error_params[:error_task_name] = collect_full_task_name(st)
+        error_params[:error_retry_at] = retry_at.to_s
+        error_task = WorkflowCompiler.compile_tasks(".error", Config.new(error_config))
+        if error_task && !error_task.empty?
+          add_session_tasks(st.id, [], st.session_id, error_task, no_delete_existent: true, ignore_parent_error: true)
+        end
       end
     end
 
@@ -375,10 +398,12 @@ module Digdag
           else
             state_params, retry_interval = retry_control.evaluate(errors)
             if retry_interval
-              st.propagate_children_failure_with_retry!(state_params, errors, retry_interval)
+              retry_at = st.propagate_children_failure_with_retry!(state_params, errors, retry_interval)
             else
               st.propagate_children_failure!(state_params, errors)
+              retry_at = nil
             end
+            add_error_tasks(st, errors, retry_at)
           end
           return true
         end
@@ -389,7 +414,7 @@ module Digdag
 
     def ready_to_start?(st)
       parent = find(st.parent_id) if st.parent_id
-      if (st.retry_at.nil? || st.retry_at <= Time.now) && (parent.nil? || parent.can_run_children?)
+      if (st.retry_at.nil? || st.retry_at <= Time.now) && (parent.nil? || parent.can_run_children?(st.ignore_parent_error))
         # subtasks in this group is ready to start
         return st.upstream_ids.all? {|i| find(i).can_run_downstream? }
       else
@@ -411,7 +436,10 @@ module Digdag
     end
 
     def collect_action_params(st)
-      collect_parent_carry_params(st).merge(collect_upstream_carry_params(st))
+      task_params = collect_task_params(st)
+      parent_params = collect_parent_carry_params(st)
+      upstream_params = collect_upstream_carry_params(st)
+      return task_params.merge(parent_params).merge(upstream_params)
     end
 
     def collect_upstream_carry_params(st)
@@ -453,7 +481,7 @@ module Digdag
       parent = find(st.parent_id) if st.parent_id
       if parent
         # progressible if parent is not done, or parent is done but can run children
-        if collect_is_progressible(parent) || parent.can_run_children?
+        if collect_is_progressible(parent) || parent.can_run_children?(st.ignore_parent_error)
           return st.upstream_ids.all? do |up_id|
             # progressible if dependent is not done, or dependent is successfully done
             up = find(up_id)

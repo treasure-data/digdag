@@ -94,13 +94,18 @@ module Digdag
     json_attr :retry_at
     json_attr :state_params   # retry_count, retry_interval, etc.
     json_attr :carry_params
+    json_attr :ignore_parent_error
     json_attr :inputs
     json_attr :outputs
     json_attr :error
     #json_attr :retry_at
 
-    def can_run_children?
-      [:planned, :success].include?(state)
+    def can_run_children?(ignore_error)
+      if ignore_error
+        [:error, :child_error, :retry_waiting, :planned, :success].include?(state)
+      else
+        [:planned, :success].include?(state)
+      end
     end
 
     def can_run_downstream?
@@ -181,6 +186,7 @@ module Digdag
       else
         raise "Invalid state transition from #{@state} to :retry_waiting"
       end
+      @retry_at
     end
 
     def plan_succeeded!(state_params, carry_params, inputs, outputs)

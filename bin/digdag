@@ -47,6 +47,7 @@ File.write("graph.dot", session_store.collect_dot_graph)
 
 puts "Data lineage:"
 session_store.collect_success_tasks(session_ids).each do |name,data|
+  # TODO remove .check from name?
   data["inputs"].each do |input|
     puts "  #{input} -> #{name}"
   end

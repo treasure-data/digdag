@@ -9,7 +9,16 @@ module Digdag
       def run
         command = config.param(:command, :string)
 
-        success = system(command)
+        env = {}
+        params.each_pair do |k,v|
+          if v.is_a?(String)
+            env[k.to_s] = v
+          else
+            env[k.to_s] = v.to_json
+          end
+        end
+
+        success = system(env, command)
         unless success
           raise "Command failed"
         end

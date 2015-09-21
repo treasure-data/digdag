@@ -34,6 +34,8 @@ wf1:
       count: 3
       check:
         py>: tasks.CheckFiles
+      error:
+        sh>: echo "error! $error_message $retry_at"
     +print:
       py>: tasks.PrintFiles
 
