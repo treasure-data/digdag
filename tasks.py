@@ -11,6 +11,8 @@ class BaseTask(object):
         self.carry_params = {}
         self.sub = {}
         self.subtask_index = 0
+        self.inputs = []
+        self.outputs = []
 
         spec = inspect.getargspec(self.init)
 
@@ -38,6 +40,7 @@ class BaseTask(object):
 
 
 
+import os.path
 
 class SplitFiles(BaseTask):
     def init(self, count=None):
@@ -52,6 +55,14 @@ class SplitFiles(BaseTask):
             paths.append(path)
 
         self.carry_params["paths"] = paths
+
+class CheckFiles(BaseTask):
+    def run(self):
+        for path in self.params["paths"]:
+            if not os.path.isfile(path):
+                raise Exception("File not built: " + path)
+            self.outputs.append({"file": path})
+        return True
 
 class PrintFiles(BaseTask):
     def run(self):
@@ -74,5 +85,4 @@ class PrintFilesSub(BaseTask):
         with open(self.path) as f:
             data = json.load(f)
         print "Printing file " + self.path + "...: " + str(data)
-
 

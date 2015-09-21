@@ -45,6 +45,18 @@ end
 
 File.write("graph.dot", session_store.collect_dot_graph)
 
+puts "Data lineage:"
+session_store.collect_success_tasks(session_ids).each do |name,data|
+  data["inputs"].each do |input|
+    puts "  #{input} -> #{name}"
+  end
+  data["outputs"].each do |output|
+    puts "  #{name} -> #{output}"
+  end
+end
+
+
+
 failed = session_store.any_failed?
 
 if failed

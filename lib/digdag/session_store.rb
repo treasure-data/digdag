@@ -58,7 +58,7 @@ module Digdag
             event_id: event.id,
             session_params: session_params,
             session_config: session_config,
-            workflow_version_id: wfv.id,
+            workflow_version_id: wfv.id,  # TODO this should be UUID?
           })
           @sessions << session
           retval << session.id
@@ -71,7 +71,7 @@ module Digdag
             LOG.debug "    config: #{task.config.to_json}"
           end
 
-          add_session_tasks(nil, session.id, wfv.tasks)
+          add_session_tasks(nil, [], session.id, wfv.tasks)
         end
 
         retval
@@ -107,7 +107,7 @@ module Digdag
 
                 if skip_data
                   LOG.info "Skipping #{full_name}"
-                  task_finished(st.id, {}, skip_data[:carry_params], nil, nil)
+                  task_finished(st.id, {}, skip_data['carry_params'], nil, nil, skip_data['inputs'], skip_data['outputs'])
                 else
                   session_params = @sessions[st.session_id].session_params
                   params = session_params.merge(collect_action_params(st))
@@ -123,7 +123,7 @@ module Digdag
                 end
               rescue => e
                 state_params = {"schedule_error" => true}
-                task_finished(st.id, state_params, {}, nil, e)
+                task_finished(st.id, state_params, {}, nil, e, [], [])
               end
             end
             # TODO use transaction. commit here.
@@ -133,7 +133,7 @@ module Digdag
       end
     end
 
-    def task_finished(task_id, state_params, carry_params, subtask_config, error)
+    def task_finished(task_id, state_params, carry_params, subtask_config, error, inputs, outputs)
       @mon.synchronize do
         if error
           LOG.warn "Task failed [#{task_id}]: #{error}"
@@ -154,14 +154,23 @@ module Digdag
         else
           st = find(task_id)
           if subtask_config && !subtask_config.empty?
-            subtasks = WorkflowCompiler.compile_tasks("#{st.task_name}.sub", Config.new(subtask_config))
-            LOG.debug "Adding subtasks: #{subtasks.inspect}"
-            if subtasks && !subtasks.empty?
-              add_session_tasks(st.id, st.session_id, subtasks)
+            subtask = WorkflowCompiler.compile_tasks(".sub", Config.new(subtask_config))
+            LOG.debug "Adding subtask: #{subtask.inspect}"
+            if subtask && !subtask.empty?
+              substs = add_session_tasks(st.id, [], st.session_id, subtask)
+              subst = substs[0]  # root subtask
             end
           end
-          st.plan_succeeded!(state_params, carry_params)
-          # possible optimization: set state=success if this task doesn't have subtasks
+          check_config = Config.new(st.config).param(:check, :hash, default: {})  # TODO parse at WorkflowCompiler?
+          unless check_config.empty?
+            check_task = WorkflowCompiler.compile_tasks(".check", Config.new(check_config))
+            if check_task && !check_task.empty?
+              root_upstream_ids = [subst.nil? ? nil : subst.id].compact
+              add_session_tasks(st.id, root_upstream_ids, st.session_id, check_task, no_delete_existent: true)
+            end
+          end
+          st.plan_succeeded!(state_params, carry_params, inputs, outputs)
+          # possible optimization: set state=success if this task doesn't have subtask
         end
 
         notice_background_update!
@@ -195,7 +204,7 @@ module Digdag
         session_ids.include?(st.session_id) && (st.planned? || st.success?)  # || st.child_error?
       end
       kvs = success_tasks.map do |st|
-        [collect_full_task_name(st), {"state" => st.state.to_s, "carry_params" => st.carry_params}]
+        [collect_full_task_name(st), {"state" => st.state.to_s, "carry_params" => st.carry_params, "inputs" => (st.inputs || []), "outputs" => (st.outputs || [])}]
       end
       Hash[kvs]
     end
@@ -313,8 +322,8 @@ module Digdag
 
     private
 
-    def add_session_tasks(root_parent_id, session_id, tasks)
-      if root_parent_id
+    def add_session_tasks(root_parent_id, root_upstream_ids, session_id, tasks, options={})
+      if root_parent_id && !options[:no_delete_existent]
         # delete previously submitted subtasks
         @session_tasks.each_with_index do |st,i|
           if collect_is_child_of(st, root_parent_id)
@@ -325,14 +334,14 @@ module Digdag
       end
 
       index_id_map = []
-      tasks.each do |task|
+      tasks.map do |task|
         session_task = SessionTask.new({
           id: @session_tasks.size,
           task_name: task.name,
           session_id: session_id,
           source_task_index: task.index,
-          parent_id: task.parent_task_index.nil? ? root_parent_id : index_id_map[task.parent_task_index],
-          upstream_ids: task.upstream_task_indexes.map {|index| index_id_map[index] },
+          parent_id: (task.parent_task_index.nil? ? root_parent_id : index_id_map[task.parent_task_index]),
+          upstream_ids: (task.parent_task_index.nil? ? root_upstream_ids : []) + task.upstream_task_indexes.map {|index| index_id_map[index] },
           grouping_only: task.grouping_only,
           config: task.config,
           state: :blocked,
@@ -341,6 +350,7 @@ module Digdag
         })
         @session_tasks << session_task
         index_id_map[task.index] = session_task.id
+        session_task
       end
     end
 
@@ -408,7 +418,7 @@ module Digdag
       params = {}
       st.upstream_ids.each do |id|
         up = find(id)
-        up_params = collect_upstream_carry_params(up).merge(collect_task_params(up))
+        up_params = collect_action_params(up).merge(collect_task_params(up))
         params.merge!(up_params)
       end
       params
@@ -417,10 +427,15 @@ module Digdag
     def collect_parent_carry_params(st)
       parent = find(st.parent_id) if st.parent_id
       if parent
-        collect_parent_carry_params(parent).merge(collect_task_params(parent))
+        collect_action_params(parent).merge(collect_task_params(parent))
       else
         {}
       end
+    end
+
+    def collect_task_params(st)
+      params = Config.new(st.config).param(:params, :hash, default: {})  # TODO should be parsed at WorkflowCompiler and set to Task and SessionTask as :task_params?
+      params.merge(st.carry_params)
     end
 
     def collect_full_task_name(st)
@@ -430,11 +445,6 @@ module Digdag
       else
         st.task_name
       end
-    end
-
-    def collect_task_params(st)
-      params = Config.new(st.config).param(:params, :hash, default: {})  # TODO should be parsed at WorkflowCompiler and set to Task and SessionTask as :task_params?
-      params.merge(st.carry_params)
     end
 
     def collect_is_progressible(st)

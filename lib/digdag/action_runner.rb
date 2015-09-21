@@ -26,7 +26,7 @@ module Digdag
         task_class = Plugin.task_class(type)
         task = task_class.new(config, params, state)
         begin
-          carry_params, subtask_config = task.call
+          carry_params, subtask_config, inputs, outputs = task.call
         ensure
           state_params = task.state rescue state
           state = Config.new(state_params || {})
@@ -39,7 +39,7 @@ module Digdag
       carry_params ||= {}
       subtask_config ||= {}
 
-      @session_api.task_finished(action.task_id, state, carry_params, subtask_config, error)
+      @session_api.task_finished(action.task_id, state, carry_params, subtask_config, error, inputs, outputs)
     end
   end
 

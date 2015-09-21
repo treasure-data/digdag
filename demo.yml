@@ -16,22 +16,24 @@ wf1:
       parallel: true
       +make_pv:
         sh>: echo "CREATE TABLE pv AS SELECT ..."
-        <<use: td_production
+        <use: td_production
       +make_users:
         sh>: echo "CREATE TABLE users AS SELECT ..."
-        <<use: td_production
+        <use: td_production
       +make_joined:
         after: [+make_pv, +make_users]
         sh>: echo "CREATE TABLE joined AS SELECT ..."
-        <<use: td_production
+        <use: td_production
     +dump:
       sh>: echo "select * from joined"
-      <<use: td_production
+      <use: td_production
 
   +subtask_example:
     +split:
       py>: tasks.SplitFiles
       count: 3
+      check:
+        py>: tasks.CheckFiles
     +print:
       py>: tasks.PrintFiles
 

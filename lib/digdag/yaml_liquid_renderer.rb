@@ -27,7 +27,7 @@ module Digdag
     def render(config, params)
       config = Config.new(config)  # copy
 
-      include_params = config.param("<<use", [:string], default: nil)
+      include_params = config.param("<use", [:string], default: nil)
       if include_params
         include_params.each do |k|
           inc = params[k]
@@ -36,16 +36,16 @@ module Digdag
             kv.each {|k,v| config[k] = v }
           end
         end
-        config.delete("<<params")
+        config.delete("<params")
       end
 
-      include_render = config.param("<<render", :string, default: nil)
+      include_render = config.param("<render", :string, default: nil)
       if include_render
         #context = Context.new(params)
         yaml = Liquid::Template.parse(include_render).render(params, filters: [Filters])
         kv = YAML.load(yaml)
         kv.each {|k,v| config[k] = v }
-        config.delete("<<render")
+        config.delete("<render")
       end
 
       config

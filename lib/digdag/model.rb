@@ -81,7 +81,7 @@ module Digdag
 
   class SessionTask < Model
     # TODO ActiveRecord model
-    # TODO store mutable fields in a different table (state, retry_at, state_params, carry_params, error)
+    # TODO store mutable fields in a different table (state, retry_at, state_params, carry_params, error, inputs, outputs)
     json_attr :id
     json_attr :task_name
     json_attr :session_id
@@ -94,6 +94,8 @@ module Digdag
     json_attr :retry_at
     json_attr :state_params   # retry_count, retry_interval, etc.
     json_attr :carry_params
+    json_attr :inputs
+    json_attr :outputs
     json_attr :error
     #json_attr :retry_at
 
@@ -181,10 +183,12 @@ module Digdag
       end
     end
 
-    def plan_succeeded!(state_params, carry_params)
+    def plan_succeeded!(state_params, carry_params, inputs, outputs)
       if @state == :running
         @state_params = state_params.dup
         @carry_params.merge!(carry_params)
+        @inputs = inputs
+        @outputs = outputs
         @state = :planned
       else
         raise "Invalid state transition from #{@state} to :planned"

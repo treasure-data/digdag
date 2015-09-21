@@ -28,13 +28,15 @@ module Digdag
       @sub = {}
       @params = params
       @carry_params = {}
+      @inputs = []
+      @outputs = []
 
       @retry_limit = config.param(:retry_limit, :integer, default: 0)
 
       init
     end
 
-    attr_reader :config, :params, :state, :carry_params, :sub
+    attr_reader :config, :params, :state, :carry_params, :sub, :inputs, :outputs
 
     def init
     end
@@ -53,7 +55,8 @@ module Digdag
         end
       end
 
-      return @carry_params, @sub
+      # TODO use builder for looser coupling of plugin API
+      return @carry_params, @sub, @inputs, @outputs
     end
 
     def run
