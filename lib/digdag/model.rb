@@ -31,10 +31,24 @@ module Digdag
     end
   end
 
-  class WorkflowVersion < Workflow
+  class WorkflowModel < Model
     # TODO ActiveRecord model
     json_attr :id
+    json_attr :name
+  end
+
+  class WorkflowVersion < Model
+    # TODO ActiveRecord model
+    json_attr :id
+    json_attr :name
+    json_attr :workflow_id
     json_attr :uuid
+    json_attr :meta
+    json_attr :tasks, [Task]
+
+    def root_task
+      tasks[0]
+    end
   end
 
   class Event < Model
@@ -67,15 +81,16 @@ module Digdag
 
   class SessionTask < Model
     # TODO ActiveRecord model
+    # TODO store mutable fields in a different table (state, retry_at, state_params, carry_params, error)
     json_attr :id
     json_attr :task_name
     json_attr :session_id
-    json_attr :source_task_index  # nullable if subaction
+    json_attr :source_task_index  # nullable if subtask
     json_attr :parent_id
     json_attr :upstream_ids
     json_attr :grouping_only
     json_attr :config
-    json_attr :state          # :blocked, :ready, :retry_waiting, :running, :planned, :error, :success, :canceled
+    json_attr :state          # :blocked, :ready, :retry_waiting, :running, :planned, :child_error, :error, :success, :canceled
     json_attr :retry_at
     json_attr :state_params   # retry_count, retry_interval, etc.
     json_attr :carry_params
@@ -98,6 +113,10 @@ module Digdag
       @state == :planned
     end
 
+    def child_error?
+      @state == :child_error
+    end
+
     def success?
       @state == :success
     end
@@ -106,8 +125,12 @@ module Digdag
       @state == :error
     end
 
+    def subtask?
+      @source_task_index == nil
+    end
+
     def ready!
-      if @state == :blocked || @state == :retry_waiting || @state == :error
+      if @state == :blocked || @state == :retry_waiting || @state == :error || @state == :child_error
         @state = :ready
         @retry_at = nil
       else
@@ -116,7 +139,7 @@ module Digdag
     end
 
     def grouping_only_ready!
-      if @state == :blocked || @state == :retry_waiting || @state == :error
+      if @state == :blocked || @state == :retry_waiting || @state == :error || @state == :child_error
         @state = :planned
       else
         raise "Invalid state transition from #{@state} to :ready"
@@ -171,10 +194,10 @@ module Digdag
     def propagate_children_failure!(state_params, children_errors)
       if @state == :planned
         @error = children_errors.to_json
-        @state = :error
+        @state = :child_error
         @state_params.merge!(state_params)
       else
-        raise "Invalid state transition from #{@state} to :error"
+        raise "Invalid state transition from #{@state} to :child_error"
       end
     end
 
@@ -200,7 +223,7 @@ module Digdag
     end
 
     def done?
-      [:error, :success, :canceled].include?(state)
+      [:error, :child_error, :success, :canceled].include?(state)
     end
   end
 end

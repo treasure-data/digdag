@@ -192,7 +192,7 @@ module Digdag
 
     def collect_success_tasks(session_ids)
       success_tasks = @session_tasks.select do |st|
-        session_ids.include?(st.session_id) && (st.planned? || st.success?)
+        session_ids.include?(st.session_id) && (st.planned? || st.success?)  # || st.child_error?
       end
       kvs = success_tasks.map do |st|
         [collect_full_task_name(st), {"state" => st.state.to_s, "carry_params" => st.carry_params}]
@@ -293,6 +293,8 @@ module Digdag
           "slateblue1"
         when :error
           "indianred1"
+        when :child_error
+          "yellow"
         when :success
           "olivedrab3"
         when :canceled
