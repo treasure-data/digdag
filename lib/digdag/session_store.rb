@@ -83,16 +83,20 @@ module Digdag
         changed = false
 
         #@session_tasks.each do |st|
+        # TODO simply select all tasks in this session and search in memory?
         search_from = @last_update_checked_at || Time.now - 60
         search_to = Time.now
-        up_parent_ids = find_all_by_recently_updated(search_from).map {|st| st.id }
-        sts = find_all_by_parent_or_upstream_ids_and_states(up_parent_ids, [:blocked, :retry_waiting, :planned])
+        recent_tasks = find_all_by_recently_updated(search_from)
+        parent_ids = recent_tasks.map {|st| st.parent_id }.compact
+        # search parents, siblings, and children of recently updated tasks
+        sts = find_all_by_ids_and_states(parent_ids, [:blocked, :retry_waiting, :planned]) +
+              find_all_by_parent_ids(parent_ids + recent_tasks.map {|st| st.id }, [:blocked, :retry_waiting, :planned])
         sts.each do |st|
           if update_task_state(st)
             changed = true
           end
         end
-        @last_update_checked_at = search_to - 30
+        @last_update_checked_at = search_to
 
         changed
       end
@@ -218,9 +222,14 @@ module Digdag
       @session_tasks.select {|st| st.updated_at >= time }
     end
 
-    def find_all_by_parent_or_upstream_ids_and_states(ids, states)
+    def find_all_by_ids_and_states(ids, states)
+      ids.map {|id| find(id) }.select {|st| st && states.include?(st.state) }
+    end
+
+    def find_all_by_parent_ids(parent_ids, states)
       @session_tasks.select do |st|
-        (states.include?(st.state)) && (st.parent_id.nil? || ids.include?(st.parent_id) || st.upstream_ids.any? {|upid| ids.include?(upid) })
+        states.include?(st.state) && (st.parent_id.nil? || parent_ids.include?(st.parent_id))
+        #states.include?(st.state) && (st.parent_id.nil? || parent_ids.include?(st.parent_id) || st.upstream_ids.any? {|upid| up_ids.include?(upid) })
       end
     end
 
