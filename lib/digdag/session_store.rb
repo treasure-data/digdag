@@ -155,7 +155,7 @@ module Digdag
             cause = error
           end
           if cause
-            add_error_tasks(st, cause, retry_at)
+            add_error_tasks(st, cause, retry_at, false)
           end
 
         else
@@ -362,7 +362,7 @@ module Digdag
       end
     end
 
-    def add_error_tasks(st, error, retry_at)
+    def add_error_tasks(st, error, retry_at, is_subtask_propagation)
       error_config = Config.new(st.config).param(:error, :hash, default: {})  # TODO parse at WorkflowCompiler?
       unless error_config.empty?
         error_params = (error_config[:params] ||= {})
@@ -370,6 +370,7 @@ module Digdag
         # TODO backtrace
         error_params[:error_task_name] = collect_full_task_name(st)
         error_params[:error_retry_at] = retry_at.to_s
+        error_params[:is_subtask_propagation] = is_subtask_propagation  # TODO parameter
         error_task = WorkflowCompiler.compile_tasks(".error", Config.new(error_config))
         if error_task && !error_task.empty?
           add_session_tasks(st.id, [], st.session_id, error_task, no_delete_existent: true, ignore_parent_error: true)
@@ -403,7 +404,7 @@ module Digdag
               st.propagate_children_failure!(state_params, errors)
               retry_at = nil
             end
-            add_error_tasks(st, errors, retry_at)
+            add_error_tasks(st, errors, retry_at, true)
           end
           return true
         end

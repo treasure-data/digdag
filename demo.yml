@@ -1,13 +1,17 @@
 wf1:
   name: "myworkflow"
   meta:
-    owner: frsyuki
+    owner: Sadayuki Furuhashi
     created_at: "2015-09-11"
 
   params:
     td_production:
       apikey: ...
       database: ...
+
+  default:
+    error:
+      sh>: "echo email body: $error_task_name failed. Will be rtried at $error_retry_at. Message: $error_message"
 
   +simple_grouping:
     +load:
@@ -34,8 +38,6 @@ wf1:
       count: 3
       check:
         py>: tasks.CheckFiles
-      error:
-        sh>: echo "error! $error_message $retry_at"
     +print:
       py>: tasks.PrintFiles
 

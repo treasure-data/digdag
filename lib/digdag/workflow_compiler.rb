@@ -80,13 +80,17 @@ module Digdag
     end
 
     def compile_tasks!
-      collect(nil, @workflow_name, @workflow_config)
+      collect(nil, {}, @workflow_name, @workflow_config)
       @tasks.map {|task| task.build }
     end
 
     private
 
-    def collect(parent_task, name, config)
+    def collect(parent_task, parent_default_config, name, config)
+      default_config = config.param(:default, :hash, default: {})
+      config = config.merge(parent_default_config)
+      next_default_config = parent_default_config.merge(default_config)
+
       subtask_keys = config.keys.select {|key| key =~ /^\+/ }
       task_config_keys = config.keys.select {|key| key !~ /^\+/ }
       task_config = Hash[task_config_keys.map {|k| [k, config[k]] }]
@@ -103,7 +107,7 @@ module Digdag
         task = add_task(parent_task, name, true, task_config)
 
         subtasks = subtask_keys.map do |key|
-          collect(task, key, config.param(key, :hash))
+          collect(task, next_default_config, key, config.param(key, :hash))
         end
 
         if config.param(:parallel, :boolean, default: false)

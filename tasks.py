@@ -53,7 +53,7 @@ class SplitFiles(BaseTask):
         for i in range(self.count):
             path = "tmp/out." + str(i)
             paths.append(path)
-            self.outputs.append({"file": path})
+            self.outputs.append({"file": path})  # reports data lineage tracking
 
         self.carry_params["paths"] = paths
 
@@ -71,6 +71,7 @@ class PrintFiles(BaseTask):
             with open(path, "w") as f:
                 json.dump({"data": path}, f)
             self.add_subtask(PrintFilesSub, path=path)
+            self.inputs.append({"file": path})  # reports data lineage tracking
         self.sub["parallel"] = True
 
 class PrintFilesSub(BaseTask):
