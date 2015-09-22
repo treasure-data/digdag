@@ -99,6 +99,7 @@ module Digdag
     json_attr :outputs
     json_attr :error
     #json_attr :retry_at
+    json_attr :updated_at
 
     def can_run_children?(ignore_error)
       if ignore_error
@@ -140,6 +141,7 @@ module Digdag
       if @state == :blocked || @state == :retry_waiting || @state == :error || @state == :child_error
         @state = :ready
         @retry_at = nil
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :ready"
       end
@@ -148,6 +150,7 @@ module Digdag
     def grouping_only_ready!
       if @state == :blocked || @state == :retry_waiting || @state == :error || @state == :child_error
         @state = :planned
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :ready"
       end
@@ -156,6 +159,7 @@ module Digdag
     def started!
       if @state == :ready
         @state = :running
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :running"
       end
@@ -163,6 +167,7 @@ module Digdag
 
     def subtask_override!
       @state = :canceled  # async state change
+      @updated_at = Time.now
     end
 
     def plan_failed!(state_params, carry_params, error)
@@ -171,6 +176,7 @@ module Digdag
         @carry_params.merge!(carry_params)
         @error = error.to_s
         @state = :error
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :error"
       end
@@ -183,6 +189,7 @@ module Digdag
         @retry_at = Time.now + retry_interval
         @error = error.nil? ? nil : error.to_s
         @state = :retry_waiting
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :retry_waiting"
       end
@@ -196,6 +203,7 @@ module Digdag
         @inputs = inputs
         @outputs = outputs
         @state = :planned
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :planned"
       end
@@ -206,6 +214,7 @@ module Digdag
         @error = children_errors.to_json
         @state = :child_error
         @state_params.merge!(state_params)
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :child_error"
       end
@@ -219,6 +228,7 @@ module Digdag
           @retry_at = Time.now + retry_interval
         end
         @state_params.merge!(state_params)
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :retry_waiting"
       end
@@ -227,6 +237,7 @@ module Digdag
     def propagate_children_success!
       if @state == :planned
         @state = :success
+        @updated_at = Time.now
       else
         raise "Invalid state transition from #{@state} to :success"
       end

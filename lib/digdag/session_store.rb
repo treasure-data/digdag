@@ -81,11 +81,19 @@ module Digdag
     def update_state!
       @mon.synchronize do
         changed = false
-        @session_tasks.each do |st|
+
+        #@session_tasks.each do |st|
+        search_from = @last_update_checked_at || Time.now - 60
+        search_to = Time.now
+        up_parent_ids = find_all_by_recently_updated(search_from).map {|st| st.id }
+        sts = find_all_by_parent_or_upstream_ids_and_states(up_parent_ids, [:blocked, :retry_waiting, :planned])
+        sts.each do |st|
           if update_task_state(st)
             changed = true
           end
         end
+        @last_update_checked_at = search_to - 30
+
         changed
       end
     end
@@ -186,7 +194,7 @@ module Digdag
 
     def any_runnable?
       @mon.synchronize do
-        @session_tasks.any? {|st| collect_is_progressible(st) }
+        @session_tasks.any? {|st| is_progressible_state(st) }
       end
     end
 
@@ -206,9 +214,19 @@ module Digdag
       @session_tasks[id]
     end
 
+    def find_all_by_recently_updated(time)
+      @session_tasks.select {|st| st.updated_at >= time }
+    end
+
+    def find_all_by_parent_or_upstream_ids_and_states(ids, states)
+      @session_tasks.select do |st|
+        (states.include?(st.state)) && (st.parent_id.nil? || ids.include?(st.parent_id) || st.upstream_ids.any? {|upid| ids.include?(upid) })
+      end
+    end
+
     def collect_success_tasks(session_ids)
       success_tasks = @session_tasks.select do |st|
-        session_ids.include?(st.session_id) && (st.planned? || st.success?)  # || st.child_error?
+        session_ids.include?(st.session_id) && st.success?  # || st.planned? || st.child_error?
       end
       kvs = success_tasks.map do |st|
         [collect_full_task_name(st), {"state" => st.state.to_s, "carry_params" => st.carry_params, "inputs" => (st.inputs || []), "outputs" => (st.outputs || [])}]
@@ -355,6 +373,7 @@ module Digdag
           state_params: {},
           carry_params: {},
           ignore_parent_error: options[:ignore_parent_error],
+          updated_at: Time.now,
         })
         @session_tasks << session_task
         index_id_map[task.index] = session_task.id
@@ -414,6 +433,7 @@ module Digdag
     end
 
     def ready_to_start?(st)
+      # optimize this method to be a single SQL
       parent = find(st.parent_id) if st.parent_id
       if (st.retry_at.nil? || st.retry_at <= Time.now) && (parent.nil? || parent.can_run_children?(st.ignore_parent_error))
         # subtasks in this group is ready to start
@@ -424,11 +444,12 @@ module Digdag
     end
 
     def collect_children_state(st, errors=[])
+      # optimize this method to be a single SQL
       is_all_done = true
       @session_tasks.each do |s|
         if s.parent_id == st.id
           errors << s.error if s.error
-          if collect_is_progressible(s)
+          if is_progressible_state(s)
             is_all_done = false
           end
         end
@@ -476,17 +497,18 @@ module Digdag
       end
     end
 
-    def collect_is_progressible(st)
+    def is_progressible_state(st)
+      # optimize this method to be a single SQL
       return false if st.done?
 
       parent = find(st.parent_id) if st.parent_id
       if parent
         # progressible if parent is not done, or parent is done but can run children
-        if collect_is_progressible(parent) || parent.can_run_children?(st.ignore_parent_error)
+        if parent.can_run_children?(st.ignore_parent_error)  # || is_progressible_state(parent)
           return st.upstream_ids.all? do |up_id|
             # progressible if dependent is not done, or dependent is successfully done
             up = find(up_id)
-            collect_is_progressible(up) || up.can_run_downstream?
+            up.can_run_downstream?  # || is_progressible_state(up)
           end
         end
         return false
