@@ -1,0 +1,24 @@
+apply plugin: 'application'
+
+mainClassName = "io.digdag.cli.Main"
+
+dependencies {
+    compile 'com.google.guava:guava:18.0'
+    compile 'com.google.inject:guice:4.0'
+    compile 'com.google.inject.extensions:guice-multibindings:4.0'
+    compile 'javax.inject:javax.inject:1'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.6.2'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.6.2'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.6.2'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.6.2'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.6.2'
+    compile 'com.fasterxml.jackson.module:jackson-module-guice:2.6.2'
+    compile 'org.msgpack:msgpack-core:0.7.0-p9'
+    compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'org.yaml:snakeyaml:1.14'
+    compile 'joda-time:joda-time:2.8.1'
+    compile 'org.immutables:value:2.0.21'
+    compile 'org.immutables:builder:2.0.21'
+    compile 'org.jdbi:jdbi:2.63.1'
+    compile 'com.h2database:h2:1.4.189'
+}

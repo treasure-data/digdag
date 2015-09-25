@@ -89,16 +89,16 @@ module Digdag
     json_attr :parent_id
     json_attr :upstream_ids
     json_attr :grouping_only
-    json_attr :config
+    json_attr :config                         # TODO store in config store table?
+    json_attr :ignore_parent_error
+
     json_attr :state          # :blocked, :ready, :retry_waiting, :running, :planned, :child_error, :error, :success, :canceled
     json_attr :retry_at
     json_attr :state_params   # retry_count, retry_interval, etc.
     json_attr :carry_params
-    json_attr :ignore_parent_error
     json_attr :inputs
     json_attr :outputs
     json_attr :error
-    #json_attr :retry_at
     json_attr :updated_at
 
     def can_run_children?(ignore_error)
