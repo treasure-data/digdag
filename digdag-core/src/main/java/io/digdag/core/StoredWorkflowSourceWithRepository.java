@@ -11,10 +11,10 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableAbstractStyle
-@JsonSerialize(as = ImmutableStoredWorkflowWithRepository.class)
-@JsonDeserialize(as = ImmutableStoredWorkflowWithRepository.class)
-public abstract class StoredWorkflowWithRepository
-        extends StoredWorkflow
+@JsonSerialize(as = ImmutableStoredWorkflowSourceWithRepository.class)
+@JsonDeserialize(as = ImmutableStoredWorkflowSourceWithRepository.class)
+public abstract class StoredWorkflowSourceWithRepository
+        extends StoredWorkflowSource
 {
     public abstract StoredRepository getRepository();
 

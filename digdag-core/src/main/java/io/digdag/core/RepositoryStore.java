@@ -1,9 +1,14 @@
 package io.digdag.core;
 
+import java.util.List;
+import com.google.common.base.Optional;
+
 public interface RepositoryStore
         extends Store
 {
-    Pageable<StoredRepository> getRepositories(int pageSize);
+    List<StoredRepository> getAllRepositories();  // TODO only for testing
+
+    List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId);
 
     StoredRepository getRepositoryById(int repoId);
 
@@ -14,7 +19,9 @@ public interface RepositoryStore
     void deleteRepository(int repoId);
 
 
-    Pageable<StoredRevision> getRevisions(int repoId, int pageSize);
+    List<StoredRevision> getAllRevisions(int repoId);  // TODO only for testing
+
+    List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
 
     StoredRevision getRevisionById(int revId);
 
@@ -27,15 +34,17 @@ public interface RepositoryStore
     void deleteRevision(int revId);
 
 
-    Pageable<StoredWorkflow> getWorkflows(int revId, int pageSize);
+    List<StoredWorkflowSource> getAllWorkflows(int revId);  // TODO only for testing
 
-    Pageable<StoredWorkflowWithRepository> getAllLatestActiveWorkflows();
+    List<StoredWorkflowSource> getWorkflows(int revId, int pageSize, Optional<Integer> lastId);
 
-    StoredWorkflow getWorkflowById(int wfId);
+    List<StoredWorkflowSourceWithRepository> getAllLatestActiveWorkflows();
 
-    StoredWorkflow getWorkflowByName(int revId, String name);
+    StoredWorkflowSource getWorkflowById(int wfId);
 
-    StoredWorkflow putWorkflow(int revId, Workflow workflow);
+    StoredWorkflowSource getWorkflowByName(int revId, String name);
+
+    StoredWorkflowSource putWorkflow(int revId, WorkflowSource workflow);
 
     void deleteWorkflow(int wfId);
 }

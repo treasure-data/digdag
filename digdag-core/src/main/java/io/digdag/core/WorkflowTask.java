@@ -4,9 +4,13 @@ import java.util.List;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.immutables.value.Value;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
+@JsonSerialize(as = ImmutableWorkflowTask.class)
+@JsonDeserialize(as = ImmutableWorkflowTask.class)
 public abstract class WorkflowTask
 {
     public abstract String getName();

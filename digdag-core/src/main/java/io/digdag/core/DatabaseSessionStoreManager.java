@@ -19,6 +19,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 public class DatabaseSessionStoreManager
+        extends BasicDatabaseStoreManager
         implements SessionStoreManager
 {
     private final Handle handle;
@@ -90,16 +91,17 @@ public class DatabaseSessionStoreManager
 
     public interface Dao
     {
-        @SqlQuery("select * from sessions where site_id = :siteId"+
+        @SqlQuery("select * from sessions" +
+                " where site_id = :siteId" +
                 " and id > :lastId" +
-                " order by id desc"+
+                " order by id desc" +
                 " limit :limit")
-        List<StoredSession> getSessions(@Bind("siteId") int siteId, @Bind("tableId") int limit, @Bind("lastId") long lastId);
+        List<StoredSession> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select * from sessions where site_id = :siteId and id = :id limit 1")
         StoredSession getSessionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select * from sessions where site_id = :siteId and name = :name limit 1")
+        @SqlQuery("select * from sessions where site_id = :siteId and unique_name = :name limit 1")
         StoredSession getSessionByName(@Bind("siteId") int siteId, @Bind("name") String name);
 
         @SqlUpdate("insert into sessions (site_id, workflow_id, unique_name, session_params, created_at)" +
@@ -123,15 +125,13 @@ public class DatabaseSessionStoreManager
         public StoredSession map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            int workflowIdValue = r.getInt("workflow_id");
-            Optional<Integer> workflowId = r.wasNull() ? Optional.absent() : Optional.of(workflowIdValue);
             return ImmutableStoredSession.builder()
                 .id(r.getLong("id"))
                 .siteId(r.getInt("site_id"))
                 .createdAt(r.getDate("created_at"))
                 .uniqueName(r.getString("unique_name"))
                 .sessionParams(cfm.fromResultSet(r, "session_params"))
-                .workflowId(workflowId)
+                .workflowId(getOptionalInt(r, "workflow_id"))
                 .build();
         }
     }

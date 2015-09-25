@@ -8,9 +8,9 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
-@JsonDeserialize(as = ImmutableStoredWorkflow.class)
-public abstract class StoredWorkflow
-        extends Workflow
+@JsonDeserialize(as = ImmutableStoredWorkflowSource.class)
+public abstract class StoredWorkflowSource
+        extends WorkflowSource
 {
     public abstract int getId();
 

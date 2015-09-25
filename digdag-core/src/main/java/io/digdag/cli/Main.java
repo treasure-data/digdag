@@ -19,37 +19,68 @@ public class Main
     public static void main(String[] args)
             throws Exception
     {
+
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
                     .registerModule(new GuavaModule())
                     .registerModule(new JodaModule()),
-                new DatabaseModule()
+                    new DatabaseModule(DatabaseStoreConfig.builder()
+                        .type("h2")
+                        //.url("jdbc:h2:../test")
+                        .url("jdbc:h2:mem:test")
+                        .build())
                 );
 
+        final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
-
-        final ConfigSource ast = loader.loadFile(new File("../demo.yml"));
-        List<Workflow> workflows = ast.getKeys()
-            .stream()
-            .map(key -> compiler.compile(key, ast.getNested(key)))
-            .collect(Collectors.toList());
-
-        ObjectMapper om = injector.getInstance(ObjectMapper.class);
-        String json = om.writeValueAsString(workflows);
-        System.out.println(json);
+        final RepositoryStore repoStore = injector.getInstance(DatabaseRepositoryStoreManager.class).getRepositoryStore(0);
+        final SessionStore sessionStore = injector.getInstance(SessionStoreManager.class).getSessionStore(0);
 
         injector.getInstance(DatabaseMigrator.class).migrate();
-        ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
 
-        SessionStore sessionStore = injector.getInstance(SessionStoreManager.class).getSessionStore(0);
-        StoredSession s = sessionStore.transaction(() ->
-            sessionStore.putSession(
-                    Session.sessionBuilder()
-                    .uniqueName("ses1")
-                    .sessionParams(cf.create())
-                    .workflowId(0)
-                    .build())
+        final ConfigSource ast = loader.loadFile(new File("../demo.yml"));
+        List<WorkflowSource> workflowSources = ast.getKeys()
+            .stream()
+            .map(key -> WorkflowSource.of(key, ast.getNested(key)))
+            .collect(Collectors.toList());
+
+        StoredRepository repo = repoStore.putRepository(
+                Repository.of("repo1", cf.create()));
+        StoredRevision rev = repoStore.putRevision(
+                repo.getId(),
+                Revision.revisionBuilder()
+                    .name("rev1")
+                    .archiveType("db")
+                    .globalParams(cf.create())
+                    .build()
+                );
+
+        List<StoredWorkflowSource> storedWorkflows = workflowSources
+            .stream()
+            .map(workflowSource -> repoStore.putWorkflow(rev.getId(), workflowSource))
+            .collect(Collectors.toList());
+
+        List<Workflow> workflows = storedWorkflows
+            .stream()
+            .map(storedWorkflow -> compiler.compile(storedWorkflow.getName(), storedWorkflow.getConfig()))
+            .collect(Collectors.toList());
+
+        List<StoredSession> sessions = sessionStore.transaction(() ->
+            storedWorkflows
+                .stream()
+                .map(storedWorkflow -> {
+                    System.out.println("Starting a session of workflow "+storedWorkflow);
+
+                    StoredSession s = sessionStore.putSession(
+                            Session.sessionBuilder()
+                            .uniqueName("ses1")
+                            .sessionParams(cf.create())
+                            .workflowId(storedWorkflow.getId())
+                            .build());
+                    return s;
+                })
+                .collect(Collectors.toList())
         );
     }
 }

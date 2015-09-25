@@ -32,10 +32,10 @@ public class ConfigSourceMapper
         return new ConfigSourceArgumentFactory();
     }
 
-    public ConfigSource fromResultSet(ResultSet rs, String name)
+    public ConfigSource fromResultSet(ResultSet rs, String column)
             throws SQLException
     {
-        return fromText(rs.getString(name));
+        return fromText(rs.getString(column));
     }
 
     private ConfigSource fromText(String text)

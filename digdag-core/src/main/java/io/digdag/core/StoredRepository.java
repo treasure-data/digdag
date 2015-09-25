@@ -20,9 +20,9 @@ public abstract class StoredRepository
 
     public abstract int getSiteId();
 
+    //public abstract Optional<Integer> getLatestRevisionId();
+
     public abstract Date getCreatedAt();
 
     public abstract Date getUpdatedAt();
-
-    //public abstract int getLatestRevisionId();
 }

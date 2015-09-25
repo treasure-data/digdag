@@ -4,26 +4,25 @@ import java.util.List;
 import java.util.Map;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
-@JsonDeserialize(as = ImmutableRepository.class)
-public abstract class Repository
+@JsonDeserialize(as = ImmutableWorkflowSource.class)
+public abstract class WorkflowSource
 {
     public abstract String getName();
 
     public abstract ConfigSource getConfig();
 
-    //public abstract boolean isDisabled();
-
-    public static ImmutableRepository.Builder repositoryBuilder()
+    public static ImmutableWorkflowSource.Builder workflowSourceBuilder()
     {
-        return ImmutableRepository.builder();
+        return ImmutableWorkflowSource.builder();
     }
 
-    public static Repository of(String name, ConfigSource config)
+    public static WorkflowSource of(String name, ConfigSource config)
     {
-        return repositoryBuilder()
+        return workflowSourceBuilder()
             .name(name)
             .config(config)
             .build();

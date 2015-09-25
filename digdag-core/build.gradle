@@ -20,5 +20,6 @@ dependencies {
     compile 'org.immutables:value:2.0.21'
     compile 'org.immutables:builder:2.0.21'
     compile 'org.jdbi:jdbi:2.63.1'
+    compile 'com.mchange:c3p0:0.9.5.1'
     compile 'com.h2database:h2:1.4.189'
 }

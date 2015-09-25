@@ -24,6 +24,6 @@ public abstract class Revision
 
     public static ImmutableRevision.Builder revisionBuilder()
     {
-        return ImmutableRevision.revisionBuilder();
+        return ImmutableRevision.builder();
     }
 }
