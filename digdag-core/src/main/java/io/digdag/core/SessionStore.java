@@ -8,13 +8,15 @@ public interface SessionStore
 {
     List<StoredSession> getAllSessions();  // TODO only for testing
 
-    List<StoredSession> getSessions(int pageSize, Optional<Long> lastId);  // TODO criteria like workflow_id?
+    List<StoredSession> getSessions(int pageSize, Optional<Long> lastId);
+
+    //List<StoredSession> getSessionsOfRepository(int pageSize, int repoId, Optional<Long> lastId);
+
+    //List<StoredSession> getSessionsOfWorkflow(int pageSize, int workflowId, Optional<Long> lastId);
 
     StoredSession getSessionById(long sesId);
 
-    StoredSession getSessionByName(String name);
-
-    StoredSession putSession(Session session);
+    StoredSession putSession(Session session, SessionRelation relation);
 
     //TaskControl getTaskControl(long sesId);
 

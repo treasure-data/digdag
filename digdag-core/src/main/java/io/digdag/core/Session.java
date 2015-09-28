@@ -10,11 +10,9 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableSession.class)
 public abstract class Session
 {
-    public abstract String getUniqueName();
+    public abstract String getName();
 
     public abstract ConfigSource getSessionParams();
-
-    public abstract Optional<Integer> getWorkflowId();
 
     //public abstract SessionOption getSessionOption();
 

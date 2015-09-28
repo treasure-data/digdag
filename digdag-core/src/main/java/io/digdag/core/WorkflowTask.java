@@ -28,7 +28,8 @@ public abstract class WorkflowTask
     public static class Builder extends ImmutableWorkflowTask.Builder { }
 
     @Value.Check
-    protected void check() {
+    protected void check()
+    {
         checkState(!getName().isEmpty(), "name of a task must not be empty");
         checkState(getTaskIndex() >= 0, "taskIndex of a task must not be negative");
     }

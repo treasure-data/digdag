@@ -7,6 +7,7 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableWorkflow.class)
@@ -31,5 +32,12 @@ public abstract class Workflow
             .meta(meta)
             .tasks(tasks)
             .build();
+    }
+
+    @Value.Check
+    protected void check()
+    {
+        checkState(!getName().isEmpty(), "Name of a workflow must not be empty");
+        checkState(!getTasks().isEmpty(), "A workflow must have at least one task");
     }
 }

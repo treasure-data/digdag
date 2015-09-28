@@ -75,19 +75,32 @@ public class DatabaseSessionStoreManager
             return dao.getSessionById(siteId, sesId);
         }
 
-        public StoredSession getSessionByName(String name)
-        {
-            return dao.getSessionByName(siteId, name);
-        }
-
-        public StoredSession putSession(Session session)
+        public StoredSession putSession(Session session, SessionRelation relation)
         {
             // TODO idempotent operation
-            long sesId = dao.insertSession(siteId, session.getWorkflowId().orNull(), session.getUniqueName(),
-                    session.getSessionParams());
+            long sesId;
+            if (relation.getWorkflowId().isPresent()) {
+                // namespace is workflow id
+                sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, relation.getWorkflowId().get(), session.getName(), session.getSessionParams());
+                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), relation.getWorkflowId().get());
+            }
+            else if (relation.getRepositoryId().isPresent()) {
+                // namespace is repository
+                sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, relation.getRepositoryId().get(), session.getName(), session.getSessionParams());
+                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), null);
+            }
+            else {
+                // namespace is site
+                sesId = dao.insertSession(siteId, NAMESPACE_SITE_ID, siteId, session.getName(), session.getSessionParams());
+                dao.insertSessionRelation(sesId, null, null);
+            }
             return getSessionById(sesId);
         }
     }
+
+    public static short NAMESPACE_WORKFLOW_ID = (short) 3;
+    public static short NAMESPACE_REPOSITORY_ID = (short) 1;
+    public static short NAMESPACE_SITE_ID = (short) 0;
 
     public interface Dao
     {
@@ -101,14 +114,19 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from sessions where site_id = :siteId and id = :id limit 1")
         StoredSession getSessionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select * from sessions where site_id = :siteId and unique_name = :name limit 1")
+        @SqlQuery("select * from sessions where site_id = :siteId and name = :name limit 1")
         StoredSession getSessionByName(@Bind("siteId") int siteId, @Bind("name") String name);
 
-        @SqlUpdate("insert into sessions (site_id, workflow_id, unique_name, session_params, created_at)" +
-                "values (:siteId, :workflowId, :uniqueName, :sessionParams, now())")
+        @SqlUpdate("insert into sessions (site_id, namespace_type, namespace_id, name, session_params, created_at)" +
+                "values (:siteId, :namespaceType, :namespaceId, :name, :sessionParams, now())")
         @GetGeneratedKeys
-        long insertSession(@Bind("siteId") int siteId, @Bind("workflowId") Integer workflowId, @Bind("uniqueName") String uniqueName,
-                @Bind("sessionParams") ConfigSource sessionParams);
+        long insertSession(@Bind("siteId") int siteId,  @Bind("namespaceType") short namespaceType,
+                @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("sessionParams") ConfigSource sessionParams);
+
+        @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +
+                "values (:id, :repositoryId, :workflowId)")
+        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
+                @Bind("workflowId") Integer workflowId);
     }
 
     private static class StoredSessionMapper
@@ -129,9 +147,8 @@ public class DatabaseSessionStoreManager
                 .id(r.getLong("id"))
                 .siteId(r.getInt("site_id"))
                 .createdAt(r.getDate("created_at"))
-                .uniqueName(r.getString("unique_name"))
+                .name(r.getString("name"))
                 .sessionParams(cfm.fromResultSet(r, "session_params"))
-                .workflowId(getOptionalInt(r, "workflow_id"))
                 .build();
         }
     }

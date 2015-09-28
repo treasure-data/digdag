@@ -66,9 +66,19 @@ public class DatabaseMigrator
             }
         }
 
+        public CreateTableBuilder addShort(String column, String options)
+        {
+            return add(column, "smallint " + options);
+        }
+
         public CreateTableBuilder addInt(String column, String options)
         {
             return add(column, "int " + options);
+        }
+
+        public CreateTableBuilder addLong(String column, String options)
+        {
+            return add(column, "bigint " + options);
         }
 
         public CreateTableBuilder addString(String column, String options)
@@ -118,19 +128,6 @@ public class DatabaseMigrator
     {
         // TODO references
         try (Handle handle = dbi.open()) {
-            // sessions
-            handle.update(
-                    new CreateTableBuilder("sessions")
-                    .addIntId("id")
-                    .addInt("site_id", "not null")
-                    .addInt("workflow_id", "")  // nullable if one-time workflow
-                    .addString("unique_name", "not null")
-                    .addLongText("session_params", "not null")
-                    //.addLongText("session_options", "not null")
-                    .addTimestamp("created_at", "not null")
-                    .build());
-            handle.update("create unique index if not exists sessions_on_site_id_and_unique_name on sessions (site_id, unique_name)");
-
             // repositories
             handle.update(
                     new CreateTableBuilder("repositories")
@@ -144,6 +141,7 @@ public class DatabaseMigrator
                     .addTimestamp("updated_at", "not null")
                     .build());
             handle.update("create unique index if not exists repositories_on_site_id_and_name on repositories (site_id, name)");
+            handle.update("create index if not exists repositories_on_site_id_and_id on repositories (site_id, id)");
 
             // revisions
             handle.update(
@@ -160,6 +158,7 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index if not exists revisions_on_repository_id_and_name on revisions (repository_id, name)");
+            handle.update("create index if not exists revisions_on_repository_id_and_id on revisions (repository_id, id)");
 
             // workflows
             handle.update(
@@ -170,6 +169,32 @@ public class DatabaseMigrator
                     .addLongText("config", "not null")
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
+            //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
+
+            // sessions
+            handle.update(
+                    new CreateTableBuilder("sessions")
+                    .addLongId("id")
+                    .addInt("site_id", "not null")
+                    .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_id
+                    .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_id
+                    .addString("name", "not null")
+                    .addLongText("session_params", "not null")
+                    //.addLongText("session_options", "not null")
+                    .addTimestamp("created_at", "not null")
+                    .build());
+            handle.update("create unique index if not exists sessions_on_namespace_and_name on sessions (namespace_id, name, namespace_type)");
+            handle.update("create index if not exists sessions_on_site_id_and_id on sessions (site_id, id)");
+
+            // session_relations
+            handle.update(
+                    new CreateTableBuilder("session_relations")
+                    .addLongId("id")
+                    .addInt("repository_id", "")     // null if one-time workflow
+                    .addInt("workflow_id", "")       // null if one-time workflow
+                    .build());
+            handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
+            handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_relations (workflow_id, id)");
         }
     }
 }

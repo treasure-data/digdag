@@ -74,10 +74,11 @@ public class Main
 
                     StoredSession s = sessionStore.putSession(
                             Session.sessionBuilder()
-                            .uniqueName("ses1")
-                            .sessionParams(cf.create())
-                            .workflowId(storedWorkflow.getId())
-                            .build());
+                                .name("ses1")
+                                .sessionParams(cf.create())
+                                .build(),
+                            SessionRelation
+                                .of(Optional.absent(), Optional.absent()));
                     return s;
                 })
                 .collect(Collectors.toList())
