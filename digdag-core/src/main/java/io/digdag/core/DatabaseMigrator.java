@@ -134,7 +134,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("site_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("config", "not null")
+                    .addLongText("config", "")
                     //.addBoolean("disabled", "not null")
                     //.addInt("latest_revision_id", "")
                     .addTimestamp("created_at", "not null")
@@ -150,7 +150,7 @@ public class DatabaseMigrator
                     // TODO disabled flag
                     .addInt("repository_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("global_params", "not null")
+                    .addLongText("global_params", "")
                     .addString("archive_type", "not null")
                     .addBinary("archive_md5", "")
                     .addString("archive_path", "")
@@ -166,7 +166,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("revision_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("config", "not null")
+                    .addLongText("config", "")
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
             //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
@@ -179,7 +179,7 @@ public class DatabaseMigrator
                     .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_id
                     .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_id
                     .addString("name", "not null")
-                    .addLongText("session_params", "not null")
+                    .addLongText("session_params", "")
                     //.addLongText("session_options", "not null")
                     .addTimestamp("created_at", "not null")
                     .build());
@@ -195,6 +195,41 @@ public class DatabaseMigrator
                     .build());
             handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
             handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_relations (workflow_id, id)");
+
+            // tasks
+            handle.update(
+                    new CreateTableBuilder("tasks")
+                    .addLongId("id")
+                    .addLong("session_id", "not null")
+                    .addLong("parent_id", "")
+                    .addInt("flags", "")  // 1=ignore_parent_flags
+                    .addString("name", "")
+                    .addLongText("options", "")
+                    .addLongText("config", "")
+                    .build());
+
+            // task_dependencies
+            handle.update(
+                    new CreateTableBuilder("task_dependencies")
+                    .addLongId("id")
+                    .addLong("parent_id", "")  // TODO unnecessary?
+                    .addLong("upstream_id", "")
+                    .addLong("downstream_id", "")
+                    .build());
+            handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
+
+            // task_states
+            handle.update(
+                    new CreateTableBuilder("task_states")
+                    .addLongId("id")
+                    .addInt("state", "not null")
+                    .addTimestamp("retry_at", "")
+                    .addTimestamp("updated_at", "not null")
+                    .addLongText("state_params", "")
+                    .addLongText("carry_params", "")
+                    .addLongText("report", "")
+                    .addLongText("error", "")
+                    .build());
         }
     }
 }

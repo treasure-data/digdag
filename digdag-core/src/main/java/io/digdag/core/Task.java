@@ -13,4 +13,15 @@ public abstract class Task
 {
     public abstract int getSessionId();
 
+    public abstract Optional<Long> getParentId();
+
+    public abstract String getName();
+
+    public abstract TaskFlags getFlags();
+
+    public abstract WorkflowTaskOptions getOptions();
+
+    public abstract ConfigSource getConfig();
+
+    public abstract List<Long> getUpstreams();  // list of task_id
 }

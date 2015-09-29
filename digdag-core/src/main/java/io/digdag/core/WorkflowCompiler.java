@@ -34,18 +34,18 @@ public class WorkflowCompiler
         private final int index;
         private final Optional<TaskBuilder> parent;
         private final String name;
-        private final WorkflowTaskOption option;
+        private final WorkflowTaskOptions options;
         private final ConfigSource config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
         public TaskBuilder(int index, Optional<TaskBuilder> parent, String name,
-                WorkflowTaskOption option, ConfigSource config)
+                WorkflowTaskOptions options, ConfigSource config)
         {
             this.index = index;
             this.parent = parent;
             this.name = name;
-            this.option = option;
+            this.options = options;
             this.config = config;
             if (parent.isPresent()) {
                 parent.get().addChild(this);
@@ -84,7 +84,7 @@ public class WorkflowCompiler
                             .stream()
                             .map(it -> it.index)
                             .collect(Collectors.toList()))
-                .option(option)
+                .options(options)
                 .config(config)
                 .build();
         }
@@ -190,9 +190,9 @@ public class WorkflowCompiler
             return tb;
         }
 
-        private WorkflowTaskOption extractTaskOption(ConfigSource config, boolean groupingOnly)
+        private WorkflowTaskOptions extractTaskOption(ConfigSource config, boolean groupingOnly)
         {
-            return new WorkflowTaskOption.Builder()
+            return new WorkflowTaskOptions.Builder()
                 .groupingOnly(groupingOnly)
                 .build();
         }

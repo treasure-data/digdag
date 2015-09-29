@@ -19,7 +19,6 @@ public class Main
     public static void main(String[] args)
             throws Exception
     {
-
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
                     .registerModule(new GuavaModule())
@@ -45,9 +44,9 @@ public class Main
             .map(key -> WorkflowSource.of(key, ast.getNested(key)))
             .collect(Collectors.toList());
 
-        StoredRepository repo = repoStore.putRepository(
+        final StoredRepository repo = repoStore.putRepository(
                 Repository.of("repo1", cf.create()));
-        StoredRevision rev = repoStore.putRevision(
+        final StoredRevision rev = repoStore.putRevision(
                 repo.getId(),
                 Revision.revisionBuilder()
                     .name("rev1")
@@ -78,7 +77,7 @@ public class Main
                                 .sessionParams(cf.create())
                                 .build(),
                             SessionRelation
-                                .of(Optional.absent(), Optional.absent()));
+                                .of(Optional.of(repo.getId()), Optional.of(storedWorkflow.getId())));
                     return s;
                 })
                 .collect(Collectors.toList())

@@ -4,10 +4,10 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Value.Immutable
-public abstract class WorkflowTaskOption
+public abstract class WorkflowTaskOptions
 {
     @JsonProperty("g")
     public abstract boolean getGroupingOnly();
 
-    public static class Builder extends ImmutableWorkflowTaskOption.Builder { }
+    public static class Builder extends ImmutableWorkflowTaskOptions.Builder { }
 }

@@ -10,107 +10,113 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import com.google.inject.Inject;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;
 import org.skife.jdbi.v2.tweak.ArgumentFactory;
 
-public class ConfigSourceMapper
+public class JsonMapper <T>
 {
-    private final ObjectMapper jsonTreeMapper;
-    private final ConfigSourceFactory cf;
+    private final ObjectMapper mapper;
+    private final Class<T> type;
 
-    @Inject
-    public ConfigSourceMapper(ConfigSourceFactory cf)
+    public JsonMapper(ObjectMapper mapper, Class<T> type)
     {
-        this.jsonTreeMapper = new ObjectMapper();
-        this.cf = cf;
+        this.mapper = mapper;
+        this.type = type;
     }
 
-    public ConfigSourceArgumentFactory getArgumentFactory()
+    public JsonArgumentFactory getArgumentFactory()
     {
-        return new ConfigSourceArgumentFactory();
+        return new JsonArgumentFactory();
     }
 
-    public ConfigSource fromResultSet(ResultSet rs, String column)
+    public T fromResultSet(ResultSet rs, String column)
             throws SQLException
     {
         String text = rs.getString(column);
         if (rs.wasNull()) {
-            return cf.create();
+            return fromText("{}");
         }
         else {
             return fromText(text);
         }
     }
 
-    private ConfigSource fromText(String text)
+    public Optional<T> fromNullableResultSet(ResultSet rs, String column)
+            throws SQLException
+    {
+        String text = rs.getString(column);
+        if (rs.wasNull()) {
+            return Optional.absent();
+        }
+        else {
+            return Optional.of(fromText(text));
+        }
+    }
+
+    private T fromText(String text)
     {
         try {
-            JsonNode node = jsonTreeMapper.readTree(text);
-            Preconditions.checkState(node instanceof ObjectNode, "Stored ConfigSource must be an object");
-            return cf.create((ObjectNode) node);
+            return mapper.readValue(text, type);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    private String toText(ConfigSource config)
+    private String toText(T value)
     {
-        if (config.isEmpty()) {
-            return null;
-        }
         try {
-            return jsonTreeMapper.writeValueAsString(config);
+            return mapper.writeValueAsString(value);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    public class ConfigSourceArgumentFactory
-            implements ArgumentFactory<ConfigSource>
+    public class JsonArgumentFactory
+            implements ArgumentFactory<T>
     {
         @Override
         public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx)
         {
-            return value instanceof ConfigSource;
+            return type.isInstance(value);
         }
 
         @Override
-        public Argument build(Class<?> expectedType, ConfigSource value, StatementContext ctx)
+        public Argument build(Class<?> expectedType, T value, StatementContext ctx)
         {
-            return new ConfigSourceArgument(value);
+            return new JsonArgument(value);
         }
     }
 
-    public class ConfigSourceArgument
+    public class JsonArgument
             implements Argument
     {
-        private final ConfigSource config;
+        private final T value;
 
-        public ConfigSourceArgument(ConfigSource config)
+        public JsonArgument(T value)
         {
-            this.config = config;
+            this.value = value;
         }
 
         @Override
         public void apply(int position, PreparedStatement statement, StatementContext ctx)
                 throws SQLException
         {
-            if (config == null) {
+            if (value == null) {
                 statement.setNull(position, Types.CLOB);
             }
             else {
-                statement.setString(position, toText(config));
+                String text = toText(value);
+                statement.setString(position, text);
             }
         }
 
         @Override
         public String toString()
         {
-            return String.valueOf(config);
+            return String.valueOf(value);
         }
     }
 }

@@ -21,7 +21,7 @@ public abstract class WorkflowTask
 
     public abstract List<Integer> getUpstreamTaskIndexes();
 
-    public abstract WorkflowTaskOption getOption();
+    public abstract WorkflowTaskOptions getOptions();
 
     public abstract ConfigSource getConfig();
 
