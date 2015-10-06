@@ -3,7 +3,7 @@ package io.digdag.core;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public class TaskFlags
+public class TaskErrorMode
 {
     public static class Builder
     {
@@ -19,13 +19,23 @@ public class TaskFlags
             }
             return this;
         }
+
+        public TaskErrorMode build()
+        {
+            return new TaskErrorMode(flags);
+        }
+    }
+
+    public static Builder builder()
+    {
+        return new Builder();
     }
 
     public static final int IGNORE_PARENT_ERROR = 1;
 
-    public static TaskFlags of(int flags)
+    public static TaskErrorMode of(int flags)
     {
-        return new TaskFlags(flags);
+        return new TaskErrorMode(flags);
     }
 
     private final int flags;
@@ -35,7 +45,7 @@ public class TaskFlags
      */
     @Deprecated
     @JsonCreator
-    public TaskFlags(int flags)
+    public TaskErrorMode(int flags)
     {
         this.flags = flags;
     }
@@ -60,13 +70,13 @@ public class TaskFlags
     public boolean equals(Object another)
     {
         return this == another ||
-            (another instanceof TaskFlags && ((TaskFlags) another).flags == flags);
+            (another instanceof TaskErrorMode && ((TaskErrorMode) another).flags == flags);
     }
 
     @Override
     public String toString()
     {
         // TODO pretty print
-        return "TaskFlags{"+flags+"}";
+        return "TaskErrorMode{"+flags+"}";
     }
 }

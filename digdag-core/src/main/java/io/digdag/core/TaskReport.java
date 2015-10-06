@@ -21,9 +21,23 @@ public abstract class TaskReport
     @JsonProperty("out")
     public abstract List<ConfigSource> getOutputs();
 
+    public abstract ConfigSource getCarryParams();
+
     // TODO metrics
 
     // TODO startedAt
 
     // TODO executedOnHost
+
+    public static ImmutableTaskReport.Builder reportBuilder()
+    {
+        return ImmutableTaskReport.builder();
+    }
+
+    public static TaskReport empty(ConfigSourceFactory cf)
+    {
+        return reportBuilder()
+            .carryParams(cf.create())
+            .build();
+    }
 }

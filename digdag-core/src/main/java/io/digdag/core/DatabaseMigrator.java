@@ -86,6 +86,11 @@ public class DatabaseMigrator
             return add(column, "varchar(255) " + options);
         }
 
+        public CreateTableBuilder addMediumText(String column, String options)
+        {
+            return add(column, "text " + options);
+        }
+
         public CreateTableBuilder addLongText(String column, String options)
         {
             return add(column, "text " + options);
@@ -134,7 +139,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("site_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("config", "")
+                    .addMediumText("config", "")
                     //.addBoolean("disabled", "not null")
                     //.addInt("latest_revision_id", "")
                     .addTimestamp("created_at", "not null")
@@ -150,7 +155,7 @@ public class DatabaseMigrator
                     // TODO disabled flag
                     .addInt("repository_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("global_params", "")
+                    .addMediumText("global_params", "")
                     .addString("archive_type", "not null")
                     .addBinary("archive_md5", "")
                     .addString("archive_path", "")
@@ -166,7 +171,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("revision_id", "not null")
                     .addString("name", "not null")
-                    .addLongText("config", "")
+                    .addMediumText("config", "")
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
             //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
@@ -179,12 +184,21 @@ public class DatabaseMigrator
                     .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_id
                     .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_id
                     .addString("name", "not null")
-                    .addLongText("session_params", "")
-                    //.addLongText("session_options", "not null")
+                    .addMediumText("params", "")
+                    .addMediumText("options", "")    // TODO set in params? or rename to config?
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index if not exists sessions_on_namespace_and_name on sessions (namespace_id, name, namespace_type)");
             handle.update("create index if not exists sessions_on_site_id_and_id on sessions (site_id, id)");
+
+            // session_archives
+            handle.update(
+                    new CreateTableBuilder("session_archives")
+                    .addLongId("id")
+                    // TODO save state
+                    .addLongText("tasks", "")  // collection of tasks, delete tasks transactionally when archived
+                    .addTimestamp("updated_at", "not null")
+                    .build());
 
             // session_relations
             handle.update(
@@ -202,34 +216,37 @@ public class DatabaseMigrator
                     .addLongId("id")
                     .addLong("session_id", "not null")
                     .addLong("parent_id", "")
-                    .addInt("flags", "")  // 1=ignore_parent_flags
-                    .addString("name", "")
-                    .addLongText("options", "")
-                    .addLongText("config", "")
+                    .addShort("task_type", "")   // 0=action, 1=grouping  NOT NULL
+                    //.addShort("error_mode", "")  // 1=ignore_parent_flags  NOT NULL
+                    .addShort("state", "not null")
+                    .addTimestamp("updated_at", "not null")  // last state update is done at this time
+                    .addTimestamp("retry_at", "")
+                    .build());
+
+            handle.update(
+                    new CreateTableBuilder("task_details")
+                    .addLongId("id")
+                    .addMediumText("full_name", "not null")
+                    .addMediumText("config", "")
+                    .build());
+
+            handle.update(
+                    new CreateTableBuilder("task_state_details")
+                    .addLongId("id")
+                    .addMediumText("state_params", "")
+                    .addMediumText("carry_params", "")
+                    .addMediumText("error", "")
+                    .addMediumText("report", "")
                     .build());
 
             // task_dependencies
             handle.update(
                     new CreateTableBuilder("task_dependencies")
                     .addLongId("id")
-                    .addLong("parent_id", "")  // TODO unnecessary?
                     .addLong("upstream_id", "")
                     .addLong("downstream_id", "")
                     .build());
             handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
-
-            // task_states
-            handle.update(
-                    new CreateTableBuilder("task_states")
-                    .addLongId("id")
-                    .addInt("state", "not null")
-                    .addTimestamp("retry_at", "")
-                    .addTimestamp("updated_at", "not null")
-                    .addLongText("state_params", "")
-                    .addLongText("carry_params", "")
-                    .addLongText("report", "")
-                    .addLongText("error", "")
-                    .build());
         }
     }
 }

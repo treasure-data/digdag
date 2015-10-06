@@ -34,22 +34,27 @@ public class WorkflowCompiler
         private final int index;
         private final Optional<TaskBuilder> parent;
         private final String name;
-        private final WorkflowTaskOptions options;
+        private final TaskType taskType;
         private final ConfigSource config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
         public TaskBuilder(int index, Optional<TaskBuilder> parent, String name,
-                WorkflowTaskOptions options, ConfigSource config)
+                TaskType taskType, ConfigSource config)
         {
             this.index = index;
             this.parent = parent;
             this.name = name;
-            this.options = options;
+            this.taskType = taskType;
             this.config = config;
             if (parent.isPresent()) {
                 parent.get().addChild(this);
             }
+        }
+
+        public int getIndex()
+        {
+            return index;
         }
 
         public String getName()
@@ -76,15 +81,15 @@ public class WorkflowCompiler
         {
             return new WorkflowTask.Builder()
                 .name(name)
-                .taskIndex(index)
-                .parentTaskIndex(
+                .index(index)
+                .parentIndex(
                         parent.transform(it -> it.index))
-                .upstreamTaskIndexes(
+                .upstreamIndexes(
                         upstreams
                             .stream()
                             .map(it -> it.index)
                             .collect(Collectors.toList()))
-                .options(options)
+                .taskType(taskType)
                 .config(config)
                 .build();
         }
@@ -129,12 +134,12 @@ public class WorkflowCompiler
             // other: ...
             config.getKeys()
                 .stream()
-                .filter(key -> !key.startsWith("+"))
+                .filter(key -> key.startsWith("+"))
                 .forEach(key -> config.remove(key));
 
             if (config.has("type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
                 // task node
-                if (subtaskConfigs.isEmpty()) {
+                if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);
                 }
                 return addTask(parent, name, false, config);
@@ -159,7 +164,7 @@ public class WorkflowCompiler
                             }
                             tb.addUpstream(up);
                         }
-                        names.put(tb.getName(), tb);
+                        names.put(subtask.getName(), tb);
                     }
                 }
                 else {
@@ -190,9 +195,9 @@ public class WorkflowCompiler
             return tb;
         }
 
-        private WorkflowTaskOptions extractTaskOption(ConfigSource config, boolean groupingOnly)
+        private TaskType extractTaskOption(ConfigSource config, boolean groupingOnly)
         {
-            return new WorkflowTaskOptions.Builder()
+            return new TaskType.Builder()
                 .groupingOnly(groupingOnly)
                 .build();
         }

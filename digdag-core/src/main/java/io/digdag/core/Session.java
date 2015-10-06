@@ -12,9 +12,9 @@ public abstract class Session
 {
     public abstract String getName();
 
-    public abstract ConfigSource getSessionParams();
+    public abstract ConfigSource getParams();
 
-    //public abstract SessionOption getSessionOption();
+    public abstract SessionOptions getOptions();
 
     public static ImmutableSession.Builder sessionBuilder()
     {

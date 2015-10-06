@@ -294,11 +294,11 @@ public class DatabaseRepositoryStoreManager
             return ImmutableStoredRepository.builder()
                 .id(r.getInt("id"))
                 .siteId(r.getInt("site_id"))
-                .createdAt(r.getDate("created_at"))
-                .updatedAt(r.getDate("updated_at"))
+                .createdAt(r.getTimestamp("created_at"))
+                .updatedAt(r.getTimestamp("updated_at"))
                 //.latestRevisionId(r.getInt("latest_revision_id"))
                 .name(r.getString("name"))
-                .config(cfm.fromResultSet(r, "config"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
         }
     }
@@ -320,9 +320,9 @@ public class DatabaseRepositoryStoreManager
             return ImmutableStoredRevision.builder()
                 .id(r.getInt("id"))
                 .repositoryId(r.getInt("repository_id"))
-                .createdAt(r.getDate("created_at"))
+                .createdAt(r.getTimestamp("created_at"))
                 .name(r.getString("name"))
-                .globalParams(cfm.fromResultSet(r, "global_params"))
+                .globalParams(cfm.fromResultSetOrEmpty(r, "global_params"))
                 .archiveType(r.getString("archive_type"))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))
@@ -349,7 +349,7 @@ public class DatabaseRepositoryStoreManager
                 .id(r.getInt("id"))
                 .revisionId(r.getInt("revision_id"))
                 .name(r.getString("name"))
-                .config(cfm.fromResultSet(r, "config"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
         }
     }

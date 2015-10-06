@@ -8,20 +8,25 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
-@JsonDeserialize(as = ImmutableStoredSession.class)
+@JsonDeserialize(as = ImmutableTask.class)
 public abstract class Task
 {
-    public abstract int getSessionId();
+    public abstract long getSessionId();
 
     public abstract Optional<Long> getParentId();
 
-    public abstract String getName();
-
-    public abstract TaskFlags getFlags();
-
-    public abstract WorkflowTaskOptions getOptions();
+    public abstract String getFullName();
 
     public abstract ConfigSource getConfig();
 
-    public abstract List<Long> getUpstreams();  // list of task_id
+    public abstract TaskType getTaskType();
+
+    //public abstract TaskErrorMode getErrorMode();
+
+    public abstract TaskStateCode getState();
+
+    public static ImmutableTask.Builder taskBuilder()
+    {
+        return ImmutableTask.builder();
+    }
 }

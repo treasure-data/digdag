@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.stream.Collectors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -27,14 +28,25 @@ public class Main
                         .type("h2")
                         //.url("jdbc:h2:../test")
                         .url("jdbc:h2:mem:test")
-                        .build())
-                );
+                        .build()),
+                (binder) -> {
+                    binder.bind(TaskApi.class).to(InProcessTaskApi.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigSourceFactory.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigSourceMapper.class).in(Scopes.SINGLETON);
+                    binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
+                    binder.bind(SessionExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskQueueDispatcher.class).to(LocalThreadTaskQueueDispatcher.class).in(Scopes.SINGLETON);
+                }
+            );
 
         final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final RepositoryStore repoStore = injector.getInstance(DatabaseRepositoryStoreManager.class).getRepositoryStore(0);
         final SessionStore sessionStore = injector.getInstance(SessionStoreManager.class).getSessionStore(0);
+        final SessionExecutor exec = injector.getInstance(SessionExecutor.class);
+        final TaskQueueDispatcher dispatcher = injector.getInstance(TaskQueueDispatcher.class);
 
         injector.getInstance(DatabaseMigrator.class).migrate();
 
@@ -71,16 +83,21 @@ public class Main
                 .map(storedWorkflow -> {
                     System.out.println("Starting a session of workflow "+storedWorkflow);
 
-                    StoredSession s = sessionStore.putSession(
+                    return exec.submitWorkflow(
+                            0,
+                            storedWorkflow,
                             Session.sessionBuilder()
                                 .name("ses1")
-                                .sessionParams(cf.create())
+                                .params(cf.create())
+                                .options(SessionOptions.sessionOptionsBuilder().build())
                                 .build(),
                             SessionRelation
                                 .of(Optional.of(repo.getId()), Optional.of(storedWorkflow.getId())));
-                    return s;
                 })
                 .collect(Collectors.toList())
         );
+
+        exec.runUntilAny(dispatcher);
+        exec.showTasks();
     }
 }

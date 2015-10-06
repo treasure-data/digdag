@@ -15,13 +15,13 @@ public abstract class WorkflowTask
 {
     public abstract String getName();
 
-    public abstract int getTaskIndex();
+    public abstract int getIndex();
 
-    public abstract Optional<Integer> getParentTaskIndex();
+    public abstract Optional<Integer> getParentIndex();
 
-    public abstract List<Integer> getUpstreamTaskIndexes();
+    public abstract List<Integer> getUpstreamIndexes();
 
-    public abstract WorkflowTaskOptions getOptions();
+    public abstract TaskType getTaskType();
 
     public abstract ConfigSource getConfig();
 
@@ -31,6 +31,6 @@ public abstract class WorkflowTask
     protected void check()
     {
         checkState(!getName().isEmpty(), "name of a task must not be empty");
-        checkState(getTaskIndex() >= 0, "taskIndex of a task must not be negative");
+        checkState(getIndex() >= 0, "index of a task must not be negative");
     }
 }

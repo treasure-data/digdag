@@ -16,8 +16,6 @@ public interface SessionStore
 
     StoredSession getSessionById(long sesId);
 
-    StoredSession putSession(Session session, SessionRelation relation);
-
     //TaskControl getTaskControl(long sesId);
 
     //Pageable<StoredTask> getTasks(long sesId, int pageSize);

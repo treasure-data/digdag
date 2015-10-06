@@ -15,6 +15,20 @@ public abstract class BasicDatabaseStoreManager
         return optional(r.wasNull(), v);
     }
 
+    public static Optional<Long> getOptionalLong(ResultSet r, String column)
+            throws SQLException
+    {
+        long v = r.getLong(column);
+        return optional(r.wasNull(), v);
+    }
+
+    public static Optional<Date> getOptionalDate(ResultSet r, String column)
+            throws SQLException
+    {
+        Date v = r.getDate(column);
+        return optional(r.wasNull(), v);
+    }
+
     public static Optional<String> getOptionalString(ResultSet r, String column)
             throws SQLException
     {

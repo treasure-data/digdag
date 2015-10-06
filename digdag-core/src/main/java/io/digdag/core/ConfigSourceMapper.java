@@ -32,7 +32,19 @@ public class ConfigSourceMapper
         return new ConfigSourceArgumentFactory();
     }
 
-    public ConfigSource fromResultSet(ResultSet rs, String column)
+    public Optional<ConfigSource> fromResultSet(ResultSet rs, String column)
+            throws SQLException
+    {
+        String text = rs.getString(column);
+        if (rs.wasNull()) {
+            return Optional.absent();
+        }
+        else {
+            return Optional.of(fromText(text));
+        }
+    }
+
+    public ConfigSource fromResultSetOrEmpty(ResultSet rs, String column)
             throws SQLException
     {
         String text = rs.getString(column);

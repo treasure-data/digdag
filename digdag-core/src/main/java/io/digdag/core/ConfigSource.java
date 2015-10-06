@@ -138,6 +138,18 @@ public class ConfigSource
         return (List<E>) get(key, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), ImmutableList.<E>of());
     }
 
+    @SuppressWarnings("unchecked")
+    public <K, V> Map<K, V> getMap(String key, Class<K> keyType, Class<V> valueType)
+    {
+        return (Map<K, V>) get(key, mapper.getTypeFactory().constructParametrizedType(Map.class, Map.class, keyType, valueType));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <K, V> Map<K, V> getMapOrEmpty(String key, Class<K> keyType, Class<V> valueType)
+    {
+        return (Map<K, V>) get(key, mapper.getTypeFactory().constructParametrizedType(Map.class, Map.class, keyType, valueType), ImmutableMap.<K, V>of());
+    }
+
     public ConfigSource getNested(String key)
     {
         JsonNode value = object.get(key);
