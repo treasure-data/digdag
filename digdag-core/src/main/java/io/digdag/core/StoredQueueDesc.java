@@ -16,7 +16,7 @@ import org.immutables.value.Value;
 public abstract class StoredQueueDesc
         extends QueueDesc
 {
-    public abstract int getId();
+    public abstract long getId();
 
     public abstract int getSiteId();
 

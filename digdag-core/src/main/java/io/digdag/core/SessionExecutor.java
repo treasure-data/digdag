@@ -231,6 +231,7 @@ public class SessionExecutor
         }
         else {
             // group error
+            // TODO add .error tasks and set error_task key to state params so that next time this doesn't add .error tasks?
             ConfigSource error = buildPropagatedError(childrenErrors);
             RetryControl retryControl = RetryControl.prepare(detail.getConfig(), detail.getStateParams(), false);  // don't retry by default
             if (retryControl.evaluate(error)) {
@@ -435,6 +436,7 @@ public class SessionExecutor
                     ConfigSource config = task.getConfig();  // TODO render using liquid?
                         Action action = Action.actionBuilder()
                         .taskId(task.getId())
+                        .siteId(task.getSiteId())
                         .fullName(fullName)
                         .config(config)
                         .params(params)

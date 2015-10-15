@@ -16,6 +16,8 @@ public abstract class Action
 {
     public abstract long getTaskId();
 
+    public abstract long getSiteId();
+
     public abstract String getFullName();
 
     public abstract ConfigSource getConfig();

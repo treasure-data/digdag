@@ -176,6 +176,19 @@ public class DatabaseMigrator
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
             //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
 
+            // repositories
+            handle.update(
+                    new CreateTableBuilder("queues")
+                    .addIntId("id")
+                    .addInt("site_id", "not null")
+                    .addString("name", "not null")
+                    .addMediumText("config", "")
+                    .addTimestamp("created_at", "not null")
+                    .addTimestamp("updated_at", "not null")
+                    .build());
+            handle.update("create unique index if not exists queues_on_site_id_and_name on queues (site_id, name)");
+            handle.update("create index if not exists queues_on_site_id_and_id on queues (site_id, id)");
+
             // sessions
             handle.update(
                     new CreateTableBuilder("sessions")

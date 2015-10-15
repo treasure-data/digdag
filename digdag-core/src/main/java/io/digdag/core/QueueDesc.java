@@ -12,7 +12,7 @@ public abstract class QueueDesc
 {
     public abstract String getName();
 
-    //public abstract ConfigSource getConfig();
+    public abstract ConfigSource getConfig();
 
     public static ImmutableQueueDesc.Builder queueDescBuilder()
     {
