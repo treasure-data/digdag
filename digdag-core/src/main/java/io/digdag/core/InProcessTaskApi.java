@@ -15,14 +15,25 @@ public class InProcessTaskApi
     }
 
     @Override
-    public void taskFinished(long taskId,
-            ConfigSource stateParams,
-            ConfigSource subtaskConfig,
-            Optional<ConfigSource> error,
-            Optional<Integer> retryInterval,
-            Optional<ConfigSource> carryParams,
-            Optional<TaskReport> report)
+    public void taskSucceeded(long taskId,
+            ConfigSource stateParams, ConfigSource subtaskConfig,
+            ConfigSource carryParams, TaskReport report)
     {
-        exec.taskFinished(taskId, stateParams, subtaskConfig, error, retryInterval, carryParams, report);
+        exec.taskSucceeded(taskId, stateParams, subtaskConfig, carryParams, report);
+    }
+
+    @Override
+    public void taskFailed(long taskId,
+            ConfigSource error, ConfigSource stateParams,
+            Optional<Integer> retryInterval)
+    {
+        exec.taskFailed(taskId, error, stateParams, retryInterval);
+    }
+
+    @Override
+    public void taskPollNext(long taskId,
+            ConfigSource stateParams, int retryInterval)
+    {
+        exec.taskPollNext(taskId, stateParams, retryInterval);
     }
 }

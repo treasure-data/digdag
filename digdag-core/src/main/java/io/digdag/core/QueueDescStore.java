@@ -14,7 +14,7 @@ public interface QueueDescStore
 
     StoredQueueDesc getQueueDescByName(String name);
 
-    StoredQueueDesc getQueueDescOrCreateDefault(String name, ConfigSource defaultConfig);
+    StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, ConfigSource defaultConfig);
 
     void updateQueueDescConfig(long qdId, ConfigSource newConfig);
 }

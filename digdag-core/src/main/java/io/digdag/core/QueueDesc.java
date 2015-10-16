@@ -19,10 +19,11 @@ public abstract class QueueDesc
         return ImmutableQueueDesc.queueDescBuilder();
     }
 
-    public static QueueDesc of(String name)
+    public static QueueDesc of(String name, ConfigSource config)
     {
         return queueDescBuilder()
             .name(name)
+            .config(config)
             .build();
     }
 }

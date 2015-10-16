@@ -17,13 +17,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.function.BooleanSupplier;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
 
 public class SessionExecutor
+        implements TaskApi
 {
     private final SessionStoreManager sm;
     private final WorkflowCompiler compiler;
@@ -129,6 +129,7 @@ public class SessionExecutor
 
             IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);
             while (cond.getAsBoolean()) {
+                System.out.println("running...");
                 boolean inced = prop.run();
                 boolean retried = retryRetryWaitingTasks();
                 if (inced || retried) {
@@ -420,14 +421,9 @@ public class SessionExecutor
             Optional<TaskReport> skipTaskReport = Optional.fromNullable(session.getOptions().getSkipTaskMap().get(fullName));
             if (skipTaskReport.isPresent()) {
                 System.out.println("Skipping task: "+fullName);  // TODO logger
-                taskFinished(
-                        control, task,
-                        cf.create(),
-                        cf.create(),
-                        Optional.absent(),
-                        Optional.absent(),
-                        Optional.absent(),
-                        skipTaskReport);
+                taskSucceeded(control, task,
+                        cf.create(), cf.create(),
+                        cf.create(), skipTaskReport.get());
                 return true;
             }
             else {
@@ -448,14 +444,9 @@ public class SessionExecutor
                 }
                 catch (Exception ex) {
                     ConfigSource stateParams = cf.create().set("schedule_error", ex.toString());
-                    taskFinished(
-                            control, task,
-                            stateParams,
-                            cf.create(),
-                            Optional.of(cf.create().set("error", ex.toString())),
-                            Optional.absent(),  // TODO retry here?
-                            Optional.absent(),
-                            Optional.absent());
+                    taskFailed(control, task,
+                            TaskRunner.makeExceptionError(cf, ex), stateParams,
+                            Optional.absent());  // TODO retry here?
                 }
             }
 
@@ -463,59 +454,80 @@ public class SessionExecutor
         }).or(false);
     }
 
-    public void taskFinished(
-            long taskId,
-            ConfigSource stateParams,
-            ConfigSource subtaskConfig,
-            Optional<ConfigSource> error,
-            Optional<Integer> retryInterval,
-            Optional<ConfigSource> carryParams,
-            Optional<TaskReport> report)
+    @Override
+    public void taskFailed(long taskId,
+            final ConfigSource error, final ConfigSource stateParams,
+            final Optional<Integer> retryInterval)
     {
         sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
-            taskFinished(control, task,
-                    stateParams, subtaskConfig, error, retryInterval, carryParams, report);
+            taskFailed(control, task,
+                    error, stateParams,
+                    retryInterval);
             return true;
         });
     }
 
-    private void taskFinished(
-            TaskControl control, StoredTask task,
-            ConfigSource stateParams,
-            ConfigSource subtaskConfig,
-            Optional<ConfigSource> error,
-            Optional<Integer> retryInterval,
-            Optional<ConfigSource> carryParams,
-            Optional<TaskReport> report)
+    @Override
+    public void taskSucceeded(long taskId,
+            final ConfigSource stateParams, final ConfigSource subtaskConfig,
+            final ConfigSource carryParams, final TaskReport report)
     {
-        // TODO validation, or method overload
+        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+            taskSucceeded(control, task,
+                    stateParams, subtaskConfig,
+                    carryParams, report);
+            return true;
+        });
+    }
 
-        if (error.isPresent()) {
-            System.out.println("task failed: "+error.get());
-            // task failed. add .error tasks
-            Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error.get(), retryInterval, false);
-            if (retryInterval.isPresent()) {
-                control.setRunningToRetry(stateParams, error.get(), retryInterval.get());
-            }
-            else if (errorTask.isPresent()) {
-                // transition to error is delayed until setDoneFromDoneChildren
-                control.setRunningToPlanned(stateParams, error.get());
-            }
-            else {
-                control.setRunningToShortCircuitError(stateParams, error.get());
-            }
+    @Override
+    public void taskPollNext(long taskId,
+            final ConfigSource stateParams, final int retryInterval)
+    {
+        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+            taskPollNext(control, task,
+                    stateParams, retryInterval);
+            return true;
+        });
+    }
+
+    private void taskFailed(TaskControl control, StoredTask task,
+            ConfigSource error, ConfigSource stateParams,
+            Optional<Integer> retryInterval)
+    {
+        System.out.println("task failed: "+error);
+        // task failed. add .error tasks
+        Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error, retryInterval, false);
+        if (retryInterval.isPresent()) {
+            control.setRunningToRetry(stateParams, error, retryInterval.get());
+        }
+        else if (errorTask.isPresent()) {
+            // transition to error is delayed until setDoneFromDoneChildren
+            control.setRunningToPlanned(stateParams, error);
         }
         else {
-            if (retryInterval.isPresent()) {
-                control.setRunningToRetry(stateParams, retryInterval.get());
-            }
-            else {
-                // task successfully finished. add .sub and .check tasks
-                Optional<StoredTask> subtaskRoot = addSubtasksIfAny(control, task, subtaskConfig);
-                addCheckTasksIfAny(control, task, subtaskRoot);
-                control.setRunningToPlanned(stateParams, carryParams.or(cf.create()), report.get());
-            }
+            control.setRunningToShortCircuitError(stateParams, error);
         }
+
+        noticeStatusPropagate();
+    }
+
+    private void taskSucceeded(TaskControl control, StoredTask task,
+            ConfigSource stateParams, ConfigSource subtaskConfig,
+            ConfigSource carryParams, TaskReport report)
+    {
+        // task successfully finished. add .sub and .check tasks
+        Optional<StoredTask> subtaskRoot = addSubtasksIfAny(control, task, subtaskConfig);
+        addCheckTasksIfAny(control, task, subtaskRoot);
+        control.setRunningToPlanned(stateParams, carryParams, report);
+
+        noticeStatusPropagate();
+    }
+
+    private void taskPollNext(TaskControl control, StoredTask task,
+            ConfigSource stateParams, int retryInterval)
+    {
+        control.setRunningToRetry(stateParams, retryInterval);
 
         noticeStatusPropagate();
     }

@@ -31,6 +31,7 @@ public class DatabaseQueueDescStoreManager
     {
         this.handle = dbi.open();
         this.cfm = cfm;
+        handle.registerMapper(new StoredQueueDescMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
     }
@@ -81,10 +82,15 @@ public class DatabaseQueueDescStoreManager
             return dao.getQueueDescByName(siteId, name);
         }
 
-        public StoredQueueDesc getQueueDescOrCreateDefault(String name, ConfigSource defaultConfig)
+        public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, ConfigSource defaultConfig)
         {
             StoredQueueDesc desc = getQueueDescByName(name);
-            // TODO create if not exists
+            if (desc == null) {
+                // TODO transaction
+                System.out.println("Adding a QueueDesc " + name);
+                dao.insertQueueDesc(siteId, name, defaultConfig);
+                desc = getQueueDescByName(name);
+            }
             return desc;
         }
 
@@ -125,9 +131,34 @@ public class DatabaseQueueDescStoreManager
         long insertQueueDesc(@Bind("siteId") int siteId, @Bind("name") String name, @Bind("config") ConfigSource config);
 
         @SqlUpdate("update queues" +
-                " set config = :config" +
+                " set config = :config, updated_at = now()" +
                 " where site_id = :siteId " +
                 " and id = :id")
         int updateQueueDescConfig(@Bind("siteId") int siteId, @Bind("id") long id, @Bind("config") ConfigSource config);
+    }
+
+    private static class StoredQueueDescMapper
+            implements ResultSetMapper<StoredQueueDesc>
+    {
+        private final ConfigSourceMapper cfm;
+
+        public StoredQueueDescMapper(ConfigSourceMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredQueueDesc map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredQueueDesc.builder()
+                .id(r.getInt("id"))
+                .siteId(r.getInt("site_id"))
+                .createdAt(r.getTimestamp("created_at"))
+                .updatedAt(r.getTimestamp("updated_at"))
+                .name(r.getString("name"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .build();
+        }
     }
 }

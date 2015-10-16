@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -36,7 +37,16 @@ public class Main
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
                     binder.bind(SessionExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskQueueDispatcher.class).to(LocalThreadTaskQueueDispatcher.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
+                    binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
+
+                    Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
+                    taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);
+
+                    Multibinder<TaskExecutorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskExecutorFactory.class);
+                    taskExecutorBinder.addBinding().to(PyTaskExecutorFactory.class).in(Scopes.SINGLETON);
+                    taskExecutorBinder.addBinding().to(ShTaskExecutorFactory.class).in(Scopes.SINGLETON);
+
                 }
             );
 
@@ -49,6 +59,8 @@ public class Main
         final TaskQueueDispatcher dispatcher = injector.getInstance(TaskQueueDispatcher.class);
 
         injector.getInstance(DatabaseMigrator.class).migrate();
+
+        injector.getInstance(LocalAgentManager.class).startLocalAgent(0, "local");
 
         final ConfigSource ast = loader.loadFile(new File("../demo.yml"));
         List<WorkflowSource> workflowSources = ast.getKeys()

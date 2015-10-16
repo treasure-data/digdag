@@ -21,4 +21,6 @@ public abstract class StoredQueueDesc
     public abstract int getSiteId();
 
     public abstract Date getCreatedAt();
+
+    public abstract Date getUpdatedAt();
 }

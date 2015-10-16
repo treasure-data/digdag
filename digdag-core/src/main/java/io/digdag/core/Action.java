@@ -14,9 +14,9 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableAction.class)
 public abstract class Action
 {
-    public abstract long getTaskId();
+    public abstract int getSiteId();
 
-    public abstract long getSiteId();
+    public abstract long getTaskId();
 
     public abstract String getFullName();
 

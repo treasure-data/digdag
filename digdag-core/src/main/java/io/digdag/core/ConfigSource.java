@@ -48,6 +48,11 @@ public class ConfigSource
         return object;
     }
 
+    public ConfigSourceFactory getFactory()
+    {
+        return new ConfigSourceFactory(mapper);
+    }
+
     public ConfigSource newConfigSource()
     {
         return new ConfigSource(mapper);

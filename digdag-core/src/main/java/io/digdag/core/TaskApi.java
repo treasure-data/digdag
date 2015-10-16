@@ -5,11 +5,14 @@ import com.google.common.collect.*;
 
 public interface TaskApi
 {
-    void taskFinished(long taskId,
-            ConfigSource stateParams,
-            ConfigSource subtaskConfig,
-            Optional<ConfigSource> error,
-            Optional<Integer> retryInterval,
-            Optional<ConfigSource> carryParams,
-            Optional<TaskReport> report);
+    void taskSucceeded(long taskId,
+            ConfigSource stateParams, ConfigSource subtaskConfig,
+            ConfigSource carryParams, TaskReport report);
+
+    void taskFailed(long taskId,
+            ConfigSource error, ConfigSource stateParams,
+            Optional<Integer> retryInterval);
+
+    void taskPollNext(long taskId,
+            ConfigSource stateParams, int retryInterval);
 }
