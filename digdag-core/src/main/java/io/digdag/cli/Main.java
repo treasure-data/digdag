@@ -62,7 +62,14 @@ public class Main
 
         injector.getInstance(LocalAgentManager.class).startLocalAgent(0, "local");
 
-        final ConfigSource ast = loader.loadFile(new File("../demo.yml"));
+        String path;
+        if (args.length > 0) {
+            path = args[0];
+        }
+        else {
+            path = "../demo.yml";
+        }
+        final ConfigSource ast = loader.loadFile(new File(path));
         List<WorkflowSource> workflowSources = ast.getKeys()
             .stream()
             .map(key -> WorkflowSource.of(key, ast.getNested(key)))
