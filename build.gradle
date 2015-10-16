@@ -1,3 +1,11 @@
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+    }
+}
+apply plugin: 'com.github.johnrengelman.shadow'
+
 allprojects {
     group = 'io.digdag'
     version = '0.1.0'
@@ -36,3 +44,36 @@ subprojects {
 task wrapper(type: Wrapper) {
     gradleVersion = '2.6'
 }
+
+project(':digdag-core') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    shadowJar {
+        manifest {
+            attributes 'Implementation-Title': project.name,
+                       'Implementation-Version': project.version,
+                       'Implementation-Vendor-Id': project.group,
+                       'Specification-Title': project.name,
+                       'Specification-Version': project.version,
+                       'Main-Class': 'io.digdag.cli.Main'
+        }
+        //append("${rootProject.projectDir}/COPYING")
+    }
+
+    task classpath(type: Copy) {
+        File dest = file("${rootProject.projectDir}/classpath")
+        doFirst { dest.deleteDir() }
+        from configurations.runtime
+        into dest
+    }
+}
+
+task cli(dependsOn: ':digdag-core:shadowJar') << {
+    file('pkg').mkdirs()
+    File f = file("pkg/digdag-${project.version}.jar")
+    f.append(file("digdag-core/build/libs/digdag-core-${project.version}-all.jar").readBytes())
+    //f.setExecutable(true)
+}
+
+task classpath(dependsOn: ['build', ':digdag-core:classpath']) << { }
+clean { delete 'classpath' }
