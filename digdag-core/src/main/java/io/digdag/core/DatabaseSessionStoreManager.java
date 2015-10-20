@@ -174,6 +174,11 @@ public class DatabaseSessionStoreManager
         return taskId;
     }
 
+    public StoredTask getTaskById(long taskId)
+    {
+        return dao.findTaskWithDetailsById(taskId);
+    }
+
     public void addDependencies(long downstream, List<Long> upstreams)
     {
         for (long upstream : upstreams) {

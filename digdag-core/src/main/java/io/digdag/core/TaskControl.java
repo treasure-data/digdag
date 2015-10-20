@@ -31,7 +31,13 @@ public class TaskControl
         return state;
     }
 
-    public void addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks)
+    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks)
+    {
+        return addSubtasks(thisTask, tasks, ImmutableList.of(), false);
+    }
+
+    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks,
+            List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
         Preconditions.checkArgument(id == thisTask.getId());
 
@@ -40,16 +46,31 @@ public class TaskControl
         indexToId.add(thisTask.getId());
         indexToFullName.add(thisTask.getFullName());
 
+        StoredTask rootTask = null;
         for (WorkflowTask wt : tasks) {
-            String fullName = indexToFullName.get(wt.getParentIndex().get()) + wt.getName();
+            String parentFullName = wt.getParentIndex().isPresent() ?
+                indexToFullName.get(wt.getParentIndex().get()) :
+                thisTask.getFullName();
+            String fullName = parentFullName + wt.getName();
+
+            if (rootTask == null) {
+                // this is root task
+                if (cancelSiblings) {
+                    // TODO not implemented yet
+                }
+            }
+
             Task task = Task.taskBuilder()
                 .sessionId(thisTask.getSessionId())
-                .parentId(indexToId.get(wt.getParentIndex().get()))
+                .parentId(wt.getParentIndex().isPresent() ?
+                        indexToId.get(wt.getParentIndex().get()) :
+                        thisTask.getId())
                 .fullName(fullName)
                 .config(wt.getConfig())
                 .taskType(wt.getTaskType())
                 .state(TaskStateCode.BLOCKED)
                 .build();
+
             long id = store.addSubtask(task);
             indexToId.add(id);
             indexToFullName.add(fullName);
@@ -62,7 +83,15 @@ public class TaskControl
                             .collect(Collectors.toList())
                         );
             }
+
+            if (rootTask == null) {
+                // this is root task
+                store.addDependencies(id, rootUpstreamIds);
+                rootTask = store.getTaskById(id);
+            }
         }
+
+        return rootTask;
     }
 
     ////
@@ -105,6 +134,15 @@ public class TaskControl
         // TODO checkState
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.ERROR;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean setPlannedToPlanned(ConfigSource stateParams, ConfigSource error)
+    {
+        if (store.setStateWithErrorDetails(id, state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+            state = TaskStateCode.PLANNED;
             return true;
         }
         return false;

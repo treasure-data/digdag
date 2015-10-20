@@ -7,6 +7,8 @@ public interface TaskControlStore
 {
     long addSubtask(Task task);
 
+    StoredTask getTaskById(long taskId);
+
     void addDependencies(long downstream, List<Long> upstreams);
 
     // state of all children is one of TaskControlStore.doneStates

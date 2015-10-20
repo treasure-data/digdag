@@ -10,17 +10,7 @@ public interface SessionStore
 
     List<StoredSession> getSessions(int pageSize, Optional<Long> lastId);
 
-    //List<StoredSession> getSessionsOfRepository(int pageSize, int repoId, Optional<Long> lastId);
-
-    //List<StoredSession> getSessionsOfWorkflow(int pageSize, int workflowId, Optional<Long> lastId);
-
     StoredSession getSessionById(long sesId);
 
-    //TaskControl getTaskControl(long sesId);
-
-    //Pageable<StoredTask> getTasks(long sesId, int pageSize);
-
     //StoredTask getTaskById(long taskId);
-
-    //long addTask(long sesId, Task task);
 }

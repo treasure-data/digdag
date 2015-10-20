@@ -227,19 +227,36 @@ public class SessionExecutor
             return lockedTask.setPlannedToSuccess();
         }
         else if (detail.getError().isPresent()) {
-            // this error was formerly delayed by taskFinished
-            return lockedTask.setPlannedToError(detail.getStateParams(), detail.getError().get());
+            if (detail.getStateParams().has("group_error")) {
+                // this error was formerly delayed by last setDoneFromDoneChildren call
+                // TODO group_error is unnecessary if error (detail.getError()) has such information
+                return lockedTask.setPlannedToGroupError(detail.getStateParams(), detail.getError().get());
+            }
+            else {
+                // this error was formerly delayed by taskFailed
+                return lockedTask.setPlannedToError(detail.getStateParams(), detail.getError().get());
+            }
         }
         else {
             // group error
-            // TODO add .error tasks and set error_task key to state params so that next time this doesn't add .error tasks?
             ConfigSource error = buildPropagatedError(childrenErrors);
             RetryControl retryControl = RetryControl.prepare(detail.getConfig(), detail.getStateParams(), false);  // don't retry by default
-            if (retryControl.evaluate(error)) {
+
+            boolean willRetry = retryControl.evaluate(error);
+            Optional<StoredTask> errorTask = addErrorTasksIfAny(lockedTask, detail, error,
+                    willRetry ? Optional.of(retryControl.getNextRetryInterval()) : Optional.absent(),
+                    true);
+            if (willRetry) {
                 int retryInterval = retryControl.getNextRetryInterval();
                 return lockedTask.setPlannedToGroupRetry(
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
+            }
+            else if (errorTask.isPresent()) {
+                // don't set GROUP_ERROR here. Delay until next setDoneFromDoneChildren call
+                ConfigSource nextState = detail.getStateParams()
+                    .set("group_error", true);
+                return lockedTask.setPlannedToPlanned(nextState, error);
             }
             else {
                 return lockedTask.setPlannedToGroupError(detail.getStateParams(), error);
@@ -517,7 +534,7 @@ public class SessionExecutor
             ConfigSource carryParams, TaskReport report)
     {
         // task successfully finished. add .sub and .check tasks
-        Optional<StoredTask> subtaskRoot = addSubtasksIfAny(control, task, subtaskConfig);
+        Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(control, task, subtaskConfig);
         addCheckTasksIfAny(control, task, subtaskRoot);
         control.setRunningToPlanned(stateParams, carryParams, report);
 
@@ -538,34 +555,50 @@ public class SessionExecutor
         return result;
     }
 
-    private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask lockedParentTask, ConfigSource parentError, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
+    private Optional<StoredTask> addSubtasksIfNotEmpty(TaskControl control, StoredTask detail, ConfigSource subtaskConfig)
     {
-        // TODO not implemented yet
-        return Optional.absent();
-    }
+        if (subtaskConfig.isEmpty()) {
+            return Optional.absent();
+        }
 
-    private Optional<StoredTask> addSubtasksIfAny(TaskControl control, StoredTask lockedParentTask, ConfigSource subtaskConfig)
-    {
         List<WorkflowTask> tasks = compiler.compileTasks(".sub", subtaskConfig);
-        if (!tasks.isEmpty()) {
-            final WorkflowTask root = tasks.get(0);
-            final List<WorkflowTask> sub = tasks.subList(1, tasks.size());
-            // TODO
-            //return Optional.of(addTasks(control, lockedParentTask, subTasks, ImmutableList.of(), true));
+        if (tasks.isEmpty()) {
             return Optional.absent();
         }
-        else {
-            return Optional.absent();
-        }
+
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true);
+        return Optional.of(task);
     }
 
-    private Optional<StoredTask> addCheckTasksIfAny(TaskControl control, StoredTask lockedParentTask, Optional<StoredTask> upstreamTask)
+    private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, ConfigSource parentError, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
     {
-        // TODO not implemented yet
-        return Optional.absent();
+        ConfigSource subtaskConfig = detail.getConfig().getNestedOrGetEmpty("error");
+        if (subtaskConfig.isEmpty()) {
+            return Optional.absent();
+        }
+
+        List<WorkflowTask> tasks = compiler.compileTasks(".error", subtaskConfig);
+        if (tasks.isEmpty()) {
+            return Optional.absent();
+        }
+
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
+        return Optional.of(task);
     }
 
-    //private StoredTask addTasks(TaskControl control, StoredTask lockedParentTask, List<WorkflowTask> tasks, List<Long> rootUpstreamIds, boolean cancelSiblings)
-    //{
-    //}
+    private Optional<StoredTask> addCheckTasksIfAny(TaskControl control, StoredTask detail, Optional<StoredTask> upstreamTask)
+    {
+        ConfigSource subtaskConfig = detail.getConfig().getNestedOrGetEmpty("check");
+        if (subtaskConfig.isEmpty()) {
+            return Optional.absent();
+        }
+
+        List<WorkflowTask> tasks = compiler.compileTasks(".check", subtaskConfig);
+        if (tasks.isEmpty()) {
+            return Optional.absent();
+        }
+
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
+        return Optional.of(task);
+    }
 }
