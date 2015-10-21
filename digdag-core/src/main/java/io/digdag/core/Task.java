@@ -21,8 +21,6 @@ public abstract class Task
 
     public abstract TaskType getTaskType();
 
-    //public abstract TaskErrorMode getErrorMode();
-
     public abstract TaskStateCode getState();
 
     public static ImmutableTask.Builder taskBuilder()

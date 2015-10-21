@@ -118,5 +118,13 @@ public class Main
 
         exec.runUntilAny(dispatcher);
         exec.showTasks();
+
+        new GraphvizWorkflowVisualizer()
+            .visualize(
+                    sessionStore.getTasks(sessions.get(0).getId(), 1024, Optional.absent())
+                        .stream()
+                        .map(it -> WorkflowVisualizerNode.of(it))
+                        .collect(Collectors.toList()),
+                    new File("graph.png"));
     }
 }

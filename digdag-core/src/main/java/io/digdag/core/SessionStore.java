@@ -12,5 +12,5 @@ public interface SessionStore
 
     StoredSession getSessionById(long sesId);
 
-    //StoredTask getTaskById(long taskId);
+    List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId);
 }

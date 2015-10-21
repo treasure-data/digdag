@@ -47,10 +47,11 @@ public class ShTaskExecutorFactory
                     env.put(pair.getKey(), pair.getValue().toString());
                 });
 
+            pb.redirectErrorStream(true);
+
             int ecode;
             try {
                 Process p = pb.start();
-                pb.redirectErrorStream(true);
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, System.out);

@@ -21,8 +21,7 @@ public abstract class StoredTask
 
     public abstract int getSiteId();
 
-    // TODO
-    //public abstract List<Long> getUpstreams();  // list of task_id
+    public abstract List<Long> getUpstreams();  // list of task_id
 
     public abstract Date getUpdatedAt();
 

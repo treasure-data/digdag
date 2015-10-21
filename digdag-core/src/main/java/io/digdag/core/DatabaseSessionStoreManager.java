@@ -28,7 +28,8 @@ public class DatabaseSessionStoreManager
     public static short NAMESPACE_REPOSITORY_ID = (short) 1;
     public static short NAMESPACE_SITE_ID = (short) 0;
 
-    private final ConfigSourceMapper cfm;
+    private final StoredTaskMapper stm;
+    private final ConfigSourceResultSetMapper errorRsm;
     private final Handle handle;
     private final Dao dao;
 
@@ -36,11 +37,12 @@ public class DatabaseSessionStoreManager
     public DatabaseSessionStoreManager(IDBI dbi, ConfigSourceMapper cfm, ObjectMapper mapper)
     {
         this.handle = dbi.open();
-        this.cfm = cfm;
         JsonMapper<SessionOptions> opm = new JsonMapper<>(mapper, SessionOptions.class);
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
+        this.stm = new StoredTaskMapper(cfm, trm);
+        this.errorRsm = new ConfigSourceResultSetMapper(cfm, "error");
+        handle.registerMapper(stm);
         handle.registerMapper(new StoredSessionMapper(cfm, opm));
-        handle.registerMapper(new StoredTaskMapper(cfm, trm));
         handle.registerMapper(new TaskStateSummaryMapper());
         handle.registerMapper(new DateMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
@@ -54,6 +56,16 @@ public class DatabaseSessionStoreManager
         handle.close();
     }
 
+    private String selectTaskDetailsQuery()
+    {
+        return "select t.*, s.site_id, td.full_name, td.config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
+                "(select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
+            " from tasks t " +
+            " join sessions s on s.id = t.session_id " +
+            " join task_details td on t.id = td.id " +
+            " join task_state_details ts on t.id = ts.id ";
+    }
+
     public SessionStore getSessionStore(int siteId)
     {
         return new DatabaseSessionStore(siteId);
@@ -61,7 +73,11 @@ public class DatabaseSessionStoreManager
 
     public List<StoredTask> getAllTasks()
     {
-        return dao.findAllTasks();
+        return handle.createQuery(
+                selectTaskDetailsQuery()
+            )
+            .map(stm)
+            .list();
     }
 
     public Date getStoreTime()
@@ -120,10 +136,9 @@ public class DatabaseSessionStoreManager
     {
         return handle.inTransaction((handle, ses) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
-            //StoredTask task = dao.lockTaskWithDetails(taskId);
             TaskStateSummary summary = dao.lockTask(taskId);
             if (summary != null) {
-                StoredTask task = dao.findTaskWithDetailsById(summary.getId());
+                StoredTask task = getTaskById(summary.getId());
                 TaskControl control = new TaskControl(this, task.getId(), task.getState());
                 T result = func.call(control, task);
                 return Optional.of(result);
@@ -163,7 +178,7 @@ public class DatabaseSessionStoreManager
         dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig());
         dao.insertEmptyTaskStateDetails(taskId);
         TaskControl control = new TaskControl(this, taskId, task.getState());
-        return func.call(control, dao.findTaskWithDetailsById(taskId));
+        return func.call(control, getTaskById(taskId));
     }
 
     public long addSubtask(Task task)
@@ -176,7 +191,12 @@ public class DatabaseSessionStoreManager
 
     public StoredTask getTaskById(long taskId)
     {
-        return dao.findTaskWithDetailsById(taskId);
+        return handle.createQuery(
+                selectTaskDetailsQuery() + " where t.id = :id"
+            )
+            .bind("id", taskId)
+            .map(stm)
+            .first();
     }
 
     public void addDependencies(long downstream, List<Long> upstreams)
@@ -209,7 +229,7 @@ public class DatabaseSessionStoreManager
                 " and error is not null"
             )
             .bind("parentId", taskId)
-            .map(new ConfigSourceResultSetMapper(cfm, "error"))
+            .map(errorRsm)
             .list();
     }
 
@@ -311,6 +331,20 @@ public class DatabaseSessionStoreManager
         {
             return dao.getSessionById(siteId, sesId);
         }
+
+        public List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId)
+        {
+            return handle.createQuery(
+                    selectTaskDetailsQuery() +
+                    " where t.id > :lastId" +
+                    " order by t.id" +
+                    " limit :limit"
+                )
+                .bind("lastId", lastId.or(0L))
+                .bind("limit", pageSize)
+                .map(stm)
+                .list();
+        }
     }
 
     public interface Dao
@@ -390,25 +424,8 @@ public class DatabaseSessionStoreManager
                 " from tasks t " +
                 " join sessions s on s.id = t.session_id " +
                 " join task_details td on t.id = td.id " +
-                " join task_state_details ts on t.id = ts.id " +
-                " where t.id = :id" +
-                " for update")
-        StoredTask lockTaskWithDetails(@Bind("id") long taskId);
-
-        @SqlQuery("select t.*, s.site_id, td.full_name, td.config, ts.state_params, ts.carry_params, ts.error, ts.report " +
-                " from tasks t " +
-                " join sessions s on s.id = t.session_id " +
-                " join task_details td on t.id = td.id " +
                 " join task_state_details ts on t.id = ts.id ")
         List<StoredTask> findAllTasks();
-
-        @SqlQuery("select t.*, s.site_id, td.full_name, td.config, ts.state_params, ts.carry_params, ts.error, ts.report " +
-                " from tasks t " +
-                " join sessions s on s.id = t.session_id " +
-                " join task_details td on t.id = td.id " +
-                " join task_state_details ts on t.id = ts.id " +
-                " where t.id = :id")
-        StoredTask findTaskWithDetailsById(@Bind("id") long taskId);
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), state = :newState" +
@@ -487,10 +504,20 @@ public class DatabaseSessionStoreManager
         public StoredTask map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
+            String upstreamIdList = r.getString("upstream_ids");
+            List<Long> upstreams;
+            if (r.wasNull()) {
+                upstreams = ImmutableList.of();
+            }
+            else {
+                upstreams = Stream.of(upstreamIdList.split(","))
+                    .map(it -> Long.parseLong(it))
+                    .collect(Collectors.toList());
+            }
             return ImmutableStoredTask.builder()
                 .id(r.getLong("id"))
                 .siteId(r.getInt("site_id"))
-                // TODO upstreams
+                .upstreams(upstreams)
                 .updatedAt(r.getTimestamp("updated_at"))
                 .retryAt(getOptionalDate(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
