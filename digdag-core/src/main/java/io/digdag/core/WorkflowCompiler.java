@@ -162,9 +162,9 @@ public class WorkflowCompiler
                             if (up == null) {
                                 throw new ConfigException("Dependency task '"+upName+"' does not exist");
                             }
-                            tb.addUpstream(up);
+                            subtask.addUpstream(up);
                         }
-                        names.put(subtask.getName(), tb);
+                        names.put(subtask.getName(), subtask);
                     }
                 }
                 else {

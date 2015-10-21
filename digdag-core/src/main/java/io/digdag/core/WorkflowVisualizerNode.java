@@ -43,7 +43,7 @@ public abstract class WorkflowVisualizerNode
 
     public static WorkflowVisualizerNode of(StoredTask task)
     {
-        String[] nameFragments = task.getFullName().split("\\+|\\.");
+        String[] nameFragments = task.getFullName().split("(?=\\+|\\.)");
         String name = nameFragments[nameFragments.length-1];
         return builder()
             .name(name)
