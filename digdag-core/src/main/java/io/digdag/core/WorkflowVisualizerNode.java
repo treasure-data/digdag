@@ -1,4 +1,3 @@
-
 package io.digdag.core;
 
 import java.util.List;

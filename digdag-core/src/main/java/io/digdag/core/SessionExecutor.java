@@ -325,10 +325,13 @@ public class SessionExecutor
 
                         if (Tasks.isDone(task.getState())) {
                             if (task.getParentId().isPresent()) {
-                                // this child became done. try to transite parent from planned to done
+                                // this child became done. try to transite parent from planned to done.
+                                // and dependint siblings tasks may be able to start
                                 if (checkedParentIds.add(task.getParentId().get())) {
                                     propagatedFromChildren = sm.lockTask(task.getParentId().get(), (TaskControl lockedParent, StoredTask detail) -> {
-                                        return setDoneFromDoneChildren(lockedParent, detail);
+                                        boolean doneFromChildren = setDoneFromDoneChildren(lockedParent, detail);
+                                        boolean siblingsToReady = lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0;
+                                        return doneFromChildren || siblingsToReady;
                                     }).or(false);
                                 }
                             }

@@ -211,9 +211,30 @@ public class DatabaseSessionStoreManager
         return handle.createQuery(
                 "select count(*) from tasks" +
                 " where parent_id = :parentId" +
-                " and state in (" + Stream.of(
-                        TaskStateCode.notDoneStates()
-                        ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")"
+                " and (" +
+                  // task is not done and not BLOCKED
+                  "state in (" + Stream.of(
+                          TaskStateCode.notDoneStates()
+                          )
+                        .filter(it -> it != TaskStateCode.BLOCKED)
+                        .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                  " or (" +
+                    // or, task is BLOCKED and
+                    " state = " + TaskStateCode.BLOCKED_CODE +
+                    // upstream tasks are runnable
+                    " and not exists (" +
+                      " select * from tasks up" +
+                      " join task_dependencies dep on up.id = dep.upstream_id" +
+                      " where dep.downstream_id = tasks.id" +
+                      " and up.state not in (" + Stream.of(
+                              TaskStateCode.canRunDownstreamStates()
+                              ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                      " and up.state in (" + Stream.of(
+                              TaskStateCode.doneStates()
+                              ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                    " )" +
+                  ")" +
+                ")"
             )
             .bind("parentId", taskId)
             .mapTo(long.class)
@@ -295,6 +316,14 @@ public class DatabaseSessionStoreManager
                   " where pt.id = tasks.parent_id" +
                   " and pt.state in (" + Stream.of(
                         TaskStateCode.canRunChildrenStates()
+                        ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                " )" +
+                " and not exists (" +
+                    "select * from tasks up" +
+                    " join task_dependencies dep on up.id = dep.upstream_id" +
+                    " where dep.downstream_id = tasks.id" +
+                    " and up.state not in (" + Stream.of(
+                        TaskStateCode.canRunDownstreamStates()
                         ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
                 " )")
             .bind("parentId", taskId)

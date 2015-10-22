@@ -62,7 +62,6 @@ public class GraphvizWorkflowVisualizer
             }
             String dot = writer.toString();
 
-            System.out.println("visualizing "+dot);
             generate(dot, output);
         }
         catch (IOException ex) {

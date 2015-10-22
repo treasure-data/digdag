@@ -68,6 +68,13 @@ public enum TaskStateCode
         };
     }
 
+    public static TaskStateCode[] canRunDownstreamStates()
+    {
+        return new TaskStateCode[] {
+            SUCCESS,
+        };
+    }
+
     public static TaskStateCode[] doneStates()
     {
         return new TaskStateCode[] {
