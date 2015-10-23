@@ -31,13 +31,13 @@ public class TaskControl
         return state;
     }
 
-    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks)
+    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks, int indexOffset)
     {
-        return addSubtasks(thisTask, tasks, ImmutableList.of(), false);
+        return addSubtasks(thisTask, tasks, ImmutableList.of(), false, indexOffset);
     }
 
     public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings)
+            List<Long> rootUpstreamIds, boolean cancelSiblings, int indexOffset)
     {
         Preconditions.checkArgument(id == thisTask.getId());
 
@@ -47,10 +47,11 @@ public class TaskControl
         indexToFullName.add(thisTask.getFullName());
 
         StoredTask rootTask = null;
+        System.out.println("Adding tasks: "+tasks);
         for (WorkflowTask wt : tasks) {
-            String parentFullName = wt.getParentIndex().isPresent() ?
-                indexToFullName.get(wt.getParentIndex().get()) :
-                thisTask.getFullName();
+            String parentFullName = wt.getParentIndex()
+                .transform(index -> indexToFullName.get(index + indexOffset))
+                .or(thisTask.getFullName());
             String fullName = parentFullName + wt.getName();
 
             if (rootTask == null) {
@@ -62,9 +63,11 @@ public class TaskControl
 
             Task task = Task.taskBuilder()
                 .sessionId(thisTask.getSessionId())
-                .parentId(wt.getParentIndex().isPresent() ?
-                        indexToId.get(wt.getParentIndex().get()) :
-                        thisTask.getId())
+                .parentId(Optional.of(
+                            wt.getParentIndex()
+                                .transform(index -> indexToId.get(index + indexOffset))
+                                .or(thisTask.getId())
+                            ))
                 .fullName(fullName)
                 .config(wt.getConfig())
                 .taskType(wt.getTaskType())
@@ -79,7 +82,7 @@ public class TaskControl
                         id,
                         wt.getUpstreamIndexes()
                             .stream()
-                            .map(index -> indexToId.get(index))
+                            .map(index -> indexToId.get(index + indexOffset))
                             .collect(Collectors.toList())
                         );
             }

@@ -69,7 +69,7 @@ public class SessionExecutor
                 .state(TaskStateCode.READY)
                 .build();
             store.addRootTask(rootTask, (control, lockedRootTask) -> {
-                control.addSubtasks(lockedRootTask, sub);
+                control.addSubtasks(lockedRootTask, sub, 0);
                 return null;
             });
         });
@@ -448,7 +448,7 @@ public class SessionExecutor
             }
             else {
                 try {
-                    ConfigSource params = collectTaskParams(session.getParams().deepCopy());
+                    ConfigSource params = collectTaskParams(task, session.getParams().deepCopy());
                     ConfigSource config = task.getConfig();  // TODO render using liquid?
                         Action action = Action.actionBuilder()
                         .taskId(task.getId())
@@ -552,9 +552,20 @@ public class SessionExecutor
         noticeStatusPropagate();
     }
 
-    private ConfigSource collectTaskParams(ConfigSource result)
+    private ConfigSource collectTaskParams(StoredTask task, ConfigSource result)
     {
-        /// TODO not implemented yet
+        // TODO not accurate implementation
+        Optional<Long> lastId = Optional.absent();
+        while (true) {
+            List<StoredTask> ses = sm.getSessionStore(task.getSiteId()).getTasks(task.getSessionId(), 1024, lastId);
+            if (ses.isEmpty()) {
+                break;
+            }
+            for (StoredTask se : ses) {
+                result.setAll(se.getCarryParams());
+                lastId = Optional.of(se.getId());
+            }
+        }
         return result;
     }
 
@@ -569,7 +580,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true, 1);
         return Optional.of(task);
     }
 
@@ -585,7 +596,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
         return Optional.of(task);
     }
 
@@ -601,7 +612,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
         return Optional.of(task);
     }
 }

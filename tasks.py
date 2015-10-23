@@ -41,6 +41,7 @@ class BaseTask(object):
 
 
 import os.path
+import errno
 
 class SplitFiles(BaseTask):
     def init(self, count=None):
@@ -68,6 +69,10 @@ class PrintFiles(BaseTask):
         print "Creating subtasks for files: "+str(self.params['paths'])
 
         for path in self.params['paths']:
+            try:
+                os.makedirs(os.path.dirname(path))
+            except OSError as exc:
+                pass
             with open(path, "w") as f:
                 json.dump({"data": path}, f)
             self.add_subtask(PrintFilesSub, path=path)

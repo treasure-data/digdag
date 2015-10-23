@@ -33,11 +33,11 @@ wf1:
       <use: td_production
 
   +subtask_example:
+    check:
+      py>: tasks.CheckFiles
     +split:
       py>: tasks.SplitFiles
       count: 3
-      check:
-        py>: tasks.CheckFiles
     +print:
       py>: tasks.PrintFiles
 
