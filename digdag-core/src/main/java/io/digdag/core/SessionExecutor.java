@@ -21,10 +21,14 @@ import java.util.function.BooleanSupplier;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SessionExecutor
         implements TaskApi
 {
+    private static final Logger logger = LoggerFactory.getLogger(SessionExecutor.class);
+
     private final SessionStoreManager sm;
     private final WorkflowCompiler compiler;
     private final ConfigSourceFactory cf;
@@ -102,17 +106,17 @@ public class SessionExecutor
     public void showTasks()
     {
         for (StoredTask task : sm.getAllTasks()) {
-            System.out.println("  Task["+task.getId()+"]: "+task.getFullName());
-            System.out.println("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
+            logger.info("  Task["+task.getId()+"]: "+task.getFullName());
+            logger.info("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
             // TODO upstreams
-            System.out.println("    state: "+task.getState());
-            System.out.println("    retryAt: "+task.getRetryAt());
-            System.out.println("    config: "+task.getConfig());
-            System.out.println("    taskType: "+task.getTaskType());
-            System.out.println("    stateParams: "+task.getStateParams());
-            System.out.println("    carryParams: "+task.getCarryParams());
-            System.out.println("    report: "+task.getReport());
-            System.out.println("    error: "+task.getError());
+            logger.info("    state: "+task.getState());
+            logger.info("    retryAt: "+task.getRetryAt());
+            logger.info("    config: "+task.getConfig());
+            logger.info("    taskType: "+task.getTaskType());
+            logger.info("    stateParams: "+task.getStateParams());
+            logger.info("    carryParams: "+task.getCarryParams());
+            logger.info("    report: "+task.getReport());
+            logger.info("    error: "+task.getError());
         }
     }
 

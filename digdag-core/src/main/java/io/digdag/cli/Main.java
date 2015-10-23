@@ -16,11 +16,21 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.*;
 
+import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+
 public class Main
 {
     public static void main(String[] args)
             throws Exception
     {
+        configureLogging("DEBUG", "-");
+
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
                     .registerModule(new GuavaModule())
@@ -126,5 +136,36 @@ public class Main
                         .map(it -> WorkflowVisualizerNode.of(it))
                         .collect(Collectors.toList()),
                     new File("graph.png"));
+    }
+
+    private static void configureLogging(String level, String logPath)
+    {
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        JoranConfigurator configurator = new JoranConfigurator();
+        configurator.setContext(context);
+        context.reset();
+
+        String name;
+        if (logPath.equals("-")) {
+            if (System.console() != null) {
+                name = "/digdag/cli/logback-color.xml";
+            } else {
+                name = "/digdag/cli/logback-console.xml";
+            }
+        } else {
+            // logback uses system property to embed variables in XML file
+            System.setProperty("digdag.logPath", logPath);
+            name = "/digdag/cli/logback-file.xml";
+        }
+        try {
+            configurator.doConfigure(Main.class.getResource(name));
+        } catch (JoranException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        org.slf4j.Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        if (logger instanceof Logger) {
+            ((Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
+        }
     }
 }
