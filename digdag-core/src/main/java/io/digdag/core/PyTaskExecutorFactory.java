@@ -8,6 +8,7 @@ import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
@@ -17,10 +18,14 @@ import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PyTaskExecutorFactory
         implements TaskExecutorFactory
 {
+    private static Logger logger = LoggerFactory.getLogger(PyTaskExecutorFactory.class);
+
     private final ObjectMapper mapper;
 
     @Inject
@@ -120,7 +125,8 @@ public class PyTaskExecutorFactory
 
             String code = sb.toString();
 
-            System.out.println("Python code: "+code);
+            logger.info("py>: {}", config.get("command", String.class, script));
+            logger.trace("Python code ===\n{}\n", code);
 
             try (FileOutputStream fo = new FileOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of(
@@ -129,19 +135,26 @@ public class PyTaskExecutorFactory
                             "state", state));
             }
 
-            ProcessBuilder pb = new ProcessBuilder("python", "-");
-            pb.redirectErrorStream(true);
-            Process p = pb.start();
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
-                writer.write(code);
+            int ecode;
+            String message;
+            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                ProcessBuilder pb = new ProcessBuilder("python", "-");
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+                    writer.write(code);
+                }
+                try (InputStream stdout = p.getInputStream()) {
+                    ByteStreams.copy(stdout, buffer);
+                }
+                ecode = p.waitFor();
+                message = buffer.toString();
             }
-            try (InputStream stdout = p.getInputStream()) {
-                ByteStreams.copy(stdout, System.out);
-            }
-            int ecode = p.waitFor();
 
+            //logger.info("Python message ===\n{}", message);  // TODO include task name
+            System.out.println(message);
             if (ecode != 0) {
-                throw new RuntimeException("Python command failed");
+                throw new RuntimeException("Python command failed: "+message);
             }
 
             return mapper.readValue(outFile, ConfigSource.class);

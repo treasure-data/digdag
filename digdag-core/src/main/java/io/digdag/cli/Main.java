@@ -16,20 +16,22 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.*;
 
-import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 
 public class Main
 {
+    private static Logger logger;
+
     public static void main(String[] args)
             throws Exception
     {
-        configureLogging("DEBUG", "-");
+        configureLogging("INFO", "-");
+        logger = LoggerFactory.getLogger(Main.class);
 
         Injector injector = Guice.createInjector(
                 new ObjectMapperModule()
@@ -64,7 +66,8 @@ public class Main
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final RepositoryStore repoStore = injector.getInstance(DatabaseRepositoryStoreManager.class).getRepositoryStore(0);
-        final SessionStore sessionStore = injector.getInstance(SessionStoreManager.class).getSessionStore(0);
+        final SessionStoreManager sessionStoreManager = injector.getInstance(SessionStoreManager.class);
+        final SessionStore sessionStore = sessionStoreManager.getSessionStore(0);
         final SessionExecutor exec = injector.getInstance(SessionExecutor.class);
         final TaskQueueDispatcher dispatcher = injector.getInstance(TaskQueueDispatcher.class);
 
@@ -110,8 +113,6 @@ public class Main
             storedWorkflows
                 .stream()
                 .map(storedWorkflow -> {
-                    System.out.println("Starting a session of workflow "+storedWorkflow);
-
                     return exec.submitWorkflow(
                             0,
                             storedWorkflow,
@@ -127,7 +128,19 @@ public class Main
         );
 
         exec.runUntilAny(dispatcher);
-        exec.showTasks();
+        for (StoredTask task : sessionStoreManager.getAllTasks()) {
+            logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
+            logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
+            logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
+            logger.debug("    state: "+task.getState());
+            logger.debug("    retryAt: "+task.getRetryAt());
+            logger.debug("    config: "+task.getConfig());
+            logger.debug("    taskType: "+task.getTaskType());
+            logger.debug("    stateParams: "+task.getStateParams());
+            logger.debug("    carryParams: "+task.getCarryParams());
+            logger.debug("    report: "+task.getReport());
+            logger.debug("    error: "+task.getError());
+        }
 
         new GraphvizWorkflowVisualizer()
             .visualize(
@@ -163,9 +176,9 @@ public class Main
             throw new RuntimeException(ex);
         }
 
-        org.slf4j.Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        if (logger instanceof Logger) {
-            ((Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
+        Logger logger = LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        if (logger instanceof ch.qos.logback.classic.Logger) {
+            ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
         }
     }
 }

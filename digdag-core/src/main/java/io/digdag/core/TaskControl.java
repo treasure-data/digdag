@@ -47,7 +47,6 @@ public class TaskControl
         indexToFullName.add(thisTask.getFullName());
 
         StoredTask rootTask = null;
-        System.out.println("Adding tasks: "+tasks);
         for (WorkflowTask wt : tasks) {
             String parentFullName = wt.getParentIndex()
                 .transform(index -> indexToFullName.get(index + indexOffset))

@@ -87,7 +87,6 @@ public class DatabaseQueueDescStoreManager
             StoredQueueDesc desc = getQueueDescByName(name);
             if (desc == null) {
                 // TODO transaction
-                System.out.println("Adding a QueueDesc " + name);
                 dao.insertQueueDesc(siteId, name, defaultConfig);
                 desc = getQueueDescByName(name);
             }

@@ -34,8 +34,6 @@ public class TaskRunner
         ConfigSource state = action.getStateParams();
 
         try {
-            System.out.println("Running action "+action.getFullName()+": "+config+" state: "+state+" params: "+params);
-
             if (!config.has("type")) {
                 java.util.Optional<String> commandKey = config.getKeys()
                     .stream()

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,13 +54,16 @@ public class SessionExecutor
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();
 
-        System.out.println("Running workflow "+workflow.getName()+" ("+workflow.getMeta()+")");
-        //for (WorkflowTask task : tasks) {
-        //    System.out.println("  Task["+task.getIndex()+"]: "+task.getName());
-        //    System.out.println("    parent: "+task.getParentIndex().transform(it -> Integer.toString(it)).or(""));
-        //    System.out.println("    upstreams: "+task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
-        //    System.out.println("    config: "+task.getConfig());
-        //}
+        logger.info("Starting a new session of workflow '{}' ({}) with session parameters: {}",
+                workflowSource.getName(),
+                workflowSource.getConfig().getNestedOrGetEmpty("meta"),
+                newSession.getParams());
+        for (WorkflowTask task : tasks) {
+            logger.trace("  Step["+task.getIndex()+"]: "+task.getName());
+            logger.trace("    parent: "+task.getParentIndex().transform(it -> Integer.toString(it)).or("(root)"));
+            logger.trace("    upstreams: "+task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
+            logger.trace("    config: "+task.getConfig());
+        }
 
         final WorkflowTask root = tasks.get(0);
         final List<WorkflowTask> sub = tasks.subList(1, tasks.size());
@@ -103,23 +107,6 @@ public class SessionExecutor
         runUntil(dispatcher, () -> sm.isAnyNotDoneWorkflows());
     }
 
-    public void showTasks()
-    {
-        for (StoredTask task : sm.getAllTasks()) {
-            logger.info("  Task["+task.getId()+"]: "+task.getFullName());
-            logger.info("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
-            // TODO upstreams
-            logger.info("    state: "+task.getState());
-            logger.info("    retryAt: "+task.getRetryAt());
-            logger.info("    config: "+task.getConfig());
-            logger.info("    taskType: "+task.getTaskType());
-            logger.info("    stateParams: "+task.getStateParams());
-            logger.info("    carryParams: "+task.getCarryParams());
-            logger.info("    report: "+task.getReport());
-            logger.info("    error: "+task.getError());
-        }
-    }
-
     private void runUntil(TaskQueueDispatcher dispatcher, BooleanSupplier cond)
             throws InterruptedException
     {
@@ -129,11 +116,8 @@ public class SessionExecutor
             propagateAllPlannedToDone();
             enqueueReadyTasks(starter);  // TODO enqueue all (not only first 100)
 
-            showTasks();
-
             IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);
             while (cond.getAsBoolean()) {
-                System.out.println("running...");
                 boolean inced = prop.run();
                 boolean retried = retryRetryWaitingTasks();
                 if (inced || retried) {
@@ -153,7 +137,6 @@ public class SessionExecutor
                 finally {
                     propagatorLock.unlock();
                 }
-                showTasks();
             }
         }
     }
@@ -342,7 +325,8 @@ public class SessionExecutor
                             else {
                                 // root task became done.
                                 // TODO return archiveSession(task.getid());
-                                System.out.println("root task is done: "+task);
+                                //logger.info("Root task is done with state {}",
+                                //        task.getState());
                             }
                         }
 
@@ -411,9 +395,7 @@ public class SessionExecutor
                     enqueueTask(dispatcher, taskId);
                 }
                 catch (Throwable t) {
-                    // TODO
-                    System.err.println("Uncaught exception: "+t);
-                    t.printStackTrace(System.err);
+                    logger.error("Uncaught exception", t);
                 }
                 finally {
                     synchronized(this) {
@@ -444,7 +426,7 @@ public class SessionExecutor
 
             Optional<TaskReport> skipTaskReport = Optional.fromNullable(session.getOptions().getSkipTaskMap().get(fullName));
             if (skipTaskReport.isPresent()) {
-                System.out.println("Skipping task: "+fullName);  // TODO logger
+                logger.debug("Skipping task '{}'", fullName);
                 taskSucceeded(control, task,
                         cf.create(), cf.create(),
                         cf.create(), skipTaskReport.get());
@@ -462,7 +444,6 @@ public class SessionExecutor
                         .params(params)
                         .stateParams(task.getStateParams())
                         .build();
-                    System.out.println("dispatch action: "+action);
                     dispatcher.dispatch(action);
                     return true;
                 }
@@ -519,7 +500,9 @@ public class SessionExecutor
             ConfigSource error, ConfigSource stateParams,
             Optional<Integer> retryInterval)
     {
-        System.out.println("task failed: "+error);
+        logger.trace("Action {} failed with error {} with ",
+                task, error, retryInterval.transform(it -> "retrying after "+it+" seconds").or("no retry"));
+
         // task failed. add .error tasks
         Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error, retryInterval, false);
         if (retryInterval.isPresent()) {
@@ -540,6 +523,9 @@ public class SessionExecutor
             ConfigSource stateParams, ConfigSource subtaskConfig,
             ConfigSource carryParams, TaskReport report)
     {
+        logger.trace("Action {} succeeded with carry parameters {}",
+                task, carryParams);
+
         // task successfully finished. add .sub and .check tasks
         Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(control, task, subtaskConfig);
         addCheckTasksIfAny(control, task, subtaskRoot);
@@ -584,6 +570,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
+        logger.trace("Adding sub tasks: {}"+tasks);
         StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true, 1);
         return Optional.of(task);
     }
@@ -600,6 +587,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
+        logger.trace("Adding error tasks: {}"+tasks);
         StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
         return Optional.of(task);
     }
@@ -616,6 +604,7 @@ public class SessionExecutor
             return Optional.absent();
         }
 
+        logger.trace("Adding check tasks: {}"+tasks);
         StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
         return Optional.of(task);
     }
