@@ -71,8 +71,10 @@ project(':digdag-core') {
 task cli(dependsOn: ':digdag-core:shadowJar') << {
     file('pkg').mkdirs()
     File f = file("pkg/digdag-${project.version}.jar")
+    f.write("")
+    f.append(file("digdag-core/src/main/sh/selfrun.sh").readBytes())
     f.append(file("digdag-core/build/libs/digdag-core-${project.version}-all.jar").readBytes())
-    //f.setExecutable(true)
+    f.setExecutable(true)
 }
 
 task classpath(dependsOn: ['build', ':digdag-core:classpath']) << { }
