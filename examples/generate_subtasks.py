@@ -1,16 +1,16 @@
-from tasks import BaseTask
+import digdag
 
-class Split(BaseTask):
+class Split(digdag.BaseTask):
     def run(self):
         self.carry_params["task_count"] = 3
 
-class ParallelProcess(BaseTask):
+class ParallelProcess(digdag.BaseTask):
     def run(self):
         for i in range(self.params["task_count"]):
             self.add_subtask(ProcessSub, index=i)
         self.sub["parallel"] = True
 
-class ProcessSub(BaseTask):
+class ProcessSub(digdag.BaseTask):
     def init(self, index=None):
         self.index = index
 

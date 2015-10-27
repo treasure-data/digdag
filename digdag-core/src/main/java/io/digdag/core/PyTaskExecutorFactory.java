@@ -113,8 +113,11 @@ public class PyTaskExecutorFactory
 
             StringBuilder sb = new StringBuilder();
             sb.append("import json\n");
+            sb.append("import sys\n");
+            sb.append("import os\n");
             sb.append("in_file = \"").append(inFile.getPath()).append("\"\n");
             sb.append("out_file = \"").append(outFile.getPath()).append("\"\n");
+            sb.append("sys.path.append(os.path.abspath(os.getcwd()))\n");
             sb.append("with open(in_file) as f:\n");
             sb.append("    in_data = json.load(f)\n");
             sb.append("    config = in_data['config']\n");

@@ -79,3 +79,7 @@ task cli(dependsOn: ':digdag-core:shadowJar') << {
 
 task classpath(dependsOn: ['build', ':digdag-core:classpath']) << { }
 clean { delete 'classpath' }
+
+task pydist(type: Exec) {
+    commandLine 'python', 'setup.py', 'sdist'
+}

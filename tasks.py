@@ -1,49 +1,10 @@
-import inspect
 import json
 import re
-
-# this should be in a library code
-class BaseTask(object):
-    def __init__(self, config, state, params):
-        self.config = config
-        self.state = state
-        self.params = params
-        self.carry_params = {}
-        self.sub = {}
-        self.subtask_index = 0
-        self.inputs = []
-        self.outputs = []
-
-        spec = inspect.getargspec(self.init)
-
-        if spec.keywords:
-            args = config
-        else:
-            keys = spec.args[1:]
-            args = dict()
-            for key in keys:
-                if key in config:
-                    args[key] = config[key]
-        self.init(**args)
-
-    def init(self):
-        pass
-
-    def carry_param(self, key, value):
-        self.carry_params[key] = value
-
-    def add_subtask(self, pyclass, **config):
-        config["py>"] = pyclass.__module__ + "." + pyclass.__name__
-        self.sub["+subtask" + str(self.subtask_index)] = config
-        self.subtask_index += 1
-
-
-
-
 import os.path
 import errno
+import digdag
 
-class SplitFiles(BaseTask):
+class SplitFiles(digdag.BaseTask):
     def init(self, count=None):
         self.count = count
 
@@ -58,13 +19,13 @@ class SplitFiles(BaseTask):
 
         self.carry_params["paths"] = paths
 
-class CheckFiles(BaseTask):
+class CheckFiles(digdag.BaseTask):
     def run(self):
         for path in self.params["paths"]:
             if not os.path.isfile(path):
                 raise Exception("File not built: " + path)
 
-class PrintFiles(BaseTask):
+class PrintFiles(digdag.BaseTask):
     def run(self):
         print "Creating subtasks for files: "+str(self.params['paths'])
 
@@ -79,7 +40,7 @@ class PrintFiles(BaseTask):
             self.inputs.append({"file": path})  # reports data lineage tracking
         self.sub["parallel"] = True
 
-class PrintFilesSub(BaseTask):
+class PrintFilesSub(digdag.BaseTask):
     def init(self, path):
         self.path = path
 

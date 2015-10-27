@@ -1,12 +1,12 @@
-from tasks import BaseTask
+import digdag
 
-class GenerateData(BaseTask):
+class GenerateData(digdag.BaseTask):
     def run(self):
         print "generating 'generated.csv'..."
         with open("generated.csv", "w") as f:
             f.write("ok")
 
-class CheckGenerated(BaseTask):
+class CheckGenerated(digdag.BaseTask):
     def run(self):
         print "checking 'generated.csv'..."
         with open("generated.csv", "r") as f:
@@ -15,17 +15,17 @@ class CheckGenerated(BaseTask):
             raise Exception("Output data is too small")
 
 
-class ComplexPlan(BaseTask):
+class ComplexPlan(digdag.BaseTask):
     def run(self):
         self.carry_params["path"] = "complex.csv"
 
-class ComplexGenerate(BaseTask):
+class ComplexGenerate(digdag.BaseTask):
     def run(self):
         print "generating "+self.params["path"]
         with open(self.params["path"], "w") as f:
             f.write("ok")
 
-class CheckComplexGenerated(BaseTask):
+class CheckComplexGenerated(digdag.BaseTask):
     def run(self):
         print "checking "+self.params["path"]
         with open(self.params["path"], "r") as f:

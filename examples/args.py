@@ -1,6 +1,6 @@
-from tasks import BaseTask
+import digdag
 
-class RequiredArgument(BaseTask):
+class RequiredArgument(digdag.BaseTask):
     def init(self, required1, required2):
         self.required1 = required1
         self.required2 = required2
@@ -10,7 +10,7 @@ class RequiredArgument(BaseTask):
         print "required2 = " + str(self.required2)
 
 
-class OptionalArgument(BaseTask):
+class OptionalArgument(digdag.BaseTask):
     def init(self, optional1=None, optional2="default"):
         self.optional1 = optional1
         self.optional2 = optional2
@@ -20,7 +20,7 @@ class OptionalArgument(BaseTask):
         print "optional2 = " + str(self.optional2)
 
 
-class MixedArgument(BaseTask):
+class MixedArgument(digdag.BaseTask):
     def init(self, arg1, arg2=None, arg3=None):
         self.arg1 = arg1
         self.arg2 = arg2

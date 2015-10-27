@@ -1,10 +1,10 @@
-from tasks import BaseTask
+import digdag
 
-class SetMyParam(BaseTask):
+class SetMyParam(digdag.BaseTask):
     def run(self):
         self.carry_params["my_param"] = {"key": "value"}
 
-class ShowMyParam(BaseTask):
+class ShowMyParam(digdag.BaseTask):
     def run(self):
         print "my_param = " + str(self.params["my_param"])
 

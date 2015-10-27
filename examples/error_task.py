@@ -1,10 +1,10 @@
-from tasks import BaseTask
+import digdag
 
-class Fails(BaseTask):
+class Fails(digdag.BaseTask):
     def run(self):
         raise Exception("This task fails")
 
-class ShowError(BaseTask):
+class ShowError(digdag.BaseTask):
     def run(self):
         print "Task failed:"
         print "  * error_message: " + str(self.params["error_message"])

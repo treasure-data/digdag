@@ -1,28 +1,28 @@
 import re
-from tasks import BaseTask
+import digdag
 
-class AlgorithmZlib(BaseTask):
+class AlgorithmZlib(digdag.BaseTask):
     def run(self):
         with open("output.Z", "w") as f:
             f.write("zzzzzzzzzz")
         self.carry_params["path_zlib"] = "output.Z"
         self.carry_params["size_zlib"] = 10
 
-class AlgorithmDeflate(BaseTask):
+class AlgorithmDeflate(digdag.BaseTask):
     def run(self):
         with open("output.gz", "w") as f:
             f.write("defldefl")
         self.carry_params["path_deflate"] = "output.gz"
         self.carry_params["size_deflate"] = 8
 
-class AlgorithmBzip2(BaseTask):
+class AlgorithmBzip2(digdag.BaseTask):
     def run(self):
         with open("output.bzip2", "w") as f:
             f.write("bz2bz2")
         self.carry_params["path_deflate"] = "output.bz2"
         self.carry_params["size_deflate"] = 6
 
-class TakeAlgorithm(BaseTask):
+class TakeAlgorithm(digdag.BaseTask):
     def run(self):
         smallest_size = None
         smallest_path = None
@@ -34,7 +34,7 @@ class TakeAlgorithm(BaseTask):
                     smallest_path = self.params["path_"+m.group(1)]
         self.carry_params["smallest_path"] = smallest_path
 
-class ShowAlgorithm(BaseTask):
+class ShowAlgorithm(digdag.BaseTask):
     def run(self):
         print "using file: "+self.params["smallest_path"]
 

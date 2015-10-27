@@ -1,2 +1,9 @@
 /graph.*
+/.gradle
+/pkg/*.jar
+/classpath/*.jar
+/build/
+*/build/
 *.pyc
+/dist/*.tar.gz
+MANIFEST
