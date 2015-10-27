@@ -473,11 +473,22 @@ module Digdag
       return task_params.merge(parent_params).merge(upstream_params)
     end
 
+    def collect_children_params(st)
+      params = {}
+      @session_tasks.each do |s|
+        if s.parent_id == st.id
+          params.merge!(collect_task_params(s))
+          params.merge!(collect_children_params(s))
+        end
+      end
+      params
+    end
+
     def collect_upstream_carry_params(st)
       params = {}
       st.upstream_ids.each do |id|
         up = find(id)
-        up_params = collect_action_params(up).merge(collect_task_params(up))
+        up_params = collect_action_params(up).merge(collect_children_params(up))
         params.merge!(up_params)
       end
       params

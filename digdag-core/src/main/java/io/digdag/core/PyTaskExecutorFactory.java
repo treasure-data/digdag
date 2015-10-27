@@ -84,7 +84,7 @@ public class PyTaskExecutorFactory
                 if (fragments.length > 1) {
                     String pkg = Arrays.asList(fragments).subList(0, fragments.length-1)
                         .stream()
-                        .collect(Collectors.joining(", "));
+                        .collect(Collectors.joining("."));
                     sb.append("from ")
                         .append(pkg)
                         .append(" import ")
