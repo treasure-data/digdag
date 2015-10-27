@@ -1,0 +1,11 @@
+error_task_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-10-27 00:12 -0700
+
+  +test:
+    py>: examples.error_task.Fails
+    error:
+      py>: examples.error_task.ShowError
+
+

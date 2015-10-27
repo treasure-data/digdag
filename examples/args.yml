@@ -1,0 +1,18 @@
+args_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-10-26 23:58 -0700
+
+  +a:
+    py>: examples.args.RequiredArgument
+    required1: "1"
+    required2: 2
+
+  +b:
+    py>: examples.args.OptionalArgument
+
+  +c:
+    py>: examples.args.MixedArgument
+    arg1: "a"
+    arg2: {b: "c"}
+

@@ -1,0 +1,18 @@
+check_task_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-10-26 23:59 -0700
+
+  +simple_generate:
+    py>: examples.check_task.GenerateData
+    check:
+      py>: examples.check_task.CheckGenerated
+
+  +complex_generate:
+    +step1:
+      py>: examples.check_task.ComplexPlan
+    +step2:
+      py>: examples.check_task.ComplexGenerate
+      check:
+        py>: examples.check_task.CheckComplexGenerated
+

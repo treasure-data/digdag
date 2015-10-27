@@ -1,0 +1,11 @@
+params_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-10-26 23:27 -0700
+
+  +set:
+    py>: examples.params.SetMyParam
+
+  +get:
+    py>: examples.params.ShowMyParam
+

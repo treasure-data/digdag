@@ -1,0 +1,20 @@
+conditions_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-10-26 23:53 -0700
+
+  +algorithms:
+    parallel: true
+    +zlib:
+      py>: examples.conditions.AlgorithmZlib
+    +gzip:
+      py>: examples.conditions.AlgorithmDeflate
+    +bzip2:
+      py>: examples.conditions.AlgorithmBzip2
+
+  +take_algorithm:
+    py>: examples.conditions.TakeAlgorithm
+
+  +show:
+    py>: examples.conditions.ShowAlgorithm
+
