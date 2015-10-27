@@ -43,7 +43,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%white(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%white(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\) %class: %m%n)</pattern>
     </encoder>
   </appender>
 
@@ -55,9 +55,11 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%blue(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%blue(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\) %class: %m%n)</pattern>
     </encoder>
   </appender>
+
+  <logger name="com.zaxxer.hikari.HikariDataSource" level="WARN"/>
 
   <root>
     <appender-ref ref="console-error"/>
