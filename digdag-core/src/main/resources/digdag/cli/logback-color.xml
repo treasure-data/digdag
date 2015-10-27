@@ -7,7 +7,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%magenta(%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%magenta(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
     </encoder>
   </appender>
 
@@ -19,7 +19,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%yellow(%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%yellow(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
     </encoder>
   </appender>
 
@@ -31,7 +31,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%green(%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%green(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
     </encoder>
   </appender>
 
@@ -43,7 +43,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%white(%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%white(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
     </encoder>
   </appender>
 
@@ -55,7 +55,7 @@
     </filter>
     <withJansi>true</withJansi>
     <encoder>
-      <pattern>%blue(%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\): %m%n)</pattern>
+      <pattern>%blue(%d{yyyy-MM-dd HH:mm:ss Z} [%level] (%thread\): %m%n)</pattern>
     </encoder>
   </appender>
 
