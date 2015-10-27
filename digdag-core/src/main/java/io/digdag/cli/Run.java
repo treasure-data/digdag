@@ -7,19 +7,14 @@ import joptsimple.OptionSet;
 import java.io.File;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.guice.ObjectMapperModule;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.*;
 import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
+import static java.util.Arrays.asList;
 
 public class Run
 {
@@ -29,55 +24,35 @@ public class Run
             throws Exception
     {
         OptionParser parser = Main.parser();
+
+        parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
+
         OptionSet op = Main.parse(parser, args);
         List<String> argv = Main.nonOptions(op);
-
         if (op.has("help") || argv.size() != 1) {
             throw usage(null);
         }
-        String file = argv.get(0);
 
-        new Run().run(file);
+        Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
+        File workflowPath = new File(argv.get(0));
+
+        new Run().run(workflowPath, visualizePath);
     }
 
     private static SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
+        System.err.println("  Options:");
+        System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
+        Main.showCommonOptions();
         System.err.println("");
         return systemExit(error);
     }
 
-    public void run(String path)
+    public void run(File workflowPath, Optional<File> visualizePath)
             throws Exception
     {
-        Injector injector = Guice.createInjector(
-                new ObjectMapperModule()
-                    .registerModule(new GuavaModule())
-                    .registerModule(new JodaModule()),
-                    new DatabaseModule(DatabaseStoreConfig.builder()
-                        .type("h2")
-                        //.url("jdbc:h2:../test")
-                        .url("jdbc:h2:mem:test")
-                        .build()),
-                (binder) -> {
-                    binder.bind(TaskApi.class).to(InProcessTaskApi.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigSourceFactory.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigSourceMapper.class).in(Scopes.SINGLETON);
-                    binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
-                    binder.bind(SessionExecutor.class).in(Scopes.SINGLETON);
-                    binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
-                    binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
-
-                    Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
-                    taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);
-
-                    Multibinder<TaskExecutorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskExecutorFactory.class);
-                    taskExecutorBinder.addBinding().to(PyTaskExecutorFactory.class).in(Scopes.SINGLETON);
-                    taskExecutorBinder.addBinding().to(ShTaskExecutorFactory.class).in(Scopes.SINGLETON);
-
-                }
-            );
+        Injector injector = Main.embed().getInjector();
 
         final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
@@ -92,7 +67,7 @@ public class Run
 
         injector.getInstance(LocalAgentManager.class).startLocalAgent(0, "local");
 
-        final ConfigSource ast = loader.loadFile(new File(path));
+        final ConfigSource ast = loader.loadFile(workflowPath);
         List<WorkflowSource> workflowSources = ast.getKeys()
             .stream()
             .map(key -> WorkflowSource.of(key, ast.getNested(key)))
@@ -152,12 +127,13 @@ public class Run
             logger.debug("    error: "+task.getError());
         }
 
-        new GraphvizWorkflowVisualizer()
-            .visualize(
+        if (visualizePath.isPresent()) {
+            Show.show(
                     sessionStore.getTasks(sessions.get(0).getId(), 1024, Optional.absent())
                         .stream()
                         .map(it -> WorkflowVisualizerNode.of(it))
                         .collect(Collectors.toList()),
-                    new File("graph.png"));
+                    visualizePath.get());
+        }
     }
 }

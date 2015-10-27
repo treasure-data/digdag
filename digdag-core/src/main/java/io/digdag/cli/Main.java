@@ -3,6 +3,8 @@ package io.digdag.cli;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
@@ -11,6 +13,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import io.digdag.DigdagEmbed;
 import static java.util.Arrays.asList;
 
 public class Main
@@ -29,6 +32,8 @@ public class Main
     public static void run(String[] args)
             throws Exception
     {
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date())+ ": Digdag v0.1.0");
+
         List<String> argList = new ArrayList<>(asList(args));
         String command = argList.stream().filter(a -> !a.startsWith("-")).findFirst().orElse(null);
         if (command == null) {
@@ -42,6 +47,9 @@ public class Main
         case "run":
             Run.main(command, commandArgs);
             break;
+        case "show":
+            Show.main(command, commandArgs);
+            break;
         default:
             throw usage("Unknown command '"+command+"'");
         }
@@ -51,8 +59,8 @@ public class Main
     {
         OptionParser parser = new OptionParser();
         parser.accepts("help");
-        parser.acceptsAll(asList("L", "log-level")).withRequiredArg().ofType(String.class).defaultsTo("info");
-        parser.acceptsAll(asList("l", "log")).withRequiredArg().ofType(String.class).defaultsTo("-");
+        parser.acceptsAll(asList("l", "log-level")).withRequiredArg().ofType(String.class).defaultsTo("info");
+        parser.acceptsAll(asList("g", "log")).withRequiredArg().ofType(String.class).defaultsTo("-");
         parser.acceptsAll(asList("X")).withRequiredArg().ofType(String.class);
         return parser;
     }
@@ -62,7 +70,7 @@ public class Main
     {
         OptionSet op = parser.parse(args);
 
-        String logLevel = (String) op.valueOf("L");
+        String logLevel = (String) op.valueOf("l");
         switch (logLevel) {
         case "error":
         case "warn":
@@ -75,7 +83,7 @@ public class Main
             throw usage("Unknown log level '"+logLevel+"'");
         }
 
-        configureLogging(logLevel, (String) op.valueOf("l"));
+        configureLogging(logLevel, (String) op.valueOf("g"));
 
         for (Object kv : op.valuesOf("X")) {
             String[] pair = kv.toString().split("=", 2);
@@ -128,12 +136,11 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
-        System.err.println("    run <workflow.yml>               Run log messages to a file (default: -)");
+        System.err.println("    run <workflow.yml>               run a workflow");
+        System.err.println("    show <workflow.yml>              visualize a workflow");
         System.err.println("");
         System.err.println("  Options:");
-        System.err.println("    -l, --log PATH                   Output log messages to a file (default: -)");
-        System.err.println("    -L, --log-level LEVEL            Log level (error, warn, info, debug or trace)");
-        System.err.println("    -X KEY=VALUE                     Add a performance system config");
+        showCommonOptions();
         System.err.println("");
         if (error == null) {
             System.err.println("Use `<command> --help` to see detailed usage of a command.");
@@ -142,6 +149,13 @@ public class Main
         else {
             return systemExit(error);
         }
+    }
+
+    static void showCommonOptions()
+    {
+        System.err.println("    -g, --log PATH                   output log messages to a file (default: -)");
+        System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
+        System.err.println("    -X KEY=VALUE                     add a performance system config");
     }
 
     public static class SystemExitException
@@ -170,5 +184,10 @@ public class Main
         else {
             return new SystemExitException(0, null);
         }
+    }
+
+    static DigdagEmbed embed()
+    {
+        return new DigdagEmbed.Bootstrap().initialize();
     }
 }
