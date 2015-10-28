@@ -17,6 +17,7 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.yaml:snakeyaml:1.14'
     compile 'joda-time:joda-time:2.8.1'
+    compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
     compile 'org.immutables:value:2.0.21'
     compile 'org.immutables:builder:2.0.21'
     compile 'org.jdbi:jdbi:2.63.1'

@@ -4,10 +4,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LocalAgent
         implements Runnable
 {
+    private static final Logger logger = LoggerFactory.getLogger(LocalAgent.class);
+
     private final ExecutorService executor;
     private final TaskQueue queue;
     private final TaskRunner runner;
@@ -17,7 +21,7 @@ public class LocalAgent
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat("local-agent-%d")
+                .setNameFormat("task-thread-%d")
                 .build()
                 );
         this.queue = queue;
@@ -44,8 +48,7 @@ public class LocalAgent
             }
         }
         catch (Throwable t) {
-            System.err.println("Uncaught exception: "+t);
-            t.printStackTrace(System.err);
+            logger.error("Uncaught exception", t);
         }
     }
 }

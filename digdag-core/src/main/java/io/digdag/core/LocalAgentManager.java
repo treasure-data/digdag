@@ -18,7 +18,7 @@ public class LocalAgentManager
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat("local-agent-manager-%d")
+                .setNameFormat("local-agent-%d")
                 .build()
                 );
         this.queueManager = queueManager;

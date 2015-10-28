@@ -21,7 +21,7 @@ public interface RepositoryStore
 
     <T> T putRepository(Repository repository, RepositoryLockAction<T> func);
 
-    void deleteRepository(int repoId);
+    void deleteRepository(int repoId);  // TODO delete schedule
 
 
     List<StoredRevision> getAllRevisions(int repoId);  // TODO only for testing
@@ -34,7 +34,7 @@ public interface RepositoryStore
 
     StoredRevision getLatestActiveRevision(int repoId);
 
-    void deleteRevision(int revId);
+    //void deleteRevision(int revId);
 
 
     List<StoredWorkflowSource> getAllWorkflows(int revId);  // TODO only for testing
@@ -47,5 +47,5 @@ public interface RepositoryStore
 
     StoredWorkflowSource getWorkflowByName(int revId, String name);
 
-    void deleteWorkflow(int wfId);
+    //void deleteWorkflow(int wfId);
 }

@@ -9,16 +9,12 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableAbstractStyle
-@JsonSerialize(as = ImmutableStoredRepository.class)
-@JsonDeserialize(as = ImmutableStoredRepository.class)
-public abstract class StoredRepository
-        extends Repository
+@JsonSerialize(as = ImmutableStoredSchedule.class)
+@JsonDeserialize(as = ImmutableStoredSchedule.class)
+public abstract class StoredSchedule
+        extends Schedule
 {
-    public abstract int getId();
-
-    public abstract int getSiteId();
-
-    //public abstract Optional<Integer> getLatestRevisionId();
+    public abstract long getId();
 
     public abstract Date getCreatedAt();
 
