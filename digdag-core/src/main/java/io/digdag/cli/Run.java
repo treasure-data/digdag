@@ -49,6 +49,43 @@ public class Run
         return systemExit(error);
     }
 
+    private static class StoreWorkflow
+    {
+        private final StoredRevision revision;
+        private final List<StoredWorkflowSource> workflows;
+
+        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowSource> workflows)
+        {
+            this.revision = revision;
+            this.workflows = workflows;
+        }
+
+        public StoredRevision getRevision()
+        {
+            return revision;
+        }
+
+        public List<StoredWorkflowSource> getWorkflows()
+        {
+            return workflows;
+        }
+
+        public static StoreWorkflow store(RepositoryStore repoStore,
+                String repositoryName, Revision revision, List<WorkflowSource> workflowSources)
+        {
+            return repoStore.putRepository(
+                    Repository.of(repositoryName),
+                    (repoControl) -> {
+                        StoredRevision rev = repoControl.putRevision(revision);
+                        List<StoredWorkflowSource> storedWorkflows =
+                            workflowSources.stream()
+                            .map(workflowSource -> repoControl.putWorkflow(rev.getId(), workflowSource))
+                            .collect(Collectors.toList());
+                        return new StoreWorkflow(rev, storedWorkflows);
+                    });
+        }
+    }
+
     public void run(File workflowPath, Optional<File> visualizePath)
             throws Exception
     {
@@ -68,51 +105,44 @@ public class Run
         injector.getInstance(LocalAgentManager.class).startLocalAgent(0, "local");
 
         final ConfigSource ast = loader.loadFile(workflowPath);
-        List<WorkflowSource> workflowSources = ast.getKeys()
-            .stream()
+        final List<WorkflowSource> workflowSources =
+            ast.getKeys().stream()
             .map(key -> WorkflowSource.of(key, ast.getNested(key)))
             .collect(Collectors.toList());
 
-        final StoredRepository repo = repoStore.putRepository(
-                Repository.of("repo1", cf.create()));
-        final StoredRevision rev = repoStore.putRevision(
-                repo.getId(),
+        // validate workflow
+        // TODO move this to RepositoryControl
+        workflowSources
+            .stream()
+            .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
+
+        final StoreWorkflow revWfs = StoreWorkflow.store(repoStore, "repo1",
                 Revision.revisionBuilder()
                     .name("rev1")
                     .archiveType("db")
                     .globalParams(cf.create())
-                    .build()
-                );
+                    .build(),
+                workflowSources);
+        final StoredRevision revision = revWfs.getRevision();
+        final List<StoredWorkflowSource> workflows = revWfs.getWorkflows();
 
-        List<StoredWorkflowSource> storedWorkflows = workflowSources
-            .stream()
-            .map(workflowSource -> repoStore.putWorkflow(rev.getId(), workflowSource))
-            .collect(Collectors.toList());
-
-        List<Workflow> workflows = storedWorkflows
-            .stream()
-            .map(storedWorkflow -> compiler.compile(storedWorkflow.getName(), storedWorkflow.getConfig()))
-            .collect(Collectors.toList());
+        final Session trigger = Session.sessionBuilder()
+            .name("ses1")
+            .params(cf.create())
+            .options(SessionOptions.sessionOptionsBuilder().build())
+            .build();
 
         List<StoredSession> sessions = sessionStore.transaction(() ->
-            storedWorkflows
-                .stream()
-                .map(storedWorkflow -> {
-                    return exec.submitWorkflow(
-                            0,
-                            storedWorkflow,
-                            Session.sessionBuilder()
-                                .name("ses1")
-                                .params(cf.create())
-                                .options(SessionOptions.sessionOptionsBuilder().build())
-                                .build(),
-                            SessionRelation
-                                .of(Optional.of(repo.getId()), Optional.of(storedWorkflow.getId())));
+                workflows.stream()
+                .map(workflow -> {
+                    return exec.submitWorkflow(0, workflow, trigger,
+                            SessionNamespace.ofWorkflow(revision.getRepositoryId(), workflow.getId()));
                 })
                 .collect(Collectors.toList())
         );
 
         exec.runUntilAny(dispatcher);
+
         for (StoredTask task : sessionStoreManager.getAllTasks()) {
             logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
             logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));

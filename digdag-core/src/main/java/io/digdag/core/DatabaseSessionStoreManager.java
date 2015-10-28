@@ -147,24 +147,24 @@ public class DatabaseSessionStoreManager
         });
     }
 
-    public StoredSession newSession(int siteId, Session newSession, SessionRelation relation, SessionBuilderAction func)
+    public StoredSession newSession(int siteId, Session newSession, SessionNamespace namespace, SessionBuilderAction func)
     {
         return handle.inTransaction((handle, ses) -> {
             long sesId;
-            if (relation.getWorkflowId().isPresent()) {
+            if (namespace.getWorkflowId().isPresent()) {
                 // namespace is workflow id
-                sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, relation.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), relation.getWorkflowId().get());
+                sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, namespace.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                dao.insertSessionNamespace(sesId, namespace.getRepositoryId().get(), namespace.getWorkflowId().get());
             }
-            else if (relation.getRepositoryId().isPresent()) {
+            else if (namespace.getRepositoryId().isPresent()) {
                 // namespace is repository
-                sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, relation.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), null);
+                sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, namespace.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                dao.insertSessionNamespace(sesId, namespace.getRepositoryId().get(), null);
             }
             else {
                 // namespace is site
                 sesId = dao.insertSession(siteId, NAMESPACE_SITE_ID, siteId, newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, null, null);
+                dao.insertSessionNamespace(sesId, null, null);
             }
             StoredSession session = dao.getSessionById(siteId, sesId);
             func.call(session, this);
@@ -401,9 +401,9 @@ public class DatabaseSessionStoreManager
         long insertSession(@Bind("siteId") int siteId,  @Bind("namespaceType") short namespaceType,
                 @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") ConfigSource params, @Bind("options") SessionOptions options);
 
-        @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +
+        @SqlUpdate("insert into session_namespaces (id, repository_id, workflow_id)" +
                 " values (:id, :repositoryId, :workflowId)")
-        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
+        void insertSessionNamespace(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
                 @Bind("workflowId") Integer workflowId);
 
         @SqlQuery("select id from tasks where state = :state limit :limit")

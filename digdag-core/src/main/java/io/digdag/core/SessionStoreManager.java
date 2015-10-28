@@ -25,14 +25,14 @@ public interface SessionStoreManager
 
     int trySetRetryWaitingToReady();
 
-    public interface TaskLockAction <T>
+    interface TaskLockAction <T>
     {
-        public T call(TaskControl lockedTask);
+        T call(TaskControl lockedTask);
     }
 
-    public interface TaskLockActionWithDetails <T>
+    interface TaskLockActionWithDetails <T>
     {
-        public T call(TaskControl lockedTask, StoredTask task);
+        T call(TaskControl lockedTask, StoredTask task);
     }
 
     // overload for polling
@@ -41,15 +41,15 @@ public interface SessionStoreManager
     // overload for taskFinished
     <T> Optional<T> lockTask(long taskId, TaskLockActionWithDetails<T> func);
 
-    public interface SessionBuilderStore
+    interface SessionBuilderStore
     {
         <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func);
     }
 
-    public interface SessionBuilderAction
+    interface SessionBuilderAction
     {
-        public void call(StoredSession session, SessionBuilderStore store);
+        void call(StoredSession session, SessionBuilderStore store);
     }
 
-    StoredSession newSession(int siteId, Session newSession, SessionRelation relation, SessionBuilderAction func);
+    StoredSession newSession(int siteId, Session newSession, SessionNamespace namespace, SessionBuilderAction func);
 }

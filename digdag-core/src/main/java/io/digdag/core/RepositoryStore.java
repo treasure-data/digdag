@@ -14,7 +14,12 @@ public interface RepositoryStore
 
     StoredRepository getRepositoryByName(String name);
 
-    StoredRepository putRepository(Repository repository);
+    interface RepositoryLockAction <T>
+    {
+        T call(RepositoryControl lockedRepository);
+    }
+
+    <T> T putRepository(Repository repository, RepositoryLockAction<T> func);
 
     void deleteRepository(int repoId);
 
@@ -29,8 +34,6 @@ public interface RepositoryStore
 
     StoredRevision getLatestActiveRevision(int repoId);
 
-    StoredRevision putRevision(int repoId, Revision revision);
-
     void deleteRevision(int revId);
 
 
@@ -43,8 +46,6 @@ public interface RepositoryStore
     StoredWorkflowSource getWorkflowById(int wfId);
 
     StoredWorkflowSource getWorkflowByName(int revId, String name);
-
-    StoredWorkflowSource putWorkflow(int revId, WorkflowSource workflow);
 
     void deleteWorkflow(int wfId);
 }

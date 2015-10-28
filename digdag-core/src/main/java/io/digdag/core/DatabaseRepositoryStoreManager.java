@@ -42,7 +42,7 @@ public class DatabaseRepositoryStoreManager
     }
 
     private class DatabaseRepositoryStore
-            implements RepositoryStore
+            implements RepositoryStore, RepositoryControlStore
     {
         // TODO retry
         private final int siteId;
@@ -77,18 +77,20 @@ public class DatabaseRepositoryStoreManager
             return dao.getRepositoryByName(siteId, name);
         }
 
-        public StoredRepository putRepository(Repository repository)
+        public <T> T putRepository(Repository repository, RepositoryLockAction<T> func)
         {
-            // TODO idempotent operation
-            int repoId = dao.insertRepository(siteId, repository.getName(), repository.getConfig());
-            return getRepositoryById(repoId);
+            return handle.inTransaction((handle, session) -> {
+                // TODO idempotent operation
+                int repoId = dao.insertRepository(siteId, repository.getName());
+                RepositoryControl control = new RepositoryControl(this, getRepositoryById(repoId));
+                return func.call(control);
+            });
         }
 
         public void deleteRepository(int repoId)
         {
             throw new UnsupportedOperationException("not implemented yet");
         }
-
 
         public List<StoredRevision> getAllRevisions(int repoId)
         {
@@ -190,10 +192,10 @@ public class DatabaseRepositoryStoreManager
         StoredRepository getRepositoryByName(@Bind("siteId") int siteId, @Bind("name") String name);
 
         @SqlUpdate("insert into repositories" +
-                " (site_id, name, config, created_at, updated_at)" +
-                " values (:siteId, :name, :config, now(), now())")
+                " (site_id, name, created_at, updated_at)" +
+                " values (:siteId, :name, now(), now())")
         @GetGeneratedKeys
-        int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name, @Bind("config") ConfigSource config);
+        int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name);
 
 
         @SqlQuery("select t.* from revisions t" +
@@ -298,7 +300,7 @@ public class DatabaseRepositoryStoreManager
                 .updatedAt(r.getTimestamp("updated_at"))
                 //.latestRevisionId(r.getInt("latest_revision_id"))
                 .name(r.getString("name"))
-                .config(cfm.fromResultSetOrEmpty(r, "config"))
+                //.config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
         }
     }

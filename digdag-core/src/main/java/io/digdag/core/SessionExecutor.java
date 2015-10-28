@@ -49,7 +49,7 @@ public class SessionExecutor
         this.cf = cf;
     }
 
-    public StoredSession submitWorkflow(int siteId, StoredWorkflowSource workflowSource, Session newSession, SessionRelation relation)
+    public StoredSession submitWorkflow(int siteId, StoredWorkflowSource workflowSource, Session newSession, SessionNamespace namespace)
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();
@@ -67,7 +67,7 @@ public class SessionExecutor
 
         final WorkflowTask root = tasks.get(0);
         final List<WorkflowTask> sub = tasks.subList(1, tasks.size());
-        return sm.newSession(siteId, newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
+        return sm.newSession(siteId, newSession, namespace, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
             final Task rootTask = Task.taskBuilder()
                 .sessionId(session.getId())
                 .parentId(Optional.absent())

@@ -12,7 +12,7 @@ public abstract class Repository
 {
     public abstract String getName();
 
-    public abstract ConfigSource getConfig();
+    //public abstract ConfigSource getConfig();
 
     //public abstract boolean isDisabled();
 
@@ -21,11 +21,10 @@ public abstract class Repository
         return ImmutableRepository.builder();
     }
 
-    public static Repository of(String name, ConfigSource config)
+    public static Repository of(String name)
     {
         return repositoryBuilder()
             .name(name)
-            .config(config)
             .build();
     }
 }
