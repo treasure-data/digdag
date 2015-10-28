@@ -71,15 +71,6 @@ public class DatabaseSessionStoreManager
         return new DatabaseSessionStore(siteId);
     }
 
-    public List<StoredTask> getAllTasks()
-    {
-        return handle.createQuery(
-                selectTaskDetailsQuery()
-            )
-            .map(stm)
-            .list();
-    }
-
     public Date getStoreTime()
     {
         return dao.now();
@@ -361,14 +352,29 @@ public class DatabaseSessionStoreManager
             return dao.getSessionById(siteId, sesId);
         }
 
+        public List<StoredTask> getAllTasks()
+        {
+            return handle.createQuery(
+                    selectTaskDetailsQuery() +
+                    " where s.site_id = :siteId"
+                )
+                .bind("siteId", siteId)
+                .map(stm)
+                .list();
+        }
+
         public List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId)
         {
             return handle.createQuery(
                     selectTaskDetailsQuery() +
                     " where t.id > :lastId" +
+                    " and s.site_id = :siteId" +
+                    " and t.session_id = :sesId" +
                     " order by t.id" +
                     " limit :limit"
                 )
+                .bind("siteId", siteId)
+                .bind("sesId", sesId)
                 .bind("lastId", lastId.or(0L))
                 .bind("limit", pageSize)
                 .map(stm)

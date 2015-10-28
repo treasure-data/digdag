@@ -49,101 +49,33 @@ public class Run
         return systemExit(error);
     }
 
-    private static class StoreWorkflow
+    static List<WorkflowSource> loadWorkflowSources(final ConfigSource ast)
     {
-        private final StoredRevision revision;
-        private final List<StoredWorkflowSource> workflows;
-
-        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowSource> workflows)
-        {
-            this.revision = revision;
-            this.workflows = workflows;
-        }
-
-        public StoredRevision getRevision()
-        {
-            return revision;
-        }
-
-        public List<StoredWorkflowSource> getWorkflows()
-        {
-            return workflows;
-        }
-
-        public static StoreWorkflow store(RepositoryStore repoStore,
-                String repositoryName, Revision revision, List<WorkflowSource> workflowSources)
-        {
-            return repoStore.putRepository(
-                    Repository.of(repositoryName),
-                    (repoControl) -> {
-                        StoredRevision rev = repoControl.putRevision(revision);
-                        List<StoredWorkflowSource> storedWorkflows =
-                            workflowSources.stream()
-                            .map(workflowSource -> repoControl.putWorkflow(rev.getId(), workflowSource))
-                            .collect(Collectors.toList());
-                        return new StoreWorkflow(rev, storedWorkflows);
-                    });
-        }
+        return ast.getKeys().stream()
+            .map(key -> WorkflowSource.of(key, ast.getNested(key)))
+            .collect(Collectors.toList());
     }
 
     public void run(File workflowPath, Optional<File> visualizePath)
             throws Exception
     {
         Injector injector = Main.embed().getInjector();
+        LocalSite localSite = injector.getInstance(LocalSite.class);
+        localSite.initialize();
 
         final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
-        final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
-        final RepositoryStore repoStore = injector.getInstance(DatabaseRepositoryStoreManager.class).getRepositoryStore(0);
-        final SessionStoreManager sessionStoreManager = injector.getInstance(SessionStoreManager.class);
-        final SessionStore sessionStore = sessionStoreManager.getSessionStore(0);
-        final SessionExecutor exec = injector.getInstance(SessionExecutor.class);
-        final TaskQueueDispatcher dispatcher = injector.getInstance(TaskQueueDispatcher.class);
 
-        injector.getInstance(DatabaseMigrator.class).migrate();
+        List<WorkflowSource> workflowSources = loadWorkflowSources(loader.loadFile(workflowPath));
 
-        injector.getInstance(LocalAgentManager.class).startLocalAgent(0, "local");
+        List<StoredSession> sessions = localSite.startWorkflows(workflowSources,
+                cf.create(), SessionOptions.empty());
 
-        final ConfigSource ast = loader.loadFile(workflowPath);
-        final List<WorkflowSource> workflowSources =
-            ast.getKeys().stream()
-            .map(key -> WorkflowSource.of(key, ast.getNested(key)))
-            .collect(Collectors.toList());
+        localSite.start();
 
-        // validate workflow
-        // TODO move this to RepositoryControl
-        workflowSources
-            .stream()
-            .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
+        localSite.runUntilAny();
 
-        final StoreWorkflow revWfs = StoreWorkflow.store(repoStore, "repo1",
-                Revision.revisionBuilder()
-                    .name("rev1")
-                    .archiveType("db")
-                    .globalParams(cf.create())
-                    .build(),
-                workflowSources);
-        final StoredRevision revision = revWfs.getRevision();
-        final List<StoredWorkflowSource> workflows = revWfs.getWorkflows();
-
-        final Session trigger = Session.sessionBuilder()
-            .name("ses1")
-            .params(cf.create())
-            .options(SessionOptions.sessionOptionsBuilder().build())
-            .build();
-
-        List<StoredSession> sessions = sessionStore.transaction(() ->
-                workflows.stream()
-                .map(workflow -> {
-                    return exec.submitWorkflow(0, workflow, trigger,
-                            SessionNamespace.ofWorkflow(revision.getRepositoryId(), workflow.getId()));
-                })
-                .collect(Collectors.toList())
-        );
-
-        exec.runUntilAny(dispatcher);
-
-        for (StoredTask task : sessionStoreManager.getAllTasks()) {
+        for (StoredTask task : localSite.getSessionStore().getAllTasks()) {
             logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
             logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
             logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
@@ -159,7 +91,7 @@ public class Run
 
         if (visualizePath.isPresent()) {
             Show.show(
-                    sessionStore.getTasks(sessions.get(0).getId(), 1024, Optional.absent())
+                    localSite.getSessionStore().getTasks(sessions.get(0).getId(), 1024, Optional.absent())
                         .stream()
                         .map(it -> WorkflowVisualizerNode.of(it))
                         .collect(Collectors.toList()),

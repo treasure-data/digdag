@@ -41,6 +41,11 @@ public class DatabaseRepositoryStoreManager
         return new DatabaseRepositoryStore(siteId);
     }
 
+    public StoredWorkflowSourceWithRepository getWorkflowDetailsById(int wfId)
+    {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     private class DatabaseRepositoryStore
             implements RepositoryStore, RepositoryControlStore
     {

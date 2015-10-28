@@ -8,8 +8,6 @@ public interface SessionStoreManager
 {
     SessionStore getSessionStore(int siteId);
 
-    List<StoredTask> getAllTasks();  // TODO only for testing
-
     Date getStoreTime();
 
     boolean isAnyNotDoneWorkflows();

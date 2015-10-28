@@ -20,4 +20,9 @@ public abstract class SessionOptions
     {
         return ImmutableSessionOptions.builder();
     }
+
+    public static SessionOptions empty()
+    {
+        return sessionOptionsBuilder().build();
+    }
 }

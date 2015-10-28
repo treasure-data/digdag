@@ -42,7 +42,10 @@ public class DigdagEmbed
                     binder.bind(SessionExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
+                    binder.bind(ScheduleStarter.class).to(StandardScheduleStarter.class).in(Scopes.SINGLETON);
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
+                    binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
+                    binder.bind(LocalSite.class).in(Scopes.SINGLETON);
 
                     Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
                     taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);
@@ -51,6 +54,8 @@ public class DigdagEmbed
                     taskExecutorBinder.addBinding().to(PyTaskExecutorFactory.class).in(Scopes.SINGLETON);
                     taskExecutorBinder.addBinding().to(ShTaskExecutorFactory.class).in(Scopes.SINGLETON);
 
+                    Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
+                    schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);
                 }
             );
     }

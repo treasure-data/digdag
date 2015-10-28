@@ -47,6 +47,9 @@ public class Main
         case "run":
             Run.main(command, commandArgs);
             break;
+        case "sched":
+            Sched.main(command, commandArgs);
+            break;
         case "show":
             Show.main(command, commandArgs);
             break;
@@ -138,6 +141,7 @@ public class Main
         System.err.println("  Commands:");
         System.err.println("    run <workflow.yml>               run a workflow");
         System.err.println("    show <workflow.yml>              visualize a workflow");
+        System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();
