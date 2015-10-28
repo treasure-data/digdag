@@ -14,7 +14,7 @@
 
 1. install Java JDK >= 8
 2. build command: $ ./gradlew cli
-3. install graphviz: $ brew install graphviz
+3. (optional) install graphviz: $ brew install graphviz
 4. run $ ./pkg/digdag-0.1.0.jar run examples/NAME.yml
 
 ## Commands
