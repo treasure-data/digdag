@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.digdag.core.*;
+import io.digdag.cli.ResumeStateFileManager;
 
 public class DigdagEmbed
 {
@@ -46,6 +47,9 @@ public class DigdagEmbed
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
+
+                    // TODO
+                    binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
 
                     Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
                     taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);

@@ -16,13 +16,13 @@ public abstract class SessionOptions
 {
     public abstract Map<String, TaskReport> getSkipTaskMap();
 
-    public static ImmutableSessionOptions.Builder sessionOptionsBuilder()
+    public static ImmutableSessionOptions.Builder builder()
     {
         return ImmutableSessionOptions.builder();
     }
 
     public static SessionOptions empty()
     {
-        return sessionOptionsBuilder().build();
+        return builder().build();
     }
 }

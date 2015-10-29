@@ -25,6 +25,7 @@ public class Run
     {
         OptionParser parser = Main.parser();
 
+        parser.acceptsAll(asList("r", "resume-state")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
 
         OptionSet op = Main.parse(parser, args);
@@ -34,15 +35,17 @@ public class Run
         }
 
         Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
+        Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
         File workflowPath = new File(argv.get(0));
 
-        new Run().run(workflowPath, visualizePath);
+        new Run().run(workflowPath, resumeStateFilePath, visualizePath);
     }
 
     private static SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
         System.err.println("  Options:");
+        //System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
         Main.showCommonOptions();
         System.err.println("");
@@ -56,7 +59,21 @@ public class Run
             .collect(Collectors.toList());
     }
 
-    public void run(File workflowPath, Optional<File> visualizePath)
+    static WorkflowSource loadFirstWorkflowSource(final ConfigSource ast)
+    {
+        List<WorkflowSource> workflowSources = loadWorkflowSources(ast);
+        if (workflowSources.size() != 1) {
+            if (workflowSources.isEmpty()) {
+                throw new RuntimeException("Workflow file doesn't include definitions");
+            }
+            else {
+                throw new RuntimeException("Workflow file includes more than one definitions");
+            }
+        }
+        return workflowSources.get(0);
+    }
+
+    public void run(File workflowPath, Optional<File> resumeStateFilePath, Optional<File> visualizePath)
             throws Exception
     {
         Injector injector = Main.embed().getInjector();
@@ -65,13 +82,30 @@ public class Run
 
         final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
-        List<WorkflowSource> workflowSources = loadWorkflowSources(loader.loadFile(workflowPath));
+        Optional<ResumeState> resumeState = Optional.absent();
+        if (resumeStateFilePath.isPresent() && rsm.exists(resumeStateFilePath.get())) {
+            resumeState = Optional.of(rsm.read(resumeStateFilePath.get()));
+        }
 
-        List<StoredSession> sessions = localSite.startWorkflows(workflowSources,
-                cf.create(), SessionOptions.empty());
+        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.loadFile(workflowPath));
 
-        localSite.start();
+        SessionOptions options = SessionOptions.builder()
+            .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
+            .build();
+
+        StoredSession session = localSite.startWorkflows(
+                ImmutableList.of(workflowSource),
+                cf.create(), options).get(0);
+
+        localSite.startLocalAgent();
+
+        if (resumeStateFilePath.isPresent()) {
+            rsm.startUpdate(resumeStateFilePath.get(),
+                    localSite.getSessionStore(), session);
+            rsm.syncOnJvmShutdown();
+        }
 
         localSite.runUntilAny();
 
@@ -91,7 +125,7 @@ public class Run
 
         if (visualizePath.isPresent()) {
             Show.show(
-                    localSite.getSessionStore().getTasks(sessions.get(0).getId(), 1024, Optional.absent())
+                    localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
                         .stream()
                         .map(it -> WorkflowVisualizerNode.of(it))
                         .collect(Collectors.toList()),

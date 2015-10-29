@@ -68,9 +68,14 @@ public class LocalSite
         databaseMigrator.migrate();
     }
 
-    public void start()
+    public void startLocalAgent()
     {
         localAgentManager.startLocalAgent(0, "local");
+    }
+
+    public void startScheduler()
+    {
+        scheduleExecutor.start();
     }
 
     private class StoreWorkflow
@@ -163,13 +168,6 @@ public class LocalSite
             Date currentTime)
     {
         storeWorkflows(workflowSources, Optional.of(currentTime));
-
-        synchronized (this) {
-            if (!schedulerStarted) {
-                scheduleExecutor.start();
-                schedulerStarted = true;
-            }
-        }
     }
 
     public void runUntilAny()

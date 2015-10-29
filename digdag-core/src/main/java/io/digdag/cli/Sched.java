@@ -66,6 +66,9 @@ public class Sched
 
         localSite.scheduleWorkflows(workflowSources, new Date());
 
+        localSite.startLocalAgent();
+        localSite.startScheduler();
+
         localSite.runUntilAny();
     }
 }
