@@ -21,4 +21,11 @@ public abstract class ResumeState
     {
         return ImmutableResumeState.builder();
     }
+
+    public static ResumeState of(Map<String, TaskReport> reports)
+    {
+        return builder()
+            .reports(reports)
+            .build();
+    }
 }

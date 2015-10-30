@@ -17,15 +17,16 @@ public class CronSchedulerFactory
     {
         return new CronScheduler(
                 config.get("cron", String.class),
-                TimeZone.getTimeZone(config.get("timezone", String.class, "UTC")));
+                TimeZone.getTimeZone(config.get("timezone", String.class, "UTC")),
+                config.get("delay", Integer.class, 0));
     }
 
     public static class CronScheduler
             extends AbstractCronScheduler
     {
-        public CronScheduler(String cronPattern, TimeZone timeZone)
+        public CronScheduler(String cronPattern, TimeZone timeZone, long delaySeconds)
         {
-            super(cronPattern, timeZone);
+            super(cronPattern, timeZone, delaySeconds);
         }
     }
 }

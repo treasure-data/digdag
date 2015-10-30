@@ -1,72 +1,115 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Iterator;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.ScheduledExecutorService;
+import javax.annotation.PreDestroy;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.core.*;
 
 public class ResumeStateFileManager
 {
-    private final ExecutorService executor;
-    private final ObjectMapper mapper;
+    private static Logger logger = LoggerFactory.getLogger(ResumeStateFileManager.class);
+
+    private final SessionStoreManager sessionStoreManager;
+    private final FileMapper mapper;
+    private final Map<File, StoredSession> targets;
+    private final YAMLFactory yaml = new YAMLFactory();
+
+    private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateFileManager(ObjectMapper mapper)
+    private ResumeStateFileManager(SessionStoreManager sessionStoreManager, FileMapper mapper)
     {
-        this.executor = Executors.newCachedThreadPool(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("ressume-state-update-%d")
-                .build()
-                );
+        this.sessionStoreManager = sessionStoreManager;
         this.mapper = mapper;
+        this.targets = new ConcurrentHashMap<>();
     }
 
-    public boolean exists(File file)
+    @PreDestroy
+    public synchronized void preDestroy()
     {
-        return file.exists() && file.length() > 0;
-    }
-
-    public ResumeState read(File file)
-            throws IOException
-    {
-        try (InputStream in = new FileInputStream(file)) {
-            return mapper.readValue(in, ResumeState.class);
+        backgroundUpdateAll();
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
         }
     }
 
-    public void syncOnJvmShutdown()
+    public void startUpdate(File file, StoredSession session)
     {
-        // TODO
+        targets.put(file, session);
+        startScheduleIfNotStarted();
     }
 
-    public void startUpdate(File file,
-            SessionStore sessionStore, StoredSession session)
+    private synchronized void startScheduleIfNotStarted()
     {
-        // TODO
+        if (executor == null) {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("ressume-state-update-%d")
+                    .build()
+                    );
+            executor.schedule(() -> backgroundUpdateAll(), 1, TimeUnit.SECONDS);
+            this.executor = executor;
+        }
     }
 
-    private static ResumeState getResumeState(SessionStore sessionStore, StoredSession session)
+    private void backgroundUpdateAll()
+    {
+        Iterator<Map.Entry<File, StoredSession>> ite = targets.entrySet().iterator();
+        while (ite.hasNext()) {
+            Map.Entry<File, StoredSession> pair = ite.next();
+            try {
+                ResumeState resumeState = getResumeState(pair.getValue());
+                mapper.writeFile(pair.getKey(), resumeState);
+                if (isDone(pair.getValue())) {
+                    ite.remove();
+                }
+            }
+            catch (Exception ex) {
+                logger.error("Uncaught exception", ex);
+                ite.remove();
+            }
+        }
+    }
+
+    private ResumeState getResumeState(StoredSession session)
     {
         ImmutableMap.Builder<String, TaskReport> taskReports = ImmutableMap.builder();
-        List<StoredTask> tasks = sessionStore.getTasks(session.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
+        List<StoredTask> tasks = sessionStoreManager
+            .getSessionStore(session.getSiteId())
+            .getTasks(session.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
         for (StoredTask task : tasks) {
             if (task.getReport().isPresent()) {
                 taskReports.put(task.getFullName(), task.getReport().get());
             }
         }
-        return ResumeState.builder()
-            .reports(taskReports.build())
-            .build();
+        return ResumeState.of(taskReports.build());
+    }
+
+    private boolean isDone(StoredSession session)
+    {
+        return Tasks.isDone(
+                sessionStoreManager
+                .getSessionStore(session.getSiteId())
+                .getRootState(session.getId()));
     }
 }

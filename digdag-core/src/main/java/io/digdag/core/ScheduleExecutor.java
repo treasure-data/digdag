@@ -54,10 +54,14 @@ public class ScheduleExecutor
         }
     }
 
-    public Date schedule(StoredSchedule sched)
+    public ScheduleTime schedule(StoredSchedule sched)
     {
+        // TODO If a workflow has wait-until-lastl-schedule attribute, don't start
+        //      new session and return a ScheduleTime with delayed nextRunTime and
+        //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();
-        starter.start(sched.getWorkflowId(), scheduleTime);
-        return scheds.getScheduler(sched.getConfig()).nextScheduleTime(scheduleTime);
+        Scheduler sr = scheds.getScheduler(sched.getConfig());
+        starter.start(sched.getWorkflowId(), sr.getTimeZone(), scheduleTime);
+        return sr.nextScheduleTime(scheduleTime);
     }
 }

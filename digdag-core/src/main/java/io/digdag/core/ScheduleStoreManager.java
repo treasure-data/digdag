@@ -9,7 +9,7 @@ public interface ScheduleStoreManager
 
     interface ScheduleAction
     {
-        Date schedule(StoredSchedule schedule);
+        ScheduleTime schedule(StoredSchedule schedule);
     }
 
     void lockReadySchedules(Date currentTime, ScheduleAction func);

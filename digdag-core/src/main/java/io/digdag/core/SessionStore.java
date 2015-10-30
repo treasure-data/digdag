@@ -12,6 +12,8 @@ public interface SessionStore
 
     StoredSession getSessionById(long sesId);
 
+    TaskStateCode getRootState(long sesId);
+
     List<StoredTask> getAllTasks();  // TODO only for testing
 
     List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId);

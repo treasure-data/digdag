@@ -46,10 +46,12 @@ public class RepositoryControl
                 if (config.isEmpty()) {
                     continue;
                 }
+                ScheduleTime firstTime = scheds.getScheduler(config).getFirstScheduleTime(currentTime);
                 Schedule schedule = Schedule.scheduleBuilder()
                     .workflowId(wf.getId())
                     .config(config)
-                    .nextScheduleTime(scheds.getScheduler(config).getFirstScheduleTime(currentTime))
+                    .nextRunTime(firstTime.getNextRunTime())
+                    .nextScheduleTime(firstTime.getNextScheduleTime())
                     .build();
                 schedules.add(schedule);
             }

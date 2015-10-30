@@ -1,10 +1,13 @@
 package io.digdag.core;
 
 import java.util.Date;
+import java.util.TimeZone;
 
 public interface Scheduler
 {
-    Date getFirstScheduleTime(Date currentTime);
+    TimeZone getTimeZone();
 
-    Date nextScheduleTime(Date lastScheduleTime);
+    ScheduleTime getFirstScheduleTime(Date currentTime);
+
+    ScheduleTime nextScheduleTime(Date lastScheduleTime);
 }

@@ -13,6 +13,8 @@ public abstract class Schedule
 
     public abstract ConfigSource getConfig();
 
+    public abstract Date getNextRunTime();
+
     public abstract Date getNextScheduleTime();
 
     public static ImmutableSchedule.Builder scheduleBuilder()
@@ -20,7 +22,7 @@ public abstract class Schedule
         return ImmutableSchedule.builder();
     }
 
-    public static Schedule of(int workflowId, ConfigSource config, Date nextScheduleTime)
+    public static Schedule of(int workflowId, ConfigSource config, Date nextRunTime, Date nextScheduleTime)
     {
         return scheduleBuilder()
             .workflowId(workflowId)

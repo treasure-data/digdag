@@ -8,10 +8,10 @@ import java.io.File;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Injector;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.*;
+import io.digdag.DigdagEmbed;
 import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
@@ -38,7 +38,7 @@ public class Run
         Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
         File workflowPath = new File(argv.get(0));
 
-        new Run().run(workflowPath, resumeStateFilePath, visualizePath);
+        new Run(workflowPath, resumeStateFilePath, visualizePath).run();
     }
 
     private static SystemExitException usage(String error)
@@ -47,6 +47,8 @@ public class Run
         System.err.println("  Options:");
         //System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
+        // TODO add -p, --param K=V
+        // TODO add -P, --params-file PATH.yml
         Main.showCommonOptions();
         System.err.println("");
         return systemExit(error);
@@ -73,20 +75,42 @@ public class Run
         return workflowSources.get(0);
     }
 
-    public void run(File workflowPath, Optional<File> resumeStateFilePath, Optional<File> visualizePath)
-            throws Exception
+    private final File workflowPath;
+    private final Optional<File> resumeStateFilePath;
+    private final Optional<File> visualizePath;
+
+    public Run(File workflowPath, Optional<File> resumeStateFilePath, Optional<File> visualizePath)
     {
-        Injector injector = Main.embed().getInjector();
+        this.workflowPath = workflowPath;
+        this.resumeStateFilePath = resumeStateFilePath;
+        this.visualizePath = visualizePath;
+    }
+
+    public void run() throws Exception
+    {
+        DigdagEmbed embed = Main.embed();
+        try {
+            run(embed.getInjector());
+        }
+        finally {
+            // close explicitly so that ResumeStateFileManager.preDestroy runs before closing h2 database
+            embed.destroy();
+        }
+    }
+
+    public void run(Injector injector) throws Exception
+    {
         LocalSite localSite = injector.getInstance(LocalSite.class);
         localSite.initialize();
 
         final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
         Optional<ResumeState> resumeState = Optional.absent();
-        if (resumeStateFilePath.isPresent() && rsm.exists(resumeStateFilePath.get())) {
-            resumeState = Optional.of(rsm.read(resumeStateFilePath.get()));
+        if (resumeStateFilePath.isPresent() && mapper.checkExists(resumeStateFilePath.get())) {
+            resumeState = Optional.of(mapper.readFile(resumeStateFilePath.get(), ResumeState.class));
         }
 
         WorkflowSource workflowSource = loadFirstWorkflowSource(loader.loadFile(workflowPath));
@@ -102,9 +126,7 @@ public class Run
         localSite.startLocalAgent();
 
         if (resumeStateFilePath.isPresent()) {
-            rsm.startUpdate(resumeStateFilePath.get(),
-                    localSite.getSessionStore(), session);
-            rsm.syncOnJvmShutdown();
+            rsm.startUpdate(resumeStateFilePath.get(), session);
         }
 
         localSite.runUntilAny();

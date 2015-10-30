@@ -58,8 +58,10 @@ public class DatabaseScheduleStoreManager
                 .stream()
                 .map(sched -> {
                     try {
-                        Date nextTime = func.schedule(sched);
-                        dao.updateNextScheduleTime(sched.getId(), nextTime.getTime() / 1000);
+                        ScheduleTime time = func.schedule(sched);
+                        dao.updateNextScheduleTime(sched.getId(),
+                                time.getNextRunTime().getTime() / 1000,
+                                time.getNextScheduleTime().getTime() / 1000);
                         return null;
                     }
                     catch (RuntimeException ex) {
@@ -110,7 +112,9 @@ public class DatabaseScheduleStoreManager
                 final long[] ids = new long[schedules.size()];
                 int i = 0;
                 for (Schedule schedule : schedules) {
-                    ids[i] = dao.insertSchedule(schedule.getWorkflowId(), schedule.getConfig(), schedule.getNextScheduleTime().getTime() / 1000);
+                    ids[i] = dao.insertSchedule(schedule.getWorkflowId(), schedule.getConfig(),
+                            schedule.getNextRunTime().getTime() / 1000,
+                            schedule.getNextScheduleTime().getTime() / 1000);
                     i++;
                 }
                 String idList = Longs.asList(ids).stream().map(id -> Long.toString(id)).collect(Collectors.joining(","));
@@ -149,21 +153,21 @@ public class DatabaseScheduleStoreManager
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlUpdate("insert into schedules" +
-                " (workflow_id, config, next_schedule_time, created_at, updated_at)" +
-                " values (:workflowId, :config, :nextScheduleTime, now(), now())")
+                " (workflow_id, config, next_run_time, next_schedule_time, created_at, updated_at)" +
+                " values (:workflowId, :config, :nextRunTime, :nextScheduleTime, now(), now())")
         @GetGeneratedKeys
-        long insertSchedule(@Bind("workflowId") int workflowId, @Bind("config") ConfigSource config, @Bind("nextScheduleTime") long nextScheduleTime);
+        long insertSchedule(@Bind("workflowId") int workflowId, @Bind("config") ConfigSource config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlQuery("select * from schedules" +
-                " where next_schedule_time <= :currentTime" +
+                " where next_run_time <= :currentTime" +
                 " limit :limit" +
                 " for update")
         List<StoredSchedule> lockReadySchedules(@Bind("long") long currentTime, @Bind("limit") int limit);
 
         @SqlUpdate("update schedules" +
-                " set next_schedule_time = :nextScheduleTime, updated_at = now()" +
+                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
                 " where id = :id")
-        void updateNextScheduleTime(@Bind("id") long id, @Bind("nextScheduleTime") long nextScheduleTime);
+        void updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
     }
 
     private static class StoredScheduleMapper

@@ -10,15 +10,23 @@ public abstract class AbstractCronScheduler
 {
     private final SchedulingPattern pattern;
     private final TimeZone timeZone;
+    private final long delaySeconds;
 
-    AbstractCronScheduler(String cronPattern, TimeZone timeZone)
+    AbstractCronScheduler(String cronPattern, TimeZone timeZone, long delaySeconds)
     {
         this.pattern = new SchedulingPattern(cronPattern);
         this.timeZone = timeZone;
+        this.delaySeconds = delaySeconds;
     }
 
     @Override
-    public Date getFirstScheduleTime(Date currentTime)
+    public TimeZone getTimeZone()
+    {
+        return timeZone;
+    }
+
+    @Override
+    public ScheduleTime getFirstScheduleTime(Date currentTime)
     {
         Date startTime = currentTime;  // TODO make this from config
         // align to the scheduling time. cron4j uses per-minute scheduling
@@ -26,10 +34,13 @@ public abstract class AbstractCronScheduler
     }
 
     @Override
-    public Date nextScheduleTime(Date lastScheduleTime)
+    public ScheduleTime nextScheduleTime(Date lastScheduleTime)
     {
         Predictor predictor = new Predictor(pattern, lastScheduleTime);
         predictor.setTimeZone(timeZone);
-        return new Date(predictor.nextMatchingTime());
+        long msec = predictor.nextMatchingTime();
+        return ScheduleTime.of(
+                new Date(msec + delaySeconds*1000),
+                new Date(msec));
     }
 }

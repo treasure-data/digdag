@@ -352,6 +352,11 @@ public class DatabaseSessionStoreManager
             return dao.getSessionById(siteId, sesId);
         }
 
+        public TaskStateCode getRootState(long sesId)
+        {
+            return TaskStateCode.of(dao.getRootState(siteId, sesId));
+        }
+
         public List<StoredTask> getAllTasks()
         {
             return handle.createQuery(
@@ -411,6 +416,14 @@ public class DatabaseSessionStoreManager
                 " values (:id, :repositoryId, :workflowId)")
         void insertSessionNamespace(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
                 @Bind("workflowId") Integer workflowId);
+
+        @SqlQuery("select state from tasks t" +
+                " join sessions s on t.session_id = s.id" +
+                " where s.site_id = :siteId" +
+                " and s.id = :id" +
+                " and t.parent_id is null" +
+                " limit 1")
+        short getRootState(@Bind("siteId") int siteId, @Bind("id") long id);
 
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
