@@ -50,7 +50,14 @@ public class ShTaskExecutorFactory
             final Map<String, String> env = pb.environment();
             params.getEntries()
                 .forEach(pair -> {
-                    env.put(pair.getKey(), pair.getValue().toString());
+                    String value;
+                    if (pair.getValue().isTextual()) {
+                        value = pair.getValue().textValue();
+                    }
+                    else {
+                        value = pair.getValue().toString();
+                    }
+                    env.put(pair.getKey(), value);
                 });
 
             pb.redirectErrorStream(true);

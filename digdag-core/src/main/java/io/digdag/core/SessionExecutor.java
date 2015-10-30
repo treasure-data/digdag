@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
@@ -21,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.function.BooleanSupplier;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,34 +109,40 @@ public class SessionExecutor
         runUntil(dispatcher, () -> sm.isAnyNotDoneWorkflows());
     }
 
+    private static final int INITIAL_INTERVAL = 100;
+    private static final int MAX_INTERVAL = 5000;
+
     private void runUntil(TaskQueueDispatcher dispatcher, BooleanSupplier cond)
             throws InterruptedException
     {
-        try (TaskStarter starter = new TaskStarter(dispatcher)) {
+        try (TaskQueuer queuer = new TaskQueuer(dispatcher)) {
             Date date = sm.getStoreTime();
             propagateAllBlockedToReady();
             propagateAllPlannedToDone();
-            enqueueReadyTasks(starter);  // TODO enqueue all (not only first 100)
+            enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
 
             IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
+            int waitMsec = INITIAL_INTERVAL;
             while (cond.getAsBoolean()) {
                 //boolean inced = prop.run();
                 //boolean retried = retryRetryWaitingTasks();
                 //if (inced || retried) {
-                //    enqueueReadyTasks(starter);
+                //    enqueueReadyTasks(queuer);
                 //    propagatorNotice = true;
                 //}
                 propagateAllBlockedToReady();
                 propagateAllPlannedToDone();
-                enqueueReadyTasks(starter);
+                enqueueReadyTasks(queuer);
 
                 propagatorLock.lock();
                 try {
                     if (propagatorNotice) {
                         propagatorNotice = false;
+                        waitMsec = INITIAL_INTERVAL;
                     }
                     else {
-                        propagatorCondition.await(2, TimeUnit.SECONDS);  // TODO use exponential back-off
+                        propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
+                        waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
                     }
                 }
                 finally {
@@ -352,17 +360,22 @@ public class SessionExecutor
         return sm.trySetRetryWaitingToReady() > 0;
     }
 
-    private class TaskStarter
+    private class TaskQueuer
             implements AutoCloseable
     {
         private final TaskQueueDispatcher dispatcher;
-        private final Map<Long, Future<Void>> waiting = new HashMap<>();
+        private final Map<Long, Future<Void>> waiting = new ConcurrentHashMap<>();
         private final ExecutorService executor;
 
-        public TaskStarter(TaskQueueDispatcher dispatcher)
+        public TaskQueuer(TaskQueueDispatcher dispatcher)
         {
             this.dispatcher = dispatcher;
-            this.executor = Executors.newCachedThreadPool();  // TODO thread name
+            this.executor = Executors.newCachedThreadPool(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("task-queuer-%d")
+                    .build()
+                    );
         }
 
         public void close()
@@ -373,28 +386,12 @@ public class SessionExecutor
             //executor.shutdownNow();
         }
 
-        public synchronized Future<Void> add(long taskId)
+        public synchronized Future<Void> add(final long taskId)
         {
             if (waiting.containsKey(taskId)) {
                 return waiting.get(taskId);
             }
-            Future<Void> future = executor.submit(new EnqueueTask(taskId));
-            waiting.put(taskId, future);
-            return future;
-        }
-
-        private class EnqueueTask
-                implements Callable<Void>
-        {
-            private final long taskId;
-
-            public EnqueueTask(long taskId)
-            {
-                this.taskId = taskId;
-            }
-
-            public Void call() throws Exception
-            {
+            Future<Void> future = executor.submit(() -> {
                 try {
                     enqueueTask(dispatcher, taskId);
                 }
@@ -402,19 +399,19 @@ public class SessionExecutor
                     logger.error("Uncaught exception", t);
                 }
                 finally {
-                    synchronized(this) {
-                        waiting.remove(taskId);
-                    }
+                    waiting.remove(taskId);
                 }
                 return null;
-            }
+            });
+            waiting.put(taskId, future);
+            return future;
         }
     }
 
-    private void enqueueReadyTasks(TaskStarter starter)
+    private void enqueueReadyTasks(TaskQueuer queuer)
     {
         for (long taskId : sm.findAllReadyTaskIds(100)) {  // TODO randomize this resut to achieve concurrency
-            starter.add(taskId);
+            queuer.add(taskId);
         }
     }
 

@@ -27,6 +27,7 @@ public class ResumeStateFileManager
 {
     private static Logger logger = LoggerFactory.getLogger(ResumeStateFileManager.class);
 
+    private final ConfigSourceFactory cf;
     private final SessionStoreManager sessionStoreManager;
     private final FileMapper mapper;
     private final Map<File, StoredSession> targets;
@@ -35,8 +36,9 @@ public class ResumeStateFileManager
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateFileManager(SessionStoreManager sessionStoreManager, FileMapper mapper)
+    private ResumeStateFileManager(ConfigSourceFactory cf, SessionStoreManager sessionStoreManager, FileMapper mapper)
     {
+        this.cf = cf;
         this.sessionStoreManager = sessionStoreManager;
         this.mapper = mapper;
         this.targets = new ConcurrentHashMap<>();
@@ -98,8 +100,10 @@ public class ResumeStateFileManager
             .getSessionStore(session.getSiteId())
             .getTasks(session.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
         for (StoredTask task : tasks) {
-            if (task.getReport().isPresent()) {
-                taskReports.put(task.getFullName(), task.getReport().get());
+            if (task.getState() == TaskStateCode.SUCCESS) {
+                taskReports.put(
+                        task.getFullName(),
+                        task.getReport().or(TaskReport.empty(cf)));  // grouping-only tasks don't have reports
             }
         }
         return ResumeState.of(taskReports.build());

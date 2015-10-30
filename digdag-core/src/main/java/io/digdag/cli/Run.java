@@ -26,6 +26,7 @@ public class Run
         OptionParser parser = Main.parser();
 
         parser.acceptsAll(asList("r", "resume-state")).withRequiredArg().ofType(String.class);
+        parser.acceptsAll(asList("P", "params-file")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
 
         OptionSet op = Main.parse(parser, args);
@@ -35,10 +36,11 @@ public class Run
         }
 
         Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
+        Optional<File> paramsFilePath = Optional.fromNullable((String) op.valueOf("P")).transform(it -> new File(it));
         Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
         File workflowPath = new File(argv.get(0));
 
-        new Run(workflowPath, resumeStateFilePath, visualizePath).run();
+        new Run(workflowPath, resumeStateFilePath, paramsFilePath, visualizePath).run();
     }
 
     private static SystemExitException usage(String error)
@@ -46,9 +48,9 @@ public class Run
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
         System.err.println("  Options:");
         System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
+        System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
         // TODO add -p, --param K=V
-        // TODO add -P, --params-file PATH.yml
         Main.showCommonOptions();
         System.err.println("");
         return systemExit(error);
@@ -77,12 +79,17 @@ public class Run
 
     private final File workflowPath;
     private final Optional<File> resumeStateFilePath;
+    private final Optional<File> paramsFilePath;
     private final Optional<File> visualizePath;
 
-    public Run(File workflowPath, Optional<File> resumeStateFilePath, Optional<File> visualizePath)
+    public Run(File workflowPath,
+            Optional<File> resumeStateFilePath,
+            Optional<File> paramsFilePath,
+            Optional<File> visualizePath)
     {
         this.workflowPath = workflowPath;
         this.resumeStateFilePath = resumeStateFilePath;
+        this.paramsFilePath = paramsFilePath;
         this.visualizePath = visualizePath;
     }
 
@@ -108,6 +115,11 @@ public class Run
         final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
+        ConfigSource params = cf.create();
+        if (paramsFilePath.isPresent()) {
+            params.setAll(mapper.readFile(paramsFilePath.get(), ConfigSource.class));
+        }
+
         Optional<ResumeState> resumeState = Optional.absent();
         if (resumeStateFilePath.isPresent() && mapper.checkExists(resumeStateFilePath.get())) {
             resumeState = Optional.of(mapper.readFile(resumeStateFilePath.get(), ResumeState.class));
@@ -121,7 +133,8 @@ public class Run
 
         StoredSession session = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
-                cf.create(), options).get(0);
+                params, options).get(0);
+        logger.debug("Submitting {}", session);
 
         localSite.startLocalAgent();
 

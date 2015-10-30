@@ -12,6 +12,8 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import io.digdag.DigdagEmbed;
@@ -22,6 +24,8 @@ import static java.util.Arrays.asList;
 
 public class Sched
 {
+    private static Logger logger = LoggerFactory.getLogger(Sched.class);
+
     public static void main(String command, String[] args)
             throws Exception
     {
@@ -140,8 +144,9 @@ public class Sched
             dir.mkdirs();
 
             StoredSession session = super.start(workflowId, timeZone, scheduleTime);
+            logger.debug("Submitting {}", session);
 
-            mapper.writeFile(new File(dir, "workflow.yml"), wf.getConfig());
+            mapper.writeFile(new File(dir, "workflow.yml"), ImmutableMap.of(wf.getName(), wf.getConfig()));
 
             mapper.writeFile(new File(dir, "params.yml"), session.getParams());
 
