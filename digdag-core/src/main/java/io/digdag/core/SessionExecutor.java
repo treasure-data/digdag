@@ -435,7 +435,7 @@ public class SessionExecutor
             }
             else {
                 try {
-                    ConfigSource params = collectTaskParams(task, session.getParams().deepCopy());
+                    ConfigSource params = collectTaskParams(task, session);
                     ConfigSource config = task.getConfig();  // TODO render using liquid?
                         Action action = Action.actionBuilder()
                         .taskId(task.getId())
@@ -445,8 +445,12 @@ public class SessionExecutor
                         .params(params)
                         .stateParams(task.getStateParams())
                         .build();
+
                     logger.debug("Queuing task: "+action);
                     dispatcher.dispatch(action);
+
+                    control.setReadyToRunning();
+
                     return true;
                 }
                 catch (Exception ex) {
@@ -544,9 +548,19 @@ public class SessionExecutor
         noticeStatusPropagate();
     }
 
-    private ConfigSource collectTaskParams(StoredTask task, ConfigSource result)
+    private ConfigSource collectTaskParams(StoredTask task, StoredSession session)
     {
         // TODO not accurate implementation
+        ConfigSource params = session.getParams().getFactory().create();
+        params.set("session_name", session.getName());
+        params.set("task_name", task.getFullName());
+        params.setAll(session.getParams());
+        params.setAll(task.getConfig().getNestedOrGetEmpty("params"));
+        return collectTaskParams(task, params);
+    }
+
+    private ConfigSource collectTaskParams(StoredTask task, ConfigSource result)
+    {
         Optional<Long> lastId = Optional.absent();
         while (true) {
             List<StoredTask> ses = sm.getSessionStore(task.getSiteId()).getTasks(task.getSessionId(), 1024, lastId);
@@ -577,12 +591,15 @@ public class SessionExecutor
         return Optional.of(task);
     }
 
-    private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, ConfigSource parentError, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
+    private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, ConfigSource error, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
     {
         ConfigSource subtaskConfig = detail.getConfig().getNestedOrGetEmpty("error");
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }
+
+        ConfigSource params = subtaskConfig.getNestedOrSetEmpty("params");
+        params.set("error", error);
 
         List<WorkflowTask> tasks = compiler.compileTasks(".error", subtaskConfig);
         if (tasks.isEmpty()) {

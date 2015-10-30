@@ -45,7 +45,7 @@ public class ScheduleStarter
 
         ConfigSource sessionParams = cf.create()
             .set("schedule_time", scheduleTime.getTime() / 1000)
-            .set("time_zone", timeZone.getID());
+            .set("timezone", timeZone.getID());
             //.set("time_zone_offset", /*how to calculate using TimeZone API? needs joda-time?*/)
 
         return Session.sessionBuilder()

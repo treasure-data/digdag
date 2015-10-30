@@ -110,6 +110,16 @@ public class TaskControl
         return store.collectChildrenErrors(id);
     }
 
+    public boolean setReadyToRunning()
+    {
+        // TODO checkState
+        if (store.setState(id, state, TaskStateCode.RUNNING)) {
+            state = TaskStateCode.RUNNING;
+            return true;
+        }
+        return false;
+    }
+
     // all necessary information is already set by setRunningToPlanned. Here simply set state to SUCCESS
     public boolean setPlannedToSuccess()
     {
