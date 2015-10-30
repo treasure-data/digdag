@@ -15,9 +15,10 @@ public class HistoryFiles
         this.dir = dir;
     }
 
-    public File getSessionDir(TimeZone timeZone, Date scheduleTime)
+    // returns dir/workflowName/yyyy-MM-dd-HHmmss
+    public File getSessionDir(WorkflowSource wf, TimeZone timeZone, Date scheduleTime)
     {
-        String name = new SimpleDateFormat("yyyy-MM-dd_HHmmss").format(scheduleTime);
-        return new File(dir, name);
+        String name = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(scheduleTime);
+        return new File(new File(dir, wf.getName()), name);
     }
 }

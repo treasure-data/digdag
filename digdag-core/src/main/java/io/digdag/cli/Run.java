@@ -45,7 +45,7 @@ public class Run
     {
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
         System.err.println("  Options:");
-        //System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
+        System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
         // TODO add -p, --param K=V
         // TODO add -P, --params-file PATH.yml

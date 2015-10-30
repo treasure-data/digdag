@@ -28,4 +28,7 @@ public interface TaskControlStore
     boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval);
 
     int trySetChildrenBlockedToReadyOrShortCircuitPlanned(long taskId);
+
+    //// trySetChildrenBlockedToReadyOrShortCircuitPlanned for root task
+    //boolean trySetBlockedToReadyOrShortCircuitPlanned(long taskId);
 }

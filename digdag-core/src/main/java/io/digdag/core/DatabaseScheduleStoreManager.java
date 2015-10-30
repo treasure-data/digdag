@@ -121,11 +121,11 @@ public class DatabaseScheduleStoreManager
                 handle.createStatement(
                         "delete from schedules" +
                         " where id in ("+
-                            "select id from schedules s" +
+                            "select s.id from schedules s" +
                             " join workflows wf on s.workflow_id = wf.id" +
                             " join revisions rev on wf.revision_id = rev.id" +
                             " where rev.repository_id = :repoId" +
-                            " and id not in (" + idList + ")" +
+                            " and s.id not in (" + idList + ")" +
                         ")"
                     )
                     .bind("repoId", repoId)
@@ -162,7 +162,7 @@ public class DatabaseScheduleStoreManager
                 " where next_run_time <= :currentTime" +
                 " limit :limit" +
                 " for update")
-        List<StoredSchedule> lockReadySchedules(@Bind("long") long currentTime, @Bind("limit") int limit);
+        List<StoredSchedule> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
 
         @SqlUpdate("update schedules" +
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
@@ -188,6 +188,7 @@ public class DatabaseScheduleStoreManager
                 .id(r.getLong("id"))
                 .workflowId(r.getInt("workflow_id"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
                 .nextScheduleTime(new Date(r.getLong("next_schedule_time") * 1000))
                 .createdAt(r.getTimestamp("created_at"))
                 .updatedAt(r.getTimestamp("updated_at"))

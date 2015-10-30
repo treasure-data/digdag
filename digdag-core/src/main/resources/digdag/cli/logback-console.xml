@@ -5,7 +5,7 @@
     </encoder>
   </appender>
 
-  <logger name="com.zaxxer.hikari.HikariDataSource" level="WARN"/>
+  <logger name="com.zaxxer.hikari" level="WARN"/>
 
   <root>
     <appender-ref ref="console"/>

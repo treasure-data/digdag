@@ -77,7 +77,7 @@ public class DigdagEmbed
                     new DatabaseModule(DatabaseStoreConfig.builder()
                         .type("h2")
                         //.url("jdbc:h2:../test")
-                        .url("jdbc:h2:mem:test")
+                        .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
                         .build()),
                 (binder) -> {
                     binder.bind(TaskApi.class).to(InProcessTaskApi.class).in(Scopes.SINGLETON);

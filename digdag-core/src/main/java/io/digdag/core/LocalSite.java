@@ -170,6 +170,12 @@ public class LocalSite
         storeWorkflows(workflowSources, Optional.of(currentTime));
     }
 
+    public void run()
+            throws InterruptedException
+    {
+        exec.run(dispatcher);
+    }
+
     public void runUntilAny()
             throws InterruptedException
     {

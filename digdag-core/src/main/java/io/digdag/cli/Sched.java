@@ -38,7 +38,7 @@ public class Sched
         File workflowPath = new File(argv.get(0));
 
         String workflowFileName = workflowPath.getName().replaceFirst("\\.\\w*$", "");
-        File outputPath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it)).or(
+        File outputPath = Optional.fromNullable((String) op.valueOf("o")).transform(it -> new File(it)).or(
                     new File(workflowPath.getParent(), workflowFileName));
 
         new Sched(workflowPath, outputPath).sched();
@@ -98,11 +98,12 @@ public class Sched
         List<WorkflowSource> workflowSources = Run.loadWorkflowSources(loader.loadFile(workflowPath));
 
         localSite.scheduleWorkflows(workflowSources, new Date());
+        // TODO set next schedule time from history
 
         localSite.startLocalAgent();
         localSite.startScheduler();
 
-        localSite.runUntilAny();
+        localSite.run();
     }
 
     private static class ScheduleStarterWithResumeState
@@ -135,16 +136,16 @@ public class Sched
         {
             StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-            File dir = hist.getSessionDir(timeZone, scheduleTime);
+            File dir = hist.getSessionDir(wf, timeZone, scheduleTime);
             dir.mkdirs();
 
             StoredSession session = super.start(workflowId, timeZone, scheduleTime);
 
-            mapper.writeFile(new File("workflow.yml"), wf.getConfig());
+            mapper.writeFile(new File(dir, "workflow.yml"), wf.getConfig());
 
-            mapper.writeFile(new File("params.yml"), session.getParams());
+            mapper.writeFile(new File(dir, "params.yml"), session.getParams());
 
-            resumeStateFiles.startUpdate(new File("state.yml"), session);
+            resumeStateFiles.startUpdate(new File(dir, "state.yml"), session);
 
             return session;
         }

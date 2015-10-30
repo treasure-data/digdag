@@ -74,7 +74,7 @@ public class SessionExecutor
                 .fullName(root.getName())
                 .config(root.getConfig())
                 .taskType(root.getTaskType())
-                .state(TaskStateCode.READY)
+                .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
                 .build();
             store.addRootTask(rootTask, (control, lockedRootTask) -> {
                 control.addSubtasks(lockedRootTask, sub, 0);
@@ -116,14 +116,17 @@ public class SessionExecutor
             propagateAllPlannedToDone();
             enqueueReadyTasks(starter);  // TODO enqueue all (not only first 100)
 
-            IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);
+            IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             while (cond.getAsBoolean()) {
-                boolean inced = prop.run();
-                boolean retried = retryRetryWaitingTasks();
-                if (inced || retried) {
-                    enqueueReadyTasks(starter);
-                    propagatorNotice = true;
-                }
+                //boolean inced = prop.run();
+                //boolean retried = retryRetryWaitingTasks();
+                //if (inced || retried) {
+                //    enqueueReadyTasks(starter);
+                //    propagatorNotice = true;
+                //}
+                propagateAllBlockedToReady();
+                propagateAllPlannedToDone();
+                enqueueReadyTasks(starter);
 
                 propagatorLock.lock();
                 try {
@@ -165,10 +168,11 @@ public class SessionExecutor
                         return false;
                     }
                     else {
-                        // root task
-                        return sm.lockTask(task.getId(), (TaskControl lockedRoot) -> {
-                            return lockedRoot.setRootPlannedToReady();
-                        }).or(false);
+                        // root task can't be BLOCKED. See submitWorkflow
+                        return false;
+                        //return sm.lockTask(task.getId(), (TaskControl lockedRoot) -> {
+                        //    return lockedRoot.setRootPlannedToReady();
+                        //}).or(false);
                     }
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
@@ -444,6 +448,7 @@ public class SessionExecutor
                         .params(params)
                         .stateParams(task.getStateParams())
                         .build();
+                    logger.debug("Queuing task: "+action);
                     dispatcher.dispatch(action);
                     return true;
                 }
@@ -500,8 +505,8 @@ public class SessionExecutor
             ConfigSource error, ConfigSource stateParams,
             Optional<Integer> retryInterval)
     {
-        logger.trace("Action {} failed with error {} with ",
-                task, error, retryInterval.transform(it -> "retrying after "+it+" seconds").or("no retry"));
+        logger.trace("Task failed with error {} with {}: {}",
+                error, retryInterval.transform(it -> "retrying after "+it+" seconds").or("no retry"), task);
 
         // task failed. add .error tasks
         Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error, retryInterval, false);
@@ -523,8 +528,8 @@ public class SessionExecutor
             ConfigSource stateParams, ConfigSource subtaskConfig,
             ConfigSource carryParams, TaskReport report)
     {
-        logger.trace("Action {} succeeded with carry parameters {}",
-                task, carryParams);
+        logger.trace("Task succeeded with carry parameters {}: {}",
+                carryParams, task);
 
         // task successfully finished. add .sub and .check tasks
         Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(control, task, subtaskConfig);

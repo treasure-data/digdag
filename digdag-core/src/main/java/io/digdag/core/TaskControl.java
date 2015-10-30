@@ -172,22 +172,19 @@ public class TaskControl
     }
 
     // collect parameters and set them to ready tasks at the same time? no, because children's carry_params are not propagated to parents
-    public long trySetChildrenBlockedToReadyOrShortCircuitPlanned()
+    public int trySetChildrenBlockedToReadyOrShortCircuitPlanned()
     {
         // TODO checkState
         return store.trySetChildrenBlockedToReadyOrShortCircuitPlanned(id);
     }
 
-    // trySetChildrenBlockedToReadyOrShortCircuitPlanned for root tasks
-    public boolean setRootPlannedToReady()
-    {
-        // TODO checkState
-        if (store.setState(id, state, TaskStateCode.READY)) {
-            state = TaskStateCode.READY;
-            return true;
-        }
-        return false;
-    }
+    //// trySetChildrenBlockedToReadyOrShortCircuitPlanned for root tasks
+    //public boolean setRootPlannedToReady()
+    //{
+    //    // TODO checkState
+    //    return store.trySetBlockedToReadyOrShortCircuitPlanned(id);
+    //    // TODO set state
+    //}
 
     ////
     // for taskFinished callback

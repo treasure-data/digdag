@@ -321,6 +321,20 @@ public class DatabaseSessionStoreManager
             .execute();
     }
 
+    //public boolean trySetBlockedToReadyOrShortCircuitPlanned(long taskId)
+    //{
+    //    int n = handle.createStatement("update tasks " +
+    //            " set updated_at = now(), state = case task_type" +
+    //            " when " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
+    //            " else " + TaskStateCode.READY_CODE +
+    //            " end" +
+    //            " where state = " + TaskStateCode.BLOCKED_CODE +
+    //            " and id = :taskId")
+    //        .bind("taskId", taskId)
+    //        .execute();
+    //    return n > 0;
+    //}
+
     private class DatabaseSessionStore
             implements SessionStore
     {

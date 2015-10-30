@@ -32,6 +32,7 @@ public class DatabaseRepositoryStoreManager
         handle.registerMapper(new StoredRepositoryMapper(cfm));
         handle.registerMapper(new StoredRevisionMapper(cfm));
         handle.registerMapper(new StoredWorkflowSourceMapper(cfm));
+        handle.registerMapper(new StoredWorkflowSourceWithRepositoryMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
     }
@@ -43,7 +44,7 @@ public class DatabaseRepositoryStoreManager
 
     public StoredWorkflowSourceWithRepository getWorkflowDetailsById(int wfId)
     {
-        throw new UnsupportedOperationException("not implemented yet");
+        return dao.getWorkflowDetailsById(wfId);
     }
 
     private class DatabaseRepositoryStore
@@ -242,37 +243,45 @@ public class DatabaseRepositoryStoreManager
         int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("globalParams") ConfigSource globalParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
 
 
-        @SqlQuery("select t.* from workflows t" +
-                " join revisions on revisions.id = t.revision_id" +
-                " join repositories on repositories.id = revisions.repository_id" +
-                " and t.revision_id = :revId" +
-                " and t.id > :lastId" +
-                " order by t.id desc" +
+        @SqlQuery("select w.* from workflows w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " and w.revision_id = :revId" +
+                " and w.id > :lastId" +
+                " order by w.id desc" +
                 " limit :limit")
         List<StoredWorkflowSource> getWorkflows(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select t.* from workflows t" +
-                " join revisions on revisions.id = t.revision_id" +
-                " join repositories on repositories.id = revisions.repository_id" +
+        @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name" +
+                " from workflows w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where w.id = :wfId")
+        StoredWorkflowSourceWithRepository getWorkflowDetailsById(@Bind("wfId") int wfId);
+
+        @SqlQuery("select w.* from workflows w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and t.id = :id" +
+                " and w.id = :id" +
                 " limit 1")
         StoredWorkflowSource getWorkflowById(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select t.* from workflows t" +
-                " join revisions on revisions.id = t.revision_id" +
-                " join repositories on repositories.id = revisions.repository_id" +
+        @SqlQuery("select w.* from workflows w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and revision_id = :revId" +
                 " and name = :name" +
                 " limit 1")
         StoredWorkflowSource getWorkflowByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
-        @SqlQuery("select t.* from workflows t" +
-                " join revisions on revisions.id = t.revision_id" +
-                " join repositories on repositories.id = revisions.repository_id" +
+        @SqlQuery("select w.* from workflows w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and t.revision_id = :revId" +
+                " and w.revision_id = :revId" +
                 " order by id desc" +
                 " limit 1")
         StoredWorkflowSource getLatestActiveWorkflow(@Bind("siteId") int siteId, @Bind("revId") int revId);
@@ -303,9 +312,7 @@ public class DatabaseRepositoryStoreManager
                 .siteId(r.getInt("site_id"))
                 .createdAt(r.getTimestamp("created_at"))
                 .updatedAt(r.getTimestamp("updated_at"))
-                //.latestRevisionId(r.getInt("latest_revision_id"))
                 .name(r.getString("name"))
-                //.config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
         }
     }
@@ -357,6 +364,37 @@ public class DatabaseRepositoryStoreManager
                 .revisionId(r.getInt("revision_id"))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .build();
+        }
+    }
+
+    private static class StoredWorkflowSourceWithRepositoryMapper
+            implements ResultSetMapper<StoredWorkflowSourceWithRepository>
+    {
+        private final ConfigSourceMapper cfm;
+
+        public StoredWorkflowSourceWithRepositoryMapper(ConfigSourceMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredWorkflowSourceWithRepository map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredWorkflowSourceWithRepository.builder()
+                .id(r.getInt("id"))
+                .revisionId(r.getInt("revision_id"))
+                .name(r.getString("name"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .repository(
+                        ImmutableStoredRepository.builder()
+                            .id(r.getInt("repo_id"))
+                            .siteId(r.getInt("site_id"))
+                            .createdAt(r.getTimestamp("repo_created_at"))
+                            .updatedAt(r.getTimestamp("repo_updated_at"))
+                            .name(r.getString("repo_name"))
+                            .build())
                 .build();
         }
     }

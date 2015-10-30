@@ -32,7 +32,7 @@ public class RepositoryControl
     }
 
     public void syncSchedulesTo(ScheduleStore schedStore, SchedulerManager scheds,
-            Date currentTime, StoredRevision revision)
+            Date currentTime, StoredRevision revision)  // TODO here needs ScheduleOptions
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         Optional<Integer> lastId = Optional.absent();
