@@ -12,9 +12,9 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableScheduleTime.class)
 public abstract class ScheduleTime
 {
-    public abstract Date getNextRunTime();
+    public abstract Date getRunTime();
 
-    public abstract Date getNextScheduleTime();
+    public abstract Date getScheduleTime();
 
     public static ImmutableScheduleTime.Builder builder()
     {
@@ -24,15 +24,15 @@ public abstract class ScheduleTime
     public static ScheduleTime of(Date nextRunTime, Date nextScheduleTime)
     {
         return builder()
-            .nextRunTime(nextRunTime)
-            .nextScheduleTime(nextScheduleTime)
+            .runTime(nextRunTime)
+            .scheduleTime(nextScheduleTime)
             .build();
     }
 
     @Value.Check
     protected void check()
     {
-        checkState(getNextRunTime().getTime() % (1000) == 0, "Next run time must be aligned with second");
-        checkState(getNextScheduleTime().getTime() % (60*1000) == 0, "Next schedule time must be aligned with minute");
+        checkState(getRunTime().getTime() % (1000) == 0, "Run time must be aligned with second");
+        checkState(getScheduleTime().getTime() % (60*1000) == 0, "Schedule time must be aligned with minute");
     }
 }

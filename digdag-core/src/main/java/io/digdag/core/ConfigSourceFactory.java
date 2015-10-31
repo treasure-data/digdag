@@ -23,4 +23,9 @@ public class ConfigSourceFactory
     {
         return new ConfigSource(objectMapper, object);
     }
+
+    public ConfigSource create(Object other)
+    {
+        return create().set("_", other).getNested("_");
+    }
 }

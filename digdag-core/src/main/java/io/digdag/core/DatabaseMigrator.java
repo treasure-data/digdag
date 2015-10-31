@@ -181,13 +181,14 @@ public class DatabaseMigrator
                     new CreateTableBuilder("schedules")
                     .addLongId("id")
                     .addInt("workflow_id", "not null")
+                    .addShort("schedule_type", "not null")
                     .addMediumText("config", "")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create unique index if not exists schedules_on_workflow_id on schedules (workflow_id)");
+            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_id)");
             handle.update("create unique index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // queues

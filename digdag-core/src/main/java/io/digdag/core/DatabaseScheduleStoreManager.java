@@ -58,10 +58,10 @@ public class DatabaseScheduleStoreManager
                 .stream()
                 .map(sched -> {
                     try {
-                        ScheduleTime time = func.schedule(sched);
+                        ScheduleTime nextTime = func.schedule(sched);
                         dao.updateNextScheduleTime(sched.getId(),
-                                time.getNextRunTime().getTime() / 1000,
-                                time.getNextScheduleTime().getTime() / 1000);
+                                nextTime.getRunTime().getTime() / 1000,
+                                nextTime.getScheduleTime().getTime() / 1000);
                         return null;
                     }
                     catch (RuntimeException ex) {
@@ -112,7 +112,8 @@ public class DatabaseScheduleStoreManager
                 final long[] ids = new long[schedules.size()];
                 int i = 0;
                 for (Schedule schedule : schedules) {
-                    ids[i] = dao.insertSchedule(schedule.getWorkflowId(), schedule.getConfig(),
+                    ids[i] = dao.insertRepositorySchedule(
+                            schedule.getWorkflowId(), schedule.getScheduleType().get(), schedule.getConfig(),
                             schedule.getNextRunTime().getTime() / 1000,
                             schedule.getNextScheduleTime().getTime() / 1000);
                     i++;
@@ -153,10 +154,10 @@ public class DatabaseScheduleStoreManager
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlUpdate("insert into schedules" +
-                " (workflow_id, config, next_run_time, next_schedule_time, created_at, updated_at)" +
-                " values (:workflowId, :config, :nextRunTime, :nextScheduleTime, now(), now())")
+                " (workflow_id, schedule_type, config, next_run_time, next_schedule_time, created_at, updated_at)" +
+                " values (:workflowId, :scheduleType, :config, :nextRunTime, :nextScheduleTime, now(), now())")
         @GetGeneratedKeys
-        long insertSchedule(@Bind("workflowId") int workflowId, @Bind("config") ConfigSource config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        long insertRepositorySchedule(@Bind("workflowId") int workflowId, @Bind("scheduleType") int scheduleType, @Bind("config") ConfigSource config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlQuery("select * from schedules" +
                 " where next_run_time <= :currentTime" +
@@ -187,6 +188,7 @@ public class DatabaseScheduleStoreManager
             return ImmutableStoredSchedule.builder()
                 .id(r.getLong("id"))
                 .workflowId(r.getInt("workflow_id"))
+                .scheduleType(ScheduleType.of(r.getInt("schedule_type")))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
                 .nextScheduleTime(new Date(r.getLong("next_schedule_time") * 1000))

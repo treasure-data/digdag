@@ -83,6 +83,11 @@ public class ConfigSource
         return object.has(key);
     }
 
+    public <E> E convert(Class<E> type)
+    {
+        return readObject(type, object);
+    }
+
     public <E> E get(String key, Class<E> type)
     {
         JsonNode value = object.get(key);

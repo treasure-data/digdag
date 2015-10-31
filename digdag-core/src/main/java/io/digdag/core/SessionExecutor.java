@@ -51,7 +51,7 @@ public class SessionExecutor
         this.cf = cf;
     }
 
-    public StoredSession submitWorkflow(int siteId, StoredWorkflowSource workflowSource, Session newSession, SessionNamespace namespace)
+    public StoredSession submitWorkflow(int siteId, WorkflowSource workflowSource, Session newSession, SessionNamespace namespace)
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();

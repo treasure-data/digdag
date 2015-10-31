@@ -10,5 +10,5 @@ public interface ScheduleStore
 
     List<StoredSchedule> getSchedules(int pageSize, Optional<Long> lastId);
 
-    List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules);
+    List<StoredSchedule> syncRepositorySchedules(int syncRepoId, List<Schedule> schedules);
 }

@@ -1,7 +1,6 @@
 package io.digdag.core;
 
 import java.util.Date;
-import com.google.common.base.Optional;
 
 public interface ScheduleStoreManager
 {

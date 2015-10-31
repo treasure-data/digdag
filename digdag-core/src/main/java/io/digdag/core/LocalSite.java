@@ -25,6 +25,7 @@ public class LocalSite
     private final ScheduleStore scheduleStore;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
+    private final SlaExecutor slaExecutor;
     private boolean schedulerStarted;
 
     @Inject
@@ -40,8 +41,8 @@ public class LocalSite
             DatabaseMigrator databaseMigrator,
             ScheduleStoreManager scheduleStoreManager,
             SchedulerManager scheds,
-            ScheduleExecutor scheduleExecutor
-            )
+            ScheduleExecutor scheduleExecutor,
+            SlaExecutor slaExecutor)
     {
         this.cf = cf;
         this.loader = loader;
@@ -56,6 +57,7 @@ public class LocalSite
         this.scheduleStore = scheduleStoreManager.getScheduleStore(0);
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
+        this.slaExecutor = slaExecutor;
     }
 
     public SessionStore getSessionStore()
@@ -119,7 +121,7 @@ public class LocalSite
                         .collect(Collectors.toList());
                     if (currentTimeToSchedule.isPresent()) {
                         repoControl.syncSchedulesTo(scheduleStore, scheds,
-                                currentTimeToSchedule.get(), rev);
+                                slaExecutor, currentTimeToSchedule.get(), rev);
                     }
                     return new StoreWorkflow(rev, storedWorkflows);
                 });
