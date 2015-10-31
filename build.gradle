@@ -19,10 +19,6 @@ subprojects {
     repositories {
         mavenCentral()
         jcenter()
-        maven {
-            // guice-bootstrap is not synced to jcenter yet
-            url 'https://dl.bintray.com/embulk/maven'
-        }
     }
 
     sourceCompatibility = 1.8
