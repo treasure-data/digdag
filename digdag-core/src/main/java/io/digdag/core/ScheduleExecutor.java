@@ -64,7 +64,7 @@ public class ScheduleExecutor
         Date scheduleTime = sched.getNextScheduleTime();
         ScheduleTime next;
         if (sched.getScheduleType().isSlaTask()) {
-            next = slaExecutor.slaTrigger(sched);
+            next = slaExecutor.triggerSla(sched);
         }
         else {
             Scheduler sr = scheds.getScheduler(sched.getConfig());

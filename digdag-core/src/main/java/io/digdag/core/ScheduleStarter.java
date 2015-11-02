@@ -2,6 +2,7 @@ package io.digdag.core;
 
 import java.util.List;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.text.SimpleDateFormat;
 import com.google.inject.Inject;
@@ -39,7 +40,7 @@ public class ScheduleStarter
     private static Session createScheduleSession(ConfigSourceFactory cf,
             TimeZone timeZone, Date scheduleTime)
     {
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
         df.setTimeZone(timeZone);
         String sessionName = df.format(scheduleTime);
 

@@ -14,9 +14,17 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableSla.class)
 public abstract class Sla
 {
+    public abstract int getSiteId();
+
+    public abstract int getRepositoryId();
+
+    public abstract int getWorkflowId();
+
     public abstract Optional<Integer> getHour();
 
     public abstract Optional<Integer> getMinute();
+
+    public abstract ConfigSource getTask();
 
     // TODO more config here
 

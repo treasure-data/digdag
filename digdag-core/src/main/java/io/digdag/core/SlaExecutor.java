@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.text.SimpleDateFormat;
 import com.google.common.base.*;
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
@@ -15,6 +16,7 @@ public class SlaExecutor
 {
     private static Logger logger = LoggerFactory.getLogger(PyTaskExecutorFactory.class);
 
+    private final ConfigSourceFactory cf;
     private final SchedulerManager scheds;
     private final ScheduleStoreManager sm;
     private final RepositoryStoreManager rm;
@@ -22,11 +24,13 @@ public class SlaExecutor
 
     @Inject
     public SlaExecutor(
+            ConfigSourceFactory cf,
             SchedulerManager scheds,
             ScheduleStoreManager sm,
             RepositoryStoreManager rm,
             SessionExecutor exec)
     {
+        this.cf = cf;
         this.scheds = scheds;
         this.sm = sm;
         this.rm = rm;
@@ -35,12 +39,13 @@ public class SlaExecutor
 
     public List<Schedule> getSlaTriggerSchedules(StoredWorkflowSource wf, ConfigSource schedulerConfig, ScheduleTime firstWorkflowTime)
     {
+        // TODO support list
         ConfigSource config = wf.getConfig().getNestedOrGetEmpty("sla");
         if (config.isEmpty()) {
             return ImmutableList.of();
         }
 
-        Sla sla = getSla(config);
+        Sla sla = getSla(wf.getId(), config);
         Scheduler sr = scheds.getScheduler(schedulerConfig);
         ScheduleTime triggerTime = nextSlaScheduleTimeFromWorkflowTime(sla, sr, firstWorkflowTime);
 
@@ -48,7 +53,7 @@ public class SlaExecutor
             .sla(sla)
             .scheduler(schedulerConfig)
             .build();
-        ConfigSource slaData = schedulerConfig.getFactory().create(slaSched);
+        ConfigSource slaData = cf.create(slaSched);
 
         Schedule trigger = Schedule.ofSla(
                 wf.getId(),
@@ -58,31 +63,61 @@ public class SlaExecutor
         return ImmutableList.of(trigger);
     }
 
-    private static Sla getSla(ConfigSource config)
+    private static Sla getSla(int workflowId, ConfigSource config)
     {
         // TODO improve parse logic
-        String time = config.get("time", String.class);
-        String[] hm = time.split(":", 2);
-        Optional<Integer> hour = Optional.of(Integer.parseInt(hm[0]));
-        Optional<Integer> minute = Optional.of(Integer.parseInt(hm[1]));
+        Optional<Integer> hour;
+        Optional<Integer> minute;
+        try {
+            int seconds = config.get("time", Integer.class);
+            hour = Optional.of(seconds / 60 / 60);
+            minute = Optional.of(seconds / 60 % 60);
+        }
+        catch (RuntimeException ex) {
+            String time = config.get("time", String.class);
+            String[] hm = time.split(":", 2);
+            hour = Optional.of(Integer.parseInt(hm[0]));
+            minute = Optional.of(Integer.parseInt(hm[1]));
+        }
 
         return Sla.builder()
+            .workflowId(workflowId)
             .hour(hour)
             .minute(minute)
+            .task(config)  // TODO take only keys starting with "+"
             .build();
     }
 
-    public ScheduleTime slaTrigger(Schedule schedule)
+    public ScheduleTime triggerSla(Schedule schedule)
     {
         logger.debug("Triggering SLA scheduled as {}", schedule);
 
-        // TODO submit SLA tasks to SessionExecutor
-
         ConfigSource slaData = schedule.getConfig();
+
         SlaSchedule slaSched = slaData.convert(SlaSchedule.class);
+        Sla sla = slaSched.getSla();
         Scheduler sr = scheds.getScheduler(slaSched.getScheduler());
-        Date lastWorkflowScheduleTime = schedule.getNextScheduleTime();
-        return nextSlaScheduleTimeFromWorkflowTime(slaSched.getSla(), sr, sr.nextScheduleTime(lastWorkflowScheduleTime));
+
+        // calculate next trigger time
+        Date thisWorkflowScheduleTime = schedule.getNextScheduleTime();
+        ScheduleTime nextSlaScheduleTime = nextSlaScheduleTimeFromWorkflowTime(sla, sr, sr.nextScheduleTime(thisWorkflowScheduleTime));
+
+        // submit SLA tasks to SessionExecutor if necessary
+        StoredWorkflowSourceWithRepository workflow = rm.getWorkflowDetailsById(sla.getWorkflowId());
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
+        df.setTimeZone(sr.getTimeZone());
+        String sessionName = "SLA " + df.format(thisWorkflowScheduleTime);  // TODO include index once multiple SLAs per workflow is supported
+        Session session = Session.sessionBuilder()
+            .name(sessionName)
+            .params(cf.create())  // TODO
+            .options(SessionOptions.empty())
+            .build();
+        exec.submitWorkflow(sla.getSiteId(),
+                WorkflowSource.of("sla", sla.getTask()),
+                session,
+                SessionNamespace.ofWorkflow(workflow.getRepository().getId(), workflow.getId()));
+
+        return nextSlaScheduleTime;
     }
 
     private ScheduleTime nextSlaScheduleTimeFromWorkflowTime(Sla sla, Scheduler sr, ScheduleTime workflowTime)

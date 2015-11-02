@@ -228,15 +228,15 @@ public class DatabaseMigrator
                     .addTimestamp("updated_at", "not null")
                     .build());
 
-            // session_namespaces
+            // session_relations
             handle.update(
-                    new CreateTableBuilder("session_namespaces")
-                    .addLongId("id")
+                    new CreateTableBuilder("session_relations")
+                    .addLongId("id")  // references sessions.id
                     .addInt("repository_id", "")     // null if one-time workflow
                     .addInt("workflow_id", "")       // null if one-time workflow
                     .build());
-            handle.update("create index if not exists session_relations_on_repository_id_and_id on session_namespaces (repository_id, id)");
-            handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_namespaces (workflow_id, id)");
+            handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
+            handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_relations (workflow_id, id)");
 
             // tasks
             handle.update(

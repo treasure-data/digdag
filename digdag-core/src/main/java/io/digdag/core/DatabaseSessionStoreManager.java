@@ -145,17 +145,17 @@ public class DatabaseSessionStoreManager
             if (namespace.getWorkflowId().isPresent()) {
                 // namespace is workflow id
                 sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, namespace.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionNamespace(sesId, namespace.getRepositoryId().get(), namespace.getWorkflowId().get());
+                dao.insertSessionRelation(sesId, namespace.getRepositoryId().get(), namespace.getWorkflowId().get());
             }
             else if (namespace.getRepositoryId().isPresent()) {
                 // namespace is repository
                 sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, namespace.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionNamespace(sesId, namespace.getRepositoryId().get(), null);
+                dao.insertSessionRelation(sesId, namespace.getRepositoryId().get(), null);
             }
             else {
                 // namespace is site
                 sesId = dao.insertSession(siteId, NAMESPACE_SITE_ID, siteId, newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionNamespace(sesId, null, null);
+                dao.insertSessionRelation(sesId, null, null);
             }
             StoredSession session = dao.getSessionById(siteId, sesId);
             func.call(session, this);
@@ -426,9 +426,9 @@ public class DatabaseSessionStoreManager
         long insertSession(@Bind("siteId") int siteId,  @Bind("namespaceType") short namespaceType,
                 @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") ConfigSource params, @Bind("options") SessionOptions options);
 
-        @SqlUpdate("insert into session_namespaces (id, repository_id, workflow_id)" +
+        @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +
                 " values (:id, :repositoryId, :workflowId)")
-        void insertSessionNamespace(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
+        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
                 @Bind("workflowId") Integer workflowId);
 
         @SqlQuery("select state from tasks t" +
