@@ -24,17 +24,17 @@ public class ScheduleStarter
         this.exec = exec;
     }
 
-    public StoredSession start(int workflowId, TimeZone timeZone, Date scheduleTime)
+    public StoredSession start(int workflowId, TimeZone timeZone, ScheduleTime time)
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-        Session trigger = createScheduleSession(cf, timeZone, scheduleTime);
+        Session trigger = createScheduleSession(cf, timeZone, time.getScheduleTime());
 
         return exec.submitWorkflow(
-                wf.getRepository().getSiteId(),
                 wf,
                 trigger,
-                SessionNamespace.ofWorkflow(wf.getRepository().getId(), wf.getId()));
+                SessionRelation.ofWorkflow(wf.getRepository().getSiteId(), wf.getRepository().getId(), wf.getId()),
+                time.getRunTime());
     }
 
     private static Session createScheduleSession(ConfigSourceFactory cf,

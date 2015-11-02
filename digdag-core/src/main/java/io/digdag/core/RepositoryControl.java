@@ -32,7 +32,7 @@ public class RepositoryControl
     }
 
     public void syncSchedulesTo(ScheduleStore schedStore, SchedulerManager scheds,
-            SlaExecutor slaExecutor, Date currentTime, StoredRevision revision)  // TODO here needs ScheduleOptions
+            Date currentTime, StoredRevision revision)  // TODO here needs ScheduleOptions
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         Optional<Integer> lastId = Optional.absent();
@@ -42,17 +42,14 @@ public class RepositoryControl
                 break;
             }
             for (StoredWorkflowSource wf : wfs) {
-                ConfigSource schedulerConfig = wf.getConfig().getNestedOrGetEmpty("schedule");
-                if (schedulerConfig.isEmpty()) {
-                    continue;
+                Optional<ConfigSource> schedulerConfig = scheds.getSchedulerConfig(wf);
+                if (schedulerConfig.isPresent()) {
+                    Scheduler sr = scheds.getScheduler(schedulerConfig.get());
+                    ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
+                    Schedule schedule = Schedule.of(wf.getId(), schedulerConfig.get(),
+                            firstTime.getRunTime(), firstTime.getScheduleTime());
+                    schedules.add(schedule);
                 }
-                Scheduler sr = scheds.getScheduler(schedulerConfig);
-                ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
-                Schedule schedule = Schedule.of( wf.getId(), schedulerConfig,
-                        firstTime.getRunTime(), firstTime.getScheduleTime());
-                schedules.add(schedule);
-                schedules.addAll(slaExecutor.getSlaTriggerSchedules(
-                            wf, schedulerConfig, firstTime));
             }
             lastId = Optional.of(wfs.get(wfs.size() - 1).getId());
         }

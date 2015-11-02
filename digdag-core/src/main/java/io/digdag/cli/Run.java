@@ -1,6 +1,7 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.Date;
 import java.util.stream.Collectors;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -133,10 +134,12 @@ public class Run
 
         StoredSession session = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
-                params, options).get(0);
+                params, options,
+                new Date()).get(0);
         logger.debug("Submitting {}", session);
 
         localSite.startLocalAgent();
+        localSite.startMonitor();
 
         if (resumeStateFilePath.isPresent()) {
             rsm.startUpdate(resumeStateFilePath.get(), session);

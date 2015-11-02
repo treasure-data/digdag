@@ -181,7 +181,6 @@ public class DatabaseMigrator
                     new CreateTableBuilder("schedules")
                     .addLongId("id")
                     .addInt("workflow_id", "not null")
-                    .addShort("schedule_type", "not null")
                     .addMediumText("config", "")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
@@ -218,6 +217,19 @@ public class DatabaseMigrator
                     .build());
             handle.update("create unique index if not exists sessions_on_namespace_and_name on sessions (namespace_id, name, namespace_type)");
             handle.update("create index if not exists sessions_on_site_id_and_id on sessions (site_id, id)");
+
+            // session_monitors
+            handle.update(
+                    new CreateTableBuilder("session_monitors")
+                    .addLongId("id")
+                    .addInt("session_id", "not null")
+                    .addMediumText("config", "not null")
+                    .addLong("next_run_time", "not null")
+                    .addTimestamp("created_at", "not null")
+                    .addTimestamp("updated_at", "not null")
+                    .build());
+            handle.update("create index if not exists session_monitors_on_workflow_id on session_monitors (session_id)");
+            handle.update("create unique index if not exists session_monitors_on_next_run_time on session_monitors (next_run_time)");
 
             // session_archives
             handle.update(

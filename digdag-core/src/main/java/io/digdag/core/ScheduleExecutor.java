@@ -18,11 +18,10 @@ public class ScheduleExecutor
     private final ScheduleStoreManager sm;
     private final SchedulerManager scheds;
     private final ScheduleStarter starter;
-    private final SlaExecutor slaExecutor;
 
     @Inject
     public ScheduleExecutor(ScheduleStoreManager sm, SchedulerManager scheds,
-            ScheduleStarter starter, SlaExecutor slaExecutor)
+            ScheduleStarter starter)
     {
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
@@ -33,7 +32,6 @@ public class ScheduleExecutor
         this.sm = sm;
         this.scheds = scheds;
         this.starter = starter;
-        this.slaExecutor = slaExecutor;
     }
 
     public void start()
@@ -62,15 +60,9 @@ public class ScheduleExecutor
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();
-        ScheduleTime next;
-        if (sched.getScheduleType().isSlaTask()) {
-            next = slaExecutor.triggerSla(sched);
-        }
-        else {
-            Scheduler sr = scheds.getScheduler(sched.getConfig());
-            starter.start(sched.getWorkflowId(), sr.getTimeZone(), scheduleTime);
-            next = sr.nextScheduleTime(scheduleTime);
-        }
-        return next;
+        Scheduler sr = scheds.getScheduler(sched.getConfig());
+        starter.start(sched.getWorkflowId(), sr.getTimeZone(),
+                ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
+        return sr.nextScheduleTime(scheduleTime);
     }
 }

@@ -17,6 +17,15 @@ public class SchedulerManager
         this.types = ImmutableList.copyOf(factories);
     }
 
+    public Optional<ConfigSource> getSchedulerConfig(WorkflowSource workflow)
+    {
+        ConfigSource schedulerConfig = workflow.getConfig().getNestedOrGetEmpty("schedule");
+        if (schedulerConfig.isEmpty()) {
+            return Optional.absent();
+        }
+        return Optional.of(schedulerConfig);
+    }
+
     public Scheduler getScheduler(ConfigSource config)
     {
         for (SchedulerFactory type : types) {

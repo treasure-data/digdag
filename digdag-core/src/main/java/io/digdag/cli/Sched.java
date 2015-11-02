@@ -106,6 +106,7 @@ public class Sched
 
         localSite.startLocalAgent();
         localSite.startScheduler();
+        localSite.startMonitor();
 
         localSite.run();
     }
@@ -136,14 +137,14 @@ public class Sched
         }
 
         @Override
-        public StoredSession start(int workflowId, TimeZone timeZone, Date scheduleTime)
+        public StoredSession start(int workflowId, TimeZone timeZone, ScheduleTime time)
         {
             StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-            File dir = hist.getSessionDir(wf, timeZone, scheduleTime);
+            File dir = hist.getSessionDir(wf, timeZone, time.getScheduleTime());
             dir.mkdirs();
 
-            StoredSession session = super.start(workflowId, timeZone, scheduleTime);
+            StoredSession session = super.start(workflowId, timeZone, time);
             logger.debug("Submitting {}", session);
 
             mapper.writeFile(new File(dir, "workflow.yml"), ImmutableMap.of(wf.getName(), wf.getConfig()));

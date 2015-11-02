@@ -33,6 +33,7 @@ public class SessionExecutor
     private static final Logger logger = LoggerFactory.getLogger(SessionExecutor.class);
 
     private final SessionStoreManager sm;
+    private final SessionMonitorManager monitorManager;
     private final WorkflowCompiler compiler;
     private final ConfigSourceFactory cf;
 
@@ -44,17 +45,22 @@ public class SessionExecutor
     public SessionExecutor(
             SessionStoreManager sm,
             WorkflowCompiler compiler,
+            SessionMonitorManager monitorManager,
             ConfigSourceFactory cf)
     {
         this.sm = sm;
         this.compiler = compiler;
+        this.monitorManager = monitorManager;
         this.cf = cf;
     }
 
-    public StoredSession submitWorkflow(int siteId, WorkflowSource workflowSource, Session newSession, SessionNamespace namespace)
+    public StoredSession submitWorkflow(WorkflowSource workflowSource, Session newSession, SessionRelation relation,
+            Date slaCurrentTime)
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();
+
+        List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) with session parameters: {}",
                 workflowSource.getName(),
@@ -69,7 +75,7 @@ public class SessionExecutor
 
         final WorkflowTask root = tasks.get(0);
         final List<WorkflowTask> sub = tasks.subList(1, tasks.size());
-        return sm.newSession(siteId, newSession, namespace, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
+        return sm.newSession(newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
             final Task rootTask = Task.taskBuilder()
                 .sessionId(session.getId())
                 .parentId(Optional.absent())
@@ -82,6 +88,7 @@ public class SessionExecutor
                 control.addSubtasks(lockedRootTask, sub, 0);
                 return null;
             });
+            store.addMonitors(session.getId(), monitors);
         });
     }
 
@@ -624,6 +631,18 @@ public class SessionExecutor
         }
 
         logger.trace("Adding check tasks: {}"+tasks);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
+        return Optional.of(task);
+    }
+
+    public Optional<StoredTask> addSlaTask(TaskControl control, StoredTask detail, ConfigSource slaConfig)
+    {
+        List<WorkflowTask> tasks = compiler.compileTasks(".sla", slaConfig);
+        if (tasks.isEmpty()) {
+            return Optional.absent();
+        }
+
+        logger.trace("Adding sla tasks: {}"+tasks);
         StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
         return Optional.of(task);
     }

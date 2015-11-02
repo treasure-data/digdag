@@ -10,38 +10,43 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableSessionNamespace.class)
-@JsonDeserialize(as = ImmutableSessionNamespace.class)
-public abstract class SessionNamespace
+@JsonSerialize(as = ImmutableSessionRelation.class)
+@JsonDeserialize(as = ImmutableSessionRelation.class)
+public abstract class SessionRelation
 {
+    public abstract int getSiteId();
+
     public abstract Optional<Integer> getRepositoryId();
 
     public abstract Optional<Integer> getWorkflowId();
 
-    public static ImmutableSessionNamespace.Builder sessionNamespaceBuilder()
+    public static ImmutableSessionRelation.Builder builder()
     {
-        return ImmutableSessionNamespace.builder();
+        return ImmutableSessionRelation.builder();
     }
 
-    public static SessionNamespace ofWorkflow(int repositoryId, int workflowId)
+    public static SessionRelation ofWorkflow(int siteId, int repositoryId, int workflowId)
     {
-        return sessionNamespaceBuilder()
+        return builder()
+            .siteId(siteId)
             .repositoryId(Optional.of(repositoryId))
             .workflowId(Optional.of(workflowId))
             .build();
     }
 
-    public static SessionNamespace ofRepository(int repositoryId)
+    public static SessionRelation ofRepository(int siteId, int repositoryId)
     {
-        return sessionNamespaceBuilder()
+        return builder()
+            .siteId(siteId)
             .repositoryId(Optional.of(repositoryId))
             .workflowId(Optional.absent())
             .build();
     }
 
-    public static SessionNamespace ofSite()
+    public static SessionRelation ofSite(int siteId)
     {
-        return sessionNamespaceBuilder()
+        return builder()
+            .siteId(siteId)
             .repositoryId(Optional.absent())
             .workflowId(Optional.absent())
             .build();

@@ -25,7 +25,7 @@ public class LocalSite
     private final ScheduleStore scheduleStore;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
-    private final SlaExecutor slaExecutor;
+    private final SessionMonitorExecutor sessionMonitorExecutor;
     private boolean schedulerStarted;
 
     @Inject
@@ -42,7 +42,7 @@ public class LocalSite
             ScheduleStoreManager scheduleStoreManager,
             SchedulerManager scheds,
             ScheduleExecutor scheduleExecutor,
-            SlaExecutor slaExecutor)
+            SessionMonitorExecutor sessionMonitorExecutor)
     {
         this.cf = cf;
         this.loader = loader;
@@ -57,7 +57,7 @@ public class LocalSite
         this.scheduleStore = scheduleStoreManager.getScheduleStore(0);
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
-        this.slaExecutor = slaExecutor;
+        this.sessionMonitorExecutor = sessionMonitorExecutor;
     }
 
     public SessionStore getSessionStore()
@@ -78,6 +78,11 @@ public class LocalSite
     public void startScheduler()
     {
         scheduleExecutor.start();
+    }
+
+    public void startMonitor()
+    {
+        sessionMonitorExecutor.start();
     }
 
     private class StoreWorkflow
@@ -121,7 +126,7 @@ public class LocalSite
                         .collect(Collectors.toList());
                     if (currentTimeToSchedule.isPresent()) {
                         repoControl.syncSchedulesTo(scheduleStore, scheds,
-                                slaExecutor, currentTimeToSchedule.get(), rev);
+                                currentTimeToSchedule.get(), rev);
                     }
                     return new StoreWorkflow(rev, storedWorkflows);
                 });
@@ -143,7 +148,9 @@ public class LocalSite
 
     public List<StoredSession> startWorkflows(
             List<WorkflowSource> workflowSources,
-            ConfigSource sessionParams, SessionOptions options)
+            ConfigSource sessionParams,
+            SessionOptions options,
+            Date slaCurrentTime)
     {
         StoreWorkflow revWfs = storeWorkflows(workflowSources, Optional.absent());
         final StoredRevision revision = revWfs.getRevision();
@@ -158,8 +165,9 @@ public class LocalSite
         return sessionStore.transaction(() -> {
             return workflows.stream()
                 .map(workflow -> {
-                    return exec.submitWorkflow(0, workflow, trigger,
-                            SessionNamespace.ofWorkflow(revision.getRepositoryId(), workflow.getId()));
+                    return exec.submitWorkflow(workflow, trigger,
+                            SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
+                            slaCurrentTime);
                 })
                 .collect(Collectors.toList());
         });

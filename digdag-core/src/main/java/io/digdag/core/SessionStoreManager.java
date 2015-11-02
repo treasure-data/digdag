@@ -39,9 +39,14 @@ public interface SessionStoreManager
     // overload for taskFinished
     <T> Optional<T> lockTask(long taskId, TaskLockActionWithDetails<T> func);
 
+    // overload for SessionMonitorExecutor
+    <T> Optional<T> lockRootTask(long sessionId, TaskLockActionWithDetails<T> func);
+
     interface SessionBuilderStore
     {
         <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func);
+
+        void addMonitors(long sessionId, List<SessionMonitor> monitors);
     }
 
     interface SessionBuilderAction
@@ -49,5 +54,14 @@ public interface SessionStoreManager
         void call(StoredSession session, SessionBuilderStore store);
     }
 
-    StoredSession newSession(int siteId, Session newSession, SessionNamespace namespace, SessionBuilderAction func);
+    StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func);
+
+    SessionRelation getSessionRelationById(long sessionId);
+
+    interface SessionMonitorAction
+    {
+        Optional<Date> schedule(StoredSessionMonitor monitor);
+    }
+
+    void lockReadySessionMonitors(Date currentTime, SessionMonitorAction func);
 }
