@@ -27,10 +27,10 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionExecutor
+public class WorkflowExecutor
         implements TaskApi
 {
-    private static final Logger logger = LoggerFactory.getLogger(SessionExecutor.class);
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
     private final SessionStoreManager sm;
     private final SessionMonitorManager monitorManager;
@@ -42,7 +42,7 @@ public class SessionExecutor
     private volatile boolean propagatorNotice = false;
 
     @Inject
-    public SessionExecutor(
+    public WorkflowExecutor(
             SessionStoreManager sm,
             WorkflowCompiler compiler,
             SessionMonitorManager monitorManager,

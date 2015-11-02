@@ -6,10 +6,10 @@ import com.google.common.base.*;
 public class InProcessTaskApi
         implements TaskApi
 {
-    private final SessionExecutor exec;
+    private final WorkflowExecutor exec;
 
     @Inject
-    public InProcessTaskApi(SessionExecutor exec)
+    public InProcessTaskApi(WorkflowExecutor exec)
     {
         this.exec = exec;
     }

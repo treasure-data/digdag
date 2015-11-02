@@ -84,7 +84,7 @@ public class DigdagEmbed
                     binder.bind(ConfigSourceFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigSourceMapper.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
-                    binder.bind(SessionExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleStarter.class).in(Scopes.SINGLETON);

@@ -20,14 +20,14 @@ public class SessionMonitorExecutor
 
     private final ConfigSourceFactory cf;
     private final SessionStoreManager sm;
-    private final SessionExecutor exec;
+    private final WorkflowExecutor exec;
     private final ExecutorService executor;
 
     @Inject
     public SessionMonitorExecutor(
             ConfigSourceFactory cf,
             SessionStoreManager sm,
-            SessionExecutor exec)
+            WorkflowExecutor exec)
     {
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()

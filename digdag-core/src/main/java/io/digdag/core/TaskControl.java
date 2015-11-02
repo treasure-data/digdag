@@ -97,7 +97,7 @@ public class TaskControl
     }
 
     ////
-    // for state propagation logic of SessionExecutorManager
+    // for state propagation logic of WorkflowExecutorManager
     //
 
     public boolean isAllChildrenDone()

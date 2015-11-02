@@ -18,7 +18,7 @@ public class LocalSite
     private final RepositoryStore repoStore;
     private final SessionStoreManager sessionStoreManager;
     private final SessionStore sessionStore;
-    private final SessionExecutor exec;
+    private final WorkflowExecutor exec;
     private final TaskQueueDispatcher dispatcher;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
@@ -35,7 +35,7 @@ public class LocalSite
             WorkflowCompiler compiler,
             RepositoryStoreManager repoStoreManager,
             SessionStoreManager sessionStoreManager,
-            SessionExecutor exec,
+            WorkflowExecutor exec,
             TaskQueueDispatcher dispatcher,
             LocalAgentManager localAgentManager,
             DatabaseMigrator databaseMigrator,

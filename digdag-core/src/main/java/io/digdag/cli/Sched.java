@@ -123,7 +123,7 @@ public class Sched
         public ScheduleStarterWithResumeState(
                 ConfigSourceFactory cf,
                 RepositoryStoreManager rm,
-                SessionExecutor exec,
+                WorkflowExecutor exec,
                 ResumeStateFileManager resumeStateFiles,
                 HistoryFiles hist,
                 FileMapper mapper,

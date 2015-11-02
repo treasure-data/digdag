@@ -11,13 +11,13 @@ public class ScheduleStarter
 {
     private final ConfigSourceFactory cf;
     private final RepositoryStoreManager rm;
-    private final SessionExecutor exec;
+    private final WorkflowExecutor exec;
 
     @Inject
     public ScheduleStarter(
             ConfigSourceFactory cf,
             RepositoryStoreManager rm,
-            SessionExecutor exec)
+            WorkflowExecutor exec)
     {
         this.cf = cf;
         this.rm = rm;

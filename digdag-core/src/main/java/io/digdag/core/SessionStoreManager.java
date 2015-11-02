@@ -12,13 +12,13 @@ public interface SessionStoreManager
 
     boolean isAnyNotDoneWorkflows();
 
-    // for SessionExecutorManager.enqueueReadyTasks
+    // for WorkflowExecutorManager.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);
 
-    // for SessionExecutorManager.IncrementalStatusPropagator.propagateStatus
+    // for WorkflowExecutorManager.IncrementalStatusPropagator.propagateStatus
     List<TaskStateSummary> findRecentlyChangedTasks(Date updatedSince, long lastId);
 
-    // for SessionExecutorManager.propagateAllBlockedToReady
+    // for WorkflowExecutorManager.propagateAllBlockedToReady
     List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
 
     int trySetRetryWaitingToReady();
