@@ -4,6 +4,7 @@ import java.util.Map;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -40,7 +41,7 @@ public class ShTaskExecutorFactory
         }
 
         @Override
-        public ConfigSource runTask(ConfigSource config, ConfigSource params)
+        public ConfigSource runTask(ConfigSource config, final ConfigSource params)
         {
             String command = config.get("command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
@@ -48,16 +49,17 @@ public class ShTaskExecutorFactory
             logger.info("sh>: {}", command);
 
             final Map<String, String> env = pb.environment();
-            params.getEntries()
-                .forEach(pair -> {
-                    String value;
-                    if (pair.getValue().isTextual()) {
-                        value = pair.getValue().textValue();
+            params.getKeys()
+                .forEach(key -> {
+                    JsonNode value = params.get(key, JsonNode.class);
+                    String string;
+                    if (value.isTextual()) {
+                        string = value.textValue();
                     }
                     else {
-                        value = pair.getValue().toString();
+                        string = value.toString();
                     }
-                    env.put(pair.getKey(), value);
+                    env.put(key, string);
                 });
 
             pb.redirectErrorStream(true);

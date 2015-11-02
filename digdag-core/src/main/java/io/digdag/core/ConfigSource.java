@@ -63,16 +63,6 @@ public class ConfigSource
         return ImmutableList.copyOf(object.fieldNames());
     }
 
-    public Iterable<Map.Entry<String, JsonNode>> getEntries()
-    {
-        return new Iterable<Map.Entry<String, JsonNode>>() {
-            public Iterator<Map.Entry<String, JsonNode>> iterator()
-            {
-                return object.fields();
-            }
-        };
-    }
-
     public boolean isEmpty()
     {
         return !object.fieldNames().hasNext();
