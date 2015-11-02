@@ -43,7 +43,7 @@ public class TaskRunner
                     // TODO warning
                     api.taskSucceeded(action.getTaskId(),
                             state, cf.create(),
-                            cf.create(), TaskReport.empty(cf));
+                            TaskReport.empty(cf));
                     return;
                 }
                 config.set("type", commandKey.get().substring(0, commandKey.get().length() - 1));
@@ -67,7 +67,7 @@ public class TaskRunner
 
             api.taskSucceeded(action.getTaskId(),
                     state, result.getSubtaskConfig(),
-                    result.getCarryParams(), result.getReport());
+                    result.getReport());
         }
         catch (TaskExecutionException ex) {
             if (ex.getError().isPresent()) {

@@ -2,6 +2,7 @@ package io.digdag.core;
 
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.sql.ResultSet;
@@ -279,11 +280,15 @@ public class DatabaseSessionStoreManager
         return n > 0;
     }
 
-    public boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, ConfigSource carryParams, TaskReport report)
+    public boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, TaskReport report)
     {
         long n = dao.setState(taskId, beforeState.get(), afterState.get());
         if (n > 0) {
-            dao.setStateDetails(taskId, stateParams, carryParams, null, report);
+            dao.setStateDetails(taskId, stateParams, report.getCarryParams(), null,
+                    // TODO create a class for stored report
+                    report.getCarryParams().getFactory().create()
+                        .set("in", report.getInputs())
+                        .set("out", report.getOutputs()));
             return true;
         }
         return false;
@@ -583,7 +588,7 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("update task_state_details " +
                 " set state_params = :stateParams, carry_params = :carryParams, error = :error, report = :report" +
                 " where id = :id")
-        long setStateDetails(@Bind("id") long taskId, @Bind("stateParams") ConfigSource stateParams, @Bind("carryParams") ConfigSource carryParams, @Bind("error") ConfigSource error, @Bind("report") TaskReport report);
+        long setStateDetails(@Bind("id") long taskId, @Bind("stateParams") ConfigSource stateParams, @Bind("carryParams") ConfigSource carryParams, @Bind("error") ConfigSource error, @Bind("report") ConfigSource report);
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), state = " + TaskStateCode.READY_CODE +
@@ -670,6 +675,14 @@ public class DatabaseSessionStoreManager
                     .map(it -> Long.parseLong(it))
                     .collect(Collectors.toList());
             }
+
+            ConfigSource reportConfig = cfm.fromResultSetOrEmpty(r, "report");
+            TaskReport report = TaskReport.builder()
+                .carryParams(cfm.fromResultSetOrEmpty(r, "carry_params"))
+                .inputs(reportConfig.getListOrEmpty("in", ConfigSource.class))
+                .outputs(reportConfig.getListOrEmpty("out", ConfigSource.class))
+                .build();
+
             return ImmutableStoredTask.builder()
                 .id(r.getLong("id"))
                 .siteId(r.getInt("site_id"))
@@ -677,8 +690,7 @@ public class DatabaseSessionStoreManager
                 .updatedAt(r.getTimestamp("updated_at"))
                 .retryAt(getOptionalDate(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
-                .carryParams(cfm.fromResultSetOrEmpty(r, "carry_params"))
-                .report(trm.fromNullableResultSet(r, "report"))
+                .report(report)
                 .error(cfm.fromResultSet(r, "error"))
                 .sessionId(r.getLong("session_id"))
                 .parentId(getOptionalLong(r, "parent_id"))

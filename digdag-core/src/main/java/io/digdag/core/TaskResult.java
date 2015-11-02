@@ -14,8 +14,6 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableTaskResult.class)
 public abstract class TaskResult
 {
-    public abstract ConfigSource getCarryParams();
-
     public abstract ConfigSource getSubtaskConfig();
 
     public abstract TaskReport getReport();

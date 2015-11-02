@@ -15,10 +15,8 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableTaskReport.class)
 public abstract class TaskReport
 {
-    @JsonProperty("in")
     public abstract List<ConfigSource> getInputs();
 
-    @JsonProperty("out")
     public abstract List<ConfigSource> getOutputs();
 
     public abstract ConfigSource getCarryParams();
@@ -29,14 +27,14 @@ public abstract class TaskReport
 
     // TODO executedOnHost
 
-    public static ImmutableTaskReport.Builder reportBuilder()
+    public static ImmutableTaskReport.Builder builder()
     {
         return ImmutableTaskReport.builder();
     }
 
     public static TaskReport empty(ConfigSourceFactory cf)
     {
-        return reportBuilder()
+        return builder()
             .carryParams(cf.create())
             .build();
     }

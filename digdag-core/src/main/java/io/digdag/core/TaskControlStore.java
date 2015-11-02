@@ -20,7 +20,7 @@ public interface TaskControlStore
     boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
 
     // planned to success
-    boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, ConfigSource carryParams, TaskReport report);
+    boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, TaskReport report);
 
     // planned to error
     boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval, ConfigSource error);

@@ -201,9 +201,9 @@ public class TaskControl
     //
 
     // to planned with successful report
-    public boolean setRunningToPlanned(ConfigSource stateParams, ConfigSource carryParams, TaskReport report)
+    public boolean setRunningToPlanned(ConfigSource stateParams, TaskReport report)
     {
-        if (store.setStateWithSuccessDetails(id, state, TaskStateCode.PLANNED, stateParams, carryParams, report)) {
+        if (store.setStateWithSuccessDetails(id, state, TaskStateCode.PLANNED, stateParams, report)) {
             state = TaskStateCode.PLANNED;
             return true;
         }

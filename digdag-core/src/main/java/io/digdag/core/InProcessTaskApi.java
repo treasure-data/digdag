@@ -17,9 +17,9 @@ public class InProcessTaskApi
     @Override
     public void taskSucceeded(long taskId,
             ConfigSource stateParams, ConfigSource subtaskConfig,
-            ConfigSource carryParams, TaskReport report)
+            TaskReport report)
     {
-        exec.taskSucceeded(taskId, stateParams, subtaskConfig, carryParams, report);
+        exec.taskSucceeded(taskId, stateParams, subtaskConfig, report);
     }
 
     @Override

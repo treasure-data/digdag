@@ -437,7 +437,7 @@ public class SessionExecutor
                 logger.debug("Skipping task '{}'", fullName);
                 taskSucceeded(control, task,
                         cf.create(), cf.create(),
-                        cf.create(), skipTaskReport.get());
+                        skipTaskReport.get());
                 return true;
             }
             else {
@@ -488,12 +488,12 @@ public class SessionExecutor
     @Override
     public void taskSucceeded(long taskId,
             final ConfigSource stateParams, final ConfigSource subtaskConfig,
-            final ConfigSource carryParams, final TaskReport report)
+            final TaskReport report)
     {
         sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
             taskSucceeded(control, task,
                     stateParams, subtaskConfig,
-                    carryParams, report);
+                    report);
             return true;
         });
     }
@@ -534,15 +534,15 @@ public class SessionExecutor
 
     private void taskSucceeded(TaskControl control, StoredTask task,
             ConfigSource stateParams, ConfigSource subtaskConfig,
-            ConfigSource carryParams, TaskReport report)
+            TaskReport report)
     {
-        logger.trace("Task succeeded with carry parameters {}: {}",
-                carryParams, task);
+        logger.trace("Task succeeded with report {}: {}",
+                report, task);
 
         // task successfully finished. add .sub and .check tasks
         Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(control, task, subtaskConfig);
         addCheckTasksIfAny(control, task, subtaskRoot);
-        control.setRunningToPlanned(stateParams, carryParams, report);
+        control.setRunningToPlanned(stateParams, report);
 
         noticeStatusPropagate();
     }
@@ -575,7 +575,9 @@ public class SessionExecutor
                 break;
             }
             for (StoredTask se : ses) {
-                result.setAll(se.getCarryParams());
+                if (se.getReport().isPresent()) {
+                    result.setAll(se.getReport().get().getCarryParams());
+                }
                 lastId = Optional.of(se.getId());
             }
         }

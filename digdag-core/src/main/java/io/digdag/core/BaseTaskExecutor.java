@@ -48,10 +48,9 @@ public abstract class BaseTaskExecutor
         try {
             ConfigSource carryParams = runTask(config, params);
             return TaskResult.builder()
-                .carryParams(carryParams)
                 .subtaskConfig(subtaskConfig)
                 .report(
-                    TaskReport.reportBuilder()
+                    TaskReport.builder()
                     .inputs(ImmutableList.copyOf(inputs))
                     .outputs(ImmutableList.copyOf(outputs))
                     .carryParams(carryParams)

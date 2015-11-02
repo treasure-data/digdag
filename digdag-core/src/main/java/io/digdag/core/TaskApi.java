@@ -7,7 +7,7 @@ public interface TaskApi
 {
     void taskSucceeded(long taskId,
             ConfigSource stateParams, ConfigSource subtaskConfig,
-            ConfigSource carryParams, TaskReport report);
+            TaskReport report);
 
     void taskFailed(long taskId,
             ConfigSource error, ConfigSource stateParams,

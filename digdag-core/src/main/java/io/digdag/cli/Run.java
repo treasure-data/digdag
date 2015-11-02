@@ -156,8 +156,9 @@ public class Run
             logger.debug("    config: "+task.getConfig());
             logger.debug("    taskType: "+task.getTaskType());
             logger.debug("    stateParams: "+task.getStateParams());
-            logger.debug("    carryParams: "+task.getCarryParams());
-            logger.debug("    report: "+task.getReport());
+            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.create()));
+            logger.debug("    in: "+task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
+            logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());
         }
 

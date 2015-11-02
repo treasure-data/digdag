@@ -29,8 +29,6 @@ public abstract class StoredTask
 
     public abstract ConfigSource getStateParams();
 
-    public abstract ConfigSource getCarryParams();
-
     public abstract Optional<TaskReport> getReport();
 
     public abstract Optional<ConfigSource> getError();  // TODO error class
