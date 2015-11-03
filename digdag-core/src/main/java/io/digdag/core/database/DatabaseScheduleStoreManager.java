@@ -12,6 +12,12 @@ import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.*;
+import io.digdag.core.schedule.Schedule;
+import io.digdag.core.schedule.ScheduleStore;
+import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.StoredSchedule;
+import io.digdag.core.schedule.ImmutableStoredSchedule;
+import io.digdag.core.spi.ScheduleTime;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -91,11 +97,6 @@ public class DatabaseScheduleStoreManager
         public DatabaseScheduleStore(int siteId)
         {
             this.siteId = siteId;
-        }
-
-        public <T> T transaction(StoreTransaction<T> transaction)
-        {
-            return handle.inTransaction((handle, session) -> transaction.call());
         }
 
         public List<StoredSchedule> getAllSchedules()

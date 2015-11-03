@@ -1,14 +1,13 @@
 package io.digdag.cli;
 
-import java.util.List;
 import java.util.Map;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.spi.TaskReport;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import static com.google.common.base.Preconditions.checkState;
-import io.digdag.core.*;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableResumeState.class)

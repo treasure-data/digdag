@@ -11,6 +11,8 @@ import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.*;
+import io.digdag.core.spi.TaskReport;
+import io.digdag.core.workflow.*;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -411,11 +413,6 @@ public class DatabaseSessionStoreManager
         public DatabaseSessionStore(int siteId)
         {
             this.siteId = siteId;
-        }
-
-        public <T> T transaction(StoreTransaction<T> transaction)
-        {
-            return handle.inTransaction((handle, ses) -> transaction.call());
         }
 
         public List<StoredSession> getAllSessions()

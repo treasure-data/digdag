@@ -7,7 +7,14 @@ import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.repository.*;
+import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.schedule.ScheduleStore;
+import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.Config;
@@ -166,15 +173,13 @@ public class LocalSite
             .options(options)
             .build();
 
-        return sessionStore.transaction(() -> {
-            return workflows.stream()
-                .map(workflow -> {
-                    return exec.submitWorkflow(workflow, trigger,
-                            SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
-                            slaCurrentTime);
-                })
-                .collect(Collectors.toList());
-        });
+        return workflows.stream()
+            .map(workflow -> {
+                return exec.submitWorkflow(workflow, trigger,
+                        SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
+                        slaCurrentTime);
+            })
+            .collect(Collectors.toList());
     }
 
     public void scheduleWorkflows(

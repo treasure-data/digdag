@@ -10,10 +10,24 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.DatabaseStoreConfig;
+import io.digdag.core.schedule.ScheduleStarter;
+import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.spi.SchedulerFactory;
+import io.digdag.core.spi.TaskExecutorFactory;
+import io.digdag.core.spi.TaskQueueFactory;
+import io.digdag.core.workflow.InProcessTaskCallbackApi;
+import io.digdag.core.workflow.TaskCallbackApi;
+import io.digdag.core.workflow.TaskQueueDispatcher;
+import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.standards.CronSchedulerFactory;
+import io.digdag.standards.MemoryTaskQueueFactory;
+import io.digdag.standards.PyTaskExecutorFactory;
+import io.digdag.standards.ShTaskExecutorFactory;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -86,7 +100,7 @@ public class DigdagEmbed
                         .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
                         .build()),
                 (binder) -> {
-                    binder.bind(TaskApi.class).to(InProcessTaskApi.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);

@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
 import java.io.File;
-import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
@@ -19,9 +16,10 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.spi.TaskReport;
+import io.digdag.core.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.*;
 import io.digdag.core.config.ConfigFactory;
 
 public class ResumeStateFileManager
@@ -114,7 +112,8 @@ public class ResumeStateFileManager
     {
         return Tasks.isDone(
                 sessionStoreManager
-                .getSessionStore(session.getSiteId())
-                .getRootState(session.getId()));
+                        .getSessionStore(session.getSiteId())
+                        .getRootState(session.getId())
+        );
     }
 }
