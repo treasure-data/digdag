@@ -14,25 +14,27 @@ import com.google.inject.Inject;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;
 import org.skife.jdbi.v2.tweak.ArgumentFactory;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
 
-public class ConfigSourceMapper
+public class ConfigMapper
 {
     private final ObjectMapper jsonTreeMapper;
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
 
     @Inject
-    public ConfigSourceMapper(ConfigSourceFactory cf)
+    public ConfigMapper(ConfigFactory cf)
     {
         this.jsonTreeMapper = new ObjectMapper();
         this.cf = cf;
     }
 
-    public ConfigSourceArgumentFactory getArgumentFactory()
+    public ConfigArgumentFactory getArgumentFactory()
     {
-        return new ConfigSourceArgumentFactory();
+        return new ConfigArgumentFactory();
     }
 
-    public Optional<ConfigSource> fromResultSet(ResultSet rs, String column)
+    public Optional<Config> fromResultSet(ResultSet rs, String column)
             throws SQLException
     {
         String text = rs.getString(column);
@@ -44,31 +46,31 @@ public class ConfigSourceMapper
         }
     }
 
-    public ConfigSource fromResultSetOrEmpty(ResultSet rs, String column)
+    public Config fromResultSetOrEmpty(ResultSet rs, String column)
             throws SQLException
     {
         String text = rs.getString(column);
         if (rs.wasNull()) {
-            return cf.create();
+            return cf.empty();
         }
         else {
             return fromText(text);
         }
     }
 
-    private ConfigSource fromText(String text)
+    private Config fromText(String text)
     {
         try {
             JsonNode node = jsonTreeMapper.readTree(text);
-            Preconditions.checkState(node instanceof ObjectNode, "Stored ConfigSource must be an object");
-            return cf.create((ObjectNode) node);
+            Preconditions.checkState(node instanceof ObjectNode, "Stored Config must be an object");
+            return cf.create((ObjectNode) node).immutable();
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    private String toText(ConfigSource config)
+    private String toText(Config config)
     {
         if (config.isEmpty()) {
             return null;
@@ -81,28 +83,28 @@ public class ConfigSourceMapper
         }
     }
 
-    public class ConfigSourceArgumentFactory
-            implements ArgumentFactory<ConfigSource>
+    public class ConfigArgumentFactory
+            implements ArgumentFactory<Config>
     {
         @Override
         public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx)
         {
-            return value instanceof ConfigSource;
+            return value instanceof Config;
         }
 
         @Override
-        public Argument build(Class<?> expectedType, ConfigSource value, StatementContext ctx)
+        public Argument build(Class<?> expectedType, Config value, StatementContext ctx)
         {
-            return new ConfigSourceArgument(value);
+            return new ConfigArgument(value);
         }
     }
 
-    public class ConfigSourceArgument
+    public class ConfigArgument
             implements Argument
     {
-        private final ConfigSource config;
+        private final Config config;
 
-        public ConfigSourceArgument(ConfigSource config)
+        public ConfigArgument(Config config)
         {
             this.config = config;
         }

@@ -8,6 +8,7 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
+import io.digdag.core.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
@@ -27,11 +28,11 @@ public abstract class StoredTask
 
     public abstract Optional<Date> getRetryAt();
 
-    public abstract ConfigSource getStateParams();
+    public abstract Config getStateParams();
 
     public abstract Optional<TaskReport> getReport();
 
-    public abstract Optional<ConfigSource> getError();  // TODO error class
+    public abstract Optional<Config> getError();  // TODO error class
 
     @Value.Check
     protected void check()

@@ -7,6 +7,7 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.digdag.core.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
@@ -14,7 +15,7 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableTaskResult.class)
 public abstract class TaskResult
 {
-    public abstract ConfigSource getSubtaskConfig();
+    public abstract Config getSubtaskConfig();
 
     public abstract TaskReport getReport();
 

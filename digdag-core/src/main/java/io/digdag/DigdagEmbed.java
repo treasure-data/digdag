@@ -15,6 +15,8 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.digdag.core.*;
+import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.cli.ResumeStateFileManager;
 
 public class DigdagEmbed
@@ -81,8 +83,8 @@ public class DigdagEmbed
                         .build()),
                 (binder) -> {
                     binder.bind(TaskApi.class).to(InProcessTaskApi.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigSourceFactory.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigSourceMapper.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);

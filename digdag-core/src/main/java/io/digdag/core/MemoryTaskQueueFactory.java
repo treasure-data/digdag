@@ -6,6 +6,7 @@ import java.util.Deque;
 import java.util.ArrayDeque;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
 
 public class MemoryTaskQueueFactory
         implements TaskQueueFactory
@@ -24,7 +25,7 @@ public class MemoryTaskQueueFactory
     }
 
     @Override
-    public TaskQueue getTaskQueue(int siteId, String name, ConfigSource config)
+    public TaskQueue getTaskQueue(int siteId, String name, Config config)
     {
         String key = "" + siteId + ":" + name;
         synchronized (taskQueues) {
@@ -43,7 +44,7 @@ public class MemoryTaskQueueFactory
     {
         private Deque<Action> queue = new ArrayDeque<>();
 
-        public MemoryTaskQueue(ConfigSource config)
+        public MemoryTaskQueue(Config config)
         { }
 
         @Override

@@ -12,7 +12,7 @@ public abstract class Repository
 {
     public abstract String getName();
 
-    //public abstract ConfigSource getConfig();
+    //public abstract Config getConfig();
 
     //public abstract boolean isDisabled();
 

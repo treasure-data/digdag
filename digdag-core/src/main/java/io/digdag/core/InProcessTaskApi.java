@@ -2,6 +2,7 @@ package io.digdag.core;
 
 import com.google.inject.Inject;
 import com.google.common.base.*;
+import io.digdag.core.config.Config;
 
 public class InProcessTaskApi
         implements TaskApi
@@ -16,7 +17,7 @@ public class InProcessTaskApi
 
     @Override
     public void taskSucceeded(long taskId,
-            ConfigSource stateParams, ConfigSource subtaskConfig,
+            Config stateParams, Config subtaskConfig,
             TaskReport report)
     {
         exec.taskSucceeded(taskId, stateParams, subtaskConfig, report);
@@ -24,7 +25,7 @@ public class InProcessTaskApi
 
     @Override
     public void taskFailed(long taskId,
-            ConfigSource error, ConfigSource stateParams,
+            Config error, Config stateParams,
             Optional<Integer> retryInterval)
     {
         exec.taskFailed(taskId, error, stateParams, retryInterval);
@@ -32,7 +33,7 @@ public class InProcessTaskApi
 
     @Override
     public void taskPollNext(long taskId,
-            ConfigSource stateParams, int retryInterval)
+            Config stateParams, int retryInterval)
     {
         exec.taskPollNext(taskId, stateParams, retryInterval);
     }

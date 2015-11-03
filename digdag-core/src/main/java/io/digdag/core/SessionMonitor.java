@@ -7,11 +7,12 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import static com.google.common.base.Preconditions.checkState;
+import io.digdag.core.config.Config;
 
 @JsonDeserialize(as = ImmutableSessionMonitor.class)
 public abstract class SessionMonitor
 {
-    public abstract ConfigSource getConfig();
+    public abstract Config getConfig();
 
     public abstract Date getNextRunTime();
 
@@ -20,7 +21,7 @@ public abstract class SessionMonitor
         return ImmutableSessionMonitor.builder();
     }
 
-    public static SessionMonitor of(ConfigSource config, Date nextRunTime)
+    public static SessionMonitor of(Config config, Date nextRunTime)
     {
         return sessionMonitorBuilder()
             .config(config)

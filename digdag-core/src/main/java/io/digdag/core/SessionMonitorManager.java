@@ -13,6 +13,7 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.config.Config;
 
 public class SessionMonitorManager
 {
@@ -32,7 +33,7 @@ public class SessionMonitorManager
             TimeZone timeZone = scheds.getSchedulerConfig(workflow)
                 .transform(config -> scheds.getScheduler(config).getTimeZone())
                 .or(TimeZone.getTimeZone("UTC"));
-            ConfigSource slaConfig = workflow.getConfig().getNestedOrGetEmpty("sla");
+            Config slaConfig = workflow.getConfig().getNestedOrGetEmpty("sla");
             TimeCalculator calc = getCalculator(slaConfig);  // validate
             // TODO validate workflow
             Date triggerTime = calc.calculateTime(currentTime, timeZone);
@@ -41,7 +42,7 @@ public class SessionMonitorManager
         return ImmutableList.of();
     }
 
-    private TimeCalculator getCalculator(ConfigSource slaConfig)
+    private TimeCalculator getCalculator(Config slaConfig)
     {
         // TODO improve parse logic
         int hour;

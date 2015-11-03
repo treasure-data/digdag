@@ -14,6 +14,10 @@ import org.slf4j.LoggerFactory;
 import io.digdag.core.*;
 import io.digdag.DigdagEmbed;
 import io.digdag.cli.Main.SystemExitException;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.MutableConfig;
+import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
@@ -57,14 +61,14 @@ public class Run
         return systemExit(error);
     }
 
-    static List<WorkflowSource> loadWorkflowSources(final ConfigSource ast)
+    static List<WorkflowSource> loadWorkflowSources(final Config ast)
     {
         return ast.getKeys().stream()
             .map(key -> WorkflowSource.of(key, ast.getNested(key)))
             .collect(Collectors.toList());
     }
 
-    static WorkflowSource loadFirstWorkflowSource(final ConfigSource ast)
+    static WorkflowSource loadFirstWorkflowSource(final Config ast)
     {
         List<WorkflowSource> workflowSources = loadWorkflowSources(ast);
         if (workflowSources.size() != 1) {
@@ -111,15 +115,16 @@ public class Run
         LocalSite localSite = injector.getInstance(LocalSite.class);
         localSite.initialize();
 
-        final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
+        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
-        ConfigSource params = cf.create();
+        MutableConfig paramsBuilder = cf.create();
         if (paramsFilePath.isPresent()) {
-            params.setAll(mapper.readFile(paramsFilePath.get(), ConfigSource.class));
+            paramsBuilder.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
         }
+        Config params = paramsBuilder.immutable();
 
         Optional<ResumeState> resumeState = Optional.absent();
         if (resumeStateFilePath.isPresent() && mapper.checkExists(resumeStateFilePath.get())) {
@@ -156,7 +161,7 @@ public class Run
             logger.debug("    config: "+task.getConfig());
             logger.debug("    taskType: "+task.getTaskType());
             logger.debug("    stateParams: "+task.getStateParams());
-            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.create()));
+            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.empty()));
             logger.debug("    in: "+task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
             logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());

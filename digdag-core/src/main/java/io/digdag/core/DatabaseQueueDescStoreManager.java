@@ -17,17 +17,18 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import io.digdag.core.config.Config;
 
 public class DatabaseQueueDescStoreManager
         extends BasicDatabaseStoreManager
         implements QueueDescStoreManager
 {
-    private final ConfigSourceMapper cfm;
+    private final ConfigMapper cfm;
     private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigSourceMapper cfm)
+    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm)
     {
         this.handle = dbi.open();
         this.cfm = cfm;
@@ -82,7 +83,7 @@ public class DatabaseQueueDescStoreManager
             return dao.getQueueDescByName(siteId, name);
         }
 
-        public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, ConfigSource defaultConfig)
+        public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, Config defaultConfig)
         {
             StoredQueueDesc desc = getQueueDescByName(name);
             if (desc == null) {
@@ -93,7 +94,7 @@ public class DatabaseQueueDescStoreManager
             return desc;
         }
 
-        public void updateQueueDescConfig(long qdId, ConfigSource newConfig)
+        public void updateQueueDescConfig(long qdId, Config newConfig)
         {
             int n = dao.updateQueueDescConfig(siteId, qdId, newConfig);
             if (n <= 0) {
@@ -127,21 +128,21 @@ public class DatabaseQueueDescStoreManager
                 " (site_id, name, config, created_at, updated_at)" +
                 " values (:siteId, :name, :config, now(), now())")
         @GetGeneratedKeys
-        long insertQueueDesc(@Bind("siteId") int siteId, @Bind("name") String name, @Bind("config") ConfigSource config);
+        long insertQueueDesc(@Bind("siteId") int siteId, @Bind("name") String name, @Bind("config") Config config);
 
         @SqlUpdate("update queues" +
                 " set config = :config, updated_at = now()" +
                 " where site_id = :siteId " +
                 " and id = :id")
-        int updateQueueDescConfig(@Bind("siteId") int siteId, @Bind("id") long id, @Bind("config") ConfigSource config);
+        int updateQueueDescConfig(@Bind("siteId") int siteId, @Bind("id") long id, @Bind("config") Config config);
     }
 
     private static class StoredQueueDescMapper
             implements ResultSetMapper<StoredQueueDesc>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredQueueDescMapper(ConfigSourceMapper cfm)
+        public StoredQueueDescMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }

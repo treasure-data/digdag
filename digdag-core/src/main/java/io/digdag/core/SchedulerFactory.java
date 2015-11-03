@@ -1,8 +1,10 @@
 package io.digdag.core;
 
+import io.digdag.core.config.Config;
+
 public interface SchedulerFactory
 {
-    boolean matches(ConfigSource config);
+    boolean matches(Config config);
 
-    Scheduler newScheduler(ConfigSource config);
+    Scheduler newScheduler(Config config);
 }

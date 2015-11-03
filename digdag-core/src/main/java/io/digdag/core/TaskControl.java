@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
 
 public class TaskControl
 {
@@ -105,7 +106,7 @@ public class TaskControl
         return store.isAllChildrenDone(id);
     }
 
-    public List<ConfigSource> collectChildrenErrors()
+    public List<Config> collectChildrenErrors()
     {
         return store.collectChildrenErrors(id);
     }
@@ -131,7 +132,7 @@ public class TaskControl
         return false;
     }
 
-    public boolean setPlannedToError(ConfigSource stateParams, ConfigSource error)
+    public boolean setPlannedToError(Config stateParams, Config error)
     {
         // TODO checkState
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
@@ -141,7 +142,7 @@ public class TaskControl
         return false;
     }
 
-    public boolean setRunningToShortCircuitError(ConfigSource stateParams, ConfigSource error)
+    public boolean setRunningToShortCircuitError(Config stateParams, Config error)
     {
         // TODO checkState
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
@@ -151,7 +152,7 @@ public class TaskControl
         return false;
     }
 
-    public boolean setPlannedToPlanned(ConfigSource stateParams, ConfigSource error)
+    public boolean setPlannedToPlanned(Config stateParams, Config error)
     {
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.PLANNED;
@@ -160,7 +161,7 @@ public class TaskControl
         return false;
     }
 
-    public boolean setPlannedToGroupError(ConfigSource stateParams, ConfigSource error)
+    public boolean setPlannedToGroupError(Config stateParams, Config error)
     {
         // TODO checkState
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
@@ -171,7 +172,7 @@ public class TaskControl
     }
 
     // group retry
-    public boolean setPlannedToGroupRetry(ConfigSource stateParams, int retryInterval)
+    public boolean setPlannedToGroupRetry(Config stateParams, int retryInterval)
     {
         // TODO checkState
         if (store.setStateWithStateParamsUpdate(id, state, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
@@ -201,7 +202,7 @@ public class TaskControl
     //
 
     // to planned with successful report
-    public boolean setRunningToPlanned(ConfigSource stateParams, TaskReport report)
+    public boolean setRunningToPlanned(Config stateParams, TaskReport report)
     {
         if (store.setStateWithSuccessDetails(id, state, TaskStateCode.PLANNED, stateParams, report)) {
             state = TaskStateCode.PLANNED;
@@ -212,7 +213,7 @@ public class TaskControl
     }
 
     // to planned with error
-    public boolean setRunningToPlanned(ConfigSource stateParams, ConfigSource error)
+    public boolean setRunningToPlanned(Config stateParams, Config error)
     {
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.PLANNED;
@@ -222,7 +223,7 @@ public class TaskControl
     }
 
     // to retry with error
-    public boolean setRunningToRetry(ConfigSource stateParams, ConfigSource error, int retryInterval)
+    public boolean setRunningToRetry(Config stateParams, Config error, int retryInterval)
     {
         if (store.setStateWithErrorDetails(id, state, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
             state = TaskStateCode.RETRY_WAITING;
@@ -232,7 +233,7 @@ public class TaskControl
     }
 
     // to retry without error
-    public boolean setRunningToRetry(ConfigSource stateParams, int retryInterval)
+    public boolean setRunningToRetry(Config stateParams, int retryInterval)
     {
         if (store.setStateWithStateParamsUpdate(id, state, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
             state = TaskStateCode.RETRY_WAITING;

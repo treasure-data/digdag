@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Date;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
+import io.digdag.core.config.Config;
 
 public class RepositoryControl
 {
@@ -42,7 +43,7 @@ public class RepositoryControl
                 break;
             }
             for (StoredWorkflowSource wf : wfs) {
-                Optional<ConfigSource> schedulerConfig = scheds.getSchedulerConfig(wf);
+                Optional<Config> schedulerConfig = scheds.getSchedulerConfig(wf);
                 if (schedulerConfig.isPresent()) {
                     Scheduler sr = scheds.getScheduler(schedulerConfig.get());
                     ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);

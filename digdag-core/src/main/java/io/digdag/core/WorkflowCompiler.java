@@ -8,6 +8,9 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigException;
+import io.digdag.core.config.MutableConfig;
 import static com.google.common.collect.Maps.immutableEntry;
 
 public class WorkflowCompiler
@@ -15,7 +18,7 @@ public class WorkflowCompiler
     public WorkflowCompiler()
     { }
 
-    public Workflow compile(String name, ConfigSource config)
+    public Workflow compile(String name, Config config)
     {
         return Workflow.workflowBuilder()
             .name(name)
@@ -24,7 +27,7 @@ public class WorkflowCompiler
             .build();
     }
 
-    public List<WorkflowTask> compileTasks(String name, ConfigSource config)
+    public List<WorkflowTask> compileTasks(String name, Config config)
     {
         return new Context().compile(name, config);
     }
@@ -35,12 +38,12 @@ public class WorkflowCompiler
         private final Optional<TaskBuilder> parent;
         private final String name;
         private final TaskType taskType;
-        private final ConfigSource config;
+        private final Config config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
         public TaskBuilder(int index, Optional<TaskBuilder> parent, String name,
-                TaskType taskType, ConfigSource config)
+                TaskType taskType, Config config)
         {
             this.index = index;
             this.parent = parent;
@@ -62,7 +65,7 @@ public class WorkflowCompiler
             return name;
         }
 
-        public ConfigSource getConfig()
+        public Config getConfig()
         {
             return config;
         }
@@ -99,10 +102,10 @@ public class WorkflowCompiler
     {
         private List<TaskBuilder> tasks = new ArrayList<>();
 
-        public List<WorkflowTask> compile(String name, ConfigSource config)
+        public List<WorkflowTask> compile(String name, Config config)
         {
             try {
-                collect(Optional.absent(), config.newConfigSource(), name, config);
+                collect(Optional.absent(), config.getFactory().empty(), name, config);
                 return tasks
                     .stream()
                     .map(tb -> tb.build())
@@ -117,18 +120,18 @@ public class WorkflowCompiler
         }
 
         public TaskBuilder collect(
-                Optional<TaskBuilder> parent, ConfigSource parentDefaultConfig,
-                String name, ConfigSource originalConfig)
+                Optional<TaskBuilder> parent, Config parentDefaultConfig,
+                String name, Config originalConfig)
         {
-            ConfigSource thisDefaultConfig = originalConfig.getNestedOrGetEmpty("default");
-            final ConfigSource defaultConfig = parentDefaultConfig.deepCopy().setAll(thisDefaultConfig);
-            final ConfigSource config = originalConfig.deepCopy().setAll(defaultConfig);
+            Config thisDefaultConfig = originalConfig.getNestedOrGetEmpty("default");
+            final Config defaultConfig = parentDefaultConfig.mutable().setAll(thisDefaultConfig).immutable();
+            final MutableConfig config = originalConfig.mutable().setAll(defaultConfig);
 
             // +key: {...}
-            List<Entry<String, ConfigSource>> subtaskConfigs = config.getKeys()
+            List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
                 .filter(key -> key.startsWith("+"))
-                .map(key -> immutableEntry(key, config.getNested(key)))
+                .map(key -> immutableEntry(key, config.getNested(key).immutable()))
                 .collect(Collectors.toList());
 
             // other: ...
@@ -142,11 +145,11 @@ public class WorkflowCompiler
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);
                 }
-                return addTask(parent, name, false, config);
+                return addTask(parent, name, false, config.immutable());
             }
             else {
                 // group node
-                final TaskBuilder tb = addTask(parent, name, true, config);
+                final TaskBuilder tb = addTask(parent, name, true, config.immutable());
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()
@@ -187,7 +190,7 @@ public class WorkflowCompiler
 
         private TaskBuilder addTask(
                 Optional<TaskBuilder> parent, String name,
-                boolean groupingOnly, ConfigSource config)
+                boolean groupingOnly, Config config)
         {
             TaskBuilder tb = new TaskBuilder(tasks.size(), parent, name,
                     extractTaskOption(config, groupingOnly), config);
@@ -195,7 +198,7 @@ public class WorkflowCompiler
             return tb;
         }
 
-        private TaskType extractTaskOption(ConfigSource config, boolean groupingOnly)
+        private TaskType extractTaskOption(Config config, boolean groupingOnly)
         {
             return new TaskType.Builder()
                 .groupingOnly(groupingOnly)

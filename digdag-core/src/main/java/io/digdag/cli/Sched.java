@@ -19,6 +19,9 @@ import joptsimple.OptionSet;
 import io.digdag.DigdagEmbed;
 import io.digdag.core.*;
 import io.digdag.cli.Main.SystemExitException;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
@@ -94,7 +97,7 @@ public class Sched
         LocalSite localSite = injector.getInstance(LocalSite.class);
         localSite.initialize();
 
-        final ConfigSourceFactory cf = injector.getInstance(ConfigSourceFactory.class);
+        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
 
         outputPath.mkdirs();
@@ -121,7 +124,7 @@ public class Sched
 
         @Inject
         public ScheduleStarterWithResumeState(
-                ConfigSourceFactory cf,
+                ConfigFactory cf,
                 RepositoryStoreManager rm,
                 WorkflowExecutor exec,
                 ResumeStateFileManager resumeStateFiles,

@@ -9,17 +9,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskReport.class)
 @JsonDeserialize(as = ImmutableTaskReport.class)
 public abstract class TaskReport
 {
-    public abstract List<ConfigSource> getInputs();
+    public abstract List<Config> getInputs();
 
-    public abstract List<ConfigSource> getOutputs();
+    public abstract List<Config> getOutputs();
 
-    public abstract ConfigSource getCarryParams();
+    public abstract Config getCarryParams();
 
     // TODO metrics
 
@@ -32,10 +34,10 @@ public abstract class TaskReport
         return ImmutableTaskReport.builder();
     }
 
-    public static TaskReport empty(ConfigSourceFactory cf)
+    public static TaskReport empty(ConfigFactory cf)
     {
         return builder()
-            .carryParams(cf.create())
+            .carryParams(cf.empty())
             .build();
     }
 }

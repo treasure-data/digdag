@@ -11,6 +11,7 @@ import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.config.Config;
 
 public class ShTaskExecutorFactory
         implements TaskExecutorFactory
@@ -27,7 +28,7 @@ public class ShTaskExecutorFactory
         return "sh";
     }
 
-    public TaskExecutor newTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state)
+    public TaskExecutor newTaskExecutor(Config config, Config params, Config state)
     {
         return new ShTaskExecutor(config, params, state);
     }
@@ -35,13 +36,13 @@ public class ShTaskExecutorFactory
     private class ShTaskExecutor
             extends BaseTaskExecutor
     {
-        public ShTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state)
+        public ShTaskExecutor(Config config, Config params, Config state)
         {
             super(config, params, state);
         }
 
         @Override
-        public ConfigSource runTask(ConfigSource config, final ConfigSource params)
+        public Config runTask(Config config, final Config params)
         {
             String command = config.get("command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
@@ -85,7 +86,7 @@ public class ShTaskExecutorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return params.getFactory().create();
+            return params.getFactory().empty();
         }
     }
 }

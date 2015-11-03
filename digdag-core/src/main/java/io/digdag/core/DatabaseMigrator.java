@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import com.google.inject.Inject;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
+import io.digdag.core.config.Config;
 
 public class DatabaseMigrator
 {

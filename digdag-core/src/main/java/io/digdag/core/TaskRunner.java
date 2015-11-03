@@ -7,15 +7,19 @@ import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigException;
+import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.MutableConfig;
 
 public class TaskRunner
 {
     private final TaskApi api;
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
     private final Map<String, TaskExecutorFactory> executorTypes;
 
     @Inject
-    public TaskRunner(TaskApi api, ConfigSourceFactory cf, Set<TaskExecutorFactory> factories)
+    public TaskRunner(TaskApi api, ConfigFactory cf, Set<TaskExecutorFactory> factories)
     {
         this.api = api;
         this.cf = cf;
@@ -29,9 +33,9 @@ public class TaskRunner
 
     public void run(Action action)
     {
-        ConfigSource config = action.getConfig();
-        ConfigSource params = action.getParams();
-        ConfigSource state = action.getStateParams();
+        MutableConfig config = action.getConfig().mutable();
+        Config params = action.getParams();
+        Config state = action.getStateParams();
 
         try {
             if (!config.has("type")) {
@@ -42,7 +46,7 @@ public class TaskRunner
                 if (!commandKey.isPresent()) {
                     // TODO warning
                     api.taskSucceeded(action.getTaskId(),
-                            state, cf.create(),
+                            state, cf.empty(),
                             TaskReport.empty(cf));
                     return;
                 }
@@ -55,7 +59,7 @@ public class TaskRunner
             if (factory == null) {
                 throw new ConfigException("Unknown task type: "+type);
             }
-            TaskExecutor executor = factory.newTaskExecutor(config, params, state);
+            TaskExecutor executor = factory.newTaskExecutor(config.immutable(), params, state);
 
             TaskResult result;
             try {
@@ -81,14 +85,14 @@ public class TaskRunner
             }
         }
         catch (Exception ex) {
-            ConfigSource error = makeExceptionError(cf, ex);
+            Config error = makeExceptionError(cf, ex);
             api.taskFailed(action.getTaskId(),
                     error, state,
                     Optional.absent());  // no retry
         }
     }
 
-    public static ConfigSource makeExceptionError(ConfigSourceFactory cf, Exception ex)
+    public static Config makeExceptionError(ConfigFactory cf, Exception ex)
     {
         return cf.create()
             .set("error", ex.toString())
@@ -96,6 +100,7 @@ public class TaskRunner
                     Arrays.asList(ex.getStackTrace())
                     .stream()
                     .map(it -> it.toString())
-                    .collect(Collectors.joining(", ")));
+                    .collect(Collectors.joining(", ")))
+            .immutable();
     }
 }

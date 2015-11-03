@@ -22,12 +22,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.*;
+import io.digdag.core.config.ConfigFactory;
 
 public class ResumeStateFileManager
 {
     private static Logger logger = LoggerFactory.getLogger(ResumeStateFileManager.class);
 
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
     private final SessionStoreManager sessionStoreManager;
     private final FileMapper mapper;
     private final Map<File, StoredSession> targets;
@@ -36,7 +37,7 @@ public class ResumeStateFileManager
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateFileManager(ConfigSourceFactory cf, SessionStoreManager sessionStoreManager, FileMapper mapper)
+    private ResumeStateFileManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, FileMapper mapper)
     {
         this.cf = cf;
         this.sessionStoreManager = sessionStoreManager;

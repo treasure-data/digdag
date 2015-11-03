@@ -1,15 +1,16 @@
 package io.digdag.core;
 
 import com.google.common.base.Optional;
+import io.digdag.core.config.Config;
 
 public class TaskExecutionException
         extends RuntimeException
 {
-    private final Optional<ConfigSource> error;
+    private final Optional<Config> error;
     private final Optional<Integer> retryInterval;
 
     public TaskExecutionException(Throwable cause,
-            ConfigSource error,
+            Config error,
             Optional<Integer> retryInterval)
     {
         super(cause);
@@ -23,7 +24,7 @@ public class TaskExecutionException
         this.retryInterval = Optional.of(retryInterval);
     }
 
-    public Optional<ConfigSource> getError()
+    public Optional<Config> getError()
     {
         return error;
     }

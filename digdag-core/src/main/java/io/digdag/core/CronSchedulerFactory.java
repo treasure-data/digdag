@@ -2,18 +2,19 @@ package io.digdag.core;
 
 import java.util.Date;
 import java.util.TimeZone;
+import io.digdag.core.config.Config;
 
 public class CronSchedulerFactory
         implements SchedulerFactory
 {
     @Override
-    public boolean matches(ConfigSource config)
+    public boolean matches(Config config)
     {
         return config.has("cron");
     }
 
     @Override
-    public Scheduler newScheduler(ConfigSource config)
+    public Scheduler newScheduler(Config config)
     {
         return new CronScheduler(
                 config.get("cron", String.class),

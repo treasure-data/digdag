@@ -7,6 +7,7 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.digdag.core.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
@@ -20,11 +21,11 @@ public abstract class Action
 
     public abstract String getFullName();
 
-    public abstract ConfigSource getConfig();
+    public abstract Config getConfig();
 
-    public abstract ConfigSource getParams();
+    public abstract Config getParams();
 
-    public abstract ConfigSource getStateParams();
+    public abstract Config getStateParams();
 
     public static ImmutableAction.Builder actionBuilder()
     {

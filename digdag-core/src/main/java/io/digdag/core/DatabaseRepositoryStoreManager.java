@@ -17,6 +17,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import io.digdag.core.config.Config;
 
 public class DatabaseRepositoryStoreManager
         extends BasicDatabaseStoreManager
@@ -26,7 +27,7 @@ public class DatabaseRepositoryStoreManager
     private final Dao dao;
 
     @Inject
-    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigSourceMapper cfm)
+    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm)
     {
         this.handle = dbi.open();
         handle.registerMapper(new StoredRepositoryMapper(cfm));
@@ -240,7 +241,7 @@ public class DatabaseRepositoryStoreManager
                 " (repository_id, name, global_params, archive_type, archive_md5, archive_path, archive_data, created_at)" +
                 " values (:repoId, :name, :globalParams, :archiveType, :archiveMd5, :archivePath, :archiveData, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("globalParams") ConfigSource globalParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
+        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("globalParams") Config globalParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
 
 
         @SqlQuery("select w.* from workflows w" +
@@ -290,15 +291,15 @@ public class DatabaseRepositoryStoreManager
                 " (revision_id, name, config)" +
                 " values (:revId, :name, :config)")
         @GetGeneratedKeys
-        int insertWorkflow(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") ConfigSource config);
+        int insertWorkflow(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
     }
 
     private static class StoredRepositoryMapper
             implements ResultSetMapper<StoredRepository>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredRepositoryMapper(ConfigSourceMapper cfm)
+        public StoredRepositoryMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
@@ -320,9 +321,9 @@ public class DatabaseRepositoryStoreManager
     private static class StoredRevisionMapper
             implements ResultSetMapper<StoredRevision>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredRevisionMapper(ConfigSourceMapper cfm)
+        public StoredRevisionMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
@@ -348,9 +349,9 @@ public class DatabaseRepositoryStoreManager
     private static class StoredWorkflowSourceMapper
             implements ResultSetMapper<StoredWorkflowSource>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredWorkflowSourceMapper(ConfigSourceMapper cfm)
+        public StoredWorkflowSourceMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
@@ -371,9 +372,9 @@ public class DatabaseRepositoryStoreManager
     private static class StoredWorkflowSourceWithRepositoryMapper
             implements ResultSetMapper<StoredWorkflowSourceWithRepository>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredWorkflowSourceWithRepositoryMapper(ConfigSourceMapper cfm)
+        public StoredWorkflowSourceWithRepositoryMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }

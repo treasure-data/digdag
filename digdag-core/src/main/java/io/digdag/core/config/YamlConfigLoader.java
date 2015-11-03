@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.config;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,28 +14,28 @@ import com.google.inject.Inject;
 public class YamlConfigLoader
 {
     private final ObjectMapper treeObjectMapper = new ObjectMapper();
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
 
     @Inject
-    public YamlConfigLoader(ConfigSourceFactory cf)
+    public YamlConfigLoader(ConfigFactory cf)
     {
         this.cf = cf;
     }
 
-    public ConfigSource load(InputStream in)
+    public Config load(InputStream in)
             throws IOException
     {
         JsonNode node = objectToJsonNode(new Yaml().load(in));
-        return cf.create(validateJsonNode(node));
+        return cf.create(validateJsonNode(node)).immutable();
     }
 
-    public ConfigSource loadString(String content)
+    public Config loadString(String content)
     {
         JsonNode node = objectToJsonNode(new Yaml().load(content));
-        return cf.create(validateJsonNode(node));
+        return cf.create(validateJsonNode(node)).immutable();
     }
 
-    public ConfigSource loadFile(File file)
+    public Config loadFile(File file)
             throws IOException
     {
         try (FileInputStream in = new FileInputStream(file)) {
@@ -56,7 +56,7 @@ public class YamlConfigLoader
     private static ObjectNode validateJsonNode(JsonNode node)
     {
         if (!node.isObject()) {
-            throw new RuntimeJsonMappingException("Expected object to load ConfigSource but got "+node);
+            throw new RuntimeJsonMappingException("Expected object to load Config but got "+node);
         }
         return (ObjectNode) node;
     }

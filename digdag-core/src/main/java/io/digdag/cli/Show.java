@@ -9,6 +9,8 @@ import com.google.inject.Injector;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import io.digdag.core.*;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
@@ -52,7 +54,7 @@ public class Show
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        final ConfigSource ast = loader.loadFile(workflowPath);
+        final Config ast = loader.loadFile(workflowPath);
 
         List<Workflow> workflows = ast.getKeys()
             .stream()

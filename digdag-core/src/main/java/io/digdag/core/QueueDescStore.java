@@ -2,6 +2,7 @@ package io.digdag.core;
 
 import java.util.List;
 import com.google.common.base.*;
+import io.digdag.core.config.Config;
 
 public interface QueueDescStore
         extends Store
@@ -14,7 +15,7 @@ public interface QueueDescStore
 
     StoredQueueDesc getQueueDescByName(String name);
 
-    StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, ConfigSource defaultConfig);
+    StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, Config defaultConfig);
 
-    void updateQueueDescConfig(long qdId, ConfigSource newConfig);
+    void updateQueueDescConfig(long qdId, Config newConfig);
 }

@@ -6,6 +6,7 @@ import java.util.Date;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
 
 public class SchedulerManager
 {
@@ -17,16 +18,16 @@ public class SchedulerManager
         this.types = ImmutableList.copyOf(factories);
     }
 
-    public Optional<ConfigSource> getSchedulerConfig(WorkflowSource workflow)
+    public Optional<Config> getSchedulerConfig(WorkflowSource workflow)
     {
-        ConfigSource schedulerConfig = workflow.getConfig().getNestedOrGetEmpty("schedule");
+        Config schedulerConfig = workflow.getConfig().getNestedOrGetEmpty("schedule");
         if (schedulerConfig.isEmpty()) {
             return Optional.absent();
         }
         return Optional.of(schedulerConfig);
     }
 
-    public Scheduler getScheduler(ConfigSource config)
+    public Scheduler getScheduler(Config config)
     {
         for (SchedulerFactory type : types) {
             if (type.matches(config)) {

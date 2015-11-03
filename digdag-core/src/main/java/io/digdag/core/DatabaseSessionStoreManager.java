@@ -20,6 +20,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import io.digdag.core.config.Config;
 
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager
@@ -30,18 +31,18 @@ public class DatabaseSessionStoreManager
     public static short NAMESPACE_SITE_ID = (short) 0;
 
     private final StoredTaskMapper stm;
-    private final ConfigSourceResultSetMapper errorRsm;
+    private final ConfigResultSetMapper errorRsm;
     private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseSessionStoreManager(IDBI dbi, ConfigSourceMapper cfm, ObjectMapper mapper)
+    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper)
     {
         this.handle = dbi.open();
         JsonMapper<SessionOptions> opm = new JsonMapper<>(mapper, SessionOptions.class);
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
         this.stm = new StoredTaskMapper(cfm, trm);
-        this.errorRsm = new ConfigSourceResultSetMapper(cfm, "error");
+        this.errorRsm = new ConfigResultSetMapper(cfm, "error");
         handle.registerMapper(stm);
         handle.registerMapper(new StoredSessionMapper(cfm, opm));
         handle.registerMapper(new TaskStateSummaryMapper());
@@ -261,7 +262,7 @@ public class DatabaseSessionStoreManager
             .first() == 0L;
     }
 
-    public List<ConfigSource> collectChildrenErrors(long taskId)
+    public List<Config> collectChildrenErrors(long taskId)
     {
         return handle.createQuery(
                 "select ts.error from tasks t" +
@@ -280,7 +281,7 @@ public class DatabaseSessionStoreManager
         return n > 0;
     }
 
-    public boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, TaskReport report)
+    public boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, TaskReport report)
     {
         long n = dao.setState(taskId, beforeState.get(), afterState.get());
         if (n > 0) {
@@ -288,13 +289,14 @@ public class DatabaseSessionStoreManager
                     // TODO create a class for stored report
                     report.getCarryParams().getFactory().create()
                         .set("in", report.getInputs())
-                        .set("out", report.getOutputs()));
+                        .set("out", report.getOutputs())
+                        .immutable());
             return true;
         }
         return false;
     }
 
-    public boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval, ConfigSource error)
+    public boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval, Config error)
     {
         long n;
         if (retryInterval.isPresent()) {
@@ -310,7 +312,7 @@ public class DatabaseSessionStoreManager
         return false;
     }
 
-    public boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval)
+    public boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval)
     {
         long n;
         if (retryInterval.isPresent()) {
@@ -490,7 +492,7 @@ public class DatabaseSessionStoreManager
                 " values (:siteId, :namespaceType, :namespaceId, :name, :params, :options, now())")
         @GetGeneratedKeys
         long insertSession(@Bind("siteId") int siteId,  @Bind("namespaceType") short namespaceType,
-                @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") ConfigSource params, @Bind("options") SessionOptions options);
+                @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") Config params, @Bind("options") SessionOptions options);
 
         @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +
                 " values (:id, :repositoryId, :workflowId)")
@@ -514,7 +516,7 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("insert into session_monitors (session_id, config, next_run_time, created_at, updated_at)" +
                 " values (:sessionId, :config, :nextRunTime, now(), now())")
         @GetGeneratedKeys
-        long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("config") ConfigSource config, @Bind("nextRunTime") long nextRunTime);
+        long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("config") Config config, @Bind("nextRunTime") long nextRunTime);
 
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
@@ -527,7 +529,7 @@ public class DatabaseSessionStoreManager
 
         @SqlUpdate("insert into task_details (id, full_name, config)" +
                 " values (:id, :fullName, :config)")
-        void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("config") ConfigSource config);
+        void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("config") Config config);
 
         @SqlUpdate("insert into task_state_details (id)" +
                 " values (:id)")
@@ -588,7 +590,7 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("update task_state_details " +
                 " set state_params = :stateParams, carry_params = :carryParams, error = :error, report = :report" +
                 " where id = :id")
-        long setStateDetails(@Bind("id") long taskId, @Bind("stateParams") ConfigSource stateParams, @Bind("carryParams") ConfigSource carryParams, @Bind("error") ConfigSource error, @Bind("report") ConfigSource report);
+        long setStateDetails(@Bind("id") long taskId, @Bind("stateParams") Config stateParams, @Bind("carryParams") Config carryParams, @Bind("error") Config error, @Bind("report") Config report);
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), state = " + TaskStateCode.READY_CODE +
@@ -625,10 +627,10 @@ public class DatabaseSessionStoreManager
     private static class StoredSessionMapper
             implements ResultSetMapper<StoredSession>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
         private final JsonMapper<SessionOptions> opm;
 
-        public StoredSessionMapper(ConfigSourceMapper cfm, JsonMapper<SessionOptions> opm)
+        public StoredSessionMapper(ConfigMapper cfm, JsonMapper<SessionOptions> opm)
         {
             this.cfm = cfm;
             this.opm = opm;
@@ -652,10 +654,10 @@ public class DatabaseSessionStoreManager
     private static class StoredTaskMapper
             implements ResultSetMapper<StoredTask>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
         private final JsonMapper<TaskReport> trm;
 
-        public StoredTaskMapper(ConfigSourceMapper cfm, JsonMapper<TaskReport> trm)
+        public StoredTaskMapper(ConfigMapper cfm, JsonMapper<TaskReport> trm)
         {
             this.cfm = cfm;
             this.trm = trm;
@@ -676,11 +678,11 @@ public class DatabaseSessionStoreManager
                     .collect(Collectors.toList());
             }
 
-            ConfigSource reportConfig = cfm.fromResultSetOrEmpty(r, "report");
+            Config reportConfig = cfm.fromResultSetOrEmpty(r, "report");
             TaskReport report = TaskReport.builder()
                 .carryParams(cfm.fromResultSetOrEmpty(r, "carry_params"))
-                .inputs(reportConfig.getListOrEmpty("in", ConfigSource.class))
-                .outputs(reportConfig.getListOrEmpty("out", ConfigSource.class))
+                .inputs(reportConfig.getListOrEmpty("in", Config.class))
+                .outputs(reportConfig.getListOrEmpty("out", Config.class))
                 .build();
 
             return ImmutableStoredTask.builder()
@@ -736,9 +738,9 @@ public class DatabaseSessionStoreManager
     private static class StoredSessionMonitorMapper
             implements ResultSetMapper<StoredSessionMonitor>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredSessionMonitorMapper(ConfigSourceMapper cfm)
+        public StoredSessionMonitorMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
@@ -758,20 +760,20 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class ConfigSourceResultSetMapper
-            implements ResultSetMapper<ConfigSource>
+    private static class ConfigResultSetMapper
+            implements ResultSetMapper<Config>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
         private final String column;
 
-        public ConfigSourceResultSetMapper(ConfigSourceMapper cfm, String column)
+        public ConfigResultSetMapper(ConfigMapper cfm, String column)
         {
             this.cfm = cfm;
             this.column = column;
         }
 
         @Override
-        public ConfigSource map(int index, ResultSet r, StatementContext ctx)
+        public Config map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
             return cfm.fromResultSetOrEmpty(r, column);

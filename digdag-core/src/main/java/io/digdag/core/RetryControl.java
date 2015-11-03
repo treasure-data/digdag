@@ -1,15 +1,17 @@
 package io.digdag.core;
 
+import io.digdag.core.config.Config;
+
 public class RetryControl
 {
-    public static RetryControl prepare(ConfigSource config, ConfigSource stateParams, boolean enableDefaultByDefault)
+    public static RetryControl prepare(Config config, Config stateParams, boolean enableDefaultByDefault)
     {
         return new RetryControl(stateParams);
     }
 
-    private final ConfigSource stateParams;
+    private final Config stateParams;
 
-    private RetryControl(ConfigSource stateParams)
+    private RetryControl(Config stateParams)
     {
         this.stateParams = stateParams;
     }
@@ -20,13 +22,13 @@ public class RetryControl
         return 0;
     }
 
-    public ConfigSource getNextRetryStateParams()
+    public Config getNextRetryStateParams()
     {
         // TODO
         return stateParams;
     }
 
-    public boolean evaluate(ConfigSource error)  // TODO error class
+    public boolean evaluate(Config error)  // TODO error class
     {
         // TODO
         return false;

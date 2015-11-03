@@ -20,18 +20,19 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import io.digdag.core.config.Config;
 
 public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager
         implements ScheduleStoreManager
 {
     private final StoredScheduleMapper ssm;
-    private final ConfigSourceMapper cfm;
+    private final ConfigMapper cfm;
     private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseScheduleStoreManager(IDBI dbi, ConfigSourceMapper cfm)
+    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm)
     {
         this.handle = dbi.open();
         this.cfm = cfm;
@@ -157,7 +158,7 @@ public class DatabaseScheduleStoreManager
                 " (workflow_id, config, next_run_time, next_schedule_time, created_at, updated_at)" +
                 " values (:workflowId, :config, :nextRunTime, :nextScheduleTime, now(), now())")
         @GetGeneratedKeys
-        long insertRepositorySchedule(@Bind("workflowId") int workflowId, @Bind("config") ConfigSource config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        long insertRepositorySchedule(@Bind("workflowId") int workflowId, @Bind("config") Config config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlQuery("select * from schedules" +
                 " where next_run_time <= :currentTime" +
@@ -174,9 +175,9 @@ public class DatabaseScheduleStoreManager
     private static class StoredScheduleMapper
             implements ResultSetMapper<StoredSchedule>
     {
-        private final ConfigSourceMapper cfm;
+        private final ConfigMapper cfm;
 
-        public StoredScheduleMapper(ConfigSourceMapper cfm)
+        public StoredScheduleMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }

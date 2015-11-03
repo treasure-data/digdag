@@ -5,18 +5,21 @@ import java.util.Map;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigException;
+import io.digdag.core.config.ConfigFactory;
 
 public class TaskQueueManager
 {
     private final QueueDescStoreManager storeManager;
-    private final ConfigSource defaultQueueConfig;
+    private final Config defaultQueueConfig;
     private final Map<String, TaskQueueFactory> queueTypes;
 
     @Inject
-    public TaskQueueManager(QueueDescStoreManager storeManager, ConfigSourceFactory cf, Set<TaskQueueFactory> factories)
+    public TaskQueueManager(QueueDescStoreManager storeManager, ConfigFactory cf, Set<TaskQueueFactory> factories)
     {
         this.storeManager = storeManager;
-        this.defaultQueueConfig = cf.create().set("type", "memory"); // TODO inject
+        this.defaultQueueConfig = cf.create().set("type", "memory").immutable(); // TODO inject
 
         ImmutableMap.Builder<String, TaskQueueFactory> builder = ImmutableMap.builder();
         for (TaskQueueFactory factory : factories) {
@@ -28,22 +31,22 @@ public class TaskQueueManager
     // used by agents
     public TaskQueue getOrCreateTaskQueue(int siteId, String name)
     {
-        ConfigSource config = storeManager.getQueueDescStore(siteId)
+        Config config = storeManager.getQueueDescStore(siteId)
             .getQueueDescByNameOrCreateDefault(name, defaultQueueConfig)
             .getConfig();
-        return getTaskQueueFromConfigSource(siteId, name, config);
+        return getTaskQueueFromConfig(siteId, name, config);
     }
 
     // used by executors
     public TaskQueue getTaskQueue(int siteId, String name)
     {
-        ConfigSource config = storeManager.getQueueDescStore(siteId)
+        Config config = storeManager.getQueueDescStore(siteId)
             .getQueueDescByName(name)
             .getConfig();
-        return getTaskQueueFromConfigSource(siteId, name, config);
+        return getTaskQueueFromConfig(siteId, name, config);
     }
 
-    private TaskQueue getTaskQueueFromConfigSource(int siteId, String name, ConfigSource config)
+    private TaskQueue getTaskQueueFromConfig(int siteId, String name, Config config)
     {
         String type = config.get("type", String.class);
         TaskQueueFactory factory = queueTypes.get(type);

@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.config;
 
 public class ConfigException
         extends RuntimeException

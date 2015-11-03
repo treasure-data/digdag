@@ -1,8 +1,10 @@
 package io.digdag.core;
 
+import io.digdag.core.config.Config;
+
 public interface TaskExecutorFactory
 {
     String getType();
 
-    TaskExecutor newTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state);
+    TaskExecutor newTaskExecutor(Config config, Config params, Config state);
 }

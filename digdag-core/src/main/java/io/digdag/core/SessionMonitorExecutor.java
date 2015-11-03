@@ -13,19 +13,21 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
 
 public class SessionMonitorExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(SessionMonitorExecutor.class);
 
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
     private final ExecutorService executor;
 
     @Inject
     public SessionMonitorExecutor(
-            ConfigSourceFactory cf,
+            ConfigFactory cf,
             SessionStoreManager sm,
             WorkflowExecutor exec)
     {

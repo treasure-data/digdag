@@ -9,10 +9,13 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.YamlConfigLoader;
 
 public class LocalSite
 {
-    private final ConfigSourceFactory cf;
+    private final ConfigFactory cf;
     private final YamlConfigLoader loader;
     private final WorkflowCompiler compiler;
     private final RepositoryStore repoStore;
@@ -30,7 +33,7 @@ public class LocalSite
 
     @Inject
     public LocalSite(
-            ConfigSourceFactory cf,
+            ConfigFactory cf,
             YamlConfigLoader loader,
             WorkflowCompiler compiler,
             RepositoryStoreManager repoStoreManager,
@@ -140,7 +143,7 @@ public class LocalSite
                 Revision.revisionBuilder()
                     .name("revision")
                     .archiveType("db")
-                    .globalParams(cf.create())
+                    .globalParams(cf.empty())
                     .build(),
                 workflowSources,
                 currentTimeToSchedule);
@@ -148,7 +151,7 @@ public class LocalSite
 
     public List<StoredSession> startWorkflows(
             List<WorkflowSource> workflowSources,
-            ConfigSource sessionParams,
+            Config sessionParams,
             SessionOptions options,
             Date slaCurrentTime)
     {

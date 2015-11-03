@@ -2,6 +2,7 @@ package io.digdag.core;
 
 import java.util.List;
 import com.google.common.base.Optional;
+import io.digdag.core.config.Config;
 
 public interface TaskControlStore
 {
@@ -15,17 +16,17 @@ public interface TaskControlStore
     boolean isAllChildrenDone(long taskId);
 
     // getChildErrors including this task's error
-    List<ConfigSource> collectChildrenErrors(long taskId);
+    List<Config> collectChildrenErrors(long taskId);
 
     boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
 
     // planned to success
-    boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, TaskReport report);
+    boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, TaskReport report);
 
     // planned to error
-    boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval, ConfigSource error);
+    boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval, Config error);
 
-    boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, ConfigSource stateParams, Optional<Integer> retryInterval);
+    boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval);
 
     int trySetChildrenBlockedToReadyOrShortCircuitPlanned(long taskId);
 

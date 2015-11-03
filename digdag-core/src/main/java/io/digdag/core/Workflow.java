@@ -7,6 +7,7 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.digdag.core.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
@@ -16,7 +17,7 @@ public abstract class Workflow
 {
     public abstract String getName();
 
-    public abstract ConfigSource getMeta();
+    public abstract Config getMeta();
 
     public abstract List<WorkflowTask> getTasks();
 
@@ -25,7 +26,7 @@ public abstract class Workflow
         return ImmutableWorkflow.builder();
     }
 
-    public static Workflow of(String name, ConfigSource meta, List<WorkflowTask> tasks)
+    public static Workflow of(String name, Config meta, List<WorkflowTask> tasks)
     {
         return workflowBuilder()
             .name(name)

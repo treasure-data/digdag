@@ -4,39 +4,41 @@ import java.util.List;
 import java.util.ArrayList;
 import com.google.common.collect.*;
 import com.google.common.base.*;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.MutableConfig;
 
 public abstract class BaseTaskExecutor
         implements TaskExecutor
 {
-    protected final ConfigSource config;
-    protected final ConfigSource params;
-    protected ConfigSource state;
+    protected final Config config;
+    protected final Config params;
+    protected MutableConfig state;
 
-    protected final ConfigSource subtaskConfig;
-    protected final List<ConfigSource> inputs;
-    protected final List<ConfigSource> outputs;
+    protected MutableConfig subtaskConfig;
+    protected final List<Config> inputs;
+    protected final List<Config> outputs;
 
-    public BaseTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state)
+    public BaseTaskExecutor(Config config, Config params, Config state)
     {
         this.config = config;
         this.params = params;
-        this.state = state;
+        this.state = state.mutable();
         this.subtaskConfig = config.getFactory().create();
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();
     }
 
-    public ConfigSource getSubtaskConfig()
+    public MutableConfig getSubtaskConfig()
     {
         return subtaskConfig;
     }
 
-    public void addInput(ConfigSource input)
+    public void addInput(Config input)
     {
         inputs.add(input);
     }
 
-    public void addOutput(ConfigSource output)
+    public void addOutput(Config output)
     {
         outputs.add(output);
     }
@@ -44,11 +46,11 @@ public abstract class BaseTaskExecutor
     @Override
     public TaskResult run()
     {
-        RetryControl retry = RetryControl.prepare(config, state, true);
+        RetryControl retry = RetryControl.prepare(config, state.immutable(), true);
         try {
-            ConfigSource carryParams = runTask(config, params);
+            Config carryParams = runTask(config, params);
             return TaskResult.builder()
-                .subtaskConfig(subtaskConfig)
+                .subtaskConfig(subtaskConfig.immutable())
                 .report(
                     TaskReport.builder()
                     .inputs(ImmutableList.copyOf(inputs))
@@ -58,9 +60,9 @@ public abstract class BaseTaskExecutor
                 .build();
         }
         catch (RuntimeException ex) {
-            ConfigSource error = TaskRunner.makeExceptionError(config.getFactory(), ex);
+            Config error = TaskRunner.makeExceptionError(config.getFactory(), ex);
             boolean doRetry = retry.evaluate(error);
-            this.state = retry.getNextRetryStateParams();
+            this.state = retry.getNextRetryStateParams().mutable();
             if (doRetry) {
                 throw new TaskExecutionException(ex, error, Optional.of(retry.getNextRetryInterval()));
             }
@@ -70,11 +72,11 @@ public abstract class BaseTaskExecutor
         }
     }
 
-    public abstract ConfigSource runTask(ConfigSource config, ConfigSource params);
+    public abstract Config runTask(Config config, Config params);
 
     @Override
-    public ConfigSource getState()
+    public Config getState()
     {
-        return state;
+        return state.immutable();
     }
 }

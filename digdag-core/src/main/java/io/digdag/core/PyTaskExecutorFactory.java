@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.config.Config;
+import io.digdag.core.config.MutableConfig;
 
 public class PyTaskExecutorFactory
         implements TaskExecutorFactory
@@ -39,7 +41,7 @@ public class PyTaskExecutorFactory
         return "py";
     }
 
-    public TaskExecutor newTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state)
+    public TaskExecutor newTaskExecutor(Config config, Config params, Config state)
     {
         return new PyTaskExecutor(config, params, state);
     }
@@ -47,15 +49,15 @@ public class PyTaskExecutorFactory
     private class PyTaskExecutor
             extends BaseTaskExecutor
     {
-        public PyTaskExecutor(ConfigSource config, ConfigSource params, ConfigSource state)
+        public PyTaskExecutor(Config config, Config params, Config state)
         {
             super(config, params, state);
         }
 
         @Override
-        public ConfigSource runTask(ConfigSource config, ConfigSource params)
+        public Config runTask(Config config, Config params)
         {
-            ConfigSource data;
+            Config data;
             try {
                 data = runCode(config, params, "run");
             }
@@ -64,14 +66,15 @@ public class PyTaskExecutorFactory
             }
 
             subtaskConfig.setAll(data.getNestedOrGetEmpty("sub"));
-            inputs.addAll(data.getListOrEmpty("inputs", ConfigSource.class));
-            outputs.addAll(data.getListOrEmpty("outputs", ConfigSource.class));
+            inputs.addAll(data.getListOrEmpty("inputs", Config.class));
+            outputs.addAll(data.getListOrEmpty("outputs", Config.class));
             return data.getNestedOrGetEmpty("carry_params");
         }
 
-        private ConfigSource runCode(ConfigSource config, ConfigSource params, String methodName)
+        private Config runCode(Config c, Config params, String methodName)
                 throws IOException, InterruptedException
         {
+            MutableConfig config = c.mutable();
             File inFile = File.createTempFile("digdag-py-in-", ".tmp");  // TODO use TempFileAllocator
             File outFile = File.createTempFile("digdag-py-out-", ".tmp");  // TODO use TempFileAllocator
 
@@ -160,7 +163,7 @@ public class PyTaskExecutorFactory
                 throw new RuntimeException("Python command failed: "+message);
             }
 
-            return mapper.readValue(outFile, ConfigSource.class);
+            return mapper.readValue(outFile, Config.class);
         }
     }
 }
