@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import org.immutables.value.Value;
 import com.google.common.base.*;

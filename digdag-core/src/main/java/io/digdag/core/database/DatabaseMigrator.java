@@ -1,11 +1,10 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import java.util.List;
 import java.util.ArrayList;
 import com.google.inject.Inject;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
-import io.digdag.core.config.Config;
 
 public class DatabaseMigrator
 {

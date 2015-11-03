@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import java.util.List;
 import java.util.Date;

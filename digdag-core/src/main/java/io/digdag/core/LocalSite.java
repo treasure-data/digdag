@@ -3,10 +3,11 @@ package io.digdag.core;
 import java.util.List;
 import java.util.Date;
 import java.util.stream.Collectors;
-import java.io.File;
+
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.database.DatabaseMigrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.Config;

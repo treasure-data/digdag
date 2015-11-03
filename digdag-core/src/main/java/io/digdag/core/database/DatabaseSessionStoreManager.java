@@ -1,8 +1,7 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import java.util.List;
 import java.util.Date;
-import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.sql.ResultSet;
@@ -11,6 +10,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.core.*;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;

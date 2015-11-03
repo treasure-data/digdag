@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import java.util.Properties;
 import javax.annotation.PreDestroy;
@@ -8,6 +8,8 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;
+import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.database.DatabaseStoreConfig;
 
 public class PooledDataSourceProvider
         implements Provider<DataSource>

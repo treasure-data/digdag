@@ -1,4 +1,4 @@
-package io.digdag.core;
+package io.digdag.core.database;
 
 import com.google.inject.Inject;
 import com.google.inject.Module;
@@ -6,6 +6,8 @@ import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import com.google.inject.Provider;
 import javax.sql.DataSource;
+
+import io.digdag.core.*;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.h2.jdbcx.JdbcConnectionPool;
