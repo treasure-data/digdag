@@ -1,21 +1,12 @@
 # digdag
 
-# How to run examples
+## Quick Start
 
-## Using Ruby PoC version (old version):
-
-1. install Ruby >= 2.1
-2. install necessary gems: $ gem install sigdump fluentd concurrent serverengine uuidtools liquid
-3. (optional) install graphviz: $ brew install graphviz
-4. run $ ./bin/digdag examples/NAME.yml
-5. (optional) visualize task dependency: $ dot -Tpng graph.dot -o graph.png
-
-## Using Java version (current version):
-
-1. install Java JDK >= 8
-2. build command: $ ./gradlew cli
-3. (optional) install graphviz: $ brew install graphviz
-4. run $ ./pkg/digdag-0.1.0.jar run examples/NAME.yml
+1. Install Java JDK >= 8
+2. Checkout the latest code: `$ git checkout https://github.com/treasure-data/digdag.git && cd digdag`
+3. Build it: `$ ./gradlew cli`
+4. Run example `$ ./pkg/digdag-0.1.0.jar run examples/NAME.yml`
+5. (optional) install graphviz: `$ brew install graphviz`
 
 ## Commands
 
@@ -24,6 +15,7 @@ Usage: digdag <command> [options...]
   Commands:
     run <workflow.yml>               run a workflow
     show <workflow.yml>              visualize a workflow
+    sched <workflow.yml> -o <dir>    start scheduling a workflow
 
   Options:
     -g, --log PATH                   output log messages to a file (default: -)
