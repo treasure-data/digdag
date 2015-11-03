@@ -19,7 +19,7 @@ public class TaskQueueManager
     public TaskQueueManager(QueueDescStoreManager storeManager, ConfigFactory cf, Set<TaskQueueFactory> factories)
     {
         this.storeManager = storeManager;
-        this.defaultQueueConfig = cf.create().set("type", "memory").immutable(); // TODO inject
+        this.defaultQueueConfig = cf.create().set("type", "memory"); // TODO inject
 
         ImmutableMap.Builder<String, TaskQueueFactory> builder = ImmutableMap.builder();
         for (TaskQueueFactory factory : factories) {

@@ -14,22 +14,17 @@ public class ConfigFactory
         this.objectMapper = objectMapper;
     }
 
-    public Config empty()
+    public Config create()
     {
-        return new ConfigImpl(objectMapper);
+        return new Config(objectMapper);
     }
 
-    public MutableConfig create()
+    public Config create(ObjectNode object)
     {
-        return new ConfigImpl(objectMapper);
+        return new Config(objectMapper, object);
     }
 
-    public MutableConfig create(ObjectNode object)
-    {
-        return new ConfigImpl(objectMapper, object);
-    }
-
-    public MutableConfig create(Object other)
+    public Config create(Object other)
     {
         return create().set("_", other).getNested("_");
     }

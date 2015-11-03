@@ -51,7 +51,7 @@ public class ConfigMapper
     {
         String text = rs.getString(column);
         if (rs.wasNull()) {
-            return cf.empty();
+            return cf.create();
         }
         else {
             return fromText(text);
@@ -63,7 +63,7 @@ public class ConfigMapper
         try {
             JsonNode node = jsonTreeMapper.readTree(text);
             Preconditions.checkState(node instanceof ObjectNode, "Stored Config must be an object");
-            return cf.create((ObjectNode) node).immutable();
+            return cf.create((ObjectNode) node);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);

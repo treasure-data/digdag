@@ -37,7 +37,7 @@ public abstract class TaskReport
     public static TaskReport empty(ConfigFactory cf)
     {
         return builder()
-            .carryParams(cf.empty())
+            .carryParams(cf.create())
             .build();
     }
 }

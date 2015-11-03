@@ -10,7 +10,6 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigException;
-import io.digdag.core.config.MutableConfig;
 import static com.google.common.collect.Maps.immutableEntry;
 
 public class WorkflowCompiler
@@ -105,7 +104,7 @@ public class WorkflowCompiler
         public List<WorkflowTask> compile(String name, Config config)
         {
             try {
-                collect(Optional.absent(), config.getFactory().empty(), name, config);
+                collect(Optional.absent(), config.getFactory().create(), name, config);
                 return tasks
                     .stream()
                     .map(tb -> tb.build())
@@ -124,14 +123,14 @@ public class WorkflowCompiler
                 String name, Config originalConfig)
         {
             Config thisDefaultConfig = originalConfig.getNestedOrGetEmpty("default");
-            final Config defaultConfig = parentDefaultConfig.mutable().setAll(thisDefaultConfig).immutable();
-            final MutableConfig config = originalConfig.mutable().setAll(defaultConfig);
+            final Config defaultConfig = parentDefaultConfig.deepCopy().setAll(thisDefaultConfig);
+            final Config config = originalConfig.deepCopy().setAll(defaultConfig);
 
             // +key: {...}
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
                 .filter(key -> key.startsWith("+"))
-                .map(key -> immutableEntry(key, config.getNested(key).immutable()))
+                .map(key -> immutableEntry(key, config.getNested(key)))
                 .collect(Collectors.toList());
 
             // other: ...
@@ -145,11 +144,11 @@ public class WorkflowCompiler
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);
                 }
-                return addTask(parent, name, false, config.immutable());
+                return addTask(parent, name, false, config);
             }
             else {
                 // group node
-                final TaskBuilder tb = addTask(parent, name, true, config.immutable());
+                final TaskBuilder tb = addTask(parent, name, true, config);
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()

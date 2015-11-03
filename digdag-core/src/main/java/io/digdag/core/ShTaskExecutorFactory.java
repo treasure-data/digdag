@@ -86,7 +86,7 @@ public class ShTaskExecutorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return params.getFactory().empty();
+            return params.getFactory().create();
         }
     }
 }

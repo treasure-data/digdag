@@ -143,7 +143,7 @@ public class LocalSite
                 Revision.revisionBuilder()
                     .name("revision")
                     .archiveType("db")
-                    .globalParams(cf.empty())
+                    .globalParams(cf.create())
                     .build(),
                 workflowSources,
                 currentTimeToSchedule);

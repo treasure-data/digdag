@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.MutableConfig;
 
 public class WorkflowExecutor
         implements TaskApi
@@ -264,9 +263,8 @@ public class WorkflowExecutor
             else if (errorTask.isPresent()) {
                 // don't set GROUP_ERROR here. Delay until next setDoneFromDoneChildren call
                 Config nextState = detail.getStateParams()
-                    .mutable()
-                    .set("group_error", true)
-                    .immutable();
+                    .deepCopy()
+                    .set("group_error", true);
                 return lockedTask.setPlannedToPlanned(nextState, error);
             }
             else {
@@ -278,7 +276,7 @@ public class WorkflowExecutor
     private Config buildPropagatedError(List<Config> childrenErrors)
     {
         Preconditions.checkState(!childrenErrors.isEmpty(), "errors must not be empty to migrate to children_error state");
-        return childrenErrors.get(0).getFactory().create().set("errors", childrenErrors).immutable();
+        return childrenErrors.get(0).getFactory().create().set("errors", childrenErrors);
     }
 
     private class IncrementalStatusPropagator
@@ -441,7 +439,7 @@ public class WorkflowExecutor
             if (skipTaskReport.isPresent()) {
                 logger.debug("Skipping task '{}'", fullName);
                 taskSucceeded(control, task,
-                        cf.empty(), cf.empty(),
+                        cf.create(), cf.create(),
                         skipTaskReport.get());
                 return true;
             }
@@ -466,7 +464,7 @@ public class WorkflowExecutor
                     return true;
                 }
                 catch (Exception ex) {
-                    Config stateParams = cf.create().set("schedule_error", ex.toString()).immutable();
+                    Config stateParams = cf.create().set("schedule_error", ex.toString());
                     taskFailed(control, task,
                             TaskRunner.makeExceptionError(cf, ex), stateParams,
                             Optional.absent());  // TODO retry here?
@@ -563,15 +561,15 @@ public class WorkflowExecutor
     private Config collectTaskParams(StoredTask task, StoredSession session)
     {
         // TODO not accurate implementation
-        MutableConfig params = session.getParams().getFactory().create();
+        Config params = session.getParams().getFactory().create();
         params.set("session_name", session.getName());
         params.set("task_name", task.getFullName());
         params.setAll(session.getParams());
         params.setAll(task.getConfig().getNestedOrGetEmpty("params"));
-        return collectTaskParams(task, params).immutable();
+        return collectTaskParams(task, params);
     }
 
-    private MutableConfig collectTaskParams(StoredTask task, MutableConfig result)
+    private Config collectTaskParams(StoredTask task, Config result)
     {
         Optional<Long> lastId = Optional.absent();
         while (true) {
@@ -607,15 +605,16 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, Config error, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
     {
-        MutableConfig subtaskConfig = detail.getConfig().getNestedOrGetEmpty("error").mutable();
+        Config subtaskConfig = detail.getConfig().getNestedOrGetEmpty("error").deepCopy();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }
 
-        MutableConfig params = subtaskConfig.getNestedOrSetEmpty("params");
+        // modify params
+        Config params = subtaskConfig.getNestedOrSetEmpty("params");
         params.set("error", error);
 
-        List<WorkflowTask> tasks = compiler.compileTasks(".error", subtaskConfig.immutable());
+        List<WorkflowTask> tasks = compiler.compileTasks(".error", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -627,7 +626,7 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addCheckTasksIfAny(TaskControl control, StoredTask detail, Optional<StoredTask> upstreamTask)
     {
-        Config subtaskConfig = detail.getConfig().getNestedOrGetEmpty("check");
+        Config subtaskConfig = detail.getConfig().getNestedOrGetEmpty("check").deepCopy();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }

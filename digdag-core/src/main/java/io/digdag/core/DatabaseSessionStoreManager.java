@@ -289,8 +289,7 @@ public class DatabaseSessionStoreManager
                     // TODO create a class for stored report
                     report.getCarryParams().getFactory().create()
                         .set("in", report.getInputs())
-                        .set("out", report.getOutputs())
-                        .immutable());
+                        .set("out", report.getOutputs()));
             return true;
         }
         return false;

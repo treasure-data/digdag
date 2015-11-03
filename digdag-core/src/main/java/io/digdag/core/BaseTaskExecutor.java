@@ -5,16 +5,15 @@ import java.util.ArrayList;
 import com.google.common.collect.*;
 import com.google.common.base.*;
 import io.digdag.core.config.Config;
-import io.digdag.core.config.MutableConfig;
 
 public abstract class BaseTaskExecutor
         implements TaskExecutor
 {
     protected final Config config;
     protected final Config params;
-    protected MutableConfig state;
+    protected Config state;
 
-    protected MutableConfig subtaskConfig;
+    protected Config subtaskConfig;
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
@@ -22,13 +21,13 @@ public abstract class BaseTaskExecutor
     {
         this.config = config;
         this.params = params;
-        this.state = state.mutable();
+        this.state = state;
         this.subtaskConfig = config.getFactory().create();
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();
     }
 
-    public MutableConfig getSubtaskConfig()
+    public Config getSubtaskConfig()
     {
         return subtaskConfig;
     }
@@ -46,11 +45,11 @@ public abstract class BaseTaskExecutor
     @Override
     public TaskResult run()
     {
-        RetryControl retry = RetryControl.prepare(config, state.immutable(), true);
+        RetryControl retry = RetryControl.prepare(config, state, true);
         try {
             Config carryParams = runTask(config, params);
             return TaskResult.builder()
-                .subtaskConfig(subtaskConfig.immutable())
+                .subtaskConfig(subtaskConfig)
                 .report(
                     TaskReport.builder()
                     .inputs(ImmutableList.copyOf(inputs))
@@ -62,7 +61,7 @@ public abstract class BaseTaskExecutor
         catch (RuntimeException ex) {
             Config error = TaskRunner.makeExceptionError(config.getFactory(), ex);
             boolean doRetry = retry.evaluate(error);
-            this.state = retry.getNextRetryStateParams().mutable();
+            this.state = retry.getNextRetryStateParams();
             if (doRetry) {
                 throw new TaskExecutionException(ex, error, Optional.of(retry.getNextRetryInterval()));
             }
@@ -77,6 +76,6 @@ public abstract class BaseTaskExecutor
     @Override
     public Config getState()
     {
-        return state.immutable();
+        return state;
     }
 }

@@ -26,13 +26,13 @@ public class YamlConfigLoader
             throws IOException
     {
         JsonNode node = objectToJsonNode(new Yaml().load(in));
-        return cf.create(validateJsonNode(node)).immutable();
+        return cf.create(validateJsonNode(node));
     }
 
     public Config loadString(String content)
     {
         JsonNode node = objectToJsonNode(new Yaml().load(content));
-        return cf.create(validateJsonNode(node)).immutable();
+        return cf.create(validateJsonNode(node));
     }
 
     public Config loadFile(File file)

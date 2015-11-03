@@ -16,7 +16,6 @@ import io.digdag.DigdagEmbed;
 import io.digdag.cli.Main.SystemExitException;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.MutableConfig;
 import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
@@ -120,11 +119,10 @@ public class Run
         final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
-        MutableConfig paramsBuilder = cf.create();
+        Config params = cf.create();
         if (paramsFilePath.isPresent()) {
-            paramsBuilder.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
+            params.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
         }
-        Config params = paramsBuilder.immutable();
 
         Optional<ResumeState> resumeState = Optional.absent();
         if (resumeStateFilePath.isPresent() && mapper.checkExists(resumeStateFilePath.get())) {
@@ -161,7 +159,7 @@ public class Run
             logger.debug("    config: "+task.getConfig());
             logger.debug("    taskType: "+task.getTaskType());
             logger.debug("    stateParams: "+task.getStateParams());
-            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.empty()));
+            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.create()));
             logger.debug("    in: "+task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
             logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());

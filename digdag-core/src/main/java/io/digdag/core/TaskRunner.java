@@ -10,7 +10,6 @@ import com.google.common.collect.*;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigException;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.MutableConfig;
 
 public class TaskRunner
 {
@@ -33,7 +32,7 @@ public class TaskRunner
 
     public void run(Action action)
     {
-        MutableConfig config = action.getConfig().mutable();
+        Config config = action.getConfig().deepCopy();
         Config params = action.getParams();
         Config state = action.getStateParams();
 
@@ -46,7 +45,7 @@ public class TaskRunner
                 if (!commandKey.isPresent()) {
                     // TODO warning
                     api.taskSucceeded(action.getTaskId(),
-                            state, cf.empty(),
+                            state, cf.create(),
                             TaskReport.empty(cf));
                     return;
                 }
@@ -59,7 +58,7 @@ public class TaskRunner
             if (factory == null) {
                 throw new ConfigException("Unknown task type: "+type);
             }
-            TaskExecutor executor = factory.newTaskExecutor(config.immutable(), params, state);
+            TaskExecutor executor = factory.newTaskExecutor(config, params, state);
 
             TaskResult result;
             try {
@@ -100,7 +99,6 @@ public class TaskRunner
                     Arrays.asList(ex.getStackTrace())
                     .stream()
                     .map(it -> it.toString())
-                    .collect(Collectors.joining(", ")))
-            .immutable();
+                    .collect(Collectors.joining(", ")));
     }
 }

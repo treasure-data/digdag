@@ -21,7 +21,6 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.Config;
-import io.digdag.core.config.MutableConfig;
 
 public class PyTaskExecutorFactory
         implements TaskExecutorFactory
@@ -71,10 +70,9 @@ public class PyTaskExecutorFactory
             return data.getNestedOrGetEmpty("carry_params");
         }
 
-        private Config runCode(Config c, Config params, String methodName)
+        private Config runCode(Config config, Config params, String methodName)
                 throws IOException, InterruptedException
         {
-            MutableConfig config = c.mutable();
             File inFile = File.createTempFile("digdag-py-in-", ".tmp");  // TODO use TempFileAllocator
             File outFile = File.createTempFile("digdag-py-out-", ".tmp");  // TODO use TempFileAllocator
 
