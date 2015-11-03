@@ -1,0 +1,17 @@
+sla_example_workflow:
+  meta:
+    owner: Sadayuki Furuhashi
+    created_at: 2015-11-02 18:20 -0700
+
+  schedule:
+    cron: "2 0 * * *"  # runs every 02:00 midnight
+    timezone: America/Los_Angeles   # this considers daylight saving time
+
+  sla:
+    time: "02:02"
+    +notice:
+      # this task runs if this workflow is not finished at 02:02
+      sh>: echo "Workflow $session_name for time $schedule_time is not finished yet!"
+
+  +sleep:
+    sh>: "sleep 180"
