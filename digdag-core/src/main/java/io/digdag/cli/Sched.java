@@ -14,6 +14,7 @@ import com.google.inject.util.Modules;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.schedule.ScheduleStarter;
 import io.digdag.core.spi.ScheduleTime;
 import io.digdag.core.workflow.SessionStoreManager;
@@ -61,7 +62,7 @@ public class Sched
     {
         System.err.println("Usage: digdag sched <workflow.yml> [options...]");
         System.err.println("  Options:");
-        System.err.println("    -o, --output DIR                  store execution results to this directory (default: same name with workflow file name)");
+        System.err.println("    -o, --output DIR                 store execution results to this directory (default: same name with workflow file name)");
         Main.showCommonOptions();
         System.err.println("");
         return systemExit(error);
@@ -108,7 +109,7 @@ public class Sched
 
         outputPath.mkdirs();
 
-        List<WorkflowSource> workflowSources = Run.loadWorkflowSources(loader.loadFile(workflowPath));
+        List<WorkflowSource> workflowSources = loader.loadFile(workflowPath).convert(WorkflowSourceList.class).get();
 
         localSite.scheduleWorkflows(workflowSources, new Date());
         // TODO set next schedule time from history

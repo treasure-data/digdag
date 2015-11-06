@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import com.google.inject.Inject;
@@ -40,6 +41,16 @@ public class FileMapper
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
+    }
+
+    public <T> String toYaml(T value)
+            throws IOException
+    {
+        StringWriter writer = new StringWriter();
+        try (YAMLGenerator yamlOut = yaml.createGenerator(writer)) {
+            mapper.writeValue(yamlOut, value);
+        }
+        return writer.toString();
     }
 
     public <T> T readFile(File file, Class<T> klass)

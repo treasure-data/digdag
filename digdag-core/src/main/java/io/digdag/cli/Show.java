@@ -6,6 +6,8 @@ import java.io.File;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Injector;
+import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import joptsimple.OptionParser;
@@ -55,11 +57,11 @@ public class Show
         final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        final Config ast = loader.loadFile(workflowPath);
+        List<WorkflowSource> workflowSources = loader.loadFile(workflowPath).convert(WorkflowSourceList.class).get();
 
-        List<Workflow> workflows = ast.getKeys()
+        List<Workflow> workflows = workflowSources
             .stream()
-            .map(key -> compiler.compile(key, ast.getNested(key)))
+            .map(wf -> compiler.compile(wf.getName(), wf.getConfig()))
             .collect(Collectors.toList());
 
         Workflow workflow = workflows.get(0);

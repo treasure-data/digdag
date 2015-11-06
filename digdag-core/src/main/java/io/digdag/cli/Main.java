@@ -53,6 +53,12 @@ public class Main
         case "show":
             Show.main(command, commandArgs);
             break;
+        case "archive":
+            Archive.main(command, commandArgs);
+            break;
+        case "server":
+            Server.main(command, commandArgs);
+            break;
         default:
             throw usage("Unknown command '"+command+"'");
         }
@@ -142,6 +148,10 @@ public class Main
         System.err.println("    run <workflow.yml>               run a workflow");
         System.err.println("    show <workflow.yml>              visualize a workflow");
         System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
+        System.err.println("");
+        System.err.println("  Server-mode commands:");
+        System.err.println("    archive <workflow.yml...>        create a project archive");
+        System.err.println("    server                           start digdag server");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();

@@ -39,6 +39,9 @@ subprojects {
     artifacts {
         archives testsJar
     }
+
+    task deps(type: DependencyReportTask) {
+    }
 }
 
 task wrapper(type: Wrapper) {

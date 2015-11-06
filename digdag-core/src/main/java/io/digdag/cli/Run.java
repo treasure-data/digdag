@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.stream.Collectors;
 
 import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.workflow.SessionOptions;
 import io.digdag.core.workflow.StoredSession;
 import io.digdag.core.workflow.StoredTask;
@@ -65,16 +66,9 @@ public class Run
         return systemExit(error);
     }
 
-    static List<WorkflowSource> loadWorkflowSources(final Config ast)
-    {
-        return ast.getKeys().stream()
-            .map(key -> WorkflowSource.of(key, ast.getNested(key)))
-            .collect(Collectors.toList());
-    }
-
     static WorkflowSource loadFirstWorkflowSource(final Config ast)
     {
-        List<WorkflowSource> workflowSources = loadWorkflowSources(ast);
+        List<WorkflowSource> workflowSources = ast.convert(WorkflowSourceList.class).get();
         if (workflowSources.size() != 1) {
             if (workflowSources.isEmpty()) {
                 throw new RuntimeException("Workflow file doesn't include definitions");
