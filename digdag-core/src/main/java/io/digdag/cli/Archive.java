@@ -68,7 +68,7 @@ public class Archive
 
     private static SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag archive <workflow.yml> [options...]");
+        System.err.println("Usage: digdag archive <workflow.yml...> [options...]");
         System.err.println("  Options:");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path");
         //System.err.println("    -C           DIR                  change directory before reading files");
