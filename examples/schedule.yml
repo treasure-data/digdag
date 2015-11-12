@@ -14,6 +14,6 @@ schedule_example_workflow:
       sh>: echo "SLA triggered"
 
   +task:
-    sh>: "This schedule is for $schedule_time $timezone"
+    sh>: echo "This schedule is for $schedule_time $timezone"
 
   # See also sla.yml
