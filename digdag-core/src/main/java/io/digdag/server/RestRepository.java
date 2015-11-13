@@ -1,7 +1,6 @@
 package io.digdag.server;
 
 import java.util.Date;
-import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -25,7 +24,7 @@ public abstract class RestRepository
 
     public abstract String getArchiveType();
 
-    public abstract Optional<byte[]> getArchiveMd5();
+    public abstract byte[] getArchiveMd5();
 
     public static ImmutableRestRepository.Builder builder()
     {
@@ -41,7 +40,7 @@ public abstract class RestRepository
             .createdAt(repo.getCreatedAt())
             .updatedAt(rev.getCreatedAt())
             .archiveType(rev.getArchiveType())
-            .archiveMd5(rev.getArchiveMd5())
+            .archiveMd5(rev.getArchiveMd5().orNull())
             .build();
     }
 }

@@ -27,12 +27,12 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 @Produces("application/json")
 public class SessionResource
 {
-    // GET  /api/sessions                                    # list sessions from recent to old
-    // GET  /api/sessions?repository=<name>                  # list sessions that belong to a particular repository
-    // GET  /api/sessions?repository=<name>&workflow=<name>  # list sessions that belong to a particular workflow
-    // GET  /api/sessions/<id>                               # show a session
-    // GET  /api/sessions/<id>/tasks                         # list tasks of a session
-    // POST /api/sessions/<id>                               # do operations on a session (cancel, retry, etc.)
+    // [*] GET  /api/sessions                                    # list sessions from recent to old
+    // [ ] GET  /api/sessions?repository=<name>                  # list sessions that belong to a particular repository
+    // [ ] GET  /api/sessions?repository=<name>&workflow=<name>  # list sessions that belong to a particular workflow
+    // [*] GET  /api/sessions/{id}                               # show a session
+    // [*] GET  /api/sessions/{id}/tasks                         # list tasks of a session
+    // [ ] POST /api/sessions/{id}                               # do operations on a session (cancel, retry, etc.)
 
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
@@ -58,6 +58,27 @@ public class SessionResource
 
         return sessions.stream()
             .map(s -> RestSession.of(s))
+            .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/api/sessions/{id}")
+    public RestSession getSessions(@PathParam("id") long id)
+    {
+        StoredSession s = sm.getSessionStore(siteId)
+            .getSessionById(id);
+        return RestSession.of(s);
+    }
+
+    @GET
+    @Path("/api/sessions/{id}/tasks")
+    public List<RestTask> getTasks(@PathParam("id") long id)
+    {
+        // TODO paging
+        return sm.getSessionStore(siteId)
+            .getTasks(id, 100, Optional.absent())
+            .stream()
+            .map(task -> RestTask.of(task))
             .collect(Collectors.toList());
     }
 }

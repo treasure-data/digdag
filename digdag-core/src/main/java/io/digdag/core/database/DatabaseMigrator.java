@@ -188,7 +188,7 @@ public class DatabaseMigrator
                     .addTimestamp("updated_at", "not null")
                     .build());
             handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_id)");
-            handle.update("create unique index if not exists schedules_on_next_run_time on schedules (next_run_time)");
+            handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // queues
             handle.update(

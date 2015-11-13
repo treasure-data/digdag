@@ -57,9 +57,9 @@ public class Archive
             throw usage(null);
         }
 
-        List<File> workflowFiles = asList(args)
+        List<File> workflowFiles = op.nonOptionArguments()
             .stream()
-            .map(arg -> new File(arg))
+            .map(arg -> new File(arg.toString()))
             .collect(Collectors.toList());
         File outputPath = new File(Optional.fromNullable((String) op.valueOf("o")).or("archive.tar.gz"));
 

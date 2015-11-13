@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ByteArrayInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -18,6 +20,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
+import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
@@ -35,14 +38,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 @Produces("application/json")
 public class RepositoryResource
 {
-    // GET  /api/repositories                                # list the latest revisions of repositories
-    // GET  /api/repositories/<id>                           # show the latest revision of a repository
-    // GET  /api/repositories/<id>?revision=name             # show a former revision of a repository
-    // GET  /api/repositories/<id>/workflows                 # list workflows of the latest revision of a repository
-    // GET  /api/repositories/<id>/workflows?revision=name   # list workflows of a former revision of a repository
-    // GET  /api/repositories/<id>/archive                   # download archive file of the latest revision of a repository
-    // GET  /api/repositories/<id>/archive?revision=name     # download archive file of a former revision of a repository
-    // PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
+    // [*] GET  /api/repositories                                # list the latest revisions of repositories
+    // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
+    // [ ] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
+    // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
+    // [ ] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
+    // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
+    // [ ] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
+    // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
 
     private final ConfigFactory cf;
     private final YamlConfigLoader loader;
@@ -89,6 +92,15 @@ public class RepositoryResource
     }
 
     @GET
+    @Path("/api/repositories/{id}")
+    public RestRepository getRepository(@PathParam("id") int repoId)
+    {
+        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
+        StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
+        return RestRepository.of(repo, rev);
+    }
+
+    @GET
     @Path("/api/repositories/{id}/workflows")
     public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId)
     {
@@ -100,6 +112,16 @@ public class RepositoryResource
         return workflows.stream()
             .map(workflow -> RestWorkflow.of(repo, rev, workflow))
             .collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/api/repositories/{id}/archive")
+    @Produces("application/x-gzip")
+    public byte[] getArchive(@PathParam("id") int repoId)
+    {
+        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
+        StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repoId);
+        return rev.getArchiveData().get();
     }
 
     @PUT
@@ -129,6 +151,7 @@ public class RepositoryResource
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveData(data)
+                                .archiveMd5(Optional.of(calculateArchiveMd5(data)))
                                 .build()
                             );
                     for (WorkflowSource workflow : meta.getWorkflows().get()) {
@@ -166,5 +189,16 @@ public class RepositoryResource
             }
         }
         return files.build();
+    }
+
+    private byte[] calculateArchiveMd5(byte[] data)
+    {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            return md.digest(data);
+        }
+        catch (NoSuchAlgorithmException ex) {
+            throw Throwables.propagate(ex);
+        }
     }
 }

@@ -109,6 +109,11 @@ public class DatabaseScheduleStoreManager
             return dao.getSchedules(siteId, pageSize, lastId.or(0L));
         }
 
+        public StoredSchedule getScheduleById(long schedId)
+        {
+            return dao.getScheduleById(siteId, schedId);
+        }
+
         public List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules)
         {
             return handle.inTransaction((handle, session) -> {
@@ -146,15 +151,25 @@ public class DatabaseScheduleStoreManager
 
     public interface Dao
     {
-        @SqlQuery("select * from schedules s" +
+        @SqlQuery("select s.* from schedules s" +
                 " join workflows wf on s.workflow_id = wf.id" +
                 " join revisions rev on wf.revision_id = rev.id" +
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where repo.site_id = :siteId" +
-                " and id > :lastId" +
-                " order by id desc" +
+                " and s.id > :lastId" +
+                " order by s.id desc" +
                 " limit :limit")
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select s.* from schedules s" +
+                " join workflows wf on s.workflow_id = wf.id" +
+                " join revisions rev on wf.revision_id = rev.id" +
+                " join repositories repo on rev.repository_id = repo.id" +
+                " where repo.site_id = :siteId" +
+                " and s.id = :schedId" +
+                " order by id desc" +
+                " limit :limit")
+        StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
 
         @SqlUpdate("insert into schedules" +
                 " (workflow_id, config, next_run_time, next_schedule_time, created_at, updated_at)" +
