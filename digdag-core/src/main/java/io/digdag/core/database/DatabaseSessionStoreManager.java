@@ -469,7 +469,19 @@ public class DatabaseSessionStoreManager
         @Override
         public List<StoredSession> getSessions(int pageSize, Optional<Long> lastId)
         {
-            return dao.getSessions(siteId, pageSize, lastId.or(0L));
+            return dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE));
+        }
+
+        @Override
+        public List<StoredSession> getSessionsOfRepository(int repositoryId, int pageSize, Optional<Long> lastId)
+        {
+            return dao.getSessionsOfRepository(siteId, repositoryId, pageSize, lastId.or(Long.MAX_VALUE));
+        }
+
+        @Override
+        public List<StoredSession> getSessionsOfWorkflow(int workflowId, int pageSize, Optional<Long> lastId)
+        {
+            return dao.getSessionsOfWorkflow(siteId, workflowId, pageSize, lastId.or(Long.MAX_VALUE));
         }
 
         @Override
@@ -528,12 +540,30 @@ public class DatabaseSessionStoreManager
         //Date now();
         java.sql.Timestamp now();
 
-        @SqlQuery("select * from sessions" +
+        @SqlQuery("select * from sessions s" +
                 " where site_id = :siteId" +
-                " and id > :lastId" +
-                " order by id desc" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
                 " limit :limit")
         List<StoredSession> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select s.* from sessions s" +
+                " join session_relations sr on s.id = sr.id" +
+                " where site_id = :siteId" +
+                " and sr.repository_id = :repoId" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSession> getSessionsOfRepository(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select s.* from sessions s" +
+                " join session_relations sr on s.id = sr.id" +
+                " where site_id = :siteId" +
+                " and sr.workflow_id = :wfId" +
+                " and s.id < :lastId" +
+                " order by s.id desc" +
+                " limit :limit")
+        List<StoredSession> getSessionsOfWorkflow(@Bind("siteId") int siteId, @Bind("wfId") int wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select * from sessions where id = :id limit 1")
         StoredSession getSessionById(@Bind("id") long id);

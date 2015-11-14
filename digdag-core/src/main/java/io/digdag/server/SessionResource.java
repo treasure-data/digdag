@@ -8,6 +8,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
@@ -28,8 +29,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class SessionResource
 {
     // [*] GET  /api/sessions                                    # list sessions from recent to old
-    // [ ] GET  /api/sessions?repository=<name>                  # list sessions that belong to a particular repository
-    // [ ] GET  /api/sessions?repository=<name>&workflow=<name>  # list sessions that belong to a particular workflow
+    // [*] GET  /api/sessions?repository=<name>                  # list sessions that belong to a particular repository
+    // [*] GET  /api/sessions?repository=<name>&workflow=<name>  # list sessions that belong to a particular workflow
     // [*] GET  /api/sessions/{id}                               # show a session
     // [*] GET  /api/sessions/{id}/tasks                         # list tasks of a session
     // [ ] POST /api/sessions/{id}                               # do operations on a session (cancel, retry, etc.)
@@ -50,11 +51,26 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions")
-    public List<RestSession> getSessions()
+    public List<RestSession> getSessions(@QueryParam("repository") String repoName, @QueryParam("workflow") String wfName)
+        throws ResourceNotFoundException
     {
         // TODO paging
-        List<StoredSession> sessions = sm.getSessionStore(siteId)
-            .getSessions(100, Optional.absent());
+        List<StoredSession> sessions;
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        SessionStore ss = sm.getSessionStore(siteId);
+        if (repoName == null) {
+            sessions = ss.getSessions(100, Optional.absent());
+        }
+        else {
+            StoredRepository repo = rs.getRepositoryByName(repoName);
+            if (wfName == null) {
+                sessions = ss.getSessionsOfRepository(repo.getId(), 100, Optional.absent());
+            }
+            else {
+                StoredWorkflowSource wf = rs.getWorkflowByName(repo.getId(), wfName);
+                sessions = ss.getSessionsOfWorkflow(wf.getId(), 100, Optional.absent());
+            }
+        }
 
         return sessions.stream()
             .map(s -> RestSession.of(s))

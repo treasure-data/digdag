@@ -360,7 +360,7 @@ public class DatabaseRepositoryStoreManager
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and revision_id = :revId" +
-                " and name = :name" +
+                " and w.name = :name" +
                 " limit 1")
         StoredWorkflowSource getWorkflowByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 

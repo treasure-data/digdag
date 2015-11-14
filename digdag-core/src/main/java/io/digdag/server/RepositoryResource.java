@@ -100,23 +100,37 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}")
-    public RestRepository getRepository(@PathParam("id") int repoId)
+    public RestRepository getRepository(@PathParam("id") int repoId, @QueryParam("revision") String revName)
             throws ResourceNotFoundException
     {
-        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
-        StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        StoredRepository repo = rs.getRepositoryById(repoId);
+        StoredRevision rev;
+        if (revName == null) {
+            rev = rs.getLatestActiveRevision(repo.getId());
+        }
+        else {
+            rev = rs.getRevisionByName(repo.getId(), revName);
+        }
         return RestRepository.of(repo, rev);
     }
 
     @GET
     @Path("/api/repositories/{id}/workflows")
-    public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId)
+    public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
             throws ResourceNotFoundException
     {
         // TODO paging
-        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
-        StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repoId);
-        List<StoredWorkflowSource> workflows = rm.getRepositoryStore(siteId).getWorkflows(rev.getId(), 100, Optional.absent());
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        StoredRepository repo = rs.getRepositoryById(repoId);
+        StoredRevision rev;
+        if (revName == null) {
+            rev = rs.getLatestActiveRevision(repo.getId());
+        }
+        else {
+            rev = rs.getRevisionByName(repo.getId(), revName);
+        }
+        List<StoredWorkflowSource> workflows = rs.getWorkflows(rev.getId(), 100, Optional.absent());
 
         return workflows.stream()
             .map(workflow -> RestWorkflow.of(repo, rev, workflow))
@@ -126,11 +140,18 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories/{id}/archive")
     @Produces("application/x-gzip")
-    public byte[] getArchive(@PathParam("id") int repoId)
+    public byte[] getArchive(@PathParam("id") int repoId, @QueryParam("revision") String revName)
             throws ResourceNotFoundException
     {
-        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
-        StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repoId);
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        StoredRepository repo = rs.getRepositoryById(repoId);
+        StoredRevision rev;
+        if (revName == null) {
+            rev = rs.getLatestActiveRevision(repo.getId());
+        }
+        else {
+            rev = rs.getRevisionByName(repo.getId(), revName);
+        }
         return rev.getArchiveData().get();
     }
 

@@ -8,6 +8,10 @@ public interface SessionStore
 {
     List<StoredSession> getSessions(int pageSize, Optional<Long> lastId);
 
+    List<StoredSession> getSessionsOfRepository(int repositoryId, int pageSize, Optional<Long> lastId);
+
+    List<StoredSession> getSessionsOfWorkflow(int workflowId, int pageSize, Optional<Long> lastId);
+
     StoredSession getSessionById(long sesId)
         throws ResourceNotFoundException;
 
