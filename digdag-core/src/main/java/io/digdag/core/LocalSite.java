@@ -2,8 +2,8 @@ package io.digdag.core;
 
 import java.util.List;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -33,7 +33,7 @@ public class LocalSite
     private final TaskQueueDispatcher dispatcher;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
-    private final ScheduleStore scheduleStore;
+    private final ScheduleStoreManager scheduleStoreManager;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
     private final SessionMonitorExecutor sessionMonitorExecutor;
@@ -65,7 +65,7 @@ public class LocalSite
         this.dispatcher = dispatcher;
         this.localAgentManager = localAgentManager;
         this.databaseMigrator = databaseMigrator;
-        this.scheduleStore = scheduleStoreManager.getScheduleStore(0);
+        this.scheduleStoreManager = scheduleStoreManager;
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
         this.sessionMonitorExecutor = sessionMonitorExecutor;
@@ -133,11 +133,23 @@ public class LocalSite
                     StoredRevision rev = repoControl.putRevision(revision);
                     List<StoredWorkflowSource> storedWorkflows =
                         workflowSources.stream()
-                        .map(workflowSource -> repoControl.putWorkflow(rev.getId(), workflowSource))
+                        .map(workflowSource -> {
+                            try {
+                                return repoControl.insertWorkflow(rev.getId(), workflowSource);
+                            }
+                            catch (ResourceConflictException ex) {
+                                throw new IllegalStateException("Database state error", ex);
+                            }
+                        })
                         .collect(Collectors.toList());
                     if (currentTimeToSchedule.isPresent()) {
-                        repoControl.syncSchedulesTo(scheduleStore, scheds,
-                                currentTimeToSchedule.get(), rev);
+                        try {
+                            repoControl.syncSchedulesTo(scheduleStoreManager, scheds,
+                                    currentTimeToSchedule.get(), rev);
+                        }
+                        catch (ResourceConflictException ex) {
+                            throw new IllegalStateException("Database state error", ex);
+                        }
                     }
                     return new StoreWorkflow(rev, storedWorkflows);
                 });
@@ -168,16 +180,21 @@ public class LocalSite
         final List<StoredWorkflowSource> workflows = revWfs.getWorkflows();
 
         final Session trigger = Session.sessionBuilder()
-            .name("session")
+            .name("session-" + UUID.randomUUID().toString())
             .params(sessionParams)
             .options(options)
             .build();
 
         return workflows.stream()
             .map(workflow -> {
-                return exec.submitWorkflow(workflow, trigger,
-                        SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
-                        slaCurrentTime);
+                try {
+                    return exec.submitWorkflow(workflow, trigger,
+                            SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
+                            slaCurrentTime);
+                }
+                catch (ResourceConflictException ex) {
+                    throw new IllegalStateException("UUID confliction", ex);
+                }
             })
             .collect(Collectors.toList());
     }

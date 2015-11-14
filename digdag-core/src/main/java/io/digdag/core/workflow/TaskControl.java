@@ -7,6 +7,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.spi.TaskReport;
 import io.digdag.core.config.Config;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class TaskControl
 {
@@ -90,7 +91,12 @@ public class TaskControl
             if (rootTask == null) {
                 // this is root task
                 store.addDependencies(id, rootUpstreamIds);
-                rootTask = store.getTaskById(id);
+                try {
+                    rootTask = store.getTaskById(id);
+                }
+                catch (ResourceNotFoundException ex) {
+                    throw new IllegalStateException("Database state error", ex);
+                }
             }
         }
 

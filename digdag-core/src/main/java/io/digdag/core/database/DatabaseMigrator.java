@@ -174,6 +174,7 @@ public class DatabaseMigrator
                     .addMediumText("config", "")
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
+            handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
             //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
 
             // schedules
@@ -187,7 +188,7 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_id)");
+            handle.update("create unique index if not exists schedules_on_workflow_id on schedules (workflow_id)");
             handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // queues
@@ -229,7 +230,7 @@ public class DatabaseMigrator
                     .addTimestamp("updated_at", "not null")
                     .build());
             handle.update("create index if not exists session_monitors_on_workflow_id on session_monitors (session_id)");
-            handle.update("create unique index if not exists session_monitors_on_next_run_time on session_monitors (next_run_time)");
+            handle.update("create index if not exists session_monitors_on_next_run_time on session_monitors (next_run_time)");
 
             // session_archives
             handle.update(

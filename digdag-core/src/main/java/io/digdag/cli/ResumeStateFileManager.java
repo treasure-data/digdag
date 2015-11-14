@@ -21,6 +21,7 @@ import io.digdag.core.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class ResumeStateFileManager
 {
@@ -110,10 +111,15 @@ public class ResumeStateFileManager
 
     private boolean isDone(StoredSession session)
     {
-        return Tasks.isDone(
-                sessionStoreManager
-                        .getSessionStore(session.getSiteId())
-                        .getRootState(session.getId())
-        );
+        try {
+            return Tasks.isDone(
+                    sessionStoreManager
+                            .getSessionStore(session.getSiteId())
+                            .getRootState(session.getId()));
+        }
+        catch (ResourceNotFoundException ex) {
+            logger.warn("Session id={} is deleted. Assuming it is done.", session.getId());
+            return true;
+        }
     }
 }

@@ -149,7 +149,7 @@ public class Run
 
         localSite.runUntilAny();
 
-        for (StoredTask task : localSite.getSessionStore().getAllTasks()) {
+        for (StoredTask task : localSite.getSessionStore().getTasks(session.getId(), 100, Optional.absent())) {  // TODO paging
             logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
             logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
             logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));

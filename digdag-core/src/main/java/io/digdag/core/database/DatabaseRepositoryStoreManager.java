@@ -39,14 +39,19 @@ public class DatabaseRepositoryStoreManager
         this.dao = handle.attach(Dao.class);
     }
 
+    @Override
     public RepositoryStore getRepositoryStore(int siteId)
     {
         return new DatabaseRepositoryStore(siteId);
     }
 
+    @Override
     public StoredWorkflowSourceWithRepository getWorkflowDetailsById(int wfId)
+            throws ResourceNotFoundException
     {
-        return dao.getWorkflowDetailsById(wfId);
+        return requiredResource(
+                dao.getWorkflowDetailsById(wfId),
+                "workflow id=%s", wfId);
     }
 
     private class DatabaseRepositoryStore
@@ -60,116 +65,183 @@ public class DatabaseRepositoryStoreManager
             this.siteId = siteId;
         }
 
-        public List<StoredRepository> getAllRepositories()
-        {
-            return dao.getRepositories(siteId, Integer.MAX_VALUE, 0);
-        }
+        //public List<StoredRepository> getAllRepositories()
+        //{
+        //    return dao.getRepositories(siteId, Integer.MAX_VALUE, 0);
+        //}
 
+        @Override
         public List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId)
         {
             return dao.getRepositories(siteId, pageSize, lastId.or(0));
         }
 
+        @Override
         public StoredRepository getRepositoryById(int repoId)
+                throws ResourceNotFoundException
         {
-            return dao.getRepositoryById(siteId, repoId);
+            return requiredResource(
+                    dao.getRepositoryById(siteId, repoId),
+                    "repository id=%d", repoId);
         }
 
-        public StoredRepository getRepositoryByName(String name)
+        @Override
+        public StoredRepository getRepositoryByName(String repoName)
+                throws ResourceNotFoundException
         {
-            return dao.getRepositoryByName(siteId, name);
+            return requiredResource(
+                    dao.getRepositoryByName(siteId, repoName),
+                    "repository name=%s", repoName);
         }
 
+        @Override
         public <T> T putRepository(Repository repository, RepositoryLockAction<T> func)
         {
             return handle.inTransaction((handle, session) -> {
-                // TODO idempotent operation
-                int repoId = dao.insertRepository(siteId, repository.getName());
-                RepositoryControl control = new RepositoryControl(this, getRepositoryById(repoId));
+                StoredRepository repo;
+                try {
+                    int repoId = catchConflict(() ->
+                            dao.insertRepository(siteId, repository.getName()),
+                            "repository name=%s", repository.getName());
+                    repo = getRepositoryById(repoId);
+                    if (repo == null) {
+                        throw new IllegalStateException("Database state error");
+                    }
+                }
+                catch (ResourceConflictException ex) {
+                    repo = dao.getRepositoryByName(siteId, repository.getName());
+                    if (repo == null) {
+                        throw new IllegalStateException("Database state error", ex);
+                    }
+                }
+                RepositoryControl control = new RepositoryControl(this, repo);
                 return func.call(control);
             });
         }
 
-        public void deleteRepository(int repoId)
-        {
-            throw new UnsupportedOperationException("not implemented yet");
-        }
+        //public List<StoredRevision> getAllRevisions(int repoId)
+        //{
+        //    return dao.getRevisions(siteId, repoId, Integer.MAX_VALUE, 0);
+        //}
 
-        public List<StoredRevision> getAllRevisions(int repoId)
-        {
-            return dao.getRevisions(siteId, repoId, Integer.MAX_VALUE, 0);
-        }
-
+        @Override
         public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
         {
             return dao.getRevisions(siteId, repoId, pageSize, lastId.or(0));
         }
 
+        @Override
         public StoredRevision getRevisionById(int revId)
+                throws ResourceNotFoundException
         {
-            return dao.getRevisionById(siteId, revId);
+            return requiredResource(
+                    dao.getRevisionById(siteId, revId),
+                    "revision id=%d", revId);
         }
 
-        public StoredRevision getRevisionByName(int repoId, String name)
+        @Override
+        public StoredRevision getRevisionByName(int repoId, String revName)
+                throws ResourceNotFoundException
         {
-            return dao.getRevisionByName(siteId, repoId, name);
+            return requiredResource(
+                    dao.getRevisionByName(siteId, repoId, revName),
+                    "revision name=%s in repository id=%d", revName, repoId);
         }
 
+        @Override
         public StoredRevision getLatestActiveRevision(int repoId)
+                throws ResourceNotFoundException
         {
-            return dao.getLatestActiveRevision(siteId, repoId);
+            return requiredResource(
+                    dao.getLatestActiveRevision(siteId, repoId),
+                    "repository id=%d", repoId);
         }
 
+        /**
+         * Create or overwrite a revision.
+         *
+         * This method doesn't check site id because RepositoryControl
+         * interface is avaiable only if site is is valid.
+         */
+        @Override
         public StoredRevision putRevision(int repoId, Revision revision)
         {
-            // TODO idempotent operation
-            // TODO check site id
-            int revId = dao.insertRevision(repoId, revision.getName(), revision.getGlobalParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getArchiveData().orNull());
-            return getRevisionById(revId);
+            try {
+                try {
+                    int revId = catchConflict(() ->
+                        dao.insertRevision(repoId, revision.getName(), revision.getGlobalParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getArchiveData().orNull()),
+                        "revision=%s in repository id=%d", revision.getName(), repoId);
+                    return getRevisionById(revId);
+                }
+                catch (ResourceConflictException ex) {
+                    StoredRevision rev = getRevisionByName(repoId, revision.getName());
+                    if (revision.equals(rev)) {
+                        return rev;
+                    }
+                    // TODO once implement deleteRevision, delete the current revision and overwrite it
+                    throw new UnsupportedOperationException("Revision already exists. Overwriting an existing revision is not supported.", ex);
+                }
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
+            }
         }
 
-        public void deleteRevision(int revId)
-        {
-            throw new UnsupportedOperationException("not implemented yet");
-        }
 
+        //public List<StoredWorkflowSource> getAllWorkflows(int revId)
+        //{
+        //    return dao.getWorkflows(siteId, revId, Integer.MAX_VALUE, 0);
+        //}
 
-        public List<StoredWorkflowSource> getAllWorkflows(int revId)
-        {
-            return dao.getWorkflows(siteId, revId, Integer.MAX_VALUE, 0);
-        }
-
+        @Override
         public List<StoredWorkflowSource> getWorkflows(int revId, int pageSize, Optional<Integer> lastId)
         {
             return dao.getWorkflows(siteId, revId, pageSize, lastId.or(0));
         }
 
-        public List<StoredWorkflowSourceWithRepository> getAllLatestActiveWorkflows()
+        @Override
+        public List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(int pageSize, Optional<Integer> lastId)
         {
-            throw new UnsupportedOperationException("not implemented yet");
+            return dao.getLatestActiveWorkflows(siteId, pageSize, lastId.or(0));
         }
 
+        @Override
         public StoredWorkflowSource getWorkflowById(int wfId)
+            throws ResourceNotFoundException
         {
-            return dao.getWorkflowById(siteId, wfId);
+            return requiredResource(
+                    dao.getWorkflowById(siteId, wfId),
+                    "workflow id=%d", wfId);
         }
 
+        @Override
         public StoredWorkflowSource getWorkflowByName(int revId, String name)
+            throws ResourceNotFoundException
         {
-            return dao.getWorkflowByName(siteId, revId, name);
+            return requiredResource(
+                    dao.getWorkflowByName(siteId, revId, name),
+                    "workflow name=%s in revision id=%d", name, revId);
         }
 
-        public StoredWorkflowSource putWorkflow(int revId, WorkflowSource workflow)
+        /**
+         * Create a revision.
+         *
+         * This method doesn't check site id because RepositoryControl
+         * interface is avaiable only if site is is valid.
+         */
+        @Override
+        public StoredWorkflowSource insertWorkflow(int revId, WorkflowSource workflow)
+            throws ResourceConflictException
         {
-            // TODO idempotent operation
-            // TODO check site id
-            int wfId = dao.insertWorkflow(revId, workflow.getName(), workflow.getConfig());
-            return getWorkflowById(wfId);
-        }
-
-        public void deleteWorkflow(int wfId)
-        {
-            throw new UnsupportedOperationException("not implemented yet");
+            try {
+                int wfId = catchConflict(() ->
+                    dao.insertWorkflow(revId, workflow.getName(), workflow.getConfig()),
+                    "workflow=%s in revision id=%d", workflow.getName(), revId);
+                return getWorkflowById(wfId);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
+            }
         }
     }
 
@@ -178,7 +250,7 @@ public class DatabaseRepositoryStoreManager
         @SqlQuery("select * from repositories" +
                 " where site_id = :siteId" +
                 " and id > :lastId" +
-                " order by id desc" +
+                " order by id asc" +
                 " limit :limit")
         List<StoredRepository> getRepositories(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
@@ -206,7 +278,7 @@ public class DatabaseRepositoryStoreManager
                 " where t.site_id = :siteId" +
                 " and t.repository_id = :repoId" +
                 " and t.id > :lastId" +
-                " order by t.id desc" +
+                " order by t.id asc" +
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
@@ -229,7 +301,7 @@ public class DatabaseRepositoryStoreManager
                 " join repositories on repositories.id = t.repository_id" +
                 " where site_id = :siteId" +
                 " and t.repository_id = :repoId" +
-                " order by t.id desc" +
+                " order by t.id asc" +
                 " limit 1")
         StoredRevision getLatestActiveRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
@@ -243,14 +315,32 @@ public class DatabaseRepositoryStoreManager
         @SqlQuery("select w.* from workflows w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " and w.revision_id = :revId" +
+                " where w.revision_id = :revId" +
                 " and w.id > :lastId" +
-                " order by w.id desc" +
+                " order by w.id asc" +
                 " limit :limit")
         List<StoredWorkflowSource> getWorkflows(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name" +
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
+                " rev.name as rev_name " +
+                " from workflows w" +
+                " join revisions rev on w.revision_id = rev.id" +
+                " join repositories repo on rev.repository_id = repo.id" +
+                " where w.revision_id in (" +
+                    "select max(rev.id) as rev_id" +
+                    " from repositories repo" +
+                    " join revisions rev on repo.id = rev.repository_id" +
+                    " where repo.site_id = :siteId" +
+                    " group by repo.id" +
+                ")" +
+                " and w.id > :lastId" +
+                " order by w.id")
+        List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+
+        @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
+                " rev.name as rev_name " +
                 " from workflows w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
@@ -279,7 +369,7 @@ public class DatabaseRepositoryStoreManager
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and w.revision_id = :revId" +
-                " order by id desc" +
+                " order by id asc" +
                 " limit 1")
         StoredWorkflowSource getLatestActiveWorkflow(@Bind("siteId") int siteId, @Bind("revId") int revId);
 
@@ -392,6 +482,7 @@ public class DatabaseRepositoryStoreManager
                             .updatedAt(r.getTimestamp("repo_updated_at"))
                             .name(r.getString("repo_name"))
                             .build())
+                .revisionName("rev_name")
                 .build();
         }
     }

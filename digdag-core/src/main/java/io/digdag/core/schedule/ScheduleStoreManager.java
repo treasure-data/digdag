@@ -1,8 +1,9 @@
 package io.digdag.core.schedule;
 
-import io.digdag.core.spi.ScheduleTime;
-
 import java.util.Date;
+import java.util.List;
+import io.digdag.core.spi.ScheduleTime;
+import io.digdag.core.repository.ResourceConflictException;
 
 public interface ScheduleStoreManager
 {
@@ -14,4 +15,7 @@ public interface ScheduleStoreManager
     }
 
     void lockReadySchedules(Date currentTime, ScheduleAction func);
+
+    List<StoredSchedule> syncRepositorySchedules(int syncRepoId, List<Schedule> schedules)
+        throws ResourceConflictException;
 }

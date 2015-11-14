@@ -67,23 +67,17 @@ public class WorkflowResource
     public List<RestWorkflow> getWorkflows()
     {
         // TODO paging
-        // TODO n-m db access
         final ImmutableList.Builder<RestWorkflow> builder = ImmutableList.builder();
-        rm.getRepositoryStore(siteId).getRepositories(100, Optional.absent())
+        return rm.getRepositoryStore(siteId).getLatestActiveWorkflows(100, Optional.absent())
             .stream()
-            .forEach(repo -> {
-                StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
-                List<StoredWorkflowSource> workflows = rm.getRepositoryStore(siteId).getWorkflows(rev.getId(), 100, Optional.absent());
-                for (StoredWorkflowSource wf : workflows) {
-                    builder.add(RestWorkflow.of(repo, rev, wf));
-                }
-            });
-        return builder.build();
+            .map(wfDetails -> RestWorkflow.of(wfDetails))
+            .collect(Collectors.toList());
     }
 
     @GET
     @Path("/api/workflows/{id}")
     public RestWorkflow getWorkflow(@PathParam("id") int wfId)
+            throws ResourceNotFoundException
     {
         StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(wfId);
         StoredRevision rev = rm.getRepositoryStore(siteId).getRevisionById(wf.getRevisionId());

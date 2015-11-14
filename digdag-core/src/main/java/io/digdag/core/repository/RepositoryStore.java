@@ -5,13 +5,13 @@ import com.google.common.base.Optional;
 
 public interface RepositoryStore
 {
-    List<StoredRepository> getAllRepositories();  // TODO only for testing
-
     List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId);
 
-    StoredRepository getRepositoryById(int repoId);
+    StoredRepository getRepositoryById(int repoId)
+        throws ResourceNotFoundException;
 
-    StoredRepository getRepositoryByName(String name);
+    StoredRepository getRepositoryByName(String repoName)
+        throws ResourceNotFoundException;
 
     interface RepositoryLockAction <T>
     {
@@ -20,31 +20,26 @@ public interface RepositoryStore
 
     <T> T putRepository(Repository repository, RepositoryLockAction<T> func);
 
-    void deleteRepository(int repoId);  // TODO delete schedule
-
-
-    List<StoredRevision> getAllRevisions(int repoId);  // TODO only for testing
 
     List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
 
-    StoredRevision getRevisionById(int revId);
+    StoredRevision getRevisionById(int revId)
+        throws ResourceNotFoundException;
 
-    StoredRevision getRevisionByName(int repoId, String name);
+    StoredRevision getRevisionByName(int repoId, String revName)
+        throws ResourceNotFoundException;
 
-    StoredRevision getLatestActiveRevision(int repoId);
+    StoredRevision getLatestActiveRevision(int repoId)
+        throws ResourceNotFoundException;
 
-    //void deleteRevision(int revId);
-
-
-    List<StoredWorkflowSource> getAllWorkflows(int revId);  // TODO only for testing
 
     List<StoredWorkflowSource> getWorkflows(int revId, int pageSize, Optional<Integer> lastId);
 
-    List<StoredWorkflowSourceWithRepository> getAllLatestActiveWorkflows();
+    List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(int pageSize, Optional<Integer> lastId);
 
-    StoredWorkflowSource getWorkflowById(int wfId);
+    StoredWorkflowSource getWorkflowById(int wfId)
+        throws ResourceNotFoundException;
 
-    StoredWorkflowSource getWorkflowByName(int revId, String name);
-
-    //void deleteWorkflow(int wfId);
+    StoredWorkflowSource getWorkflowByName(int revId, String name)
+        throws ResourceNotFoundException;
 }

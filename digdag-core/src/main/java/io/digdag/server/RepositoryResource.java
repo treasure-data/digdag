@@ -79,21 +79,29 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories")
     public List<RestRepository> getRepositories()
+            throws ResourceNotFoundException
     {
         // TODO paging
         // TODO n-m db access
         return rm.getRepositoryStore(siteId).getRepositories(100, Optional.absent())
             .stream()
             .map(repo -> {
-                StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
-                return RestRepository.of(repo, rev);
+                try {
+                    StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
+                    return RestRepository.of(repo, rev);
+                }
+                catch (ResourceNotFoundException ex) {
+                    return null;
+                }
             })
+            .filter(repo -> repo != null)
             .collect(Collectors.toList());
     }
 
     @GET
     @Path("/api/repositories/{id}")
     public RestRepository getRepository(@PathParam("id") int repoId)
+            throws ResourceNotFoundException
     {
         StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
         StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
@@ -103,6 +111,7 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories/{id}/workflows")
     public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId)
+            throws ResourceNotFoundException
     {
         // TODO paging
         StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
@@ -118,6 +127,7 @@ public class RepositoryResource
     @Path("/api/repositories/{id}/archive")
     @Produces("application/x-gzip")
     public byte[] getArchive(@PathParam("id") int repoId)
+            throws ResourceNotFoundException
     {
         StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(repoId);
         StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repoId);
@@ -154,12 +164,15 @@ public class RepositoryResource
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))
                                 .build()
                             );
-                    for (WorkflowSource workflow : meta.getWorkflows().get()) {
-                        repo.putWorkflow(rev.getId(), workflow);
+                    try {
+                        for (WorkflowSource workflow : meta.getWorkflows().get()) {
+                            repo.insertWorkflow(rev.getId(), workflow);
+                        }
+                        repo.syncSchedulesTo(scheduleStore, scheds, new Date(), rev);
                     }
-                    repo.syncSchedulesTo(
-                            scheduleStore.getScheduleStore(repo.get().getSiteId()),
-                            scheds, new Date(), rev);
+                    catch (ResourceConflictException ex) {
+                        throw new IllegalStateException("Database state error", ex);
+                    }
                     return RestRepository.of(repo.get(), rev);
                 });
 

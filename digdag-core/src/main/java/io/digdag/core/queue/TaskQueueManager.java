@@ -10,6 +10,7 @@ import io.digdag.core.spi.TaskQueueFactory;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigException;
 import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class TaskQueueManager
 {
@@ -41,6 +42,7 @@ public class TaskQueueManager
 
     // used by executors
     public TaskQueue getTaskQueue(int siteId, String name)
+        throws ResourceNotFoundException
     {
         Config config = storeManager.getQueueDescStore(siteId)
             .getQueueDescByName(name)

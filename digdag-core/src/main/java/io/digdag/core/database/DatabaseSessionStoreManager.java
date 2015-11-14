@@ -23,6 +23,8 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.core.config.Config;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager
@@ -72,16 +74,28 @@ public class DatabaseSessionStoreManager
             " join task_state_details ts on t.id = ts.id ";
     }
 
+    @Override
     public SessionStore getSessionStore(int siteId)
     {
         return new DatabaseSessionStore(siteId);
     }
 
+    @Override
+    public StoredSession getSessionById(long sesId)
+        throws ResourceNotFoundException
+    {
+        return requiredResource(
+                dao.getSessionById(sesId),
+                "session id=%d", sesId);
+    }
+
+    @Override
     public Date getStoreTime()
     {
         return dao.now();
     }
 
+    @Override
     public boolean isAnyNotDoneWorkflows()
     {
         // TODO optimize
@@ -96,27 +110,32 @@ public class DatabaseSessionStoreManager
             .first() > 0L;
     }
 
+    @Override
     public List<Long> findAllReadyTaskIds(int maxEntries)
     {
         return dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries);
     }
 
+    @Override
     public List<TaskStateSummary> findRecentlyChangedTasks(Date updatedSince, long lastId)
     {
         return dao.findRecentlyChangedTasks(updatedSince, lastId, 100);
     }
 
+    @Override
     public List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId)
     {
         return dao.findTasksByState(state.get(), lastId, 100);
     }
 
+    @Override
     public int trySetRetryWaitingToReady()
     {
         return dao.trySetRetryWaitingToReady();
     }
 
-    public <T> Optional<T> lockTask(long taskId, TaskLockAction<T> func)
+    @Override
+    public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
         return handle.inTransaction((handle, ses) -> {
             TaskStateSummary task = dao.lockTask(taskId);
@@ -129,7 +148,8 @@ public class DatabaseSessionStoreManager
         });
     }
 
-    public <T> Optional<T> lockTask(long taskId, TaskLockActionWithDetails<T> func)
+    @Override
+    public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
         return handle.inTransaction((handle, ses) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
@@ -144,7 +164,8 @@ public class DatabaseSessionStoreManager
         });
     }
 
-    public <T> Optional<T> lockRootTask(long sessionId, TaskLockActionWithDetails<T> func)
+    @Override
+    public <T> Optional<T> lockRootTaskIfExists(long sessionId, TaskLockActionWithDetails<T> func)
     {
         return handle.inTransaction((handle, ses) -> {
             TaskStateSummary summary = dao.lockRootTask(sessionId);
@@ -158,77 +179,100 @@ public class DatabaseSessionStoreManager
         });
     }
 
+    @Override
     public StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func)
+        throws ResourceConflictException
     {
-        return handle.inTransaction((handle, ses) -> {
-            long sesId;
-            if (relation.getWorkflowId().isPresent()) {
-                // namespace is workflow id
-                sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_WORKFLOW_ID, relation.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), relation.getWorkflowId().get());
-            }
-            else if (relation.getRepositoryId().isPresent()) {
-                // namespace is repository
-                sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_REPOSITORY_ID, relation.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), null);
-            }
-            else {
-                // namespace is site
-                sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_SITE_ID, relation.getSiteId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                dao.insertSessionRelation(sesId, null, null);
-            }
-            StoredSession session = dao.getSessionById(relation.getSiteId(), sesId);
-            func.call(session, this);
-            return session;
-        });
+        return catchConflict(() ->
+            handle.inTransaction((handle, ses) -> {
+                long sesId;
+                if (relation.getWorkflowId().isPresent()) {
+                    // namespace is workflow id
+                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_WORKFLOW_ID, relation.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), relation.getWorkflowId().get());
+                }
+                else if (relation.getRepositoryId().isPresent()) {
+                    // namespace is repository
+                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_REPOSITORY_ID, relation.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), null);
+                }
+                else {
+                    // namespace is site
+                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_SITE_ID, relation.getSiteId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    dao.insertSessionRelation(sesId, null, null);
+                }
+                StoredSession session = dao.getSessionById(relation.getSiteId(), sesId);
+                func.call(session, this);
+                return session;
+            }),
+            "session name=%s in with %s", newSession.getName(), relation);
     }
 
-    public SessionRelation getSessionRelationById(long sessionId)
-    {
-        return dao.getSessionRelationById(sessionId);
-    }
+    //public SessionRelation getSessionRelationById(long sessionId)
+    //    throws ResourceNotFoundException
+    //{
+    //    return requiredResource(
+    //            dao.getSessionRelationById(sessionId),
+    //            "session id=%d", sessionId);
+    //}
 
+    @Override
     public <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func)
     {
-        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());
+        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
         dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig());
         dao.insertEmptyTaskStateDetails(taskId);
         TaskControl control = new TaskControl(this, taskId, task.getState());
-        return func.call(control, getTaskById(taskId));
-    }
-
-    public void addMonitors(long sessionId, List<SessionMonitor> monitors)
-    {
-        for (SessionMonitor monitor : monitors) {
-            dao.insertSessionMonitor(sessionId, monitor.getConfig(), monitor.getNextRunTime().getTime() / 1000);
+        StoredTask stored;
+        try {
+            stored = getTaskById(taskId);
         }
+        catch (ResourceNotFoundException ex) {
+            throw new IllegalStateException("Database state error", ex);
+        }
+        return func.call(control, stored);
     }
 
+    @Override
     public long addSubtask(Task task)
     {
-        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());
+        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
         dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig());
         dao.insertEmptyTaskStateDetails(taskId);
         return taskId;
     }
 
-    public StoredTask getTaskById(long taskId)
+    @Override
+    public void addMonitors(long sessionId, List<SessionMonitor> monitors)
     {
-        return handle.createQuery(
-                selectTaskDetailsQuery() + " where t.id = :id"
-            )
-            .bind("id", taskId)
-            .map(stm)
-            .first();
-    }
-
-    public void addDependencies(long downstream, List<Long> upstreams)
-    {
-        for (long upstream : upstreams) {
-            dao.insertTaskDependency(downstream, upstream);
+        for (SessionMonitor monitor : monitors) {
+            dao.insertSessionMonitor(sessionId, monitor.getConfig(), monitor.getNextRunTime().getTime() / 1000);  // session_monitors table don't have unique index
         }
     }
 
+    @Override
+    public StoredTask getTaskById(long taskId)
+        throws ResourceNotFoundException
+    {
+        return requiredResource(
+            handle.createQuery(
+                    selectTaskDetailsQuery() + " where t.id = :id"
+                )
+                .bind("id", taskId)
+                .map(stm)
+                .first(),
+            "task id=%d", taskId);
+    }
+
+    @Override
+    public void addDependencies(long downstream, List<Long> upstreams)
+    {
+        for (long upstream : upstreams) {
+            dao.insertTaskDependency(downstream, upstream);  // task_dependencies table don't have unique index
+        }
+    }
+
+    @Override
     public boolean isAllChildrenDone(long taskId)
     {
         return handle.createQuery(
@@ -264,6 +308,7 @@ public class DatabaseSessionStoreManager
             .first() == 0L;
     }
 
+    @Override
     public List<Config> collectChildrenErrors(long taskId)
     {
         return handle.createQuery(
@@ -371,6 +416,7 @@ public class DatabaseSessionStoreManager
     //    return n > 0;
     //}
 
+    @Override
     public void lockReadySessionMonitors(Date currentTime, SessionMonitorAction func)
     {
         List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
@@ -415,37 +461,48 @@ public class DatabaseSessionStoreManager
             this.siteId = siteId;
         }
 
-        public List<StoredSession> getAllSessions()
-        {
-            return dao.getSessions(siteId, Integer.MAX_VALUE, 0L);
-        }
+        //public List<StoredSession> getAllSessions()
+        //{
+        //    return dao.getSessions(siteId, Integer.MAX_VALUE, 0L);
+        //}
 
+        @Override
         public List<StoredSession> getSessions(int pageSize, Optional<Long> lastId)
         {
             return dao.getSessions(siteId, pageSize, lastId.or(0L));
         }
 
+        @Override
         public StoredSession getSessionById(long sesId)
+            throws ResourceNotFoundException
         {
-            return dao.getSessionById(siteId, sesId);
+            return requiredResource(
+                    dao.getSessionById(siteId, sesId),
+                    "session id=%d", sesId);
         }
 
+        @Override
         public TaskStateCode getRootState(long sesId)
+            throws ResourceNotFoundException
         {
-            return TaskStateCode.of(dao.getRootState(siteId, sesId));
+            return TaskStateCode.of(
+                    requiredResource(
+                        dao.getRootState(siteId, sesId),
+                        "session id=%d", sesId));
         }
 
-        public List<StoredTask> getAllTasks()
-        {
-            return handle.createQuery(
-                    selectTaskDetailsQuery() +
-                    " where s.site_id = :siteId"
-                )
-                .bind("siteId", siteId)
-                .map(stm)
-                .list();
-        }
+        //public List<StoredTask> getAllTasks()
+        //{
+        //    return handle.createQuery(
+        //            selectTaskDetailsQuery() +
+        //            " where s.site_id = :siteId"
+        //        )
+        //        .bind("siteId", siteId)
+        //        .map(stm)
+        //        .list();
+        //}
 
+        @Override
         public List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId)
         {
             return handle.createQuery(
@@ -478,6 +535,9 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSession> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
+        @SqlQuery("select * from sessions where id = :id limit 1")
+        StoredSession getSessionById(@Bind("id") long id);
+
         @SqlQuery("select * from sessions where site_id = :siteId and id = :id limit 1")
         StoredSession getSessionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
@@ -507,7 +567,7 @@ public class DatabaseSessionStoreManager
                 " and s.id = :id" +
                 " and t.parent_id is null" +
                 " limit 1")
-        short getRootState(@Bind("siteId") int siteId, @Bind("id") long id);
+        Short getRootState(@Bind("siteId") int siteId, @Bind("id") long id);
 
         @SqlUpdate("insert into session_monitors (session_id, config, next_run_time, created_at, updated_at)" +
                 " values (:sessionId, :config, :nextRunTime, now(), now())")

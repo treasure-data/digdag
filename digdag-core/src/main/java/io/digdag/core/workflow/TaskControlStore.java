@@ -4,12 +4,14 @@ import java.util.List;
 import com.google.common.base.Optional;
 import io.digdag.core.spi.TaskReport;
 import io.digdag.core.config.Config;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskControlStore
 {
     long addSubtask(Task task);
 
-    StoredTask getTaskById(long taskId);
+    StoredTask getTaskById(long taskId)
+        throws ResourceNotFoundException;
 
     void addDependencies(long downstream, List<Long> upstreams);
 

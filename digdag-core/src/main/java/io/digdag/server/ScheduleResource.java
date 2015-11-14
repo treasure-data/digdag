@@ -63,15 +63,22 @@ public class ScheduleResource
             .getSchedules(100, Optional.absent())
             .stream()
             .map(sched -> {
-                StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());
-                return RestSchedule.of(sched, wf);
+                try {
+                    StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());
+                    return RestSchedule.of(sched, wf);
+                }
+                catch (ResourceNotFoundException ex) {
+                    return null;
+                }
             })
+            .filter(sched -> sched != null)
             .collect(Collectors.toList());
     }
 
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") long id)
+        throws ResourceNotFoundException
     {
         StoredSchedule sched = sm.getScheduleStore(siteId).getScheduleById(id);
         StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());

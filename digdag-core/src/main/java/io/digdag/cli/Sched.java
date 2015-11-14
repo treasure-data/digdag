@@ -15,6 +15,8 @@ import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.schedule.ScheduleStarter;
 import io.digdag.core.spi.ScheduleTime;
 import io.digdag.core.workflow.SessionStoreManager;
@@ -148,6 +150,7 @@ public class Sched
 
         @Override
         public StoredSession start(int workflowId, TimeZone timeZone, ScheduleTime time)
+                throws ResourceNotFoundException, ResourceConflictException
         {
             StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 

@@ -64,6 +64,7 @@ public class SessionResource
     @GET
     @Path("/api/sessions/{id}")
     public RestSession getSessions(@PathParam("id") long id)
+        throws ResourceNotFoundException
     {
         StoredSession s = sm.getSessionStore(siteId)
             .getSessionById(id);

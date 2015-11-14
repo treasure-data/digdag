@@ -14,5 +14,5 @@ public abstract class StoredWorkflowSourceWithRepository
 {
     public abstract StoredRepository getRepository();
 
-    // TODO include RevisionSummary
+    public abstract String getRevisionName();
 }

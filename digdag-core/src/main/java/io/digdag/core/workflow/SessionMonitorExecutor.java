@@ -59,12 +59,13 @@ public class SessionMonitorExecutor
 
     public Optional<Date> runMonitor(StoredSessionMonitor storedMonitor)
     {
-        sm.lockRootTask(storedMonitor.getSessionId(), (TaskControl control, StoredTask detail) -> {
+        sm.lockRootTaskIfExists(storedMonitor.getSessionId(), (TaskControl control, StoredTask detail) -> {
             if (!Tasks.isDone(detail.getState())) {
                 exec.addSlaTask(control, detail, storedMonitor.getConfig());
             }
             return true;
         });
+        // do nothing if already deleted
         return Optional.absent();
     }
 }

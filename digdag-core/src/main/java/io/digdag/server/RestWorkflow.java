@@ -8,6 +8,7 @@ import io.digdag.core.config.Config;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowSource;
+import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestWorkflow.class)
@@ -33,12 +34,22 @@ public abstract class RestWorkflow
 
     public static RestWorkflow of(StoredRepository repo, StoredRevision rev, StoredWorkflowSource workflow)
     {
+        return of(repo, rev.getName(), workflow);
+    }
+
+    public static RestWorkflow of(StoredWorkflowSourceWithRepository wfDetails)
+    {
+        return of(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails);
+    }
+
+    private static RestWorkflow of(StoredRepository repo, String revName, StoredWorkflowSource workflow)
+    {
         return builder()
             .id(workflow.getId())
             .name(workflow.getName())
             .config(workflow.getConfig())
             .repository(IdName.of(repo.getId(), repo.getName()))
-            .revision(rev.getName())
+            .revision(revName)
             .build();
     }
 }

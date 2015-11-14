@@ -8,6 +8,8 @@ import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.spi.ScheduleTime;
 import io.digdag.core.spi.Scheduler;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +64,22 @@ public class ScheduleExecutor
         //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();
         Scheduler sr = scheds.getScheduler(sched.getConfig());
-        starter.start(sched.getWorkflowId(), sr.getTimeZone(),
-                ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
-        return sr.nextScheduleTime(scheduleTime);
+        try {
+            starter.start(sched.getWorkflowId(), sr.getTimeZone(),
+                    ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
+            return sr.nextScheduleTime(scheduleTime);
+        }
+        catch (ResourceNotFoundException ex) {
+            Exception error = new IllegalStateException("Schedule for a workflow id="+sched.getWorkflowId()+" is scheduled but does not exist.", ex);
+            logger.error("Database state error during scheduling. Pending the schedule for 1 hour", error);
+            return ScheduleTime.of(
+                    new Date(sched.getNextRunTime().getTime() + 3600*1000),
+                    sched.getNextScheduleTime());
+        }
+        catch (ResourceConflictException ex) {
+            Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
+            logger.error("Database state error during scheduling. Skipping the schedule", error);
+            return sr.nextScheduleTime(scheduleTime);
+        }
     }
 }

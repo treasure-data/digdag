@@ -3,6 +3,8 @@ package io.digdag.core.workflow;
 import java.util.List;
 import java.util.Date;
 import com.google.common.base.*;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionStoreManager
 {
@@ -10,10 +12,15 @@ public interface SessionStoreManager
 
     Date getStoreTime();
 
+    // for WorkflowExecutorManager.runUntilAny
     boolean isAnyNotDoneWorkflows();
 
     // for WorkflowExecutorManager.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);
+
+    // for WorkflowExecutorManager.enqueueTask
+    StoredSession getSessionById(long sesId)
+        throws ResourceNotFoundException;
 
     // for WorkflowExecutorManager.IncrementalStatusPropagator.propagateStatus
     List<TaskStateSummary> findRecentlyChangedTasks(Date updatedSince, long lastId);
@@ -34,13 +41,13 @@ public interface SessionStoreManager
     }
 
     // overload for polling
-    <T> Optional<T> lockTask(long taskId, TaskLockAction<T> func);
+    <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func);
 
     // overload for taskFinished
-    <T> Optional<T> lockTask(long taskId, TaskLockActionWithDetails<T> func);
+    <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func);
 
     // overload for SessionMonitorExecutor
-    <T> Optional<T> lockRootTask(long sessionId, TaskLockActionWithDetails<T> func);
+    <T> Optional<T> lockRootTaskIfExists(long sessionId, TaskLockActionWithDetails<T> func);
 
     interface SessionBuilderStore
     {
@@ -54,9 +61,8 @@ public interface SessionStoreManager
         void call(StoredSession session, SessionBuilderStore store);
     }
 
-    StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func);
-
-    SessionRelation getSessionRelationById(long sessionId);
+    StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func)
+        throws ResourceConflictException;
 
     interface SessionMonitorAction
     {

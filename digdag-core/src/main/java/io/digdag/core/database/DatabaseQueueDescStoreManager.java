@@ -22,6 +22,8 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.core.config.Config;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class DatabaseQueueDescStoreManager
         extends BasicDatabaseStoreManager
@@ -62,35 +64,54 @@ public class DatabaseQueueDescStoreManager
             this.siteId = siteId;
         }
 
-        public List<StoredQueueDesc> getAllQueueDescs()
-        {
-            return dao.getQueueDescs(siteId, Integer.MAX_VALUE, 0);
-        }
+        //public List<StoredQueueDesc> getAllQueueDescs()
+        //{
+        //    return dao.getQueueDescs(siteId, Integer.MAX_VALUE, 0);
+        //}
 
+        @Override
         public List<StoredQueueDesc> getQueueDescs(int pageSize, Optional<Long> lastId)
         {
             return dao.getQueueDescs(siteId, pageSize, lastId.or(0L));
         }
 
+        @Override
         public StoredQueueDesc getQueueDescById(long qdId)
+            throws ResourceNotFoundException
         {
-            return dao.getQueueDescById(siteId, qdId);
+            return requiredResource(
+                    dao.getQueueDescById(siteId, qdId),
+                    "queue id=%d", qdId);
         }
 
+        @Override
         public StoredQueueDesc getQueueDescByName(String name)
+            throws ResourceNotFoundException
         {
-            return dao.getQueueDescByName(siteId, name);
+            return requiredResource(
+                    dao.getQueueDescByName(siteId, name),
+                    "queue name=%s", name);
         }
 
+        @Override
         public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, Config defaultConfig)
         {
-            StoredQueueDesc desc = getQueueDescByName(name);
-            if (desc == null) {
-                // TODO transaction
-                dao.insertQueueDesc(siteId, name, defaultConfig);
-                desc = getQueueDescByName(name);
-            }
-            return desc;
+            return handle.inTransaction((handle, session) -> {
+                try {
+                    try {
+                        long qdId = catchConflict(() ->
+                                dao.insertQueueDesc(siteId, name, defaultConfig),
+                                "queue name=%s", name);
+                        return getQueueDescById(qdId);
+                    }
+                    catch (ResourceConflictException ex) {
+                        return getQueueDescByName(name);
+                    }
+                }
+                catch (ResourceNotFoundException ex) {
+                    throw new IllegalStateException("Database state error", ex);
+                }
+            });
         }
 
         public void updateQueueDescConfig(long qdId, Config newConfig)

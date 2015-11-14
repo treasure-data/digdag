@@ -24,6 +24,8 @@ import io.digdag.core.agent.TaskRunner;
 import io.digdag.core.queue.Action;
 import io.digdag.core.spi.TaskReport;
 import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.config.Config;
@@ -57,6 +59,7 @@ public class WorkflowExecutor
 
     public StoredSession submitWorkflow(WorkflowSource workflowSource, Session newSession, SessionRelation relation,
             Date slaCurrentTime)
+        throws ResourceConflictException
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();
@@ -177,7 +180,7 @@ public class WorkflowExecutor
                     if (task.getParentId().isPresent()) {
                         long parentId = task.getParentId().get();
                         if (checkedParentIds.add(parentId)) {
-                            return sm.lockTask(parentId, (TaskControl lockedParent) -> {
+                            return sm.lockTaskIfExists(parentId, (TaskControl lockedParent) -> {
                                 return lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0;
                             }).or(false);
                         }
@@ -186,7 +189,7 @@ public class WorkflowExecutor
                     else {
                         // root task can't be BLOCKED. See submitWorkflow
                         return false;
-                        //return sm.lockTask(task.getId(), (TaskControl lockedRoot) -> {
+                        //return sm.lockTaskIfExists(task.getId(), (TaskControl lockedRoot) -> {
                         //    return lockedRoot.setRootPlannedToReady();
                         //}).or(false);
                     }
@@ -210,7 +213,7 @@ public class WorkflowExecutor
                 tasks
                 .stream()
                 .map(task -> {
-                    return sm.lockTask(task.getId(), (TaskControl lockedTask, StoredTask detail) -> {
+                    return sm.lockTaskIfExists(task.getId(), (TaskControl lockedTask, StoredTask detail) -> {
                         return setDoneFromDoneChildren(lockedTask, detail);
                     }).or(false);
                 })
@@ -319,13 +322,13 @@ public class WorkflowExecutor
 
                         if (Tasks.isDone(task.getState()) || task.getState() == TaskStateCode.PLANNED) {
                             // this parent became planned or done. may be transite from planned to done immediately
-                            propagatedToSelf = sm.lockTask(task.getId(), (TaskControl lockedTask, StoredTask detail) -> {
+                            propagatedToSelf = sm.lockTaskIfExists(task.getId(), (TaskControl lockedTask, StoredTask detail) -> {
                                 return setDoneFromDoneChildren(lockedTask, detail);
                             }).or(false);
 
                             if (!propagatedToSelf) {
                                 // if this task is not done yet, transite children from blocked to ready
-                                propagatedToChildren = sm.lockTask(task.getId(), (TaskControl lockedTask) -> {
+                                propagatedToChildren = sm.lockTaskIfExists(task.getId(), (TaskControl lockedTask) -> {
                                     return lockedTask.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0;
                                 }).or(false);
                             }
@@ -336,7 +339,7 @@ public class WorkflowExecutor
                                 // this child became done. try to transite parent from planned to done.
                                 // and dependint siblings tasks may be able to start
                                 if (checkedParentIds.add(task.getParentId().get())) {
-                                    propagatedFromChildren = sm.lockTask(task.getParentId().get(), (TaskControl lockedParent, StoredTask detail) -> {
+                                    propagatedFromChildren = sm.lockTaskIfExists(task.getParentId().get(), (TaskControl lockedParent, StoredTask detail) -> {
                                         boolean doneFromChildren = setDoneFromDoneChildren(lockedParent, detail);
                                         boolean siblingsToReady = lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0;
                                         return doneFromChildren || siblingsToReady;
@@ -395,7 +398,7 @@ public class WorkflowExecutor
             //executor.shutdownNow();
         }
 
-        public synchronized Future<Void> add(final long taskId)
+        public synchronized Future<Void> asyncEnqueueTask(final long taskId)
         {
             if (waiting.containsKey(taskId)) {
                 return waiting.get(taskId);
@@ -420,19 +423,27 @@ public class WorkflowExecutor
     private void enqueueReadyTasks(TaskQueuer queuer)
     {
         for (long taskId : sm.findAllReadyTaskIds(100)) {  // TODO randomize this resut to achieve concurrency
-            queuer.add(taskId);
+            queuer.asyncEnqueueTask(taskId);
         }
     }
 
     private void enqueueTask(final TaskQueueDispatcher dispatcher, final long taskId)
     {
-        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+        sm.lockTaskIfExists(taskId, (TaskControl control, StoredTask task) -> {
             if (control.getState() != TaskStateCode.READY) {
                 return false;
             }
 
             String fullName = task.getFullName();
-            StoredSession session = sm.getSessionStore(task.getSiteId()).getSessionById(task.getSessionId());
+            StoredSession session;
+            try {
+                session = sm.getSessionById(task.getSessionId());
+            }
+            catch (ResourceNotFoundException ex) {
+                Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session does not exist.", ex);
+                logger.error("Database state error enquing task.", error);
+                return false;
+            }
 
             Optional<TaskReport> skipTaskReport = Optional.fromNullable(session.getOptions().getSkipTaskMap().get(fullName));
             if (skipTaskReport.isPresent()) {
@@ -478,7 +489,7 @@ public class WorkflowExecutor
             final Config error, final Config stateParams,
             final Optional<Integer> retryInterval)
     {
-        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+        sm.lockTaskIfExists(taskId, (TaskControl control, StoredTask task) -> {
             taskFailed(control, task,
                     error, stateParams,
                     retryInterval);
@@ -490,7 +501,7 @@ public class WorkflowExecutor
             final Config stateParams, final Config subtaskConfig,
             final TaskReport report)
     {
-        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+        sm.lockTaskIfExists(taskId, (TaskControl control, StoredTask task) -> {
             taskSucceeded(control, task,
                     stateParams, subtaskConfig,
                     report);
@@ -501,7 +512,7 @@ public class WorkflowExecutor
     public void taskPollNext(long taskId,
             final Config stateParams, final int retryInterval)
     {
-        sm.lockTask(taskId, (TaskControl control, StoredTask task) -> {
+        sm.lockTaskIfExists(taskId, (TaskControl control, StoredTask task) -> {
             taskPollNext(control, task,
                     stateParams, retryInterval);
             return true;
@@ -567,6 +578,7 @@ public class WorkflowExecutor
 
     private Config collectTaskParams(StoredTask task, Config result)
     {
+        // TODO not accurate implementation
         Optional<Long> lastId = Optional.absent();
         while (true) {
             List<StoredTask> ses = sm.getSessionStore(task.getSiteId()).getTasks(task.getSessionId(), 1024, lastId);

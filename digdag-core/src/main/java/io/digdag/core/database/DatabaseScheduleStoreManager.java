@@ -11,7 +11,8 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.core.*;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
@@ -54,11 +55,13 @@ public class DatabaseScheduleStoreManager
         handle.close();
     }
 
+    @Override
     public ScheduleStore getScheduleStore(int siteId)
     {
         return new DatabaseScheduleStore(siteId);
     }
 
+    @Override
     public void lockReadySchedules(Date currentTime, ScheduleAction func)
     {
         List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
@@ -88,6 +91,44 @@ public class DatabaseScheduleStoreManager
         }
     }
 
+    @Override
+    public List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules)
+        throws ResourceConflictException
+    {
+        return handle.inTransaction((handle, session) -> {
+            final long[] ids = new long[schedules.size()];
+            int i = 0;
+            for (Schedule schedule : schedules) {
+                ids[i] = catchConflict(() ->
+                        dao.insertRepositorySchedule(
+                            schedule.getWorkflowId(), schedule.getConfig(),
+                            schedule.getNextRunTime().getTime() / 1000,
+                            schedule.getNextScheduleTime().getTime() / 1000),
+                        "schedule workflow_id=%d", schedule.getWorkflowId());
+                i++;
+            }
+            String idList = Longs.asList(ids).stream().map(id -> Long.toString(id)).collect(Collectors.joining(","));
+            handle.createStatement(
+                    "delete from schedules" +
+                    " where id in (" +
+                        "select s.id from schedules s" +
+                        " join workflows wf on s.workflow_id = wf.id" +
+                        " join revisions rev on wf.revision_id = rev.id" +
+                        " where rev.repository_id = :repoId" +
+                        " and s.id not in (" + idList + ")" +
+                    ")"
+                )
+                .bind("repoId", repoId)
+                .execute();
+            return handle.createQuery(
+                    "select * from schedules" +
+                    " where id in (" + idList + ")"
+                )
+                .map(ssm)
+                .list();
+        });
+    }
+
     private class DatabaseScheduleStore
             implements ScheduleStore
     {
@@ -99,53 +140,24 @@ public class DatabaseScheduleStoreManager
             this.siteId = siteId;
         }
 
-        public List<StoredSchedule> getAllSchedules()
-        {
-            return dao.getSchedules(siteId, Integer.MAX_VALUE, 0L);
-        }
+        //public List<StoredSchedule> getAllSchedules()
+        //{
+        //    return dao.getSchedules(siteId, Integer.MAX_VALUE, 0L);
+        //}
 
+        @Override
         public List<StoredSchedule> getSchedules(int pageSize, Optional<Long> lastId)
         {
             return dao.getSchedules(siteId, pageSize, lastId.or(0L));
         }
 
+        @Override
         public StoredSchedule getScheduleById(long schedId)
+            throws ResourceNotFoundException
         {
-            return dao.getScheduleById(siteId, schedId);
-        }
-
-        public List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules)
-        {
-            return handle.inTransaction((handle, session) -> {
-                final long[] ids = new long[schedules.size()];
-                int i = 0;
-                for (Schedule schedule : schedules) {
-                    ids[i] = dao.insertRepositorySchedule(
-                            schedule.getWorkflowId(), schedule.getConfig(),
-                            schedule.getNextRunTime().getTime() / 1000,
-                            schedule.getNextScheduleTime().getTime() / 1000);
-                    i++;
-                }
-                String idList = Longs.asList(ids).stream().map(id -> Long.toString(id)).collect(Collectors.joining(","));
-                handle.createStatement(
-                        "delete from schedules" +
-                        " where id in ("+
-                            "select s.id from schedules s" +
-                            " join workflows wf on s.workflow_id = wf.id" +
-                            " join revisions rev on wf.revision_id = rev.id" +
-                            " where rev.repository_id = :repoId" +
-                            " and s.id not in (" + idList + ")" +
-                        ")"
-                    )
-                    .bind("repoId", repoId)
-                    .execute();
-                return handle.createQuery(
-                        "select * from schedules" +
-                        " where id in (" + idList + ")"
-                    )
-                    .map(ssm)
-                    .list();
-            });
+            return requiredResource(
+                    dao.getScheduleById(siteId, schedId),
+                    "schedule id=%d", schedId);
         }
     }
 
@@ -157,7 +169,7 @@ public class DatabaseScheduleStoreManager
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where repo.site_id = :siteId" +
                 " and s.id > :lastId" +
-                " order by s.id desc" +
+                " order by s.id asc" +
                 " limit :limit")
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
@@ -167,7 +179,7 @@ public class DatabaseScheduleStoreManager
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where repo.site_id = :siteId" +
                 " and s.id = :schedId" +
-                " order by id desc" +
+                " order by id asc" +
                 " limit :limit")
         StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
 

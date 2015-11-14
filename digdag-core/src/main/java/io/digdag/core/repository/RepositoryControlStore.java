@@ -9,5 +9,8 @@ public interface RepositoryControlStore
 
     StoredRevision putRevision(int repoId, Revision revision);
 
-    StoredWorkflowSource putWorkflow(int revId, WorkflowSource workflow);
+    StoredWorkflowSource insertWorkflow(int revId, WorkflowSource workflow)
+        throws ResourceConflictException;
+
+    //void deleteRepository(int repoId);  // TODO delete schedule
 }
