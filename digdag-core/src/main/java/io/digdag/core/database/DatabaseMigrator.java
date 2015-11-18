@@ -14,8 +14,13 @@ public class DatabaseMigrator
     @Inject
     public DatabaseMigrator(IDBI dbi, DatabaseStoreConfig config)
     {
+        this(dbi, config.getType());
+    }
+
+    public DatabaseMigrator(IDBI dbi, String databaseType)
+    {
         this.dbi = dbi;
-        this.databaseType = config.getType();
+        this.databaseType = databaseType;
     }
 
     public static String getDriverClassName(String type)
@@ -211,6 +216,7 @@ public class DatabaseMigrator
                     .addInt("site_id", "not null")
                     .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_id
                     .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_id
+                    // TODO task_index
                     .addString("name", "not null")
                     .addMediumText("params", "")
                     .addMediumText("options", "")    // TODO set in params? or rename to config?

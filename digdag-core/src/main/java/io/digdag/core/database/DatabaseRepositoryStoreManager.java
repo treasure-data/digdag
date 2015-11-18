@@ -175,7 +175,7 @@ public class DatabaseRepositoryStoreManager
                 }
                 catch (ResourceConflictException ex) {
                     StoredRevision rev = getRevisionByName(repoId, revision.getName());
-                    if (revision.equals(rev)) {
+                    if (revision.equals(Revision.revisionBuilder().from(rev).build())) {
                         return rev;
                     }
                     // TODO once implement deleteRevision, delete the current revision and overwrite it

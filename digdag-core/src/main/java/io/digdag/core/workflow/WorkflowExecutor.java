@@ -57,13 +57,39 @@ public class WorkflowExecutor
         this.cf = cf;
     }
 
-    public StoredSession submitWorkflow(WorkflowSource workflowSource, Session newSession, SessionRelation relation,
+    public StoredSession submitWorkflow(
+            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
+            Date slaCurrentTime, TaskMatchPattern from)
+        throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
+    {
+        Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
+        List<WorkflowTask> tasks = workflow.getTasks();
+
+        int index = from.findIndex(tasks);
+
+        return submitWorkflow(tasks, index,
+                workflowSource, newSession, relation,
+                slaCurrentTime);
+    }
+
+    public StoredSession submitWorkflow(
+            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
             Date slaCurrentTime)
         throws ResourceConflictException
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
         List<WorkflowTask> tasks = workflow.getTasks();
 
+        return submitWorkflow(tasks, 0,
+                workflowSource, newSession, relation,
+                slaCurrentTime);
+    }
+
+    private StoredSession submitWorkflow(List<WorkflowTask> tasks, int fromIndex,
+            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
+            Date slaCurrentTime)
+        throws ResourceConflictException
+    {
         List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) with session parameters: {}",
@@ -77,8 +103,9 @@ public class WorkflowExecutor
             logger.trace("    config: "+task.getConfig());
         }
 
+        // TODO support fromIndex
+
         final WorkflowTask root = tasks.get(0);
-        final List<WorkflowTask> sub = tasks.subList(1, tasks.size());
         return sm.newSession(newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
             final Task rootTask = Task.taskBuilder()
                 .sessionId(session.getId())
@@ -89,7 +116,7 @@ public class WorkflowExecutor
                 .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
                 .build();
             store.addRootTask(rootTask, (control, lockedRootTask) -> {
-                control.addSubtasks(lockedRootTask, sub, 0);
+                control.addTasksExceptingRootTask(lockedRootTask, tasks);
                 return null;
             });
             store.addMonitors(session.getId(), monitors);
@@ -607,7 +634,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sub tasks: {}"+tasks);
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true, 1);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), true);
         return Optional.of(task);
     }
 
@@ -628,7 +655,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding error tasks: {}"+tasks);
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
         return Optional.of(task);
     }
 
@@ -645,7 +672,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding check tasks: {}"+tasks);
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
         return Optional.of(task);
     }
 
@@ -657,7 +684,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sla tasks: {}"+tasks);
-        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false, 1);
+        StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
         return Optional.of(task);
     }
 }

@@ -15,6 +15,7 @@ allprojects {
 
 subprojects {
     apply plugin: 'maven'
+    apply plugin: 'jacoco'
 
     repositories {
         mavenCentral()

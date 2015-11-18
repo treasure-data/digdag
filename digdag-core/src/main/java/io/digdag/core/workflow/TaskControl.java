@@ -33,41 +33,58 @@ public class TaskControl
         return state;
     }
 
-    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks, int indexOffset)
+    public StoredTask addTasksExceptingRootTask(StoredTask rootTask, List<WorkflowTask> tasks)
     {
-        return addSubtasks(thisTask, tasks, ImmutableList.of(), false, indexOffset);
+        return addTasks(rootTask, tasks, ImmutableList.of(), false, true);
     }
 
-    public StoredTask addSubtasks(StoredTask thisTask, List<WorkflowTask> tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings, int indexOffset)
+    public StoredTask addSubtasks(StoredTask parentTask, List<WorkflowTask> tasks,
+            List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
-        Preconditions.checkArgument(id == thisTask.getId());
+        return addTasks(parentTask, tasks, rootUpstreamIds, cancelSiblings, false);
+    }
+
+    private StoredTask addTasks(StoredTask parentTask, List<WorkflowTask> tasks,
+            List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootParentTask)
+    {
+        Preconditions.checkArgument(id == parentTask.getId());
 
         List<Long> indexToId = new ArrayList<>();
         List<String> indexToFullName = new ArrayList<>();
-        indexToId.add(thisTask.getId());
-        indexToFullName.add(thisTask.getFullName());
 
-        StoredTask rootTask = null;
+        StoredTask rootTask;
+        if (firstTaskIsRootParentTask) {
+            // tasks.get(0) == parentTask == root task
+            rootTask = parentTask;
+        }
+        else {
+            rootTask = null;
+        }
+
+        boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
+            if (firstTask && firstTaskIsRootParentTask) {
+                indexToId.add(rootTask.getId());
+                indexToFullName.add(rootTask.getFullName());
+                firstTask = false;
+                continue;
+            }
+
             String parentFullName = wt.getParentIndex()
-                .transform(index -> indexToFullName.get(index + indexOffset))
-                .or(thisTask.getFullName());
+                .transform(index -> indexToFullName.get(index))
+                .or(parentTask.getFullName());
             String fullName = parentFullName + wt.getName();
 
-            if (rootTask == null) {
-                // this is root task
-                if (cancelSiblings) {
-                    // TODO not implemented yet
-                }
+            if (firstTask && cancelSiblings) {
+                // TODO not implemented yet
             }
 
             Task task = Task.taskBuilder()
-                .sessionId(thisTask.getSessionId())
+                .sessionId(parentTask.getSessionId())
                 .parentId(Optional.of(
                             wt.getParentIndex()
-                                .transform(index -> indexToId.get(index + indexOffset))
-                                .or(thisTask.getId())
+                                .transform(index -> indexToId.get(index))
+                                .or(parentTask.getId())
                             ))
                 .fullName(fullName)
                 .config(wt.getConfig())
@@ -83,12 +100,12 @@ public class TaskControl
                         id,
                         wt.getUpstreamIndexes()
                             .stream()
-                            .map(index -> indexToId.get(index + indexOffset))
+                            .map(index -> indexToId.get(index))
                             .collect(Collectors.toList())
                         );
             }
 
-            if (rootTask == null) {
+            if (firstTask) {
                 // this is root task
                 store.addDependencies(id, rootUpstreamIds);
                 try {
@@ -97,6 +114,7 @@ public class TaskControl
                 catch (ResourceNotFoundException ex) {
                     throw new IllegalStateException("Database state error", ex);
                 }
+                firstTask = false;
             }
         }
 

@@ -12,7 +12,7 @@ import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseStoreConfig;
 
 public class PooledDataSourceProvider
-        implements Provider<DataSource>
+        implements Provider<DataSource>, AutoCloseable
 {
     private final DatabaseStoreConfig config;
     private HikariDataSource ds;
