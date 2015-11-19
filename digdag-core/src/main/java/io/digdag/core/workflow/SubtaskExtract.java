@@ -38,7 +38,6 @@ public class SubtaskExtract
 
         ImmutableList.Builder<WorkflowTask> builder = ImmutableList.builder();
         for (WorkflowTask task : extracted) {
-            System.out.println("task: "+task.getIndex()+" parent: "+task.getParentIndex()+" rootTaskIndex: "+rootTaskIndex+" name: "+task.getName());
             WorkflowTask indexMapped = new WorkflowTask.Builder().from(task)
                 .index(map.get(task.getIndex()))
                 .parentIndex(

@@ -140,11 +140,15 @@ public class Run
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
             .build();
 
-        StoredSession session = localSite.startWorkflows(
+        List<StoredSession> sessions = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
                 fromTaskName,
                 params, options,
-                new Date()).get(0);
+                new Date());
+        if (sessions.isEmpty()) {
+            throw systemExit("No workflows to start");
+        }
+        StoredSession session = sessions.get(0);
         logger.debug("Submitting {}", session);
 
         localSite.startLocalAgent();

@@ -577,7 +577,7 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("insert into sessions (site_id, namespace_type, namespace_id, name, params, options, created_at)" +
                 " values (:siteId, :namespaceType, :namespaceId, :name, :params, :options, now())")
         @GetGeneratedKeys
-        long insertSession(@Bind("siteId") int siteId,  @Bind("namespaceType") short namespaceType,
+        long insertSession(@Bind("siteId") int siteId, @Bind("namespaceType") short namespaceType,
                 @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") Config params, @Bind("options") SessionOptions options);
 
         @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +

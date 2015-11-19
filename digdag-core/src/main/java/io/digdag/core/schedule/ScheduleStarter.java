@@ -40,6 +40,7 @@ public class ScheduleStarter
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
+        // TODO consider from: option. add +pattern to session name
         Session trigger = createScheduleSession(cf, timeZone, time.getScheduleTime());
 
         return exec.submitWorkflow(
