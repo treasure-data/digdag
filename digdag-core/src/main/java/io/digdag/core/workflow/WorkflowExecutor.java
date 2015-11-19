@@ -59,42 +59,22 @@ public class WorkflowExecutor
 
     public StoredSession submitWorkflow(
             WorkflowSource workflowSource, Session newSession, SessionRelation relation,
-            Date slaCurrentTime, TaskMatchPattern from)
+            Date slaCurrentTime, Optional<TaskMatchPattern> from)
         throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
-        List<WorkflowTask> tasks = workflow.getTasks();
+        List<WorkflowTask> sourceTasks = workflow.getTasks();
 
-        int index = from.findIndex(tasks);
-
-        return submitWorkflow(tasks, index,
-                workflowSource, newSession, relation,
-                slaCurrentTime);
-    }
-
-    public StoredSession submitWorkflow(
-            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
-            Date slaCurrentTime)
-        throws ResourceConflictException
-    {
-        Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
-        List<WorkflowTask> tasks = workflow.getTasks();
-
-        return submitWorkflow(tasks, 0,
-                workflowSource, newSession, relation,
-                slaCurrentTime);
-    }
-
-    private StoredSession submitWorkflow(List<WorkflowTask> sourceTasks, int fromIndex,
-            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
-            Date slaCurrentTime)
-        throws ResourceConflictException
-    {
-        List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
+        int fromIndex = 0;
+        if (from.isPresent()) {
+            fromIndex = from.get().findIndex(sourceTasks);
+        }
 
         List<WorkflowTask> tasks = (fromIndex > 0) ?
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
+
+        List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) from index {} with session parameters: {}",
                 workflowSource.getName(),

@@ -149,7 +149,8 @@ public class Sched
         }
 
         @Override
-        public StoredSession start(int workflowId, TimeZone timeZone, ScheduleTime time)
+        public StoredSession start(int workflowId, Optional<String> from,
+                TimeZone timeZone, ScheduleTime time)
                 throws ResourceNotFoundException, ResourceConflictException
         {
             StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
@@ -157,12 +158,15 @@ public class Sched
             File dir = hist.getSessionDir(wf, timeZone, time.getScheduleTime());
             dir.mkdirs();
 
-            StoredSession session = super.start(workflowId, timeZone, time);
+            StoredSession session = super.start(workflowId, from, timeZone, time);
             logger.debug("Submitting {}", session);
 
             mapper.writeFile(new File(dir, "workflow.yml"), ImmutableMap.of(wf.getName(), wf.getConfig()));
 
             mapper.writeFile(new File(dir, "params.yml"), session.getParams());
+
+            // TODO generate command.sh file that includes
+            //      digdag -p params.yml -w workflow.yml -f from
 
             resumeStateFiles.startUpdate(new File(dir, "state.yml"), session);
 

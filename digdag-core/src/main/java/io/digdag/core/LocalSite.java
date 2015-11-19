@@ -192,11 +192,8 @@ public class LocalSite
             .map(workflow -> {
                 try {
                     SessionRelation rel = SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId());
-                    if (fromTaskName.isPresent()) {
-                        return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime, new TaskMatchPattern(fromTaskName.get()));
-                    } else {
-                        return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime);
-                    }
+                    return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime,
+                            fromTaskName.transform(name -> new TaskMatchPattern(name)));
                 }
                 catch (TaskMatchPattern.NoMatchException ex) {
                     logger.error("No task matched with '{}'", fromTaskName.orNull());

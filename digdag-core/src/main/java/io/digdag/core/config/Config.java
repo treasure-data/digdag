@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Iterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -217,6 +218,12 @@ public class Config
     public <E> E get(String key, TypeReference<E> type, E defaultValue)
     {
         return (E) get(key, mapper.getTypeFactory().constructType(type));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <E> Optional<E> getOptional(String key, Class<E> type)
+    {
+        return (Optional<E>) get(key, mapper.getTypeFactory().constructParametrizedType(Optional.class, Optional.class, type), Optional.<E>absent());
     }
 
     @SuppressWarnings("unchecked")

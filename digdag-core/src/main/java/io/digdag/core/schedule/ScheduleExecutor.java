@@ -64,22 +64,28 @@ public class ScheduleExecutor
         //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();
         Scheduler sr = scheds.getScheduler(sched.getConfig());
+        Optional<String> from = sched.getConfig().getOptional("from", String.class);
         try {
-            starter.start(sched.getWorkflowId(), sr.getTimeZone(),
-                    ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
+            starter.start(sched.getWorkflowId(), from,
+                    sr.getTimeZone(), ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
             return sr.nextScheduleTime(scheduleTime);
         }
         catch (ResourceNotFoundException ex) {
             Exception error = new IllegalStateException("Schedule for a workflow id="+sched.getWorkflowId()+" is scheduled but does not exist.", ex);
-            logger.error("Database state error during scheduling. Pending the schedule for 1 hour", error);
+            logger.error("Database state error during scheduling. Pending this schedule for 1 hour", error);
             return ScheduleTime.of(
                     new Date(sched.getNextRunTime().getTime() + 3600*1000),
                     sched.getNextScheduleTime());
         }
         catch (ResourceConflictException ex) {
             Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
-            logger.error("Database state error during scheduling. Skipping the schedule", error);
+            logger.error("Database state error during scheduling. Skipping this schedule", error);
             return sr.nextScheduleTime(scheduleTime);
+        } catch (RuntimeException ex) {
+            logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
+            return ScheduleTime.of(
+                    new Date(sched.getNextRunTime().getTime() + 3600*1000),
+                    sched.getNextScheduleTime());
         }
     }
 }
