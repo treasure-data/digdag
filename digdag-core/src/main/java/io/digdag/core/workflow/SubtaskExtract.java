@@ -58,6 +58,9 @@ public class SubtaskExtract
 
     public void addExtracted(WorkflowTask task)
     {
+        if (extracted.stream().anyMatch(t -> t.getIndex() == task.getIndex())) {
+            return;
+        }
         extracted.add(task);
 
         // add child tasks
