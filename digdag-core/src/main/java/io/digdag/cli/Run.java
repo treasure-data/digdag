@@ -1,14 +1,15 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.stream.Collectors;
-
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.workflow.SessionOptions;
 import io.digdag.core.workflow.StoredSession;
 import io.digdag.core.workflow.StoredTask;
+import io.digdag.core.workflow.TaskStateCode;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import java.io.File;
@@ -154,13 +155,17 @@ public class Run
         localSite.startLocalAgent();
         localSite.startMonitor();
 
-        if (resumeStateFilePath.isPresent()) {
-            rsm.startUpdate(resumeStateFilePath.get(), session);
-        }
+        // if resumeStateFilePath is not set, use workflow.yml.resume.yml
+        File resumeResultPath = resumeStateFilePath.or(new File(workflowPath.toString() + ".resume.yml"));
+        rsm.startUpdate(resumeResultPath, session);
 
         localSite.runUntilAny();
 
+        ArrayList<StoredTask> failedTasks = new ArrayList<>();
         for (StoredTask task : localSite.getSessionStore().getTasks(session.getId(), 100, Optional.absent())) {  // TODO paging
+            if (task.getState() == TaskStateCode.ERROR) {
+                failedTasks.add(task);
+            }
             logger.debug("  Task["+task.getId()+"]: "+task.getFullName());
             logger.debug("    parent: "+task.getParentId().transform(it -> Long.toString(it)).or("(root)"));
             logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
@@ -182,6 +187,16 @@ public class Run
                         .map(it -> WorkflowVisualizerNode.of(it))
                         .collect(Collectors.toList()),
                     visualizePath.get());
+        }
+
+        if (!failedTasks.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (StoredTask task : failedTasks) {
+                sb.append(String.format("Task %s failed.%n", task.getFullName()));
+            }
+            sb.append(String.format("Use `digdag run %s -r %s` to restart this workflow.",
+                        workflowPath, resumeResultPath));
+            throw systemExit(sb.toString());
         }
     }
 }

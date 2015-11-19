@@ -13,6 +13,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import joptsimple.OptionException;
 import io.digdag.DigdagEmbed;
 import static java.util.Arrays.asList;
 
@@ -24,8 +25,15 @@ public class Main
         try {
             run(args);
         }
-        catch (SystemExitException e) {
-            System.exit(e.getCode());
+        catch (OptionException ex) {
+            System.err.println("error: "+ex.getMessage());
+            System.exit(1);
+        }
+        catch (SystemExitException ex) {
+            if (ex.getMessage() != null) {
+                System.err.println("error: "+ex.getMessage());
+            }
+            System.exit(ex.getCode());
         }
     }
 
@@ -192,7 +200,6 @@ public class Main
     static SystemExitException systemExit(String errorMessage)
     {
         if (errorMessage != null) {
-            System.err.println("error: "+errorMessage);
             return new SystemExitException(1, errorMessage);
         }
         else {
