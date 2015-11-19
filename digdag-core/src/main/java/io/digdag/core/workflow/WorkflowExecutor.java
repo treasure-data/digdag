@@ -96,9 +96,10 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        logger.info("Starting a new session of workflow '{}' ({}) with session parameters: {}",
+        logger.info("Starting a new session of workflow '{}' ({}) from index {} with session parameters: {}",
                 workflowSource.getName(),
                 workflowSource.getConfig().getNestedOrGetEmpty("meta"),
+                fromIndex,
                 newSession.getParams());
         for (WorkflowTask task : tasks) {
             logger.trace("  Step["+task.getIndex()+"]: "+task.getName());
@@ -106,8 +107,6 @@ public class WorkflowExecutor
             logger.trace("    upstreams: "+task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
             logger.trace("    config: "+task.getConfig());
         }
-
-        // TODO support fromIndex
 
         final WorkflowTask root = tasks.get(0);
         return sm.newSession(newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {

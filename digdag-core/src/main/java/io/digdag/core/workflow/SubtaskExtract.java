@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 public class SubtaskExtract
@@ -27,6 +28,7 @@ public class SubtaskExtract
 
     public List<WorkflowTask> getExtracted()
     {
+        extracted.add(tasks.get(0));  // always add root
         addExtracted(tasks.get(rootTaskIndex));
 
         Map<Integer, Integer> map = new HashMap<>();
@@ -36,13 +38,19 @@ public class SubtaskExtract
 
         ImmutableList.Builder<WorkflowTask> builder = ImmutableList.builder();
         for (WorkflowTask task : extracted) {
+            System.out.println("task: "+task.getIndex()+" parent: "+task.getParentIndex()+" rootTaskIndex: "+rootTaskIndex+" name: "+task.getName());
             WorkflowTask indexMapped = new WorkflowTask.Builder().from(task)
                 .index(map.get(task.getIndex()))
-                .parentIndex(task.getParentIndex().transform(index -> map.get(index)))
+                .parentIndex(
+                        task.getParentIndex().transform(index ->
+                            map.containsKey(index) ? map.get(index) : 0
+                        ))
                 .upstreamIndexes(
+                        (task.getIndex() == rootTaskIndex) ?
+                        ImmutableList.of() :
                         task.getUpstreamIndexes().stream()
-                        .map(index -> map.get(index))
-                        .collect(Collectors.toList()))
+                            .map(index -> map.get(index))
+                            .collect(Collectors.toList()))
                 .build();
             builder.add(indexMapped);
         }

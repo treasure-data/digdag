@@ -46,7 +46,7 @@ public class Run
             throw usage(null);
         }
 
-        Optional<String> fromTaskName = Optional.fromNullable((String) op.valueOf("P"));
+        Optional<String> fromTaskName = Optional.fromNullable((String) op.valueOf("f"));
         Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
         Optional<File> paramsFilePath = Optional.fromNullable((String) op.valueOf("P")).transform(it -> new File(it));
         Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));

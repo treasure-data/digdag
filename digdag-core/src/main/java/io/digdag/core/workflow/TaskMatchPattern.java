@@ -42,7 +42,7 @@ public class TaskMatchPattern
     public TaskMatchPattern(String pattern)
     {
         this.pattern = pattern;
-        this.regex = Pattern.compile("/(?:\\A|[\\+\\.])" + Pattern.quote(pattern) + "(?:\\z|[\\+\\.])");
+        this.regex = Pattern.compile(".*" + Pattern.quote(pattern));  // same with String.endsWith
     }
 
     public int findIndex(List<WorkflowTask> compiledTasks)
@@ -58,7 +58,7 @@ public class TaskMatchPattern
         }
         else {
             throw new MultipleMatchException(String.format(
-                        "Pattern '%s' amambiguous. Matching candidates are '%s'", all.values().toString()), all);
+                        "Pattern '%s' is ambiguous. Matching candidates are %s", pattern, all.values()), all);
         }
     }
 
@@ -67,7 +67,7 @@ public class TaskMatchPattern
         Map<String, WorkflowTask> resolved = new FullNameResolver(compiledTasks).resolve();
         Map<Integer, String> map = new TreeMap<>();
         for (Map.Entry<String, WorkflowTask> pair : resolved.entrySet()) {
-            if (pattern.matches(pair.getKey())) {
+            if (regex.matcher(pair.getKey()).matches()) {
                 map.put(pair.getValue().getIndex(), pair.getKey());
             }
         }
