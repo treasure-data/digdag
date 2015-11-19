@@ -13,6 +13,7 @@
 ```
 Usage: digdag <command> [options...]
   Commands:
+    gen <name>                       generate a new workflow definition
     run <workflow.yml>               run a workflow
     show <workflow.yml>              visualize a workflow
     sched <workflow.yml> -o <dir>    start scheduling a workflow

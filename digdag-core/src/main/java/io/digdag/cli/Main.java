@@ -58,6 +58,9 @@ public class Main
         case "sched":
             Sched.main(command, commandArgs);
             break;
+        case "gen":
+            Gen.main(command, commandArgs);
+            break;
         case "show":
             Show.main(command, commandArgs);
             break;
@@ -153,6 +156,7 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
+        System.err.println("    gen <name>                       generate a new workflow definition");
         System.err.println("    run <workflow.yml>               run a workflow");
         System.err.println("    show <workflow.yml>              visualize a workflow");
         System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
