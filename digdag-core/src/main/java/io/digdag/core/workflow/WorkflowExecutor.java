@@ -85,12 +85,16 @@ public class WorkflowExecutor
                 slaCurrentTime);
     }
 
-    private StoredSession submitWorkflow(List<WorkflowTask> tasks, int fromIndex,
+    private StoredSession submitWorkflow(List<WorkflowTask> sourceTasks, int fromIndex,
             WorkflowSource workflowSource, Session newSession, SessionRelation relation,
             Date slaCurrentTime)
         throws ResourceConflictException
     {
         List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
+
+        List<WorkflowTask> tasks = (fromIndex > 0) ?
+            SubtaskExtract.extract(sourceTasks, fromIndex) :
+            sourceTasks;
 
         logger.info("Starting a new session of workflow '{}' ({}) with session parameters: {}",
                 workflowSource.getName(),

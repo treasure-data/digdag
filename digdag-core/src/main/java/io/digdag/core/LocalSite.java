@@ -23,6 +23,8 @@ import io.digdag.core.config.YamlConfigLoader;
 
 public class LocalSite
 {
+    private static Logger logger = LoggerFactory.getLogger(LocalSite.class);
+
     private final ConfigFactory cf;
     private final YamlConfigLoader loader;
     private final WorkflowCompiler compiler;
@@ -171,6 +173,7 @@ public class LocalSite
 
     public List<StoredSession> startWorkflows(
             List<WorkflowSource> workflowSources,
+            Optional<String> fromTaskName,
             Config sessionParams,
             SessionOptions options,
             Date slaCurrentTime)
@@ -188,14 +191,25 @@ public class LocalSite
         return workflows.stream()
             .map(workflow -> {
                 try {
-                    return exec.submitWorkflow(workflow, trigger,
-                            SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId()),
-                            slaCurrentTime);
+                    SessionRelation rel = SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId());
+                    if (fromTaskName.isPresent()) {
+                        return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime, new TaskMatchPattern(fromTaskName.get()));
+                    } else {
+                        return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime);
+                    }
+                }
+                catch (TaskMatchPattern.NoMatchException ex) {
+                    logger.error("No task matched with '{}'", fromTaskName.orNull());
+                    return null;
+                }
+                catch (TaskMatchPattern.MultipleMatchException ex) {
+                    throw new IllegalArgumentException(ex);  // TODO exception class
                 }
                 catch (ResourceConflictException ex) {
                     throw new IllegalStateException("UUID confliction", ex);
                 }
             })
+            .filter(wf -> wf != null)
             .collect(Collectors.toList());
     }
 

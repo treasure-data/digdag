@@ -35,6 +35,7 @@ public class Run
     {
         OptionParser parser = Main.parser();
 
+        parser.acceptsAll(asList("f", "from")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("r", "resume-state")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("P", "params-file")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
@@ -45,18 +46,20 @@ public class Run
             throw usage(null);
         }
 
-        Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
-        Optional<File> paramsFilePath = Optional.fromNullable((String) op.valueOf("P")).transform(it -> new File(it));
+        Optional<String> fromTaskName = Optional.fromNullable((String) op.valueOf("P"));
         Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
+        Optional<File> paramsFilePath = Optional.fromNullable((String) op.valueOf("P")).transform(it -> new File(it));
+        Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
         File workflowPath = new File(argv.get(0));
 
-        new Run(workflowPath, resumeStateFilePath, paramsFilePath, visualizePath).run();
+        new Run(workflowPath, fromTaskName, resumeStateFilePath, paramsFilePath, visualizePath).run();
     }
 
     private static SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
         System.err.println("  Options:");
+        System.err.println("    -f, --from +NAME                 skip tasks before this task");
         System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
@@ -81,16 +84,19 @@ public class Run
     }
 
     private final File workflowPath;
+    private final Optional<String> fromTaskName;
     private final Optional<File> resumeStateFilePath;
     private final Optional<File> paramsFilePath;
     private final Optional<File> visualizePath;
 
     public Run(File workflowPath,
+            Optional<String> fromTaskName,
             Optional<File> resumeStateFilePath,
             Optional<File> paramsFilePath,
             Optional<File> visualizePath)
     {
         this.workflowPath = workflowPath;
+        this.fromTaskName = fromTaskName;
         this.resumeStateFilePath = resumeStateFilePath;
         this.paramsFilePath = paramsFilePath;
         this.visualizePath = visualizePath;
@@ -136,6 +142,7 @@ public class Run
 
         StoredSession session = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
+                fromTaskName,
                 params, options,
                 new Date()).get(0);
         logger.debug("Submitting {}", session);
