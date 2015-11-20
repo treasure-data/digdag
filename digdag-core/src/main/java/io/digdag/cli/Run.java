@@ -1,7 +1,9 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Date;
 import java.util.stream.Collectors;
 import io.digdag.core.repository.WorkflowSource;
@@ -38,6 +40,7 @@ public class Run
 
         parser.acceptsAll(asList("f", "from")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("r", "resume-state")).withRequiredArg().ofType(String.class);
+        parser.acceptsAll(asList("p", "param")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("P", "params-file")).withRequiredArg().ofType(String.class);
         parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
 
@@ -53,7 +56,15 @@ public class Run
         Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
         File workflowPath = new File(argv.get(0));
 
-        new Run(workflowPath, fromTaskName, resumeStateFilePath, paramsFilePath, visualizePath).run();
+        Map<String, String> params = new HashMap<>();
+        for (Object kv : op.valuesOf("p")) {
+            String[] pair = kv.toString().split("=", 2);
+            String key = pair[0];
+            String value = (pair.length > 1 ? pair[1] : "true");
+            params.put(key, value);
+        }
+
+        new Run(workflowPath, fromTaskName, resumeStateFilePath, params, paramsFilePath, visualizePath).run();
     }
 
     private static SystemExitException usage(String error)
@@ -62,6 +73,7 @@ public class Run
         System.err.println("  Options:");
         System.err.println("    -f, --from +NAME                 skip tasks before this task");
         System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
+        System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
         // TODO add -p, --param K=V
@@ -87,18 +99,21 @@ public class Run
     private final File workflowPath;
     private final Optional<String> fromTaskName;
     private final Optional<File> resumeStateFilePath;
+    private final Map<String, String> params;
     private final Optional<File> paramsFilePath;
     private final Optional<File> visualizePath;
 
     public Run(File workflowPath,
             Optional<String> fromTaskName,
             Optional<File> resumeStateFilePath,
+            Map<String, String> params,
             Optional<File> paramsFilePath,
             Optional<File> visualizePath)
     {
         this.workflowPath = workflowPath;
         this.fromTaskName = fromTaskName;
         this.resumeStateFilePath = resumeStateFilePath;
+        this.params = params;
         this.paramsFilePath = paramsFilePath;
         this.visualizePath = visualizePath;
     }
@@ -125,9 +140,12 @@ public class Run
         final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
-        Config params = cf.create();
+        Config sessionParams = cf.create();
         if (paramsFilePath.isPresent()) {
-            params.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
+            sessionParams.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
+        }
+        for (Map.Entry<String, String> pair : params.entrySet()) {
+            sessionParams.set(pair.getKey(), pair.getValue());
         }
 
         Optional<ResumeState> resumeState = Optional.absent();
@@ -144,7 +162,7 @@ public class Run
         List<StoredSession> sessions = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
                 fromTaskName,
-                params, options,
+                sessionParams, options,
                 new Date());
         if (sessions.isEmpty()) {
             throw systemExit("No workflows to start");
