@@ -623,7 +623,7 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, Config error, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
     {
-        Config subtaskConfig = detail.getConfig().getNestedOrGetEmpty("error").deepCopy();
+        Config subtaskConfig = detail.getConfig().getNestedOrderedOrGetEmpty("error").deepCopy();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }
@@ -644,7 +644,7 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addCheckTasksIfAny(TaskControl control, StoredTask detail, Optional<StoredTask> upstreamTask)
     {
-        Config subtaskConfig = detail.getConfig().getNestedOrGetEmpty("check").deepCopy();
+        Config subtaskConfig = detail.getConfig().getNestedOrderedOrGetEmpty("check").deepCopy();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }

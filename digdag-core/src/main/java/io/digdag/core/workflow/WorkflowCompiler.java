@@ -131,7 +131,7 @@ public class WorkflowCompiler
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
                 .filter(key -> key.startsWith("+"))
-                .map(key -> immutableEntry(key, config.getNested(key)))
+                .map(key -> immutableEntry(key, config.getNestedOrderedOrGetEmpty(key)))
                 .collect(Collectors.toList());
 
             // other: ...

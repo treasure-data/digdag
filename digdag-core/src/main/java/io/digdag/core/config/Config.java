@@ -35,28 +35,14 @@ public class Config
         this.object = (ObjectNode) object;
     }
 
+    // here uses JsonNode instead of ObjectNode for workaround of https://github.com/FasterXML/jackson-databind/issues/941
     @JsonCreator
-    public static Config deserializeFromJackson(@JacksonInject ObjectMapper mapper, JsonNode node)
+    public static Config deserializeFromJackson(@JacksonInject ObjectMapper mapper, JsonNode object)
     {
-        if (node instanceof ObjectNode) {
-            return new Config(mapper, (ObjectNode) node);
+        if (!object.isObject()) {
+            throw new RuntimeJsonMappingException("Expected object but got "+object);
         }
-        else if (node instanceof ArrayNode) {
-            Config config = new Config(mapper);
-            Iterator<JsonNode> ite = ((ArrayNode) node).elements();
-            while (ite.hasNext()) {
-                JsonNode nested = ite.next();
-                if (!(nested instanceof ObjectNode)) {
-                    throw new RuntimeJsonMappingException("Expected object but got "+nested);
-                }
-                // here assumes config is an order-preserving map
-                config.setAll(new Config(mapper, (ObjectNode) nested));
-            }
-            return config;
-        }
-        else {
-            throw new RuntimeJsonMappingException("Expected array or object but got "+node);
-        }
+        return new Config(mapper, (ObjectNode) object);
     }
 
     @JsonValue
@@ -283,7 +269,8 @@ public class Config
         if (value == null) {
             value = object.objectNode();
             object.set(key, value);
-        } else if (!value.isObject()) {
+        }
+        else if (!value.isObject()) {
             throw new ConfigException("Attribute "+key+" must be an object");
         }
         return new Config(mapper, (ObjectNode) value);
@@ -294,8 +281,34 @@ public class Config
         JsonNode value = object.get(key);
         if (value == null) {
             value = object.objectNode();
-        } else if (!value.isObject()) {
+        }
+        else if (!value.isObject()) {
             throw new ConfigException("Attribute "+key+" must be an object");
+        }
+        return new Config(mapper, (ObjectNode) value);
+    }
+
+    public Config getNestedOrderedOrGetEmpty(String key)
+    {
+        JsonNode value = object.get(key);
+        if (value == null) {
+            value = object.objectNode();
+        }
+        else if (value.isArray()) {
+            Config config = new Config(mapper);
+            Iterator<JsonNode> ite = ((ArrayNode) value).elements();
+            while (ite.hasNext()) {
+                JsonNode nested = ite.next();
+                if (!(nested instanceof ObjectNode)) {
+                    throw new RuntimeJsonMappingException("Expected object but got "+nested);
+                }
+                // here assumes config is an order-preserving map
+                config.setAll(new Config(mapper, (ObjectNode) nested));
+            }
+            return config;
+        }
+        else if (!value.isObject()) {
+            throw new ConfigException("Attribute "+key+" must be an object or array of objects");
         }
         return new Config(mapper, (ObjectNode) value);
     }

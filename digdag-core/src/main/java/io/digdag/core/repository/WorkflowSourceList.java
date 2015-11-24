@@ -20,11 +20,11 @@ public abstract class WorkflowSourceList
     }
 
     @JsonCreator
-    public static WorkflowSourceList of(LinkedHashMap<String, Config> map)
+    public static WorkflowSourceList of(Config object)
     {
         ImmutableList.Builder<WorkflowSource> builder = ImmutableList.builder();
-        for (Map.Entry<String, Config> pair : map.entrySet()) {
-            builder.add(WorkflowSource.of(pair.getKey(), pair.getValue()));
+        for (String key : object.getKeys()) {
+            builder.add(WorkflowSource.of(key, object.getNestedOrderedOrGetEmpty(key)));
         }
         return of(builder.build());
     }
@@ -32,6 +32,7 @@ public abstract class WorkflowSourceList
     @JsonValue
     public Map<String, Config> toJson()
     {
+        // workflow source list must be an order-preserving map
         Map<String, Config> map = new LinkedHashMap<String, Config>();
         for (WorkflowSource wf : get()) {
             map.put(wf.getName(), wf.getConfig());
