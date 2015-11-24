@@ -46,7 +46,7 @@ public class YamlTagConstructor
                     }
                     catch (Exception ex) {
                         throw new TagException(
-                                ex.getMessage() + " " + node.getTag(),
+                                String.format("%s%nAt %s", ex.getMessage(), node.getTag()),
                                 node.getStartMark());
                     }
                 }

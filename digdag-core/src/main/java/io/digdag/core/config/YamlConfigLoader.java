@@ -22,13 +22,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.JinjavaConfig;
+import com.hubspot.jinjava.lib.fn.ELFunctionDefinition;
 import com.hubspot.jinjava.loader.FileLocator;
 import com.hubspot.jinjava.loader.ResourceNotFoundException;
 
 public class YamlConfigLoader
 {
+    private static final Logger logger = LoggerFactory.getLogger(YamlConfigLoader.class);
+
     private static Pattern validIncludePattern = Pattern.compile("^(?:(?:[\\/\\:\\\\\\;])?(?![^a-zA-Z0-9_]+[\\/\\:\\\\\\;])[^\\/\\:\\\\\\;]*)+$");
 
     private final ObjectMapper treeObjectMapper = new ObjectMapper();
@@ -93,6 +98,14 @@ public class YamlConfigLoader
             });
         }
 
+        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "dump",
+                    YamlExpressions.class, "dump", Object.class));
+        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "parse",
+                    YamlExpressions.class, "parse", String.class));
+        jinjava.getGlobalContext().registerTag(new YamlIncludeTag());
+        jinjava.getGlobalContext().registerTag(new YamlExpressions.DumpTag());
+        jinjava.getGlobalContext().registerTag(new YamlExpressions.ParseTag());
+
         String data;
         if (renderParams.isPresent()) {
             Map<String, Object> bindings = new HashMap<>();
@@ -101,6 +114,8 @@ public class YamlConfigLoader
             }
 
             data = jinjava.render(content, bindings);
+
+            logger.debug("rendered config:\n---\n{}\n---", data);
         }
         else {
             data = content;
