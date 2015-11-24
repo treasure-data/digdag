@@ -33,18 +33,18 @@ public class TaskControl
         return state;
     }
 
-    public StoredTask addTasksExceptingRootTask(StoredTask rootTask, List<WorkflowTask> tasks)
+    public StoredTask addTasksExceptingRootTask(StoredTask rootTask, WorkflowTaskList tasks)
     {
         return addTasks(rootTask, tasks, ImmutableList.of(), false, true);
     }
 
-    public StoredTask addSubtasks(StoredTask parentTask, List<WorkflowTask> tasks,
+    public StoredTask addSubtasks(StoredTask parentTask, WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
         return addTasks(parentTask, tasks, rootUpstreamIds, cancelSiblings, false);
     }
 
-    private StoredTask addTasks(StoredTask parentTask, List<WorkflowTask> tasks,
+    private StoredTask addTasks(StoredTask parentTask, WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootParentTask)
     {
         Preconditions.checkArgument(id == parentTask.getId());

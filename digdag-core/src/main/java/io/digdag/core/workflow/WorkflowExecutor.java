@@ -63,14 +63,14 @@ public class WorkflowExecutor
         throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
         Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
-        List<WorkflowTask> sourceTasks = workflow.getTasks();
+        WorkflowTaskList sourceTasks = workflow.getTasks();
 
         int fromIndex = 0;
         if (from.isPresent()) {
             fromIndex = from.get().findIndex(sourceTasks);
         }
 
-        List<WorkflowTask> tasks = (fromIndex > 0) ?
+        WorkflowTaskList tasks = (fromIndex > 0) ?
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
@@ -611,7 +611,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        List<WorkflowTask> tasks = compiler.compileTasks(".sub", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(".sub", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -632,7 +632,7 @@ public class WorkflowExecutor
         Config params = subtaskConfig.getNestedOrSetEmpty("params");
         params.set("error", error);
 
-        List<WorkflowTask> tasks = compiler.compileTasks(".error", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(".error", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -649,7 +649,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        List<WorkflowTask> tasks = compiler.compileTasks(".check", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(".check", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -661,7 +661,7 @@ public class WorkflowExecutor
 
     public Optional<StoredTask> addSlaTask(TaskControl control, StoredTask detail, Config slaConfig)
     {
-        List<WorkflowTask> tasks = compiler.compileTasks(".sla", slaConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(".sla", slaConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }

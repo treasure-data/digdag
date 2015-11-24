@@ -1,7 +1,6 @@
 package io.digdag.core.workflow;
 
 import java.util.List;
-
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.immutables.value.Value;
@@ -19,14 +18,14 @@ public abstract class Workflow
 
     public abstract Config getMeta();
 
-    public abstract List<WorkflowTask> getTasks();
+    public abstract WorkflowTaskList getTasks();
 
     public static ImmutableWorkflow.Builder workflowBuilder()
     {
         return ImmutableWorkflow.builder();
     }
 
-    public static Workflow of(String name, Config meta, List<WorkflowTask> tasks)
+    public static Workflow of(String name, Config meta, WorkflowTaskList tasks)
     {
         return workflowBuilder()
             .name(name)

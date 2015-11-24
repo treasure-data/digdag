@@ -10,23 +10,23 @@ import com.google.common.collect.ImmutableList;
 
 public class SubtaskExtract
 {
-    public static List<WorkflowTask> extract(List<WorkflowTask> tasks, int rootTaskIndex)
+    public static WorkflowTaskList extract(WorkflowTaskList tasks, int rootTaskIndex)
     {
         return new SubtaskExtract(tasks, rootTaskIndex).getExtracted();
     }
 
-    private final List<WorkflowTask> tasks;
+    private final WorkflowTaskList tasks;
     private final int rootTaskIndex;
     private final List<WorkflowTask> extracted;
 
-    private SubtaskExtract(List<WorkflowTask> tasks, int rootTaskIndex)
+    private SubtaskExtract(WorkflowTaskList tasks, int rootTaskIndex)
     {
         this.tasks = tasks;
         this.rootTaskIndex = rootTaskIndex;
         this.extracted = new ArrayList<>();
     }
 
-    public List<WorkflowTask> getExtracted()
+    public WorkflowTaskList getExtracted()
     {
         extracted.add(tasks.get(0));  // always add root
         addExtracted(tasks.get(rootTaskIndex));
@@ -53,7 +53,7 @@ public class SubtaskExtract
                 .build();
             builder.add(indexMapped);
         }
-        return builder.build();
+        return WorkflowTaskList.of(builder.build());
     }
 
     public void addExtracted(WorkflowTask task)

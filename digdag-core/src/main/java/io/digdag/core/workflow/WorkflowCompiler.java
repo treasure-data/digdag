@@ -26,7 +26,7 @@ public class WorkflowCompiler
             .build();
     }
 
-    public List<WorkflowTask> compileTasks(String name, Config config)
+    public WorkflowTaskList compileTasks(String name, Config config)
     {
         return new Context().compile(name, config);
     }
@@ -101,14 +101,15 @@ public class WorkflowCompiler
     {
         private List<TaskBuilder> tasks = new ArrayList<>();
 
-        public List<WorkflowTask> compile(String name, Config config)
+        public WorkflowTaskList compile(String name, Config config)
         {
             try {
                 collect(Optional.absent(), config.getFactory().create(), name, config);
-                return tasks
-                    .stream()
-                    .map(tb -> tb.build())
-                    .collect(Collectors.toList());
+                return WorkflowTaskList.of(
+                        tasks
+                        .stream()
+                        .map(tb -> tb.build())
+                        .collect(Collectors.toList()));
             }
             catch (ConfigException ex) {
                 throw ex;

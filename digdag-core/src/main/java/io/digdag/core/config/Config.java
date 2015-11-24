@@ -10,6 +10,7 @@ import com.google.common.base.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
 import com.fasterxml.jackson.databind.JavaType;
@@ -34,14 +35,28 @@ public class Config
         this.object = (ObjectNode) object;
     }
 
-    // here uses JsonNode instead of ObjectNode for workaround of https://github.com/FasterXML/jackson-databind/issues/941
     @JsonCreator
-    public static Config deserializeFromJackson(@JacksonInject ObjectMapper mapper, JsonNode object)
+    public static Config deserializeFromJackson(@JacksonInject ObjectMapper mapper, JsonNode node)
     {
-        if (!(object instanceof ObjectNode)) {
-            throw new RuntimeJsonMappingException("Expected object but got "+object);
+        if (node instanceof ObjectNode) {
+            return new Config(mapper, (ObjectNode) node);
         }
-        return new Config(mapper, (ObjectNode) object);
+        else if (node instanceof ArrayNode) {
+            Config config = new Config(mapper);
+            Iterator<JsonNode> ite = ((ArrayNode) node).elements();
+            while (ite.hasNext()) {
+                JsonNode nested = ite.next();
+                if (!(nested instanceof ObjectNode)) {
+                    throw new RuntimeJsonMappingException("Expected object but got "+nested);
+                }
+                // here assumes config is an order-preserving map
+                config.setAll(new Config(mapper, (ObjectNode) nested));
+            }
+            return config;
+        }
+        else {
+            throw new RuntimeJsonMappingException("Expected array or object but got "+node);
+        }
     }
 
     @JsonValue
@@ -291,7 +306,8 @@ public class Config
             return mapper.readValue(value.traverse(), type);
         }
         catch (Exception ex) {
-            throw Throwables.propagate(ex);
+            Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+            throw new ConfigException(ex);
         }
     }
 
@@ -301,7 +317,8 @@ public class Config
             return mapper.readValue(value.traverse(), type);
         }
         catch (Exception ex) {
-            throw Throwables.propagate(ex);
+            Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+            throw new ConfigException(ex);
         }
     }
 
