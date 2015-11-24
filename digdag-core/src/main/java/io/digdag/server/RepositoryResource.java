@@ -169,7 +169,11 @@ public class RepositoryResource
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }
-            meta = loader.loadFile(dir.child(ArchiveMetadata.FILE_NAME)).convert(ArchiveMetadata.class);
+            Config renderedConfig = loader.loadFile(
+                    dir.child(ArchiveMetadata.FILE_NAME),
+                    Optional.of(dir.get()),
+                    cf.create());
+            meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
         RestRepository stored = rm.getRepositoryStore(siteId).putRepository(

@@ -18,6 +18,7 @@ dependencies {
     compile 'org.msgpack:msgpack-core:0.7.0-p9'
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.yaml:snakeyaml:1.14'
+    compile 'com.hubspot.jinjava:jinjava:2.1.0'
     compile 'joda-time:joda-time:2.8.1'
     compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
     compile 'org.immutables:value:2.0.21'

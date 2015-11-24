@@ -30,7 +30,6 @@ import io.digdag.DigdagEmbed;
 import io.digdag.core.*;
 import io.digdag.cli.Main.SystemExitException;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
@@ -107,11 +106,11 @@ public class Sched
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
 
         outputPath.mkdirs();
 
-        List<WorkflowSource> workflowSources = loader.loadFile(workflowPath).convert(WorkflowSourceList.class).get();
+        List<WorkflowSource> workflowSources = loader.load(workflowPath).convert(WorkflowSourceList.class).get();
 
         localSite.scheduleWorkflows(workflowSources, new Date());
         // TODO set next schedule time from history

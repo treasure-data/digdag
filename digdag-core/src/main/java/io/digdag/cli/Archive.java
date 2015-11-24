@@ -33,7 +33,6 @@ import io.digdag.DigdagEmbed;
 import io.digdag.core.*;
 import io.digdag.cli.Main.SystemExitException;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -91,14 +90,14 @@ public class Archive
 
         System.out.println("Creating "+outputPath+"...");
 
-        final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
 
         List<WorkflowSource> workflows = new ArrayList<>();
         for (File workflowFile : workflowFiles) {
             // TODO validate workflow
             workflows.addAll(
-                loader.loadFile(workflowFile).convert(WorkflowSourceList.class).get());
+                loader.load(workflowFile).convert(WorkflowSourceList.class).get());
         }
 
         List<String> stdinLines;

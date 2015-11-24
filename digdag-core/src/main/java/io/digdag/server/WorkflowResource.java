@@ -33,33 +33,15 @@ public class WorkflowResource
     // [*] GET  /api/workflows                                   # list workflows of the latest revision of all repositories
     // [*] GET  /api/workflows/<id>                              # show a particular workflow (which belongs to a revision)
 
-    private final ConfigFactory cf;
-    private final YamlConfigLoader loader;
-    private final WorkflowCompiler compiler;
     private final RepositoryStoreManager rm;
-    private final ScheduleStoreManager scheduleStore;
-    private final SchedulerManager scheds;
-    private final TempFileManager temp;
 
     private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public WorkflowResource(
-            ConfigFactory cf,
-            YamlConfigLoader loader,
-            WorkflowCompiler compiler,
-            RepositoryStoreManager rm,
-            ScheduleStoreManager scheduleStore,
-            SchedulerManager scheds,
-            TempFileManager temp)
+            RepositoryStoreManager rm)
     {
-        this.cf = cf;
-        this.loader = loader;
-        this.scheduleStore = scheduleStore;
-        this.scheds = scheds;
-        this.compiler = compiler;
         this.rm = rm;
-        this.temp = temp;
     }
 
     @GET

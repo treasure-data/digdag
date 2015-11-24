@@ -13,7 +13,6 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import io.digdag.core.config.Config;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
@@ -54,10 +53,10 @@ public class Show
     {
         Injector injector = Main.embed().getInjector();
 
-        final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        List<WorkflowSource> workflowSources = loader.loadFile(workflowPath).convert(WorkflowSourceList.class).get();
+        List<WorkflowSource> workflowSources = loader.load(workflowPath).convert(WorkflowSourceList.class).get();
 
         List<Workflow> workflows = workflowSources
             .stream()

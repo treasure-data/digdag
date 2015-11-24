@@ -25,7 +25,6 @@ import io.digdag.DigdagEmbed;
 import io.digdag.cli.Main.SystemExitException;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
@@ -136,7 +135,7 @@ public class Run
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final YamlConfigLoader loader = injector.getInstance(YamlConfigLoader.class);
+        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
@@ -153,7 +152,7 @@ public class Run
             resumeState = Optional.of(mapper.readFile(resumeStateFilePath.get(), ResumeState.class));
         }
 
-        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.loadFile(workflowPath));
+        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(workflowPath));
 
         SessionOptions options = SessionOptions.builder()
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
