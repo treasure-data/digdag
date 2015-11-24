@@ -24,15 +24,10 @@ public class FileMapper
         this.mapper = mapper;
     }
 
-    public boolean checkExists(File file)
-    {
-        return file.exists() && file.length() > 0;
-    }
-
     public <T> void writeFile(File file, T value)
     {
         try {
-            // TODO use yaml if file path ends with yml, otherwise use json
+            // TODO use yaml if file path ends with yml, otherwise use json?
             try (YAMLGenerator out = yaml.createGenerator(new FileOutputStream(file))) {
                 // TODO write to a String first, then write to file. to not create partially-written broken file
                 mapper.writeValue(out, value);
@@ -51,18 +46,5 @@ public class FileMapper
             mapper.writeValue(yamlOut, value);
         }
         return writer.toString();
-    }
-
-    public <T> T readFile(File file, Class<T> klass)
-    {
-        try {
-            // TODO use yaml if file path ends with yml, otherwise use json
-            try (YAMLParser in = yaml.createParser(new FileInputStream(file))) {
-                return mapper.readValue(in, klass);
-            }
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
-        }
     }
 }

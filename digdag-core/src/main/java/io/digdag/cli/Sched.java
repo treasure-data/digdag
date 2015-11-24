@@ -43,6 +43,7 @@ public class Sched
         OptionParser parser = Main.parser();
 
         parser.acceptsAll(asList("o", "output")).withRequiredArg().ofType(String.class);
+        // TODO support -p option? for jinja template rendering
 
         OptionSet op = Main.parse(parser, args);
         List<String> argv = Main.nonOptions(op);
@@ -110,7 +111,7 @@ public class Sched
 
         outputPath.mkdirs();
 
-        List<WorkflowSource> workflowSources = loader.load(workflowPath).convert(WorkflowSourceList.class).get();
+        List<WorkflowSource> workflowSources = loader.load(workflowPath, cf.create()).convert(WorkflowSourceList.class).get();
 
         localSite.scheduleWorkflows(workflowSources, new Date());
         // TODO set next schedule time from history

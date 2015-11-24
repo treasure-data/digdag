@@ -25,6 +25,7 @@ import io.digdag.DigdagEmbed;
 import io.digdag.cli.Main.SystemExitException;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.config.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
@@ -135,24 +136,25 @@ public class Run
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+        final YamlConfigLoader rawLoader = injector.getInstance(YamlConfigLoader.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
-        final FileMapper mapper = injector.getInstance(FileMapper.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
         Config sessionParams = cf.create();
         if (paramsFilePath.isPresent()) {
-            sessionParams.setAll(mapper.readFile(paramsFilePath.get(), Config.class));
+            sessionParams.setAll(loader.load(paramsFilePath.get(), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             sessionParams.set(pair.getKey(), pair.getValue());
         }
 
         Optional<ResumeState> resumeState = Optional.absent();
-        if (resumeStateFilePath.isPresent() && mapper.checkExists(resumeStateFilePath.get())) {
-            resumeState = Optional.of(mapper.readFile(resumeStateFilePath.get(), ResumeState.class));
+        if (resumeStateFilePath.isPresent() && loader.checkExists(resumeStateFilePath.get())) {
+            // jinja and !!include are disabled
+            resumeState = Optional.of(rawLoader.loadFile(resumeStateFilePath.get(), Optional.absent(), Optional.absent()).convert(ResumeState.class));
         }
 
-        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(workflowPath));
+        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(workflowPath, sessionParams));
 
         SessionOptions options = SessionOptions.builder()
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))

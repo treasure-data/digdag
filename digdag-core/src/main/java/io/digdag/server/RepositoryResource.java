@@ -48,7 +48,7 @@ public class RepositoryResource
     // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
 
     private final ConfigFactory cf;
-    private final YamlConfigLoader loader;
+    private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager scheduleStore;
@@ -60,7 +60,7 @@ public class RepositoryResource
     @Inject
     public RepositoryResource(
             ConfigFactory cf,
-            YamlConfigLoader loader,
+            YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
             RepositoryStoreManager rm,
             ScheduleStoreManager scheduleStore,
@@ -68,7 +68,7 @@ public class RepositoryResource
             TempFileManager temp)
     {
         this.cf = cf;
-        this.loader = loader;
+        this.rawLoader = rawLoader;
         this.scheduleStore = scheduleStore;
         this.scheds = scheds;
         this.compiler = compiler;
@@ -169,10 +169,10 @@ public class RepositoryResource
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }
-            Config renderedConfig = loader.loadFile(
+            // jinja and !!include are disabled
+            Config renderedConfig = rawLoader.loadFile(
                     dir.child(ArchiveMetadata.FILE_NAME),
-                    Optional.of(dir.get()),
-                    cf.create());
+                    Optional.absent(), Optional.absent());
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 

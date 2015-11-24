@@ -20,14 +20,20 @@ public class ArgumentConfigLoader
         this.cf = cf;
     }
 
-    public Config load(File path)
+    public boolean checkExists(File file)
+    {
+        return file.exists() && file.length() > 0;
+    }
+
+    public Config load(File path, Config params)
         throws IOException
     {
+        // TODO use yaml if file path ends with yml, otherwise use json?
         return loader.loadFile(
                 path,
                 Optional.of(
                     new File(new File(path.getAbsolutePath()).getParent())
                 ),
-                cf.create());
+                Optional.of(cf.create()));
     }
 }

@@ -13,6 +13,7 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import io.digdag.core.config.Config;
+import io.digdag.core.config.ConfigFactory;
 import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
@@ -25,6 +26,7 @@ public class Show
         OptionParser parser = Main.parser();
 
         parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
+        // TODO support -p option? for jinja template rendering
 
         OptionSet op = Main.parse(parser, args);
         List<String> argv = Main.nonOptions(op);
@@ -53,10 +55,11 @@ public class Show
     {
         Injector injector = Main.embed().getInjector();
 
+        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        List<WorkflowSource> workflowSources = loader.load(workflowPath).convert(WorkflowSourceList.class).get();
+        List<WorkflowSource> workflowSources = loader.load(workflowPath, cf.create()).convert(WorkflowSourceList.class).get();
 
         List<Workflow> workflows = workflowSources
             .stream()

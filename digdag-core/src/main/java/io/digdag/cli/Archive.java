@@ -49,6 +49,7 @@ public class Archive
         OptionParser parser = Main.parser();
 
         parser.acceptsAll(asList("o", "output")).withRequiredArg().ofType(String.class);
+        // TODO support -p option? for jinja template rendering
 
         OptionSet op = Main.parse(parser, args);
         List<String> argv = Main.nonOptions(op);
@@ -90,6 +91,7 @@ public class Archive
 
         System.out.println("Creating "+outputPath+"...");
 
+        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
 
@@ -97,7 +99,7 @@ public class Archive
         for (File workflowFile : workflowFiles) {
             // TODO validate workflow
             workflows.addAll(
-                loader.load(workflowFile).convert(WorkflowSourceList.class).get());
+                loader.load(workflowFile, cf.create()).convert(WorkflowSourceList.class).get());
         }
 
         List<String> stdinLines;
