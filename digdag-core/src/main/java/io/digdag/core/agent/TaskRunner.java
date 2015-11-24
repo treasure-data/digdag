@@ -39,7 +39,9 @@ public class TaskRunner
         Config params = action.getParams();
         Config state = action.getStateParams();
 
-        try {
+        // set task name to thread name so that logger shows it
+        try (SetThreadName threadName = new SetThreadName("task-"+action.getFullName())) {
+
             if (!config.has("type")) {
                 java.util.Optional<String> commandKey = config.getKeys()
                     .stream()
@@ -74,6 +76,7 @@ public class TaskRunner
             callback.taskSucceeded(action.getTaskId(),
                     state, result.getSubtaskConfig(),
                     result.getReport());
+
         }
         catch (TaskExecutionException ex) {
             if (ex.getError().isPresent()) {
