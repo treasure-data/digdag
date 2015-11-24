@@ -1,8 +1,4 @@
 conditions_example_workflow:
-  meta:
-    owner: Sadayuki Furuhashi
-    created_at: 2015-10-26 23:53 -0700
-
   +algorithms:
     parallel: true
     +zlib:

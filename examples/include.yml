@@ -1,0 +1,4 @@
+include_example_workflow:
+  {% set including_file = "examples/include.yml" %}
+  {% set complex_data = {user: 'me', password: 'Top Secret'} %}
+  +part1: {% include 'parts/part1.yml' %}

@@ -1,8 +1,4 @@
 check_task_example_workflow:
-  meta:
-    owner: Sadayuki Furuhashi
-    created_at: 2015-10-26 23:59 -0700
-
   +simple_generate:
     py>: examples.check_task.GenerateData
     check:
