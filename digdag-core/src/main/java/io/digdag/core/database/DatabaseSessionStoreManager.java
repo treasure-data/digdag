@@ -276,33 +276,32 @@ public class DatabaseSessionStoreManager
     public boolean isAnyProgressibleChild(long taskId)
     {
         return handle.createQuery(
-                "select count(*) from tasks" +
+                "select id from tasks" +
                 " where parent_id = :parentId" +
                 " and (" +
                   // a child task is progressing now
-                  "state in (" + Stream.of(
-                          TaskStateCode.progressingStates()
-                          )
-                        .filter(it -> it != TaskStateCode.BLOCKED)
+                "state in (" + Stream.of(
+                        TaskStateCode.progressingStates()
+                        )
                         .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
                   " or (" +
                     // or, a child task is BLOCKED and
-                    " state = " + TaskStateCode.BLOCKED_CODE +
+                    "state = " + TaskStateCode.BLOCKED_CODE +
                     // it's ready to run
                     " and not exists (" +
-                      " select * from tasks up" +
+                      "select * from tasks up" +
                       " join task_dependencies dep on up.id = dep.upstream_id" +
                       " where dep.downstream_id = tasks.id" +
                       " and up.state not in (" + Stream.of(
                               TaskStateCode.canRunDownstreamStates()
                               ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
-                    " )" +
+                    ")" +
                   ")" +
-                ")"
+                ") limit 1"
             )
             .bind("parentId", taskId)
-            .mapTo(long.class)
-            .first() > 0L;  // some dependencies are still running
+            .mapTo(Long.class)
+            .first() != null;
     }
 
     @Override
