@@ -79,6 +79,9 @@ public class SessionMonitorManager
             cal.setTime(time);
             cal.set(Calendar.HOUR_OF_DAY, hour);
             cal.set(Calendar.MINUTE, minute);
+            if (cal.getTime().getTime() < time.getTime()) {
+                cal.add(Calendar.DATE, 1);
+            }
             return cal.getTime();
         }
     }
