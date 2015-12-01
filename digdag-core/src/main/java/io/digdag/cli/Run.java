@@ -217,5 +217,10 @@ public class Run
                         workflowPath, resumeResultPath));
             throw systemExit(sb.toString());
         }
+        else if (!resumeStateFilePath.isPresent()) {
+            rsm.stopUpdate(resumeResultPath);
+            rsm.shutdown();
+            resumeResultPath.delete();
+        }
     }
 }

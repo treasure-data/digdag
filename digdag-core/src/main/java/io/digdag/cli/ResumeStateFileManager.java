@@ -45,7 +45,7 @@ public class ResumeStateFileManager
     }
 
     @PreDestroy
-    public synchronized void preDestroy()
+    public synchronized void shutdown()
     {
         backgroundUpdateAll();
         if (executor != null) {
@@ -58,6 +58,11 @@ public class ResumeStateFileManager
     {
         targets.put(file, session);
         startScheduleIfNotStarted();
+    }
+
+    public void stopUpdate(File file)
+    {
+        targets.remove(file);
     }
 
     private synchronized void startScheduleIfNotStarted()
