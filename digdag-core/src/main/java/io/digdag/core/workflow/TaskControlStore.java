@@ -15,8 +15,8 @@ public interface TaskControlStore
 
     void addDependencies(long downstream, List<Long> upstreams);
 
-    // state of all children is one of TaskControlStore.doneStates
-    boolean isAllChildrenDone(long taskId);
+    // return true if one or more child task is progressible.
+    boolean isAnyProgressibleChild(long taskId);
 
     // getChildErrors including this task's error
     List<Config> collectChildrenErrors(long taskId);

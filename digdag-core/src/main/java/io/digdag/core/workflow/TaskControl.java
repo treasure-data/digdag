@@ -125,9 +125,9 @@ public class TaskControl
     // for state propagation logic of WorkflowExecutorManager
     //
 
-    public boolean isAllChildrenDone()
+    public boolean isAnyProgressibleChild()
     {
-        return store.isAllChildrenDone(id);
+        return store.isAnyProgressibleChild(id);
     }
 
     public List<Config> collectChildrenErrors()

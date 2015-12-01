@@ -238,10 +238,11 @@ public class WorkflowExecutor
         if (lockedTask.getState() != TaskStateCode.PLANNED) {
             return false;
         }
-        if (!lockedTask.isAllChildrenDone()) {
+        if (lockedTask.isAnyProgressibleChild()) {
             return false;
         }
 
+        logger.trace("setDoneFromDoneChildren {} {}", detail, lockedTask);
         List<Config> childrenErrors = lockedTask.collectChildrenErrors();
         if (childrenErrors.isEmpty() && !detail.getError().isPresent()) {
             return lockedTask.setPlannedToSuccess();
@@ -539,9 +540,11 @@ public class WorkflowExecutor
         // task failed. add .error tasks
         Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error, retryInterval, false);
         if (retryInterval.isPresent()) {
+            logger.trace("Retrying the failed task");
             control.setRunningToRetry(stateParams, error, retryInterval.get());
         }
         else if (errorTask.isPresent()) {
+            logger.trace("Added an error task");
             // transition to error is delayed until setDoneFromDoneChildren
             control.setRunningToPlanned(stateParams, error);
         }

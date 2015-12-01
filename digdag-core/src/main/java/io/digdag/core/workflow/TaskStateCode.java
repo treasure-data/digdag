@@ -97,6 +97,17 @@ public enum TaskStateCode
         };
     }
 
+    public static TaskStateCode[] progressingStates()
+    {
+        return new TaskStateCode[] {
+            READY,
+            RETRY_WAITING,
+            GROUP_RETRY_WAITING,
+            RUNNING,
+            PLANNED,
+        };
+    }
+
     @JsonCreator
     public static TaskStateCode of(int code)
     {

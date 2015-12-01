@@ -273,22 +273,22 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public boolean isAllChildrenDone(long taskId)
+    public boolean isAnyProgressibleChild(long taskId)
     {
         return handle.createQuery(
                 "select count(*) from tasks" +
                 " where parent_id = :parentId" +
                 " and (" +
-                  // task is not done and not BLOCKED
+                  // a child task is progressing now
                   "state in (" + Stream.of(
-                          TaskStateCode.notDoneStates()
+                          TaskStateCode.progressingStates()
                           )
                         .filter(it -> it != TaskStateCode.BLOCKED)
                         .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
                   " or (" +
-                    // or, task is BLOCKED and
+                    // or, a child task is BLOCKED and
                     " state = " + TaskStateCode.BLOCKED_CODE +
-                    // upstream tasks are runnable
+                    // it's ready to run
                     " and not exists (" +
                       " select * from tasks up" +
                       " join task_dependencies dep on up.id = dep.upstream_id" +
@@ -296,16 +296,13 @@ public class DatabaseSessionStoreManager
                       " and up.state not in (" + Stream.of(
                               TaskStateCode.canRunDownstreamStates()
                               ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
-                      " and up.state in (" + Stream.of(
-                              TaskStateCode.doneStates()
-                              ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
                     " )" +
                   ")" +
                 ")"
             )
             .bind("parentId", taskId)
             .mapTo(long.class)
-            .first() == 0L;
+            .first() > 0L;  // some dependencies are still running
     }
 
     @Override
