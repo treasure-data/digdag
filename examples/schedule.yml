@@ -7,12 +7,6 @@ schedule_example_workflow:
     cron: "* * * * *"  # every minute
     timezone: America/Los_Angeles   # this considers daylight saving time
 
-  sla:
-    task: +show
-    time: "14:04"
-    +trigger:
-      sh>: echo "SLA triggered"
-
   +task:
     sh>: echo "This schedule is for $schedule_time $timezone"
 
