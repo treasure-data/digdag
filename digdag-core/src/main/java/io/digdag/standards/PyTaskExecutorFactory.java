@@ -148,7 +148,7 @@ public class PyTaskExecutorFactory
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
                 ProcessBuilder pb = new ProcessBuilder("python", "-");
                 pb.redirectErrorStream(true);
-                Process p = exec.start(request.getRevisionInfo(), pb);
+                Process p = exec.start(request, pb);
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
                     writer.write(code);
                 }

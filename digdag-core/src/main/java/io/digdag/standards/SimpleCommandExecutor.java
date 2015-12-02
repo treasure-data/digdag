@@ -5,7 +5,7 @@ import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.core.spi.CommandExecutor;
-import io.digdag.core.spi.RevisionInfo;
+import io.digdag.core.spi.TaskRequest;
 
 public class SimpleCommandExecutor
     implements CommandExecutor
@@ -19,13 +19,11 @@ public class SimpleCommandExecutor
     {
     }
 
-    public Process start(
-            Optional<RevisionInfo> archiveRevision,
-            ProcessBuilder pb)
+    public Process start(TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
-        if (archiveRevision.isPresent() && extractArchive) {
-            // TODO get File of revisionInfo from the injected ArchiveManager and
+        if (request.getRevisionInfo().isPresent() && extractArchive) {
+            // TODO get File of RevisionInfo from the injected ArchiveManager and
             //      extract it to a new temp directory (archiveBuildPath/${repositoryName}/${revisionName}.${revisionId}.tmp)
             //      use Files.move to move _tmp to the actual dir with CopyOption.ATOMIC_MOVE
         }

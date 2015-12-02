@@ -75,7 +75,7 @@ public class ShTaskExecutorFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                Process p = exec.start(request.getRevisionInfo(), pb);
+                Process p = exec.start(request, pb);
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, buffer);
