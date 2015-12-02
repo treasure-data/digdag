@@ -3,6 +3,7 @@ package io.digdag.core.workflow;
 import java.util.List;
 import com.google.common.base.*;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.spi.RevisionInfo;
 
 public interface SessionStore
 {

@@ -1,12 +1,12 @@
 package io.digdag.core.spi;
 
 import com.google.common.base.Optional;
-import io.digdag.core.queue.Action;
+import io.digdag.core.spi.TaskRequest;
 
 public interface TaskQueue
 {
-    void put(Action action);
+    void put(TaskRequest request);
 
-    Optional<Action> receive(long timeoutMillis)
+    Optional<TaskRequest> receive(long timeoutMillis)
             throws InterruptedException;  // TODO receiver node options
 }

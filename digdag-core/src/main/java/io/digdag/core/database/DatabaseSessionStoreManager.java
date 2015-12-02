@@ -12,6 +12,7 @@ import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.*;
 import io.digdag.core.spi.TaskReport;
+import io.digdag.core.spi.RevisionInfo;
 import io.digdag.core.workflow.*;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
@@ -52,6 +53,7 @@ public class DatabaseSessionStoreManager
         handle.registerMapper(new TaskStateSummaryMapper());
         handle.registerMapper(new StoredSessionMonitorMapper(cfm));
         handle.registerMapper(new SessionRelationMapper());
+        handle.registerMapper(new RevisionInfoMapper());
         handle.registerMapper(new DateMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         handle.registerArgumentFactory(opm.getArgumentFactory());
@@ -183,21 +185,25 @@ public class DatabaseSessionStoreManager
     public StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
         throws ResourceConflictException
     {
-        return catchConflict(() ->
-            handle.inTransaction((handle, ses) -> {
-                long sesId;
-                if (relation.isPresent() && relation.get().getWorkflowId().isPresent()) {
-                    // namespace is workflow id
+        return catchConflict(() -> {
+                final long sesId;
+                if (relation.isPresent()) {
                     SessionRelation rel = relation.get();
-                    int wfId = rel.getWorkflowId().get();
-                    sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, wfId, newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    dao.insertSessionRelation(sesId, rel.getRepositoryId(), rel.getRevisionId(), wfId);
-                }
-                else if (relation.isPresent()) {
-                    // namespace is revision
-                    SessionRelation rel = relation.get();
-                    sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, rel.getRepositoryId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    dao.insertSessionRelation(sesId, rel.getRepositoryId(), rel.getRevisionId(), null);
+                    sesId = handle.inTransaction((handle, ses) -> {
+                        if (rel.getWorkflowId().isPresent()) {
+                            // namespace is workflow id
+                            int wfId = rel.getWorkflowId().get();
+                            long insertedId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, wfId, newSession.getName(), newSession.getParams(), newSession.getOptions());
+                            dao.insertSessionRelation(insertedId, rel.getRepositoryId(), rel.getRevisionId(), wfId);
+                            return insertedId;
+                        }
+                        else {
+                            // namespace is revision
+                            long insertedId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, rel.getRepositoryId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                            dao.insertSessionRelation(insertedId, rel.getRepositoryId(), rel.getRevisionId(), null);
+                            return insertedId;
+                        }
+                    });
                 }
                 else {
                     // namespace is site
@@ -207,8 +213,13 @@ public class DatabaseSessionStoreManager
                 StoredSession session = dao.getSessionById(siteId, sesId);
                 func.call(session, this);
                 return session;
-            }),
+            },
             "session name=%s in with %s", newSession.getName(), relation);
+    }
+
+    public Optional<RevisionInfo> getAssociatedRevisionInfo(long sesId)
+    {
+        return Optional.fromNullable(dao.findAssociatedRevisionInfo(sesId));
     }
 
     //public SessionRelation getSessionRelationById(long sessionId)
@@ -600,6 +611,13 @@ public class DatabaseSessionStoreManager
         @GetGeneratedKeys
         long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("config") Config config, @Bind("nextRunTime") long nextRunTime);
 
+        @SqlQuery("select rev.id, repo.name as repository_name, rev.name "+
+                " from session_relations sr" +
+                " join repositories repo on sr.repository_id = repo.id" +
+                " join revisions rev on sr.revision_id = rev.id" +
+                " where sr.id = :id")
+        RevisionInfo findAssociatedRevisionInfo(@Bind("id") long sessionId);
+
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
 
@@ -814,6 +832,20 @@ public class DatabaseSessionStoreManager
                 .revisionId(r.getInt("revision_id"))
                 .workflowId(getOptionalInt(r, "workflow_id"))
                 .build();
+        }
+    }
+
+    private static class RevisionInfoMapper
+            implements ResultSetMapper<RevisionInfo>
+    {
+        @Override
+        public RevisionInfo map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return RevisionInfo.of(
+                    r.getInt("id"),
+                    r.getString("repository_name"),
+                    r.getString("name"));
         }
     }
 

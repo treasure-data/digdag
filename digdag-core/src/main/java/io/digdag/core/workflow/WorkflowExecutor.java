@@ -21,8 +21,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.TaskRunner;
-import io.digdag.core.queue.Action;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskReport;
+import io.digdag.core.spi.TaskInfo;
+import io.digdag.core.spi.RevisionInfo;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -469,17 +471,23 @@ public class WorkflowExecutor
                 try {
                     Config params = collectTaskParams(task, session);
                     Config config = task.getConfig();  // TODO render using liquid?
-                        Action action = Action.actionBuilder()
-                        .taskId(task.getId())
-                        .siteId(task.getSiteId())
-                        .fullName(fullName)
-                        .config(config)
-                        .params(params)
-                        .stateParams(task.getStateParams())
-                        .build();
+                        TaskRequest request = TaskRequest.builder()
+                            .taskInfo(
+                                    TaskInfo.of(
+                                        task.getId(),
+                                        task.getSiteId(),
+                                        session.getId(),
+                                        session.getName(),
+                                        fullName))
+                            .revisionInfo(
+                                    sm.getAssociatedRevisionInfo(session.getId()))
+                            .config(config)
+                            .params(params)
+                            .lastStateParams(task.getStateParams())
+                            .build();
 
-                    logger.debug("Queuing task: "+action);
-                    dispatcher.dispatch(action);
+                    logger.debug("Queuing task: "+request);
+                    dispatcher.dispatch(request);
 
                     control.setReadyToRunning();
 

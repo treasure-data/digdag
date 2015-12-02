@@ -8,6 +8,7 @@ import io.digdag.core.agent.RetryControl;
 import io.digdag.core.config.Config;
 import io.digdag.core.spi.TaskExecutionException;
 import io.digdag.core.spi.TaskExecutor;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskReport;
 import io.digdag.core.spi.TaskResult;
 import io.digdag.core.agent.TaskRunner;
@@ -15,20 +16,18 @@ import io.digdag.core.agent.TaskRunner;
 public abstract class BaseTaskExecutor
         implements TaskExecutor
 {
-    protected final Config config;
-    protected final Config params;
-    protected Config state;
+    protected final TaskRequest request;
+    protected Config stateParams;
 
     protected Config subtaskConfig;
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
-    public BaseTaskExecutor(Config config, Config params, Config state)
+    public BaseTaskExecutor(TaskRequest request)
     {
-        this.config = config;
-        this.params = params;
-        this.state = state;
-        this.subtaskConfig = config.getFactory().create();
+        this.request = request;
+        this.stateParams = request.getLastStateParams().deepCopy();
+        this.subtaskConfig = request.getConfig().getFactory().create();
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();
     }
@@ -51,9 +50,9 @@ public abstract class BaseTaskExecutor
     @Override
     public TaskResult run()
     {
-        RetryControl retry = RetryControl.prepare(config, state, true);
+        RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, true);
         try {
-            Config carryParams = runTask(config, params);
+            Config carryParams = runTask();
             return TaskResult.builder()
                 .subtaskConfig(subtaskConfig)
                 .report(
@@ -65,9 +64,9 @@ public abstract class BaseTaskExecutor
                 .build();
         }
         catch (RuntimeException ex) {
-            Config error = TaskRunner.makeExceptionError(config.getFactory(), ex);
+            Config error = TaskRunner.makeExceptionError(request.getConfig().getFactory(), ex);
             boolean doRetry = retry.evaluate(error);
-            this.state = retry.getNextRetryStateParams();
+            this.stateParams = retry.getNextRetryStateParams();
             if (doRetry) {
                 throw new TaskExecutionException(ex, error, Optional.of(retry.getNextRetryInterval()));
             }
@@ -77,11 +76,11 @@ public abstract class BaseTaskExecutor
         }
     }
 
-    public abstract Config runTask(Config config, Config params);
+    public abstract Config runTask();
 
     @Override
-    public Config getState()
+    public Config getStateParams()
     {
-        return state;
+        return stateParams;
     }
 }

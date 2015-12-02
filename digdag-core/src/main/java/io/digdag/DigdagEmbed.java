@@ -17,6 +17,7 @@ import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.DatabaseStoreConfig;
 import io.digdag.core.schedule.ScheduleStarter;
 import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.spi.CommandExecutor;
 import io.digdag.core.spi.SchedulerFactory;
 import io.digdag.core.spi.TaskExecutorFactory;
 import io.digdag.core.spi.TaskQueueFactory;
@@ -28,6 +29,7 @@ import io.digdag.standards.CronSchedulerFactory;
 import io.digdag.standards.MemoryTaskQueueFactory;
 import io.digdag.standards.PyTaskExecutorFactory;
 import io.digdag.standards.ShTaskExecutorFactory;
+import io.digdag.standards.SimpleCommandExecutor;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -111,6 +113,8 @@ public class DigdagEmbed
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
+
+                    binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
 
                     // TODO
                     binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);

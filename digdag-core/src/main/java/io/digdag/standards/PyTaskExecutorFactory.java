@@ -15,6 +15,8 @@ import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import io.digdag.core.spi.CommandExecutor;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskExecutor;
 import io.digdag.core.spi.TaskExecutorFactory;
 import org.slf4j.Logger;
@@ -26,11 +28,13 @@ public class PyTaskExecutorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(PyTaskExecutorFactory.class);
 
+    private final CommandExecutor exec;
     private final ObjectMapper mapper;
 
     @Inject
-    public PyTaskExecutorFactory(ObjectMapper mapper)
+    public PyTaskExecutorFactory(CommandExecutor exec, ObjectMapper mapper)
     {
+        this.exec = exec;
         this.mapper = mapper;
     }
 
@@ -39,25 +43,25 @@ public class PyTaskExecutorFactory
         return "py";
     }
 
-    public TaskExecutor newTaskExecutor(Config config, Config params, Config state)
+    public TaskExecutor newTaskExecutor(TaskRequest request)
     {
-        return new PyTaskExecutor(config, params, state);
+        return new PyTaskExecutor(request);
     }
 
     private class PyTaskExecutor
             extends BaseTaskExecutor
     {
-        public PyTaskExecutor(Config config, Config params, Config state)
+        public PyTaskExecutor(TaskRequest request)
         {
-            super(config, params, state);
+            super(request);
         }
 
         @Override
-        public Config runTask(Config config, Config params)
+        public Config runTask()
         {
             Config data;
             try {
-                data = runCode(config, params, "run");
+                data = runCode(request.getConfig(), request.getParams(), "run");
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
@@ -94,7 +98,6 @@ public class PyTaskExecutorFactory
                 sb.append("task = ").append(klass).append("(config, state, params)").append("\n");
                 sb.append("task.").append(methodName).append("()\n\n");
 
-                sb.append("out = dict()\n");
                 sb.append("if hasattr(task, 'sub'):\n");
                 sb.append("    out['sub'] = task.sub\n");
                 sb.append("if hasattr(task, 'carry_params'):\n");
@@ -103,13 +106,9 @@ public class PyTaskExecutorFactory
                 sb.append("    out['inputs'] = task.inputs  # TODO check callable\n");
                 sb.append("if hasattr(task, 'outputs'):\n");
                 sb.append("    out['outputs'] = task.outputs  # TODO check callable\n");
-                sb.append("with open(out_file, 'w') as out_file:\n");
-                sb.append("    json.dump(out, out_file)\n");
 
                 config.set("script", sb.toString());
             }
-
-            String script = config.get("script", String.class);
 
             StringBuilder sb = new StringBuilder();
             sb.append("import json\n");
@@ -123,8 +122,14 @@ public class PyTaskExecutorFactory
             sb.append("    config = in_data['config']\n");
             sb.append("    params = in_data['params']\n");
             sb.append("    state = in_data['state']\n");
+            sb.append("out = dict()\n");
             sb.append("\n");
+
+            String script = config.get("script", String.class);
             sb.append(script);
+
+            sb.append("with open(out_file, 'w') as out_file:\n");
+            sb.append("    json.dump(out, out_file)\n");
 
             String code = sb.toString();
 
@@ -133,9 +138,9 @@ public class PyTaskExecutorFactory
 
             try (FileOutputStream fo = new FileOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of(
-                            "config", config,
-                            "params", params,
-                            "state", state));
+                            "config", request.getConfig(),
+                            "params", request.getParams(),
+                            "state", request.getLastStateParams()));
             }
 
             int ecode;
@@ -143,7 +148,7 @@ public class PyTaskExecutorFactory
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
                 ProcessBuilder pb = new ProcessBuilder("python", "-");
                 pb.redirectErrorStream(true);
-                Process p = pb.start();
+                Process p = exec.start(request.getRevisionInfo(), pb);
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
                     writer.write(code);
                 }

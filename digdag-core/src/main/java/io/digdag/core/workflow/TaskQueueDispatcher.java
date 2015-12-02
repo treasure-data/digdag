@@ -1,7 +1,7 @@
 package io.digdag.core.workflow;
 
 import com.google.inject.Inject;
-import io.digdag.core.queue.Action;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.spi.TaskQueue;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -20,15 +20,15 @@ public class TaskQueueDispatcher
         this.manager = manager;
     }
 
-    public void dispatch(Action action)
+    public void dispatch(TaskRequest request)
             throws ResourceNotFoundException
     {
-        logger.trace("Dispatching action {}", action.getFullName());
-        logger.trace("  params: {}", action.getParams());
-        logger.trace("  stateParams: {}", action.getStateParams());
+        logger.trace("Dispatching request {}", request.getTaskInfo().getFullName());
+        logger.trace("  params: {}", request.getParams());
+        logger.trace("  stateParams: {}", request.getLastStateParams());
 
-        String queueName = action.getConfig().get("queue", String.class, "local");  // TODO configurable default queue name
-        TaskQueue queue = manager.getTaskQueue(action.getSiteId(), queueName);
-        queue.put(action);
+        String queueName = request.getConfig().get("queue", String.class, "local");  // TODO configurable default queue name
+        TaskQueue queue = manager.getTaskQueue(request.getTaskInfo().getSiteId(), queueName);
+        queue.put(request);
     }
 }

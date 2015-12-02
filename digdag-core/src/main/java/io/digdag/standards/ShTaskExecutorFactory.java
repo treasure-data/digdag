@@ -9,6 +9,8 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
+import io.digdag.core.spi.CommandExecutor;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskExecutor;
 import io.digdag.core.spi.TaskExecutorFactory;
 import org.slf4j.Logger;
@@ -20,9 +22,12 @@ public class ShTaskExecutorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ShTaskExecutorFactory.class);
 
+    private final CommandExecutor exec;
+
     @Inject
-    public ShTaskExecutorFactory()
+    public ShTaskExecutorFactory(CommandExecutor exec)
     {
+        this.exec = exec;
     }
 
     public String getType()
@@ -30,31 +35,31 @@ public class ShTaskExecutorFactory
         return "sh";
     }
 
-    public TaskExecutor newTaskExecutor(Config config, Config params, Config state)
+    public TaskExecutor newTaskExecutor(TaskRequest request)
     {
-        return new ShTaskExecutor(config, params, state);
+        return new ShTaskExecutor(request);
     }
 
     private class ShTaskExecutor
             extends BaseTaskExecutor
     {
-        public ShTaskExecutor(Config config, Config params, Config state)
+        public ShTaskExecutor(TaskRequest request)
         {
-            super(config, params, state);
+            super(request);
         }
 
         @Override
-        public Config runTask(Config config, final Config params)
+        public Config runTask()
         {
-            String command = config.get("command", String.class);
+            String command = request.getConfig().get("command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
 
             logger.info("sh>: {}", command);
 
             final Map<String, String> env = pb.environment();
-            params.getKeys()
+            request.getParams().getKeys()
                 .forEach(key -> {
-                    JsonNode value = params.get(key, JsonNode.class);
+                    JsonNode value = request.getParams().get(key, JsonNode.class);
                     String string;
                     if (value.isTextual()) {
                         string = value.textValue();
@@ -70,7 +75,7 @@ public class ShTaskExecutorFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                Process p = pb.start();
+                Process p = exec.start(request.getRevisionInfo(), pb);
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, buffer);
@@ -88,7 +93,7 @@ public class ShTaskExecutorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return params.getFactory().create();
+            return request.getParams().getFactory().create();
         }
     }
 }

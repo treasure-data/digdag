@@ -3,6 +3,7 @@ package io.digdag.core.workflow;
 import java.util.List;
 import java.util.Date;
 import com.google.common.base.*;
+import io.digdag.core.spi.RevisionInfo;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -63,6 +64,8 @@ public interface SessionStoreManager
 
     StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
         throws ResourceConflictException;
+
+    Optional<RevisionInfo> getAssociatedRevisionInfo(long sesId);
 
     interface SessionMonitorAction
     {

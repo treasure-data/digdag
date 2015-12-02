@@ -6,5 +6,5 @@ public interface TaskExecutor
 {
     TaskResult run();
 
-    Config getState();
+    Config getStateParams();
 }

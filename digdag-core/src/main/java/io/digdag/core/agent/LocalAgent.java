@@ -4,7 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.queue.Action;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +35,11 @@ public class LocalAgent
     {
         try {
             while (true) {
-                Optional<Action> action = queue.receive(10_000);
-                if (action.isPresent()) {
+                Optional<TaskRequest> req = queue.receive(10_000);
+                if (req.isPresent()) {
                     executor.submit(() -> {
                         try {
-                            runner.run(action.get());
+                            runner.run(req.get());
                         }
                         catch (Throwable t) {
                             System.err.println("Uncaught exception: "+t);

@@ -7,7 +7,7 @@ import java.util.ArrayDeque;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.config.Config;
-import io.digdag.core.queue.Action;
+import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskQueue;
 import io.digdag.core.spi.TaskQueueFactory;
 
@@ -45,20 +45,20 @@ public class MemoryTaskQueueFactory
     private static class MemoryTaskQueue
             implements TaskQueue
     {
-        private Deque<Action> queue = new ArrayDeque<>();
+        private Deque<TaskRequest> queue = new ArrayDeque<>();
 
         public MemoryTaskQueue(Config config)
         { }
 
         @Override
-        public synchronized void put(Action action)
+        public synchronized void put(TaskRequest request)
         {
-            queue.offerLast(action);
+            queue.offerLast(request);
             notifyAll();
         }
 
         @Override
-        public synchronized Optional<Action> receive(long timeoutMillis)
+        public synchronized Optional<TaskRequest> receive(long timeoutMillis)
                 throws InterruptedException
         {
             if (queue.isEmpty()) {

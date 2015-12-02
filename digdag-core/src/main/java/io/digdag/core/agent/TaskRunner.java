@@ -10,7 +10,6 @@ import com.google.common.collect.*;
 import io.digdag.core.config.Config;
 import io.digdag.core.config.ConfigException;
 import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.queue.Action;
 import io.digdag.core.spi.*;
 import io.digdag.core.workflow.TaskCallbackApi;
 
@@ -33,14 +32,14 @@ public class TaskRunner
         this.executorTypes = builder.build();
     }
 
-    public void run(Action action)
+    public void run(TaskRequest request)
     {
-        Config config = action.getConfig().deepCopy();
-        Config params = action.getParams();
-        Config state = action.getStateParams();
+        long taskId = request.getTaskInfo().getId();
+        Config config = request.getConfig().deepCopy();
+        Config nextState = request.getLastStateParams();
 
         // set task name to thread name so that logger shows it
-        try (SetThreadName threadName = new SetThreadName("task-"+action.getFullName())) {
+        try (SetThreadName threadName = new SetThreadName("task-"+request.getTaskInfo().getFullName())) {
 
             if (!config.has("type")) {
                 java.util.Optional<String> commandKey = config.getKeys()
@@ -49,8 +48,8 @@ public class TaskRunner
                     .findFirst();
                 if (!commandKey.isPresent()) {
                     // TODO warning
-                    callback.taskSucceeded(action.getTaskId(),
-                            state, cf.create(),
+                    callback.taskSucceeded(taskId,
+                            nextState, cf.create(),
                             TaskReport.empty(cf));
                     return;
                 }
@@ -63,36 +62,41 @@ public class TaskRunner
             if (factory == null) {
                 throw new ConfigException("Unknown task type: "+type);
             }
-            TaskExecutor executor = factory.newTaskExecutor(config, params, state);
+            TaskExecutor executor = factory.newTaskExecutor(
+                    TaskRequest.builder()
+                        .from(request)
+                        .config(config)
+                        .build());
 
             TaskResult result;
             try {
                 result = executor.run();
             }
             finally {
-                state = executor.getState();
+                nextState = executor.getStateParams();
             }
 
-            callback.taskSucceeded(action.getTaskId(),
-                    state, result.getSubtaskConfig(),
+            callback.taskSucceeded(taskId,
+                    nextState, result.getSubtaskConfig(),
                     result.getReport());
 
         }
         catch (TaskExecutionException ex) {
             if (ex.getError().isPresent()) {
-                callback.taskFailed(action.getTaskId(),
-                        ex.getError().get(), state,
+                callback.taskFailed(taskId,
+                        ex.getError().get(), nextState,
                         ex.getRetryInterval());
             }
             else {
-                callback.taskPollNext(action.getTaskId(),
-                        state, ex.getRetryInterval().get());
+                callback.taskPollNext(
+                        taskId,
+                        nextState, ex.getRetryInterval().get());
             }
         }
         catch (Exception ex) {
             Config error = makeExceptionError(cf, ex);
-            callback.taskFailed(action.getTaskId(),
-                    error, state,
+            callback.taskFailed(taskId,
+                    error, nextState,
                     Optional.absent());  // no retry
         }
     }
