@@ -1,14 +1,15 @@
+from __future__ import print_function
 import digdag
 
 class GenerateData(digdag.BaseTask):
     def run(self):
-        print "generating 'generated.csv'..."
+        print("generating 'generated.csv'...")
         with open("generated.csv", "w") as f:
             f.write("ok")
 
 class CheckGenerated(digdag.BaseTask):
     def run(self):
-        print "checking 'generated.csv'..."
+        print("checking 'generated.csv'...")
         with open("generated.csv", "r") as f:
             data = f.read()
         if len(data) < 2:
@@ -21,13 +22,13 @@ class ComplexPlan(digdag.BaseTask):
 
 class ComplexGenerate(digdag.BaseTask):
     def run(self):
-        print "generating "+self.params["path"]
+        print("generating "+self.params["path"])
         with open(self.params["path"], "w") as f:
             f.write("ok")
 
 class CheckComplexGenerated(digdag.BaseTask):
     def run(self):
-        print "checking "+self.params["path"]
+        print("checking "+self.params["path"])
         with open(self.params["path"], "r") as f:
             data = f.read()
         if len(data) < 2:

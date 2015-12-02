@@ -1,3 +1,4 @@
+from __future__ import print_function
 import digdag
 
 class Split(digdag.BaseTask):
@@ -15,5 +16,5 @@ class ProcessSub(digdag.BaseTask):
         self.index = index
 
     def run(self):
-        print "Processing " + str(self.index)
+        print("Processing " + str(self.index))
 

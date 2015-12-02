@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import digdag
 
@@ -36,5 +37,5 @@ class TakeAlgorithm(digdag.BaseTask):
 
 class ShowAlgorithm(digdag.BaseTask):
     def run(self):
-        print "using file: "+self.params["smallest_path"]
+        print("using file: "+self.params["smallest_path"])
 
