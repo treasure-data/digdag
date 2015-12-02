@@ -58,7 +58,8 @@ public class WorkflowExecutor
     }
 
     public StoredSession submitWorkflow(
-            WorkflowSource workflowSource, Session newSession, SessionRelation relation,
+            int siteId, WorkflowSource workflowSource,
+            Session newSession, Optional<SessionRelation> relation,
             Date slaCurrentTime, Optional<TaskMatchPattern> from)
         throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
@@ -89,7 +90,7 @@ public class WorkflowExecutor
         }
 
         final WorkflowTask root = tasks.get(0);
-        return sm.newSession(newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
+        return sm.newSession(siteId, newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
             final Task rootTask = Task.taskBuilder()
                 .sessionId(session.getId())
                 .parentId(Optional.absent())

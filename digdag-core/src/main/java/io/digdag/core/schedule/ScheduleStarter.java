@@ -46,10 +46,10 @@ public class ScheduleStarter
 
         Session trigger = createScheduleSession(cf, from, timeZone, time.getScheduleTime());
 
-        SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getSiteId(), wf.getRepository().getId(), wf.getId());
+        SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
 
         try {
-            return exec.submitWorkflow(wf, trigger, rel, time.getRunTime(),
+            return exec.submitWorkflow(wf.getRepository().getSiteId(), wf, trigger, Optional.of(rel), time.getRunTime(),
                     from.transform(name -> new TaskMatchPattern(name)));
         }
         catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleMatchException ex) {

@@ -180,28 +180,31 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func)
+    public StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
         throws ResourceConflictException
     {
         return catchConflict(() ->
             handle.inTransaction((handle, ses) -> {
                 long sesId;
-                if (relation.getWorkflowId().isPresent()) {
+                if (relation.isPresent() && relation.get().getWorkflowId().isPresent()) {
                     // namespace is workflow id
-                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_WORKFLOW_ID, relation.getWorkflowId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), relation.getWorkflowId().get());
+                    SessionRelation rel = relation.get();
+                    int wfId = rel.getWorkflowId().get();
+                    sesId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, wfId, newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    dao.insertSessionRelation(sesId, rel.getRepositoryId(), rel.getRevisionId(), wfId);
                 }
-                else if (relation.getRepositoryId().isPresent()) {
-                    // namespace is repository
-                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_REPOSITORY_ID, relation.getRepositoryId().get(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    dao.insertSessionRelation(sesId, relation.getRepositoryId().get(), null);
+                else if (relation.isPresent()) {
+                    // namespace is revision
+                    SessionRelation rel = relation.get();
+                    sesId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, rel.getRepositoryId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    dao.insertSessionRelation(sesId, rel.getRepositoryId(), rel.getRevisionId(), null);
                 }
                 else {
                     // namespace is site
-                    sesId = dao.insertSession(relation.getSiteId(), NAMESPACE_SITE_ID, relation.getSiteId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    dao.insertSessionRelation(sesId, null, null);
+                    sesId = dao.insertSession(siteId, NAMESPACE_SITE_ID, siteId, newSession.getName(), newSession.getParams(), newSession.getOptions());
+                    // no insert to session_relations
                 }
-                StoredSession session = dao.getSessionById(relation.getSiteId(), sesId);
+                StoredSession session = dao.getSessionById(siteId, sesId);
                 func.call(session, this);
                 return session;
             }),
@@ -576,15 +579,12 @@ public class DatabaseSessionStoreManager
         long insertSession(@Bind("siteId") int siteId, @Bind("namespaceType") short namespaceType,
                 @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") Config params, @Bind("options") SessionOptions options);
 
-        @SqlUpdate("insert into session_relations (id, repository_id, workflow_id)" +
-                " values (:id, :repositoryId, :workflowId)")
-        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") Integer repositoryId,
+        @SqlUpdate("insert into session_relations (id, repository_id, revision_id, workflow_id)" +
+                " values (:id, :repositoryId, :revisionId, :workflowId)")
+        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") int repositoryId, @Bind("revisionId") int revisionId,
                 @Bind("workflowId") Integer workflowId);
 
-        @SqlQuery("select s.site_id, sr.repository_id, sr.workflow_id" +
-                " from sessions s" +
-                " join session_relations sr on sr.id = s.id" +
-                " where s.id = :id")
+        @SqlQuery("select * from session_relations where id = :id")
         SessionRelation getSessionRelationById(@Bind("id") long sessionId);
 
         @SqlQuery("select state from tasks t" +
@@ -810,8 +810,8 @@ public class DatabaseSessionStoreManager
                 throws SQLException
         {
             return ImmutableSessionRelation.builder()
-                .siteId(r.getInt("site_id"))
-                .repositoryId(getOptionalInt(r, "repository_id"))
+                .repositoryId(r.getInt("repository_id"))
+                .revisionId(r.getInt("revision_id"))
                 .workflowId(getOptionalInt(r, "workflow_id"))
                 .build();
         }

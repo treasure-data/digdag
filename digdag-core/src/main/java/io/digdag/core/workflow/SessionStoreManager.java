@@ -61,7 +61,7 @@ public interface SessionStoreManager
         void call(StoredSession session, SessionBuilderStore store);
     }
 
-    StoredSession newSession(Session newSession, SessionRelation relation, SessionBuilderAction func)
+    StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
         throws ResourceConflictException;
 
     interface SessionMonitorAction

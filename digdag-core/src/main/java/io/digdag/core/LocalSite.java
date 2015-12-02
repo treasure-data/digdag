@@ -191,8 +191,8 @@ public class LocalSite
         return workflows.stream()
             .map(workflow -> {
                 try {
-                    SessionRelation rel = SessionRelation.ofWorkflow(0, revision.getRepositoryId(), workflow.getId());
-                    return exec.submitWorkflow(workflow, trigger, rel, slaCurrentTime,
+                    SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), workflow.getId());
+                    return exec.submitWorkflow(0, workflow, trigger, Optional.of(rel), slaCurrentTime,
                             fromTaskName.transform(name -> new TaskMatchPattern(name)));
                 }
                 catch (TaskMatchPattern.NoMatchException ex) {

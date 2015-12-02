@@ -251,10 +251,12 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("session_relations")
                     .addLongId("id")  // references sessions.id
-                    .addInt("repository_id", "")     // null if one-time workflow
-                    .addInt("workflow_id", "")       // null if one-time workflow
+                    .addInt("repository_id", "not null")
+                    .addInt("revision_id", "not null")
+                    .addInt("workflow_id", "")       // null if one-time associated-to-revision workflow
                     .build());
             handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
+            handle.update("create index if not exists session_relations_on_revision_id_and_id on session_relations (revision_id, id)");
             handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_relations (workflow_id, id)");
 
             // tasks

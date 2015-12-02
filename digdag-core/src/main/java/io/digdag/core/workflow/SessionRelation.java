@@ -6,15 +6,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkState;
+import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableSessionRelation.class)
 @JsonDeserialize(as = ImmutableSessionRelation.class)
 public abstract class SessionRelation
 {
-    public abstract int getSiteId();
+    public abstract int getRepositoryId();
 
-    public abstract Optional<Integer> getRepositoryId();
+    public abstract int getRevisionId();
 
     public abstract Optional<Integer> getWorkflowId();
 
@@ -23,36 +24,21 @@ public abstract class SessionRelation
         return ImmutableSessionRelation.builder();
     }
 
-    public static SessionRelation ofWorkflow(int siteId, int repositoryId, int workflowId)
+    public static SessionRelation ofRevision(int repositoryId, int revisionId)
     {
         return builder()
-            .siteId(siteId)
-            .repositoryId(Optional.of(repositoryId))
+            .repositoryId(repositoryId)
+            .revisionId(revisionId)
+            .workflowId(Optional.absent())
+            .build();
+    }
+
+    public static SessionRelation ofWorkflow(int repositoryId, int revisionId, int workflowId)
+    {
+        return builder()
+            .repositoryId(repositoryId)
+            .revisionId(revisionId)
             .workflowId(Optional.of(workflowId))
             .build();
-    }
-
-    public static SessionRelation ofRepository(int siteId, int repositoryId)
-    {
-        return builder()
-            .siteId(siteId)
-            .repositoryId(Optional.of(repositoryId))
-            .workflowId(Optional.absent())
-            .build();
-    }
-
-    public static SessionRelation ofSite(int siteId)
-    {
-        return builder()
-            .siteId(siteId)
-            .repositoryId(Optional.absent())
-            .workflowId(Optional.absent())
-            .build();
-    }
-
-    @Value.Check
-    protected void check()
-    {
-        checkState(!getWorkflowId().isPresent() || getRepositoryId().isPresent(),  "repositoryId must be set if workflowId is set");
     }
 }
