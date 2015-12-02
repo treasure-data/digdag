@@ -1,3 +1,4 @@
+from __future__ import print_function
 import digdag
 
 class SetMyParam(digdag.BaseTask):
@@ -6,5 +7,5 @@ class SetMyParam(digdag.BaseTask):
 
 class ShowMyParam(digdag.BaseTask):
     def run(self):
-        print "my_param = " + str(self.params["my_param"])
+        print("my_param = " + str(self.params["my_param"]))
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json
 import re
 import os.path
@@ -9,7 +10,7 @@ class SplitFiles(digdag.BaseTask):
         self.count = count
 
     def run(self):
-        print "Splitting files...: count="  + str(self.count)
+        print("Splitting files...: count="  + str(self.count))
 
         paths = []
         for i in range(self.count):
@@ -50,5 +51,5 @@ class PrintFilesSub(digdag.BaseTask):
 
         with open(self.path) as f:
             data = json.load(f)
-        print "Printing file " + self.path + "...: " + str(data)
+        print("Printing file " + self.path + "...: " + str(data))
 

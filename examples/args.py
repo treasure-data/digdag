@@ -1,3 +1,4 @@
+from __future__ import print_function
 import digdag
 
 class RequiredArgument(digdag.BaseTask):
@@ -6,8 +7,8 @@ class RequiredArgument(digdag.BaseTask):
         self.required2 = required2
 
     def run(self):
-        print "required1 = " + str(self.required1)
-        print "required2 = " + str(self.required2)
+        print("required1 = " + str(self.required1))
+        print("required2 = " + str(self.required2))
 
 
 class OptionalArgument(digdag.BaseTask):
@@ -16,8 +17,8 @@ class OptionalArgument(digdag.BaseTask):
         self.optional2 = optional2
 
     def run(self):
-        print "optional1 = " + str(self.optional1)
-        print "optional2 = " + str(self.optional2)
+        print("optional1 = " + str(self.optional1))
+        print("optional2 = " + str(self.optional2))
 
 
 class MixedArgument(digdag.BaseTask):
@@ -27,7 +28,7 @@ class MixedArgument(digdag.BaseTask):
         self.arg3 = arg3
 
     def run(self):
-        print "arg1 = " + str(self.arg1)
-        print "arg2 = " + str(self.arg2)
-        print "arg3 = " + str(self.arg3)
+        print("arg1 = " + str(self.arg1))
+        print("arg2 = " + str(self.arg2))
+        print("arg3 = " + str(self.arg3))
 
