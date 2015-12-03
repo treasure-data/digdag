@@ -1,6 +1,6 @@
 error_task_example_workflow:
   error:
-    py>: examples.error_task.ShowError
+    py>: examples.error_task.show_error
 
   +test:
-    py>: examples.error_task.Fails
+    py>: examples.error_task.fails

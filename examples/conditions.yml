@@ -1,16 +1,16 @@
 conditions_example_workflow:
   +algorithms:
-    parallel: true
-    +zlib:
-      py>: examples.conditions.AlgorithmZlib
-    +gzip:
-      py>: examples.conditions.AlgorithmDeflate
-    +bzip2:
-      py>: examples.conditions.AlgorithmBzip2
-
-  +take_algorithm:
-    py>: examples.conditions.TakeAlgorithm
+    +try:
+      parallel: true
+      +zlib:
+        py>: examples.conditions.Algorithm.zlib
+      +gzip:
+        py>: examples.conditions.Algorithm.deflate
+      +bzip2:
+        py>: examples.conditions.Algorithm.bzip2
+    +decide:
+      py>: examples.conditions.Algorithm.decide_algorithm
 
   +show:
-    py>: examples.conditions.ShowAlgorithm
+    py>: examples.conditions.show_algorithm
 

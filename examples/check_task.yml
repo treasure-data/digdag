@@ -1,14 +1,12 @@
 check_task_example_workflow:
-  +simple_generate:
-    py>: examples.check_task.GenerateData
+  +generate_methods:
+    py>: examples.check_task.generate
     check:
-      py>: examples.check_task.CheckGenerated
+      py>: examples.check_task.check_generated
 
-  +complex_generate:
-    +step1:
-      py>: examples.check_task.ComplexPlan
-    +step2:
-      py>: examples.check_task.ComplexGenerate
-      check:
-        py>: examples.check_task.CheckComplexGenerated
+  +generate_class_and_params:
+    py>: examples.check_task.Generator.run
+    check:
+      py>: examples.check_task.Generator.check
+
 

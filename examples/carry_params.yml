@@ -1,0 +1,7 @@
+params_example_workflow:
+  +set:
+    py>: examples.carry_params.set_my_param
+
+  +get:
+    py>: examples.carry_params.show_my_param
+

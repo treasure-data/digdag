@@ -15,9 +15,9 @@ with open(in_file) as f:
 
 mod = sys.modules['digdag_env'] = imp.new_module('digdag_env')
 mod.config = config
-mod.subtasks = collections.OrderedDict()
-mod.export_params = {}
+mod.subtask_config = collections.OrderedDict()
 mod.state_params = {}
+mod.export_params = {}
 mod.carry_params = {}
 import digdag_env
 
@@ -83,7 +83,7 @@ else:
     result = callable_type(**args)
 
 out = {
-    'subtasks': digdag_env.subtasks,
+    'subtask_config': digdag_env.subtask_config,
     'export_params': digdag_env.export_params,
     'state_params': digdag_env.state_params,
     'carry_params': digdag_env.carry_params,

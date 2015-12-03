@@ -1,7 +1,0 @@
-params_example_workflow:
-  +set:
-    py>: examples.params.SetMyParam
-
-  +get:
-    py>: examples.params.ShowMyParam
-
