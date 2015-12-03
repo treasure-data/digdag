@@ -28,7 +28,7 @@ class CheckFiles(digdag.BaseTask):
 
 class PrintFiles(digdag.BaseTask):
     def run(self):
-        print "Creating subtasks for files: "+str(self.params['paths'])
+        print("Creating subtasks for files: "+str(self.params['paths']))
 
         for path in self.params['paths']:
             try:

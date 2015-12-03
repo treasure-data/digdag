@@ -10,9 +10,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.digdag.core.spi.CommandExecutor;
@@ -27,6 +30,19 @@ public class PyTaskExecutorFactory
         implements TaskExecutorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(PyTaskExecutorFactory.class);
+
+    private final String runnerScript;
+
+    {
+        try (InputStreamReader reader = new InputStreamReader(
+                    PyTaskExecutorFactory.class.getResourceAsStream("/digdag/standards/py/runner.py"),
+                    StandardCharsets.UTF_8)) {
+            runnerScript = CharStreams.toString(reader);
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
+    }
 
     private final CommandExecutor exec;
     private final ObjectMapper mapper;
