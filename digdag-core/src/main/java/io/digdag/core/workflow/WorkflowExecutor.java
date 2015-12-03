@@ -97,7 +97,7 @@ public class WorkflowExecutor
                 .sessionId(session.getId())
                 .parentId(Optional.absent())
                 .fullName(root.getName())
-                .config(root.getConfig())
+                .config(TaskConfig.validate(root.getConfig()))
                 .taskType(root.getTaskType())
                 .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
                 .build();
@@ -470,21 +470,21 @@ public class WorkflowExecutor
             else {
                 try {
                     Config params = collectTaskParams(task, session);
-                    Config config = task.getConfig();  // TODO render using liquid?
-                        TaskRequest request = TaskRequest.builder()
-                            .taskInfo(
-                                    TaskInfo.of(
-                                        task.getId(),
-                                        task.getSiteId(),
-                                        session.getId(),
-                                        session.getName(),
-                                        fullName))
-                            .revisionInfo(
-                                    sm.getAssociatedRevisionInfo(session.getId()))
-                            .config(config)
-                            .params(params)
-                            .lastStateParams(task.getStateParams())
-                            .build();
+                    Config config = task.getConfig().getMerged();
+                    TaskRequest request = TaskRequest.builder()
+                        .taskInfo(
+                                TaskInfo.of(
+                                    task.getId(),
+                                    task.getSiteId(),
+                                    session.getId(),
+                                    session.getName(),
+                                    fullName))
+                        .revisionInfo(
+                                sm.getAssociatedRevisionInfo(session.getId()))
+                        .config(config)
+                        .params(params)
+                        .lastStateParams(task.getStateParams())
+                        .build();
 
                     logger.debug("Queuing task: "+request);
                     dispatcher.dispatch(request);
@@ -594,7 +594,7 @@ public class WorkflowExecutor
         params.set("session_name", session.getName());
         params.set("task_name", task.getFullName());
         params.setAll(session.getParams());
-        params.setAll(task.getConfig().getNestedOrGetEmpty("params"));
+        params.setAll(task.getConfig().getExport());
         return collectTaskParams(task, params);
     }
 
@@ -635,14 +635,14 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addErrorTasksIfAny(TaskControl control, StoredTask detail, Config error, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
     {
-        Config subtaskConfig = detail.getConfig().getNestedOrderedOrGetEmpty("error").deepCopy();
+        Config subtaskConfig = detail.getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }
 
-        // modify params
-        Config params = subtaskConfig.getNestedOrSetEmpty("params");
-        params.set("error", error);
+        // modify export params
+        Config export = subtaskConfig.getNestedOrSetEmpty("export");
+        export.set("error", error);
 
         WorkflowTaskList tasks = compiler.compileTasks(".error", subtaskConfig);
         if (tasks.isEmpty()) {
@@ -656,7 +656,7 @@ public class WorkflowExecutor
 
     private Optional<StoredTask> addCheckTasksIfAny(TaskControl control, StoredTask detail, Optional<StoredTask> upstreamTask)
     {
-        Config subtaskConfig = detail.getConfig().getNestedOrderedOrGetEmpty("check").deepCopy();
+        Config subtaskConfig = detail.getConfig().getCheckConfig();
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
         }

@@ -68,7 +68,7 @@ public class DatabaseSessionStoreManager
 
     private String selectTaskDetailsQuery()
     {
-        return "select t.*, s.site_id, td.full_name, td.config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
+        return "select t.*, s.site_id, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
                 "(select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
             " from tasks t " +
             " join sessions s on s.id = t.session_id " +
@@ -234,7 +234,7 @@ public class DatabaseSessionStoreManager
     public <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func)
     {
         long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
-        dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig());
+        dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
         dao.insertEmptyTaskStateDetails(taskId);
         TaskControl control = new TaskControl(this, taskId, task.getState());
         StoredTask stored;
@@ -251,7 +251,7 @@ public class DatabaseSessionStoreManager
     public long addSubtask(Task task)
     {
         long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
-        dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig());
+        dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
         dao.insertEmptyTaskStateDetails(taskId);
         return taskId;
     }
@@ -627,9 +627,9 @@ public class DatabaseSessionStoreManager
         long insertTask(@Bind("sessionId") long sessionId, @Bind("parentId") Long parentId,
                 @Bind("taskType") int taskType, @Bind("state") short state);
 
-        @SqlUpdate("insert into task_details (id, full_name, config)" +
-                " values (:id, :fullName, :config)")
-        void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("config") Config config);
+        @SqlUpdate("insert into task_details (id, full_name, local_config, export_config)" +
+                " values (:id, :fullName, :localConfig, :exportConfig)")
+        void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("localConfig") Config localConfig, @Bind("exportConfig") Config exportConfig);
 
         @SqlUpdate("insert into task_state_details (id)" +
                 " values (:id)")
@@ -668,7 +668,7 @@ public class DatabaseSessionStoreManager
                 " for update")
         TaskStateSummary lockRootTask(@Bind("sessionId") long sessionId);
 
-        @SqlQuery("select t.*, s.site_id, td.full_name, td.config, ts.state_params, ts.carry_params, ts.error, ts.report " +
+        @SqlQuery("select t.*, s.site_id, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report " +
                 " from tasks t " +
                 " join sessions s on s.id = t.session_id " +
                 " join task_details td on t.id = td.id " +
@@ -797,7 +797,10 @@ public class DatabaseSessionStoreManager
                 .sessionId(r.getLong("session_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
-                .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .config(
+                        TaskConfig.assumeValidated(
+                            cfm.fromResultSetOrEmpty(r, "local_config"),
+                            cfm.fromResultSetOrEmpty(r, "export_config")))
                 .taskType(TaskType.of(r.getInt("task_type")))
                 .state(TaskStateCode.of(r.getInt("state")))
                 .build();

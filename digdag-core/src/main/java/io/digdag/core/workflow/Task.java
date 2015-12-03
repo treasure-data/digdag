@@ -15,7 +15,7 @@ public abstract class Task
 
     public abstract String getFullName();
 
-    public abstract Config getConfig();
+    public abstract TaskConfig getConfig();
 
     public abstract TaskType getTaskType();
 

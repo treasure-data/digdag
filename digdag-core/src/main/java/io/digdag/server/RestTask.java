@@ -48,11 +48,11 @@ public abstract class RestTask
             .id(task.getId())
             .fullName(task.getFullName())
             .parentId(task.getParentId().orNull())
-            .config(task.getConfig())
+            .config(task.getConfig().getNonValidated())
             .upstreams(task.getUpstreams())
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
-            .carryParams(task.getReport().transform(report -> report.getCarryParams()).or(task.getConfig().getFactory().create()))
+            .carryParams(task.getReport().transform(report -> report.getCarryParams()).or(task.getConfig().getLocal().getFactory().create()))
             .stateParams(task.getStateParams())
             .build();
     }

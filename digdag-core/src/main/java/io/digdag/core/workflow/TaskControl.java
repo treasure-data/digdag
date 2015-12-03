@@ -87,7 +87,7 @@ public class TaskControl
                                 .or(parentTask.getId())
                             ))
                 .fullName(fullName)
-                .config(wt.getConfig())
+                .config(TaskConfig.validate(wt.getConfig()))
                 .taskType(wt.getTaskType())
                 .state(TaskStateCode.BLOCKED)
                 .build();

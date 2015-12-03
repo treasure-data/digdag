@@ -276,7 +276,8 @@ public class DatabaseMigrator
                     new CreateTableBuilder("task_details")
                     .addLongId("id")
                     .addMediumText("full_name", "not null")
-                    .addMediumText("config", "")
+                    .addMediumText("local_config", "")
+                    .addMediumText("export_config", "")
                     .build());
 
             handle.update(
