@@ -17,8 +17,6 @@ public abstract class TaskRequest
 
     public abstract Config getConfig();
 
-    public abstract Config getParams();
-
     public abstract Config getLastStateParams();
 
     public static ImmutableTaskRequest.Builder builder()

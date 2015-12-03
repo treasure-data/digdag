@@ -2,6 +2,8 @@ package io.digdag.core.database;
 
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.sql.ResultSet;
@@ -35,8 +37,8 @@ public class DatabaseSessionStoreManager
     public static short NAMESPACE_REPOSITORY_ID = (short) 1;
     public static short NAMESPACE_SITE_ID = (short) 0;
 
+    private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
-    private final ConfigResultSetMapper errorRsm;
     private final Handle handle;
     private final Dao dao;
 
@@ -46,13 +48,14 @@ public class DatabaseSessionStoreManager
         this.handle = dbi.open();
         JsonMapper<SessionOptions> opm = new JsonMapper<>(mapper, SessionOptions.class);
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
+        this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm, trm);
-        this.errorRsm = new ConfigResultSetMapper(cfm, "error");
         handle.registerMapper(stm);
         handle.registerMapper(new StoredSessionMapper(cfm, opm));
         handle.registerMapper(new TaskStateSummaryMapper());
         handle.registerMapper(new StoredSessionMonitorMapper(cfm));
         handle.registerMapper(new SessionRelationMapper());
+        handle.registerMapper(new TaskRelationMapper());
         handle.registerMapper(new RevisionInfoMapper());
         handle.registerMapper(new DateMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
@@ -328,7 +331,7 @@ public class DatabaseSessionStoreManager
                 " and error is not null"
             )
             .bind("parentId", taskId)
-            .map(errorRsm)
+            .map(new ConfigResultSetMapper(cfm, "error"))
             .list();
     }
 
@@ -458,6 +461,68 @@ public class DatabaseSessionStoreManager
             }
             throw first;
         }
+    }
+
+    @Override
+    public List<TaskRelation> getTaskRelations(long sesId)
+    {
+        return handle.createQuery(
+                "select id, parent_id," +
+                " (select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
+                " from tasks t " +
+                " where session_id = :id"
+            )
+            .bind("id", sesId)
+            .map(new TaskRelationMapper())
+            .list();
+    }
+
+    @Override
+    public List<Config> getExportParams(List<Long> idList)
+    {
+        if (idList.isEmpty()) {
+            return ImmutableList.of();
+        }
+        List<IdConfig> list = handle.createQuery(
+                "select id, export_config" +
+                " from task_details" +
+                " where id in ("+idList.stream().map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+            )
+            .map(new IdConfigMapper(cfm, "export_config"))
+            .list();
+        return orderIdConfigList(idList, list);
+    }
+
+    @Override
+    public List<Config> getCarryParams(List<Long> idList)
+    {
+        if (idList.isEmpty()) {
+            return ImmutableList.of();
+        }
+        List<IdConfig> list = handle.createQuery(
+                "select id, carry_params" +
+                " from task_state_details" +
+                " where id in ("+idList.stream().map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+            )
+            .map(new IdConfigMapper(cfm, "carry_params"))
+            .list();
+        return orderIdConfigList(idList, list);
+    }
+
+    private List<Config> orderIdConfigList(List<Long> idList, List<IdConfig> list)
+    {
+        Map<Long, Config> map = new HashMap<>();
+        for (IdConfig idConfig : list) {
+            map.put(idConfig.id, idConfig.config);
+        }
+        ImmutableList.Builder<Config> builder = ImmutableList.builder();
+        for (long id : idList) {
+            Config config = map.get(id);
+            if (config != null) {
+                builder.add(config);
+            }
+        }
+        return builder.build();
     }
 
     private class DatabaseSessionStore
@@ -767,17 +832,6 @@ public class DatabaseSessionStoreManager
         public StoredTask map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            String upstreamIdList = r.getString("upstream_ids");
-            List<Long> upstreams;
-            if (r.wasNull()) {
-                upstreams = ImmutableList.of();
-            }
-            else {
-                upstreams = Stream.of(upstreamIdList.split(","))
-                    .map(it -> Long.parseLong(it))
-                    .collect(Collectors.toList());
-            }
-
             Config reportConfig = cfm.fromResultSetOrEmpty(r, "report");
             TaskReport report = TaskReport.builder()
                 .carryParams(cfm.fromResultSetOrEmpty(r, "carry_params"))
@@ -788,7 +842,7 @@ public class DatabaseSessionStoreManager
             return ImmutableStoredTask.builder()
                 .id(r.getLong("id"))
                 .siteId(r.getInt("site_id"))
-                .upstreams(upstreams)
+                .upstreams(getLongIdList(r, "upstream_ids"))
                 .updatedAt(r.getTimestamp("updated_at"))
                 .retryAt(getOptionalDate(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
@@ -838,6 +892,21 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    private static class TaskRelationMapper
+            implements ResultSetMapper<TaskRelation>
+    {
+        @Override
+        public TaskRelation map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableTaskRelation.builder()
+                .id(r.getInt("id"))
+                .parentId(getOptionalLong(r, "parent_id"))
+                .upstreams(getLongIdList(r, "upstream_ids"))
+                .build();
+        }
+    }
+
     private static class RevisionInfoMapper
             implements ResultSetMapper<RevisionInfo>
     {
@@ -874,6 +943,40 @@ public class DatabaseSessionStoreManager
                 .createdAt(r.getTimestamp("created_at"))
                 .updatedAt(r.getTimestamp("updated_at"))
                 .build();
+        }
+    }
+
+    private static class IdConfig
+    {
+        protected final long id;
+        protected final Config config;
+
+        public IdConfig(long id, Config config)
+        {
+            this.id = id;
+            this.config = config;
+        }
+    }
+
+    private static class IdConfigMapper
+            implements ResultSetMapper<IdConfig>
+    {
+        private final ConfigMapper cfm;
+        private final String configColumn;
+
+        public IdConfigMapper(ConfigMapper cfm, String configColumn)
+        {
+            this.cfm = cfm;
+            this.configColumn = configColumn;
+        }
+
+        @Override
+        public IdConfig map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return new IdConfig(
+                    r.getLong("id"),
+                    cfm.fromResultSetOrEmpty(r, configColumn));
         }
     }
 

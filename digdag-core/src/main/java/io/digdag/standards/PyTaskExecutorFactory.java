@@ -75,9 +75,7 @@ public class PyTaskExecutorFactory
         @Override
         public Config runTask()
         {
-            Config taskEnv = request.getParams().deepCopy()
-                .setAll(request.getConfig())
-                .setAll(request.getParams())
+            Config taskEnv = request.getConfig().deepCopy()
                 .setAll(request.getLastStateParams());
             Config data;
             try {
@@ -92,10 +90,8 @@ public class PyTaskExecutorFactory
             inputs.addAll(data.getListOrEmpty("inputs", Config.class));
             outputs.addAll(data.getListOrEmpty("outputs", Config.class));
 
-            // TODO distinguish carry params from export params?
             Config carryParams = data.getNestedOrGetEmpty("carry_params");
-            Config exportParams = data.getNestedOrGetEmpty("export_params");
-            return exportParams.setAll(carryParams);
+            return carryParams;
         }
 
         private Config runCode(Config config, Config taskEnv)

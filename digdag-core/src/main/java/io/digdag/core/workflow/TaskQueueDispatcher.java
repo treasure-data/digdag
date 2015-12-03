@@ -24,7 +24,7 @@ public class TaskQueueDispatcher
             throws ResourceNotFoundException
     {
         logger.trace("Dispatching request {}", request.getTaskInfo().getFullName());
-        logger.trace("  params: {}", request.getParams());
+        logger.trace("  config: {}", request.getConfig());
         logger.trace("  stateParams: {}", request.getLastStateParams());
 
         String queueName = request.getConfig().get("queue", String.class, "local");  // TODO configurable default queue name

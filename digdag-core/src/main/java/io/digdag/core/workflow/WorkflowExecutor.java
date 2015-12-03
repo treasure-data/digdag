@@ -469,8 +469,7 @@ public class WorkflowExecutor
             }
             else {
                 try {
-                    Config params = collectTaskParams(task, session);
-                    Config config = task.getConfig().getMerged();
+                    Config config = collectTaskConfig(task, session);
                     TaskRequest request = TaskRequest.builder()
                         .taskInfo(
                                 TaskInfo.of(
@@ -482,7 +481,6 @@ public class WorkflowExecutor
                         .revisionInfo(
                                 sm.getAssociatedRevisionInfo(session.getId()))
                         .config(config)
-                        .params(params)
                         .lastStateParams(task.getStateParams())
                         .build();
 
@@ -587,34 +585,28 @@ public class WorkflowExecutor
         noticeStatusPropagate();
     }
 
-    private Config collectTaskParams(StoredTask task, StoredSession session)
+    private Config collectTaskConfig(StoredTask task, StoredSession session)
     {
-        // TODO not accurate implementation
-        Config params = session.getParams().getFactory().create();
-        params.set("session_name", session.getName());
-        params.set("task_name", task.getFullName());
-        params.setAll(session.getParams());
-        params.setAll(task.getConfig().getExport());
-        return collectTaskParams(task, params);
-    }
-
-    private Config collectTaskParams(StoredTask task, Config result)
-    {
-        // TODO not accurate implementation
-        Optional<Long> lastId = Optional.absent();
-        while (true) {
-            List<StoredTask> ses = sm.getSessionStore(task.getSiteId()).getTasks(task.getSessionId(), 1024, lastId);
-            if (ses.isEmpty()) {
-                break;
-            }
-            for (StoredTask se : ses) {
-                if (se.getReport().isPresent()) {
-                    result.setAll(se.getReport().get().getCarryParams());
-                }
-                lastId = Optional.of(se.getId());
-            }
+        List<Long> parentsFromRoot;
+        List<Long> upstreamsFromFar;
+        {
+            TaskTree tree = new TaskTree(sm.getTaskRelations(session.getId()));
+            parentsFromRoot = Lists.reverse(tree.getParentIdList(task.getId()));
+            upstreamsFromFar = Lists.reverse(tree.getRecursiveParentsUpstreamChildrenIdList(task.getId()));
         }
-        return result;
+
+        // merge order is:
+        //   session < export < carry from parents < carry from upstreams < local
+        Config config = session.getParams().deepCopy();
+        sm.getExportParams(parentsFromRoot)
+            .stream().forEach(node -> config.setAll(node));
+        config.setAll(task.getConfig().getExport());
+        sm.getCarryParams(parentsFromRoot)
+            .stream().forEach(node -> config.setAll(node));
+        sm.getCarryParams(upstreamsFromFar)
+            .stream().forEach(node -> config.setAll(node));
+        config.setAll(task.getConfig().getLocal());
+        return config;
     }
 
     private Optional<StoredTask> addSubtasksIfNotEmpty(TaskControl control, StoredTask detail, Config subtaskConfig)

@@ -57,9 +57,10 @@ public class ShTaskExecutorFactory
             logger.info("sh>: {}", command);
 
             final Map<String, String> env = pb.environment();
-            request.getParams().getKeys()
+            request.getConfig().getKeys()
                 .forEach(key -> {
-                    JsonNode value = request.getParams().get(key, JsonNode.class);
+                    // TODO validate key
+                    JsonNode value = request.getConfig().get(key, JsonNode.class);
                     String string;
                     if (value.isTextual()) {
                         string = value.textValue();
@@ -93,7 +94,7 @@ public class ShTaskExecutorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return request.getParams().getFactory().create();
+            return request.getConfig().getFactory().create();
         }
     }
 }

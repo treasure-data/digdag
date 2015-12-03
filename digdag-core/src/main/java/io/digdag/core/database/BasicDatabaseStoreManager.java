@@ -1,7 +1,10 @@
 package io.digdag.core.database;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import com.google.common.base.*;
@@ -81,6 +84,18 @@ public abstract class BasicDatabaseStoreManager
     {
         byte[] v = r.getBytes(column);
         return optional(r.wasNull(), v);
+    }
+
+    public static List<Long> getLongIdList(ResultSet r, String column)
+            throws SQLException
+    {
+        String v = r.getString(column);
+        if (r.wasNull()) {
+            return new ArrayList<>();
+        }
+        return Stream.of(v.split(","))
+            .map(it -> Long.parseLong(it))
+            .collect(Collectors.toList());
     }
 
     private static <T> Optional<T> optional(boolean wasNull, T v)
