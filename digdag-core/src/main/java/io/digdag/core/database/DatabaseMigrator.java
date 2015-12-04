@@ -3,6 +3,10 @@ package io.digdag.core.database;
 import java.util.List;
 import java.util.ArrayList;
 import com.google.inject.Inject;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 
@@ -30,6 +34,34 @@ public class DatabaseMigrator
             return "org.h2.Driver";
         default:
             throw new RuntimeException("Unsupported database type: "+type);
+        }
+    }
+
+    public String getDatabaseVersion()
+    {
+        try (Handle handle = dbi.open()) {
+            if (checkTableExists(handle, "schema_migrations")) {
+                String version = handle.createQuery("select version from schema_migrations order by name desc limit 1")
+                    .mapTo(String.class)
+                    .first();
+                if (version != null) {
+                    return version;
+                }
+            }
+            return "19700101000000";
+        }
+    }
+
+    private static boolean checkTableExists(Handle handle, String name)
+    {
+        try {
+            Connection con = handle.getConnection();
+            DatabaseMetaData meta = con.getMetaData();
+            ResultSet res = meta.getTables(null, null, "schema_migrations", new String[] {"TABLE"});
+            return res.next();
+        }
+        catch (SQLException ex) {
+            throw new RuntimeException("Unable to get table list", ex);
         }
     }
 
@@ -122,10 +154,43 @@ public class DatabaseMigrator
         }
     }
 
-    public void migrate()
+    private interface Migration
     {
-        // TODO references
-        try (Handle handle = dbi.open()) {
+        public String getVersion();
+
+        public void migrate(Handle handle);
+    }
+
+    private final Migration MigrateCreateSchemaVersions = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20151204215653";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update(
+                    new CreateTableBuilder("schema_migrations")
+                    .addString("name", "not null")
+                    .addTimestamp("created_at", "not null")
+                    .build());
+        }
+    };
+
+    private final Migration MigrateCreateTables = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20151204221156";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            // TODO references
+
             // repositories
             handle.update(
                     new CreateTableBuilder("repositories")
@@ -285,6 +350,24 @@ public class DatabaseMigrator
                     .addLong("downstream_id", "")
                     .build());
             handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
+        }
+    };
+
+    private final Migration[] migrations = {
+        MigrateCreateSchemaVersions,
+        MigrateCreateTables,
+    };
+
+    public void migrate()
+    {
+        String dbVersion = getDatabaseVersion();
+        for (Migration m : migrations) {
+            if (dbVersion.compareTo(m.getVersion()) < 0) {
+                try (Handle handle = dbi.open()) {
+                    m.migrate(handle);
+                    handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
+                }
+            }
         }
     }
 }
