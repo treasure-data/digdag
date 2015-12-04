@@ -28,8 +28,6 @@ public class DatabaseMigrator
         switch (type) {
         case "h2":
             return "org.h2.Driver";
-        case "sqlite":
-            return "org.sqlite.JDBC";
         default:
             throw new RuntimeException("Unsupported database type: "+type);
         }
@@ -53,22 +51,12 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addIntId(String column)
         {
-            if (databaseType.equals("sqlite")) {
-                return add(column, "integer primary key AUTOINCREMENT");
-            }
-            else {
-                return add(column, "int primary key AUTO_INCREMENT");
-            }
+            return add(column, "int primary key AUTO_INCREMENT");
         }
 
         public CreateTableBuilder addLongId(String column)
         {
-            if (databaseType.equals("sqlite")) {
-                return add(column, "integer primary key AUTOINCREMENT");
-            }
-            else {
-                return add(column, "bigint primary key AUTO_INCREMENT");
-            }
+            return add(column, "bigint primary key AUTO_INCREMENT");
         }
 
         public CreateTableBuilder addShort(String column, String options)
