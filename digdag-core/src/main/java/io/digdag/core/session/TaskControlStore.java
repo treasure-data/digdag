@@ -2,8 +2,8 @@ package io.digdag.core.session;
 
 import java.util.List;
 import com.google.common.base.Optional;
-import io.digdag.core.spi.TaskReport;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.TaskReport;
+import io.digdag.spi.config.Config;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskControlStore

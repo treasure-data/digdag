@@ -22,16 +22,16 @@ import com.google.inject.Inject;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.session.*;
-import io.digdag.core.spi.TaskRequest;
-import io.digdag.core.spi.TaskReport;
-import io.digdag.core.spi.TaskInfo;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskInfo;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.spi.config.Config;
-import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigFactory;
 
 public class WorkflowExecutor
 {

@@ -18,7 +18,7 @@ import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.schedule.ImmutableStoredSchedule;
-import io.digdag.core.spi.ScheduleTime;
+import io.digdag.spi.ScheduleTime;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -28,7 +28,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 
 public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager

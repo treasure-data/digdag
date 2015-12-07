@@ -1,4 +1,8 @@
 rootProject.name = 'digdag'
 
 include 'digdag-core'
+include 'digdag-spi'
+include 'digdag-cli'
+include 'digdag-server'
+include 'digdag-standards'
 include 'digdag-guice-rs'

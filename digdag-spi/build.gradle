@@ -1,0 +1,11 @@
+
+dependencies {
+    compile 'javax.inject:javax.inject:1'
+    compile 'com.google.guava:guava:18.0'
+    compile 'org.immutables:value:2.0.21'
+    compile 'org.immutables:builder:2.0.21'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.6.2'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.6.2'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.6.2'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.6.2'
+}

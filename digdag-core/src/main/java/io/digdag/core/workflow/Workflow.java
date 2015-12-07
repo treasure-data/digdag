@@ -5,7 +5,7 @@ import com.google.common.collect.*;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable

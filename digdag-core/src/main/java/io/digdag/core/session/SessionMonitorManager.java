@@ -14,7 +14,7 @@ import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.repository.WorkflowSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 
 public class SessionMonitorManager
 {

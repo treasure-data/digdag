@@ -28,6 +28,10 @@ subprojects {
     compileJava.options.encoding = 'UTF-8'
     compileTestJava.options.encoding = 'UTF-8'
 
+    dependencies {
+        testCompile 'junit:junit:4.12'
+    }
+
     tasks.withType(JavaCompile) {
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
@@ -49,7 +53,7 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.6'
 }
 
-project(':digdag-core') {
+project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     shadowJar {
@@ -72,16 +76,16 @@ project(':digdag-core') {
     }
 }
 
-task cli(dependsOn: ':digdag-core:shadowJar') << {
+task cli(dependsOn: ':digdag-cli:shadowJar') << {
     file('pkg').mkdirs()
     File f = file("pkg/digdag-${project.version}.jar")
     f.write("")
-    f.append(file("digdag-core/src/main/sh/selfrun.sh").readBytes())
-    f.append(file("digdag-core/build/libs/digdag-core-${project.version}-all.jar").readBytes())
+    f.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
+    f.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
     f.setExecutable(true)
 }
 
-task classpath(dependsOn: ['build', ':digdag-core:classpath']) << { }
+task classpath(dependsOn: ['build', ':digdag-cli:classpath']) << { }
 clean { delete 'classpath' }
 
 task pydist(type: Exec) {

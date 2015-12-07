@@ -11,7 +11,7 @@ import io.digdag.core.workflow.Tasks;
 import io.digdag.core.workflow.WorkflowExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.spi.config.ConfigFactory;
 
 public class SessionMonitorExecutor
 {

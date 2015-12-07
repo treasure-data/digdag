@@ -5,7 +5,7 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 
 @JsonDeserialize(as = ImmutableWorkflowSource.class)
 public abstract class WorkflowSource

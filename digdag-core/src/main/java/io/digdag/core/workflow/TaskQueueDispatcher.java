@@ -1,9 +1,9 @@
 package io.digdag.core.workflow;
 
 import com.google.inject.Inject;
-import io.digdag.core.spi.TaskRequest;
+import io.digdag.spi.TaskRequest;
 import io.digdag.core.queue.TaskQueueManager;
-import io.digdag.core.spi.TaskQueue;
+import io.digdag.spi.TaskQueue;
 import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

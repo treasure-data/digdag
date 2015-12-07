@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Date;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.spi.ScheduleTime;
-import io.digdag.core.spi.Scheduler;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.Scheduler;
 
 public class RepositoryControl
 {

@@ -3,7 +3,7 @@ package io.digdag.core.workflow;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 
 public class TaskConfig
 {

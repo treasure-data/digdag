@@ -3,7 +3,7 @@ package io.digdag.core.session;
 import java.util.Map;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import io.digdag.core.spi.TaskReport;
+import io.digdag.spi.TaskReport;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

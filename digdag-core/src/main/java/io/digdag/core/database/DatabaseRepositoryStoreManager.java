@@ -17,7 +17,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.core.spi.config.Config;
+import io.digdag.spi.config.Config;
 
 public class DatabaseRepositoryStoreManager
         extends BasicDatabaseStoreManager

@@ -17,8 +17,8 @@ import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.spi.config.Config;
-import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigFactory;
 import io.digdag.core.yaml.YamlConfigLoader;
 
 public class LocalSite

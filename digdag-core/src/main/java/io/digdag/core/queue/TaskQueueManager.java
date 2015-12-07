@@ -5,11 +5,11 @@ import java.util.Map;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import io.digdag.core.spi.TaskQueue;
-import io.digdag.core.spi.TaskQueueFactory;
-import io.digdag.core.spi.config.Config;
-import io.digdag.core.spi.config.ConfigException;
-import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.spi.TaskQueue;
+import io.digdag.spi.TaskQueueFactory;
+import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigException;
+import io.digdag.spi.config.ConfigFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public class TaskQueueManager
