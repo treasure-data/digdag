@@ -3,10 +3,11 @@ package io.digdag.core.workflow;
 import java.util.List;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.session.TaskType;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable

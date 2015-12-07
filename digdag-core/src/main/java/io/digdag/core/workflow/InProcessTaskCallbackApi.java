@@ -2,10 +2,8 @@ package io.digdag.core.workflow;
 
 import com.google.inject.Inject;
 import com.google.common.base.*;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import io.digdag.core.spi.TaskReport;
-import io.digdag.core.workflow.TaskCallbackApi;
-import io.digdag.core.workflow.WorkflowExecutor;
 
 public class InProcessTaskCallbackApi
         implements TaskCallbackApi

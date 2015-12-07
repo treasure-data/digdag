@@ -7,8 +7,8 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigFactory;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskReport.class)

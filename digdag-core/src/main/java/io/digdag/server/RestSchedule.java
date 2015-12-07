@@ -5,7 +5,7 @@ import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import io.digdag.core.repository.StoredWorkflowSource;
 import io.digdag.core.schedule.StoredSchedule;
 

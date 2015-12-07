@@ -11,10 +11,10 @@ public class LocalAgentManager
 {
     private final ExecutorService executor;
     private final TaskQueueManager queueManager;
-    private final TaskRunner taskRunner;
+    private final TaskRunnerManager taskRunnerManager;
 
     @Inject
-    public LocalAgentManager(TaskQueueManager queueManager, TaskRunner taskRunner)
+    public LocalAgentManager(TaskQueueManager queueManager, TaskRunnerManager taskRunnerManager)
     {
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
@@ -23,13 +23,13 @@ public class LocalAgentManager
                 .build()
                 );
         this.queueManager = queueManager;
-        this.taskRunner = taskRunner;
+        this.taskRunnerManager = taskRunnerManager;
     }
 
     public void startLocalAgent(int siteId, String queueName)
     {
         executor.submit(new LocalAgent(
                     queueManager.getOrCreateTaskQueue(siteId, queueName),
-                    taskRunner));
+                taskRunnerManager));
     }
 }

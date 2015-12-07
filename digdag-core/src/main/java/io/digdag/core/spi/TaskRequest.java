@@ -4,7 +4,7 @@ import org.immutables.value.Value;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskRequest.class)

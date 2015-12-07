@@ -10,7 +10,7 @@ import javax.sql.DataSource;
 import io.digdag.core.queue.QueueDescStoreManager;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
-import io.digdag.core.workflow.SessionStoreManager;
+import io.digdag.core.session.SessionStoreManager;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.h2.jdbcx.JdbcConnectionPool;

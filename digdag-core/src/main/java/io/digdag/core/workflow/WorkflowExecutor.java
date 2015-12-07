@@ -20,18 +20,18 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.agent.RetryControl;
-import io.digdag.core.agent.TaskRunner;
+import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.session.*;
 import io.digdag.core.spi.TaskRequest;
 import io.digdag.core.spi.TaskReport;
 import io.digdag.core.spi.TaskInfo;
-import io.digdag.core.spi.RevisionInfo;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigFactory;
 
 public class WorkflowExecutor
 {
@@ -494,7 +494,7 @@ public class WorkflowExecutor
                 catch (Exception ex) {
                     Config stateParams = cf.create().set("schedule_error", ex.toString());
                     taskFailed(control, task,
-                            TaskRunner.makeExceptionError(cf, ex), stateParams,
+                            TaskRunnerManager.makeExceptionError(cf, ex), stateParams,
                             Optional.absent());  // TODO retry here?
                 }
             }

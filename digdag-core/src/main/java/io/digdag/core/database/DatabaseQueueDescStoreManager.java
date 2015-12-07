@@ -7,7 +7,6 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.core.*;
 import io.digdag.core.queue.QueueDescStore;
 import io.digdag.core.queue.QueueDescStoreManager;
 import io.digdag.core.queue.StoredQueueDesc;
@@ -21,7 +20,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 

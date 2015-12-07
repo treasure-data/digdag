@@ -19,24 +19,24 @@ import io.digdag.core.schedule.ScheduleStarter;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.spi.CommandExecutor;
 import io.digdag.core.spi.SchedulerFactory;
-import io.digdag.core.spi.TaskExecutorFactory;
+import io.digdag.core.spi.TaskRunnerFactory;
 import io.digdag.core.spi.TaskQueueFactory;
 import io.digdag.core.workflow.InProcessTaskCallbackApi;
 import io.digdag.core.workflow.TaskCallbackApi;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.standards.CronSchedulerFactory;
-import io.digdag.standards.MemoryTaskQueueFactory;
-import io.digdag.standards.PyTaskExecutorFactory;
-import io.digdag.standards.ShTaskExecutorFactory;
-import io.digdag.standards.SimpleCommandExecutor;
+import io.digdag.standards.scheduler.CronSchedulerFactory;
+import io.digdag.standards.queue.MemoryTaskQueueFactory;
+import io.digdag.standards.task.PyTaskRunnerFactory;
+import io.digdag.standards.task.ShTaskRunnerFactory;
+import io.digdag.standards.command.SimpleCommandExecutor;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.digdag.core.*;
-import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.cli.ResumeStateFileManager;
 
 public class DigdagEmbed
@@ -122,9 +122,9 @@ public class DigdagEmbed
                     Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
                     taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);
 
-                    Multibinder<TaskExecutorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskExecutorFactory.class);
-                    taskExecutorBinder.addBinding().to(PyTaskExecutorFactory.class).in(Scopes.SINGLETON);
-                    taskExecutorBinder.addBinding().to(ShTaskExecutorFactory.class).in(Scopes.SINGLETON);
+                    Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
+                    taskExecutorBinder.addBinding().to(PyTaskRunnerFactory.class).in(Scopes.SINGLETON);
+                    taskExecutorBinder.addBinding().to(ShTaskRunnerFactory.class).in(Scopes.SINGLETON);
 
                     Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
                     schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);

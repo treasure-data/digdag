@@ -1,10 +1,9 @@
 package io.digdag.server;
 
-import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowSource;

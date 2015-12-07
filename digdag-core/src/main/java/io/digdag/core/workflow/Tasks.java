@@ -1,5 +1,7 @@
 package io.digdag.core.workflow;
 
+import io.digdag.core.session.TaskStateCode;
+
 public final class Tasks
 {
     private Tasks() { }

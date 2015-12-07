@@ -1,7 +1,7 @@
 package io.digdag.core.spi;
 
 import com.google.common.base.Optional;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 
 public class TaskExecutionException
         extends RuntimeException

@@ -21,7 +21,6 @@ import com.google.inject.Inject;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
-import io.digdag.core.config.*;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;

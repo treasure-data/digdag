@@ -5,8 +5,8 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
-import io.digdag.core.workflow.StoredTask;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.session.StoredTask;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestTask.class)

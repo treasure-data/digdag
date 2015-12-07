@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.HashSet;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.session.TaskRelation;
 
 public class TaskTree
 {

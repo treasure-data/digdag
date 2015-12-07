@@ -8,7 +8,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.spi.Scheduler;
 import io.digdag.core.spi.SchedulerFactory;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 import io.digdag.core.repository.WorkflowSource;
 
 public class SchedulerManager

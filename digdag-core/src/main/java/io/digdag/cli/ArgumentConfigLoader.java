@@ -4,9 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.core.yaml.YamlConfigLoader;
 
 public class ArgumentConfigLoader
 {

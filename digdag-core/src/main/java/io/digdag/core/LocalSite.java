@@ -11,15 +11,15 @@ import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigFactory;
+import io.digdag.core.yaml.YamlConfigLoader;
 
 public class LocalSite
 {

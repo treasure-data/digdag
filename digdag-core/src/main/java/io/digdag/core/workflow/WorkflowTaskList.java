@@ -5,7 +5,6 @@ import java.util.AbstractList;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public class WorkflowTaskList

@@ -1,7 +1,5 @@
 package io.digdag.core.repository;
 
-import java.util.Map;
-import io.digdag.core.config.Config;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;

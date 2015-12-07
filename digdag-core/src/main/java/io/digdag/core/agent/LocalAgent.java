@@ -16,9 +16,9 @@ public class LocalAgent
 
     private final ExecutorService executor;
     private final TaskQueue queue;
-    private final TaskRunner runner;
+    private final TaskRunnerManager runner;
 
-    public LocalAgent(TaskQueue queue, TaskRunner runner)
+    public LocalAgent(TaskQueue queue, TaskRunnerManager runner)
     {
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()

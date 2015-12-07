@@ -4,8 +4,8 @@ import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
-import io.digdag.core.workflow.StoredSession;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.session.StoredSession;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestSession.class)

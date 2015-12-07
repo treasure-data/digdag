@@ -14,8 +14,8 @@ import com.google.inject.Inject;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;
 import org.skife.jdbi.v2.tweak.ArgumentFactory;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigFactory;
 
 public class ConfigMapper
 {

@@ -8,8 +8,9 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigException;
+import io.digdag.core.session.TaskType;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigException;
 import static com.google.common.collect.Maps.immutableEntry;
 
 public class WorkflowCompiler

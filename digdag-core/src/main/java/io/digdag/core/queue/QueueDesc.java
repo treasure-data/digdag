@@ -4,7 +4,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.core.config.Config;
+import io.digdag.core.spi.config.Config;
 
 @JsonDeserialize(as = ImmutableQueueDesc.class)
 public abstract class QueueDesc

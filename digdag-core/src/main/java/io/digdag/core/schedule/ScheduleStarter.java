@@ -7,19 +7,19 @@ import java.text.SimpleDateFormat;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.core.spi.ScheduleTime;
-import io.digdag.core.workflow.SessionOptions;
-import io.digdag.core.config.Config;
-import io.digdag.core.config.ConfigException;
-import io.digdag.core.config.ConfigFactory;
+import io.digdag.core.session.SessionOptions;
+import io.digdag.core.spi.config.Config;
+import io.digdag.core.spi.config.ConfigException;
+import io.digdag.core.spi.config.ConfigFactory;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.workflow.Session;
-import io.digdag.core.workflow.SessionRelation;
-import io.digdag.core.workflow.StoredSession;
+import io.digdag.core.session.Session;
+import io.digdag.core.session.SessionRelation;
+import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.session.TaskMatchPattern;
 
 public class ScheduleStarter
 {
