@@ -92,11 +92,11 @@ public class TdTaskRunnerFactory
                 case "hive":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO TABLE " + op.escapeIdentPresto(insertInto.get()) + "\n" + command;
+                        query = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + command;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO OVERWRITE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + command;
+                        query = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + command;
                     }
                     else {
                         query = command;
