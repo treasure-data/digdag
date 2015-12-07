@@ -24,6 +24,8 @@ td_example_workflow:
     +using_hive:
       td>: select count(*) from history
       insert_into: history
+      engine: hive
+      priority: +1
 
   +cleanup:
     type: td_ddl
