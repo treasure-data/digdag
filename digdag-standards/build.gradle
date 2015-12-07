@@ -2,4 +2,8 @@
 dependencies {
     compile project(':digdag-core')
     compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
+
+    // td
+    compile 'com.treasuredata.client:td-client:0.7.0'
+    compile 'org.msgpack:msgpack-core:0.7.1'
 }

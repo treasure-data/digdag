@@ -1,0 +1,31 @@
+td_example_workflow:
+  export:
+    td:
+      apikey: MY/ACCOUNT_API_KEY
+      database: my_db
+
+  +queries:
+    +store_results:
+      td>: select count(*) as cnt from sample_datasets.www_access
+      create_table: count_table
+
+    +append_results:
+      td>: select cnt from count_table
+      insert_into: history
+
+    +show_results:
+      +download_to_file:
+        td>: select * from history
+        download_file: history.csv
+
+      +show:
+        sh>: cat history.csv
+
+    +using_hive:
+      td>: select count(*) from history
+      insert_into: history
+
+  +cleanup:
+    type: td_ddl
+    delete_table: [count_table]
+
