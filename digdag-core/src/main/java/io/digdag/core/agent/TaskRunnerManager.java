@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigException;
 import io.digdag.spi.config.ConfigFactory;
@@ -15,6 +17,8 @@ import io.digdag.core.workflow.TaskCallbackApi;
 
 public class TaskRunnerManager
 {
+    private static Logger logger = LoggerFactory.getLogger(TaskRunnerManager.class);
+
     private final TaskCallbackApi callback;
     private final ConfigFactory cf;
     private final Map<String, TaskRunnerFactory> executorTypes;
@@ -82,6 +86,7 @@ public class TaskRunnerManager
 
         }
         catch (TaskExecutionException ex) {
+            logger.error("Task failed", ex);
             if (ex.getError().isPresent()) {
                 callback.taskFailed(taskId,
                         ex.getError().get(), nextState,
@@ -94,6 +99,7 @@ public class TaskRunnerManager
             }
         }
         catch (Exception ex) {
+            logger.error("Task failed", ex);
             Config error = makeExceptionError(cf, ex);
             callback.taskFailed(taskId,
                     error, nextState,
