@@ -55,8 +55,6 @@ public class ShTaskRunnerFactory
             String command = request.getConfig().get("command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
 
-            logger.info("sh>: {}", command);
-
             final Map<String, String> env = pb.environment();
             request.getConfig().getKeys()
                 .forEach(key -> {

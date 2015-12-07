@@ -108,12 +108,10 @@ public class PyTaskRunnerFactory
                 String command = config.get("command", String.class);
                 script = runnerScript;
                 args = ImmutableList.of(command, inFile.toString(), outFile.toString());
-                logger.info("py>: {}", command);
             }
             else {
                 script = config.get("script", String.class);
                 args = ImmutableList.of(inFile.toString(), outFile.toString());
-                logger.info("py>: script");
             }
 
             try (FileOutputStream fo = new FileOutputStream(inFile)) {

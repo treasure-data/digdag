@@ -45,7 +45,12 @@ public class TaskRunnerManager
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName("task-"+request.getTaskInfo().getFullName())) {
 
-            if (!config.has("type")) {
+            String type;
+            if (config.has("type")) {
+                type = config.get("type", String.class);
+                logger.info("type: {}", type);
+            }
+            else {
                 java.util.Optional<String> commandKey = config.getKeys()
                     .stream()
                     .filter(key -> key.endsWith(">"))
@@ -57,10 +62,12 @@ public class TaskRunnerManager
                             TaskReport.empty(cf));
                     return;
                 }
-                config.set("type", commandKey.get().substring(0, commandKey.get().length() - 1));
-                config.set("command", config.get(commandKey.get(), Object.class));
+                type = commandKey.get().substring(0, commandKey.get().length() - 1);
+                Object command = config.get(commandKey.get(), Object.class);
+                config.set("type", type);
+                config.set("command", command);
+                logger.info("{}>: {}", type, command);
             }
-            String type = config.get("type", String.class);
 
             TaskRunnerFactory factory = executorTypes.get(type);
             if (factory == null) {
