@@ -3,6 +3,7 @@ package io.digdag.server;
 import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
 import org.immutables.value.Value;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
@@ -24,7 +25,7 @@ public abstract class RestRepository
 
     public abstract String getArchiveType();
 
-    public abstract byte[] getArchiveMd5();
+    public abstract Optional<byte[]> getArchiveMd5();  // TODO Optional is not working correctly but using for now
 
     public static ImmutableRestRepository.Builder builder()
     {
@@ -40,7 +41,7 @@ public abstract class RestRepository
             .createdAt(repo.getCreatedAt())
             .updatedAt(rev.getCreatedAt())
             .archiveType(rev.getArchiveType())
-            .archiveMd5(rev.getArchiveMd5().orNull())
+            .archiveMd5(rev.getArchiveMd5())
             .build();
     }
 }
