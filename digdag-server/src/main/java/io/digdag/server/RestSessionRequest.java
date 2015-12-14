@@ -12,24 +12,28 @@ import io.digdag.spi.config.Config;
 @JsonDeserialize(as = ImmutableRestSessionRequest.class)
 public abstract class RestSessionRequest
 {
-    @JsonProperty("repository")
-    public abstract Optional<String> getRepositoryName();
-
     @JsonProperty("workflow")
-    public abstract Optional<String> getWorkflowName();
+    public abstract String getWorkflowName();
 
-    @JsonProperty("revision")
-    public abstract Optional<String> getRevision();
+    // TODO Optional doesn't work with JAX-RS somehow
+    //@JsonProperty("repository")
+    //public abstract Optional<String> getRepositoryName();
 
-    @JsonProperty("workflowId")
-    public abstract Optional<Integer> getWorkflowId();
+    //@JsonProperty("workflow")
+    //public abstract Optional<String> getWorkflowName();
 
-    @JsonProperty("session_name")
-    public abstract Optional<String> getSessionName();
+    //@JsonProperty("revision")
+    //public abstract Optional<String> getRevision();
 
-    @JsonProperty("params")
-    public abstract Optional<Config> getSessionParams();
+    //@JsonProperty("workflowId")
+    //public abstract Optional<Integer> getWorkflowId();
 
-    @JsonProperty("from")
-    public abstract Optional<String> getFromTaskName();
+    //@JsonProperty("session_name")
+    //public abstract Optional<String> getSessionName();
+
+    //@JsonProperty("params")
+    //public abstract Optional<Config> getSessionParams();
+
+    //@JsonProperty("from")
+    //public abstract Optional<String> getFromTaskName();
 }

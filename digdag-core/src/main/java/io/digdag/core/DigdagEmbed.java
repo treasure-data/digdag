@@ -84,11 +84,11 @@ public class DigdagEmbed
                 new ObjectMapperModule()
                     .registerModule(new GuavaModule()),
                     //.registerModule(new JodaModule()),
-                    new DatabaseModule(DatabaseStoreConfig.builder()
-                        .type("h2")
-                        //.url("jdbc:h2:./test;DB_CLOSE_ON_EXIT=FALSE")
-                        .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
-                        .build()),
+                new DatabaseModule(DatabaseStoreConfig.builder()
+                    .type("h2")
+                    //.url("jdbc:h2:./test;DB_CLOSE_ON_EXIT=FALSE")
+                    .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
+                    .build()),
                 (binder) -> {
                     binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);

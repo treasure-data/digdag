@@ -39,7 +39,7 @@ public class GuiceRsServletContainerInitializer
                 binder.bind(ServletContext.class).toInstance(context);
             })
             .getInstance(GuiceRsBootstrap.class)
-            .initialize();
+            .initialize(context);
 
         if (injector instanceof AutoCloseable) {
             context.addListener(new CloseableInjectorDestroyListener((AutoCloseable) injector));

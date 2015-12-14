@@ -111,6 +111,7 @@ public class SessionResource
     }
 
     @PUT
+    @Consumes("application/json")
     @Path("/api/sessions")
     public RestSession startTask(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
@@ -118,37 +119,46 @@ public class SessionResource
         StoredWorkflowSource wf;
         SessionRelation rel;
 
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
-        if (request.getWorkflowId().isPresent()) {
-            Preconditions.checkArgument(!request.getRepositoryName().isPresent(), "repository and workflowId can't be set together");
-            Preconditions.checkArgument(!request.getWorkflowName().isPresent(), "workflow and workflowId can't be set together");
-            Preconditions.checkArgument(!request.getRevision().isPresent(), "revision and workflowId can't be set together");
+        // TODO
+        //RepositoryStore rs = rm.getRepositoryStore(siteId);
+        //if (request.getWorkflowId().isPresent()) {
+        //    Preconditions.checkArgument(!request.getRepositoryName().isPresent(), "repository and workflowId can't be set together");
+        //    Preconditions.checkArgument(!request.getWorkflowName().isPresent(), "workflow and workflowId can't be set together");
+        //    Preconditions.checkArgument(!request.getRevision().isPresent(), "revision and workflowId can't be set together");
 
-            wf = rs.getWorkflowById(request.getWorkflowId().get());  // validate site id
-            StoredWorkflowSourceWithRepository details = rm.getWorkflowDetailsById(wf.getId());
-            rel = SessionRelation.ofWorkflow(details.getRepository().getId(), details.getRevisionId(), details.getId());
-        }
-        else {
-            Preconditions.checkArgument(request.getRepositoryName().isPresent(), "repository is required if workflowId is not set");
-            Preconditions.checkArgument(request.getWorkflowName().isPresent(), "workflow is required if workflowId is not set");
-            StoredRepository repo = rs.getRepositoryByName(request.getWorkflowName().get());
-            StoredRevision rev;
-            if (request.getRevision().isPresent()) {
-                rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
-            }
-            else {
-                rev = rs.getLatestActiveRevision(repo.getId());
-            }
-            wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName().get());
+        //    wf = rs.getWorkflowById(request.getWorkflowId().get());  // validate site id
+        //    StoredWorkflowSourceWithRepository details = rm.getWorkflowDetailsById(wf.getId());
+        //    rel = SessionRelation.ofWorkflow(details.getRepository().getId(), details.getRevisionId(), details.getId());
+        //}
+        //else {
+        //    Preconditions.checkArgument(request.getRepositoryName().isPresent(), "repository is required if workflowId is not set");
+        //    Preconditions.checkArgument(request.getWorkflowName().isPresent(), "workflow is required if workflowId is not set");
+        //    StoredRepository repo = rs.getRepositoryByName(request.getWorkflowName().get());
+        //    StoredRevision rev;
+        //    if (request.getRevision().isPresent()) {
+        //        rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
+        //    }
+        //    else {
+        //        rev = rs.getLatestActiveRevision(repo.getId());
+        //    }
+        //    wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName().get());
+        //    rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
+        //}
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        {
+            StoredRepository repo = rs.getRepositoryByName("default");
+            StoredRevision rev = rs.getLatestActiveRevision(repo.getId());
+            wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName());
             rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
         }
 
-        String sessionName = request.getSessionName().or(UUID.randomUUID().toString());
+        //String sessionName = request.getSessionName().or(UUID.randomUUID().toString());
+        String sessionName = UUID.randomUUID().toString();
 
         Config sessionParams = cf.create();
-        if (request.getSessionParams().isPresent()) {
-            sessionParams.setAll(request.getSessionParams().get());
-        }
+        //if (request.getSessionParams().isPresent()) {
+        //    sessionParams.setAll(request.getSessionParams().get());
+        //}
 
         Session session = Session.sessionBuilder()
             .name(sessionName)
@@ -158,7 +168,7 @@ public class SessionResource
 
         StoredSession stored = executor.submitWorkflow(
                 siteId, wf, session, Optional.of(rel),
-                new Date(), request.getFromTaskName().transform(name -> new TaskMatchPattern(name)));
+                new Date(), /*request.getFromTaskName().transform(name -> new TaskMatchPattern(name))*/ Optional.absent());
 
         return RestSession.of(stored);
     }

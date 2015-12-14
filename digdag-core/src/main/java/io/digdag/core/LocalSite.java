@@ -161,7 +161,7 @@ public class LocalSite
             Optional<Date> currentTimeToSchedule)
     {
         return storeWorkflows(
-                "repository",
+                "default",
                 Revision.revisionBuilder()
                     .name("revision")
                     .archiveType("db")
