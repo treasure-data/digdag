@@ -1,5 +1,5 @@
 args_example_workflow:
-  # If you haven't checked args.yml, please check it first.
+  # If you haven't checked python_args.yml, please check it first.
 
   +simple:
     # Local parameters are only for this task.
