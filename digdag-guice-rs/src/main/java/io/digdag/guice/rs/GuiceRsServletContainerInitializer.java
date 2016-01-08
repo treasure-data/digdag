@@ -4,7 +4,11 @@ import java.util.Map;
 import java.util.Set;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -34,10 +38,17 @@ public class GuiceRsServletContainerInitializer
 
     private void processBootstrap(final Class<GuiceRsBootstrap> bootstrap, final ServletContext context)
     {
-        final Injector injector = Guice.createInjector((binder) -> {
-                binder.bind(GuiceRsBootstrap.class).to(bootstrap);
-                binder.bind(ServletContext.class).toInstance(context);
-            })
+        ImmutableList.Builder<Module> modules = ImmutableList.builder();
+        modules.add(GuiceRsCommandLineModule.fromInitParameter(context));
+        modules.add(GuiceRsServerControllerModule.fromInitParameter(context));
+        modules.add((binder) -> {
+            binder.bind(GuiceRsBootstrap.class).to(bootstrap).asEagerSingleton();
+            binder.bind(ServletContext.class).toInstance(context);
+        });
+
+        final Injector injector = Guice.createInjector(
+                Iterables.filter(modules.build(), Predicates.notNull())
+                )
             .getInstance(GuiceRsBootstrap.class)
             .initialize(context);
 
