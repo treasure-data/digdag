@@ -8,8 +8,6 @@ import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.digdag.guice.rs.GuiceRsModule;
-import com.fasterxml.jackson.module.guice.ObjectMapperModule;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
 public class ServerModule
         extends GuiceRsModule
