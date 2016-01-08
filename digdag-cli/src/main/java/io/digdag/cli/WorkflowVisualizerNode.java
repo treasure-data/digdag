@@ -2,8 +2,7 @@ package io.digdag.cli;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.WorkflowTask;

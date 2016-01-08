@@ -1,8 +1,6 @@
 package io.digdag.cli;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import org.slf4j.Logger;
@@ -11,21 +9,52 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionException;
 import io.digdag.core.DigdagEmbed;
-import static java.util.Arrays.asList;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 
 public class Main
 {
-    public static void main(String[] args)
-            throws Exception
+    public static class MainOptions
     {
+        @Parameter(names = "--help", help = true, hidden = true)
+        boolean help;
+    }
+
+    public static void main(String[] args)
+        throws Exception
+    {
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date())+ ": Digdag v0.1.0");
+
+        MainOptions mainOpts = new MainOptions();
+        JCommander jc = new JCommander(mainOpts);
+        jc.setProgramName("digdag");
+
+        jc.addCommand("archive", new Archive());
+        jc.addCommand("gen", new Gen());
+        jc.addCommand("run", new Run());
+        jc.addCommand("sched", new Sched());
+        jc.addCommand("server", new Server());
+        jc.addCommand("show", new Show());
+
         try {
-            run(args);
+            jc.parse(args);
+
+            if (mainOpts.help) {
+                throw usage(null);
+            }
+
+            Command command = getParsedCommand(jc);
+            if (command == null) {
+                throw usage(null);
+            }
+
+            processCommonOptions(command);
+
+            command.main();
         }
-        catch (OptionException ex) {
+        catch (ParameterException ex) {
             System.err.println("error: "+ex.getMessage());
             System.exit(1);
         }
@@ -37,82 +66,39 @@ public class Main
         }
     }
 
-    public static void run(String[] args)
-            throws Exception
+    private static Command getParsedCommand(JCommander jc)
     {
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date())+ ": Digdag v0.1.0");
-
-        List<String> argList = new ArrayList<>(asList(args));
-        String command = argList.stream().filter(a -> !a.startsWith("-")).findFirst().orElse(null);
-        if (command == null) {
-            throw usage(null);
+        String commandName = jc.getParsedCommand();
+        if (commandName == null) {
+            return null;
         }
 
-        argList.remove(command);
-        String[] commandArgs = argList.toArray(new String[argList.size()]);
-
-        switch (command) {
-        case "run":
-            Run.main(command, commandArgs);
-            break;
-        case "sched":
-            Sched.main(command, commandArgs);
-            break;
-        case "gen":
-            Gen.main(command, commandArgs);
-            break;
-        case "show":
-            Show.main(command, commandArgs);
-            break;
-        case "archive":
-            Archive.main(command, commandArgs);
-            break;
-        case "server":
-            Server.main(command, commandArgs);
-            break;
-        default:
-            throw usage("Unknown command '"+command+"'");
-        }
+        return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    static OptionParser parser()
-    {
-        OptionParser parser = new OptionParser();
-        parser.accepts("help");
-        parser.acceptsAll(asList("l", "log-level")).withRequiredArg().ofType(String.class).defaultsTo("info");
-        parser.acceptsAll(asList("g", "log")).withRequiredArg().ofType(String.class).defaultsTo("-");
-        parser.acceptsAll(asList("X")).withRequiredArg().ofType(String.class);
-        return parser;
-    }
-
-    static OptionSet parse(OptionParser parser, String[] args)
+    private static void processCommonOptions(Command command)
             throws SystemExitException
     {
-        OptionSet op = parser.parse(args);
+        if (command.help) {
+            throw command.usage(null);
+        }
 
-        String logLevel = (String) op.valueOf("l");
-        switch (logLevel) {
+        switch (command.logLevel) {
         case "error":
         case "warn":
         case "info":
         case "debug":
         case "trace":
-            logLevel = logLevel.toUpperCase();
             break;
         default:
-            throw usage("Unknown log level '"+logLevel+"'");
+            throw usage("Unknown log level '"+command.logLevel+"'");
         }
 
-        configureLogging(logLevel, (String) op.valueOf("g"));
+        configureLogging(command.logLevel, command.logPath);
 
-        for (Object kv : op.valuesOf("X")) {
-            String[] pair = kv.toString().split("=", 2);
-            String key = pair[0];
-            String value = (pair.length > 1 ? pair[1] : "true");
-            System.setProperty(key, value);
+        for (Map.Entry<String, String> pair : command.systemProperties.entrySet()) {
+            System.setProperty(pair.getKey(), pair.getValue());
         }
-
-        return op;
     }
 
     private static void configureLogging(String level, String logPath)
@@ -144,12 +130,6 @@ public class Main
         if (logger instanceof ch.qos.logback.classic.Logger) {
             ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
         }
-    }
-
-    static List<String> nonOptions(OptionSet op)
-    {
-        List<?> following = op.nonOptionArguments();
-        return Arrays.asList(following.toArray(new String[following.size()]));
     }
 
     private static SystemExitException usage(String error)
@@ -184,23 +164,6 @@ public class Main
         System.err.println("    -X KEY=VALUE                     add a performance system config");
     }
 
-    public static class SystemExitException
-            extends Exception
-    {
-        private final int code;
-
-        public SystemExitException(int code, String message)
-        {
-            super(message);
-            this.code = code;
-        }
-
-        public int getCode()
-        {
-            return code;
-        }
-    }
-
     static SystemExitException systemExit(String errorMessage)
     {
         if (errorMessage != null) {
@@ -209,10 +172,5 @@ public class Main
         else {
             return new SystemExitException(0, null);
         }
-    }
-
-    static DigdagEmbed embed()
-    {
-        return new DigdagEmbed.Bootstrap().initialize();
     }
 }

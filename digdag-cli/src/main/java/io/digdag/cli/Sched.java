@@ -5,62 +5,62 @@ import java.util.Date;
 import java.util.stream.Collectors;
 import java.io.File;
 import java.util.TimeZone;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
+import com.beust.jcommander.Parameter;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.LocalSite;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.schedule.ScheduleStarter;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.WorkflowExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import io.digdag.core.*;
-import io.digdag.cli.Main.SystemExitException;
+import io.digdag.core.schedule.ScheduleStarter;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 
 public class Sched
+    extends Command
 {
-    private static Logger logger = LoggerFactory.getLogger(Sched.class);
+    private static final Logger logger = LoggerFactory.getLogger(Sched.class);
 
-    public static void main(String command, String[] args)
+    @Parameter(names = {"-o", "--output"})
+    String output = null;
+
+    @Override
+    public void main()
             throws Exception
     {
-        OptionParser parser = Main.parser();
-
-        parser.acceptsAll(asList("o", "output")).withRequiredArg().ofType(String.class);
-        // TODO support -p option? for jinja template rendering
-
-        OptionSet op = Main.parse(parser, args);
-        List<String> argv = Main.nonOptions(op);
-        if (op.has("help") || argv.size() != 1) {
+        if (args.size() != 1) {
             throw usage(null);
         }
 
-        File workflowPath = new File(argv.get(0));
+        String workflowPath = args.get(0);
 
-        String workflowFileName = workflowPath.getName().replaceFirst("\\.\\w*$", "");
-        File outputPath = Optional.fromNullable((String) op.valueOf("o")).transform(it -> new File(it)).or(
-                    new File(workflowPath.getParent(), workflowFileName));
+        if (output == null) {
+            File workflowFile = new File(workflowPath);
+            String workflowFileName = workflowFile.getName().replaceFirst("\\.\\w*$", "");
+            output = new File(workflowFile.getParent(), workflowFileName).toString();
+        }
 
-        new Sched(workflowPath, outputPath).sched();
+        sched(args.get(0));
     }
 
-    private static SystemExitException usage(String error)
+    @Override
+    public SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag sched <workflow.yml> [options...]");
         System.err.println("  Options:");
@@ -70,20 +70,14 @@ public class Sched
         return systemExit(error);
     }
 
-    private final File workflowPath;
-    private final File outputPath;
-
-    public Sched(File workflowPath, final File outputPath)
+    private void sched(String workflowPath)
+            throws Exception
     {
-        this.workflowPath = workflowPath;
-        this.outputPath = outputPath;
-    }
+        File outputFile = new File(output);
 
-    public void sched() throws Exception
-    {
-        DigdagEmbed embed = new DigdagEmbed.Bootstrap()
+        Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
-                binder.bind(HistoryFiles.class).toInstance(new HistoryFiles(outputPath));
+                binder.bind(HistoryFiles.class).toInstance(new HistoryFiles(outputFile));
                 binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
             })
             .overrideModules(modules -> {
@@ -92,27 +86,18 @@ public class Sched
                 });
                 return asList(mod);
             })
-            .initialize();
-        try {
-            sched(embed.getInjector());
-        }
-        finally {
-            // close explicitly so that ResumeStateFileManager.preDestroy runs before closing h2 database
-            embed.destroy();
-        }
-    }
+            .initialize()
+            .getInjector();
 
-    public void sched(Injector injector) throws Exception
-    {
         LocalSite localSite = injector.getInstance(LocalSite.class);
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
 
-        outputPath.mkdirs();
+        outputFile.mkdirs();
 
-        List<WorkflowSource> workflowSources = loader.load(workflowPath, cf.create()).convert(WorkflowSourceList.class).get();
+        List<WorkflowSource> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowSourceList.class).get();
 
         localSite.scheduleWorkflows(workflowSources, new Date());
         // TODO set next schedule time from history

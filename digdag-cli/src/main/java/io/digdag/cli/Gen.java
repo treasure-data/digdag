@@ -1,31 +1,24 @@
 package io.digdag.cli;
 
-import java.util.List;
 import java.io.File;
 import java.io.PrintStream;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import io.digdag.cli.Main.SystemExitException;
 import static io.digdag.cli.Main.systemExit;
-import static java.util.Arrays.asList;
 
 public class Gen
+    extends Command
 {
-    public static void main(String command, String[] args)
-            throws Exception
+    @Override
+    public void main()
+        throws Exception
     {
-        OptionParser parser = Main.parser();
-
-        OptionSet op = Main.parse(parser, args);
-        List<String> argv = Main.nonOptions(op);
-        if (op.has("help") || argv.size() != 1) {
+        if (args.size() != 1) {
             throw usage(null);
         }
-
-        new Gen().gen(argv.get(0));
+        gen(args.get(0));
     }
 
-    private static SystemExitException usage(String error)
+    @Override
+    public SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag gen <name>");
         Main.showCommonOptions();
@@ -33,8 +26,8 @@ public class Gen
         return systemExit(error);
     }
 
-    public void gen(String name)
-            throws Exception
+    private void gen(String name)
+        throws Exception
     {
         File file = new File(name+".yml");
         if (file.exists()) {

@@ -16,55 +16,41 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.inject.Inject;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
+import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.repository.WorkflowSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import io.digdag.cli.Main.SystemExitException;
+import com.beust.jcommander.Parameter;
 import io.digdag.spi.config.ConfigFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import static io.digdag.cli.Main.systemExit;
-import static java.util.Arrays.asList;
 
 public class Archive
+    extends Command
 {
-    private static Logger logger = LoggerFactory.getLogger(Archive.class);
+    @Parameter(names = {"-o", "--output"})
+    String output = "archive.tar.gz";
 
-    public static void main(String command, String[] args)
+    // TODO support -p option? for jinja template rendering
+
+    @Override
+    public void main()
             throws Exception
     {
-        OptionParser parser = Main.parser();
-
-        parser.acceptsAll(asList("o", "output")).withRequiredArg().ofType(String.class);
-        // TODO support -p option? for jinja template rendering
-
-        OptionSet op = Main.parse(parser, args);
-        List<String> argv = Main.nonOptions(op);
-        if (op.has("help") || argv.isEmpty()) {
+        if (args.isEmpty()) {
             throw usage(null);
         }
 
-        List<File> workflowFiles = op.nonOptionArguments()
-            .stream()
-            .map(arg -> new File(arg.toString()))
-            .collect(Collectors.toList());
-        File outputPath = new File(Optional.fromNullable((String) op.valueOf("o")).or("archive.tar.gz"));
-
-        new Archive().archive(outputPath, workflowFiles);
+        archive(args);
     }
 
-    private static SystemExitException usage(String error)
+    @Override
+    public SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag archive <workflow.yml...> [options...]");
         System.err.println("  Options:");
@@ -82,22 +68,24 @@ public class Archive
         return systemExit(error);
     }
 
-    public void archive(File outputPath, List<File> workflowFiles)
+    private void archive(List<String> workflowFiles)
             throws IOException
     {
-        Injector injector = Main.embed().getInjector();
+        System.out.println("Creating "+output+"...");
 
-        System.out.println("Creating "+outputPath+"...");
+        Injector injector = new DigdagEmbed.Bootstrap()
+            .initialize()
+            .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
 
         List<WorkflowSource> workflows = new ArrayList<>();
-        for (File workflowFile : workflowFiles) {
+        for (String workflowFile : workflowFiles) {
             // TODO validate workflow
             workflows.addAll(
-                loader.load(workflowFile, cf.create()).convert(WorkflowSourceList.class).get());
+                loader.load(new File(workflowFile), cf.create()).convert(WorkflowSourceList.class).get());
         }
 
         List<String> stdinLines;
@@ -108,9 +96,11 @@ public class Archive
             stdinLines = CharStreams.readLines(new BufferedReader(new InputStreamReader(System.in)));
         }
 
-        Set<File> missingWorkflowFiles = new HashSet<>(workflowFiles);
+        Set<File> missingWorkflowFiles = new HashSet<>(
+                workflowFiles.stream().map(arg -> new File(arg)).collect(Collectors.toList())
+                );
 
-        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(outputPath))))) {
+        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
             for (String line : stdinLines) {
                 File file = new File(line);
 

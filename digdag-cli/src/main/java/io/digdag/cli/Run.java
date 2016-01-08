@@ -6,68 +6,60 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 import java.util.stream.Collectors;
+import java.io.File;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.DynamicParameter;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Injector;
+import com.google.inject.Scopes;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.LocalSite;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.session.SessionOptions;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import java.io.File;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.core.*;
-import io.digdag.cli.Main.SystemExitException;
+import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigFactory;
-import io.digdag.core.yaml.YamlConfigLoader;
 import static io.digdag.cli.Main.systemExit;
-import static java.util.Arrays.asList;
 
 public class Run
+    extends Command
 {
-    private static Logger logger = LoggerFactory.getLogger(Run.class);
+    private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
-    public static void main(String command, String[] args)
+    @Parameter(names = {"-f", "--from"})
+    String fromTaskName = null;
+
+    @Parameter(names = {"-r", "--resume-state"})
+    String resumeStateFilePath = null;
+
+    @DynamicParameter(names = {"-p", "--param"})
+    Map<String, String> params = new HashMap<>();
+
+    @Parameter(names = {"-P", "--params-file"})
+    String paramsFile = null;
+
+    @Parameter(names = {"-s", "--show"})
+    String visualizePath = null;
+
+    @Override
+    public void main()
             throws Exception
     {
-        OptionParser parser = Main.parser();
-
-        parser.acceptsAll(asList("f", "from")).withRequiredArg().ofType(String.class);
-        parser.acceptsAll(asList("r", "resume-state")).withRequiredArg().ofType(String.class);
-        parser.acceptsAll(asList("p", "param")).withRequiredArg().ofType(String.class);
-        parser.acceptsAll(asList("P", "params-file")).withRequiredArg().ofType(String.class);
-        parser.acceptsAll(asList("s", "show")).withRequiredArg().ofType(String.class);
-
-        OptionSet op = Main.parse(parser, args);
-        List<String> argv = Main.nonOptions(op);
-        if (op.has("help") || argv.size() != 1) {
+        if (args.size() != 1) {
             throw usage(null);
         }
-
-        Optional<String> fromTaskName = Optional.fromNullable((String) op.valueOf("f"));
-        Optional<File> resumeStateFilePath = Optional.fromNullable((String) op.valueOf("r")).transform(it -> new File(it));
-        Optional<File> paramsFilePath = Optional.fromNullable((String) op.valueOf("P")).transform(it -> new File(it));
-        Optional<File> visualizePath = Optional.fromNullable((String) op.valueOf("s")).transform(it -> new File(it));
-        File workflowPath = new File(argv.get(0));
-
-        Map<String, String> params = new HashMap<>();
-        for (Object kv : op.valuesOf("p")) {
-            String[] pair = kv.toString().split("=", 2);
-            String key = pair[0];
-            String value = (pair.length > 1 ? pair[1] : "true");
-            params.put(key, value);
-        }
-
-        new Run(workflowPath, fromTaskName, resumeStateFilePath, params, paramsFilePath, visualizePath).run();
+        run(args.get(0));
     }
 
-    private static SystemExitException usage(String error)
+    public SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag run <workflow.yml> [options...]");
         System.err.println("  Options:");
@@ -82,60 +74,15 @@ public class Run
         return systemExit(error);
     }
 
-    static WorkflowSource loadFirstWorkflowSource(final Config ast)
+    public void run(String workflowPath) throws Exception
     {
-        List<WorkflowSource> workflowSources = ast.convert(WorkflowSourceList.class).get();
-        if (workflowSources.size() != 1) {
-            if (workflowSources.isEmpty()) {
-                throw new RuntimeException("Workflow file doesn't include definitions");
-            }
-            else {
-                throw new RuntimeException("Workflow file includes more than one definitions");
-            }
-        }
-        return workflowSources.get(0);
-    }
-
-    private final File workflowPath;
-    private final Optional<String> fromTaskName;
-    private final Optional<File> resumeStateFilePath;
-    private final Map<String, String> params;
-    private final Optional<File> paramsFilePath;
-    private final Optional<File> visualizePath;
-
-    public Run(File workflowPath,
-            Optional<String> fromTaskName,
-            Optional<File> resumeStateFilePath,
-            Map<String, String> params,
-            Optional<File> paramsFilePath,
-            Optional<File> visualizePath)
-    {
-        this.workflowPath = workflowPath;
-        this.fromTaskName = fromTaskName;
-        this.resumeStateFilePath = resumeStateFilePath;
-        this.params = params;
-        this.paramsFilePath = paramsFilePath;
-        this.visualizePath = visualizePath;
-    }
-
-    public void run() throws Exception
-    {
-        DigdagEmbed embed = new DigdagEmbed.Bootstrap()
+        Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
                 binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
             })
-            .initialize();
-        try {
-            run(embed.getInjector());
-        }
-        finally {
-            // close explicitly so that ResumeStateFileManager.preDestroy runs before closing h2 database
-            embed.destroy();
-        }
-    }
+            .initialize()
+            .getInjector();
 
-    public void run(Injector injector) throws Exception
-    {
         LocalSite localSite = injector.getInstance(LocalSite.class);
         localSite.initialize();
 
@@ -145,20 +92,20 @@ public class Run
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
         Config sessionParams = cf.create();
-        if (paramsFilePath.isPresent()) {
-            sessionParams.setAll(loader.load(paramsFilePath.get(), cf.create()));
+        if (paramsFile != null) {
+            sessionParams.setAll(loader.load(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             sessionParams.set(pair.getKey(), pair.getValue());
         }
 
         Optional<ResumeState> resumeState = Optional.absent();
-        if (resumeStateFilePath.isPresent() && loader.checkExists(resumeStateFilePath.get())) {
+        if (resumeStateFilePath != null && loader.checkExists(new File(resumeStateFilePath))) {
             // jinja and !!include are disabled
-            resumeState = Optional.of(rawLoader.loadFile(resumeStateFilePath.get(), Optional.absent(), Optional.absent()).convert(ResumeState.class));
+            resumeState = Optional.of(rawLoader.loadFile(new File(resumeStateFilePath), Optional.absent(), Optional.absent()).convert(ResumeState.class));
         }
 
-        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(workflowPath, sessionParams));
+        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(new File(workflowPath), sessionParams));
 
         SessionOptions options = SessionOptions.builder()
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
@@ -166,7 +113,7 @@ public class Run
 
         List<StoredSession> sessions = localSite.startWorkflows(
                 ImmutableList.of(workflowSource),
-                fromTaskName,
+                Optional.fromNullable(fromTaskName),
                 sessionParams, options,
                 new Date());
         if (sessions.isEmpty()) {
@@ -179,7 +126,7 @@ public class Run
         localSite.startMonitor();
 
         // if resumeStateFilePath is not set, use workflow.yml.resume.yml
-        File resumeResultPath = resumeStateFilePath.or(new File(workflowPath.toString() + ".resume.yml"));
+        File resumeResultPath = new File(Optional.fromNullable(resumeStateFilePath).or(workflowPath + ".resume.yml"));
         rsm.startUpdate(resumeResultPath, session);
 
         localSite.runUntilAny();
@@ -203,13 +150,12 @@ public class Run
             logger.debug("    error: "+task.getError());
         }
 
-        if (visualizePath.isPresent()) {
-            Show.show(
-                    localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
-                        .stream()
-                        .map(it -> WorkflowVisualizerNode.of(it))
-                        .collect(Collectors.toList()),
-                    visualizePath.get());
+        if (visualizePath != null) {
+            List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
+                .stream()
+                .map(it -> WorkflowVisualizerNode.of(it))
+                .collect(Collectors.toList());
+            Show.show(nodes, new File(visualizePath));
         }
 
         if (!failedTasks.isEmpty()) {
@@ -221,10 +167,25 @@ public class Run
                         workflowPath, resumeResultPath));
             throw systemExit(sb.toString());
         }
-        else if (!resumeStateFilePath.isPresent()) {
+        else if (resumeStateFilePath == null) {
             rsm.stopUpdate(resumeResultPath);
             rsm.shutdown();
             resumeResultPath.delete();
         }
+    }
+
+    // also used by Sched
+    static WorkflowSource loadFirstWorkflowSource(final Config ast)
+    {
+        List<WorkflowSource> workflowSources = ast.convert(WorkflowSourceList.class).get();
+        if (workflowSources.size() != 1) {
+            if (workflowSources.isEmpty()) {
+                throw new RuntimeException("Workflow file doesn't include definitions");
+            }
+            else {
+                throw new RuntimeException("Workflow file includes more than one definitions");
+            }
+        }
+        return workflowSources.get(0);
     }
 }
