@@ -17,13 +17,14 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
+import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.Start;
 
 public class Main
 {
     public static class MainOptions
     {
-        @Parameter(names = "--help", help = true, hidden = true)
+        @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
         boolean help;
     }
 
@@ -47,6 +48,7 @@ public class Main
         jc.addCommand("start", new Start());
         jc.addCommand("session", new ShowSession(), "sessions");
         jc.addCommand("task", new ShowTask(), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(), "schedules");
 
         try {
             try {
@@ -159,11 +161,12 @@ public class Main
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");
         System.err.println("    workflows                        show registered workflows");
+        System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions                         show past and current sessions");
         System.err.println("    tasks <session-id>               show status of a session");
+        System.err.println("    archive <workflow.yml...>        create a project archive");
         System.err.println("");
         System.err.println("  Server-mode commands:");
-        System.err.println("    archive <workflow.yml...>        create a project archive");
         System.err.println("    server                           start digdag server");
         System.err.println("");
         System.err.println("  Options:");

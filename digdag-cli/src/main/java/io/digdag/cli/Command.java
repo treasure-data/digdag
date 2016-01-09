@@ -21,7 +21,7 @@ public abstract class Command
     @DynamicParameter(names = "-X")
     protected Map<String, String> systemProperties = new HashMap<>();
 
-    @Parameter(names = "--help", help = true, hidden = true)
+    @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
     public abstract void main() throws Exception;

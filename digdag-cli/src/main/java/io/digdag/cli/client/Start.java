@@ -46,6 +46,7 @@ public class Start
         System.err.println("  Options:");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
+        System.err.println("    -u, --unique NAME                unique name of this session");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
