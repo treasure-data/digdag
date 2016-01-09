@@ -22,7 +22,6 @@ public class Gen
     {
         System.err.println("Usage: digdag gen <name>");
         Main.showCommonOptions();
-        System.err.println("");
         return systemExit(error);
     }
 

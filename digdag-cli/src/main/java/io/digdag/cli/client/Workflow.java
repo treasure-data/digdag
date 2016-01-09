@@ -1,0 +1,39 @@
+package io.digdag.cli.client;
+
+import java.util.List;
+import io.digdag.cli.SystemExitException;
+import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestWorkflow;
+import static io.digdag.cli.Main.systemExit;
+
+public class Workflow
+    extends ClientCommand
+{
+    @Override
+    public void main()
+        throws Exception
+    {
+        if (args.isEmpty()) {
+            showWorkflows();
+        }
+        else {
+            usage(null);
+        }
+    }
+
+    public SystemExitException usage(String error)
+    {
+        System.err.println("Usage: digdag workflows [id]");
+        System.err.println("  Options:");
+        ClientCommand.showCommonOptions();
+        return systemExit(error);
+    }
+
+    public void showWorkflows()
+        throws Exception
+    {
+        DigdagClient client = buildClient();
+        List<RestWorkflow> workflows = client.getWorkflows();
+        modelPrinter().printList(workflows);
+    }
+}

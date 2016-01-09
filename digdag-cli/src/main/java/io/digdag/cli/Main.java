@@ -9,10 +9,14 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import io.digdag.core.DigdagEmbed;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.MissingCommandException;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.cli.client.Session;
+import io.digdag.cli.client.Task;
+import io.digdag.cli.client.Workflow;
 
 public class Main
 {
@@ -38,8 +42,17 @@ public class Main
         jc.addCommand("server", new Server());
         jc.addCommand("show", new Show());
 
+        jc.addCommand("workflow", new Workflow(), "workflows");
+        jc.addCommand("session", new Session(), "sessions");
+        jc.addCommand("task", new Task(), "tasks");
+
         try {
-            jc.parse(args);
+            try {
+                jc.parse(args);
+            }
+            catch (MissingCommandException ex) {
+                throw usage("available commands are: "+jc.getCommands().keySet());
+            }
 
             if (mainOpts.help) {
                 throw usage(null);
@@ -141,13 +154,17 @@ public class Main
         System.err.println("    show <workflow.yml>              visualize a workflow");
         System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
         System.err.println("");
+        System.err.println("  Client-mode commands:");
+        System.err.println("    workflows                        show registered workflows");
+        System.err.println("    sessions                         show past and current sessions");
+        System.err.println("    tasks <session-id>               show status of a session");
+        System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    archive <workflow.yml...>        create a project archive");
         System.err.println("    server                           start digdag server");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();
-        System.err.println("");
         if (error == null) {
             System.err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -157,14 +174,15 @@ public class Main
         }
     }
 
-    static void showCommonOptions()
+    public static void showCommonOptions()
     {
         System.err.println("    -g, --log PATH                   output log messages to a file (default: -)");
         System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         System.err.println("    -X KEY=VALUE                     add a performance system config");
+        System.err.println("");
     }
 
-    static SystemExitException systemExit(String errorMessage)
+    public static SystemExitException systemExit(String errorMessage)
     {
         if (errorMessage != null) {
             return new SystemExitException(1, errorMessage);

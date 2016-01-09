@@ -70,7 +70,6 @@ public class Run
         System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
         // TODO add -p, --param K=V
         Main.showCommonOptions();
-        System.err.println("");
         return systemExit(error);
     }
 

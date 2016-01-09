@@ -38,7 +38,6 @@ public class Show
         System.err.println("  Options:");
         System.err.println("    -s, --show PATH.png              store a PNG file to this path (default: workflow.png)");
         Main.showCommonOptions();
-        System.err.println("");
         return systemExit(error);
     }
 

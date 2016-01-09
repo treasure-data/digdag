@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.client.api;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

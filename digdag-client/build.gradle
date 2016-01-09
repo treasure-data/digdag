@@ -1,0 +1,9 @@
+
+dependencies {
+    compile project(':digdag-core')
+
+    compile('org.jboss.resteasy:resteasy-client:3.0.13.Final')
+
+    compile 'org.apache.commons:commons-compress:1.10'
+    compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.6.2'
+}

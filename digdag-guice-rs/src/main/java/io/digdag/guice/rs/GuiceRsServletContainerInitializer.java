@@ -39,16 +39,24 @@ public class GuiceRsServletContainerInitializer
     private void processBootstrap(final Class<GuiceRsBootstrap> bootstrap, final ServletContext context)
     {
         ImmutableList.Builder<Module> modules = ImmutableList.builder();
-        modules.add(GuiceRsCommandLineModule.fromInitParameter(context));
-        modules.add(GuiceRsServerControllerModule.fromInitParameter(context));
+        Module module;
+
+        module = GuiceRsCommandLineModule.fromInitParameter(context);
+        if (module != null) {
+            modules.add(module);
+        }
+
+        module = GuiceRsServerControllerModule.fromInitParameter(context);
+        if (module != null) {
+            modules.add(module);
+        }
+
         modules.add((binder) -> {
             binder.bind(GuiceRsBootstrap.class).to(bootstrap).asEagerSingleton();
             binder.bind(ServletContext.class).toInstance(context);
         });
 
-        final Injector injector = Guice.createInjector(
-                Iterables.filter(modules.build(), Predicates.notNull())
-                )
+        final Injector injector = Guice.createInjector(modules.build())
             .getInstance(GuiceRsBootstrap.class)
             .initialize(context);
 

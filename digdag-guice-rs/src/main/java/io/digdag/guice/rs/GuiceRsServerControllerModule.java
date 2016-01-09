@@ -38,6 +38,9 @@ public class GuiceRsServerControllerModule
 
     public static GuiceRsServerControllerModule fromInitParameter(String value)
     {
+        if (value == null) {
+            return null;
+        }
         return new GuiceRsServerControllerModule(restoreInitParameterValue(value));
     }
 

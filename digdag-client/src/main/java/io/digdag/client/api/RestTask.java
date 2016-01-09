@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.client.api;
 
 import java.util.Date;
 import java.util.List;

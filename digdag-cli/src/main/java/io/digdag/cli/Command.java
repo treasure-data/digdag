@@ -16,7 +16,7 @@ public abstract class Command
     protected String logPath = "-";
 
     @Parameter(names = {"-l", "--log-level"})
-    protected String logLevel = "-";
+    protected String logLevel = "info";
 
     @DynamicParameter(names = "-X")
     protected Map<String, String> systemProperties = new HashMap<>();

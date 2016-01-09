@@ -4,6 +4,7 @@ mainClassName = "io.digdag.cli.Main"
 
 dependencies {
     compile project(':digdag-core')
+    compile project(':digdag-client')
     compile project(':digdag-server')
     compile project(':digdag-standards')
     compile 'ch.qos.logback:logback-classic:1.1.3'

@@ -57,14 +57,12 @@ public class Archive
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path");
         //System.err.println("    -C           DIR                  change directory before reading files");
         Main.showCommonOptions();
-        System.err.println("");
         System.err.println("  Stdin:");
         System.err.println("    Names of the files to add the archive.");
         System.err.println("");
         System.err.println("  Examples:");
         System.err.println("    $ find . | digdag archive myflow.yml");
         System.err.println("    $ git ls-files | digdag archive -o archive.tar.gz workflows/*.yml");
-        System.err.println("");
         return systemExit(error);
     }
 

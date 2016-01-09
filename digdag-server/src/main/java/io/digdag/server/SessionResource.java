@@ -23,6 +23,7 @@ import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -90,7 +91,7 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions/{id}")
-    public RestSession getSessions(@PathParam("id") long id)
+    public RestSession getSession(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
         StoredSession s = sm.getSessionStore(siteId)

@@ -24,6 +24,7 @@ import com.google.common.base.Optional;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
+import io.digdag.client.api.*;
 
 @Path("/")
 @Produces("application/json")

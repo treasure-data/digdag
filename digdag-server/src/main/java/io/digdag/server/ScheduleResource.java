@@ -24,6 +24,7 @@ import com.google.common.base.Optional;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
+import io.digdag.client.api.*;
 import io.digdag.server.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;

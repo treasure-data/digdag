@@ -66,7 +66,6 @@ public class Sched
         System.err.println("  Options:");
         System.err.println("    -o, --output DIR                 store execution results to this directory (default: same name with workflow file name)");
         Main.showCommonOptions();
-        System.err.println("");
         return systemExit(error);
     }
 
