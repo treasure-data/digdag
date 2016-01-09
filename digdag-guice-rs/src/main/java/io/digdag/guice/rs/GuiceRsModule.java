@@ -122,18 +122,25 @@ public abstract class GuiceRsModule
         }
 
         @SuppressWarnings("unchecked")
-        public ApplicationBindingBuilder withProvider(Class<?>... annotatedClass)
+        public ApplicationBindingBuilder withProvider(Class<?> annotatedClass)
         {
-            for (Class<?> clazz : annotatedClass) {
-                Key<Object> key = Key.get((Class<Object>) clazz, UniqueAnnotations.create());
-                binder.bind(key).to(clazz);
-                initializer.addProvider(key);
-            }
+            Key<Object> key = Key.get((Class<Object>) annotatedClass, UniqueAnnotations.create());
+            binder.bind(key).to(annotatedClass);
+            initializer.addProvider(key);
             return this;
         }
 
         @SuppressWarnings("unchecked")
         public <T> ApplicationBindingBuilder withProvider(Class<T> annotatedClass, Provider<? extends T> providerProvider)
+        {
+            Key<T> key = Key.get(annotatedClass, UniqueAnnotations.create());
+            binder.bind(key).toProvider(providerProvider);
+            initializer.addProvider((Key<Object>) key);
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> ApplicationBindingBuilder withProvider(Class<T> annotatedClass, Class<? extends Provider<? extends T>> providerProvider)
         {
             Key<T> key = Key.get(annotatedClass, UniqueAnnotations.create());
             binder.bind(key).toProvider(providerProvider);
