@@ -25,11 +25,18 @@ public class Server
     public void main()
             throws Exception
     {
-        if (args.size() != 1) {
+        String workflowPath;
+        switch (args.size()) {
+        case 0:
+            workflowPath = null;
+            break;
+        case 1:
+            workflowPath = args.get(0);
+            break;
+        default:
             throw usage(null);
         }
-
-        server(args.get(0));
+        server(workflowPath);
     }
 
     @Override
