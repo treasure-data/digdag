@@ -5,6 +5,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.ext.Provider;
 import com.google.inject.Inject;
+import com.google.inject.Scopes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.digdag.guice.rs.GuiceRsModule;
@@ -26,6 +27,7 @@ public class ServerModule
             .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .withProvider(CorsFilter.class);
         binder().bind(ServerStarter.class).asEagerSingleton();
+        binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
     }
 
     public static class JsonProviderProvider

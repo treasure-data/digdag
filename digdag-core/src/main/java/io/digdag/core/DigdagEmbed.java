@@ -10,15 +10,21 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.digdag.core.agent.LocalAgentManager;
+import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.DatabaseStoreConfig;
 import io.digdag.core.schedule.ScheduleStarter;
 import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.session.SessionMonitorExecutor;
+import io.digdag.core.session.SessionMonitorManager;
 import io.digdag.core.workflow.InProcessTaskCallbackApi;
 import io.digdag.core.workflow.TaskCallbackApi;
 import io.digdag.core.workflow.TaskQueueDispatcher;
+import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
@@ -63,7 +69,7 @@ public class DigdagEmbed
         private DigdagEmbed build(boolean destroyOnShutdownHook)
         {
             final org.embulk.guice.Bootstrap bootstrap = new org.embulk.guice.Bootstrap()
-                .requireExplicitBindings(false)
+                .requireExplicitBindings(true)
                 .addModules(DigdagEmbed.standardModules());
             moduleOverrides.stream().forEach(override -> bootstrap.overrideModules(override));
 
@@ -101,6 +107,12 @@ public class DigdagEmbed
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskRunnerManager.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
+                    binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(SessionMonitorManager.class).in(Scopes.SINGLETON);
+                    binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                 },
                 new ExtensionServiceLoaderModule()
         );

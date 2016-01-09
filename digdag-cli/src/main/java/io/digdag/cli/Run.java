@@ -78,6 +78,8 @@ public class Run
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
                 binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
+                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
+                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
             })
             .initialize()
             .getInjector();

@@ -5,15 +5,19 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigFactory;
 import io.digdag.client.api.*;
 
 public class DigdagClient
@@ -47,27 +51,41 @@ public class DigdagClient
     }
 
     private final String endpoint;
-    private final Client client;
     private final MultivaluedMap<String, Object> headers;
+
+    private final Client client;
+    private final ConfigFactory cf;
 
     private DigdagClient(Builder builder)
     {
         this.endpoint = "http://" + builder.host + ":" + builder.port;
-        this.client = new ResteasyClientBuilder()
-            .register(new JacksonJsonProvider(buildObjectMapper()))
-            .build();
+
         this.headers = new MultivaluedHashMap<>();
+
+        // here uses Guice to make @JacksonInject work which is used at io.digdag.spi.config.Config.<init>
+        Injector injector = buildInjector();
+        this.client = new ResteasyClientBuilder()
+            .register(new JacksonJsonProvider(injector.getInstance(ObjectMapper.class)))
+            .build();
+        this.cf = injector.getInstance(ConfigFactory.class);
     }
 
-    private static ObjectMapper buildObjectMapper()
+    public Config newConfig()
     {
-        // use Guice here to make @JacksonInject work which is used at io.digdag.spi.config.Config.<init>
+        return cf.create();
+    }
+
+    private static Injector buildInjector()
+    {
         return Guice.createInjector(
+            (binder) -> {
+                binder.bind(ConfigFactory.class);
+            },
             new ObjectMapperModule()
                 .registerModule(new GuavaModule())
                 //.registerModule(new JodaModule())
-            )
-            .getInstance(ObjectMapper.class);
+
+            );
     }
 
     public List<RestRepository> getRepositories()
@@ -157,7 +175,24 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    // TODO startTask
+    public RestSession startSession(String name, String repoName, String workflowName)
+    {
+        return startSession(name, repoName, workflowName, newConfig());
+    }
+
+    public RestSession startSession(String name, String repoName, String workflowName, Config params)
+    {
+        RestSessionRequest req =
+            RestSessionRequest.builder()
+            .name(name)
+            .repositoryName(repoName)
+            .workflowName(workflowName)
+            .params(params)
+            .build();
+        return doPut(RestSession.class,
+                req,
+                target("/api/sessions"));
+    }
 
     public List<RestWorkflow> getWorkflows()
     {
@@ -189,5 +224,19 @@ public class DigdagClient
         return target.request("application/json")
             .headers(headers)
             .get(type);
+    }
+
+    private <T> T doPut(Class<T> type, Object body, WebTarget target)
+    {
+        return target.request("application/json")
+            .headers(headers)
+            .put(Entity.entity(body, "application/json"), type);
+    }
+
+    private <T> T doPost(Class<T> type, Object body, WebTarget target)
+    {
+        return target.request("application/json")
+            .headers(headers)
+            .post(Entity.entity(body, "application/json"), type);
     }
 }

@@ -19,6 +19,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowSourceList;
@@ -72,6 +73,10 @@ public class Archive
         System.out.println("Creating "+output+"...");
 
         Injector injector = new DigdagEmbed.Bootstrap()
+            .addModules(binder -> {
+                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
+                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+            })
             .initialize()
             .getInjector();
 

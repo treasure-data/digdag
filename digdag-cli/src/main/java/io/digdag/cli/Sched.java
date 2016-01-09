@@ -78,6 +78,7 @@ public class Sched
             .addModules(binder -> {
                 binder.bind(HistoryFiles.class).toInstance(new HistoryFiles(outputFile));
                 binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
+                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
             })
             .overrideModules(modules -> {
                 Module mod = Modules.override(modules).with(binder -> {

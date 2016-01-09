@@ -14,9 +14,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.MissingCommandException;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.cli.client.Session;
-import io.digdag.cli.client.Task;
-import io.digdag.cli.client.Workflow;
+import io.digdag.cli.client.ShowSession;
+import io.digdag.cli.client.ShowTask;
+import io.digdag.cli.client.ShowWorkflow;
+import io.digdag.cli.client.Start;
 
 public class Main
 {
@@ -42,9 +43,10 @@ public class Main
         jc.addCommand("server", new Server());
         jc.addCommand("show", new Show());
 
-        jc.addCommand("workflow", new Workflow(), "workflows");
-        jc.addCommand("session", new Session(), "sessions");
-        jc.addCommand("task", new Task(), "tasks");
+        jc.addCommand("workflow", new ShowWorkflow(), "workflows");
+        jc.addCommand("start", new Start());
+        jc.addCommand("session", new ShowSession(), "sessions");
+        jc.addCommand("task", new ShowTask(), "tasks");
 
         try {
             try {
@@ -155,6 +157,7 @@ public class Main
         System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
+        System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");
         System.err.println("    workflows                        show registered workflows");
         System.err.println("    sessions                         show past and current sessions");
         System.err.println("    tasks <session-id>               show status of a session");

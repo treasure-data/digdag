@@ -10,6 +10,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
+import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import com.google.common.collect.*;
@@ -114,14 +115,15 @@ public class SessionResource
     @PUT
     @Consumes("application/json")
     @Path("/api/sessions")
-    public RestSession startTask(RestSessionRequest request)
+    public RestSession startSession(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
         StoredWorkflowSource wf;
         SessionRelation rel;
 
-        // TODO
-        //RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+
+        // TODO support startSession by id
         //if (request.getWorkflowId().isPresent()) {
         //    Preconditions.checkArgument(!request.getRepositoryName().isPresent(), "repository and workflowId can't be set together");
         //    Preconditions.checkArgument(!request.getWorkflowName().isPresent(), "workflow and workflowId can't be set together");
@@ -131,39 +133,23 @@ public class SessionResource
         //    StoredWorkflowSourceWithRepository details = rm.getWorkflowDetailsById(wf.getId());
         //    rel = SessionRelation.ofWorkflow(details.getRepository().getId(), details.getRevisionId(), details.getId());
         //}
-        //else {
-        //    Preconditions.checkArgument(request.getRepositoryName().isPresent(), "repository is required if workflowId is not set");
-        //    Preconditions.checkArgument(request.getWorkflowName().isPresent(), "workflow is required if workflowId is not set");
-        //    StoredRepository repo = rs.getRepositoryByName(request.getWorkflowName().get());
-        //    StoredRevision rev;
-        //    if (request.getRevision().isPresent()) {
-        //        rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
-        //    }
-        //    else {
-        //        rev = rs.getLatestActiveRevision(repo.getId());
-        //    }
-        //    wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName().get());
-        //    rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
-        //}
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
         {
-            StoredRepository repo = rs.getRepositoryByName("default");
-            StoredRevision rev = rs.getLatestActiveRevision(repo.getId());
+            StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
+            StoredRevision rev;
+            // TODO support startSession using an old revision
+            //if (request.getRevision().isPresent()) {
+            //    rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
+            //}
+            //else {
+                rev = rs.getLatestActiveRevision(repo.getId());
+            //}
             wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName());
             rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
         }
 
-        //String sessionName = request.getSessionName().or(UUID.randomUUID().toString());
-        String sessionName = UUID.randomUUID().toString();
-
-        Config sessionParams = cf.create();
-        //if (request.getSessionParams().isPresent()) {
-        //    sessionParams.setAll(request.getSessionParams().get());
-        //}
-
         Session session = Session.sessionBuilder()
-            .name(sessionName)
-            .params(sessionParams)
+            .name(request.getName())  //.or(UUID.randomUUID().toString());
+            .params(request.getParams())
             .options(SessionOptions.empty())
             .build();
 

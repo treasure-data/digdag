@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.io.File;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.WorkflowSource;
@@ -45,6 +46,9 @@ public class Show
             throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
+            .addModules(binder -> {
+                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+            })
             .initialize()
             .getInjector();
 

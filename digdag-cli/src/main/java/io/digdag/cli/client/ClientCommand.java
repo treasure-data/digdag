@@ -34,7 +34,7 @@ public abstract class ClientCommand
 
     public static void showCommonOptions()
     {
-        System.err.println("    -h, --host HOST[:PORT]           HTTP endpoint");
+        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint");
         Main.showCommonOptions();
     }
 

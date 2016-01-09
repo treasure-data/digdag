@@ -3,10 +3,10 @@ package io.digdag.cli.client;
 import java.util.List;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestWorkflow;
 import static io.digdag.cli.Main.systemExit;
 
-public class Session
+public class ShowWorkflow
     extends ClientCommand
 {
     @Override
@@ -14,26 +14,26 @@ public class Session
         throws Exception
     {
         if (args.isEmpty()) {
-            showSessions();
+            showWorkflows();
         }
         else {
-            usage(null);
+            throw usage(null);
         }
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag sessions [id]");
+        System.err.println("Usage: digdag workflows [id]");
         System.err.println("  Options:");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showSessions()
+    public void showWorkflows()
         throws Exception
     {
         DigdagClient client = buildClient();
-        List<RestSession> sessions = client.getSessions();
-        modelPrinter().printList(sessions);
+        List<RestWorkflow> workflows = client.getWorkflows();
+        modelPrinter().printList(workflows);
     }
 }
