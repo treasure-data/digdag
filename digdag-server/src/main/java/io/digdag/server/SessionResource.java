@@ -153,6 +153,8 @@ public class SessionResource
             .options(SessionOptions.empty())
             .build();
 
+        // TODO catch TaskMatchPattern.MultipleMatchException and TaskMatchPattern.NoMatchException and throw
+        //      an exception that is mapped to 422 Unprocessable Entity
         StoredSession stored = executor.submitWorkflow(
                 siteId, wf, session, Optional.of(rel),
                 new Date(), /*request.getFromTaskName().transform(name -> new TaskMatchPattern(name))*/ Optional.absent());

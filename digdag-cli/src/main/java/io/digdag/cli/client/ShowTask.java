@@ -10,7 +10,7 @@ public class ShowTask
     extends ClientCommand
 {
     @Override
-    public void main()
+    public void mainWithClientException()
         throws Exception
     {
         if (args.size() != 1) {

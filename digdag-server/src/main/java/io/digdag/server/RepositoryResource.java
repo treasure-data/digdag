@@ -81,7 +81,7 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories")
     public List<RestRepository> getRepositories(@QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+        throws ResourceNotFoundException
     {
         // TODO paging
         // TODO n-m db access
@@ -110,7 +110,7 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories/{id}")
     public RestRepository getRepository(@PathParam("id") int repoId, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+        throws ResourceNotFoundException
     {
         RepositoryStore rs = rm.getRepositoryStore(siteId);
         StoredRepository repo = rs.getRepositoryById(repoId);
@@ -127,7 +127,7 @@ public class RepositoryResource
     @GET
     @Path("/api/repositories/{id}/workflows")
     public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+        throws ResourceNotFoundException
     {
         // TODO paging
         RepositoryStore rs = rm.getRepositoryStore(siteId);
@@ -150,7 +150,7 @@ public class RepositoryResource
     @Path("/api/repositories/{id}/archive")
     @Produces("application/x-gzip")
     public byte[] getArchive(@PathParam("id") int repoId, @QueryParam("revision") String revName)
-            throws ResourceNotFoundException
+        throws ResourceNotFoundException
     {
         RepositoryStore rs = rm.getRepositoryStore(siteId);
         StoredRepository repo = rs.getRepositoryById(repoId);
@@ -169,7 +169,7 @@ public class RepositoryResource
     @Path("/api/repositories")
     public RestRepository putRepository(@QueryParam("repository") String name, @QueryParam("revision") String revision,
             InputStream body)
-            throws IOException
+        throws IOException
     {
         byte[] data = ByteStreams.toByteArray(body);
 
@@ -214,7 +214,7 @@ public class RepositoryResource
     }
 
     private List<File> extractConfigFiles(File dir, ArchiveInputStream archive)
-            throws IOException
+        throws IOException
     {
         ImmutableList.Builder<File> files = ImmutableList.builder();
         ArchiveEntry entry;

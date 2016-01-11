@@ -31,7 +31,7 @@ public class Start
     String uniqueName = null;
 
     @Override
-    public void main()
+    public void mainWithClientException()
         throws Exception
     {
         if (args.size() != 2) {

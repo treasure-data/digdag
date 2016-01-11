@@ -10,7 +10,7 @@ public class ShowSession
     extends ClientCommand
 {
     @Override
-    public void main()
+    public void mainWithClientException()
         throws Exception
     {
         if (args.isEmpty()) {
