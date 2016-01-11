@@ -321,6 +321,7 @@ public class DatabaseMigrator
                     .addShort("task_type", "")   // 0=action, 1=grouping  NOT NULL
                     //.addShort("error_mode", "")  // 1=ignore_parent_flags  NOT NULL
                     .addShort("state", "not null")
+                    .addShort("state_flags", "not null")
                     .addTimestamp("updated_at", "not null")  // last state update is done at this time
                     .addTimestamp("retry_at", "")
                     .build());

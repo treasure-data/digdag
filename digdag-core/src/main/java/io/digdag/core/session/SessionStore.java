@@ -15,6 +15,9 @@ public interface SessionStore
     StoredSession getSessionById(long sesId)
         throws ResourceNotFoundException;
 
+    StoredSession getSessionByName(String sesName)
+        throws ResourceNotFoundException;
+
     TaskStateCode getRootState(long sesId)
         throws ResourceNotFoundException;
 

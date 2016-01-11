@@ -38,14 +38,17 @@ public class DatabaseSessionStoreManager
     public static short NAMESPACE_REPOSITORY_ID = (short) 1;
     public static short NAMESPACE_SITE_ID = (short) 0;
 
+    private final String databaseType;
+
     private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
     private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper)
+    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper, DatabaseStoreConfig config)
     {
+        this.databaseType = config.getType();
         this.handle = dbi.open();
         JsonMapper<SessionOptions> opm = new JsonMapper<>(mapper, SessionOptions.class);
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
@@ -68,6 +71,26 @@ public class DatabaseSessionStoreManager
     public void close()
     {
         handle.close();
+    }
+
+    private String bitAnd(String op1, String op2)
+    {
+        switch (databaseType) {
+        case "h2":
+            return "BITAND(" + op1 + ", " + op2 + ")";
+        default:
+            return op1 + " % " + op2;
+        }
+    }
+
+    private String bitOr(String op1, String op2)
+    {
+        switch (databaseType) {
+        case "h2":
+            return "BITOR(" + op1 + ", " + op2 + ")";
+        default:
+            return op1 + " | " + op2;
+        }
     }
 
     private String selectTaskDetailsQuery()
@@ -132,6 +155,22 @@ public class DatabaseSessionStoreManager
     public List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId)
     {
         return dao.findTasksByState(state.get(), lastId, 100);
+    }
+
+    @Override
+    public boolean requestCancelSession(long sesId)
+    {
+        int n = handle.createStatement("update tasks " +
+                " set state_flags = " + bitOr("state_flags", ":flag") +
+                " where session_id = :sesId" +
+                " and state in (" + Stream.of(
+                    TaskStateCode.notDoneStates()
+                    ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")"
+            )
+            .bind("flag", TaskStateFlags.CANCEL_REQUESTED)
+            .bind("sesId", sesId)
+            .execute();
+        return n > 0;
     }
 
     @Override
@@ -388,11 +427,12 @@ public class DatabaseSessionStoreManager
         return false;
     }
 
-    public int trySetChildrenBlockedToReadyOrShortCircuitPlanned(long taskId)
+    public int trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(long taskId)
     {
-        return handle.createStatement("update tasks " +
-                " set updated_at = now(), state = case task_type" +
-                " when " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
+        return handle.createStatement("update tasks" +
+                " set updated_at = now(), state = case" +
+                " when task_type = " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
+                " when " + bitAnd("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) + " != 0 then " + TaskStateCode.CANCELED_CODE +
                 " else " + TaskStateCode.READY_CODE +
                 " end" +
                 " where state = " + TaskStateCode.BLOCKED_CODE +
@@ -570,6 +610,15 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public StoredSession getSessionByName(String sesName)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    dao.getSessionByName(siteId, sesName),
+                    "session id=%s", sesName);
+        }
+
+        @Override
         public TaskStateCode getRootState(long sesId)
             throws ResourceNotFoundException
         {
@@ -687,8 +736,8 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
 
-        @SqlUpdate("insert into tasks (session_id, parent_id, task_type, state, updated_at)" +
-                " values (:sessionId, :parentId, :taskType, :state, now())")
+        @SqlUpdate("insert into tasks (session_id, parent_id, task_type, state, state_flags, updated_at)" +
+                " values (:sessionId, :parentId, :taskType, :state, 0, now())")
         @GetGeneratedKeys
         long insertTask(@Bind("sessionId") long sessionId, @Bind("parentId") Long parentId,
                 @Bind("taskType") int taskType, @Bind("state") short state);
@@ -858,6 +907,7 @@ public class DatabaseSessionStoreManager
                                 cfm.fromResultSetOrEmpty(r, "export_config")))
                 .taskType(TaskType.of(r.getInt("task_type")))
                 .state(TaskStateCode.of(r.getInt("state")))
+                .stateFlags(TaskStateFlags.of(r.getInt("state_flags")))
                 .build();
         }
     }

@@ -2,6 +2,7 @@ package io.digdag.core.session;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class TaskType
 {
@@ -31,7 +32,6 @@ public class TaskType
     @JsonCreator
     public static TaskType of(int flags)
     {
-        // TODO validation
         return new TaskType(flags);
     }
 
@@ -39,6 +39,8 @@ public class TaskType
 
     public TaskType(int flags)
     {
+        checkArgument(flags >= 0 && flags < Short.MAX_VALUE, "TaskType must be positive 16-bit signed integer");
+        checkArgument((flags & ~GROUPING_ONLY) == 0, "Unknown TaskType is set");
         this.flags = flags;
     }
 
@@ -68,7 +70,11 @@ public class TaskType
     @Override
     public String toString()
     {
-        // TODO pretty print
-        return "TaskType{"+flags+"}";
+        if ((flags & GROUPING_ONLY) != 0) {
+            return "TaskType{GROUPING_ONLY}";
+        }
+        else {
+            return "TaskType{}";
+        }
     }
 }

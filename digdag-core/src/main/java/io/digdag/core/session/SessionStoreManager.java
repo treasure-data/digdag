@@ -31,6 +31,8 @@ public interface SessionStoreManager
     // for WorkflowExecutorManager.propagateAllBlockedToReady
     List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
 
+    boolean requestCancelSession(long sesId);
+
     int trySetRetryWaitingToReady();
 
     interface TaskLockAction <T>

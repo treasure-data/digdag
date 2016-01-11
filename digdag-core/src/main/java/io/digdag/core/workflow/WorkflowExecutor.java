@@ -92,7 +92,7 @@ public class WorkflowExecutor
         }
 
         final WorkflowTask root = tasks.get(0);
-        return sm.newSession(siteId, newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
+        StoredSession stored = sm.newSession(siteId, newSession, relation, (StoredSession session, SessionStoreManager.SessionBuilderStore store) -> {
             final Task rootTask = Task.taskBuilder()
                 .sessionId(session.getId())
                 .parentId(Optional.absent())
@@ -107,10 +107,34 @@ public class WorkflowExecutor
             });
             store.addMonitors(session.getId(), monitors);
         });
+
+        noticeStatusPropagate();  // TODO is this necessary?
+
+        return stored;
     }
 
-    public void killWorkflow()
+    public boolean cancelSessionById(int siteId, long sesId)
+        throws ResourceNotFoundException
     {
+        StoredSession s = sm.getSessionStore(siteId).getSessionById(sesId);
+        boolean updated = sm.requestCancelSession(s.getId());
+
+        if (updated) {
+            noticeStatusPropagate();
+        }
+        return updated;
+    }
+
+    public boolean cancelSessionByName(int siteId, String sesName)
+        throws ResourceNotFoundException
+    {
+        StoredSession s = sm.getSessionStore(siteId).getSessionByName(sesName);
+        boolean updated = sm.requestCancelSession(s.getId());
+
+        if (updated) {
+            noticeStatusPropagate();
+        }
+        return updated;
     }
 
     private void noticeStatusPropagate()
@@ -198,7 +222,7 @@ public class WorkflowExecutor
                         long parentId = task.getParentId().get();
                         if (checkedParentIds.add(parentId)) {
                             return sm.lockTaskIfExists(parentId, (TaskControl lockedParent) ->
-                                lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0
+                                lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled() > 0
                             ).or(false);
                         }
                         return false;
@@ -250,6 +274,15 @@ public class WorkflowExecutor
         }
 
         logger.trace("setDoneFromDoneChildren {} {}", detail, lockedTask);
+
+        // this parent task must not be "SUCCESS" when a child is canceled.
+        // here assumes that CANCEL_REQUESTED flag is set to all tasks of a session
+        // transactionally. If CANCEL_REQUESTED flag is set to a child,
+        // CANCEL_REQUESTED flag should also be set to this parent task.
+        if (detail.getStateFlags().isCancelRequested()) {
+            return lockedTask.setToCanceled();
+        }
+
         List<Config> childrenErrors = lockedTask.collectChildrenErrors();
         if (childrenErrors.isEmpty() && !detail.getError().isPresent()) {
             boolean updated = lockedTask.setPlannedToSuccess();
@@ -374,7 +407,7 @@ public class WorkflowExecutor
                             if (!propagatedToSelf) {
                                 // if this task is not done yet, transite children from blocked to ready
                                 propagatedToChildren = sm.lockTaskIfExists(task.getId(), (TaskControl lockedTask) ->
-                                    lockedTask.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0
+                                    lockedTask.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled() > 0
                                 ).or(false);
                             }
                         }
@@ -386,7 +419,7 @@ public class WorkflowExecutor
                                 if (checkedParentIds.add(task.getParentId().get())) {
                                     propagatedFromChildren = sm.lockTaskIfExists(task.getParentId().get(), (TaskControl lockedParent, StoredTask detail) -> {
                                         boolean doneFromChildren = setDoneFromDoneChildren(lockedParent, detail);
-                                        boolean siblingsToReady = lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlanned() > 0;
+                                        boolean siblingsToReady = lockedParent.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled() > 0;
                                         return doneFromChildren || siblingsToReady;
                                     }).or(false);
                                 }
@@ -513,6 +546,10 @@ public class WorkflowExecutor
                         .config(config)
                         .lastStateParams(task.getStateParams())
                         .build();
+
+                    if (task.getStateFlags().isCancelRequested()) {
+                        return control.setToCanceled();
+                    }
 
                     logger.debug("Queuing task: "+request);
                     dispatcher.dispatch(request);

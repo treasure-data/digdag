@@ -152,6 +152,15 @@ public class TaskControl
         return false;
     }
 
+    public boolean setToCanceled()
+    {
+        if (store.setState(id, state, TaskStateCode.CANCELED)) {
+            state = TaskStateCode.CANCELED;
+            return true;
+        }
+        return false;
+    }
+
     // all necessary information is already set by setRunningToPlanned. Here simply set state to SUCCESS
     public boolean setPlannedToSuccess()
     {
@@ -209,9 +218,9 @@ public class TaskControl
     }
 
     // collect parameters and set them to ready tasks at the same time? no, because children's carry_params are not propagated to parents
-    public int trySetChildrenBlockedToReadyOrShortCircuitPlanned()
+    public int trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled()
     {
-        return store.trySetChildrenBlockedToReadyOrShortCircuitPlanned(id);
+        return store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(id);
     }
 
     ////

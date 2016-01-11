@@ -21,6 +21,7 @@ public enum TaskStateCode
     public static final short RETRY_WAITING_CODE = (short) 2;
     public static final short GROUP_RETRY_WAITING_CODE = (short) 3;
     public static final short PLANNED_CODE = (short) 5;
+    public static final short CANCELED_CODE = (short) 9;
 
     // state:
     //   retry_blocked -> blocked: every time full search
