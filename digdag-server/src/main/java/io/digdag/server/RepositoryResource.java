@@ -42,11 +42,11 @@ public class RepositoryResource
 {
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
-    // [ ] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
+    // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
-    // [ ] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
+    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
     // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
-    // [ ] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
+    // [*] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
     // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
 
     private final ConfigFactory cf;
@@ -80,16 +80,23 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories")
-    public List<RestRepository> getRepositories()
+    public List<RestRepository> getRepositories(@QueryParam("revision") String revName)
             throws ResourceNotFoundException
     {
         // TODO paging
         // TODO n-m db access
-        return rm.getRepositoryStore(siteId).getRepositories(100, Optional.absent())
+        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        return rs.getRepositories(100, Optional.absent())
             .stream()
             .map(repo -> {
                 try {
-                    StoredRevision rev = rm.getRepositoryStore(siteId).getLatestActiveRevision(repo.getId());
+                    StoredRevision rev;
+                    if (revName == null) {
+                        rev = rs.getLatestActiveRevision(repo.getId());
+                    }
+                    else {
+                        rev = rs.getRevisionByName(repo.getId(), revName);
+                    }
                     return RestRepository.of(repo, rev);
                 }
                 catch (ResourceNotFoundException ex) {
