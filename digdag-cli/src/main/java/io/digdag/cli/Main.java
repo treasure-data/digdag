@@ -19,6 +19,7 @@ import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.Start;
+import io.digdag.cli.client.Kill;
 
 public class Main
 {
@@ -46,6 +47,7 @@ public class Main
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
+        jc.addCommand("kill", new Kill());
         jc.addCommand("session", new ShowSession(), "sessions");
         jc.addCommand("task", new ShowTask(), "tasks");
         jc.addCommand("schedule", new ShowSchedule(), "schedules");
@@ -160,6 +162,7 @@ public class Main
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");
+        System.err.println("    kill <session-id>                kill a running session");
         System.err.println("    workflows                        show registered workflows");
         System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions                         show past and current sessions");

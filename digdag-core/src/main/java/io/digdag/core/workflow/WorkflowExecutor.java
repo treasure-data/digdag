@@ -113,7 +113,7 @@ public class WorkflowExecutor
         return stored;
     }
 
-    public boolean cancelSessionById(int siteId, long sesId)
+    public boolean killSessionById(int siteId, long sesId)
         throws ResourceNotFoundException
     {
         StoredSession s = sm.getSessionStore(siteId).getSessionById(sesId);
@@ -122,10 +122,13 @@ public class WorkflowExecutor
         if (updated) {
             noticeStatusPropagate();
         }
+
+        // TODO sync kill requests to already-running tasks in queue
+
         return updated;
     }
 
-    public boolean cancelSessionByName(int siteId, String sesName)
+    public boolean killSessionByName(int siteId, String sesName)
         throws ResourceNotFoundException
     {
         StoredSession s = sm.getSessionStore(siteId).getSessionByName(sesName);
@@ -134,6 +137,9 @@ public class WorkflowExecutor
         if (updated) {
             noticeStatusPropagate();
         }
+
+        // TODO sync kill requests to already-running tasks in queue
+
         return updated;
     }
 

@@ -40,7 +40,7 @@ public class SessionResource
     // [*] GET  /api/sessions/{id}                               # show a session
     // [*] GET  /api/sessions/{id}/tasks                         # list tasks of a session
     // [*] PUT  /api/sessions                                    # starts a new session (cancel, retry, etc.)
-    // [ ] POST /api/sessions/{id}                               # do operations on a session (cancel, retry, etc.)
+    // [*] POST /api/sessions/{id}/kill                          # kill a session
 
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
@@ -158,5 +158,17 @@ public class SessionResource
                 new Date(), /*request.getFromTaskName().transform(name -> new TaskMatchPattern(name))*/ Optional.absent());
 
         return RestSession.of(stored);
+    }
+
+    @POST
+    @Consumes("application/json")
+    @Path("/api/sessions/{id}/kill")
+    public void killSession(@PathParam("id") long id)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        boolean updated = executor.killSessionById(siteId, id);
+        if (!updated) {
+            throw new ResourceConflictException("Session already killed or finished");
+        }
     }
 }

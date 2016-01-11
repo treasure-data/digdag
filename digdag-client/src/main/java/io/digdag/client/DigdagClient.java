@@ -1,6 +1,7 @@
 package io.digdag.client;
 
 import java.util.List;
+import java.util.HashMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -192,6 +193,14 @@ public class DigdagClient
         return doPut(RestSession.class,
                 req,
                 target("/api/sessions"));
+    }
+
+    public void killSession(long sessionId)
+    {
+        doPost(void.class,
+                new HashMap<String, String>(),
+                target("/api/sessions/{id}/kill")
+                .resolveTemplate("id", sessionId));
     }
 
     public List<RestWorkflow> getWorkflows()
