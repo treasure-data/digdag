@@ -1,16 +1,21 @@
-package io.digdag.core.session;
+package io.digdag.core.workflow;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.Task;
+import io.digdag.core.session.TaskControlStore;
+import io.digdag.core.session.TaskStateCode;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.config.Config;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskConfig;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
+import static com.google.common.base.Preconditions.checkState;
 
 public class TaskControl
 {
@@ -140,8 +145,7 @@ public class TaskControl
 
     public boolean setReadyToRunning()
     {
-        // TODO checkState
-        if (store.setState(id, state, TaskStateCode.RUNNING)) {
+        if (store.setState(id, TaskStateCode.READY, TaskStateCode.RUNNING)) {
             state = TaskStateCode.RUNNING;
             return true;
         }
@@ -151,8 +155,7 @@ public class TaskControl
     // all necessary information is already set by setRunningToPlanned. Here simply set state to SUCCESS
     public boolean setPlannedToSuccess()
     {
-        // TODO checkState
-        if (store.setState(id, state, TaskStateCode.SUCCESS)) {
+        if (store.setState(id, TaskStateCode.PLANNED, TaskStateCode.SUCCESS)) {
             state = TaskStateCode.SUCCESS;
             return true;
         }
@@ -161,8 +164,7 @@ public class TaskControl
 
     public boolean setPlannedToError(Config stateParams, Config error)
     {
-        // TODO checkState
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -171,8 +173,7 @@ public class TaskControl
 
     public boolean setRunningToShortCircuitError(Config stateParams, Config error)
     {
-        // TODO checkState
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(id, TaskStateCode.RUNNING, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -181,7 +182,7 @@ public class TaskControl
 
     public boolean setPlannedToPlanned(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -190,8 +191,7 @@ public class TaskControl
 
     public boolean setPlannedToGroupError(Config stateParams, Config error)
     {
-        // TODO checkState
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.GROUP_ERROR;
             return true;
         }
@@ -201,8 +201,7 @@ public class TaskControl
     // group retry
     public boolean setPlannedToGroupRetry(Config stateParams, int retryInterval)
     {
-        // TODO checkState
-        if (store.setStateWithStateParamsUpdate(id, state, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
+        if (store.setStateWithStateParamsUpdate(id, TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
             state = TaskStateCode.GROUP_RETRY_WAITING;
         }
         return false;
@@ -212,17 +211,8 @@ public class TaskControl
     // collect parameters and set them to ready tasks at the same time? no, because children's carry_params are not propagated to parents
     public int trySetChildrenBlockedToReadyOrShortCircuitPlanned()
     {
-        // TODO checkState
         return store.trySetChildrenBlockedToReadyOrShortCircuitPlanned(id);
     }
-
-    //// trySetChildrenBlockedToReadyOrShortCircuitPlanned for root tasks
-    //public boolean setRootPlannedToReady()
-    //{
-    //    // TODO checkState
-    //    return store.trySetBlockedToReadyOrShortCircuitPlanned(id);
-    //    // TODO set state
-    //}
 
     ////
     // for taskFinished callback
@@ -252,7 +242,7 @@ public class TaskControl
     // to retry with error
     public boolean setRunningToRetry(Config stateParams, Config error, int retryInterval)
     {
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
+        if (store.setStateWithErrorDetails(id, TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }
@@ -262,7 +252,7 @@ public class TaskControl
     // to retry without error
     public boolean setRunningToRetry(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(id, state, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
+        if (store.setStateWithStateParamsUpdate(id, TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }

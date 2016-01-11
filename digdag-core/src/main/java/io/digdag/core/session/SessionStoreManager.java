@@ -3,6 +3,7 @@ package io.digdag.core.session;
 import java.util.List;
 import java.util.Date;
 import com.google.common.base.*;
+import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.RevisionInfo;
 import io.digdag.spi.config.Config;
 import io.digdag.core.repository.ResourceConflictException;

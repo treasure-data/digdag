@@ -13,6 +13,7 @@ import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.session.*;
+import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.RevisionInfo;
 import io.digdag.core.workflow.TaskConfig;

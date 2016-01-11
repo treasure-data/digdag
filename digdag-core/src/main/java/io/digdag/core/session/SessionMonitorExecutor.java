@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.workflow.TaskControl;
 import io.digdag.core.workflow.Tasks;
 import io.digdag.core.workflow.WorkflowExecutor;
 import org.slf4j.Logger;
