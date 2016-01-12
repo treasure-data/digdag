@@ -23,10 +23,10 @@ public class Reschedule
     @Parameter(names = {"-t", "--skip-to"})
     String toTime = null;
 
-    @Parameter(names = {"-a", "--at"})
+    @Parameter(names = {"-a", "--run-at"})
     String runAtTime = null;
 
-    @Parameter(names = {"-d", "--dry"})
+    @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
     @Override
@@ -53,7 +53,7 @@ public class Reschedule
         System.err.println("  Options:");
         System.err.println("    -s, --skip N                     skips specified number of schedules");
         System.err.println("    -t, --skip-to 'YYYY-MM-DD hh:mm:SS'  skips schedules until the specified time (exclusive)");
-        System.err.println("    -a, --at 'YYYY-MM-DD hh:mm:SS'   set next run time to this time");
+        System.err.println("    -a, --run-at 'YYYY-MM-DD hh:mm:SS'   set next run time to this time");
         System.err.println("    -d, --dry-run                    try to reschedule and validates the results but does nothing");
         ClientCommand.showCommonOptions();
         return systemExit(error);
