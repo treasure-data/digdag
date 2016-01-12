@@ -29,6 +29,8 @@ public abstract class ClientCommand
                 throw systemExit("Resource not found: " + res.readEntity(String.class));
             case 409:  // CONFLICT
                 throw systemExit("Request conflicted: " + res.readEntity(String.class));
+            case 422:  // UNPROCESSABLE_ENTITY
+                throw systemExit("Invalid option: " + res.readEntity(String.class));
             default:
                 throw systemExit("Status code " + res.getStatus() + ": " + res.readEntity(String.class));
             }

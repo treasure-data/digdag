@@ -88,4 +88,73 @@ public class ScheduleExecutor
                     sched.getNextScheduleTime());
         }
     }
+
+    public StoredSchedule skipScheduleToTime(int siteId, long schedId, Date nextTime, Optional<Date> runTime, boolean dryRun)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
+
+        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (ScheduleControl control) -> {
+            StoredSchedule sched = control.getSchedule();
+            Scheduler sr = scheds.getScheduler(sched.getConfig());
+
+            ScheduleTime alignedNextTime = sr.getFirstScheduleTime(new Date(nextTime.getTime() - 1));
+            if (sched.getNextScheduleTime().getTime() < alignedNextTime.getScheduleTime().getTime()) {
+                // OK
+                if (runTime.isPresent()) {
+                    alignedNextTime = ScheduleTime.of(runTime.get(), alignedNextTime.getScheduleTime());
+                }
+                if (!dryRun) {
+                    control.updateNextScheduleTime(alignedNextTime); // TODO validate return value is true, otherwise throw ResourceConflictException
+                }
+                return Optional.of(control.getSchedule());
+            }
+            else {
+                // NG
+                return Optional.<StoredSchedule>absent();
+            }
+        });
+        if (optional.isPresent()) {
+            return optional.get();
+        }
+        else {
+            throw new ResourceConflictException("Specified time to skip schedules is already past");
+        }
+    }
+
+    public StoredSchedule skipScheduleByCount(int siteId, long schedId, Date currentTime, int count, Optional<Date> runTime, boolean dryRun)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
+
+        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (ScheduleControl control) -> {
+            StoredSchedule sched = control.getSchedule();
+            Scheduler sr = scheds.getScheduler(sched.getConfig());
+
+            ScheduleTime time = sr.getFirstScheduleTime(currentTime);
+            for (int i=0; i < count; i++) {
+                time = sr.nextScheduleTime(time.getScheduleTime());
+            }
+            if (sched.getNextScheduleTime().getTime() < time.getScheduleTime().getTime()) {
+                // OK
+                if (runTime.isPresent()) {
+                    time = ScheduleTime.of(runTime.get(), time.getScheduleTime());
+                }
+                if (!dryRun) {
+                    control.updateNextScheduleTime(time); // TODO validate return value is true, otherwise throw ResourceConflictException
+                }
+                return Optional.of(control.getSchedule());
+            }
+            else {
+                // NG
+                return Optional.<StoredSchedule>absent();
+            }
+        });
+        if (optional.isPresent()) {
+            return optional.get();
+        }
+        else {
+            throw new ResourceConflictException("Specified time to skip schedules is already past");
+        }
+    }
 }

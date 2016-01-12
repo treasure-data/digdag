@@ -1,6 +1,7 @@
 package io.digdag.client;
 
 import java.util.List;
+import java.util.Date;
 import java.util.HashMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.GenericType;
@@ -11,6 +12,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.common.base.Optional;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -214,6 +216,31 @@ public class DigdagClient
         return doGet(RestWorkflow.class,
                 target("/api/workflows/{id}")
                 .resolveTemplate("id", workflowId));
+    }
+
+    public RestScheduleSummary skipSchedulesToTime(long scheduleId, Date date, Optional<Date> runTime, boolean dryRun)
+    {
+        return doPost(RestScheduleSummary.class,
+                RestScheduleSkipRequest.builder()
+                    .nextTime(date.getTime() / 1000)
+                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .dryRun(dryRun)
+                    .build(),
+                target("/api/schedules/{id}/skip")
+                .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary skipSchedulesByCount(long scheduleId, Date fromTime, int count, Optional<Date> runTime, boolean dryRun)
+    {
+        return doPost(RestScheduleSummary.class,
+                RestScheduleSkipRequest.builder()
+                    .fromTime(fromTime.getTime() / 1000)
+                    .count(count)
+                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .dryRun(dryRun)
+                    .build(),
+                target("/api/schedules/{id}/skip")
+                .resolveTemplate("id", scheduleId));
     }
 
     private WebTarget target(String path)

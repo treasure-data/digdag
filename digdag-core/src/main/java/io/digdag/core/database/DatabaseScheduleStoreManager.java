@@ -16,6 +16,8 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.ScheduleControl;
+import io.digdag.core.schedule.ScheduleControlStore;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.schedule.ImmutableStoredSchedule;
 import io.digdag.spi.ScheduleTime;
@@ -32,7 +34,7 @@ import io.digdag.spi.config.Config;
 
 public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager
-        implements ScheduleStoreManager
+        implements ScheduleStoreManager, ScheduleControlStore
 {
     private final StoredScheduleMapper ssm;
     private final ConfigMapper cfm;
@@ -92,6 +94,16 @@ public class DatabaseScheduleStoreManager
     }
 
     @Override
+    public boolean updateNextScheduleTime(long schedId,
+            ScheduleTime nextTime)
+    {
+        int n = dao.updateNextScheduleTime(schedId,
+                nextTime.getRunTime().getTime() / 1000,
+                nextTime.getScheduleTime().getTime() / 1000);
+        return n > 0;
+    }
+
+    @Override
     public List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules)
         throws ResourceConflictException
     {
@@ -127,6 +139,23 @@ public class DatabaseScheduleStoreManager
                 .map(ssm)
                 .list();
         });
+    }
+
+    public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
+        throws ResourceNotFoundException
+    {
+        Optional<T> ret = handle.inTransaction((handle, session) -> {
+            StoredSchedule schedule = dao.lockScheduleById(schedId);
+            if (schedule == null) {
+                return Optional.<T>absent();
+            }
+            ScheduleControl control = new ScheduleControl(this, schedule);
+            T result = func.call(control);
+            return Optional.of(result);
+        });
+        return requiredResource(
+                ret.orNull(),
+                "schedule id=%d", schedId);
     }
 
     private class DatabaseScheduleStore
@@ -195,10 +224,15 @@ public class DatabaseScheduleStoreManager
                 " for update")
         List<StoredSchedule> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
 
+        @SqlQuery("select * from schedules" +
+                " where id = :id" +
+                " for update")
+        StoredSchedule lockScheduleById(@Bind("id") long taskId);
+
         @SqlUpdate("update schedules" +
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
                 " where id = :id")
-        void updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
     }
 
     private static class StoredScheduleMapper

@@ -37,20 +37,24 @@ public class ScheduleResource
 {
     // [*] GET  /api/schedules                                   # list schedules of the latest revision of all repositories
     // [*] GET  /api/schedules/<id>                              # show a particular schedule (which belongs to a workflow)
-    // [ ] POST /api/schedules/<id>                              # do operations on a schedule (rollback run time for back-filling, skip the next run, etc.)
+    // [*] POST /api/schedules/<id>/skip                         # skips schedules forward to a future time
+    // [ ] POST /api/schedules/<id>/backfill                     # run or re-run past schedules
 
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
+    private final ScheduleExecutor exec;
 
     private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public ScheduleResource(
             RepositoryStoreManager rm,
-            ScheduleStoreManager sm)
+            ScheduleStoreManager sm,
+            ScheduleExecutor exec)
     {
         this.rm = rm;
         this.sm = sm;
+        this.exec = exec;
     }
 
     @GET
@@ -83,5 +87,28 @@ public class ScheduleResource
         StoredSchedule sched = sm.getScheduleStore(siteId).getScheduleById(id);
         StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());
         return RestSchedule.of(sched, wf);
+    }
+
+    @POST
+    @Consumes("application/json")
+    @Path("/api/schedules/{id}/skip")
+    public RestScheduleSummary skipSchedule(@PathParam("id") long id, RestScheduleSkipRequest request)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        StoredSchedule updated;
+        if (request.getNextTime().isPresent()) {
+            updated = exec.skipScheduleToTime(siteId, id,
+                    new Date(request.getNextTime().get() * 1000),
+                    request.getNextRunTime().transform(t -> new Date(t * 1000)),
+                    request.getDryRun());
+        }
+        else {
+            updated = exec.skipScheduleByCount(siteId, id,
+                    new Date(request.getFromTime().get() * 1000),
+                    request.getCount().get(),
+                    request.getNextRunTime().transform(t -> new Date(t * 1000)),
+                    request.getDryRun());
+        }
+        return RestScheduleSummary.of(updated);
     }
 }
