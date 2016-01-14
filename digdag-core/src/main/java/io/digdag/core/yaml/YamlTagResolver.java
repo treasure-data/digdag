@@ -15,6 +15,12 @@ public class YamlTagResolver
     // This is called by snakeyaml Composer which converts parser events
     // into an object. jackson-dataformat-yaml doesn't use this because it
     // traverses parser events without using Composer.
+    //
+    // jackson-dataformat-yaml doesn't use this because it traverses parser
+    // events without using Composer.
+
+    public static final Pattern FLOAT_EXCEPTING_ZERO_START = Pattern
+        .compile("^([-+]?(\\.[0-9]+|[1-9][0-9_]*(\\.[0-9_]*)?)([eE][-+]?[0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$");
 
     @Override
     public void addImplicitResolver(Tag tag, Pattern regexp, String first)
@@ -22,7 +28,10 @@ public class YamlTagResolver
         // This method is called by constructor through addImplicitResolvers
         // to setup default implicit resolvers.
 
-        if (tag.equals(Tag.BOOL)) {
+        if (tag.equals(Tag.FLOAT)) {
+            super.addImplicitResolver(Tag.FLOAT, FLOAT_EXCEPTING_ZERO_START, "-+0123456789.");
+        }
+        else if (tag.equals(Tag.BOOL)) {
             // use stricter rule (reject 'On', 'Off', 'Yes', 'No')
             super.addImplicitResolver(Tag.BOOL, Pattern.compile("^(?:[Tt]rue|[Ff]alse)$"), "TtFf");
         }
