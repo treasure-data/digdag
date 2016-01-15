@@ -1,7 +1,7 @@
 include_example_workflow:
-  {% set including_file = "examples/include.yml" %}
+  {% set orig_file = "examples/include.yml" %}
   {% set complex_data = {user: 'me', password: 'Top Secret'} %}
-  +part1: {% include 'parts/part1.yml' %}
+  +part1: {% load 'parts/part1.yml' %}
 
   {% set messages = ['Directed', 'Acyclic', 'Graph'] %}
-  +run_loop: {% include 'parts/run_loop.yml' %}
+  +run_loop: {% load 'parts/run_loop.yml' %}

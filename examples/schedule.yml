@@ -9,5 +9,10 @@ schedule_example_workflow:
 
   +task:
     sh>: echo "This schedule is for $schedule_time $timezone"
+    export:
+      retry$: task_retry
+      $retry: task_retry
+      retry=: task_retry
+      sh>=: jinja("test.q")
 
   # See also sla.yml

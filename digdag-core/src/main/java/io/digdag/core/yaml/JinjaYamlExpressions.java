@@ -4,12 +4,13 @@ import java.util.Objects;
 import com.google.common.base.CharMatcher;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.representer.Representer;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.tag.Tag;
 import com.hubspot.jinjava.tree.TagNode;
 
-public class YamlExpressions
+public class JinjaYamlExpressions
 {
     private static final Yaml yaml;
 
@@ -18,7 +19,7 @@ public class YamlExpressions
         DumperOptions opts = new DumperOptions();
         opts.setDefaultFlowStyle(DumperOptions.FlowStyle.FLOW);
 
-        yaml = new Yaml(new YamlTagConstructor(), new Representer(), opts, new YamlTagResolver());
+        yaml = new Yaml(new SafeConstructor(), new Representer(), opts, new YamlTagResolver());
     }
 
     public static String dump(Object object)

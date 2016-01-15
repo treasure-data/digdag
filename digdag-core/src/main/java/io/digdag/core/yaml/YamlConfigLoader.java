@@ -18,6 +18,7 @@ import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.representer.Representer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,48 +68,10 @@ public class YamlConfigLoader
     public Config loadString(String content, Optional<File> resourceDirectory, Optional<Config> renderParams)
         throws IOException
     {
-        Jinjava jinjava = new Jinjava(
-                JinjavaConfig.newBuilder()
-                .withLocale(Locale.ENGLISH)
-                .withCharset(StandardCharsets.UTF_8)
-                //.withTimeZone(TimeZone.UTC)
-                .build());
-
-        YamlTagConstructor constructor = new YamlTagConstructor();
-        Yaml yaml = new Yaml(constructor, new Representer(), new DumperOptions(), new YamlTagResolver());
-        if (resourceDirectory.isPresent()) {
-            constructor.setInclude((name) -> {
-                File file = resolveIncludeFile(resourceDirectory.get(), name);
-
-                return loadFile(file, resourceDirectory, renderParams);
-            });
-
-            jinjava.setResourceLocator((name, encoding, interpreter) -> {
-                File file = resolveIncludeFile(resourceDirectory.get(), name);
-
-                if (!file.exists() || !file.isFile()) {
-                    throw new ResourceNotFoundException("Couldn't find resource: " + file);
-                }
-
-                return Files.toString(file, encoding);
-            });
-        }
-        else {
-            jinjava.setResourceLocator((name, encoding, interpreter) -> {
-                throw new RuntimeException("include tag is not allowed in this context");
-            });
-        }
-
-        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "dump",
-                    YamlExpressions.class, "dump", Object.class));
-        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "parse",
-                    YamlExpressions.class, "parse", String.class));
-        jinjava.getGlobalContext().registerTag(new YamlIncludeTag());
-        jinjava.getGlobalContext().registerTag(new YamlExpressions.DumpTag());
-        jinjava.getGlobalContext().registerTag(new YamlExpressions.ParseTag());
-
         String data;
         if (renderParams.isPresent()) {
+            Jinjava jinjava = newJinjava(resourceDirectory, renderParams);
+
             Map<String, Object> bindings = new HashMap<>();
             for (String key : renderParams.get().getKeys()) {
                 bindings.put(key, renderParams.get().get(key, Object.class));
@@ -124,7 +87,7 @@ public class YamlConfigLoader
 
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
-        Object object = yaml.load(data);
+        Object object = newYaml().load(data);
         JsonNode node = treeObjectMapper.readTree(treeObjectMapper.writeValueAsString(object));
         return cf.create(validateJsonNode(node));
     }
@@ -135,6 +98,48 @@ public class YamlConfigLoader
             throw new RuntimeJsonMappingException("Expected object to load Config but got "+node);
         }
         return (ObjectNode) node;
+    }
+
+    private Yaml newYaml()
+    {
+        return new Yaml(new SafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
+    }
+
+    private Jinjava newJinjava(Optional<File> resourceDirectory, Optional<Config> renderParams)
+    {
+        Jinjava jinjava = new Jinjava(
+                JinjavaConfig.newBuilder()
+                .withLocale(Locale.ENGLISH)
+                .withCharset(StandardCharsets.UTF_8)
+                //.withTimeZone(TimeZone.UTC)
+                .build());
+
+        if (resourceDirectory.isPresent()) {
+            jinjava.setResourceLocator((name, encoding, interpreter) -> {
+                File file = resolveIncludeFile(resourceDirectory.get(), name);
+
+                if (!file.exists() || !file.isFile()) {
+                    throw new ResourceNotFoundException("Couldn't find resource: " + file);
+                }
+
+                return Files.toString(file, encoding);
+            });
+        }
+        else {
+            jinjava.setResourceLocator((name, encoding, interpreter) -> {
+                throw new RuntimeException("include and load tags are not allowed in this context");
+            });
+        }
+
+        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "dump",
+                    JinjaYamlExpressions.class, "dump", Object.class));
+        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "parse",
+                    JinjaYamlExpressions.class, "parse", String.class));
+        jinjava.getGlobalContext().registerTag(new JinjaLoadTag());
+        jinjava.getGlobalContext().registerTag(new JinjaYamlExpressions.DumpTag());
+        jinjava.getGlobalContext().registerTag(new JinjaYamlExpressions.ParseTag());
+
+        return jinjava;
     }
 
     public static File resolveIncludeFile(File baseDir, String name)
