@@ -25,4 +25,10 @@ public abstract class Revision
     {
         return ImmutableRevision.builder();
     }
+
+    @Value.Check
+    protected void check()
+    {
+        // TODO check name
+    }
 }

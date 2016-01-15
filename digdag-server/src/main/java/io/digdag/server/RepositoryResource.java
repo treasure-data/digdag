@@ -139,7 +139,7 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        List<StoredWorkflowSource> workflows = rs.getWorkflows(rev.getId(), 100, Optional.absent());
+        List<StoredWorkflowSource> workflows = rs.getWorkflowSources(rev.getId(), 100, Optional.absent());
 
         return workflows.stream()
             .map(workflow -> RestWorkflow.of(repo, rev, workflow))
@@ -200,7 +200,7 @@ public class RepositoryResource
                             );
                     try {
                         for (WorkflowSource workflow : meta.getWorkflows().get()) {
-                            repo.insertWorkflow(rev.getId(), workflow);
+                            repo.insertWorkflowSource(rev.getId(), workflow);
                         }
                         repo.syncSchedulesTo(scheduleStore, scheds, new Date(), rev);
                     }
@@ -213,6 +213,8 @@ public class RepositoryResource
         return stored;
     }
 
+    // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
+    //      rawLoader.loadFile doesn't have to render the file because it's already rendered.
     private List<File> extractConfigFiles(File dir, ArchiveInputStream archive)
         throws IOException
     {

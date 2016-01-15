@@ -32,10 +32,10 @@ public class RepositoryControl
         return store.putRevision(repository.getId(), revision);
     }
 
-    public StoredWorkflowSource insertWorkflow(int revId, WorkflowSource workflow)
+    public StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource workflow)
             throws ResourceConflictException
     {
-        return store.insertWorkflow(revId, workflow);
+        return store.insertWorkflowSource(revId, workflow);
     }
 
     public void syncSchedulesTo(ScheduleStoreManager schedStoreManager, SchedulerManager scheds,
@@ -45,7 +45,7 @@ public class RepositoryControl
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         Optional<Integer> lastId = Optional.absent();
         while (true) {
-            List<StoredWorkflowSource> wfs = store.getWorkflows(revision.getId(), 100, lastId);
+            List<StoredWorkflowSource> wfs = store.getWorkflowSources(revision.getId(), 100, lastId);
             if (wfs.isEmpty()) {
                 break;
             }

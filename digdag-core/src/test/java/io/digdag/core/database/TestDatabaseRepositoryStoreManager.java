@@ -1,7 +1,5 @@
 package io.digdag.core.database;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
@@ -111,8 +109,8 @@ public class TestDatabaseRepositoryStoreManager
         assertNotNull(store.getRevisionById(storedRev.getId()));
         assertNotNull(store.getRevisionByName(storedRepo.getId(), storedRev.getName()));
 
-        assertNotNull(store.getWorkflowById(storedWf.getId()));
-        assertNotNull(store.getWorkflowByName(storedRev.getId(), storedWf.getName()));
+        assertNotNull(store.getWorkflowSourceById(storedWf.getId()));
+        assertNotNull(store.getWorkflowSourceByName(storedRev.getId(), storedWf.getName()));
 
         assertNotFound(true, () -> store.getRepositoryById(storedRepo.getId() + 1));
         assertNotFound(true, () -> store.getRepositoryByName(storedRepo.getName() + " "));
@@ -121,9 +119,9 @@ public class TestDatabaseRepositoryStoreManager
         assertNotFound(true, () -> store.getRevisionByName(storedRepo.getId() + 1, storedRev.getName()));
         assertNotFound(true, () -> store.getRevisionByName(storedRepo.getId(), storedRev.getName() + " "));
 
-        assertNotFound(true, () -> store.getWorkflowById(storedWf.getId() + 1));
-        assertNotFound(true, () -> store.getWorkflowByName(storedRev.getId() + 1, storedWf.getName()));
-        assertNotFound(true, () -> store.getWorkflowByName(storedRev.getId(), storedWf.getName() + " "));
+        assertNotFound(true, () -> store.getWorkflowSourceById(storedWf.getId() + 1));
+        assertNotFound(true, () -> store.getWorkflowSourceByName(storedRev.getId() + 1, storedWf.getName()));
+        assertNotFound(true, () -> store.getWorkflowSourceByName(storedRev.getId(), storedWf.getName() + " "));
 
         RepositoryStore another = manager.getRepositoryStore(1);
 
@@ -133,8 +131,8 @@ public class TestDatabaseRepositoryStoreManager
         assertNotFound(true, () -> another.getRevisionById(storedRev.getId()));
         assertNotFound(true, () -> another.getRevisionByName(storedRepo.getId(), storedRev.getName()));
 
-        assertNotFound(true, () -> another.getWorkflowById(storedWf.getId()));
-        assertNotFound(true, () -> another.getWorkflowByName(storedRev.getId(), storedWf.getName()));
+        assertNotFound(true, () -> another.getWorkflowSourceById(storedWf.getId()));
+        assertNotFound(true, () -> another.getWorkflowSourceByName(storedRev.getId(), storedWf.getName()));
     }
 
     private static Revision createRevision(String name)

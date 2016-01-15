@@ -68,7 +68,7 @@ public class ScheduleResource
             .stream()
             .map(sched -> {
                 try {
-                    StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());
+                    StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowId());
                     return RestSchedule.of(sched, wf);
                 }
                 catch (ResourceNotFoundException ex) {
@@ -85,7 +85,7 @@ public class ScheduleResource
         throws ResourceNotFoundException
     {
         StoredSchedule sched = sm.getScheduleStore(siteId).getScheduleById(id);
-        StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowById(sched.getWorkflowId());
+        StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowId());
         return RestSchedule.of(sched, wf);
     }
 

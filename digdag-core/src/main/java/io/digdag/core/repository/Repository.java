@@ -4,15 +4,12 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
+import java.util.regex.Pattern;
 
 @JsonDeserialize(as = ImmutableRepository.class)
 public abstract class Repository
 {
     public abstract String getName();
-
-    //public abstract Config getConfig();
-
-    //public abstract boolean isDisabled();
 
     public static ImmutableRepository.Builder repositoryBuilder()
     {
@@ -24,5 +21,12 @@ public abstract class Repository
         return repositoryBuilder()
             .name(name)
             .build();
+    }
+
+    @Value.Check
+    protected void check()
+    {
+        // TODO check name
+        //   must not be an integer
     }
 }

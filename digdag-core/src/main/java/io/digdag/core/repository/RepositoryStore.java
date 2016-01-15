@@ -33,13 +33,13 @@ public interface RepositoryStore
         throws ResourceNotFoundException;
 
 
-    List<StoredWorkflowSource> getWorkflows(int revId, int pageSize, Optional<Integer> lastId);
+    List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId);
 
-    List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(int pageSize, Optional<Integer> lastId);
+    List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(int pageSize, Optional<Integer> lastId);
 
-    StoredWorkflowSource getWorkflowById(int wfId)
+    StoredWorkflowSource getWorkflowSourceById(int wfId)
         throws ResourceNotFoundException;
 
-    StoredWorkflowSource getWorkflowByName(int revId, String name)
+    StoredWorkflowSource getWorkflowSourceByName(int revId, String name)
         throws ResourceNotFoundException;
 }

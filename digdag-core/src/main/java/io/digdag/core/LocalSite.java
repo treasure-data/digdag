@@ -137,7 +137,7 @@ public class LocalSite
                         workflowSources.stream()
                         .map(workflowSource -> {
                             try {
-                                return repoControl.insertWorkflow(rev.getId(), workflowSource);
+                                return repoControl.insertWorkflowSource(rev.getId(), workflowSource);
                             }
                             catch (ResourceConflictException ex) {
                                 throw new IllegalStateException("Database state error", ex);

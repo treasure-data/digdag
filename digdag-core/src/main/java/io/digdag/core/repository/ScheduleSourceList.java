@@ -10,23 +10,23 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public abstract class WorkflowSourceList
+public abstract class ScheduleSourceList
 {
-    // same code with ScheduleSourceList
+    // same code with WorkflowSourceList
 
-    public abstract List<WorkflowSource> get();
+    public abstract List<ScheduleSource> get();
 
-    public static WorkflowSourceList of(List<WorkflowSource> list)
+    public static ScheduleSourceList of(List<ScheduleSource> list)
     {
-        return ImmutableWorkflowSourceList.builder().addAllGet(list).build();
+        return ImmutableScheduleSourceList.builder().addAllGet(list).build();
     }
 
     @JsonCreator
-    public static WorkflowSourceList of(Config object)
+    public static ScheduleSourceList of(Config object)
     {
-        ImmutableList.Builder<WorkflowSource> builder = ImmutableList.builder();
+        ImmutableList.Builder<ScheduleSource> builder = ImmutableList.builder();
         for (String key : object.getKeys()) {
-            builder.add(WorkflowSource.of(key, object.getNestedOrderedOrGetEmpty(key)));
+            builder.add(ScheduleSource.of(key, object.getNestedOrderedOrGetEmpty(key)));
         }
         return of(builder.build());
     }
@@ -34,9 +34,9 @@ public abstract class WorkflowSourceList
     @JsonValue
     public Map<String, Config> toJson()
     {
-        // workflow source list must be an order-preserving map
+        // schedule source list must be an order-preserving map
         Map<String, Config> map = new LinkedHashMap<String, Config>();
-        for (WorkflowSource wf : get()) {
+        for (ScheduleSource wf : get()) {
             map.put(wf.getName(), wf.getConfig());
         }
         return map;

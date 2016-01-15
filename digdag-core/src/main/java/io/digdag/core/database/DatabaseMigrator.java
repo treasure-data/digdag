@@ -217,23 +217,39 @@ public class DatabaseMigrator
                     .addString("archive_type", "not null")
                     .addBinary("archive_md5", "")
                     .addString("archive_path", "")
-                    .addLongBinary("archive_data", "")
+                    .addLongBinary("archive_data", "")  // TODO move to revision_archives
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index if not exists revisions_on_repository_id_and_name on revisions (repository_id, name)");
             handle.update("create index if not exists revisions_on_repository_id_and_id on revisions (repository_id, id)");
 
-            // workflows
+            //handle.update(
+            //        new CreateTableBuilder("revision_archives")
+            //        .addIntId("id")
+            //        .addLongBinary("archive_data", "")
+            //        .build());
+
+            // workflow_sources
             handle.update(
-                    new CreateTableBuilder("workflows")
+                    new CreateTableBuilder("workflow_sources")
                     .addIntId("id")
                     .addInt("revision_id", "not null")
                     .addString("name", "not null")
                     .addMediumText("config", "")
                     .build());
-            handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflows (revision_id, name)");
-            handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
-            //handle.update("create index if not exists workflows_on_revision_id_and_id on workflows (revision_id, id)");
+            handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflow_sources (revision_id, name)");
+            handle.update("create index if not exists workflows_on_revision_id_and_id on workflow_sources (revision_id, id)");
+
+            // schedule_sources
+            handle.update(
+                    new CreateTableBuilder("schedule_sources")
+                    .addIntId("id")
+                    .addInt("revision_id", "not null")
+                    .addString("name", "not null")
+                    .addMediumText("config", "")
+                    .build());
+            handle.update("create unique index if not exists workflows_on_revision_id_and_name on schedule_sources (revision_id, name)");
+            handle.update("create index if not exists workflows_on_revision_id_and_id on schedule_sources (revision_id, id)");
 
             // schedules
             handle.update(

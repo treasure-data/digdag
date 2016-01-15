@@ -80,7 +80,7 @@ public class SessionResource
                 sessions = ss.getSessionsOfRepository(repo.getId(), 100, Optional.absent());
             }
             else {
-                StoredWorkflowSource wf = rs.getWorkflowByName(repo.getId(), wfName);
+                StoredWorkflowSource wf = rs.getWorkflowSourceByName(repo.getId(), wfName);
                 sessions = ss.getSessionsOfWorkflow(wf.getId(), 100, Optional.absent());
             }
         }
@@ -143,7 +143,7 @@ public class SessionResource
             //else {
                 rev = rs.getLatestActiveRevision(repo.getId());
             //}
-            wf = rs.getWorkflowByName(rev.getId(), request.getWorkflowName());
+            wf = rs.getWorkflowSourceByName(rev.getId(), request.getWorkflowName());
             rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
         }
 

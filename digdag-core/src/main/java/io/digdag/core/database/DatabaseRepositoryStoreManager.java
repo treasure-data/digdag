@@ -187,38 +187,38 @@ public class DatabaseRepositoryStoreManager
         }
 
 
-        //public List<StoredWorkflowSource> getAllWorkflows(int revId)
+        //public List<StoredWorkflowSource> getAllWorkflowSources(int revId)
         //{
-        //    return dao.getWorkflows(siteId, revId, Integer.MAX_VALUE, 0);
+        //    return dao.getWorkflowSources(siteId, revId, Integer.MAX_VALUE, 0);
         //}
 
         @Override
-        public List<StoredWorkflowSource> getWorkflows(int revId, int pageSize, Optional<Integer> lastId)
+        public List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId)
         {
-            return dao.getWorkflows(siteId, revId, pageSize, lastId.or(0));
+            return dao.getWorkflowSources(siteId, revId, pageSize, lastId.or(0));
         }
 
         @Override
-        public List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(int pageSize, Optional<Integer> lastId)
+        public List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(int pageSize, Optional<Integer> lastId)
         {
-            return dao.getLatestActiveWorkflows(siteId, pageSize, lastId.or(0));
+            return dao.getLatestActiveWorkflowSources(siteId, pageSize, lastId.or(0));
         }
 
         @Override
-        public StoredWorkflowSource getWorkflowById(int wfId)
+        public StoredWorkflowSource getWorkflowSourceById(int wfId)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getWorkflowById(siteId, wfId),
+                    dao.getWorkflowSourceByid(siteId, wfId),
                     "workflow id=%d", wfId);
         }
 
         @Override
-        public StoredWorkflowSource getWorkflowByName(int revId, String name)
+        public StoredWorkflowSource getWorkflowSourceByName(int revId, String name)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getWorkflowByName(siteId, revId, name),
+                    dao.getWorkflowSourceByName(siteId, revId, name),
                     "workflow name=%s in revision id=%d", name, revId);
         }
 
@@ -229,14 +229,14 @@ public class DatabaseRepositoryStoreManager
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredWorkflowSource insertWorkflow(int revId, WorkflowSource workflow)
+        public StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource workflow)
             throws ResourceConflictException
         {
             try {
                 int wfId = catchConflict(() ->
-                    dao.insertWorkflow(revId, workflow.getName(), workflow.getConfig()),
+                    dao.insertWorkflowSource(revId, workflow.getName(), workflow.getConfig()),
                     "workflow=%s in revision id=%d", workflow.getName(), revId);
-                return getWorkflowById(wfId);
+                return getWorkflowSourceById(wfId);
             }
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
@@ -311,19 +311,19 @@ public class DatabaseRepositoryStoreManager
         int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("globalParams") Config globalParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
 
 
-        @SqlQuery("select w.* from workflows w" +
+        @SqlQuery("select w.* from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where w.revision_id = :revId" +
                 " and w.id > :lastId" +
                 " order by w.id asc" +
                 " limit :limit")
-        List<StoredWorkflowSource> getWorkflows(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredWorkflowSource> getWorkflowSources(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
                 " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
                 " rev.name as rev_name " +
-                " from workflows w" +
+                " from workflow_sources w" +
                 " join revisions rev on w.revision_id = rev.id" +
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where w.revision_id in (" +
@@ -335,35 +335,35 @@ public class DatabaseRepositoryStoreManager
                 ")" +
                 " and w.id > :lastId" +
                 " order by w.id")
-        List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflows(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
                 " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
                 " rev.name as rev_name " +
-                " from workflows w" +
+                " from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where w.id = :wfId")
         StoredWorkflowSourceWithRepository getWorkflowDetailsById(@Bind("wfId") int wfId);
 
-        @SqlQuery("select w.* from workflows w" +
+        @SqlQuery("select w.* from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and w.id = :id" +
                 " limit 1")
-        StoredWorkflowSource getWorkflowById(@Bind("siteId") int siteId, @Bind("id") int id);
+        StoredWorkflowSource getWorkflowSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select w.* from workflows w" +
+        @SqlQuery("select w.* from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and revision_id = :revId" +
                 " and w.name = :name" +
                 " limit 1")
-        StoredWorkflowSource getWorkflowByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
+        StoredWorkflowSource getWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
-        @SqlQuery("select w.* from workflows w" +
+        @SqlQuery("select w.* from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
@@ -372,11 +372,11 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowSource getLatestActiveWorkflow(@Bind("siteId") int siteId, @Bind("revId") int revId);
 
-        @SqlUpdate("insert into workflows" +
+        @SqlUpdate("insert into workflow_sources" +
                 " (revision_id, name, config)" +
                 " values (:revId, :name, :config)")
         @GetGeneratedKeys
-        int insertWorkflow(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
+        int insertWorkflowSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
     }
 
     private static class StoredRepositoryMapper

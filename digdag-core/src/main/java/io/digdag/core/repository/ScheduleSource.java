@@ -7,21 +7,21 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.config.Config;
 
-@JsonDeserialize(as = ImmutableWorkflowSource.class)
-public abstract class WorkflowSource
+@JsonDeserialize(as = ImmutableScheduleSource.class)
+public abstract class ScheduleSource
 {
     public abstract String getName();
 
     public abstract Config getConfig();
 
-    public static ImmutableWorkflowSource.Builder workflowSourceBuilder()
+    public static ImmutableScheduleSource.Builder scheduleSourceBuilder()
     {
-        return ImmutableWorkflowSource.builder();
+        return ImmutableScheduleSource.builder();
     }
 
-    public static WorkflowSource of(String name, Config config)
+    public static ScheduleSource of(String name, Config config)
     {
-        return workflowSourceBuilder()
+        return scheduleSourceBuilder()
             .name(name)
             .config(config)
             .build();
@@ -31,6 +31,6 @@ public abstract class WorkflowSource
     protected void check()
     {
         // TODO check name
-        //   must start with +
+        //   must start with -
     }
 }
