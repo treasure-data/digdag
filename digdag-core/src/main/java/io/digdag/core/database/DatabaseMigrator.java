@@ -246,7 +246,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("revision_id", "not null")
                     .addString("name", "not null")
-                    .addMediumText("config", "")
+                    .addMediumText("config", "")  // TODO store schedule_source_id instead of config
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on schedule_sources (revision_id, name)");
             handle.update("create index if not exists workflows_on_revision_id_and_id on schedule_sources (revision_id, id)");

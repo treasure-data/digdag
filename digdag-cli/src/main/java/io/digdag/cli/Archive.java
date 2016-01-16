@@ -133,8 +133,10 @@ public class Archive
                 tar.closeArchiveEntry();
             }
 
+
             // create .digdag.yml
             // TODO make ScheduleSourceList from Dagfile
+            // TODO set default time zone if not set
             byte[] meta = mapper.toYaml(ArchiveMetadata.of(WorkflowSourceList.of(workflows), ScheduleSourceList.of(ImmutableList.of()))).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(meta.length);

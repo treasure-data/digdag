@@ -355,8 +355,8 @@ public class DatabaseRepositoryStoreManager
         List<StoredWorkflowSource> getWorkflowSources(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
-                " rev.name as rev_name " +
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_sources w" +
                 " join revisions rev on w.revision_id = rev.id" +
                 " join repositories repo on rev.repository_id = repo.id" +
@@ -372,8 +372,8 @@ public class DatabaseRepositoryStoreManager
         List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name, " +
-                " rev.name as rev_name " +
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
@@ -562,6 +562,7 @@ public class DatabaseRepositoryStoreManager
                             .name(r.getString("repo_name"))
                             .build())
                 .revisionName("rev_name")
+                .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))
                 .build();
         }
     }

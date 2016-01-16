@@ -46,7 +46,7 @@ public class ScheduleStarter
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-        Session trigger = createScheduleSession(cf, wf, from, timeZone, time.getScheduleTime());
+        Session trigger = createScheduleSession(cf, wf.getRevisionDefaultParams(), wf, from, timeZone, time.getScheduleTime());
 
         SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
 
@@ -60,7 +60,7 @@ public class ScheduleStarter
     }
 
     private static Session createScheduleSession(ConfigFactory cf,
-            WorkflowSource workflow,
+            Config revisionDefaultParams, WorkflowSource workflow,
             Optional<String> from, TimeZone timeZone, Date scheduleTime)
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
@@ -76,7 +76,7 @@ public class ScheduleStarter
 
         return Session.sessionBuilder(
                 sessionName,
-                cf.create(),  // TODO set revision.params here
+                revisionDefaultParams,
                 workflow,
                 overwriteParams)
             .options(SessionOptions.empty())

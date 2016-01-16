@@ -185,7 +185,7 @@ public class LocalSite
             TimeZone defaultTimeZone,
             WorkflowSourceList workflowSources,
             Optional<String> fromTaskName,
-            Config sessionParams,
+            Config overwriteParams,
             Date slaCurrentTime,
             SessionOptions options)
     {
@@ -200,7 +200,7 @@ public class LocalSite
                     Session trigger = Session.sessionBuilder(
                             "session-" + UUID.randomUUID().toString(),
                             defaultTimeZone,
-                            cf.create(), workflow, sessionParams)
+                            cf.create(), workflow, overwriteParams)
                         .options(options)
                         .build();
 

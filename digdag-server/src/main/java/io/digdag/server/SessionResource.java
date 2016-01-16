@@ -118,6 +118,7 @@ public class SessionResource
     public RestSession startSession(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
+        StoredRevision rev;
         StoredWorkflowSource wf;
         SessionRelation rel;
 
@@ -135,7 +136,6 @@ public class SessionResource
         //}
         {
             StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
-            StoredRevision rev;
             // TODO support startSession using an old revision
             //if (request.getRevision().isPresent()) {
             //    rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
@@ -148,9 +148,7 @@ public class SessionResource
         }
 
         Session session = Session.sessionBuilder(
-                request.getName(),  //.or(UUID.randomUUID().toString());
-                request.getParams().getFactory().create(), // TODO set revision.params here
-                wf, request.getParams())
+                request.getName(), rev.getDefaultParams(), wf, request.getParams())
             .options(SessionOptions.empty())
             .build();
 

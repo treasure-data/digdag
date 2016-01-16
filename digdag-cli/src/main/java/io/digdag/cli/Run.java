@@ -93,12 +93,12 @@ public class Run
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
 
-        Config sessionParams = cf.create();
+        Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            sessionParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
-            sessionParams.set(pair.getKey(), pair.getValue());
+            overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
         Optional<ResumeState> resumeState = Optional.absent();
@@ -107,7 +107,7 @@ public class Run
             resumeState = Optional.of(rawLoader.loadFile(new File(resumeStateFilePath), Optional.absent(), Optional.absent()).convert(ResumeState.class));
         }
 
-        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(new File(workflowPath), sessionParams));
+        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(new File(workflowPath), overwriteParams));
 
         SessionOptions options = SessionOptions.builder()
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
@@ -117,7 +117,7 @@ public class Run
                 TimeZone.getDefault(),  // TODO configurable by cmdline argument
                 WorkflowSourceList.of(ImmutableList.of(workflowSource)),
                 Optional.fromNullable(fromTaskName),
-                sessionParams, new Date(), options);
+                overwriteParams, new Date(), options);
         if (sessions.isEmpty()) {
             throw systemExit("No workflows to start");
         }
