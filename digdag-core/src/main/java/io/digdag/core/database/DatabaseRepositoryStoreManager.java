@@ -169,7 +169,7 @@ public class DatabaseRepositoryStoreManager
             try {
                 try {
                     int revId = catchConflict(() ->
-                        dao.insertRevision(repoId, revision.getName(), revision.getGlobalParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getArchiveData().orNull()),
+                        dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getArchiveData().orNull()),
                         "revision=%s in repository id=%d", revision.getName(), repoId);
                     return getRevisionById(revId);
                 }
@@ -339,10 +339,10 @@ public class DatabaseRepositoryStoreManager
         StoredRevision getLatestActiveRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
         @SqlUpdate("insert into revisions" +
-                " (repository_id, name, global_params, archive_type, archive_md5, archive_path, archive_data, created_at)" +
-                " values (:repoId, :name, :globalParams, :archiveType, :archiveMd5, :archivePath, :archiveData, now())")
+                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, archive_data, created_at)" +
+                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, :archiveData, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("globalParams") Config globalParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
+        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
 
 
         @SqlQuery("select w.* from workflow_sources w" +
@@ -479,7 +479,7 @@ public class DatabaseRepositoryStoreManager
                 .repositoryId(r.getInt("repository_id"))
                 .createdAt(r.getTimestamp("created_at"))
                 .name(r.getString("name"))
-                .globalParams(cfm.fromResultSetOrEmpty(r, "global_params"))
+                .defaultParams(cfm.fromResultSetOrEmpty(r, "default_params"))
                 .archiveType(r.getString("archive_type"))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))

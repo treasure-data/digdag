@@ -174,7 +174,7 @@ public class LocalSite
                 Revision.revisionBuilder()
                     .name("revision")
                     .archiveType("db")
-                    .globalParams(cf.create())
+                    .defaultParams(cf.create())
                     .build(),
                 workflowSources,
                 scheduleSources,
@@ -197,7 +197,7 @@ public class LocalSite
         return workflows.stream()
             .map(workflow -> {
                 try {
-                    Session trigger = Sessions.newSession(
+                    Session trigger = Session.sessionBuilder(
                             "session-" + UUID.randomUUID().toString(),
                             defaultTimeZone,
                             cf.create(), workflow, sessionParams)

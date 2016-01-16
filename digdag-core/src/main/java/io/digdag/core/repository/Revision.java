@@ -11,7 +11,7 @@ public abstract class Revision
 {
     public abstract String getName();
 
-    public abstract Config getGlobalParams();
+    public abstract Config getDefaultParams();
 
     public abstract String getArchiveType();
 

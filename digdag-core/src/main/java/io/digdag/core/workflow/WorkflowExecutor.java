@@ -78,7 +78,7 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        TimeZone timeZone = Sessions.getSessionTimeZone(newSession);
+        TimeZone timeZone = Session.getSessionTimeZone(newSession);
         List<SessionMonitor> monitors = monitorManager.getMonitors(source, timeZone, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) from index {} with session parameters: {}",

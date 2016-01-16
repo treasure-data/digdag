@@ -147,7 +147,7 @@ public class SessionResource
             rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
         }
 
-        Session session = Sessions.newSession(
+        Session session = Session.sessionBuilder(
                 request.getName(),  //.or(UUID.randomUUID().toString());
                 request.getParams().getFactory().create(), // TODO set revision.params here
                 wf, request.getParams())

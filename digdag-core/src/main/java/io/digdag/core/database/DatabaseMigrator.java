@@ -213,7 +213,7 @@ public class DatabaseMigrator
                     // TODO disabled flag
                     .addInt("repository_id", "not null")
                     .addString("name", "not null")
-                    .addMediumText("global_params", "")
+                    .addMediumText("default_params", "")
                     .addString("archive_type", "not null")
                     .addBinary("archive_md5", "")
                     .addString("archive_path", "")

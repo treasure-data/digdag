@@ -17,7 +17,6 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.Sessions;
 import io.digdag.core.session.SessionRelation;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.SessionMonitorManager;
@@ -75,7 +74,7 @@ public class ScheduleStarter
         Config overwriteParams = cf.create()
             .set("schedule_time", scheduleTime.getTime() / 1000);
 
-        return Sessions.newSession(
+        return Session.sessionBuilder(
                 sessionName,
                 cf.create(),  // TODO set revision.params here
                 workflow,

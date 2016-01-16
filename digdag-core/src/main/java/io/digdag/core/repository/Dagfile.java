@@ -28,28 +28,33 @@ public abstract class Dagfile
     @JsonUnwrapped
     public abstract ScheduleSourceList getScheduleList();
 
+    @JsonUnwrapped
+    public abstract Config getDefaultParams();
+
     @JsonCreator
     public static Dagfile fromConfig(Config config)
     {
-        Config workflowCopy = config.deepCopy();
-        for (String key : workflowCopy.getKeys()) {
-            if (!key.startsWith("+")) {
-                workflowCopy.remove(key);
-            }
-        }
+        Config others = config.deepCopy();
+        Config workflowList = config.getFactory().create();
+        Config scheduleList = config.getFactory().create();
 
-        Config scheduleCopy = config.deepCopy();
-        for (String key : scheduleCopy.getKeys()) {
-            // TODO schedule syntax is not fixed yet
-            if (!key.startsWith("-")) {
-                scheduleCopy.remove(key);
+        for (String key : others.getKeys()) {
+            if (key.startsWith("+")) {
+                workflowList.set(key, others.get(key, JsonNode.class));
+                others.remove(key);
             }
+            else if (key.startsWith("-")) {
+                scheduleList.set(key, others.get(key, JsonNode.class));
+                others.remove(key);
+            }
+            // TODO validate key
         }
 
         return builder()
             .defaultTaskName(config.getOptional("default", String.class))
-            .workflowList(workflowCopy.convert(WorkflowSourceList.class))
-            .scheduleList(scheduleCopy.convert(ScheduleSourceList.class))
+            .workflowList(workflowList.convert(WorkflowSourceList.class))
+            .scheduleList(scheduleList.convert(ScheduleSourceList.class))
+            .defaultParams(others)
             .build();
     }
 

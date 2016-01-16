@@ -191,7 +191,7 @@ public class RepositoryResource
                     StoredRevision rev = repo.putRevision(
                             Revision.revisionBuilder()
                                 .name(revision)
-                                .globalParams(cf.create())
+                                .defaultParams(cf.create())
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveData(data)
