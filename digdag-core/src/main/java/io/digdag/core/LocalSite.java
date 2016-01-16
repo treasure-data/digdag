@@ -3,6 +3,7 @@ package io.digdag.core;
 import java.util.List;
 import java.util.Date;
 import java.util.UUID;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.google.common.base.*;
@@ -38,6 +39,7 @@ public class LocalSite
     private final ScheduleStoreManager scheduleStoreManager;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
+    private final SessionMonitorManager sessionMonitorManager;
     private final SessionMonitorExecutor sessionMonitorExecutor;
     private boolean schedulerStarted;
 
@@ -55,6 +57,7 @@ public class LocalSite
             ScheduleStoreManager scheduleStoreManager,
             SchedulerManager scheds,
             ScheduleExecutor scheduleExecutor,
+            SessionMonitorManager sessionMonitorManager,
             SessionMonitorExecutor sessionMonitorExecutor)
     {
         this.cf = cf;
@@ -70,6 +73,7 @@ public class LocalSite
         this.scheduleStoreManager = scheduleStoreManager;
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
+        this.sessionMonitorManager = sessionMonitorManager;
         this.sessionMonitorExecutor = sessionMonitorExecutor;
     }
 
@@ -102,11 +106,13 @@ public class LocalSite
     {
         private final StoredRevision revision;
         private final List<StoredWorkflowSource> workflows;
+        private final List<StoredScheduleSource> schedules;
 
-        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowSource> workflows)
+        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowSource> workflows, List<StoredScheduleSource> schedules)
         {
             this.revision = revision;
             this.workflows = workflows;
+            this.schedules = schedules;
         }
 
         public StoredRevision getRevision()
@@ -118,14 +124,20 @@ public class LocalSite
         {
             return workflows;
         }
+
+        public List<StoredScheduleSource> getSchedules()
+        {
+            return schedules;
+        }
     }
 
     private StoreWorkflow storeWorkflows(String repositoryName, Revision revision,
-            List<WorkflowSource> workflowSources, Optional<Date> currentTimeToSchedule)
+            WorkflowSourceList workflowSources, ScheduleSourceList scheduleSources,
+            Optional<Date> currentTimeToSchedule)
     {
         // validate workflow
         // TODO move this to RepositoryControl
-        workflowSources
+        workflowSources.get()
             .stream()
             .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
 
@@ -133,31 +145,28 @@ public class LocalSite
                 Repository.of(repositoryName),
                 (repoControl) -> {
                     StoredRevision rev = repoControl.putRevision(revision);
-                    List<StoredWorkflowSource> storedWorkflows =
-                        workflowSources.stream()
-                        .map(workflowSource -> {
-                            try {
-                                return repoControl.insertWorkflowSource(rev.getId(), workflowSource);
-                            }
-                            catch (ResourceConflictException ex) {
-                                throw new IllegalStateException("Database state error", ex);
-                            }
-                        })
-                        .collect(Collectors.toList());
-                    if (currentTimeToSchedule.isPresent()) {
-                        try {
-                            repoControl.syncSchedulesTo(scheduleStoreManager, scheds,
-                                    currentTimeToSchedule.get(), rev);
+                    try {
+                        List<StoredWorkflowSource> storedWorkflows =
+                            repoControl.insertWorkflowSources(rev.getId(), workflowSources.get());
+                        List<StoredScheduleSource> storedSchedules =
+                            repoControl.insertScheduleSources(rev.getId(), scheduleSources.get());
+                        if (currentTimeToSchedule.isPresent()) {
+                            repoControl.syncSchedules(
+                                    scheduleStoreManager, scheds,
+                                    rev, storedSchedules,
+                                    currentTimeToSchedule.get());
                         }
-                        catch (ResourceConflictException ex) {
-                            throw new IllegalStateException("Database state error", ex);
-                        }
+                        return new StoreWorkflow(rev, storedWorkflows, storedSchedules);
                     }
-                    return new StoreWorkflow(rev, storedWorkflows);
+                    catch (ResourceConflictException ex) {
+                        throw new IllegalStateException("Database state error", ex);
+                    }
                 });
     }
 
-    private StoreWorkflow storeWorkflows(List<WorkflowSource> workflowSources,
+    private StoreWorkflow storeWorkflows(
+            WorkflowSourceList workflowSources,
+            ScheduleSourceList scheduleSources,
             Optional<Date> currentTimeToSchedule)
     {
         return storeWorkflows(
@@ -168,32 +177,36 @@ public class LocalSite
                     .globalParams(cf.create())
                     .build(),
                 workflowSources,
+                scheduleSources,
                 currentTimeToSchedule);
     }
 
     public List<StoredSession> startWorkflows(
-            List<WorkflowSource> workflowSources,
+            TimeZone defaultTimeZone,
+            WorkflowSourceList workflowSources,
             Optional<String> fromTaskName,
             Config sessionParams,
-            SessionOptions options,
-            Date slaCurrentTime)
+            Date slaCurrentTime,
+            SessionOptions options)
     {
-        StoreWorkflow revWfs = storeWorkflows(workflowSources, Optional.absent());
+        StoreWorkflow revWfs = storeWorkflows(workflowSources,
+                ScheduleSourceList.of(ImmutableList.of()), Optional.absent());
         final StoredRevision revision = revWfs.getRevision();
         final List<StoredWorkflowSource> workflows = revWfs.getWorkflows();
-
-        final Session trigger = Session.sessionBuilder()
-            .name("session-" + UUID.randomUUID().toString())
-            .params(sessionParams)
-            .options(options)
-            .build();
 
         return workflows.stream()
             .map(workflow -> {
                 try {
+                    Session trigger = Sessions.newSession(
+                            "session-" + UUID.randomUUID().toString(),
+                            defaultTimeZone,
+                            cf.create(), workflow, sessionParams)
+                        .options(options)
+                        .build();
+
                     SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), workflow.getId());
-                    return exec.submitWorkflow(0, workflow, trigger, Optional.of(rel), slaCurrentTime,
-                            fromTaskName.transform(name -> new TaskMatchPattern(name)));
+                    return exec.submitWorkflow(0, workflow, trigger, Optional.of(rel),
+                            slaCurrentTime, fromTaskName.transform(name -> new TaskMatchPattern(name)));
                 }
                 catch (TaskMatchPattern.NoMatchException ex) {
                     logger.error("No task matched with '{}'", fromTaskName.orNull());
@@ -211,10 +224,11 @@ public class LocalSite
     }
 
     public void scheduleWorkflows(
-            List<WorkflowSource> workflowSources,
+            WorkflowSourceList workflowSources,
+            ScheduleSourceList scheduleSources,
             Date currentTime)
     {
-        storeWorkflows(workflowSources, Optional.of(currentTime));
+        storeWorkflows(workflowSources, scheduleSources, Optional.of(currentTime));
     }
 
     public void run()

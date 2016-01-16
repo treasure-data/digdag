@@ -33,6 +33,7 @@ public class DatabaseRepositoryStoreManager
         handle.registerMapper(new StoredRepositoryMapper(cfm));
         handle.registerMapper(new StoredRevisionMapper(cfm));
         handle.registerMapper(new StoredWorkflowSourceMapper(cfm));
+        handle.registerMapper(new StoredScheduleSourceMapper(cfm));
         handle.registerMapper(new StoredWorkflowSourceWithRepositoryMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
@@ -222,6 +223,24 @@ public class DatabaseRepositoryStoreManager
                     "workflow name=%s in revision id=%d", name, revId);
         }
 
+        //@Override
+        public StoredScheduleSource getScheduleSourceById(int wfId)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    dao.getScheduleSourceByid(siteId, wfId),
+                    "schedule id=%d", wfId);
+        }
+
+        //@Override
+        public StoredScheduleSource getScheduleSourceByName(int revId, String name)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    dao.getScheduleSourceByName(siteId, revId, name),
+                    "schedule name=%s in revision id=%d", name, revId);
+        }
+
         /**
          * Create a revision.
          *
@@ -229,14 +248,29 @@ public class DatabaseRepositoryStoreManager
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource workflow)
+        public StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource source)
             throws ResourceConflictException
         {
             try {
                 int wfId = catchConflict(() ->
-                    dao.insertWorkflowSource(revId, workflow.getName(), workflow.getConfig()),
-                    "workflow=%s in revision id=%d", workflow.getName(), revId);
+                    dao.insertWorkflowSource(revId, source.getName(), source.getConfig()),
+                    "workflow=%s in revision id=%d", source.getName(), revId);
                 return getWorkflowSourceById(wfId);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
+            }
+        }
+
+        @Override
+        public StoredScheduleSource insertScheduleSource(int revId, ScheduleSource source)
+            throws ResourceConflictException
+        {
+            try {
+                int wfId = catchConflict(() ->
+                    dao.insertScheduleSource(revId, source.getName(), source.getConfig()),
+                    "schedule=%s in revision id=%d", source.getName(), revId);
+                return getScheduleSourceById(wfId);
             }
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
@@ -363,6 +397,23 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowSource getWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
+        @SqlQuery("select w.* from schedule_sources w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where site_id = :siteId" +
+                " and w.id = :id" +
+                " limit 1")
+        StoredScheduleSource getScheduleSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
+
+        @SqlQuery("select w.* from schedule_sources w" +
+                " join revisions rev on rev.id = w.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where site_id = :siteId" +
+                " and revision_id = :revId" +
+                " and w.name = :name" +
+                " limit 1")
+        StoredScheduleSource getScheduleSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
+
         @SqlQuery("select w.* from workflow_sources w" +
                 " join revisions rev on rev.id = w.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
@@ -377,6 +428,12 @@ public class DatabaseRepositoryStoreManager
                 " values (:revId, :name, :config)")
         @GetGeneratedKeys
         int insertWorkflowSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
+
+        @SqlUpdate("insert into schedule_sources" +
+                " (revision_id, name, config)" +
+                " values (:revId, :name, :config)")
+        @GetGeneratedKeys
+        int insertScheduleSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
     }
 
     private static class StoredRepositoryMapper
@@ -446,6 +503,29 @@ public class DatabaseRepositoryStoreManager
                 throws SQLException
         {
             return ImmutableStoredWorkflowSource.builder()
+                .id(r.getInt("id"))
+                .revisionId(r.getInt("revision_id"))
+                .name(r.getString("name"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
+                .build();
+        }
+    }
+
+    private static class StoredScheduleSourceMapper
+            implements ResultSetMapper<StoredScheduleSource>
+    {
+        private final ConfigMapper cfm;
+
+        public StoredScheduleSourceMapper(ConfigMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredScheduleSource map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredScheduleSource.builder()
                 .id(r.getInt("id"))
                 .revisionId(r.getInt("revision_id"))
                 .name(r.getString("name"))

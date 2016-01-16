@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.io.File;
 import org.slf4j.Logger;
@@ -113,10 +114,10 @@ public class Run
             .build();
 
         List<StoredSession> sessions = localSite.startWorkflows(
-                ImmutableList.of(workflowSource),
+                TimeZone.getDefault(),  // TODO configurable by cmdline argument
+                WorkflowSourceList.of(ImmutableList.of(workflowSource)),
                 Optional.fromNullable(fromTaskName),
-                sessionParams, options,
-                new Date());
+                sessionParams, new Date(), options);
         if (sessions.isEmpty()) {
             throw systemExit("No workflows to start");
         }

@@ -12,5 +12,8 @@ public interface RepositoryControlStore
     StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource workflow)
         throws ResourceConflictException;
 
+    StoredScheduleSource insertScheduleSource(int revId, ScheduleSource workflow)
+        throws ResourceConflictException;
+
     //void deleteRepository(int repoId);  // TODO delete schedule
 }

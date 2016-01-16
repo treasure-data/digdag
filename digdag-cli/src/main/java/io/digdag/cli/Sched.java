@@ -56,7 +56,7 @@ public class Sched
             output = new File(workflowFile.getParent(), workflowFileName).toString();
         }
 
-        sched(args.get(0));
+        //sched(args.get(0));
     }
 
     @Override
@@ -69,6 +69,8 @@ public class Sched
         return systemExit(error);
     }
 
+    // TODO use Dagfile
+    /*
     private void sched(String workflowPath)
             throws Exception
     {
@@ -159,4 +161,5 @@ public class Sched
             return session;
         }
     }
+    */
 }

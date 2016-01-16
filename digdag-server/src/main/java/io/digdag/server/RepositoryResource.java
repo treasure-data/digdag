@@ -199,10 +199,13 @@ public class RepositoryResource
                                 .build()
                             );
                     try {
-                        for (WorkflowSource workflow : meta.getWorkflows().get()) {
-                            repo.insertWorkflowSource(rev.getId(), workflow);
-                        }
-                        repo.syncSchedulesTo(scheduleStore, scheds, new Date(), rev);
+                        List<StoredWorkflowSource> storedWorkflows =
+                            repo.insertWorkflowSources(rev.getId(), meta.getWorkflows().get());
+                        List<StoredScheduleSource> storedSchedules =
+                            repo.insertScheduleSources(rev.getId(), meta.getSchedules().get());
+                        repo.syncSchedules(scheduleStore, scheds,
+                                rev, storedSchedules,
+                                new Date());
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);

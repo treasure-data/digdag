@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -60,12 +61,12 @@ public class WorkflowExecutor
     }
 
     public StoredSession submitWorkflow(
-            int siteId, WorkflowSource workflowSource,
+            int siteId, WorkflowSource source,
             Session newSession, Optional<SessionRelation> relation,
             Date slaCurrentTime, Optional<TaskMatchPattern> from)
         throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
     {
-        Workflow workflow = compiler.compile(workflowSource.getName(), workflowSource.getConfig());
+        Workflow workflow = compiler.compile(source.getName(), source.getConfig());
         WorkflowTaskList sourceTasks = workflow.getTasks();
 
         int fromIndex = 0;
@@ -77,11 +78,12 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        List<SessionMonitor> monitors = monitorManager.getMonitors(workflowSource, slaCurrentTime);
+        TimeZone timeZone = Sessions.getSessionTimeZone(newSession);
+        List<SessionMonitor> monitors = monitorManager.getMonitors(source, timeZone, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) from index {} with session parameters: {}",
-                workflowSource.getName(),
-                workflowSource.getConfig().getNestedOrGetEmpty("meta"),
+                source.getName(),
+                source.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
                 newSession.getParams());
         for (WorkflowTask task : tasks) {

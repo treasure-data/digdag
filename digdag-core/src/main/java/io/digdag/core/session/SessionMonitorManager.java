@@ -26,14 +26,11 @@ public class SessionMonitorManager
         this.scheds = scheds;
     }
 
-    public List<SessionMonitor> getMonitors(WorkflowSource workflow, Date currentTime)
+    public List<SessionMonitor> getMonitors(WorkflowSource workflow, TimeZone timeZone, Date currentTime)
     {
         // TODO scheduleTime
         if (workflow.getConfig().has("sla")) {
             // TODO support multiple SLAs
-            TimeZone timeZone = scheds.getSchedulerConfig(workflow)
-                .transform(config -> scheds.getScheduler(config).getTimeZone())
-                .or(TimeZone.getTimeZone("UTC"));
             Config slaConfig = workflow.getConfig().getNestedOrGetEmpty("sla");
             TimeCalculator calc = getCalculator(slaConfig);  // validate
             // TODO validate workflow

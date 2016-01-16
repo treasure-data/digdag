@@ -15,11 +15,14 @@ import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.session.Session;
+import io.digdag.core.session.Sessions;
 import io.digdag.core.session.SessionRelation;
 import io.digdag.core.session.StoredSession;
-import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.core.session.SessionMonitorManager;
 import io.digdag.core.session.TaskMatchPattern;
+import io.digdag.core.workflow.WorkflowExecutor;
 
 public class ScheduleStarter
 {
@@ -44,13 +47,13 @@ public class ScheduleStarter
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-        Session trigger = createScheduleSession(cf, from, timeZone, time.getScheduleTime());
+        Session trigger = createScheduleSession(cf, wf, from, timeZone, time.getScheduleTime());
 
         SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
 
         try {
-            return exec.submitWorkflow(wf.getRepository().getSiteId(), wf, trigger, Optional.of(rel), time.getRunTime(),
-                    from.transform(name -> new TaskMatchPattern(name)));
+            return exec.submitWorkflow(wf.getRepository().getSiteId(), wf, trigger, Optional.of(rel),
+                    time.getRunTime(), from.transform(name -> new TaskMatchPattern(name)));
         }
         catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleMatchException ex) {
             throw new ConfigException(ex);
@@ -58,6 +61,7 @@ public class ScheduleStarter
     }
 
     private static Session createScheduleSession(ConfigFactory cf,
+            WorkflowSource workflow,
             Optional<String> from, TimeZone timeZone, Date scheduleTime)
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
@@ -68,14 +72,14 @@ public class ScheduleStarter
             sessionName += " " + from.get();
         }
 
-        Config sessionParams = cf.create()
-            .set("schedule_time", scheduleTime.getTime() / 1000)
-            .set("timezone", timeZone.getID());
-            //.set("time_zone_offset", /*how to calculate using TimeZone API? needs joda-time?*/)
+        Config overwriteParams = cf.create()
+            .set("schedule_time", scheduleTime.getTime() / 1000);
 
-        return Session.sessionBuilder()
-            .name(sessionName)
-            .params(sessionParams)
+        return Sessions.newSession(
+                sessionName,
+                cf.create(),  // TODO set revision.params here
+                workflow,
+                overwriteParams)
             .options(SessionOptions.empty())
             .build();
     }

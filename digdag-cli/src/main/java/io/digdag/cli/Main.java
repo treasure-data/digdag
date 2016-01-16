@@ -41,7 +41,6 @@ public class Main
         jc.addCommand("archive", new Archive());
         jc.addCommand("gen", new Gen());
         jc.addCommand("run", new Run());
-        jc.addCommand("sched", new Sched());
         jc.addCommand("server", new Server());
         jc.addCommand("show", new Show());
 
@@ -157,8 +156,6 @@ public class Main
         System.err.println("  Commands:");
         System.err.println("    gen <name>                       generate a new workflow definition");
         System.err.println("    run <workflow.yml>               run a workflow");
-        System.err.println("    show <workflow.yml>              visualize a workflow");
-        System.err.println("    sched <workflow.yml> -o <dir>    start scheduling a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");

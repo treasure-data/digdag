@@ -22,8 +22,10 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.ArchiveMetadata;
-import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.ScheduleSource;
+import io.digdag.core.repository.ScheduleSourceList;
 import com.beust.jcommander.Parameter;
 import io.digdag.spi.config.ConfigFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
@@ -132,7 +134,8 @@ public class Archive
             }
 
             // create .digdag.yml
-            byte[] meta = mapper.toYaml(ArchiveMetadata.of(WorkflowSourceList.of(workflows))).getBytes(StandardCharsets.UTF_8);
+            // TODO make ScheduleSourceList from Dagfile
+            byte[] meta = mapper.toYaml(ArchiveMetadata.of(WorkflowSourceList.of(workflows), ScheduleSourceList.of(ImmutableList.of()))).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(meta.length);
             metaEntry.setModTime(new Date());

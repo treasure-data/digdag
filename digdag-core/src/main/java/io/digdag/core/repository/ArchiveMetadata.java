@@ -13,15 +13,18 @@ public abstract class ArchiveMetadata
 
     public abstract WorkflowSourceList getWorkflows();
 
+    public abstract ScheduleSourceList getSchedules();
+
     public static ImmutableArchiveMetadata.Builder builder()
     {
         return ImmutableArchiveMetadata.builder();
     }
 
-    public static ArchiveMetadata of(WorkflowSourceList workflows)
+    public static ArchiveMetadata of(WorkflowSourceList workflows, ScheduleSourceList schedules)
     {
         return builder()
             .workflows(workflows)
+            .schedules(schedules)
             .build();
     }
 }

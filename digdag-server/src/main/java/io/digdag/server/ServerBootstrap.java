@@ -25,7 +25,7 @@ public class ServerBootstrap
             .initialize()
             .getInjector();
 
-        // TODO move this class to io.dgidag.cli package
+        /* TODO use Dagfile
         String workflowPath = context.getInitParameter("io.digdag.server.workflowPath");
         if (workflowPath != null) {
             File path = new File(workflowPath);
@@ -54,6 +54,7 @@ public class ServerBootstrap
             thread.setDaemon(true);
             thread.start();
         }
+        */
 
         return injector;
     }

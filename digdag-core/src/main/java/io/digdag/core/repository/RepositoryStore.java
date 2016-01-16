@@ -42,4 +42,15 @@ public interface RepositoryStore
 
     StoredWorkflowSource getWorkflowSourceByName(int revId, String name)
         throws ResourceNotFoundException;
+
+
+    //List<StoredScheduleSource> getScheduleSources(int revId, int pageSize, Optional<Integer> lastId);
+
+    //List<StoredScheduleSourceWithRepository> getLatestActiveScheduleSources(int pageSize, Optional<Integer> lastId);
+
+    //StoredScheduleSource getScheduleSourceById(int wfId)
+    //    throws ResourceNotFoundException;
+
+    //StoredScheduleSource getScheduleSourceByName(int revId, String name)
+    //    throws ResourceNotFoundException;
 }
