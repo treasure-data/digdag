@@ -90,24 +90,20 @@ public class RepositoryControl
 
     public void syncSchedules(
             ScheduleStoreManager schedStoreManager, SchedulerManager scheds,
-            StoredRevision revision, List<StoredScheduleSource> sources, Date currentTime)
+            StoredRevision revision,
+            List<StoredWorkflowSource> workflows, List<StoredScheduleSource> sources,
+            Date currentTime)
         throws ResourceConflictException
     {
-        ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
-        Optional<Integer> lastId = Optional.absent();
-        while (true) {
-            if (sources.isEmpty()) {
-                break;
-            }
-            for (StoredScheduleSource source : sources) {
-                Scheduler sr = scheds.getScheduler(source.getConfig());
-                ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
-                Schedule schedule = Schedule.of(source.getId(), source.getConfig(),
-                        firstTime.getRunTime(), firstTime.getScheduleTime());
-                schedules.add(schedule);
-            }
-            lastId = Optional.of(sources.get(sources.size() - 1).getId());
+        ImmutableList.Builder<Schedule> builder = ImmutableList.builder();
+        for (StoredScheduleSource source : sources) {
+            int workflowSourceId = scheds.matchWorkflow(source, workflows);
+            Scheduler sr = scheds.getScheduler(source.getConfig());
+            ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
+            Schedule schedule = Schedule.of(source.getId(), workflowSourceId,
+                    firstTime.getRunTime(), firstTime.getScheduleTime());
+            builder.add(schedule);
         }
-        schedStoreManager.syncRepositorySchedules(revision.getRepositoryId(), schedules.build());
+        schedStoreManager.syncRepositorySchedules(revision.getRepositoryId(), builder.build());
     }
 }

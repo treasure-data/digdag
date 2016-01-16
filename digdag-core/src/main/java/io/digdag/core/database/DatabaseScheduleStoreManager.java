@@ -69,7 +69,9 @@ public class DatabaseScheduleStoreManager
         List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
             return dao.lockReadySchedules(currentTime.getTime() / 1000, 10)  // TODO 10 should be configurable?
                 .stream()
-                .map(sched -> {
+                .map(schedId -> {
+                    // TODO JOIN + FOR UPDATE doesn't work with H2 database
+                    StoredSchedule sched = dao.getScheduleByIdInternal(schedId);
                     try {
                         ScheduleTime nextTime = func.schedule(sched);
                         dao.updateNextScheduleTime(sched.getId(),
@@ -113,10 +115,10 @@ public class DatabaseScheduleStoreManager
             for (Schedule schedule : schedules) {
                 ids[i] = catchConflict(() ->
                         dao.insertRepositorySchedule(
-                            schedule.getWorkflowId(), schedule.getConfig(),
+                            schedule.getScheduleSourceId(), schedule.getWorkflowSourceId(),
                             schedule.getNextRunTime().getTime() / 1000,
                             schedule.getNextScheduleTime().getTime() / 1000),
-                        "schedule workflow_id=%d", schedule.getWorkflowId());
+                        "schedule workflow_id=%d", schedule.getWorkflowSourceId());
                 i++;
             }
             String idList = Longs.asList(ids).stream().map(id -> Long.toString(id)).collect(Collectors.joining(","));
@@ -124,8 +126,8 @@ public class DatabaseScheduleStoreManager
                     "delete from schedules" +
                     " where id in (" +
                         "select s.id from schedules s" +
-                        " join workflows wf on s.workflow_id = wf.id" +
-                        " join revisions rev on wf.revision_id = rev.id" +
+                        " join schedule_sources ss on s.source_id = ss.id" +
+                        " join revisions rev on ss.revision_id = rev.id" +
                         " where rev.repository_id = :repoId" +
                         " and s.id not in (" + idList + ")" +
                     ")"
@@ -145,7 +147,9 @@ public class DatabaseScheduleStoreManager
         throws ResourceNotFoundException
     {
         Optional<T> ret = handle.inTransaction((handle, session) -> {
-            StoredSchedule schedule = dao.lockScheduleById(schedId);
+            // TODO JOIN + FOR UPDATE doesn't work with H2 database
+            dao.lockScheduleById(schedId);
+            StoredSchedule schedule = dao.getScheduleByIdInternal(schedId);
             if (schedule == null) {
                 return Optional.<T>absent();
             }
@@ -192,9 +196,9 @@ public class DatabaseScheduleStoreManager
 
     public interface Dao
     {
-        @SqlQuery("select s.* from schedules s" +
-                " join workflows wf on s.workflow_id = wf.id" +
-                " join revisions rev on wf.revision_id = rev.id" +
+        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
+                " join schedule_sources ss on s.source_id = ss.id" +
+                " join revisions rev on ss.revision_id = rev.id" +
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where repo.site_id = :siteId" +
                 " and s.id > :lastId" +
@@ -202,32 +206,35 @@ public class DatabaseScheduleStoreManager
                 " limit :limit")
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.* from schedules s" +
-                " join workflows wf on s.workflow_id = wf.id" +
-                " join revisions rev on wf.revision_id = rev.id" +
+        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
+                " join schedule_sources ss on s.source_id = ss.id" +
+                " where s.id = :schedId")
+        StoredSchedule getScheduleByIdInternal(@Bind("schedId") long schedId);
+
+        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
+                " join schedule_sources ss on s.source_id = ss.id" +
+                " join revisions rev on ss.revision_id = rev.id" +
                 " join repositories repo on rev.repository_id = repo.id" +
                 " where repo.site_id = :siteId" +
-                " and s.id = :schedId" +
-                " order by id asc" +
-                " limit :limit")
+                " and s.id = :schedId")
         StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
 
         @SqlUpdate("insert into schedules" +
-                " (workflow_id, config, next_run_time, next_schedule_time, created_at, updated_at)" +
-                " values (:workflowId, :config, :nextRunTime, :nextScheduleTime, now(), now())")
+                " (source_id, workflow_id, next_run_time, next_schedule_time, created_at, updated_at)" +
+                " values (:sourceId, :workflowId, :nextRunTime, :nextScheduleTime, now(), now())")
         @GetGeneratedKeys
-        long insertRepositorySchedule(@Bind("workflowId") int workflowId, @Bind("config") Config config, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        long insertRepositorySchedule(@Bind("sourceId") int sourceId, @Bind("workflowId") int workflowId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
-        @SqlQuery("select * from schedules" +
+        @SqlQuery("select id from schedules" +
                 " where next_run_time <= :currentTime" +
                 " limit :limit" +
                 " for update")
-        List<StoredSchedule> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+        List<Integer> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
 
         @SqlQuery("select * from schedules" +
                 " where id = :id" +
                 " for update")
-        StoredSchedule lockScheduleById(@Bind("id") long taskId);
+        int lockScheduleById(@Bind("id") long taskId);
 
         @SqlUpdate("update schedules" +
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
@@ -251,7 +258,9 @@ public class DatabaseScheduleStoreManager
         {
             return ImmutableStoredSchedule.builder()
                 .id(r.getLong("id"))
-                .workflowId(r.getInt("workflow_id"))
+                .scheduleSourceId(r.getInt("source_id"))
+                .workflowSourceId(r.getInt("workflow_id"))
+                .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
                 .nextScheduleTime(new Date(r.getLong("next_schedule_time") * 1000))

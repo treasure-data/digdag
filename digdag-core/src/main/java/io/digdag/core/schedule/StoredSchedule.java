@@ -6,6 +6,7 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
+import io.digdag.spi.config.Config;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableStoredSchedule.class)
@@ -14,6 +15,10 @@ public abstract class StoredSchedule
         extends Schedule
 {
     public abstract long getId();
+
+    public abstract String getName();
+
+    public abstract Config getConfig();
 
     public abstract Date getCreatedAt();
 

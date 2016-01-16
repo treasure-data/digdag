@@ -153,7 +153,7 @@ public class LocalSite
                         if (currentTimeToSchedule.isPresent()) {
                             repoControl.syncSchedules(
                                     scheduleStoreManager, scheds,
-                                    rev, storedSchedules,
+                                    rev, storedWorkflows, storedSchedules,
                                     currentTimeToSchedule.get());
                         }
                         return new StoreWorkflow(rev, storedWorkflows, storedSchedules);

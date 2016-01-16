@@ -187,8 +187,8 @@ public class RepositoryResource
 
         RestRepository stored = rm.getRepositoryStore(siteId).putRepository(
                 Repository.of(name),
-                (RepositoryControl repo) -> {
-                    StoredRevision rev = repo.putRevision(
+                (RepositoryControl repoControl) -> {
+                    StoredRevision rev = repoControl.putRevision(
                             Revision.revisionBuilder()
                                 .name(revision)
                                 .defaultParams(cf.create())
@@ -200,17 +200,17 @@ public class RepositoryResource
                             );
                     try {
                         List<StoredWorkflowSource> storedWorkflows =
-                            repo.insertWorkflowSources(rev.getId(), meta.getWorkflows().get());
+                            repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflows().get());
                         List<StoredScheduleSource> storedSchedules =
-                            repo.insertScheduleSources(rev.getId(), meta.getSchedules().get());
-                        repo.syncSchedules(scheduleStore, scheds,
-                                rev, storedSchedules,
+                            repoControl.insertScheduleSources(rev.getId(), meta.getSchedules().get());
+                        repoControl.syncSchedules(scheduleStore, scheds,
+                                rev, storedWorkflows, storedSchedules,
                                 new Date());
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);
                     }
-                    return RestRepository.of(repo.get(), rev);
+                    return RestRepository.of(repoControl.get(), rev);
                 });
 
         return stored;

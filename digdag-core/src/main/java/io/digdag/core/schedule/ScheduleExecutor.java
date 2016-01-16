@@ -66,12 +66,12 @@ public class ScheduleExecutor
         Scheduler sr = scheds.getScheduler(sched.getConfig());
         Optional<String> from = sched.getConfig().getOptional("from", String.class);
         try {
-            starter.start(sched.getWorkflowId(), from,
+            starter.start(sched.getWorkflowSourceId(), from,
                     sr.getTimeZone(), ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
             return sr.nextScheduleTime(scheduleTime);
         }
         catch (ResourceNotFoundException ex) {
-            Exception error = new IllegalStateException("Schedule for a workflow id="+sched.getWorkflowId()+" is scheduled but does not exist.", ex);
+            Exception error = new IllegalStateException("Workflow for a schedule id="+sched.getId()+" is scheduled but does not exist.", ex);
             logger.error("Database state error during scheduling. Pending this schedule for 1 hour", error);
             return ScheduleTime.of(
                     new Date(sched.getNextRunTime().getTime() + 3600*1000),
@@ -81,7 +81,8 @@ public class ScheduleExecutor
             Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
             logger.error("Database state error during scheduling. Skipping this schedule", error);
             return sr.nextScheduleTime(scheduleTime);
-        } catch (RuntimeException ex) {
+        }
+        catch (RuntimeException ex) {
             logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
             return ScheduleTime.of(
                     new Date(sched.getNextRunTime().getTime() + 3600*1000),

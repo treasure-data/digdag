@@ -246,7 +246,7 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("revision_id", "not null")
                     .addString("name", "not null")
-                    .addMediumText("config", "")  // TODO store schedule_source_id instead of config
+                    .addMediumText("config", "")
                     .build());
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on schedule_sources (revision_id, name)");
             handle.update("create index if not exists workflows_on_revision_id_and_id on schedule_sources (revision_id, id)");
@@ -255,14 +255,15 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("schedules")
                     .addLongId("id")
+                    .addInt("source_id", "not null")
                     .addInt("workflow_id", "not null")
-                    .addMediumText("config", "")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create unique index if not exists schedules_on_workflow_id on schedules (workflow_id)");
+            handle.update("create unique index if not exists schedules_on_source_id on schedules (source_id)");
+            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_id)");
             handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // queues
