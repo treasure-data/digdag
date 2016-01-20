@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.immutables.value.Value;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableArchiveMetadata.class)

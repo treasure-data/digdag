@@ -1,4 +1,4 @@
-package io.digdag.spi.config;
+package io.digdag.client.config;
 
 import javax.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;

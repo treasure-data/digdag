@@ -25,7 +25,7 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.Tasks;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.ConfigFactory;
 
 public class ResumeStateManager
 {

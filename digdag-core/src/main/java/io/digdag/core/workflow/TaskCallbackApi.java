@@ -1,9 +1,9 @@
 package io.digdag.core.workflow;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
+import io.digdag.spi.RevisionInfo;
 
 public interface TaskCallbackApi
 {
@@ -17,4 +17,6 @@ public interface TaskCallbackApi
 
     void taskPollNext(long taskId,
             Config stateParams, int retryInterval);
+
+    //boolean requireSession(RevisionInfo revision, String workflowName);
 }

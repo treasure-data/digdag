@@ -12,8 +12,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigException;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 
 public class ConfigEvalEngine
 {

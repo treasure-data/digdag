@@ -29,9 +29,9 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigException;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 
 public class Run

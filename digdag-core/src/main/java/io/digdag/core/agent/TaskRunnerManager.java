@@ -9,9 +9,9 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigException;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.*;
 import io.digdag.core.workflow.TaskCallbackApi;
 

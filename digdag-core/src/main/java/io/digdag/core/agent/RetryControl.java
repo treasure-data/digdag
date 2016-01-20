@@ -1,6 +1,6 @@
 package io.digdag.core.agent;
 
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.core.workflow.TaskConfig;
 
 public class RetryControl

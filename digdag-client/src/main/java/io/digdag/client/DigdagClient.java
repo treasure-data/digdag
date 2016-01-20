@@ -13,14 +13,13 @@ import javax.ws.rs.client.WebTarget;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.common.base.Optional;
-import org.immutables.value.Value;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
 
 public class DigdagClient
@@ -65,7 +64,7 @@ public class DigdagClient
 
         this.headers = new MultivaluedHashMap<>();
 
-        // here uses Guice to make @JacksonInject work which is used at io.digdag.spi.config.Config.<init>
+        // here uses Guice to make @JacksonInject work which is used at io.digdag.client.config.Config.<init>
         Injector injector = buildInjector();
         this.client = new ResteasyClientBuilder()
             .register(new JacksonJsonProvider(injector.getInstance(ObjectMapper.class)))

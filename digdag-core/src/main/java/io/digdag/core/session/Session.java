@@ -5,7 +5,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.core.repository.WorkflowSource;
 
 @JsonDeserialize(as = ImmutableSession.class)

@@ -2,7 +2,7 @@ package io.digdag.core.workflow;
 
 import com.google.inject.Inject;
 import com.google.common.base.*;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
 
 public class InProcessTaskCallbackApi

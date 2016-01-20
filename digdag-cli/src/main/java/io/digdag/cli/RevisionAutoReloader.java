@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.core.LocalSite;
 
 public class RevisionAutoReloader

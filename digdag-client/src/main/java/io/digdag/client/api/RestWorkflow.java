@@ -3,7 +3,7 @@ package io.digdag.client.api;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestWorkflow.class)

@@ -10,7 +10,7 @@ import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskConfig;
 import io.digdag.core.workflow.WorkflowTask;

@@ -1,8 +1,8 @@
 package io.digdag.core.database;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 

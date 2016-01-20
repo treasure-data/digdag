@@ -7,7 +7,7 @@ import com.google.common.base.*;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.spi.*;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.spi.TaskRunner;
 
 public abstract class BaseTaskRunner

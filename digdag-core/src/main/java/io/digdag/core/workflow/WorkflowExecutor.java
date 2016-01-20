@@ -33,8 +33,8 @@ import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 
 public class WorkflowExecutor
 {

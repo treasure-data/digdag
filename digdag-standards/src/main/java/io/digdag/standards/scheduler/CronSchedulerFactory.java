@@ -1,7 +1,7 @@
 package io.digdag.standards.scheduler;
 
 import java.util.TimeZone;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.SchedulerFactory;
 

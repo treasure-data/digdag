@@ -1,6 +1,6 @@
 package io.digdag.spi;
 
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 public interface TaskQueueFactory
 {

@@ -7,9 +7,9 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskQueue;
 import io.digdag.spi.TaskQueueFactory;
-import io.digdag.spi.config.Config;
-import io.digdag.spi.config.ConfigException;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public class TaskQueueManager

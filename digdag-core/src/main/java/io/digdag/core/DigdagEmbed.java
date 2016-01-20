@@ -30,7 +30,7 @@ import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 //import com.fasterxml.jackson.datatype.joda.JodaModule;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.yaml.YamlConfigLoader;
 
 public class DigdagEmbed

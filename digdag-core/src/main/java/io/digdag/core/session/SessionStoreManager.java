@@ -5,7 +5,7 @@ import java.util.Date;
 import com.google.common.base.*;
 import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.RevisionInfo;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 

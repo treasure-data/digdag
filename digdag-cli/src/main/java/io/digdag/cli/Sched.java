@@ -28,7 +28,7 @@ import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Arrays.asList;
 

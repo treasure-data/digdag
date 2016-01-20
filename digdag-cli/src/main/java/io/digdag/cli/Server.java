@@ -28,7 +28,7 @@ import io.digdag.guice.rs.GuiceRsServerControlModule;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.server.ServerModule;
-import io.digdag.spi.config.ConfigFactory;
+import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 
 public class Server

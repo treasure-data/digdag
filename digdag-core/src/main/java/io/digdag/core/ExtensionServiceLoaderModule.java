@@ -3,7 +3,7 @@ package io.digdag.core;
 import java.util.ServiceLoader;
 import com.google.inject.Module;
 import com.google.inject.Binder;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 /**
  * ExtensionServiceLoaderModule loads Extensions using java.util.ServiceLoader

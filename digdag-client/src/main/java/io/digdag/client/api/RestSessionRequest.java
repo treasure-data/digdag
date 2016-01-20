@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestSessionRequest.class)

@@ -1,4 +1,4 @@
-package io.digdag.spi.config;
+package io.digdag.client.config;
 
 import java.util.List;
 import java.util.Map;

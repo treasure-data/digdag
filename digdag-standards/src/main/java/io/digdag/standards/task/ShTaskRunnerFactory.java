@@ -16,7 +16,7 @@ import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 public class ShTaskRunnerFactory
         implements TaskRunnerFactory

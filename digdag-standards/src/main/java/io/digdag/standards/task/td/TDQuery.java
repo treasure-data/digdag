@@ -6,7 +6,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.Iterator;
 import com.google.common.base.Throwables;
 import com.google.common.base.Function;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.Value;

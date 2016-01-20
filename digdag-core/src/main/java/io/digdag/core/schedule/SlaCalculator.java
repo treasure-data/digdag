@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Calendar;
 import java.util.TimeZone;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 
 class SlaCalculator
 {

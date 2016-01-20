@@ -1,7 +1,7 @@
 package io.digdag.standards.task.td;
 
 import java.io.Closeable;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import io.digdag.standards.task.BaseTaskRunner;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientBuilder;

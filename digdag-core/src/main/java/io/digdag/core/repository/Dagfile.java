@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.immutables.value.Value;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import java.util.regex.Pattern;
 
 @Value.Immutable

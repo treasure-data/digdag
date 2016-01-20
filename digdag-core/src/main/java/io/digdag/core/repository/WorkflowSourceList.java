@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import com.google.common.collect.ImmutableList;
-import io.digdag.spi.config.Config;
+import io.digdag.client.config.Config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.immutables.value.Value;
