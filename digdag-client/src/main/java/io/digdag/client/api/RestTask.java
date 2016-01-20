@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.config.Config;
-import io.digdag.core.session.StoredTask;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestTask.class)
@@ -40,20 +39,5 @@ public abstract class RestTask
     public static ImmutableRestTask.Builder builder()
     {
         return ImmutableRestTask.builder();
-    }
-
-    public static RestTask of(StoredTask task)
-    {
-        return builder()
-            .id(task.getId())
-            .fullName(task.getFullName())
-            .parentId(task.getParentId().orNull())
-            .config(task.getConfig().getNonValidated())
-            .upstreams(task.getUpstreams())
-            .isGroup(task.getTaskType().isGroupingOnly())
-            .state(task.getState().toString().toLowerCase())
-            .carryParams(task.getReport().transform(report -> report.getCarryParams()).or(task.getConfig().getLocal().getFactory().create()))
-            .stateParams(task.getStateParams())
-            .build();
     }
 }

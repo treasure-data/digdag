@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.config.Config;
-import io.digdag.core.session.StoredSession;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestSession.class)
@@ -32,15 +31,5 @@ public abstract class RestSession
     public static ImmutableRestSession.Builder builder()
     {
         return ImmutableRestSession.builder();
-    }
-
-    public static RestSession of(StoredSession session)
-    {
-        return builder()
-            .id(session.getId())
-            .name(session.getName())
-            .params(session.getParams())
-            .createdAt(session.getCreatedAt())
-            .build();
     }
 }

@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
-import io.digdag.core.repository.StoredRepository;
-import io.digdag.core.repository.StoredRevision;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestRepository.class)
@@ -30,18 +28,5 @@ public abstract class RestRepository
     public static ImmutableRestRepository.Builder builder()
     {
         return ImmutableRestRepository.builder();
-    }
-
-    public static RestRepository of(StoredRepository repo, StoredRevision rev)
-    {
-        return builder()
-            .id(repo.getId())
-            .name(repo.getName())
-            .revision(rev.getName())
-            .createdAt(repo.getCreatedAt())
-            .updatedAt(rev.getCreatedAt())
-            .archiveType(rev.getArchiveType())
-            .archiveMd5(rev.getArchiveMd5())
-            .build();
     }
 }

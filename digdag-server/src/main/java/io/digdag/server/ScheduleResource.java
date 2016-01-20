@@ -69,7 +69,7 @@ public class ScheduleResource
             .map(sched -> {
                 try {
                     StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowSourceId());
-                    return RestSchedule.of(sched, wf);
+                    return RestModels.schedule(sched, wf);
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -86,7 +86,7 @@ public class ScheduleResource
     {
         StoredSchedule sched = sm.getScheduleStore(siteId).getScheduleById(id);
         StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowSourceId());
-        return RestSchedule.of(sched, wf);
+        return RestModels.schedule(sched, wf);
     }
 
     @POST
@@ -109,6 +109,6 @@ public class ScheduleResource
                     request.getNextRunTime().transform(t -> new Date(t * 1000)),
                     request.getDryRun());
         }
-        return RestScheduleSummary.of(updated);
+        return RestModels.scheduleSummary(updated);
     }
 }

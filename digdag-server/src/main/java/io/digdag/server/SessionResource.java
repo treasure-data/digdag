@@ -86,7 +86,7 @@ public class SessionResource
         }
 
         return sessions.stream()
-            .map(s -> RestSession.of(s))
+            .map(s -> RestModels.session(s))
             .collect(Collectors.toList());
     }
 
@@ -97,7 +97,7 @@ public class SessionResource
     {
         StoredSession s = sm.getSessionStore(siteId)
             .getSessionById(id);
-        return RestSession.of(s);
+        return RestModels.session(s);
     }
 
     @GET
@@ -108,7 +108,7 @@ public class SessionResource
         return sm.getSessionStore(siteId)
             .getTasks(id, 100, Optional.absent())
             .stream()
-            .map(task -> RestTask.of(task))
+            .map(task -> RestModels.task(task))
             .collect(Collectors.toList());
     }
 
@@ -160,7 +160,7 @@ public class SessionResource
                 session, Optional.of(rel),
                 ImmutableList.of());
 
-        return RestSession.of(stored);
+        return RestModels.session(stored);
     }
 
     @POST

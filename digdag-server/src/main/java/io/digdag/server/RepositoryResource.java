@@ -94,7 +94,7 @@ public class RepositoryResource
                     else {
                         rev = rs.getRevisionByName(repo.getId(), revName);
                     }
-                    return RestRepository.of(repo, rev);
+                    return RestModels.repository(repo, rev);
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -118,7 +118,7 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        return RestRepository.of(repo, rev);
+        return RestModels.repository(repo, rev);
     }
 
     @GET
@@ -139,7 +139,7 @@ public class RepositoryResource
         List<StoredWorkflowSource> workflows = rs.getWorkflowSources(rev.getId(), 100, Optional.absent());
 
         return workflows.stream()
-            .map(workflow -> RestWorkflow.of(repo, rev, workflow))
+            .map(workflow -> RestModels.workflow(repo, rev, workflow))
             .collect(Collectors.toList());
     }
 
@@ -207,7 +207,7 @@ public class RepositoryResource
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);
                     }
-                    return RestRepository.of(repoControl.get(), rev);
+                    return RestModels.repository(repoControl.get(), rev);
                 });
 
         return stored;

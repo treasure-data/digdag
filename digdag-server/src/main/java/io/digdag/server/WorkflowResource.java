@@ -52,7 +52,7 @@ public class WorkflowResource
         final ImmutableList.Builder<RestWorkflow> builder = ImmutableList.builder();
         return rm.getRepositoryStore(siteId).getLatestActiveWorkflowSources(100, Optional.absent())
             .stream()
-            .map(wfDetails -> RestWorkflow.of(wfDetails))
+            .map(wfDetails -> RestModels.workflow(wfDetails))
             .collect(Collectors.toList());
     }
 
@@ -64,6 +64,6 @@ public class WorkflowResource
         StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(wfId);
         StoredRevision rev = rm.getRepositoryStore(siteId).getRevisionById(wf.getRevisionId());
         StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(rev.getRepositoryId());
-        return RestWorkflow.of(repo, rev, wf);
+        return RestModels.workflow(repo, rev, wf);
     }
 }

@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.sql.ResultSet;
@@ -12,6 +13,7 @@ import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.Schedule;
+import io.digdag.client.api.IdName;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -40,6 +42,7 @@ public class DatabaseRepositoryStoreManager
         handle.registerMapper(new StoredWorkflowSourceMapper(cfm));
         handle.registerMapper(new StoredScheduleSourceMapper(cfm));
         handle.registerMapper(new StoredWorkflowSourceWithRepositoryMapper(cfm));
+        handle.registerMapper(new IdNameMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
     }
@@ -291,7 +294,7 @@ public class DatabaseRepositoryStoreManager
             }
             int revId = sources.get(0).getRevisionId();
 
-            Map<String, Integer> oldNames = dao.getLatestWorkflowNamesOfRepository(repoId);
+            Map<String, Long> oldNames = idNameListToHashMap(dao.getLatestWorkflowNamesOfRepository(repoId));
             if (oldNames == null) {
                 oldNames = ImmutableMap.of();
             }
@@ -336,7 +339,7 @@ public class DatabaseRepositoryStoreManager
                 handle.createStatement(
                         "delete from workflows" +
                         " where id in (" +
-                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")");
+                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")");
             }
         }
 
@@ -348,7 +351,7 @@ public class DatabaseRepositoryStoreManager
                 return;
             }
 
-            Map<String, Integer> oldNames = dao.getLatestScheduleNamesOfRepository(repoId);
+            Map<String, Long> oldNames = idNameListToHashMap(dao.getLatestScheduleNamesOfRepository(repoId));
             if (oldNames == null) {
                 oldNames = ImmutableMap.of();
             }
@@ -395,7 +398,7 @@ public class DatabaseRepositoryStoreManager
                 handle.createStatement(
                         "delete from schedules" +
                         " where id in (" +
-                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")");
+                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")");
             }
         }
     }
@@ -559,11 +562,11 @@ public class DatabaseRepositoryStoreManager
 
         @SqlQuery("select name, id from workflows" +
                 " where repository_id = :repoId")
-        Map<String, Integer> getLatestWorkflowNamesOfRepository(@Bind("repoId") int repoId);
+        List<IdName> getLatestWorkflowNamesOfRepository(@Bind("repoId") int repoId);
 
         @SqlQuery("select name, id from schedules" +
                 " where repository_id = :repoId")
-        Map<String, Integer> getLatestScheduleNamesOfRepository(@Bind("repoId") int repoId);
+        List<IdName> getLatestScheduleNamesOfRepository(@Bind("repoId") int repoId);
     }
 
     private static class StoredRepositoryMapper
@@ -695,5 +698,28 @@ public class DatabaseRepositoryStoreManager
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))
                 .build();
         }
+    }
+
+    private static class IdNameMapper
+            implements ResultSetMapper<IdName>
+    {
+        @Override
+        public IdName map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return IdName.of(r.getLong("id"), r.getString("name"));
+        }
+    }
+
+    private HashMap<String, Long> idNameListToHashMap(List<IdName> list)
+    {
+        if (list == null) {
+            return null;
+        }
+        HashMap<String, Long> map = new HashMap<>();
+        for (IdName idName : list) {
+            map.put(idName.getName(), idName.getId());
+        }
+        return map;
     }
 }
