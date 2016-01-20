@@ -116,7 +116,8 @@ public class RepositoryControl
 
             Scheduler sr = scheds.getScheduler(scheduleSource.getConfig());
             ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
-            Schedule schedule = Schedule.of(scheduleSource.getId(), workflowSource.getId(),
+            Schedule schedule = Schedule.of(scheduleSource.getName(),
+                    scheduleSource.getId(), workflowSource.getId(),
                     firstTime.getRunTime(), firstTime.getScheduleTime());
             schedules.add(schedule);
         }

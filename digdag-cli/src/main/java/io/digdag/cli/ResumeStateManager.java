@@ -89,7 +89,7 @@ public class ResumeStateManager
                     .setNameFormat("session-state-update-%d")
                     .build()
                     );
-            executor.schedule(() -> backgroundUpdateAll(), 1, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(() -> backgroundUpdateAll(), 1, 1, TimeUnit.SECONDS);
             this.executor = executor;
         }
     }

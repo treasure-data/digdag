@@ -10,6 +10,7 @@ run: +sla
 -sla_daily:
   cron: "2 0 * * *"  # runs every 02:00 midnight
   timezone: America/Los_Angeles   # this considers daylight saving time
+  workflow: +sla
   sla:
     time: "02:02"
     +notice:

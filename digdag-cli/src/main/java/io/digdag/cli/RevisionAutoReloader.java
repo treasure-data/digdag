@@ -54,9 +54,10 @@ public class RevisionAutoReloader
         ReloadTarget target = new ReloadTarget(file, defaultTimeZone, overwriteParams);
         target.load();
         targets.add(target);
+        startAutoReload();
     }
 
-    public synchronized void startAutoReload()
+    private synchronized void startAutoReload()
     {
         if (executor == null) {
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
@@ -65,7 +66,7 @@ public class RevisionAutoReloader
                     .setNameFormat("revision-auto-reloader-%d")
                     .build()
                     );
-            executor.schedule(() -> backgroundUpdateAll(), 30, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(() -> backgroundUpdateAll(), 30, 30, TimeUnit.SECONDS);
             this.executor = executor;
         }
     }
@@ -119,6 +120,7 @@ public class RevisionAutoReloader
             try {
                 Dagfile dagfile = readDagfile();  // TODO optimize this code
                 if (!dagfile.equals(lastDagfile)) {
+                    logger.info("Reloading " + file);
                     localSite.scheduleWorkflows(
                             dagfile.getWorkflowList(),
                             dagfile.getScheduleList(),

@@ -25,9 +25,10 @@ public abstract class Schedule
         return ImmutableSchedule.builder();
     }
 
-    public static Schedule of(int scheduleSourceId, int workflowSourceId, Date nextRunTime, Date nextScheduleTime)
+    public static Schedule of(String name, int scheduleSourceId, int workflowSourceId, Date nextRunTime, Date nextScheduleTime)
     {
         return scheduleBuilder()
+            .name(name)
             .scheduleSourceId(scheduleSourceId)
             .workflowSourceId(workflowSourceId)
             .nextRunTime(nextRunTime)

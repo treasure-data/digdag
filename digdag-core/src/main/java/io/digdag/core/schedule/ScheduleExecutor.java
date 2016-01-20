@@ -67,10 +67,10 @@ public class ScheduleExecutor
     // used by RepositoryControl.syncLatestRevision and startSchedule
     public static TaskMatchPattern getScheduleWorkflowMatchPattern(Config scheduleConfig)
     {
-        String pattern = scheduleConfig.get("trigger", String.class);
+        String pattern = scheduleConfig.get("workflow", String.class);
         TaskMatchPattern compiled = TaskMatchPattern.compile(pattern);
         if (compiled.getSubtaskMatchPattern().isPresent()) {
-            throw new ConfigException("trigger: option doesn't accept subtask name");
+            throw new ConfigException("workflow: option doesn't accept subtask name");
         }
         return compiled;
     }
