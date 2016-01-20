@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.undertow.Undertow;
@@ -20,6 +21,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.digdag.guice.rs.GuiceRsBootstrap;
+import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
@@ -62,7 +64,7 @@ public class Server
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag server [options...] );
+        System.err.println("Usage: digdag server [options...]");
         System.err.println("  Options:");
         System.err.println("    -p, --port PORT                  port number to listen HTTP clients (default: 9090)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
@@ -106,6 +108,14 @@ public class Server
     {
         private static Server cmd;
 
+        private GuiceRsServerControl control;
+
+        @Inject
+        public ServerBootstrap(GuiceRsServerControl control)
+        {
+            this.control = control;
+        }
+
         @Override
         public Injector initialize(ServletContext context)
         {
@@ -141,7 +151,8 @@ public class Server
                     site.run();
                 }
                 catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    logger.error("Uncaught error", ex);
+                    control.destroy();
                 }
             }, "local-site");
             thread.setDaemon(true);

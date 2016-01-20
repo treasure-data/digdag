@@ -46,7 +46,7 @@ public class GuiceRsServletContainerInitializer
             modules.add(module);
         }
 
-        module = GuiceRsServerControllerModule.fromInitParameter(context);
+        module = GuiceRsServerControlModule.fromInitParameter(context);
         if (module != null) {
             modules.add(module);
         }
