@@ -166,7 +166,7 @@ public class RepositoryResource
     @Path("/api/repositories")
     public RestRepository putRepository(@QueryParam("repository") String name, @QueryParam("revision") String revision,
             InputStream body)
-        throws IOException
+        throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         byte[] data = ByteStreams.toByteArray(body);
 
@@ -195,18 +195,13 @@ public class RepositoryResource
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))
                                 .build()
                             );
-                    try {
-                        List<StoredWorkflowSource> storedWorkflows =
-                            repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflowList().get());
-                        List<StoredScheduleSource> storedSchedules =
-                            repoControl.insertScheduleSources(rev.getId(), meta.getScheduleList().get());
-                        repoControl.syncLatestRevision(rev,
-                                storedWorkflows, storedSchedules,
-                                scheds, new Date());
-                    }
-                    catch (ResourceConflictException ex) {
-                        throw new IllegalStateException("Database state error", ex);
-                    }
+                    List<StoredWorkflowSource> storedWorkflows =
+                        repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflowList().get());
+                    List<StoredScheduleSource> storedSchedules =
+                        repoControl.insertScheduleSources(rev.getId(), meta.getScheduleList().get());
+                    repoControl.syncLatestRevision(rev,
+                            storedWorkflows, storedSchedules,
+                            scheds, new Date());
                     return RestModels.repository(repoControl.get(), rev);
                 });
 

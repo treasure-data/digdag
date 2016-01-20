@@ -126,9 +126,10 @@ public class LocalSite
         }
     }
 
-    private StoreWorkflow storeWorkflows(String repositoryName, Revision revision,
+    private StoreWorkflow storeLocalWorkflowsImpl(String repositoryName, Revision revision,
             WorkflowSourceList workflowSources, ScheduleSourceList scheduleSources,
             Optional<Date> currentTimeToSchedule)
+        throws ResourceConflictException, ResourceNotFoundException
     {
         // validate workflow
         // TODO move this to RepositoryControl
@@ -140,37 +141,34 @@ public class LocalSite
                 Repository.of(repositoryName),
                 (repoControl) -> {
                     StoredRevision rev = repoControl.putRevision(revision);
-                    try {
-                        List<StoredWorkflowSource> storedWorkflows =
-                            repoControl.insertWorkflowSources(rev.getId(), workflowSources.get());
-                        List<StoredScheduleSource> storedSchedules =
-                            repoControl.insertScheduleSources(rev.getId(), scheduleSources.get());
-                        if (currentTimeToSchedule.isPresent()) {
-                            repoControl.syncLatestRevision(
-                                    rev, storedWorkflows, storedSchedules,
-                                    scheds, currentTimeToSchedule.get());
-                        }
-                        else {
-                            repoControl.syncLatestRevision(rev, storedWorkflows);
-                        }
-                        return new StoreWorkflow(rev, storedWorkflows, storedSchedules);
+                    List<StoredWorkflowSource> storedWorkflows =
+                        repoControl.insertWorkflowSources(rev.getId(), workflowSources.get());
+                    List<StoredScheduleSource> storedSchedules =
+                        repoControl.insertScheduleSources(rev.getId(), scheduleSources.get());
+                    if (currentTimeToSchedule.isPresent()) {
+                        repoControl.syncLatestRevision(
+                                rev, storedWorkflows, storedSchedules,
+                                scheds, currentTimeToSchedule.get());
                     }
-                    catch (ResourceConflictException ex) {
-                        throw new IllegalStateException("Database state error", ex);
+                    else {
+                        repoControl.syncLatestRevision(rev, storedWorkflows);
                     }
+                    return new StoreWorkflow(rev, storedWorkflows, storedSchedules);
                 });
     }
 
-    private StoreWorkflow storeWorkflows(
+    private StoreWorkflow storeLocalWorkflows(
+            String revisionName,
             WorkflowSourceList workflowSources,
             ScheduleSourceList scheduleSources,
             Optional<Date> currentTimeToSchedule,
             Config defaultParams)
+        throws ResourceConflictException, ResourceNotFoundException
     {
-        return storeWorkflows(
+        return storeLocalWorkflowsImpl(
                 "default",
                 Revision.revisionBuilder()
-                    .name("revision")
+                    .name(revisionName)
                     .archiveType("db")
                     .defaultParams(defaultParams)
                     .build(),
@@ -185,8 +183,9 @@ public class LocalSite
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams,
             SessionOptions options)
+        throws ResourceConflictException, ResourceNotFoundException
     {
-        StoreWorkflow revWfs = storeWorkflows(workflowSources,
+        StoreWorkflow revWfs = storeLocalWorkflows("revision", workflowSources,
                 ScheduleSourceList.of(ImmutableList.of()), Optional.absent(),
                 overwriteParams);
         final StoredRevision revision = revWfs.getRevision();
@@ -214,18 +213,18 @@ public class LocalSite
         catch (MultipleTaskMatchException ex) {
             throw new IllegalArgumentException(ex);  // TODO exception class
         }
-        catch (ResourceConflictException ex) {
-            throw new IllegalStateException("UUID confliction", ex);
-        }
     }
 
-    public StoredRevision scheduleWorkflows(
+    public StoredRevision storeWorkflows(
+            String revisionName,
             WorkflowSourceList workflowSources,
             ScheduleSourceList scheduleSources,
             Date currentTime,
             Config defaultParams)
+        throws ResourceConflictException, ResourceNotFoundException
     {
-        return storeWorkflows(
+        return storeLocalWorkflows(
+                revisionName,
                 workflowSources,
                 scheduleSources,
                 Optional.of(currentTime),

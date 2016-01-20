@@ -5,7 +5,6 @@ dependencies {
     compile 'com.google.inject.extensions:guice-multibindings:4.0'
     compile 'org.embulk:guice-bootstrap:0.1.0'
     //compile 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.6.2'
-    compile 'com.fasterxml.jackson.module:jackson-module-guice:2.6.2'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.2'
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.jdbi:jdbi:2.63.1'

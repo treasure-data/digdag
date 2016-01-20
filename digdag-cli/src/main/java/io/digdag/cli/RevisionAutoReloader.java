@@ -3,11 +3,14 @@ package io.digdag.cli;
 import java.util.List;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.Locale;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.io.File;
 import java.io.IOException;
 import javax.annotation.PreDestroy;
@@ -17,6 +20,8 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.spi.config.Config;
 import io.digdag.core.LocalSite;
 
@@ -49,7 +54,7 @@ public class RevisionAutoReloader
     public void loadFile(File file,
             TimeZone defaultTimeZone,
             Config overwriteParams)
-        throws IOException
+        throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         ReloadTarget target = new ReloadTarget(file, defaultTimeZone, overwriteParams);
         target.load();
@@ -103,10 +108,11 @@ public class RevisionAutoReloader
         }
 
         public void load()
-            throws IOException
+            throws IOException, ResourceConflictException, ResourceNotFoundException
         {
             lastDagfile = readDagfile();
-            localSite.scheduleWorkflows(
+            localSite.storeWorkflows(
+                    makeRevisionName(),
                     lastDagfile.getWorkflowList(),
                     lastDagfile.getScheduleList(),
                     new Date(),
@@ -121,7 +127,8 @@ public class RevisionAutoReloader
                 Dagfile dagfile = readDagfile();  // TODO optimize this code
                 if (!dagfile.equals(lastDagfile)) {
                     logger.info("Reloading " + file);
-                    localSite.scheduleWorkflows(
+                    localSite.storeWorkflows(
+                            makeRevisionName(),
                             dagfile.getWorkflowList(),
                             dagfile.getScheduleList(),
                             new Date(),
@@ -131,7 +138,7 @@ public class RevisionAutoReloader
                     lastDagfile = dagfile;
                 }
             }
-            catch (RuntimeException | IOException ex) {
+            catch (RuntimeException | ResourceConflictException | ResourceNotFoundException | IOException ex) {
                 logger.error("Failed to reload", ex);
             }
         }
@@ -140,6 +147,14 @@ public class RevisionAutoReloader
             throws IOException
         {
             return loader.load(file, overwriteParams).convert(Dagfile.class);
+        }
+
+        private String makeRevisionName()
+        {
+            DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.ENGLISH)
+                .withZone(ZoneId.of(defaultTimeZone.getID()));
+            return formatter.format(new Date().toInstant());
         }
     }
 }

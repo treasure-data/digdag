@@ -15,10 +15,12 @@ public interface RepositoryStore
 
     interface RepositoryLockAction <T>
     {
-        T call(RepositoryControl lockedRepository);
+        T call(RepositoryControl lockedRepository)
+            throws ResourceNotFoundException, ResourceConflictException;
     }
 
-    <T> T putRepository(Repository repository, RepositoryLockAction<T> func);
+    <T> T putRepository(Repository repository, RepositoryLockAction<T> func)
+        throws ResourceNotFoundException, ResourceConflictException;
 
 
     List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);

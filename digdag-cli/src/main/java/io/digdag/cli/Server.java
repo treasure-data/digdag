@@ -24,6 +24,7 @@ import io.undertow.servlet.api.ServletContainerInitializerInfo;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
+import io.digdag.guice.rs.GuiceRsServerControlModule;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.server.ServerModule;
@@ -87,6 +88,7 @@ public class Server
                     new ServletContainerInitializerInfo(
                         GuiceRsServletContainerInitializer.class,
                         ImmutableSet.of(ServerBootstrap.class)))
+            .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
             ;
 
         DeploymentManager manager = Servlets.defaultContainer()
@@ -102,6 +104,25 @@ public class Server
             .setHandler(path)
             .build();
         server.start();
+    }
+
+    private static class ServerControl
+            implements GuiceRsServerControl
+    {
+        static Undertow server;
+        static DeploymentManager manager;
+
+        @Override
+        public void stop()
+        {
+            server.stop();
+        }
+
+        @Override
+        public void destroy()
+        {
+            manager.undeploy();
+        }
     }
 
     public static class ServerBootstrap
@@ -138,7 +159,7 @@ public class Server
                 try {
                     autoReloader.loadFile(new File(cmd.autoLoadFile), TimeZone.getDefault(), cf.create());
                 }
-                catch (IOException ex) {
+                catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
             }
