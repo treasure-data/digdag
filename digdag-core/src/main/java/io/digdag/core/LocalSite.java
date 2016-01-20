@@ -167,14 +167,15 @@ public class LocalSite
     private StoreWorkflow storeWorkflows(
             WorkflowSourceList workflowSources,
             ScheduleSourceList scheduleSources,
-            Optional<Date> currentTimeToSchedule)
+            Optional<Date> currentTimeToSchedule,
+            Config defaultParams)
     {
         return storeWorkflows(
                 "default",
                 Revision.revisionBuilder()
                     .name("revision")
                     .archiveType("db")
-                    .defaultParams(cf.create())
+                    .defaultParams(defaultParams)
                     .build(),
                 workflowSources,
                 scheduleSources,
@@ -190,7 +191,8 @@ public class LocalSite
             SessionOptions options)
     {
         StoreWorkflow revWfs = storeWorkflows(workflowSources,
-                ScheduleSourceList.of(ImmutableList.of()), Optional.absent());
+                ScheduleSourceList.of(ImmutableList.of()), Optional.absent(),
+                overwriteParams);
         final StoredRevision revision = revWfs.getRevision();
         final List<StoredWorkflowSource> sources = revWfs.getWorkflows();
 
@@ -200,7 +202,7 @@ public class LocalSite
             Session trigger = Session.sessionBuilder(
                     "session-" + UUID.randomUUID().toString(),
                     defaultTimeZone,
-                    cf.create(), source, overwriteParams)
+                    cf.create(), source, cf.create())
                 .options(options)
                 .build();
 
@@ -221,12 +223,18 @@ public class LocalSite
         }
     }
 
-    public void scheduleWorkflows(
+    public StoredRevision scheduleWorkflows(
             WorkflowSourceList workflowSources,
             ScheduleSourceList scheduleSources,
-            Date currentTime)
+            Date currentTime,
+            Config defaultParams)
     {
-        storeWorkflows(workflowSources, scheduleSources, Optional.of(currentTime));
+        return storeWorkflows(
+                workflowSources,
+                scheduleSources,
+                Optional.of(currentTime),
+                defaultParams)
+            .getRevision();
     }
 
     public void run()
