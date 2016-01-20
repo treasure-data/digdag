@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.repository.ResourceConflictException;
@@ -64,12 +65,16 @@ public class ScheduleExecutor
     public static TaskMatchPattern getScheduleWorkflowMatchPattern(Config scheduleConfig)
     {
         String pattern = scheduleConfig.get("trigger", String.class);
-        return TaskMatchPattern.compile(pattern);
+        TaskMatchPattern compiled = TaskMatchPattern.compile(pattern);
+        if (compiled.getSubtaskMatchPattern().isPresent()) {
+            throw new ConfigException("trigger: option doesn't accept subtask name");
+        }
+        return compiled;
     }
 
     public ScheduleTime schedule(StoredSchedule sched)
     {
-        // TODO If a workflow has wait-until-lastl-schedule attribute, don't start
+        // TODO If a workflow has wait-until-last-schedule attribute, don't start
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();

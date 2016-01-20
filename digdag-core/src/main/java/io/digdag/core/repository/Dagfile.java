@@ -1,14 +1,11 @@
 package io.digdag.core.repository;
 
 import java.util.Map;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.immutables.value.Value;
@@ -16,19 +13,15 @@ import io.digdag.spi.config.Config;
 import java.util.regex.Pattern;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutableDagfile.class)
 public abstract class Dagfile
 {
     @JsonProperty("run")
     public abstract Optional<String> getDefaultTaskName();
 
-    @JsonUnwrapped
     public abstract WorkflowSourceList getWorkflowList();
 
-    @JsonUnwrapped
     public abstract ScheduleSourceList getScheduleList();
 
-    @JsonUnwrapped
     public abstract Config getDefaultParams();
 
     @JsonCreator
@@ -50,8 +43,11 @@ public abstract class Dagfile
             // TODO validate key
         }
 
+        Optional<String> defaultTaskName = config.getOptional("run", String.class);
+        others.remove("run");
+
         return builder()
-            .defaultTaskName(config.getOptional("run", String.class))
+            .defaultTaskName(defaultTaskName)
             .workflowList(workflowList.convert(WorkflowSourceList.class))
             .scheduleList(scheduleList.convert(ScheduleSourceList.class))
             .defaultParams(others)
@@ -61,5 +57,30 @@ public abstract class Dagfile
     public static ImmutableDagfile.Builder builder()
     {
         return ImmutableDagfile.builder();
+    }
+
+    @JsonValue
+    public Map<String, Object> toJsonValue()
+    {
+        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+
+        if (getDefaultTaskName().isPresent()) {
+            builder.put("run", getDefaultTaskName().get());
+        }
+
+        Config defaultParams = getDefaultParams();
+        for (String key : defaultParams.getKeys()) {
+            builder.put(key, defaultParams.get(key, JsonNode.class));
+        }
+
+        for (WorkflowSource source : getWorkflowList().get()) {
+            builder.put(source.getName(), source.getConfig());
+        }
+
+        for (ScheduleSource source : getScheduleList().get()) {
+            builder.put(source.getName(), source.getConfig());
+        }
+
+        return builder.build();
     }
 }

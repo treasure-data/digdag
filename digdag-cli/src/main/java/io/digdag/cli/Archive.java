@@ -1,6 +1,8 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
@@ -21,12 +23,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.repository.ScheduleSource;
-import io.digdag.core.repository.ScheduleSourceList;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.DynamicParameter;
+import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -36,6 +39,15 @@ import static io.digdag.cli.Main.systemExit;
 public class Archive
     extends Command
 {
+    @Parameter(names = {"-f", "--file"})
+    String dagfilePath = "Dagfile";
+
+    @DynamicParameter(names = {"-p", "--param"})
+    Map<String, String> params = new HashMap<>();
+
+    @Parameter(names = {"-P", "--params-file"})
+    String paramsFile = null;
+
     @Parameter(names = {"-o", "--output"})
     String output = "archive.tar.gz";
 
@@ -45,18 +57,18 @@ public class Archive
     public void main()
             throws Exception
     {
-        if (args.isEmpty()) {
+        if (args.size() != 0) {
             throw usage(null);
         }
-
-        archive(args);
+        archive();
     }
 
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag archive <workflow.yml...> [options...]");
+        System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
         System.err.println("  Options:");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: ./Dagfile)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path");
         //System.err.println("    -C           DIR                  change directory before reading files");
         Main.showCommonOptions();
@@ -64,12 +76,12 @@ public class Archive
         System.err.println("    Names of the files to add the archive.");
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ find . | digdag archive myflow.yml");
+        System.err.println("    $ find . | digdag archive");
         System.err.println("    $ git ls-files | digdag archive -o archive.tar.gz workflows/*.yml");
         return systemExit(error);
     }
 
-    private void archive(List<String> workflowFiles)
+    private void archive()
             throws IOException
     {
         System.out.println("Creating "+output+"...");
@@ -86,12 +98,19 @@ public class Archive
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final FileMapper mapper = injector.getInstance(FileMapper.class);
 
-        List<WorkflowSource> workflows = new ArrayList<>();
-        for (String workflowFile : workflowFiles) {
-            // TODO validate workflow
-            workflows.addAll(
-                loader.load(new File(workflowFile), cf.create()).convert(WorkflowSourceList.class).get());
+        Config overwriteParams = cf.create();
+        if (paramsFile != null) {
+            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
         }
+        for (Map.Entry<String, String> pair : params.entrySet()) {
+            overwriteParams.set(pair.getKey(), pair.getValue());
+        }
+
+        Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        ArchiveMetadata meta = ArchiveMetadata.of(
+            dagfile.getWorkflowList(),
+            dagfile.getScheduleList(),
+            dagfile.getDefaultParams().setAll(overwriteParams));
 
         List<String> stdinLines;
         if (System.console() != null) {
@@ -101,9 +120,8 @@ public class Archive
             stdinLines = CharStreams.readLines(new BufferedReader(new InputStreamReader(System.in)));
         }
 
-        Set<File> missingWorkflowFiles = new HashSet<>(
-                workflowFiles.stream().map(arg -> new File(arg)).collect(Collectors.toList())
-                );
+        Set<File> requiredFiles = new HashSet<>();
+        requiredFiles.add(new File(dagfilePath));
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
             for (String line : stdinLines) {
@@ -121,10 +139,10 @@ public class Archive
                     }
                     tar.closeArchiveEntry();
                 }
-                missingWorkflowFiles.remove(file);
+                requiredFiles.remove(file);
             }
 
-            for (File file : missingWorkflowFiles) {
+            for (File file : requiredFiles) {
                 System.out.println("  Archiving "+file);
                 tar.putArchiveEntry(new TarArchiveEntry(file));
                 try (FileInputStream in = new FileInputStream(file)) {
@@ -133,22 +151,25 @@ public class Archive
                 tar.closeArchiveEntry();
             }
 
-
             // create .digdag.yml
             // TODO make ScheduleSourceList from Dagfile
             // TODO set default time zone if not set
-            byte[] meta = mapper.toYaml(ArchiveMetadata.of(WorkflowSourceList.of(workflows), ScheduleSourceList.of(ImmutableList.of()))).getBytes(StandardCharsets.UTF_8);
+            byte[] metaBody = mapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
-            metaEntry.setSize(meta.length);
+            metaEntry.setSize(metaBody.length);
             metaEntry.setModTime(new Date());
             tar.putArchiveEntry(metaEntry);
-            tar.write(meta);
+            tar.write(metaBody);
             tar.closeArchiveEntry();
         }
 
         System.out.println("  Workflows:");
-        for (WorkflowSource workflow : workflows) {
+        for (WorkflowSource workflow : meta.getWorkflowList().get()) {
             System.out.println("    "+workflow.getName());
+        }
+        System.out.println("  Schedules:");
+        for (ScheduleSource schedule : meta.getScheduleList().get()) {
+            System.out.println("    "+schedule.getName());
         }
     }
 }

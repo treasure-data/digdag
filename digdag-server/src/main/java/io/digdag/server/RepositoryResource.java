@@ -188,7 +188,7 @@ public class RepositoryResource
                     StoredRevision rev = repoControl.putRevision(
                             Revision.revisionBuilder()
                                 .name(revision)
-                                .defaultParams(cf.create())
+                                .defaultParams(meta.getDefaultParams())
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveData(data)
@@ -197,9 +197,9 @@ public class RepositoryResource
                             );
                     try {
                         List<StoredWorkflowSource> storedWorkflows =
-                            repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflows().get());
+                            repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflowList().get());
                         List<StoredScheduleSource> storedSchedules =
-                            repoControl.insertScheduleSources(rev.getId(), meta.getSchedules().get());
+                            repoControl.insertScheduleSources(rev.getId(), meta.getScheduleList().get());
                         repoControl.syncLatestRevision(rev,
                                 storedWorkflows, storedSchedules,
                                 scheds, new Date());
