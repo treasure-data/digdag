@@ -534,8 +534,14 @@ public class WorkflowExecutor
 
             Optional<TaskReport> skipTaskReport = Optional.fromNullable(session.getOptions().getSkipTaskMap().get(fullName));
             if (skipTaskReport.isPresent()) {
-                logger.debug("Skipping task '{}'", fullName);
-                return taskSucceeded(control, task,
+                logger.info("Skipping task '{}'", fullName);
+                boolean updated = control.setReadyToRunning();
+                if (!updated) {
+                    logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
+                }
+                // here must not pass StoredTask because state of the task is
+                // changed from READY to RUNNING.
+                return taskSucceeded(task.getId(),
                         cf.create(), cf.create(),
                         skipTaskReport.get());
             }
@@ -663,7 +669,7 @@ public class WorkflowExecutor
                 report, task);
 
         if (task.getState() != TaskStateCode.RUNNING) {
-            logger.trace("Skipping taskSucceeded callback to a {} task",
+            logger.debug("Ignoring taskSucceeded callback to a {} task",
                     task.getState());
             return false;
         }

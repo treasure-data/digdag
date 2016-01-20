@@ -110,6 +110,34 @@ public enum TaskStateCode
     }
 
     @JsonCreator
+    public static TaskStateCode parse(String name)
+    {
+        switch(name) {
+        case "blocked":
+            return BLOCKED;
+        case "ready":
+            return READY;
+        case "retry_waiting":
+            return RETRY_WAITING;
+        case "group_retry_waiting":
+            return GROUP_RETRY_WAITING;
+        case "running":
+            return RUNNING;
+        case "planned":
+            return PLANNED;
+        case "group_error":
+            return GROUP_ERROR;
+        case "success":
+            return SUCCESS;
+        case "error":
+            return ERROR;
+        case "canceled":
+            return CANCELED;
+        default:
+            throw new IllegalStateException("Unknown task status name: " + name);
+        }
+    }
+
     public static TaskStateCode of(int code)
     {
         switch(code) {
@@ -148,5 +176,11 @@ public enum TaskStateCode
     public short get()
     {
         return code;
+    }
+
+    @JsonValue
+    public String toString()
+    {
+        return name().toLowerCase();
     }
 }

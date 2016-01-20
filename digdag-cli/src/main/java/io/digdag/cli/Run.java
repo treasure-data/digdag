@@ -28,6 +28,7 @@ import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.yaml.YamlConfigLoader;
+import io.digdag.spi.TaskReport;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigException;
 import io.digdag.spi.config.ConfigFactory;
@@ -99,7 +100,7 @@ public class Run
         System.err.println("Usage: digdag run [+task] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH                  use this file to load tasks (default: ./Dagfile)");
-        System.err.println("    -s, --session PATH               use this directory to store status files");
+        System.err.println("    -s, --session PATH               use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
@@ -112,7 +113,7 @@ public class Run
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
-                binder.bind(ResumeStateFileManager.class).in(Scopes.SINGLETON);
+                binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                 binder.bind(FileMapper.class).in(Scopes.SINGLETON);
                 binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
             })
@@ -125,7 +126,7 @@ public class Run
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final YamlConfigLoader rawLoader = injector.getInstance(YamlConfigLoader.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
-        final ResumeStateFileManager rsm = injector.getInstance(ResumeStateFileManager.class);
+        final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
@@ -135,10 +136,9 @@ public class Run
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        Optional<ResumeState> resumeState = Optional.absent();
-        if (sessionStatePath != null && loader.checkExists(new File(sessionStatePath))) {
-            // jinja and !!include are disabled
-            resumeState = Optional.of(rawLoader.loadFile(new File(sessionStatePath), Optional.absent(), Optional.absent()).convert(ResumeState.class));
+        Map<String, TaskReport> successfulTaskReports = ImmutableMap.of();
+        if (sessionStatePath != null) {
+            successfulTaskReports = rsm.readSuccessfulTaskReports(new File(sessionStatePath));
         }
 
         Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
@@ -154,7 +154,7 @@ public class Run
         WorkflowSourceList workflowSources = dagfile.getWorkflowList();
 
         SessionOptions options = SessionOptions.builder()
-            .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
+            .skipTaskMap(successfulTaskReports)
             .build();
 
         StoredSession session = localSite.storeAndStartWorkflows(
@@ -170,7 +170,7 @@ public class Run
         localSite.startMonitor();
 
         // if sessionStatePath is not set, use workflow.yml.resume.yml
-        File resumeResultPath = new File(Optional.fromNullable(sessionStatePath).or(dagfilePath + ".resume.yml"));
+        File resumeResultPath = new File(Optional.fromNullable(sessionStatePath).or("digdag.status"));
         rsm.startUpdate(resumeResultPath, session);
 
         localSite.runUntilAny();
@@ -204,15 +204,16 @@ public class Run
 
         if (!failedTasks.isEmpty()) {
             StringBuilder sb = new StringBuilder();
+            sb.append(String.format("%n"));
+            sb.append(String.format("Task state is stored at %s.%n", resumeResultPath));
             for (StoredTask task : failedTasks) {
-                sb.append(String.format("Task %s failed.%n", task.getFullName()));
+                sb.append(String.format("  Task %s failed.%n", task.getFullName()));
             }
-            sb.append(String.format("Use `digdag run %s -r %s` to restart this workflow.",
-                        dagfilePath, resumeResultPath));
+            sb.append(String.format("Run the workflow again using `-s %s` option to retry this workflow.",
+                        resumeResultPath));
             throw systemExit(sb.toString());
         }
         else if (sessionStatePath == null) {
-            rsm.stopUpdate(resumeResultPath);
             rsm.shutdown();
             resumeResultPath.delete();
         }

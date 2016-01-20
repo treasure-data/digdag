@@ -26,6 +26,7 @@ public class FileMapper
 
     public <T> void writeFile(File file, T value)
     {
+        file.getParentFile().mkdirs();
         try {
             // TODO use yaml if file path ends with yml, otherwise use json?
             try (YAMLGenerator out = yaml.createGenerator(new FileOutputStream(file))) {
@@ -46,5 +47,19 @@ public class FileMapper
             mapper.writeValue(yamlOut, value);
         }
         return writer.toString();
+    }
+
+    public <T> T readFile(File file, Class<T> type)
+    {
+        try {
+            // TODO use yaml if file path ends with yml, otherwise use json?
+            try (YAMLParser out = yaml.createParser(new FileInputStream(file))) {
+                // TODO write to a String first, then write to file. to not create partially-written broken file
+                return mapper.readValue(out, type);
+            }
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
     }
 }
