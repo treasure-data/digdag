@@ -39,7 +39,7 @@ public class Run
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
     @Parameter(names = {"-f", "--file"})
-    String dagfilePath = "Dagfile";
+    String dagfilePath = null;
 
     @Parameter(names = {"-s", "--session"})
     String sessionStatePath = null;
@@ -71,6 +71,10 @@ public class Run
     {
         if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
             throw Main.usage(null);
+        }
+
+        if (dagfilePath == null) {
+            dagfilePath = "Dagfile";
         }
 
         String taskNamePattern;
