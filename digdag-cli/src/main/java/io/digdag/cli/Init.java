@@ -63,7 +63,7 @@ public class Init
         }
         else {
             gen.cpAbsoluteDest("Dagfile.yml", file);
-            System.out.println("Done. Use `./digdag run` to run this workflow.");
+            System.out.println("Done. Use `./digdag r` to run this workflow.");
         }
     }
 
