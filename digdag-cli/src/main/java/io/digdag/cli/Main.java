@@ -23,6 +23,8 @@ import io.digdag.cli.client.Kill;
 
 public class Main
 {
+    private static final String PROGRAM_NAME = "digdag";
+
     public static class MainOptions
     {
         @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
@@ -36,7 +38,7 @@ public class Main
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
-        jc.setProgramName("digdag");
+        jc.setProgramName(PROGRAM_NAME);
 
         jc.addCommand("archive", new Archive());
         jc.addCommand("gen", new Gen());
@@ -65,7 +67,10 @@ public class Main
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                throw usage(null);
+                command = new Run();
+                jc = new JCommander(mainOpts);
+                jc.setProgramName(PROGRAM_NAME);
+                jc.parse(args);
             }
 
             processCommonOptions(command);
