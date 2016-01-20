@@ -168,8 +168,8 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
-        System.err.println("    init                             generate a new sample Dagfile");
-        System.err.println("    r[un] [+name]                      run a workflow");
+        System.err.println("    init                             generate a new sample digdag.yml");
+        System.err.println("    r[un] [+name]                    run a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");

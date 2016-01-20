@@ -20,7 +20,7 @@ public class Init
         String dagfilePath;
         switch (args.size()) {
         case 0:
-            dagfilePath = "Dagfile";
+            dagfilePath = Run.DEFAULT_DAGFILE;
             break;
         case 1:
             dagfilePath = args.get(0);
@@ -62,7 +62,7 @@ public class Init
             System.out.println("File "+file+" already exists. Canceled");
         }
         else {
-            gen.cpAbsoluteDest("Dagfile.yml", file);
+            gen.cpAbsoluteDest("digdag.yml", file);
             System.out.println("Done. Use `./digdag r` to run this workflow.");
         }
     }

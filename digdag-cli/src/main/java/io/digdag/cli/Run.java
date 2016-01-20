@@ -37,6 +37,8 @@ import static io.digdag.cli.Main.systemExit;
 public class Run
     extends Command
 {
+    public static final String DEFAULT_DAGFILE = "digdag.yml";
+
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
     @Parameter(names = {"-f", "--file"})
@@ -75,7 +77,7 @@ public class Run
         }
 
         if (dagfilePath == null) {
-            dagfilePath = "Dagfile";
+            dagfilePath = DEFAULT_DAGFILE;
         }
 
         String taskNamePattern;
@@ -99,7 +101,7 @@ public class Run
     {
         System.err.println("Usage: digdag run [+task] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: ./Dagfile)");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
         System.err.println("    -s, --session PATH               use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");

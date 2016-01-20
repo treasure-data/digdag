@@ -40,7 +40,7 @@ public class Archive
     extends Command
 {
     @Parameter(names = {"-f", "--file"})
-    String dagfilePath = "Dagfile";
+    String dagfilePath = Run.DEFAULT_DAGFILE;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -68,7 +68,7 @@ public class Archive
     {
         System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: ./Dagfile)");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path");
         //System.err.println("    -C           DIR                  change directory before reading files");
         Main.showCommonOptions();

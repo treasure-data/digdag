@@ -86,7 +86,7 @@ public class ResumeStateManager
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
                     new ThreadFactoryBuilder()
                     .setDaemon(true)
-                    .setNameFormat("ressume-state-update-%d")
+                    .setNameFormat("session-state-update-%d")
                     .build()
                     );
             executor.schedule(() -> backgroundUpdateAll(), 1, TimeUnit.SECONDS);

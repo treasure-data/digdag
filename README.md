@@ -13,7 +13,7 @@
 ```
 Usage: digdag <command> [options...]
   Commands:
-    init                             generate a new sample Dagfile
+    init                             generate a new sample digdag.yml
     run [+name]                      run a workflow
 
   Server-mode commands:
