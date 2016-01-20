@@ -141,7 +141,7 @@ public class WorkflowCompiler
                 .filter(key -> key.startsWith("+"))
                 .forEach(key -> config.remove(key));
 
-            if (config.has("type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
+            if (config.has("type") || config.has("type=") || config.getKeys().stream().anyMatch(key -> key.endsWith(">") || key.endsWith(">="))) {
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);

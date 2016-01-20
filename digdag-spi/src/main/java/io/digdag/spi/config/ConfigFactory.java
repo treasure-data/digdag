@@ -19,13 +19,13 @@ public class ConfigFactory
         return new Config(objectMapper);
     }
 
-    public Config create(ObjectNode object)
-    {
-        return new Config(objectMapper, object);
-    }
-
     public Config create(Object other)
     {
         return create().set("_", other).getNested("_");
+    }
+
+    public Config wrap(ObjectNode object)
+    {
+        return new Config(objectMapper, object);
     }
 }

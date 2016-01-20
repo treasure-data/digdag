@@ -1,0 +1,17 @@
+run: +js_vars
++js_vars:
+  +task1:
+    sh>: "echo $val"
+    val: 1
+
+  +task2:
+    sh>: "echo $val"
+    val=: return 1 + 1
+
+  +task3:
+    export:
+      command: "echo $val"
+    +run_command:
+      sh>=: return command
+      val=: return 2 + 3
+

@@ -1,6 +1,7 @@
 package io.digdag.standards.task;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -21,6 +22,8 @@ public class ShTaskRunnerFactory
         implements TaskRunnerFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ShTaskRunnerFactory.class);
+
+    private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_]+");
 
     private final CommandExecutor exec;
 
@@ -58,16 +61,20 @@ public class ShTaskRunnerFactory
             final Map<String, String> env = pb.environment();
             request.getConfig().getKeys()
                 .forEach(key -> {
-                    // TODO validate key
-                    JsonNode value = request.getConfig().get(key, JsonNode.class);
-                    String string;
-                    if (value.isTextual()) {
-                        string = value.textValue();
+                    if (isValidEnvKey(key)) {
+                        JsonNode value = request.getConfig().get(key, JsonNode.class);
+                        String string;
+                        if (value.isTextual()) {
+                            string = value.textValue();
+                        }
+                        else {
+                            string = value.toString();
+                        }
+                        env.put(key, string);
                     }
                     else {
-                        string = value.toString();
+                        logger.trace("Ignoring invalid env var key: {}", key);
                     }
-                    env.put(key, string);
                 });
 
             pb.redirectErrorStream(true);
@@ -95,5 +102,10 @@ public class ShTaskRunnerFactory
 
             return request.getConfig().getFactory().create();
         }
+    }
+
+    private static boolean isValidEnvKey(String key)
+    {
+        return VALID_ENV_KEY.matcher(key).matches();
     }
 }

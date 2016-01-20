@@ -11,6 +11,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
@@ -107,6 +108,7 @@ public class DigdagEmbed
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
                     binder.bind(TaskRunnerManager.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);

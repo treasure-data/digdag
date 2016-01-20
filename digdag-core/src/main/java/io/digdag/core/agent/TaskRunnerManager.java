@@ -21,13 +21,16 @@ public class TaskRunnerManager
 
     private final TaskCallbackApi callback;
     private final ConfigFactory cf;
+    private final ConfigEvalEngine evalEngine;
     private final Map<String, TaskRunnerFactory> executorTypes;
 
     @Inject
-    public TaskRunnerManager(TaskCallbackApi callback, ConfigFactory cf, Set<TaskRunnerFactory> factories)
+    public TaskRunnerManager(TaskCallbackApi callback, ConfigFactory cf,
+            ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
     {
         this.callback = callback;
         this.cf = cf;
+        this.evalEngine = evalEngine;
 
         ImmutableMap.Builder<String, TaskRunnerFactory> builder = ImmutableMap.builder();
         for (TaskRunnerFactory factory : factories) {
@@ -44,6 +47,9 @@ public class TaskRunnerManager
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskInfo().getFullName())) {
+
+            config = evalEngine.eval(config);
+            logger.trace("evaluated config: {}", config);
 
             String type;
             if (config.has("type")) {
@@ -71,7 +77,7 @@ public class TaskRunnerManager
 
             TaskRunnerFactory factory = executorTypes.get(type);
             if (factory == null) {
-                throw new ConfigException("Unknown task type: "+type);
+                throw new ConfigException("Unknown task type: " + type);
             }
             TaskRunner executor = factory.newTaskExecutor(
                     TaskRequest.builder()
