@@ -16,8 +16,6 @@ public abstract class StoredSchedule
 {
     public abstract long getId();
 
-    public abstract String getName();
-
     public abstract Config getConfig();
 
     public abstract Date getCreatedAt();

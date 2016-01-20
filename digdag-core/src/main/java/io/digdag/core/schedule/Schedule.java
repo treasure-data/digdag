@@ -10,6 +10,8 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableSchedule.class)
 public abstract class Schedule
 {
+    public abstract String getName();
+
     public abstract int getScheduleSourceId();
 
     public abstract int getWorkflowSourceId();

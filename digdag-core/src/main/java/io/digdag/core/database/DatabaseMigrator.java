@@ -251,19 +251,31 @@ public class DatabaseMigrator
             handle.update("create unique index if not exists workflows_on_revision_id_and_name on schedule_sources (revision_id, name)");
             handle.update("create index if not exists workflows_on_revision_id_and_id on schedule_sources (revision_id, id)");
 
+            // workflows
+            handle.update(
+                    new CreateTableBuilder("workflows")
+                    .addLongId("id")
+                    .addInt("source_id", "not null")
+                    .addInt("repository_id", "not null")
+                    .addString("name", "not null")
+                    .build());
+            handle.update("create unique index if not exists workflows_on_source_id on workflows (source_id)");
+            handle.update("create unique index if not exists workflows_on_repository_id_and_name on workflows (repository_id, name)");
+
             // schedules
             handle.update(
                     new CreateTableBuilder("schedules")
                     .addLongId("id")
                     .addInt("source_id", "not null")
-                    .addInt("workflow_id", "not null")
+                    .addInt("repository_id", "not null")
+                    .addString("name", "not null")
+                    .addInt("workflow_source_id", "not null")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
-                    .addTimestamp("created_at", "not null")
-                    .addTimestamp("updated_at", "not null")
                     .build());
             handle.update("create unique index if not exists schedules_on_source_id on schedules (source_id)");
-            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_id)");
+            handle.update("create unique index if not exists schedules_on_repository_id_and_name on schedules (repository_id, name)");
+            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_source_id)");
             handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // queues
@@ -284,8 +296,8 @@ public class DatabaseMigrator
                     new CreateTableBuilder("sessions")
                     .addLongId("id")
                     .addInt("site_id", "not null")
-                    .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_id
-                    .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_id
+                    .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_source_id
+                    .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_source_id
                     // TODO task_index
                     .addString("name", "not null")
                     .addMediumText("params", "")
@@ -323,11 +335,11 @@ public class DatabaseMigrator
                     .addLongId("id")  // references sessions.id
                     .addInt("repository_id", "not null")
                     .addInt("revision_id", "not null")
-                    .addInt("workflow_id", "")       // null if one-time associated-to-revision workflow
+                    .addInt("workflow_source_id", "")       // null if one-time associated-to-revision workflow
                     .build());
             handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
             handle.update("create index if not exists session_relations_on_revision_id_and_id on session_relations (revision_id, id)");
-            handle.update("create index if not exists session_relations_on_workflow_id_and_id on session_relations (workflow_id, id)");
+            handle.update("create index if not exists session_relations_on_workflow_source_id_and_id on session_relations (workflow_source_id, id)");
 
             // tasks
             handle.update(

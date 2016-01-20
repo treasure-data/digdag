@@ -105,44 +105,6 @@ public class DatabaseScheduleStoreManager
         return n > 0;
     }
 
-    @Override
-    public List<StoredSchedule> syncRepositorySchedules(int repoId, List<Schedule> schedules)
-        throws ResourceConflictException
-    {
-        return handle.inTransaction((handle, session) -> {
-            final long[] ids = new long[schedules.size()];
-            int i = 0;
-            for (Schedule schedule : schedules) {
-                ids[i] = catchConflict(() ->
-                        dao.insertRepositorySchedule(
-                            schedule.getScheduleSourceId(), schedule.getWorkflowSourceId(),
-                            schedule.getNextRunTime().getTime() / 1000,
-                            schedule.getNextScheduleTime().getTime() / 1000),
-                        "schedule workflow_id=%d", schedule.getWorkflowSourceId());
-                i++;
-            }
-            String idList = Longs.asList(ids).stream().map(id -> Long.toString(id)).collect(Collectors.joining(","));
-            handle.createStatement(
-                    "delete from schedules" +
-                    " where id in (" +
-                        "select s.id from schedules s" +
-                        " join schedule_sources ss on s.source_id = ss.id" +
-                        " join revisions rev on ss.revision_id = rev.id" +
-                        " where rev.repository_id = :repoId" +
-                        " and s.id not in (" + idList + ")" +
-                    ")"
-                )
-                .bind("repoId", repoId)
-                .execute();
-            return handle.createQuery(
-                    "select * from schedules" +
-                    " where id in (" + idList + ")"
-                )
-                .map(ssm)
-                .list();
-        });
-    }
-
     public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
         throws ResourceNotFoundException
     {

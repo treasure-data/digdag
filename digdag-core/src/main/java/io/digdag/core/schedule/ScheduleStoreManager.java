@@ -18,9 +18,6 @@ public interface ScheduleStoreManager
 
     void lockReadySchedules(Date currentTime, ScheduleAction func);
 
-    List<StoredSchedule> syncRepositorySchedules(int syncRepoId, List<Schedule> schedules)
-        throws ResourceConflictException;
-
     interface ScheduleLockAction <T>
     {
         T call(ScheduleControl control);

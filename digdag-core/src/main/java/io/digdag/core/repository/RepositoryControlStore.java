@@ -2,6 +2,7 @@ package io.digdag.core.repository;
 
 import java.util.List;
 import com.google.common.base.Optional;
+import io.digdag.core.schedule.Schedule;
 
 public interface RepositoryControlStore
 {
@@ -13,6 +14,12 @@ public interface RepositoryControlStore
         throws ResourceConflictException;
 
     StoredScheduleSource insertScheduleSource(int revId, ScheduleSource workflow)
+        throws ResourceConflictException;
+
+    void syncWorkflowsToRevision(int repoId, List<StoredWorkflowSource> sources)
+        throws ResourceConflictException;
+
+    void syncSchedulesToRevision(int repoId, List<Schedule> schedules)
         throws ResourceConflictException;
 
     //void deleteRepository(int repoId);  // TODO delete schedule

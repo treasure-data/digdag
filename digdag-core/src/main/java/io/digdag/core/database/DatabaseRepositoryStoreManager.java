@@ -1,6 +1,9 @@
 package io.digdag.core.database;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import com.google.common.base.*;
@@ -8,6 +11,7 @@ import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.*;
+import io.digdag.core.schedule.Schedule;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -18,6 +22,7 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.spi.config.Config;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class DatabaseRepositoryStoreManager
         extends BasicDatabaseStoreManager
@@ -276,6 +281,123 @@ public class DatabaseRepositoryStoreManager
                 throw new IllegalStateException("Database state error", ex);
             }
         }
+
+        @Override
+        public void syncWorkflowsToRevision(int repoId, List<StoredWorkflowSource> sources)
+            throws ResourceConflictException
+        {
+            if (sources.isEmpty()) {
+                return;
+            }
+            int revId = sources.get(0).getRevisionId();
+
+            Map<String, Integer> oldNames = dao.getLatestWorkflowNamesOfRepository(repoId);
+            if (oldNames == null) {
+                oldNames = ImmutableMap.of();
+            }
+
+            for (StoredWorkflowSource source : sources) {
+                // validate workflows
+                checkArgument(source.getRevisionId() == revId);
+
+                if (oldNames.containsKey(source.getName())) {
+                    // found the same name. overwriting source_id.
+                    int n = handle.createStatement(
+                            "update workflows" +
+                            " set source_id = :sourceId" +
+                            " where id = :id"
+                        )
+                        .bind("sourceId", source.getId())
+                        .bind("id", oldNames.get(source.getName()))
+                        .execute();
+                    if (n <= 0) {
+                        // TODO exception?
+                    }
+                    oldNames.remove(source.getName());
+                }
+                else {
+                    // not found this name. inserting new entry.
+                    // TODO this INSERT can be optimized by using lazy multiple-value insert
+                    catchConflict(() ->
+                            handle.createStatement(
+                                "insert into workflows" +
+                                " (source_id, repository_id, name)" +
+                                " values (:sourceId, :repoId, :name)"
+                            )
+                            .bind("sourceId", source.getId())
+                            .bind("repoId", repoId)
+                            .bind("name", source.getName())
+                            .execute(),
+                            "workflow name=%s", source.getName());
+                }
+            }
+            if (!oldNames.isEmpty()) {
+                // those names don exist any more.
+                handle.createStatement(
+                        "delete from workflows" +
+                        " where id in (" +
+                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")");
+            }
+        }
+
+        @Override
+        public void syncSchedulesToRevision(int repoId, List<Schedule> schedules)
+            throws ResourceConflictException
+        {
+            if (schedules.isEmpty()) {
+                return;
+            }
+
+            Map<String, Integer> oldNames = dao.getLatestScheduleNamesOfRepository(repoId);
+            if (oldNames == null) {
+                oldNames = ImmutableMap.of();
+            }
+
+            for (Schedule schedule : schedules) {
+                if (oldNames.containsKey(schedule.getName())) {
+                    // found the same name. overwriting source_id.
+                    int n = handle.createStatement(
+                            "update schedules" +
+                            " set source_id = :sourceId, workflow_source_id = :workflowSourceId" +
+                            // TODO should here update next_run_time nad next_schedule_time?
+                            " where id = :id"
+                        )
+                        .bind("sourceId", schedule.getScheduleSourceId())
+                        .bind("workflowSourceId", schedule.getWorkflowSourceId())
+                        .bind("id", oldNames.get(schedule.getName()))
+                        .execute();
+                    if (n <= 0) {
+                        // TODO exception?
+                    }
+                    oldNames.remove(schedule.getName());
+                }
+                else {
+                    // not found this name. inserting new entry.
+                    // TODO this INSERT can be optimized by using lazy multiple-value insert
+                    catchConflict(() ->
+                            handle.createStatement(
+                                "insert into schedules" +
+                                " (source_id, repository_id, name, workflow_source_id, next_run_time, next_schedule_time)" +
+                                " values (:sourceId, :repoId, :name, :workflowSourceId, :nextRunTime, :nextScheduleTime)"
+                            )
+                            .bind("sourceId", schedule.getScheduleSourceId())
+                            .bind("repoId", repoId)
+                            .bind("name", schedule.getName())
+                            .bind("workflowSourceId", schedule.getWorkflowSourceId())
+                            .bind("nextRunTime", schedule.getNextRunTime().getTime() / 1000)
+                            .bind("nextScheduleTime", schedule.getNextScheduleTime().getTime() / 1000)
+                            .execute(),
+                            "schedule name=%s", schedule.getName());
+                }
+            }
+            if (!oldNames.isEmpty()) {
+                // those names don exist any more.
+                handle.createStatement(
+                        "delete from schedules" +
+                        " where id in (" +
+                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")");
+            }
+        }
     }
 
     public interface Dao
@@ -434,6 +556,14 @@ public class DatabaseRepositoryStoreManager
                 " values (:revId, :name, :config)")
         @GetGeneratedKeys
         int insertScheduleSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
+
+        @SqlQuery("select name, id from workflows" +
+                " where repository_id = :repoId")
+        Map<String, Integer> getLatestWorkflowNamesOfRepository(@Bind("repoId") int repoId);
+
+        @SqlQuery("select name, id from schedules" +
+                " where repository_id = :repoId")
+        Map<String, Integer> getLatestScheduleNamesOfRepository(@Bind("repoId") int repoId);
     }
 
     private static class StoredRepositoryMapper

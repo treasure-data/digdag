@@ -88,22 +88,27 @@ public class RepositoryControl
         }
     }
 
-    public void syncSchedules(
-            ScheduleStoreManager schedStoreManager, SchedulerManager scheds,
-            StoredRevision revision,
-            List<StoredWorkflowSource> workflows, List<StoredScheduleSource> sources,
-            Date currentTime)
+    public void syncLatestRevision(StoredRevision revision, List<StoredWorkflowSource> workflowSources)
         throws ResourceConflictException
     {
-        ImmutableList.Builder<Schedule> builder = ImmutableList.builder();
-        for (StoredScheduleSource source : sources) {
-            int workflowSourceId = scheds.matchWorkflow(source, workflows);
-            Scheduler sr = scheds.getScheduler(source.getConfig());
+        syncLatestRevision(revision, workflowSources, ImmutableList.of(), null, null);
+    }
+
+    public void syncLatestRevision(StoredRevision revision,
+            List<StoredWorkflowSource> workflowSources, List<StoredScheduleSource> scheduleSources,
+            SchedulerManager scheds, Date currentTime)
+        throws ResourceConflictException
+    {
+        ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
+        for (StoredScheduleSource scheduleSource : scheduleSources) {
+            int triggerWorkflowSourceId = scheds.matchWorkflow(scheduleSource, workflowSources);
+            Scheduler sr = scheds.getScheduler(scheduleSource.getConfig());
             ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
-            Schedule schedule = Schedule.of(source.getId(), workflowSourceId,
+            Schedule schedule = Schedule.of(scheduleSource.getId(), triggerWorkflowSourceId,
                     firstTime.getRunTime(), firstTime.getScheduleTime());
-            builder.add(schedule);
+            schedules.add(schedule);
         }
-        schedStoreManager.syncRepositorySchedules(revision.getRepositoryId(), builder.build());
+        store.syncWorkflowsToRevision(repository.getId(), workflowSources);
+        store.syncSchedulesToRevision(repository.getId(), schedules.build());
     }
 }

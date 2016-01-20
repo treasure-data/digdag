@@ -53,7 +53,6 @@ public class RepositoryResource
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
     private final RepositoryStoreManager rm;
-    private final ScheduleStoreManager scheduleStore;
     private final SchedulerManager scheds;
     private final TempFileManager temp;
 
@@ -65,13 +64,11 @@ public class RepositoryResource
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
             RepositoryStoreManager rm,
-            ScheduleStoreManager scheduleStore,
             SchedulerManager scheds,
             TempFileManager temp)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
-        this.scheduleStore = scheduleStore;
         this.scheds = scheds;
         this.compiler = compiler;
         this.rm = rm;
@@ -203,9 +200,9 @@ public class RepositoryResource
                             repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflows().get());
                         List<StoredScheduleSource> storedSchedules =
                             repoControl.insertScheduleSources(rev.getId(), meta.getSchedules().get());
-                        repoControl.syncSchedules(scheduleStore, scheds,
-                                rev, storedWorkflows, storedSchedules,
-                                new Date());
+                        repoControl.syncLatestRevision(rev,
+                                storedWorkflows, storedSchedules,
+                                scheds, new Date());
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);

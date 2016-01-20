@@ -26,7 +26,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.schedule.ScheduleStarter;
+import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
@@ -84,7 +84,7 @@ public class Sched
             })
             .overrideModules(modules -> {
                 Module mod = Modules.override(modules).with(binder -> {
-                    binder.bind(ScheduleStarter.class).to(ScheduleStarterWithResumeState.class);
+                    binder.bind(ScheduleHandler.class).to(ScheduleHandlerWithResumeState.class);
                 });
                 return asList(mod);
             })
@@ -111,8 +111,8 @@ public class Sched
         localSite.run();
     }
 
-    private static class ScheduleStarterWithResumeState
-            extends ScheduleStarter
+    private static class ScheduleHandlerWithResumeState
+            extends ScheduleHandler
     {
         private final FileMapper mapper;
         private final HistoryFiles hist;
@@ -120,7 +120,7 @@ public class Sched
         private final RepositoryStoreManager rm;
 
         @Inject
-        public ScheduleStarterWithResumeState(
+        public ScheduleHandlerWithResumeState(
                 ConfigFactory cf,
                 RepositoryStoreManager rm,
                 WorkflowExecutor exec,

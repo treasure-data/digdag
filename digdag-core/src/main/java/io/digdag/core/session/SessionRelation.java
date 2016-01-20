@@ -16,7 +16,7 @@ public abstract class SessionRelation
 
     public abstract int getRevisionId();
 
-    public abstract Optional<Integer> getWorkflowId();
+    public abstract Optional<Integer> getWorkflowSourceId();
 
     public static ImmutableSessionRelation.Builder builder()
     {
@@ -28,16 +28,16 @@ public abstract class SessionRelation
         return builder()
             .repositoryId(repositoryId)
             .revisionId(revisionId)
-            .workflowId(Optional.absent())
+            .workflowSourceId(Optional.absent())
             .build();
     }
 
-    public static SessionRelation ofWorkflow(int repositoryId, int revisionId, int workflowId)
+    public static SessionRelation ofWorkflow(int repositoryId, int revisionId, int workflowSourceId)
     {
         return builder()
             .repositoryId(repositoryId)
             .revisionId(revisionId)
-            .workflowId(Optional.of(workflowId))
+            .workflowSourceId(Optional.of(workflowSourceId))
             .build();
     }
 }

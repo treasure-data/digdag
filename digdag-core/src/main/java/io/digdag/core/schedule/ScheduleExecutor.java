@@ -20,11 +20,11 @@ public class ScheduleExecutor
     private final ExecutorService executor;
     private final ScheduleStoreManager sm;
     private final SchedulerManager scheds;
-    private final ScheduleStarter starter;
+    private final ScheduleHandler handler;
 
     @Inject
     public ScheduleExecutor(ScheduleStoreManager sm, SchedulerManager scheds,
-            ScheduleStarter starter)
+            ScheduleHandler handler)
     {
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
@@ -34,7 +34,7 @@ public class ScheduleExecutor
                 );
         this.sm = sm;
         this.scheds = scheds;
-        this.starter = starter;
+        this.handler = handler;
     }
 
     public void start()
@@ -66,7 +66,7 @@ public class ScheduleExecutor
         Scheduler sr = scheds.getScheduler(sched.getConfig());
         Optional<String> from = sched.getConfig().getOptional("from", String.class);
         try {
-            starter.start(sched.getWorkflowSourceId(), from,
+            handler.start(sched.getWorkflowSourceId(), from,
                     sr.getTimeZone(), ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
             return sr.nextScheduleTime(scheduleTime);
         }

@@ -12,7 +12,6 @@ import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
@@ -36,7 +35,6 @@ public class LocalSite
     private final TaskQueueDispatcher dispatcher;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
-    private final ScheduleStoreManager scheduleStoreManager;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
     private final SessionMonitorManager sessionMonitorManager;
@@ -54,7 +52,6 @@ public class LocalSite
             TaskQueueDispatcher dispatcher,
             LocalAgentManager localAgentManager,
             DatabaseMigrator databaseMigrator,
-            ScheduleStoreManager scheduleStoreManager,
             SchedulerManager scheds,
             ScheduleExecutor scheduleExecutor,
             SessionMonitorManager sessionMonitorManager,
@@ -70,7 +67,6 @@ public class LocalSite
         this.dispatcher = dispatcher;
         this.localAgentManager = localAgentManager;
         this.databaseMigrator = databaseMigrator;
-        this.scheduleStoreManager = scheduleStoreManager;
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
         this.sessionMonitorManager = sessionMonitorManager;
@@ -151,10 +147,12 @@ public class LocalSite
                         List<StoredScheduleSource> storedSchedules =
                             repoControl.insertScheduleSources(rev.getId(), scheduleSources.get());
                         if (currentTimeToSchedule.isPresent()) {
-                            repoControl.syncSchedules(
-                                    scheduleStoreManager, scheds,
+                            repoControl.syncLatestRevision(
                                     rev, storedWorkflows, storedSchedules,
-                                    currentTimeToSchedule.get());
+                                    scheds, currentTimeToSchedule.get());
+                        }
+                        else {
+                            repoControl.syncLatestRevision(rev, storedWorkflows);
                         }
                         return new StoreWorkflow(rev, storedWorkflows, storedSchedules);
                     }

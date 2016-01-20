@@ -233,9 +233,9 @@ public class DatabaseSessionStoreManager
                 if (relation.isPresent()) {
                     SessionRelation rel = relation.get();
                     sesId = handle.inTransaction((handle, ses) -> {
-                        if (rel.getWorkflowId().isPresent()) {
-                            // namespace is workflow id
-                            int wfId = rel.getWorkflowId().get();
+                        if (rel.getWorkflowSourceId().isPresent()) {
+                            // namespace is workflow source id
+                            int wfId = rel.getWorkflowSourceId().get();
                             long insertedId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, wfId, newSession.getName(), newSession.getParams(), newSession.getOptions());
                             dao.insertSessionRelation(insertedId, rel.getRepositoryId(), rel.getRevisionId(), wfId);
                             return insertedId;
@@ -595,9 +595,9 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public List<StoredSession> getSessionsOfWorkflow(int workflowId, int pageSize, Optional<Long> lastId)
+        public List<StoredSession> getSessionsOfWorkflow(int workflowSourceId, int pageSize, Optional<Long> lastId)
         {
-            return dao.getSessionsOfWorkflow(siteId, workflowId, pageSize, lastId.or(Long.MAX_VALUE));
+            return dao.getSessionsOfWorkflow(siteId, workflowSourceId, pageSize, lastId.or(Long.MAX_VALUE));
         }
 
         @Override
@@ -684,7 +684,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select s.* from sessions s" +
                 " join session_relations sr on s.id = sr.id" +
                 " where site_id = :siteId" +
-                " and sr.workflow_id = :wfId" +
+                " and sr.workflow_source_id = :wfId" +
                 " and s.id < :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
@@ -705,10 +705,10 @@ public class DatabaseSessionStoreManager
         long insertSession(@Bind("siteId") int siteId, @Bind("namespaceType") short namespaceType,
                 @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") Config params, @Bind("options") SessionOptions options);
 
-        @SqlUpdate("insert into session_relations (id, repository_id, revision_id, workflow_id)" +
-                " values (:id, :repositoryId, :revisionId, :workflowId)")
+        @SqlUpdate("insert into session_relations (id, repository_id, revision_id, workflow_source_id)" +
+                " values (:id, :repositoryId, :revisionId, :workflowSourceId)")
         void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") int repositoryId, @Bind("revisionId") int revisionId,
-                @Bind("workflowId") Integer workflowId);
+                @Bind("workflowSourceId") Integer workflowSourceId);
 
         @SqlQuery("select * from session_relations where id = :id")
         SessionRelation getSessionRelationById(@Bind("id") long sessionId);
@@ -938,7 +938,7 @@ public class DatabaseSessionStoreManager
             return ImmutableSessionRelation.builder()
                 .repositoryId(r.getInt("repository_id"))
                 .revisionId(r.getInt("revision_id"))
-                .workflowId(getOptionalInt(r, "workflow_id"))
+                .workflowSourceId(getOptionalInt(r, "workflow_source_id"))
                 .build();
         }
     }

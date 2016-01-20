@@ -16,7 +16,7 @@ import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.DatabaseStoreConfig;
-import io.digdag.core.schedule.ScheduleStarter;
+import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.session.SessionMonitorExecutor;
@@ -103,7 +103,7 @@ public class DigdagEmbed
                     binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
-                    binder.bind(ScheduleStarter.class).in(Scopes.SINGLETON);
+                    binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);

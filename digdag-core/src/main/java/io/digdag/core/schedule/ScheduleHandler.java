@@ -23,14 +23,14 @@ import io.digdag.core.session.SessionMonitorManager;
 import io.digdag.core.session.TaskMatchPattern;
 import io.digdag.core.workflow.WorkflowExecutor;
 
-public class ScheduleStarter
+public class ScheduleHandler
 {
     private final ConfigFactory cf;
     private final RepositoryStoreManager rm;
     private final WorkflowExecutor exec;
 
     @Inject
-    public ScheduleStarter(
+    public ScheduleHandler(
             ConfigFactory cf,
             RepositoryStoreManager rm,
             WorkflowExecutor exec)
