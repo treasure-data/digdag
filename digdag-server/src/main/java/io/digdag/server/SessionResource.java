@@ -118,35 +118,15 @@ public class SessionResource
     public RestSession startSession(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException
     {
-        StoredRevision rev;
-        StoredWorkflowSource wf;
-        SessionRelation rel;
-
         RepositoryStore rs = rm.getRepositoryStore(siteId);
         TaskMatchPattern workflowPattern = TaskMatchPattern.compile(request.getWorkflowNamePattern());
 
-        // TODO support startSession by id
-        //if (request.getWorkflowId().isPresent()) {
-        //    Preconditions.checkArgument(!request.getRepositoryName().isPresent(), "repository and workflowId can't be set together");
-        //    Preconditions.checkArgument(!request.getWorkflowNamePattern().isPresent(), "workflow and workflowId can't be set together");
-        //    Preconditions.checkArgument(!request.getRevision().isPresent(), "revision and workflowId can't be set together");
+        StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
+        StoredWorkflowSourceWithRepository wf = rs.getLatestActiveWorkflowSourceByName(repo.getId(), workflowPattern.getRootWorkflowName());
 
-        //    wf = rs.getWorkflowById(request.getWorkflowId().get());  // validate site id
-        //    StoredWorkflowSourceWithRepository details = rm.getWorkflowDetailsById(wf.getId());
-        //    rel = SessionRelation.ofWorkflow(details.getRepository().getId(), details.getRevisionId(), details.getId());
-        //}
-        {
-            StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
-            // TODO support startSession using an old revision
-            //if (request.getRevision().isPresent()) {
-            //    rev = rs.getRevisionByName(repo.getId(), request.getRevision().get());
-            //}
-            //else {
-                rev = rs.getLatestActiveRevision(repo.getId());
-            //}
-            wf = rs.getWorkflowSourceByName(rev.getId(), workflowPattern.getRootWorkflowName());
-            rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
-        }
+        SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
+
+        StoredRevision rev = rs.getRevisionById(wf.getRevisionId());
 
         Session session = Session.sessionBuilder(
                 request.getName(), rev.getDefaultParams(), wf, request.getParams())

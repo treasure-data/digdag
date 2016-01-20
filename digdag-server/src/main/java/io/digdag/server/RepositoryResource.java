@@ -89,7 +89,7 @@ public class RepositoryResource
                 try {
                     StoredRevision rev;
                     if (revName == null) {
-                        rev = rs.getLatestActiveRevision(repo.getId());
+                        rev = rs.getLatestRevision(repo.getId());
                     }
                     else {
                         rev = rs.getRevisionByName(repo.getId(), revName);
@@ -113,7 +113,7 @@ public class RepositoryResource
         StoredRepository repo = rs.getRepositoryById(repoId);
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestActiveRevision(repo.getId());
+            rev = rs.getLatestRevision(repo.getId());
         }
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
@@ -131,7 +131,7 @@ public class RepositoryResource
         StoredRepository repo = rs.getRepositoryById(repoId);
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestActiveRevision(repo.getId());
+            rev = rs.getLatestRevision(repo.getId());
         }
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
@@ -153,7 +153,7 @@ public class RepositoryResource
         StoredRepository repo = rs.getRepositoryById(repoId);
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestActiveRevision(repo.getId());
+            rev = rs.getLatestRevision(repo.getId());
         }
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);

@@ -12,6 +12,8 @@ import com.google.inject.Scopes;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.ConfigEvalEngine;
+import io.digdag.core.agent.TaskCallbackApi;
+import io.digdag.core.agent.LocalInProcessTaskCallbackApi;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
@@ -21,8 +23,6 @@ import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.session.SessionMonitorExecutor;
-import io.digdag.core.workflow.InProcessTaskCallbackApi;
-import io.digdag.core.workflow.TaskCallbackApi;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -96,7 +96,6 @@ public class DigdagEmbed
                     .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
                     .build()),
                 (binder) -> {
-                    binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
@@ -107,6 +106,7 @@ public class DigdagEmbed
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
+                    binder.bind(TaskCallbackApi.class).to(LocalInProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
                     binder.bind(TaskRunnerManager.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);

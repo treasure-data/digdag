@@ -13,7 +13,6 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.*;
-import io.digdag.core.workflow.TaskCallbackApi;
 
 public class TaskRunnerManager
 {

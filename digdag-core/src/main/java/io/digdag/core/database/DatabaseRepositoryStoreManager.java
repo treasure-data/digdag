@@ -157,11 +157,11 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredRevision getLatestActiveRevision(int repoId)
+        public StoredRevision getLatestRevision(int repoId)
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getLatestActiveRevision(siteId, repoId),
+                    dao.getLatestRevision(siteId, repoId),
                     "repository id=%d", repoId);
         }
 
@@ -205,6 +205,13 @@ public class DatabaseRepositoryStoreManager
         public List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId)
         {
             return dao.getWorkflowSources(siteId, revId, pageSize, lastId.or(0));
+        }
+
+        @Override
+        public StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(int repoId, String name)
+            throws ResourceNotFoundException
+        {
+            return dao.getLatestActiveWorkflowSourceByName(siteId, repoId, name);
         }
 
         @Override
@@ -461,7 +468,7 @@ public class DatabaseRepositoryStoreManager
                 " and t.repository_id = :repoId" +
                 " order by t.id asc" +
                 " limit 1")
-        StoredRevision getLatestActiveRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
+        StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
         @SqlUpdate("insert into revisions" +
                 " (repository_id, name, default_params, archive_type, archive_md5, archive_path, archive_data, created_at)" +
@@ -470,83 +477,81 @@ public class DatabaseRepositoryStoreManager
         int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
 
 
-        @SqlQuery("select w.* from workflow_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+        @SqlQuery("select ws.* from workflow_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " where w.revision_id = :revId" +
-                " and w.id > :lastId" +
-                " order by w.id asc" +
+                " where ws.revision_id = :revId" +
+                " and ws.id > :lastId" +
+                " order by ws.id asc" +
                 " limit :limit")
         List<StoredWorkflowSource> getWorkflowSources(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
+        @SqlQuery("select w.source_id as id, ws.revision_id, ws.name, ws.config," +
                 " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflow_sources w" +
-                " join revisions rev on w.revision_id = rev.id" +
-                " join repositories repo on rev.repository_id = repo.id" +
-                " where w.revision_id in (" +
-                    "select max(rev.id) as rev_id" +
-                    " from repositories repo" +
-                    " join revisions rev on repo.id = rev.repository_id" +
-                    " where repo.site_id = :siteId" +
-                    " group by repo.id" +
-                ")" +
-                " and w.id > :lastId" +
-                " order by w.id")
+                " from workflows w" +
+                " join repositories repo on w.repository_id = repo.id" +
+                " join workflow_sources ws on w.source_id = ws.id" +
+                " join revisions rev on ws.revision_id = rev.id" +
+                " where repo.site_id = :siteId" +
+                " and w.repository_id = :repoId" +
+                " and w.name = :name")
+        StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
+
+        @SqlQuery("select w.source_id as id, ws.revision_id, ws.name, ws.config," +
+                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from workflows w" +
+                " join repositories repo on w.repository_id = repo.id" +
+                " join workflow_sources ws on w.source_id = ws.id" +
+                " join revisions rev on ws.revision_id = rev.id" +
+                " where repo.site_id = :siteId" +
+                " and ws.id > :lastId" +
+                " order by w.source_id")
         List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select w.id, w.revision_id, w.name, w.config,"+
+        @SqlQuery("select ws.id, ws.revision_id, ws.name, ws.config,"+
                 " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflow_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+                " from workflow_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " where w.id = :wfId")
+                " where ws.id = :wfId")
         StoredWorkflowSourceWithRepository getWorkflowDetailsById(@Bind("wfId") int wfId);
 
-        @SqlQuery("select w.* from workflow_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+        @SqlQuery("select ws.* from workflow_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and w.id = :id" +
+                " and ws.id = :id" +
                 " limit 1")
         StoredWorkflowSource getWorkflowSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select w.* from workflow_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+        @SqlQuery("select ws.* from workflow_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and revision_id = :revId" +
-                " and w.name = :name" +
+                " and ws.name = :name" +
                 " limit 1")
         StoredWorkflowSource getWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
-        @SqlQuery("select w.* from schedule_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+        @SqlQuery("select ws.* from schedule_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and w.id = :id" +
+                " and ws.id = :id" +
                 " limit 1")
         StoredScheduleSource getScheduleSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select w.* from schedule_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
+        @SqlQuery("select ws.* from schedule_sources ws" +
+                " join revisions rev on rev.id = ws.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and revision_id = :revId" +
-                " and w.name = :name" +
+                " and ws.name = :name" +
                 " limit 1")
         StoredScheduleSource getScheduleSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
-
-        @SqlQuery("select w.* from workflow_sources w" +
-                " join revisions rev on rev.id = w.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and w.revision_id = :revId" +
-                " order by id asc" +
-                " limit 1")
-        StoredWorkflowSource getLatestActiveWorkflow(@Bind("siteId") int siteId, @Bind("revId") int revId);
 
         @SqlUpdate("insert into workflow_sources" +
                 " (revision_id, name, config)" +

@@ -31,11 +31,14 @@ public interface RepositoryStore
     StoredRevision getRevisionByName(int repoId, String revName)
         throws ResourceNotFoundException;
 
-    StoredRevision getLatestActiveRevision(int repoId)
+    StoredRevision getLatestRevision(int repoId)
         throws ResourceNotFoundException;
 
 
     List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId);
+
+    StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(int repoId, String name)
+        throws ResourceNotFoundException;
 
     List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(int pageSize, Optional<Integer> lastId);
 

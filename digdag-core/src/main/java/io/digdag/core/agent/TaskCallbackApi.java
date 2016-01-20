@@ -1,9 +1,10 @@
-package io.digdag.core.workflow;
+package io.digdag.core.agent;
 
 import com.google.common.base.Optional;
-import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
-import io.digdag.spi.RevisionInfo;
+import io.digdag.spi.TaskReport;
+import io.digdag.core.session.Session;
+import io.digdag.core.session.TaskStateCode;
 
 public interface TaskCallbackApi
 {
@@ -18,5 +19,5 @@ public interface TaskCallbackApi
     void taskPollNext(long taskId,
             Config stateParams, int retryInterval);
 
-    //boolean requireSession(RevisionInfo revision, String workflowName);
+    TaskStateCode startSession(String repositoryName, String workflowName, Session session);
 }
