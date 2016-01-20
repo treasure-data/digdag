@@ -1,4 +1,4 @@
-default: +generate_subtasks
+run: +generate_subtasks
 +generate_subtasks:
   +process:
     +split:

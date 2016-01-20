@@ -1,4 +1,4 @@
-default: +error_task
+run: +error_task
 +error_task:
   error:
     py>: examples.error_task.show_error

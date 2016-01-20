@@ -1,4 +1,4 @@
-default: +treasuredata
+run: +treasuredata
 +treasuredata:
   export:
     td:

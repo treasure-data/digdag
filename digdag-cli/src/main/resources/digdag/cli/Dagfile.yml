@@ -1,4 +1,4 @@
-default: +main
+run: +main
 +main:
   +task1:
     sh>: "echo this task runs first."

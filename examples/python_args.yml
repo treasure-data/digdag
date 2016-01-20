@@ -1,4 +1,4 @@
-default: +python_args
+run: +python_args
 +python_args:
   +a:
     py>: examples.python_args.required_arguments

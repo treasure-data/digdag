@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 @JsonDeserialize(as = ImmutableDagfile.class)
 public abstract class Dagfile
 {
-    @JsonProperty("default")
+    @JsonProperty("run")
     public abstract Optional<String> getDefaultTaskName();
 
     @JsonUnwrapped
@@ -51,7 +51,7 @@ public abstract class Dagfile
         }
 
         return builder()
-            .defaultTaskName(config.getOptional("default", String.class))
+            .defaultTaskName(config.getOptional("run", String.class))
             .workflowList(workflowList.convert(WorkflowSourceList.class))
             .scheduleList(scheduleList.convert(ScheduleSourceList.class))
             .defaultParams(others)

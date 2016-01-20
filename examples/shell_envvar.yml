@@ -1,4 +1,4 @@
-default: +shell_envvar
+run: +shell_envvar
 +shell_envvar:
   +simple:
     sh>: ./examples/shell_envvar.sh

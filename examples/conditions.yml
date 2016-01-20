@@ -1,4 +1,4 @@
-default: +conditions
+run: +conditions
 +conditions:
   +algorithms:
     +try:
