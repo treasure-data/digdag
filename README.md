@@ -13,10 +13,8 @@
 ```
 Usage: digdag <command> [options...]
   Commands:
-    gen <name>                       generate a new workflow definition
-    run <workflow.yml>               run a workflow
-    show <workflow.yml>              visualize a workflow
-    sched <workflow.yml> -o <dir>    start scheduling a workflow
+    init                             generate a new sample Dagfile
+    run [+name]                      run a workflow
 
   Server-mode commands:
     archive <workflow.yml...>        create a project archive
@@ -36,12 +34,12 @@ With Command-Line-Interface, Digdag runs workflows on local machine.
 
 ### Running a workflow
 
-`digdag run <workflow.yml>` executes a workflow. A workflow is defined in a YAML file with Jinja2 template.
+`digdag -f <workflow.yml>` executes a workflow. A workflow is defined in a YAML file with Jinja2 template.
 
 All keys starting with `+` are tasks. Tasks run from the top task to the bottom one by one. A task can be nested. If a group of tasks have `parallel: true` option, tasks in the group runs in parallel. For details, checkout example definitions at [examples/](https://github.com/treasure-data/digdag/blob/master/examples).
 
 ```
-digdag run examples/check_task.yml
+digdag -f examples/check_task.yml
 ```
 
 ### Resuming a session
@@ -49,7 +47,7 @@ digdag run examples/check_task.yml
 Digdag supports resuming a failed session. When a workflow fails, you can restart it with `-r` option to skip tasks that succeeded before.
 
 ```
-digdag run config.yml -r config.yml.resume.yml
+digdag -f config.yml -r config.yml.resume.yml
 ```
 
 ## Server-mode

@@ -69,7 +69,7 @@ public class Run
     public void main()
             throws Exception
     {
-        if (runAsImplicit && args.isEmpty()) {
+        if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
             throw Main.usage(null);
         }
 

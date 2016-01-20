@@ -60,6 +60,14 @@ public class Main
             catch (MissingCommandException ex) {
                 throw usage("available commands are: "+jc.getCommands().keySet());
             }
+            catch (ParameterException ex) {
+                if (getParsedCommand(jc) == null) {
+                    // go to Run.asImplicit section
+                }
+                else {
+                    throw ex;
+                }
+            }
 
             if (mainOpts.help) {
                 throw usage(null);
@@ -68,7 +76,7 @@ public class Main
             Command command = getParsedCommand(jc);
             if (command == null) {
                 command = Run.asImplicit();
-                jc = new JCommander(mainOpts);
+                jc = new JCommander(command);
                 jc.setProgramName(PROGRAM_NAME);
                 jc.parse(args);
             }
@@ -160,7 +168,7 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
-        System.err.println("    init                             generates a new sample Dagfile");
+        System.err.println("    init                             generate a new sample Dagfile");
         System.err.println("    run [+name]                      run a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
