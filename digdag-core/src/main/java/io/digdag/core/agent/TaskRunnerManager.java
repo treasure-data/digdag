@@ -43,7 +43,7 @@ public class TaskRunnerManager
         Config nextState = request.getLastStateParams();
 
         // set task name to thread name so that logger shows it
-        try (SetThreadName threadName = new SetThreadName("task-"+request.getTaskInfo().getFullName())) {
+        try (SetThreadName threadName = new SetThreadName(request.getTaskInfo().getFullName())) {
 
             String type;
             if (config.has("type")) {

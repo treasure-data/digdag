@@ -41,7 +41,7 @@ public class Main
         jc.setProgramName(PROGRAM_NAME);
 
         jc.addCommand("archive", new Archive());
-        jc.addCommand("gen", new Gen());
+        jc.addCommand("init", new Init());
         jc.addCommand("run", new Run());
         jc.addCommand("server", new Server());
         jc.addCommand("show", new Show());
@@ -160,7 +160,7 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
-        System.err.println("    gen <name>                       generate a new workflow definition");
+        System.err.println("    init                             generates a new sample Dagfile");
         System.err.println("    run [+name]                      run a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
