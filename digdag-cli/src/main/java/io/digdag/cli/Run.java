@@ -205,7 +205,7 @@ public class Run
         if (!failedTasks.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("%n"));
-            sb.append(String.format("Task state is stored at %s.%n", resumeResultPath));
+            sb.append(String.format("Task state is stored at %s directory.%n", resumeResultPath));
             for (StoredTask task : failedTasks) {
                 sb.append(String.format("  Task %s failed.%n", task.getFullName()));
             }
