@@ -19,14 +19,17 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
+import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.WorkflowSourceList;
 import io.digdag.core.session.SessionOptions;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.spi.config.Config;
+import io.digdag.spi.config.ConfigException;
 import io.digdag.spi.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 
@@ -35,11 +38,11 @@ public class Run
 {
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
-    @Parameter(names = {"-f", "--from"})
-    String fromTaskName = null;
+    @Parameter(names = {"-f", "--file"})
+    String dagfilePath = "Dagfile";
 
-    @Parameter(names = {"-r", "--resume-state"})
-    String resumeStateFilePath = null;
+    @Parameter(names = {"-s", "--session"})
+    String sessionStatePath = null;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -47,34 +50,61 @@ public class Run
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-s", "--show"})
+    @Parameter(names = {"-G", "--graph"})
     String visualizePath = null;
+
+    // TODO dry run
+
+    private boolean runAsImplicit = false;
+
+    // used by Main
+    static Run asImplicit()
+    {
+        Run command = new Run();
+        command.runAsImplicit = true;
+        return command;
+    }
 
     @Override
     public void main()
             throws Exception
     {
-        if (args.size() != 1) {
+        if (runAsImplicit && args.isEmpty()) {
+            throw Main.usage(null);
+        }
+
+        String taskNamePattern;
+        switch (args.size()) {
+        case 0:
+            taskNamePattern = null;
+            break;
+        case 1:
+            taskNamePattern = args.get(0);
+            if (!taskNamePattern.startsWith("+")) {
+                throw usage("Task name must begin with '+': " + taskNamePattern);
+            }
+            break;
+        default:
             throw usage(null);
         }
-        run(args.get(0));
+        run(taskNamePattern);
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag run <workflow.yml> [options...]");
+        System.err.println("Usage: digdag run [+task] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --from +NAME                 skip tasks before this task");
-        System.err.println("    -r, --resume-state PATH.yml      path to resume state file");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: ./Dagfile)");
+        System.err.println("    -s, --session PATH               use this directory to store status files");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        System.err.println("    -s, --show PATH.png              visualize result of execution and create a PNG file");
-        // TODO add -p, --param K=V
+        System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
+        //System.err.println("    -d, --dry-run                    dry run mode");
         Main.showCommonOptions();
         return systemExit(error);
     }
 
-    public void run(String workflowPath) throws Exception
+    public void run(String taskNamePattern) throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
@@ -102,33 +132,41 @@ public class Run
         }
 
         Optional<ResumeState> resumeState = Optional.absent();
-        if (resumeStateFilePath != null && loader.checkExists(new File(resumeStateFilePath))) {
+        if (sessionStatePath != null && loader.checkExists(new File(sessionStatePath))) {
             // jinja and !!include are disabled
-            resumeState = Optional.of(rawLoader.loadFile(new File(resumeStateFilePath), Optional.absent(), Optional.absent()).convert(ResumeState.class));
+            resumeState = Optional.of(rawLoader.loadFile(new File(sessionStatePath), Optional.absent(), Optional.absent()).convert(ResumeState.class));
         }
 
-        WorkflowSource workflowSource = loadFirstWorkflowSource(loader.load(new File(workflowPath), overwriteParams));
+        Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        if (taskNamePattern == null) {
+            if (dagfile.getDefaultTaskName().isPresent()) {
+                taskNamePattern = dagfile.getDefaultTaskName().get();
+            }
+            else {
+                throw new ConfigException(String.format(
+                            "default: option is not written at %s file. Please add default: option or add +NAME option to command line", dagfilePath));
+            }
+        }
+        WorkflowSourceList workflowSources = dagfile.getWorkflowList();
 
         SessionOptions options = SessionOptions.builder()
             .skipTaskMap(resumeState.transform(it -> it.getReports()).or(ImmutableMap.of()))
             .build();
 
-        List<StoredSession> sessions = localSite.startWorkflows(
+        StoredSession session = localSite.storeAndStartWorkflows(
                 TimeZone.getDefault(),  // TODO configurable by cmdline argument
-                WorkflowSourceList.of(ImmutableList.of(workflowSource)),
-                Optional.fromNullable(fromTaskName),
-                overwriteParams, new Date(), options);
-        if (sessions.isEmpty()) {
-            throw systemExit("No workflows to start");
-        }
-        StoredSession session = sessions.get(0);
+                workflowSources,
+                TaskMatchPattern.compile(taskNamePattern),
+                overwriteParams,
+                new Date(),
+                options);
         logger.debug("Submitting {}", session);
 
         localSite.startLocalAgent();
         localSite.startMonitor();
 
-        // if resumeStateFilePath is not set, use workflow.yml.resume.yml
-        File resumeResultPath = new File(Optional.fromNullable(resumeStateFilePath).or(workflowPath + ".resume.yml"));
+        // if sessionStatePath is not set, use workflow.yml.resume.yml
+        File resumeResultPath = new File(Optional.fromNullable(sessionStatePath).or(dagfilePath + ".resume.yml"));
         rsm.startUpdate(resumeResultPath, session);
 
         localSite.runUntilAny();
@@ -152,13 +190,13 @@ public class Run
             logger.debug("    error: "+task.getError());
         }
 
-        if (visualizePath != null) {
-            List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
-                .stream()
-                .map(it -> WorkflowVisualizerNode.of(it))
-                .collect(Collectors.toList());
-            Show.show(nodes, new File(visualizePath));
-        }
+        //if (visualizePath != null) {
+        //    List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
+        //        .stream()
+        //        .map(it -> WorkflowVisualizerNode.of(it))
+        //        .collect(Collectors.toList());
+        //    Show.show(nodes, new File(visualizePath));
+        //}
 
         if (!failedTasks.isEmpty()) {
             StringBuilder sb = new StringBuilder();
@@ -166,28 +204,13 @@ public class Run
                 sb.append(String.format("Task %s failed.%n", task.getFullName()));
             }
             sb.append(String.format("Use `digdag run %s -r %s` to restart this workflow.",
-                        workflowPath, resumeResultPath));
+                        dagfilePath, resumeResultPath));
             throw systemExit(sb.toString());
         }
-        else if (resumeStateFilePath == null) {
+        else if (sessionStatePath == null) {
             rsm.stopUpdate(resumeResultPath);
             rsm.shutdown();
             resumeResultPath.delete();
         }
-    }
-
-    // also used by Sched
-    static WorkflowSource loadFirstWorkflowSource(final Config ast)
-    {
-        List<WorkflowSource> workflowSources = ast.convert(WorkflowSourceList.class).get();
-        if (workflowSources.size() != 1) {
-            if (workflowSources.isEmpty()) {
-                throw new RuntimeException("Workflow file doesn't include definitions");
-            }
-            else {
-                throw new RuntimeException("Workflow file includes more than one definitions");
-            }
-        }
-        return workflowSources.get(0);
     }
 }

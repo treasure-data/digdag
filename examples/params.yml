@@ -1,4 +1,5 @@
-args_example_workflow:
+default: +params
++params:
   # If you haven't checked python_args.yml, please check it first.
 
   +simple:

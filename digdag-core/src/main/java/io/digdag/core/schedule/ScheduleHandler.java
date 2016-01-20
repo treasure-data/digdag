@@ -20,7 +20,8 @@ import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionRelation;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.SessionMonitorManager;
-import io.digdag.core.session.TaskMatchPattern;
+import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 public class ScheduleHandler
@@ -40,35 +41,36 @@ public class ScheduleHandler
         this.exec = exec;
     }
 
-    public StoredSession start(int workflowId, Optional<String> from,
+    public StoredSession start(int workflowId, Optional<SubtaskMatchPattern> subtaskMatchPattern,
             TimeZone timeZone, ScheduleTime time)
             throws ResourceNotFoundException, ResourceConflictException
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
-        Session trigger = createScheduleSession(cf, wf.getRevisionDefaultParams(), wf, from, timeZone, time.getScheduleTime());
+        Session trigger = createScheduleSession(cf, wf.getRevisionDefaultParams(), wf, subtaskMatchPattern, timeZone, time.getScheduleTime());
 
         SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
 
         try {
-            return exec.submitWorkflow(wf.getRepository().getSiteId(), wf, trigger, Optional.of(rel),
-                    time.getRunTime(), from.transform(name -> new TaskMatchPattern(name)));
+            return exec.submitWorkflow(wf.getRepository().getSiteId(),
+                    wf, subtaskMatchPattern, trigger, Optional.of(rel),
+                    time.getRunTime());
         }
-        catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleMatchException ex) {
+        catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleTaskMatchException ex) {
             throw new ConfigException(ex);
         }
     }
 
     private static Session createScheduleSession(ConfigFactory cf,
             Config revisionDefaultParams, WorkflowSource workflow,
-            Optional<String> from, TimeZone timeZone, Date scheduleTime)
+            Optional<SubtaskMatchPattern> subtaskMatchPattern, TimeZone timeZone, Date scheduleTime)
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
         df.setTimeZone(timeZone);
 
         String sessionName = df.format(scheduleTime);
-        if (from.isPresent()) {
-            sessionName += " " + from.get();
+        if (subtaskMatchPattern.isPresent()) {
+            sessionName += " " + subtaskMatchPattern.get().getPattern();
         }
 
         Config overwriteParams = cf.create()

@@ -1,4 +1,5 @@
-params_example_workflow:
+default: +carry_params
+carry_params:
   +set:
     py>: examples.carry_params.set_my_param
 

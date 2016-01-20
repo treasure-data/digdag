@@ -67,7 +67,7 @@ public class Main
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                command = new Run();
+                command = Run.asImplicit();
                 jc = new JCommander(mainOpts);
                 jc.setProgramName(PROGRAM_NAME);
                 jc.parse(args);
@@ -155,12 +155,13 @@ public class Main
         }
     }
 
-    private static SystemExitException usage(String error)
+    // called also by Run
+    static SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
         System.err.println("    gen <name>                       generate a new workflow definition");
-        System.err.println("    run <workflow.yml>               run a workflow");
+        System.err.println("    run [+name]                      run a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");

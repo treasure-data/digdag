@@ -19,7 +19,7 @@ public abstract class RestSessionRequest
     public abstract String getRepositoryName();
 
     @JsonProperty("workflow")
-    public abstract String getWorkflowName();
+    public abstract String getWorkflowNamePattern();
 
     // TODO Optional doesn't work with JAX-RS somehow
     //@JsonProperty("revision")

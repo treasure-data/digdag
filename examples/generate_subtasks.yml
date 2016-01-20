@@ -1,4 +1,5 @@
-generate_subtasks_example_workflow:
+default: +generate_subtasks
++generate_subtasks:
   +process:
     +split:
       py>: examples.generate_subtasks.ParallelProcess.split

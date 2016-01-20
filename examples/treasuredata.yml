@@ -1,4 +1,5 @@
-td_example_workflow:
+default: +treasuredata
++treasuredata:
   export:
     td:
       apikey: MY/ACCOUNT_API_KEY

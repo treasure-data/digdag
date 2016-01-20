@@ -24,18 +24,6 @@ public class SchedulerManager
         this.types = ImmutableList.copyOf(factories);
     }
 
-    public int matchWorkflow(ScheduleSource schedule, List<StoredWorkflowSource> workflows)
-    {
-        // TODO use TaskMatchPattern
-        String name = schedule.getConfig().get("trigger", String.class);
-        for (StoredWorkflowSource workflow : workflows) {
-            if (workflow.getName().equals(name)) {
-                return workflow.getId();
-            }
-        }
-        throw new ConfigException("Triggering workflow does not exist: " + name);
-    }
-
     public Scheduler getScheduler(Config config)
     {
         for (SchedulerFactory type : types) {

@@ -1,4 +1,5 @@
-conditions_example_workflow:
+default: +conditions
++conditions:
   +algorithms:
     +try:
       parallel: true

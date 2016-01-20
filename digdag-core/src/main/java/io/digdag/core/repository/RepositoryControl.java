@@ -9,6 +9,9 @@ import io.digdag.spi.config.Config;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.spi.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import java.util.stream.Collectors;
@@ -101,13 +104,27 @@ public class RepositoryControl
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         for (StoredScheduleSource scheduleSource : scheduleSources) {
-            int triggerWorkflowSourceId = scheds.matchWorkflow(scheduleSource, workflowSources);
+            TaskMatchPattern taskMatchPattern = ScheduleExecutor.getScheduleWorkflowMatchPattern(scheduleSource.getConfig());
+
+            StoredWorkflowSource workflowSource;
+            try {
+                workflowSource = taskMatchPattern.findRootWorkflow(workflowSources);
+            }
+            catch (TaskMatchPattern.NoMatchException ex) {
+                throw new ConfigException(ex);
+            }
+
             Scheduler sr = scheds.getScheduler(scheduleSource.getConfig());
             ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
-            Schedule schedule = Schedule.of(scheduleSource.getId(), triggerWorkflowSourceId,
+            Schedule schedule = Schedule.of(scheduleSource.getId(), workflowSource.getId(),
                     firstTime.getRunTime(), firstTime.getScheduleTime());
             schedules.add(schedule);
         }
+
+        // TODO validate workflows and sessions
+        //   * compile workflow
+        //   * validate SubtaskMatchPattern
+
         store.syncWorkflowsToRevision(repository.getId(), workflowSources);
         store.syncSchedulesToRevision(repository.getId(), schedules.build());
     }

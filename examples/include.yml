@@ -1,4 +1,5 @@
-include_example_workflow:
+default: +include
++include:
   {% set orig_file = "examples/include.yml" %}
   {% set complex_data = {user: 'me', password: 'Top Secret'} %}
   +part1: {% load 'parts/part1.yml' %}

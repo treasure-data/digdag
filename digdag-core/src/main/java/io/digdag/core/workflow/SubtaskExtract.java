@@ -1,4 +1,4 @@
-package io.digdag.core.session;
+package io.digdag.core.workflow;
 
 import java.util.List;
 import java.util.ArrayList;

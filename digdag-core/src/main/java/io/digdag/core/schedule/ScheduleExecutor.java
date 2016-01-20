@@ -6,10 +6,13 @@ import java.util.concurrent.ExecutorService;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.spi.config.Config;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.workflow.SubtaskMatchPattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +60,13 @@ public class ScheduleExecutor
         }
     }
 
+    // used by RepositoryControl.syncLatestRevision and schedule
+    public static TaskMatchPattern getScheduleWorkflowMatchPattern(Config scheduleConfig)
+    {
+        String pattern = scheduleConfig.get("trigger", String.class);
+        return TaskMatchPattern.compile(pattern);
+    }
+
     public ScheduleTime schedule(StoredSchedule sched)
     {
         // TODO If a workflow has wait-until-lastl-schedule attribute, don't start
@@ -64,9 +74,9 @@ public class ScheduleExecutor
         //      same nextScheduleTime
         Date scheduleTime = sched.getNextScheduleTime();
         Scheduler sr = scheds.getScheduler(sched.getConfig());
-        Optional<String> from = sched.getConfig().getOptional("from", String.class);
+        Optional<SubtaskMatchPattern> subtaskMatchPattern = getScheduleWorkflowMatchPattern(sched.getConfig()).getSubtaskMatchPattern();
         try {
-            handler.start(sched.getWorkflowSourceId(), from,
+            handler.start(sched.getWorkflowSourceId(), subtaskMatchPattern,
                     sr.getTimeZone(), ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
             return sr.nextScheduleTime(scheduleTime);
         }

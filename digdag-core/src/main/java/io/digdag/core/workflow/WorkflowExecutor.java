@@ -29,6 +29,8 @@ import io.digdag.spi.TaskInfo;
 import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
+import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.config.Config;
@@ -60,20 +62,19 @@ public class WorkflowExecutor
         this.cf = cf;
     }
 
-    public StoredSession submitWorkflow(
-            int siteId, WorkflowSource source,
+    public StoredSession submitWorkflow(int siteId,
+            WorkflowSource source, Optional<SubtaskMatchPattern> subtaskMatchPattern,
             Session newSession, Optional<SessionRelation> relation,
-            Date slaCurrentTime, Optional<TaskMatchPattern> from)
-        throws ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
+            Date slaCurrentTime)
+        throws ResourceConflictException, NoMatchException, MultipleTaskMatchException
     {
         Workflow workflow = compiler.compile(source.getName(), source.getConfig());
         WorkflowTaskList sourceTasks = workflow.getTasks();
 
         int fromIndex = 0;
-        if (from.isPresent()) {
-            fromIndex = from.get().findIndex(sourceTasks);
+        if (subtaskMatchPattern.isPresent()) {
+            fromIndex = subtaskMatchPattern.get().findIndex(sourceTasks);  // this may return 0
         }
-
         WorkflowTaskList tasks = (fromIndex > 0) ?
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
@@ -81,7 +82,7 @@ public class WorkflowExecutor
         TimeZone timeZone = Session.getSessionTimeZone(newSession);
         List<SessionMonitor> monitors = monitorManager.getMonitors(source, timeZone, slaCurrentTime);
 
-        logger.info("Starting a new session of workflow '{}' ({}) from index {} with session parameters: {}",
+        logger.info("Starting a new session of workflow '{}' ({}) from task {} with session parameters: {}",
                 source.getName(),
                 source.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
@@ -626,7 +627,7 @@ public class WorkflowExecutor
             return false;
         }
 
-        // task failed. add .error tasks
+        // task failed. add :error tasks
         Optional<StoredTask> errorTask = addErrorTasksIfAny(control, task, error, retryInterval, false);
         boolean updated;
         if (retryInterval.isPresent()) {
@@ -667,7 +668,7 @@ public class WorkflowExecutor
             return false;
         }
 
-        // task successfully finished. add .sub and .check tasks
+        // task successfully finished. add :sub and :check tasks
         Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(control, task, subtaskConfig);
         addCheckTasksIfAny(control, task, subtaskRoot);
         boolean updated = control.setRunningToPlanned(stateParams, report);
@@ -735,7 +736,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(".sub", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(":sub", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -756,7 +757,7 @@ public class WorkflowExecutor
         Config export = subtaskConfig.getNestedOrSetEmpty("export");
         export.set("error", error);
 
-        WorkflowTaskList tasks = compiler.compileTasks(".error", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(":error", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -773,7 +774,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(".check", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(":check", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }

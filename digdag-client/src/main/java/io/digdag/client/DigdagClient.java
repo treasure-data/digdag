@@ -178,18 +178,18 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    public RestSession startSession(String name, String repoName, String workflowName)
+    public RestSession startSession(String name, String repoName, String workflowNamePattern)
     {
-        return startSession(name, repoName, workflowName, newConfig());
+        return startSession(name, repoName, workflowNamePattern, newConfig());
     }
 
-    public RestSession startSession(String name, String repoName, String workflowName, Config params)
+    public RestSession startSession(String name, String repoName, String workflowNamePattern, Config params)
     {
         RestSessionRequest req =
             RestSessionRequest.builder()
             .name(name)
             .repositoryName(repoName)
-            .workflowName(workflowName)
+            .workflowNamePattern(workflowNamePattern)
             .params(params)
             .build();
         return doPut(RestSession.class,

@@ -1,4 +1,5 @@
-shell_envvar_example_workflow:
+default: +shell_envvar
++shell_envvar:
   +simple:
     sh>: ./examples/shell_envvar.sh
     param1: "this is param1"

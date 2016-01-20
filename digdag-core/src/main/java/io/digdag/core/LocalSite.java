@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigFactory;
+import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
+import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import io.digdag.core.yaml.YamlConfigLoader;
 
 public class LocalSite
@@ -179,10 +181,10 @@ public class LocalSite
                 currentTimeToSchedule);
     }
 
-    public List<StoredSession> startWorkflows(
+    public StoredSession storeAndStartWorkflows(
             TimeZone defaultTimeZone,
             WorkflowSourceList workflowSources,
-            Optional<String> fromTaskName,
+            TaskMatchPattern taskMatchPattern,
             Config overwriteParams,
             Date slaCurrentTime,
             SessionOptions options)
@@ -190,35 +192,33 @@ public class LocalSite
         StoreWorkflow revWfs = storeWorkflows(workflowSources,
                 ScheduleSourceList.of(ImmutableList.of()), Optional.absent());
         final StoredRevision revision = revWfs.getRevision();
-        final List<StoredWorkflowSource> workflows = revWfs.getWorkflows();
+        final List<StoredWorkflowSource> sources = revWfs.getWorkflows();
 
-        return workflows.stream()
-            .map(workflow -> {
-                try {
-                    Session trigger = Session.sessionBuilder(
-                            "session-" + UUID.randomUUID().toString(),
-                            defaultTimeZone,
-                            cf.create(), workflow, overwriteParams)
-                        .options(options)
-                        .build();
+        try {
+            StoredWorkflowSource source = taskMatchPattern.findRootWorkflow(sources);
 
-                    SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), workflow.getId());
-                    return exec.submitWorkflow(0, workflow, trigger, Optional.of(rel),
-                            slaCurrentTime, fromTaskName.transform(name -> new TaskMatchPattern(name)));
-                }
-                catch (TaskMatchPattern.NoMatchException ex) {
-                    logger.error("No task matched with '{}'", fromTaskName.orNull());
-                    return null;
-                }
-                catch (TaskMatchPattern.MultipleMatchException ex) {
-                    throw new IllegalArgumentException(ex);  // TODO exception class
-                }
-                catch (ResourceConflictException ex) {
-                    throw new IllegalStateException("UUID confliction", ex);
-                }
-            })
-            .filter(wf -> wf != null)
-            .collect(Collectors.toList());
+            Session trigger = Session.sessionBuilder(
+                    "session-" + UUID.randomUUID().toString(),
+                    defaultTimeZone,
+                    cf.create(), source, overwriteParams)
+                .options(options)
+                .build();
+
+            SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), source.getId());
+            return exec.submitWorkflow(0, source, taskMatchPattern.getSubtaskMatchPattern(),
+                    trigger, Optional.of(rel),
+                    slaCurrentTime);
+        }
+        catch (NoMatchException ex) {
+            //logger.error("No task matched with '{}'", fromTaskName.orNull());
+            throw new IllegalArgumentException(ex);  // TODO exception class
+        }
+        catch (MultipleTaskMatchException ex) {
+            throw new IllegalArgumentException(ex);  // TODO exception class
+        }
+        catch (ResourceConflictException ex) {
+            throw new IllegalStateException("UUID confliction", ex);
+        }
     }
 
     public void scheduleWorkflows(

@@ -116,18 +116,19 @@ public class SessionResource
     @Consumes("application/json")
     @Path("/api/sessions")
     public RestSession startSession(RestSessionRequest request)
-        throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleMatchException, TaskMatchPattern.NoMatchException
+        throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException
     {
         StoredRevision rev;
         StoredWorkflowSource wf;
         SessionRelation rel;
 
         RepositoryStore rs = rm.getRepositoryStore(siteId);
+        TaskMatchPattern workflowPattern = TaskMatchPattern.compile(request.getWorkflowNamePattern());
 
         // TODO support startSession by id
         //if (request.getWorkflowId().isPresent()) {
         //    Preconditions.checkArgument(!request.getRepositoryName().isPresent(), "repository and workflowId can't be set together");
-        //    Preconditions.checkArgument(!request.getWorkflowName().isPresent(), "workflow and workflowId can't be set together");
+        //    Preconditions.checkArgument(!request.getWorkflowNamePattern().isPresent(), "workflow and workflowId can't be set together");
         //    Preconditions.checkArgument(!request.getRevision().isPresent(), "revision and workflowId can't be set together");
 
         //    wf = rs.getWorkflowById(request.getWorkflowId().get());  // validate site id
@@ -143,7 +144,7 @@ public class SessionResource
             //else {
                 rev = rs.getLatestActiveRevision(repo.getId());
             //}
-            wf = rs.getWorkflowSourceByName(rev.getId(), request.getWorkflowName());
+            wf = rs.getWorkflowSourceByName(rev.getId(), workflowPattern.getRootWorkflowName());
             rel = SessionRelation.ofWorkflow(repo.getId(), rev.getId(), wf.getId());
         }
 
@@ -155,8 +156,9 @@ public class SessionResource
         // TODO catch TaskMatchPattern.MultipleMatchException and TaskMatchPattern.NoMatchException and throw
         //      an exception that is mapped to 422 Unprocessable Entity
         StoredSession stored = executor.submitWorkflow(
-                siteId, wf, session, Optional.of(rel),
-                new Date(), /*request.getFromTaskName().transform(name -> new TaskMatchPattern(name))*/ Optional.absent());
+                siteId, wf, workflowPattern.getSubtaskMatchPattern(),
+                session, Optional.of(rel),
+                new Date());
 
         return RestSession.of(stored);
     }
