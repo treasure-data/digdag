@@ -115,18 +115,22 @@ public class RevisionAutoReloader
         }
 
         public void tryReload()
-            throws IOException
         {
-            Dagfile dagfile = readDagfile();  // TODO optimize this code
-            if (!dagfile.equals(lastDagfile)) {
-                localSite.scheduleWorkflows(
-                        dagfile.getWorkflowList(),
-                        dagfile.getScheduleList(),
-                        new Date(),
-                        dagfile.getDefaultParams()
-                            .deepCopy()
-                            .setAll(overwriteParams));
-                lastDagfile = dagfile;
+            try {
+                Dagfile dagfile = readDagfile();  // TODO optimize this code
+                if (!dagfile.equals(lastDagfile)) {
+                    localSite.scheduleWorkflows(
+                            dagfile.getWorkflowList(),
+                            dagfile.getScheduleList(),
+                            new Date(),
+                            dagfile.getDefaultParams()
+                                .deepCopy()
+                                .setAll(overwriteParams));
+                    lastDagfile = dagfile;
+                }
+            }
+            catch (RuntimeException | IOException ex) {
+                logger.error("Failed to reload", ex);
             }
         }
 
