@@ -164,7 +164,6 @@ public class Run
                 workflowSources,
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams,
-                new Date(),
                 options);
         logger.debug("Submitting {}", session);
 

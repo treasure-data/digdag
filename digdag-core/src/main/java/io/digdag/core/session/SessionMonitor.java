@@ -11,6 +11,8 @@ import io.digdag.spi.config.Config;
 @JsonDeserialize(as = ImmutableSessionMonitor.class)
 public abstract class SessionMonitor
 {
+    public abstract String getType();
+
     public abstract Config getConfig();
 
     public abstract Date getNextRunTime();
@@ -20,9 +22,10 @@ public abstract class SessionMonitor
         return ImmutableSessionMonitor.builder();
     }
 
-    public static SessionMonitor of(Config config, Date nextRunTime)
+    public static SessionMonitor of(String type, Config config, Date nextRunTime)
     {
         return sessionMonitorBuilder()
+            .type(type)
             .config(config)
             .nextRunTime(nextRunTime)
             .build();

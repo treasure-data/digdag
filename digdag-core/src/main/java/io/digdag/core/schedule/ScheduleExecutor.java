@@ -1,10 +1,12 @@
 package io.digdag.core.schedule;
 
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import com.google.inject.Inject;
 import com.google.common.base.*;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.config.Config;
 import io.digdag.spi.config.ConfigException;
@@ -14,6 +16,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
+import io.digdag.core.session.SessionMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +64,7 @@ public class ScheduleExecutor
         }
     }
 
-    // used by RepositoryControl.syncLatestRevision and schedule
+    // used by RepositoryControl.syncLatestRevision and startSchedule
     public static TaskMatchPattern getScheduleWorkflowMatchPattern(Config scheduleConfig)
     {
         String pattern = scheduleConfig.get("trigger", String.class);
@@ -77,13 +80,9 @@ public class ScheduleExecutor
         // TODO If a workflow has wait-until-last-schedule attribute, don't start
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
-        Date scheduleTime = sched.getNextScheduleTime();
         Scheduler sr = scheds.getScheduler(sched.getConfig());
-        Optional<SubtaskMatchPattern> subtaskMatchPattern = getScheduleWorkflowMatchPattern(sched.getConfig()).getSubtaskMatchPattern();
         try {
-            handler.start(sched.getWorkflowSourceId(), subtaskMatchPattern,
-                    sr.getTimeZone(), ScheduleTime.of(sched.getNextRunTime(), scheduleTime));
-            return sr.nextScheduleTime(scheduleTime);
+            return startSchedule(sched, sr);
         }
         catch (ResourceNotFoundException ex) {
             Exception error = new IllegalStateException("Workflow for a schedule id="+sched.getId()+" is scheduled but does not exist.", ex);
@@ -95,7 +94,7 @@ public class ScheduleExecutor
         catch (ResourceConflictException ex) {
             Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
             logger.error("Database state error during scheduling. Skipping this schedule", error);
-            return sr.nextScheduleTime(scheduleTime);
+            return sr.nextScheduleTime(sched.getNextScheduleTime());
         }
         catch (RuntimeException ex) {
             logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
@@ -103,6 +102,29 @@ public class ScheduleExecutor
                     new Date(sched.getNextRunTime().getTime() + 3600*1000),
                     sched.getNextScheduleTime());
         }
+    }
+
+    private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        Date scheduleTime = sched.getNextScheduleTime();
+        Date runTime = sched.getNextRunTime();
+        TimeZone timeZone = sr.getTimeZone();
+
+        Optional<SubtaskMatchPattern> subtaskMatchPattern =
+            getScheduleWorkflowMatchPattern(sched.getConfig()).getSubtaskMatchPattern();
+
+        ImmutableList.Builder<SessionMonitor> monitors = ImmutableList.builder();
+        if (sched.getConfig().has("sla")) {
+            Config slaConfig = sched.getConfig().getNestedOrGetEmpty("sla");
+            // TODO support multiple SLAs
+            Date triggerTime = SlaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
+            monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));
+        }
+
+        handler.start(sched.getWorkflowSourceId(), subtaskMatchPattern, monitors.build(),
+                timeZone, ScheduleTime.of(runTime, scheduleTime));
+        return sr.nextScheduleTime(scheduleTime);
     }
 
     public StoredSchedule skipScheduleToTime(int siteId, long schedId, Date nextTime, Optional<Date> runTime, boolean dryRun)

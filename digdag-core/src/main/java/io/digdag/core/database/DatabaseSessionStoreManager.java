@@ -303,7 +303,7 @@ public class DatabaseSessionStoreManager
     public void addMonitors(long sessionId, List<SessionMonitor> monitors)
     {
         for (SessionMonitor monitor : monitors) {
-            dao.insertSessionMonitor(sessionId, monitor.getConfig(), monitor.getNextRunTime().getTime() / 1000);  // session_monitors table don't have unique index
+            dao.insertSessionMonitor(sessionId, monitor.getNextRunTime().getTime() / 1000, monitor.getType(), monitor.getConfig());  // session_monitors table don't have unique index
         }
     }
 
@@ -721,10 +721,10 @@ public class DatabaseSessionStoreManager
                 " limit 1")
         Short getRootState(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlUpdate("insert into session_monitors (session_id, config, next_run_time, created_at, updated_at)" +
-                " values (:sessionId, :config, :nextRunTime, now(), now())")
+        @SqlUpdate("insert into session_monitors (session_id, next_run_time, type, config, created_at, updated_at)" +
+                " values (:sessionId, :nextRunTime, :type, :config, now(), now())")
         @GetGeneratedKeys
-        long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("config") Config config, @Bind("nextRunTime") long nextRunTime);
+        long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
 
         @SqlQuery("select rev.id, repo.name as repository_name, rev.name "+
                 " from session_relations sr" +
@@ -989,8 +989,9 @@ public class DatabaseSessionStoreManager
             return ImmutableStoredSessionMonitor.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getInt("session_id"))
-                .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
+                .type(r.getString("type"))
+                .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .createdAt(r.getTimestamp("created_at"))
                 .updatedAt(r.getTimestamp("updated_at"))
                 .build();

@@ -1,46 +1,21 @@
-package io.digdag.core.session;
+package io.digdag.core.schedule;
 
 import java.util.List;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Calendar;
 import java.util.TimeZone;
-
-import com.google.inject.Inject;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.repository.WorkflowSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.digdag.spi.config.Config;
 
-public class SessionMonitorManager
+class SlaCalculator
 {
-    private final SchedulerManager scheds;
-
-    @Inject
-    public SessionMonitorManager(SchedulerManager scheds)
+    public static Date getTriggerTime(Config slaConfig, Date currentTime, TimeZone timeZone)
     {
-        this.scheds = scheds;
+        TimeCalculator calc = getCalculator(slaConfig);
+        return calc.calculateTime(currentTime, timeZone);
     }
 
-    public List<SessionMonitor> getMonitors(WorkflowSource workflow, TimeZone timeZone, Date currentTime)
-    {
-        // TODO scheduleTime
-        if (workflow.getConfig().has("sla")) {
-            // TODO support multiple SLAs
-            Config slaConfig = workflow.getConfig().getNestedOrGetEmpty("sla");
-            TimeCalculator calc = getCalculator(slaConfig);  // validate
-            // TODO validate workflow
-            Date triggerTime = calc.calculateTime(currentTime, timeZone);
-            return ImmutableList.of(SessionMonitor.of(slaConfig, triggerTime));
-        }
-        return ImmutableList.of();
-    }
-
-    private TimeCalculator getCalculator(Config slaConfig)
+    private static TimeCalculator getCalculator(Config slaConfig)
     {
         // TODO improve parse logic
         int hour;

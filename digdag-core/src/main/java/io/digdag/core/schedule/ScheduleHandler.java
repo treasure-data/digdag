@@ -1,5 +1,6 @@
 package io.digdag.core.schedule;
 
+import java.util.List;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -19,7 +20,7 @@ import io.digdag.core.repository.WorkflowSource;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionRelation;
 import io.digdag.core.session.StoredSession;
-import io.digdag.core.session.SessionMonitorManager;
+import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -42,7 +43,7 @@ public class ScheduleHandler
     }
 
     public StoredSession start(int workflowId, Optional<SubtaskMatchPattern> subtaskMatchPattern,
-            TimeZone timeZone, ScheduleTime time)
+            List<SessionMonitor> monitors, TimeZone timeZone, ScheduleTime time)
             throws ResourceNotFoundException, ResourceConflictException
     {
         StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
@@ -54,7 +55,7 @@ public class ScheduleHandler
         try {
             return exec.submitWorkflow(wf.getRepository().getSiteId(),
                     wf, subtaskMatchPattern, trigger, Optional.of(rel),
-                    time.getRunTime());
+                    monitors);
         }
         catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleTaskMatchException ex) {
             throw new ConfigException(ex);

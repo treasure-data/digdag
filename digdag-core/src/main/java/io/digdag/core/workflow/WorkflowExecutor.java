@@ -41,7 +41,6 @@ public class WorkflowExecutor
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
     private final SessionStoreManager sm;
-    private final SessionMonitorManager monitorManager;
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
 
@@ -53,19 +52,17 @@ public class WorkflowExecutor
     public WorkflowExecutor(
             SessionStoreManager sm,
             WorkflowCompiler compiler,
-            SessionMonitorManager monitorManager,
             ConfigFactory cf)
     {
         this.sm = sm;
         this.compiler = compiler;
-        this.monitorManager = monitorManager;
         this.cf = cf;
     }
 
     public StoredSession submitWorkflow(int siteId,
             WorkflowSource source, Optional<SubtaskMatchPattern> subtaskMatchPattern,
             Session newSession, Optional<SessionRelation> relation,
-            Date slaCurrentTime)
+            List<SessionMonitor> monitors)
         throws ResourceConflictException, NoMatchException, MultipleTaskMatchException
     {
         Workflow workflow = compiler.compile(source.getName(), source.getConfig());
@@ -78,9 +75,6 @@ public class WorkflowExecutor
         WorkflowTaskList tasks = (fromIndex > 0) ?
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
-
-        TimeZone timeZone = Session.getSessionTimeZone(newSession);
-        List<SessionMonitor> monitors = monitorManager.getMonitors(source, timeZone, slaCurrentTime);
 
         logger.info("Starting a new session of workflow '{}' ({}) from task {} with session parameters: {}",
                 source.getName(),
@@ -790,14 +784,14 @@ public class WorkflowExecutor
         return Optional.of(task);
     }
 
-    public Optional<StoredTask> addSlaTask(TaskControl control, StoredTask detail, Config slaConfig)
+    public Optional<StoredTask> addMonitorTask(TaskControl control, StoredTask detail, String type, Config taskConfig)
     {
-        WorkflowTaskList tasks = compiler.compileTasks(".sla", slaConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(":" + type, taskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
 
-        logger.trace("Adding sla tasks: {}"+tasks);
+        logger.trace("Adding {} tasks: {}", type, tasks);
         StoredTask task = control.addSubtasks(detail, tasks, ImmutableList.of(), false);
         return Optional.of(task);
     }

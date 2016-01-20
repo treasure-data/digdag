@@ -20,7 +20,6 @@ import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.session.SessionMonitorExecutor;
-import io.digdag.core.session.SessionMonitorManager;
 import io.digdag.core.workflow.InProcessTaskCallbackApi;
 import io.digdag.core.workflow.TaskCallbackApi;
 import io.digdag.core.workflow.TaskQueueDispatcher;
@@ -111,7 +110,6 @@ public class DigdagEmbed
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
-                    binder.bind(SessionMonitorManager.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                 },
                 new ExtensionServiceLoaderModule()

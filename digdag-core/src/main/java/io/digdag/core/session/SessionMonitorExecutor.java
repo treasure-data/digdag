@@ -64,7 +64,7 @@ public class SessionMonitorExecutor
     {
         sm.lockRootTaskIfExists(storedMonitor.getSessionId(), (TaskControl control, StoredTask detail) -> {
             if (!Tasks.isDone(detail.getState())) {
-                exec.addSlaTask(control, detail, storedMonitor.getConfig());
+                exec.addMonitorTask(control, detail, storedMonitor.getType(), storedMonitor.getConfig());
             }
             return true;
         });

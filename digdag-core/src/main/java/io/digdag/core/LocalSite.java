@@ -39,7 +39,6 @@ public class LocalSite
     private final DatabaseMigrator databaseMigrator;
     private final SchedulerManager scheds;
     private final ScheduleExecutor scheduleExecutor;
-    private final SessionMonitorManager sessionMonitorManager;
     private final SessionMonitorExecutor sessionMonitorExecutor;
     private boolean schedulerStarted;
 
@@ -56,7 +55,6 @@ public class LocalSite
             DatabaseMigrator databaseMigrator,
             SchedulerManager scheds,
             ScheduleExecutor scheduleExecutor,
-            SessionMonitorManager sessionMonitorManager,
             SessionMonitorExecutor sessionMonitorExecutor)
     {
         this.cf = cf;
@@ -71,7 +69,6 @@ public class LocalSite
         this.databaseMigrator = databaseMigrator;
         this.scheds = scheds;
         this.scheduleExecutor = scheduleExecutor;
-        this.sessionMonitorManager = sessionMonitorManager;
         this.sessionMonitorExecutor = sessionMonitorExecutor;
     }
 
@@ -187,7 +184,6 @@ public class LocalSite
             WorkflowSourceList workflowSources,
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams,
-            Date slaCurrentTime,
             SessionOptions options)
     {
         StoreWorkflow revWfs = storeWorkflows(workflowSources,
@@ -209,7 +205,7 @@ public class LocalSite
             SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), source.getId());
             return exec.submitWorkflow(0, source, taskMatchPattern.getSubtaskMatchPattern(),
                     trigger, Optional.of(rel),
-                    slaCurrentTime);
+                    ImmutableList.of());
         }
         catch (NoMatchException ex) {
             //logger.error("No task matched with '{}'", fromTaskName.orNull());

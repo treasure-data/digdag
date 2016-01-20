@@ -312,8 +312,9 @@ public class DatabaseMigrator
                     new CreateTableBuilder("session_monitors")
                     .addLongId("id")
                     .addInt("session_id", "not null")
-                    .addMediumText("config", "not null")
                     .addLong("next_run_time", "not null")
+                    .addString("type", "not null")
+                    .addMediumText("config", "not null")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());

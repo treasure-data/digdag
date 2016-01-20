@@ -158,7 +158,7 @@ public class SessionResource
         StoredSession stored = executor.submitWorkflow(
                 siteId, wf, workflowPattern.getSubtaskMatchPattern(),
                 session, Optional.of(rel),
-                new Date());
+                ImmutableList.of());
 
         return RestSession.of(stored);
     }
