@@ -1,8 +1,3 @@
-run: +include
-+include:
-  {% set orig_file = "examples/include.yml" %}
-  {% set complex_data = {user: 'me', password: 'Top Secret'} %}
-  +part1: {% load 'parts/part1.yml' %}
-
-  {% set messages = ['Directed', 'Acyclic', 'Graph'] %}
-  +run_loop: {% load 'parts/run_loop.yml' %}
+run: +basic
+<<: {% load "basic.yml" %}
+<<: {% load "conditions.yml" %}

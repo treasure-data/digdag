@@ -42,7 +42,7 @@ public class Main
 
         jc.addCommand("archive", new Archive());
         jc.addCommand("init", new Init());
-        jc.addCommand("run", new Run());
+        jc.addCommand("run", new Run(), "r");
         jc.addCommand("server", new Server());
         jc.addCommand("show", new Show());
 
@@ -169,7 +169,7 @@ public class Main
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Commands:");
         System.err.println("    init                             generate a new sample Dagfile");
-        System.err.println("    run [+name]                      run a workflow");
+        System.err.println("    r[un] [+name]                      run a workflow");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");

@@ -8,6 +8,11 @@ public class JinjaLoadTag
     extends IncludeTag
 {
     @Override
+    public String getName() {
+        return "load";
+    }
+
+    @Override
     public String interpret(TagNode tagNode, JinjavaInterpreter interpreter)
     {
         String yamlContent = super.interpret(tagNode, interpreter);
