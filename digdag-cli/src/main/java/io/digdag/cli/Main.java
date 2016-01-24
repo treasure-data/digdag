@@ -34,7 +34,7 @@ public class Main
     public static void main(String[] args)
         throws Exception
     {
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date())+ ": Digdag v0.2.0");
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.2.0");
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);

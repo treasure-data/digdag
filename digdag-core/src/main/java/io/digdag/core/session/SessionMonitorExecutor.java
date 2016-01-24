@@ -1,6 +1,6 @@
 package io.digdag.core.session;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import com.google.inject.Inject;
@@ -50,7 +50,7 @@ public class SessionMonitorExecutor
         try {
             while (true) {
                 Thread.sleep(1000);  // TODO sleep interval
-                sm.lockReadySessionMonitors(new Date(), (storedMonitor) -> {
+                sm.lockReadySessionMonitors(Instant.now(), (storedMonitor) -> {
                     return runMonitor(storedMonitor);
                 });
             }
@@ -60,11 +60,11 @@ public class SessionMonitorExecutor
         }
     }
 
-    public Optional<Date> runMonitor(StoredSessionMonitor storedMonitor)
+    public Optional<Instant> runMonitor(StoredSessionMonitor storedMonitor)
     {
-        sm.lockRootTaskIfExists(storedMonitor.getSessionId(), (TaskControl control, StoredTask detail) -> {
-            if (!Tasks.isDone(detail.getState())) {
-                exec.addMonitorTask(control, detail, storedMonitor.getType(), storedMonitor.getConfig());
+        sm.lockRootTaskIfExists(storedMonitor.getAttemptId(), (store, storedTask) -> {
+            if (!Tasks.isDone(storedTask.getState())) {
+                exec.addMonitorTask(new TaskControl(store, storedTask), storedMonitor.getType(), storedMonitor.getConfig());
             }
             return true;
         });

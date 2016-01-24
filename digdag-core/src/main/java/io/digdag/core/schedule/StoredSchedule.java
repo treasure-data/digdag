@@ -1,6 +1,6 @@
 package io.digdag.core.schedule;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -14,11 +14,11 @@ import io.digdag.client.config.Config;
 public abstract class StoredSchedule
         extends Schedule
 {
-    public abstract long getId();
+    public abstract int getId();
 
-    public abstract Config getConfig();
+    public abstract int getRepositoryId();
 
-    public abstract Date getCreatedAt();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 }

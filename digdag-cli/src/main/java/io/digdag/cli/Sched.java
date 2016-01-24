@@ -1,10 +1,10 @@
 package io.digdag.cli;
 
 import java.util.List;
-import java.util.Date;
+import java.time.Instant;
 import java.util.stream.Collectors;
 import java.io.File;
-import java.util.TimeZone;
+import java.time.ZoneId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
@@ -18,9 +18,9 @@ import com.beust.jcommander.Parameter;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.repository.RepositoryStoreManager;
-import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
-import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.SessionStoreManager;
@@ -99,9 +99,9 @@ public class Sched
 
         outputFile.mkdirs();
 
-        List<WorkflowSource> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowSourceList.class).get();
+        List<WorkflowDefinition> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowDefinitionList.class).get();
 
-        localSite.scheduleWorkflows(workflowSources, new Date());
+        localSite.scheduleWorkflows(workflowSources, Instant.now()());
         // TODO set next schedule time from history
 
         localSite.startLocalAgent();
@@ -137,11 +137,11 @@ public class Sched
         }
 
         @Override
-        public StoredSession start(int workflowId, Optional<String> from,
-                TimeZone timeZone, ScheduleTime time)
+        public StoredSession start(long workflowId, Optional<String> from,
+                ZoneId timeZone, ScheduleTime time)
                 throws ResourceNotFoundException, ResourceConflictException
         {
-            StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
+            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(workflowId);
 
             File dir = hist.getSessionDir(wf, timeZone, time.getScheduleTime());
             dir.mkdirs();

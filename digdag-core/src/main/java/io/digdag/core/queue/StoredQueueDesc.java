@@ -1,6 +1,6 @@
 package io.digdag.core.queue;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -17,7 +17,7 @@ public abstract class StoredQueueDesc
 
     public abstract int getSiteId();
 
-    public abstract Date getCreatedAt();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 }

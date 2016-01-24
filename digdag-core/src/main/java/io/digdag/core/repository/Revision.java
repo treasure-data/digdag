@@ -19,8 +19,6 @@ public abstract class Revision
 
     public abstract Optional<String> getArchivePath();
 
-    public abstract Optional<byte[]> getArchiveData();
-
     public static ImmutableRevision.Builder revisionBuilder()
     {
         return ImmutableRevision.builder();

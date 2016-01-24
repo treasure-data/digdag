@@ -1,9 +1,10 @@
 package io.digdag.core.schedule;
 
 import java.util.List;
-import java.util.Date;
-import java.util.Locale;
 import java.util.TimeZone;
+import java.util.Locale;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.text.SimpleDateFormat;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
@@ -13,16 +14,14 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.RepositoryStoreManager;
-import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.SessionRelation;
-import io.digdag.core.session.StoredSession;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.SessionMonitor;
-import io.digdag.core.workflow.TaskMatchPattern;
-import io.digdag.core.workflow.SubtaskMatchPattern;
+import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 public class ScheduleHandler
@@ -42,40 +41,36 @@ public class ScheduleHandler
         this.exec = exec;
     }
 
-    public StoredSession start(int workflowId, Optional<SubtaskMatchPattern> subtaskMatchPattern,
-            List<SessionMonitor> monitors, TimeZone timeZone, ScheduleTime time)
+    public StoredSessionAttempt start(StoredWorkflowDefinitionWithRepository def,
+            List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time)
             throws ResourceNotFoundException, ResourceConflictException
     {
-        StoredWorkflowSourceWithRepository wf = rm.getWorkflowDetailsById(workflowId);
+        AttemptRequest ar = AttemptRequest.builder()
+            .repositoryId(def.getRepository().getId())
+            .workflowName(def.getName())
+            .instant(time.getScheduleTime())
+            .retryAttemptName(Optional.absent())
+            .defaultTimeZone(timeZone)
+            .defaultParams(def.getRevisionDefaultParams())
+            .overwriteParams(cf.create())
+            .build();
 
-        Session trigger = createScheduleSession(cf, wf.getRevisionDefaultParams(), wf, subtaskMatchPattern, timeZone, time.getScheduleTime());
-
-        SessionRelation rel = SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId());
-
-        try {
-            return exec.submitWorkflow(wf.getRepository().getSiteId(),
-                    wf, subtaskMatchPattern, trigger, Optional.of(rel),
-                    monitors);
-        }
-        catch (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleTaskMatchException ex) {
-            throw new ConfigException(ex);
-        }
+        return exec.submitWorkflow(def.getRepository().getSiteId(),
+                ar, def, monitors);
     }
 
+    /*
     private static Session createScheduleSession(ConfigFactory cf,
-            Config revisionDefaultParams, WorkflowSource workflow,
-            Optional<SubtaskMatchPattern> subtaskMatchPattern, TimeZone timeZone, Date scheduleTime)
+            Config revisionDefaultParams, WorkflowDefinition workflow,
+            ZoneId timeZone, Instant scheduleTime)
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
-        df.setTimeZone(timeZone);
+        df.setTimeZone(TimeZone.getTimeZone(timeZone));
 
         String sessionName = df.format(scheduleTime);
-        if (subtaskMatchPattern.isPresent()) {
-            sessionName += " " + subtaskMatchPattern.get().getPattern();
-        }
 
         Config overwriteParams = cf.create()
-            .set("schedule_time", scheduleTime.getTime() / 1000);
+            .set("schedule_time", scheduleTime.getEpochSecond());
 
         return Session.sessionBuilder(
                 sessionName,
@@ -85,4 +80,5 @@ public class ScheduleHandler
             .options(SessionOptions.empty())
             .build();
     }
+    */
 }

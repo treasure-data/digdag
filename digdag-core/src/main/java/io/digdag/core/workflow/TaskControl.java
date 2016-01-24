@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
@@ -20,20 +21,24 @@ import static com.google.common.base.Preconditions.checkState;
 public class TaskControl
 {
     private final TaskControlStore store;
-    private final long id;
+    private final StoredTask task;
     private TaskStateCode state;
 
-    public TaskControl(TaskControlStore store, long id, TaskStateCode state)
+    public TaskControl(TaskControlStore store, StoredTask task)
     {
         this.store = store;
-        this.id = id;
-        this.state = state;
-        // TODO get TaskControlStore
+        this.task = task;
+        this.state = task.getState();
+    }
+
+    public StoredTask get()
+    {
+        return task;
     }
 
     public long getId()
     {
-        return id;
+        return task.getId();
     }
 
     public TaskStateCode getState()
@@ -41,21 +46,21 @@ public class TaskControl
         return state;
     }
 
-    public StoredTask addTasksExceptingRootTask(StoredTask rootTask, WorkflowTaskList tasks)
+    public StoredTask addTasksExceptingRootTask(WorkflowTaskList tasks)
     {
-        return addTasks(rootTask, tasks, ImmutableList.of(), false, true);
+        return addTasks(task, tasks, ImmutableList.of(), false, true);
     }
 
-    public StoredTask addSubtasks(StoredTask parentTask, WorkflowTaskList tasks,
+    public StoredTask addSubtasks(WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
-        return addTasks(parentTask, tasks, rootUpstreamIds, cancelSiblings, false);
+        return addTasks(task, tasks, rootUpstreamIds, cancelSiblings, false);
     }
 
     private StoredTask addTasks(StoredTask parentTask, WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootParentTask)
     {
-        Preconditions.checkArgument(id == parentTask.getId());
+        Preconditions.checkArgument(getId() == parentTask.getId());
 
         List<Long> indexToId = new ArrayList<>();
         List<String> indexToFullName = new ArrayList<>();
@@ -88,7 +93,6 @@ public class TaskControl
             }
 
             Task task = Task.taskBuilder()
-                .sessionId(parentTask.getSessionId())
                 .parentId(Optional.of(
                             wt.getParentIndex()
                                 .transform(index -> indexToId.get(index))
@@ -100,7 +104,7 @@ public class TaskControl
                 .state(TaskStateCode.BLOCKED)
                 .build();
 
-            long id = store.addSubtask(task);
+            long id = store.addSubtask(parentTask.getAttemptId(), task);
             indexToId.add(id);
             indexToFullName.add(fullName);
             if (!wt.getUpstreamIndexes().isEmpty()) {
@@ -135,17 +139,17 @@ public class TaskControl
 
     public boolean isAnyProgressibleChild()
     {
-        return store.isAnyProgressibleChild(id);
+        return store.isAnyProgressibleChild(getId());
     }
 
     public List<Config> collectChildrenErrors()
     {
-        return store.collectChildrenErrors(id);
+        return store.collectChildrenErrors(getId());
     }
 
     public boolean setReadyToRunning()
     {
-        if (store.setState(id, TaskStateCode.READY, TaskStateCode.RUNNING)) {
+        if (store.setState(getId(), TaskStateCode.READY, TaskStateCode.RUNNING)) {
             state = TaskStateCode.RUNNING;
             return true;
         }
@@ -154,7 +158,7 @@ public class TaskControl
 
     public boolean setToCanceled()
     {
-        if (store.setState(id, state, TaskStateCode.CANCELED)) {
+        if (store.setState(getId(), state, TaskStateCode.CANCELED)) {
             state = TaskStateCode.CANCELED;
             return true;
         }
@@ -164,7 +168,7 @@ public class TaskControl
     // all necessary information is already set by setRunningToPlanned. Here simply set state to SUCCESS
     public boolean setPlannedToSuccess()
     {
-        if (store.setState(id, TaskStateCode.PLANNED, TaskStateCode.SUCCESS)) {
+        if (store.setState(getId(), TaskStateCode.PLANNED, TaskStateCode.SUCCESS)) {
             state = TaskStateCode.SUCCESS;
             return true;
         }
@@ -173,7 +177,7 @@ public class TaskControl
 
     public boolean setPlannedToError(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -182,7 +186,7 @@ public class TaskControl
 
     public boolean setRunningToShortCircuitError(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, TaskStateCode.RUNNING, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -191,7 +195,7 @@ public class TaskControl
 
     public boolean setPlannedToPlanned(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -200,7 +204,7 @@ public class TaskControl
 
     public boolean setPlannedToGroupError(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, TaskStateCode.PLANNED, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.GROUP_ERROR;
             return true;
         }
@@ -210,17 +214,11 @@ public class TaskControl
     // group retry
     public boolean setPlannedToGroupRetry(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(id, TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
+        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
             state = TaskStateCode.GROUP_RETRY_WAITING;
         }
         return false;
         // propagateChildrenErrorWithRetry
-    }
-
-    // collect parameters and set them to ready tasks at the same time? no, because children's carry_params are not propagated to parents
-    public int trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled()
-    {
-        return store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(id);
     }
 
     ////
@@ -230,7 +228,7 @@ public class TaskControl
     // to planned with successful report
     public boolean setRunningToPlanned(Config stateParams, TaskReport report)
     {
-        if (store.setStateWithSuccessDetails(id, state, TaskStateCode.PLANNED, stateParams, report)) {
+        if (store.setStateWithSuccessDetails(getId(), state, TaskStateCode.PLANNED, stateParams, report)) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -241,7 +239,7 @@ public class TaskControl
     // to planned with error
     public boolean setRunningToPlanned(Config stateParams, Config error)
     {
-        if (store.setStateWithErrorDetails(id, state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+        if (store.setStateWithErrorDetails(getId(), state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -251,7 +249,7 @@ public class TaskControl
     // to retry with error
     public boolean setRunningToRetry(Config stateParams, Config error, int retryInterval)
     {
-        if (store.setStateWithErrorDetails(id, TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
+        if (store.setStateWithErrorDetails(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }
@@ -261,7 +259,7 @@ public class TaskControl
     // to retry without error
     public boolean setRunningToRetry(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(id, TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
+        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }

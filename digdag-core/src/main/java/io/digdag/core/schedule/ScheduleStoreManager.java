@@ -1,6 +1,6 @@
 package io.digdag.core.schedule;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
@@ -13,14 +13,15 @@ public interface ScheduleStoreManager
 
     interface ScheduleAction
     {
-        ScheduleTime schedule(StoredSchedule schedule);
+        void schedule(ScheduleControlStore store, StoredSchedule schedule);
     }
 
-    void lockReadySchedules(Date currentTime, ScheduleAction func);
+    void lockReadySchedules(Instant currentTime, ScheduleAction func);
 
     interface ScheduleLockAction <T>
     {
-        T call(ScheduleControl control);
+        T call(ScheduleControlStore store, StoredSchedule storedSched)
+            throws ResourceNotFoundException;
     }
 
     <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)

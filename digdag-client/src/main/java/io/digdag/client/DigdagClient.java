@@ -111,16 +111,16 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
-    public List<RestWorkflow> getWorkflows(int repoId)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(int repoId)
     {
-        return doGet(new GenericType<List<RestWorkflow>>() { },
+        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/repositories/{id}/workflows")
                 .resolveTemplate("id", repoId));
     }
 
-    public List<RestWorkflow> getWorkflows(int repoId, String revision)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(int repoId, String revision)
     {
-        return doGet(new GenericType<List<RestWorkflow>>() { },
+        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/repositories/{id}/workflows")
                 .resolveTemplate("id", repoId)
                 .queryParam("revision", revision));
@@ -177,18 +177,18 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    public RestSession startSession(String name, String repoName, String workflowNamePattern)
+    public RestSession startSession(String name, String repoName, String workflowName)
     {
-        return startSession(name, repoName, workflowNamePattern, newConfig());
+        return startSession(name, repoName, workflowName, newConfig());
     }
 
-    public RestSession startSession(String name, String repoName, String workflowNamePattern, Config params)
+    public RestSession startSession(String name, String repoName, String workflowName, Config params)
     {
         RestSessionRequest req =
             RestSessionRequest.builder()
             .name(name)
             .repositoryName(repoName)
-            .workflowNamePattern(workflowNamePattern)
+            .workflowName(workflowName)
             .params(params)
             .build();
         return doPut(RestSession.class,
@@ -204,15 +204,15 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    public List<RestWorkflow> getWorkflows()
+    public List<RestWorkflowDefinition> getWorkflowDefinitions()
     {
-        return doGet(new GenericType<List<RestWorkflow>>() { },
+        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/workflows"));
     }
 
-    public RestWorkflow getWorkflow(int workflowId)
+    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
     {
-        return doGet(RestWorkflow.class,
+        return doGet(RestWorkflowDefinition.class,
                 target("/api/workflows/{id}")
                 .resolveTemplate("id", workflowId));
     }

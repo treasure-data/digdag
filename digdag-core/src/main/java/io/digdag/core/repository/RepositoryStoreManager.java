@@ -5,6 +5,9 @@ public interface RepositoryStoreManager
     RepositoryStore getRepositoryStore(int siteId);
 
     // used by the standard ScheduleHandler
-    StoredWorkflowSourceWithRepository getWorkflowDetailsById(int wfId)
+    StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(long wfId)
+        throws ResourceNotFoundException;
+
+    StoredRepository getRepositoryByIdInternal(int repoId)
         throws ResourceNotFoundException;
 }

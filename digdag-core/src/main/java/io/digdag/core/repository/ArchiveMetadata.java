@@ -14,10 +14,7 @@ public abstract class ArchiveMetadata
     public static final String FILE_NAME = ".digdag.yml";
 
     @JsonProperty("workflows")
-    public abstract WorkflowSourceList getWorkflowList();
-
-    @JsonProperty("schedules")
-    public abstract ScheduleSourceList getScheduleList();
+    public abstract WorkflowDefinitionList getWorkflowList();
 
     @JsonProperty("params")
     public abstract Config getDefaultParams();
@@ -27,11 +24,10 @@ public abstract class ArchiveMetadata
         return ImmutableArchiveMetadata.builder();
     }
 
-    public static ArchiveMetadata of(WorkflowSourceList workflows, ScheduleSourceList schedules, Config defaultParams)
+    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams)
     {
         return builder()
             .workflowList(workflows)
-            .scheduleList(schedules)
             .defaultParams(defaultParams)
             .build();
     }

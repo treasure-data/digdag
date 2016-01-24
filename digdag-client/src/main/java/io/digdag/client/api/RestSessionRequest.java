@@ -1,5 +1,6 @@
 package io.digdag.client.api;
 
+import java.time.Instant;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,9 +20,12 @@ public abstract class RestSessionRequest
     public abstract String getRepositoryName();
 
     @JsonProperty("workflow")
-    public abstract String getWorkflowNamePattern();
+    public abstract String getWorkflowName();
 
-    // TODO Optional doesn't work with JAX-RS somehow
+    public abstract Instant getInstant();
+
+    public abstract Optional<String> getRetryAttemptName();
+
     //@JsonProperty("revision")
     //public abstract Optional<String> getRevision();
 

@@ -32,17 +32,17 @@ public class TestDatabaseRepositoryStoreManager
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowSource wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("wf1");
 
-        StoredRepository storedRepo = store.putRepository(
+        StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
                 (lock) -> {
                     assertConflict(false, () -> {
                         StoredRevision storedRev = lock.putRevision(rev);
                         assertEquals(rev, Revision.revisionBuilder().from(storedRev).build());
 
-                        StoredWorkflowSource storedWf = lock.insertWorkflow(storedRev.getId(), wf);
-                        assertEquals(wf, WorkflowSource.workflowSourceBuilder().from(storedWf).build());
+                        StoredWorkflowDefinition storedWf = lock.insertWorkflow(storedRev.getId(), wf);
+                        assertEquals(wf, WorkflowDefinition.workflowSourceBuilder().from(storedWf).build());
                     });
                     return lock.get();
                 });
@@ -54,9 +54,9 @@ public class TestDatabaseRepositoryStoreManager
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowSource wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("wf1");
 
-        StoredRepository storedRepo = store.putRepository(
+        StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
                 (lock) -> {
                     // revision overwrites
@@ -75,7 +75,7 @@ public class TestDatabaseRepositoryStoreManager
                 });
 
         // repository overwrites
-        StoredRepository storedRepo2 = store.putRepository(
+        StoredRepository storedRepo2 = store.putAndLockRepository(
                 repo,
                 (lock) -> lock.get());
         assertEquals(storedRepo, storedRepo2);
@@ -87,11 +87,11 @@ public class TestDatabaseRepositoryStoreManager
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowSource wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("wf1");
 
         AtomicReference<StoredRevision> revRef = new AtomicReference<>();
-        AtomicReference<StoredWorkflowSource> wfRef = new AtomicReference<>();
-        StoredRepository storedRepo = store.putRepository(
+        AtomicReference<StoredWorkflowDefinition> wfRef = new AtomicReference<>();
+        StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
                 (lock) -> {
                     assertConflict(false, () -> {
@@ -101,7 +101,7 @@ public class TestDatabaseRepositoryStoreManager
                     return lock.get();
                 });
         StoredRevision storedRev = revRef.get();
-        StoredWorkflowSource storedWf = wfRef.get();
+        StoredWorkflowDefinition storedWf = wfRef.get();
 
         assertNotNull(store.getRepositoryById(storedRepo.getId()));
         assertNotNull(store.getRepositoryByName(storedRepo.getName()));
@@ -109,8 +109,8 @@ public class TestDatabaseRepositoryStoreManager
         assertNotNull(store.getRevisionById(storedRev.getId()));
         assertNotNull(store.getRevisionByName(storedRepo.getId(), storedRev.getName()));
 
-        assertNotNull(store.getWorkflowSourceById(storedWf.getId()));
-        assertNotNull(store.getWorkflowSourceByName(storedRev.getId(), storedWf.getName()));
+        assertNotNull(store.getWorkflowDefinitionById(storedWf.getId()));
+        assertNotNull(store.getWorkflowDefinitionByName(storedRev.getId(), storedWf.getName()));
 
         assertNotFound(true, () -> store.getRepositoryById(storedRepo.getId() + 1));
         assertNotFound(true, () -> store.getRepositoryByName(storedRepo.getName() + " "));
@@ -119,9 +119,9 @@ public class TestDatabaseRepositoryStoreManager
         assertNotFound(true, () -> store.getRevisionByName(storedRepo.getId() + 1, storedRev.getName()));
         assertNotFound(true, () -> store.getRevisionByName(storedRepo.getId(), storedRev.getName() + " "));
 
-        assertNotFound(true, () -> store.getWorkflowSourceById(storedWf.getId() + 1));
-        assertNotFound(true, () -> store.getWorkflowSourceByName(storedRev.getId() + 1, storedWf.getName()));
-        assertNotFound(true, () -> store.getWorkflowSourceByName(storedRev.getId(), storedWf.getName() + " "));
+        assertNotFound(true, () -> store.getWorkflowDefinitionById(storedWf.getId() + 1));
+        assertNotFound(true, () -> store.getWorkflowDefinitionByName(storedRev.getId() + 1, storedWf.getName()));
+        assertNotFound(true, () -> store.getWorkflowDefinitionByName(storedRev.getId(), storedWf.getName() + " "));
 
         RepositoryStore another = manager.getRepositoryStore(1);
 
@@ -131,8 +131,8 @@ public class TestDatabaseRepositoryStoreManager
         assertNotFound(true, () -> another.getRevisionById(storedRev.getId()));
         assertNotFound(true, () -> another.getRevisionByName(storedRepo.getId(), storedRev.getName()));
 
-        assertNotFound(true, () -> another.getWorkflowSourceById(storedWf.getId()));
-        assertNotFound(true, () -> another.getWorkflowSourceByName(storedRev.getId(), storedWf.getName()));
+        assertNotFound(true, () -> another.getWorkflowDefinitionById(storedWf.getId()));
+        assertNotFound(true, () -> another.getWorkflowDefinitionByName(storedRev.getId(), storedWf.getName()));
     }
 
     private static Revision createRevision(String name)
@@ -144,9 +144,9 @@ public class TestDatabaseRepositoryStoreManager
             .build();
     }
 
-    private static WorkflowSource createWorkflow(String name)
+    private static WorkflowDefinition createWorkflow(String name)
     {
-        return WorkflowSource.of(
+        return WorkflowDefinition.of(
                 name,
                 createConfig().set("uniq", System.nanoTime()));
     }

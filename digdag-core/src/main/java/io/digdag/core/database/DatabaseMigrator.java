@@ -86,9 +86,19 @@ public class DatabaseMigrator
             return add(column, "int primary key AUTO_INCREMENT");
         }
 
+        public CreateTableBuilder addIntId(String column, String options)
+        {
+            return add(column, "int primary key AUTO_INCREMENT " + options);
+        }
+
         public CreateTableBuilder addLongId(String column)
         {
             return add(column, "bigint primary key AUTO_INCREMENT");
+        }
+
+        public CreateTableBuilder addLongId(String column, String options)
+        {
+            return add(column, "bigint primary key AUTO_INCREMENT " + options);
         }
 
         public CreateTableBuilder addShort(String column, String options)
@@ -108,7 +118,12 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addString(String column, String options)
         {
-            return add(column, "varchar(255) " + options);
+            if (databaseType.equals("postgresql")) {
+                return add(column, "text " + options);
+            }
+            else {
+                return add(column, "varchar(255) " + options);
+            }
         }
 
         public CreateTableBuilder addMediumText(String column, String options)
@@ -123,7 +138,12 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addBinary(String column, String options)
         {
-            return add(column, "varbinary(255) " + options);
+            if (databaseType.equals("postgresql")) {
+                return add(column, "bytea " + options);
+            }
+            else {
+                return add(column, "varbinary(255) " + options);
+            }
         }
 
         public CreateTableBuilder addLongBinary(String column, String options)
@@ -133,7 +153,12 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addTimestamp(String column, String options)
         {
-            return add(column, "timestamp " + options);
+            if (databaseType.equals("postgresql")) {
+                return add(column, "timestamp with time zone " + options);
+            }
+            else {
+                return add(column, "timestamp " + options);
+            }
         }
 
         public String build()
@@ -197,168 +222,140 @@ public class DatabaseMigrator
                     .addIntId("id")
                     .addInt("site_id", "not null")
                     .addString("name", "not null")
-                    //.addMediumText("config", "")
-                    //.addBoolean("disabled", "not null")
-                    //.addInt("latest_revision_id", "")
                     .addTimestamp("created_at", "not null")
-                    .addTimestamp("updated_at", "not null")
+                    //.addTimestamp("deleted_at", "not null")  // this points UNIXTIME 0 (1970-01-01 00:00:00 UTC) if this repository is not deleted
                     .build());
             handle.update("create unique index if not exists repositories_on_site_id_and_name on repositories (site_id, name)");
-            handle.update("create index if not exists repositories_on_site_id_and_id on repositories (site_id, id)");
+            //handle.update("create unique index if not exists repositories_on_site_id_and_name on repositories (site_id, name, deleted_at)");
 
             // revisions
             handle.update(
                     new CreateTableBuilder("revisions")
                     .addIntId("id")
-                    // TODO disabled flag
-                    .addInt("repository_id", "not null")
+                    .addInt("repository_id", "not null references repositories (id)")
                     .addString("name", "not null")
+                    // TODO disabled flag
                     .addMediumText("default_params", "")
                     .addString("archive_type", "not null")
-                    .addBinary("archive_md5", "")
                     .addString("archive_path", "")
-                    .addLongBinary("archive_data", "")  // TODO move to revision_archives
+                    .addBinary("archive_md5", "")
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index if not exists revisions_on_repository_id_and_name on revisions (repository_id, name)");
             handle.update("create index if not exists revisions_on_repository_id_and_id on revisions (repository_id, id)");
 
-            //handle.update(
-            //        new CreateTableBuilder("revision_archives")
-            //        .addIntId("id")
-            //        .addLongBinary("archive_data", "")
-            //        .build());
-
-            // workflow_sources
+            // revision_archives
             handle.update(
-                    new CreateTableBuilder("workflow_sources")
-                    .addIntId("id")
-                    .addInt("revision_id", "not null")
-                    .addString("name", "not null")
-                    .addMediumText("config", "")
+                    new CreateTableBuilder("revision_archives")
+                    .addIntId("id", "references revisions (id)")
+                    .addLongBinary("archive_data", "not null")
                     .build());
-            handle.update("create unique index if not exists workflows_on_revision_id_and_name on workflow_sources (revision_id, name)");
-            handle.update("create index if not exists workflows_on_revision_id_and_id on workflow_sources (revision_id, id)");
 
-            // schedule_sources
+            // workflow_configs
             handle.update(
-                    new CreateTableBuilder("schedule_sources")
-                    .addIntId("id")
-                    .addInt("revision_id", "not null")
-                    .addString("name", "not null")
-                    .addMediumText("config", "")
+                    new CreateTableBuilder("workflow_configs")
+                    .addIntId("id", "references revisions (id)")
+                    .addInt("repository_id", "not null references repositories (id)")
+                    .addMediumText("config", "not null")
+                    .addLong("config_digest", "not null")
                     .build());
-            handle.update("create unique index if not exists workflows_on_revision_id_and_name on schedule_sources (revision_id, name)");
-            handle.update("create index if not exists workflows_on_revision_id_and_id on schedule_sources (revision_id, id)");
+            handle.update("create index if not exists workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
 
-            // workflows
+            // workflow_definitions
             handle.update(
-                    new CreateTableBuilder("workflows")
+                    new CreateTableBuilder("workflow_definitions")
                     .addLongId("id")
-                    .addInt("source_id", "not null")
-                    .addInt("repository_id", "not null")
+                    .addInt("config_id", "not null references workflow_configs (id)")
+                    .addInt("revision_id", "not null references revisions (id)")
                     .addString("name", "not null")
                     .build());
-            handle.update("create unique index if not exists workflows_on_source_id on workflows (source_id)");
-            handle.update("create unique index if not exists workflows_on_repository_id_and_name on workflows (repository_id, name)");
+            handle.update("create unique index if not exists workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
 
             // schedules
             handle.update(
                     new CreateTableBuilder("schedules")
-                    .addLongId("id")
-                    .addInt("source_id", "not null")
-                    .addInt("repository_id", "not null")
-                    .addString("name", "not null")
-                    .addInt("workflow_source_id", "not null")
+                    .addIntId("id")
+                    .addInt("repository_id", "not null references repositories (id)")
+                    .addLong("workflow_definition_id", "not null references workflow_definitions (id)")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
-                    .build());
-            handle.update("create unique index if not exists schedules_on_source_id on schedules (source_id)");
-            handle.update("create unique index if not exists schedules_on_repository_id_and_name on schedules (repository_id, name)");
-            handle.update("create index if not exists schedules_on_workflow_id on schedules (workflow_source_id)");
-            handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
-
-            // queues
-            handle.update(
-                    new CreateTableBuilder("queues")
-                    .addIntId("id")
-                    .addInt("site_id", "not null")
-                    .addString("name", "not null")
-                    .addMediumText("config", "")
+                    .addLong("last_session_instant", "")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create unique index if not exists queues_on_site_id_and_name on queues (site_id, name)");
-            handle.update("create index if not exists queues_on_site_id_and_id on queues (site_id, id)");
+            handle.update("create index if not exists schedules_on_repository_id on schedules (repository_id)");
+            handle.update("create unique index if not exists schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
+            handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
 
             // sessions
             handle.update(
                     new CreateTableBuilder("sessions")
                     .addLongId("id")
-                    .addInt("site_id", "not null")
-                    .addShort("namespace_type", "not null")  // 0=site_id, 1=repository_id, 2=revision_id, 3=workflow_source_id
-                    .addInt("namespace_id", "not null")      // site_id or repository_id if one-time workflow, otherwise workflow_source_id
-                    // TODO task_index
-                    .addString("name", "not null")
+                    .addInt("repository_id", "not null references repositories (id)")
+                    .addString("workflow_name", "not null")
+                    .addLong("instant", "not null")
+                    .addLong("last_attempt_id", "")
+                    .build());
+            handle.update("create unique index if not exists sessions_on_repository_id_and_workflow_name_and_instant on sessions (repository_id, workflow_name, instant)");
+            handle.update("create index if not exists sessions_on_repository_id on sessions (repository_id, id)");
+            handle.update("create index if not exists sessions_on_repository_id_and_workflow_name on sessions (repository_id, workflow_name, id)");
+
+            // session_attempts
+            handle.update(
+                    new CreateTableBuilder("session_attempts")
+                    .addLongId("id")
+                    .addLong("session_id", "not null references sessions (id)")
+                    .addString("attempt_name", "not null")
+                    .addLong("workflow_definition_id", "references workflow_definitions (id)")
+                    .addShort("state_flags", "not null")  // 0=running or blocked, 1=cancel_requested, 2=done, 4=success
                     .addMediumText("params", "")
-                    .addMediumText("options", "")    // TODO set in params? or rename to config?
                     .addTimestamp("created_at", "not null")
                     .build());
-            handle.update("create unique index if not exists sessions_on_namespace_and_name on sessions (namespace_id, name, namespace_type)");
-            handle.update("create index if not exists sessions_on_site_id_and_id on sessions (site_id, id)");
+            handle.update("create unique index if not exists session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
+            handle.update("create index if not exists session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id)");
+
+            //// session_attempt_archives
+            //handle.update(
+            //        new CreateTableBuilder("session_attempt_archives")
+            //        .addLongId("id")
+            //        // TODO save state
+            //        .addLongText("tasks", "")  // collection of tasks, delete tasks transactionally when archived
+            //        .addTimestamp("updated_at", "not null")
+            //        .build());
 
             // session_monitors
             handle.update(
                     new CreateTableBuilder("session_monitors")
                     .addLongId("id")
-                    .addInt("session_id", "not null")
+                    .addLong("attempt_id", "not null")
                     .addLong("next_run_time", "not null")
                     .addString("type", "not null")
-                    .addMediumText("config", "not null")
+                    .addMediumText("config", "")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create index if not exists session_monitors_on_workflow_id on session_monitors (session_id)");
+            handle.update("create index if not exists session_monitors_on_attempt_id on session_monitors (attempt_id)");
             handle.update("create index if not exists session_monitors_on_next_run_time on session_monitors (next_run_time)");
-
-            // session_archives
-            handle.update(
-                    new CreateTableBuilder("session_archives")
-                    .addLongId("id")
-                    // TODO save state
-                    .addLongText("tasks", "")  // collection of tasks, delete tasks transactionally when archived
-                    .addTimestamp("updated_at", "not null")
-                    .build());
-
-            // session_relations
-            handle.update(
-                    new CreateTableBuilder("session_relations")
-                    .addLongId("id")  // references sessions.id
-                    .addInt("repository_id", "not null")
-                    .addInt("revision_id", "not null")
-                    .addInt("workflow_source_id", "")       // null if one-time associated-to-revision workflow
-                    .build());
-            handle.update("create index if not exists session_relations_on_repository_id_and_id on session_relations (repository_id, id)");
-            handle.update("create index if not exists session_relations_on_revision_id_and_id on session_relations (revision_id, id)");
-            handle.update("create index if not exists session_relations_on_workflow_source_id_and_id on session_relations (workflow_source_id, id)");
 
             // tasks
             handle.update(
                     new CreateTableBuilder("tasks")
                     .addLongId("id")
-                    .addLong("session_id", "not null")
-                    .addLong("parent_id", "")
+                    .addLong("attempt_id", "not null references session_attempts (id)")
+                    .addLong("parent_id", "references tasks (id)")
                     .addShort("task_type", "")   // 0=action, 1=grouping  NOT NULL
                     //.addShort("error_mode", "")  // 1=ignore_parent_flags  NOT NULL
                     .addShort("state", "not null")
                     .addShort("state_flags", "not null")
-                    .addTimestamp("updated_at", "not null")  // last state update is done at this time
                     .addTimestamp("retry_at", "")
+                    .addTimestamp("updated_at", "not null")  // last state update is done at this time
                     .build());
+            handle.update("create index if not exists tasks_on_attempt_id on tasks (attempt_id, id)");
+            handle.update("create index if not exists tasks_on_parent_id on tasks (parent_id)");
 
             handle.update(
                     new CreateTableBuilder("task_details")
-                    .addLongId("id")
+                    .addLongId("id", "references tasks (id)")
                     .addMediumText("full_name", "not null")
                     .addMediumText("local_config", "")
                     .addMediumText("export_config", "")
@@ -366,7 +363,7 @@ public class DatabaseMigrator
 
             handle.update(
                     new CreateTableBuilder("task_state_details")
-                    .addLongId("id")
+                    .addLongId("id", "references tasks (id)")
                     .addMediumText("state_params", "")
                     .addMediumText("carry_params", "")
                     .addMediumText("error", "")
@@ -381,6 +378,19 @@ public class DatabaseMigrator
                     .addLong("downstream_id", "")
                     .build());
             handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
+
+            // queues
+            handle.update(
+                    new CreateTableBuilder("queues")
+                    .addIntId("id")
+                    .addInt("site_id", "not null")
+                    .addString("name", "not null")
+                    .addMediumText("config", "")
+                    .addTimestamp("created_at", "not null")
+                    .addTimestamp("updated_at", "not null")
+                    .build());
+            handle.update("create unique index if not exists queues_on_site_id_and_name on queues (site_id, name)");
+            handle.update("create index if not exists queues_on_site_id on queues (site_id, id)");
         }
     };
 

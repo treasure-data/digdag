@@ -4,7 +4,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.session.SessionStatusFlags;
 
 public interface TaskCallbackApi
 {
@@ -19,5 +19,8 @@ public interface TaskCallbackApi
     void taskPollNext(long taskId,
             Config stateParams, int retryInterval);
 
-    TaskStateCode startSession(String repositoryName, String workflowName, Session session);
+    //SessionStatusFlags startSession(
+    //        String repositoryName,
+    //        String workflowName,
+    //        Session session);
 }

@@ -1,8 +1,6 @@
 package io.digdag.core.repository;
 
-import java.util.Date;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import java.time.Instant;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -17,9 +15,7 @@ public abstract class StoredRepository
 
     public abstract int getSiteId();
 
-    //public abstract Optional<Integer> getLatestRevisionId();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getCreatedAt();
-
-    public abstract Date getUpdatedAt();
+    //public abstract Optional<Instant> getDeletedAt();
 }

@@ -9,8 +9,6 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableTask.class)
 public abstract class Task
 {
-    public abstract long getSessionId();
-
     public abstract Optional<Long> getParentId();
 
     public abstract String getFullName();

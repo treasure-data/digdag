@@ -1,14 +1,13 @@
 package io.digdag.cli;
 
 import java.util.List;
-import java.util.Date;
-import java.util.TimeZone;
 import java.util.Locale;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.io.File;
@@ -52,7 +51,7 @@ public class RevisionAutoReloader
     }
 
     public void loadFile(File file,
-            TimeZone defaultTimeZone,
+            ZoneId defaultTimeZone,
             Config overwriteParams)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
@@ -94,12 +93,12 @@ public class RevisionAutoReloader
     private class ReloadTarget
     {
         private final File file;
-        private final TimeZone defaultTimeZone;
+        private final ZoneId defaultTimeZone;
         private final Config overwriteParams;
         private int lastRevId;
         private Dagfile lastDagfile;
 
-        public ReloadTarget(File file, TimeZone defaultTimeZone, Config overwriteParams)
+        public ReloadTarget(File file, ZoneId defaultTimeZone, Config overwriteParams)
         {
             this.file = file;
             this.defaultTimeZone = defaultTimeZone;
@@ -114,8 +113,7 @@ public class RevisionAutoReloader
             localSite.storeWorkflows(
                     makeRevisionName(),
                     lastDagfile.getWorkflowList(),
-                    lastDagfile.getScheduleList(),
-                    new Date(),
+                    Instant.now(),
                     lastDagfile.getDefaultParams()
                         .deepCopy()
                         .setAll(overwriteParams));
@@ -130,8 +128,7 @@ public class RevisionAutoReloader
                     localSite.storeWorkflows(
                             makeRevisionName(),
                             dagfile.getWorkflowList(),
-                            dagfile.getScheduleList(),
-                            new Date(),
+                            Instant.now(),
                             dagfile.getDefaultParams()
                                 .deepCopy()
                                 .setAll(overwriteParams));
@@ -153,8 +150,8 @@ public class RevisionAutoReloader
         {
             DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.ENGLISH)
-                .withZone(ZoneId.of(defaultTimeZone.getID()));
-            return formatter.format(new Date().toInstant());
+                .withZone(defaultTimeZone);
+            return formatter.format(Instant.now());
         }
     }
 }

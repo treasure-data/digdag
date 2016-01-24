@@ -1,6 +1,6 @@
 package io.digdag.core.session;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -15,9 +15,9 @@ public abstract class StoredSessionMonitor
 {
     public abstract long getId();
 
-    public abstract long getSessionId();
+    public abstract long getAttemptId();
 
-    public abstract Date getCreatedAt();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 }

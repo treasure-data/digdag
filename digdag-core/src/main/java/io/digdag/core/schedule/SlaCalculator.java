@@ -1,15 +1,15 @@
 package io.digdag.core.schedule;
 
 import java.util.List;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Calendar;
-import java.util.TimeZone;
+import java.time.ZoneId;
 import io.digdag.client.config.Config;
 
 class SlaCalculator
 {
-    public static Date getTriggerTime(Config slaConfig, Date currentTime, TimeZone timeZone)
+    public static Instant getTriggerTime(Config slaConfig, Instant currentTime, ZoneId timeZone)
     {
         TimeCalculator calc = getCalculator(slaConfig);
         return calc.calculateTime(currentTime, timeZone);
@@ -45,16 +45,20 @@ class SlaCalculator
             this.minute = minute;
         }
 
-        public Date calculateTime(Date time, TimeZone timeZone)
+        public Instant calculateTime(Instant time, ZoneId timeZone)
         {
+            // TODO
+            return time;
+            /*
             Calendar cal = Calendar.getInstance(timeZone, Locale.ENGLISH);
             cal.setTime(time);
             cal.set(Calendar.HOUR_OF_DAY, hour);
             cal.set(Calendar.MINUTE, minute);
-            if (cal.getTime().getTime() < time.getTime()) {
+            if (cal.getTime().isBefore(time)) {
                 cal.add(Calendar.DATE, 1);
             }
             return cal.getTime();
+            */
         }
     }
 }

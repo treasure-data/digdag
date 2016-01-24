@@ -6,21 +6,18 @@ import io.digdag.core.schedule.Schedule;
 
 public interface RepositoryControlStore
 {
-    List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId);
+    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
 
     StoredRevision putRevision(int repoId, Revision revision);
 
-    StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource workflow)
+    void insertRevisionArchiveData(int revId, byte[] data)
+            throws ResourceConflictException;
+
+    StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition workflow)
         throws ResourceConflictException;
 
-    StoredScheduleSource insertScheduleSource(int revId, ScheduleSource workflow)
-        throws ResourceConflictException;
+    void updateSchedules(int repoId, List<Schedule> schedules)
+            throws ResourceConflictException;
 
-    void syncWorkflowsToRevision(int repoId, List<StoredWorkflowSource> sources)
-        throws ResourceConflictException;
-
-    void syncSchedulesToRevision(int repoId, List<Schedule> schedules)
-        throws ResourceConflictException;
-
-    //void deleteRepository(int repoId);  // TODO delete schedule
+    //void deleteRepository(int repoId);  // set deleted_at to repository, and delete schedules
 }

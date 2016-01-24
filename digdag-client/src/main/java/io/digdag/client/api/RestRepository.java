@@ -1,6 +1,6 @@
 package io.digdag.client.api;
 
-import java.util.Date;
+import java.time.Instant;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Optional;
@@ -17,13 +17,13 @@ public abstract class RestRepository
 
     public abstract String getRevision();
 
-    public abstract Date getCreatedAt();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 
     public abstract String getArchiveType();
 
-    public abstract Optional<byte[]> getArchiveMd5();  // TODO Optional is not working correctly but using for now
+    public abstract Optional<byte[]> getArchiveMd5();
 
     public static ImmutableRestRepository.Builder builder()
     {

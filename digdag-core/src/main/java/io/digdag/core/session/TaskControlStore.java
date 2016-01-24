@@ -8,7 +8,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskControlStore
 {
-    long addSubtask(Task task);
+    long addSubtask(long attemptId, Task task);
 
     StoredTask getTaskById(long taskId)
         throws ResourceNotFoundException;

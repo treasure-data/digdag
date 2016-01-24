@@ -20,7 +20,7 @@ public class WorkflowCompiler
 
     public Workflow compile(String name, Config config)
     {
-        return Workflow.workflowBuilder()
+        return Workflow.builder()
             .name(name)
             .meta(config.getNestedOrGetEmpty("meta"))
             .tasks(compileTasks(name, config))

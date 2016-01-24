@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
 import java.util.List;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Stream;
@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.RevisionInfo;
 import io.digdag.core.workflow.TaskConfig;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
@@ -32,12 +31,8 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager
-        implements SessionStoreManager, SessionStoreManager.SessionBuilderStore, TaskControlStore
+        implements SessionStoreManager, TaskControlStore
 {
-    public static short NAMESPACE_WORKFLOW_ID = (short) 3;
-    public static short NAMESPACE_REPOSITORY_ID = (short) 1;
-    public static short NAMESPACE_SITE_ID = (short) 0;
-
     private final String databaseType;
 
     private final ConfigMapper cfm;
@@ -50,20 +45,18 @@ public class DatabaseSessionStoreManager
     {
         this.databaseType = config.getType();
         this.handle = dbi.open();
-        JsonMapper<SessionOptions> opm = new JsonMapper<>(mapper, SessionOptions.class);
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
         this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm, trm);
         handle.registerMapper(stm);
-        handle.registerMapper(new StoredSessionMapper(cfm, opm));
+        handle.registerMapper(new StoredSessionMapper(cfm));
+        handle.registerMapper(new StoredSessionAttemptMapper(cfm));
+        handle.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
         handle.registerMapper(new TaskStateSummaryMapper());
         handle.registerMapper(new StoredSessionMonitorMapper(cfm));
-        handle.registerMapper(new SessionRelationMapper());
         handle.registerMapper(new TaskRelationMapper());
-        handle.registerMapper(new RevisionInfoMapper());
-        handle.registerMapper(new DateMapper());
+        handle.registerMapper(new InstantMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
-        handle.registerArgumentFactory(opm.getArgumentFactory());
         handle.registerArgumentFactory(trm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
     }
@@ -95,10 +88,9 @@ public class DatabaseSessionStoreManager
 
     private String selectTaskDetailsQuery()
     {
-        return "select t.*, s.site_id, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
+        return "select t.*, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
                 "(select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
             " from tasks t " +
-            " join sessions s on s.id = t.session_id " +
             " join task_details td on t.id = td.id " +
             " join task_state_details ts on t.id = ts.id ";
     }
@@ -110,30 +102,27 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public StoredSession getSessionById(long sesId)
-        throws ResourceNotFoundException
-    {
-        return requiredResource(
-                dao.getSessionById(sesId),
-                "session id=%d", sesId);
-    }
-
-    @Override
-    public Date getStoreTime()
+    public Instant getStoreTime()
     {
         return dao.now();
     }
 
     @Override
-    public boolean isAnyNotDoneWorkflows()
+    public StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
+        throws ResourceNotFoundException
     {
-        // TODO optimize
+        return requiredResource(
+                dao.getAttemptWithSessionByIdInternal(attemptId),
+                "session attempt id=%d", attemptId);
+    }
+
+    @Override
+    public boolean isAnyNotDoneSessions()
+    {
         return handle.createQuery(
-                "select count(*) from tasks" +
-                " where parent_id is null" +
-                " and state in (" + Stream.of(
-                        TaskStateCode.notDoneStates()
-                        ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")"
+                "select count(*) from sessions s" +
+                " join session_attempts sa on sa.id = s.last_attempt_id" +
+                " where " + bitAnd("state_flags", Integer.toString(SessionStatusFlags.DONE_CODE)) + " = 0"
             )
             .mapTo(long.class)
             .first() > 0L;
@@ -146,7 +135,7 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public List<TaskStateSummary> findRecentlyChangedTasks(Date updatedSince, long lastId)
+    public List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId)
     {
         return dao.findRecentlyChangedTasks(updatedSince, lastId, 100);
     }
@@ -158,17 +147,17 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public boolean requestCancelSession(long sesId)
+    public boolean requestCancelAttempt(long attemptId)
     {
         int n = handle.createStatement("update tasks " +
                 " set state_flags = " + bitOr("state_flags", ":flag") +
-                " where session_id = :sesId" +
+                " where attempt_id = :attemptId" +
                 " and state in (" + Stream.of(
                     TaskStateCode.notDoneStates()
                     ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")"
             )
             .bind("flag", TaskStateFlags.CANCEL_REQUESTED)
-            .bind("sesId", sesId)
+            .bind("attemptId", attemptId)
             .execute();
         return n > 0;
     }
@@ -183,10 +172,9 @@ public class DatabaseSessionStoreManager
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
         return handle.inTransaction((handle, ses) -> {
-            TaskStateSummary task = dao.lockTask(taskId);
-            if (task != null) {
-                TaskControl control = new TaskControl(this, task.getId(), task.getState());
-                T result = func.call(control);
+            Long locked = dao.lockTask(taskId);
+            if (locked != null) {
+                T result = func.call(this);
                 return Optional.of(result);
             }
             return Optional.<T>absent();
@@ -198,11 +186,10 @@ public class DatabaseSessionStoreManager
     {
         return handle.inTransaction((handle, ses) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
-            TaskStateSummary summary = dao.lockTask(taskId);
-            if (summary != null) {
-                StoredTask task = getTaskById(summary.getId());
-                TaskControl control = new TaskControl(this, task.getId(), task.getState());
-                T result = func.call(control, task);
+            Long locked = dao.lockTask(taskId);
+            if (locked != null) {
+                StoredTask task = getTaskById(taskId);
+                T result = func.call(this, task);
                 return Optional.of(result);
             }
             return Optional.<T>absent();
@@ -210,14 +197,13 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public <T> Optional<T> lockRootTaskIfExists(long sessionId, TaskLockActionWithDetails<T> func)
+    public <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func)
     {
         return handle.inTransaction((handle, ses) -> {
-            TaskStateSummary summary = dao.lockRootTask(sessionId);
-            if (summary != null) {
-                StoredTask task = getTaskById(summary.getId());
-                TaskControl control = new TaskControl(this, task.getId(), task.getState());
-                T result = func.call(control, task);
+            Long taskId = dao.lockRootTask(attemptId);
+            if (taskId != null) {
+                StoredTask task = getTaskById(taskId);
+                T result = func.call(this, task);
                 return Optional.of(result);
             }
             return Optional.<T>absent();
@@ -225,86 +211,12 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
-        throws ResourceConflictException
+    public long addSubtask(long attemptId, Task task)
     {
-        return catchConflict(() -> {
-                final long sesId;
-                if (relation.isPresent()) {
-                    SessionRelation rel = relation.get();
-                    sesId = handle.inTransaction((handle, ses) -> {
-                        if (rel.getWorkflowSourceId().isPresent()) {
-                            // namespace is workflow source id
-                            int wfId = rel.getWorkflowSourceId().get();
-                            long insertedId = dao.insertSession(siteId, NAMESPACE_WORKFLOW_ID, wfId, newSession.getName(), newSession.getParams(), newSession.getOptions());
-                            dao.insertSessionRelation(insertedId, rel.getRepositoryId(), rel.getRevisionId(), wfId);
-                            return insertedId;
-                        }
-                        else {
-                            // namespace is revision
-                            long insertedId = dao.insertSession(siteId, NAMESPACE_REPOSITORY_ID, rel.getRepositoryId(), newSession.getName(), newSession.getParams(), newSession.getOptions());
-                            dao.insertSessionRelation(insertedId, rel.getRepositoryId(), rel.getRevisionId(), null);
-                            return insertedId;
-                        }
-                    });
-                }
-                else {
-                    // namespace is site
-                    sesId = dao.insertSession(siteId, NAMESPACE_SITE_ID, siteId, newSession.getName(), newSession.getParams(), newSession.getOptions());
-                    // no insert to session_relations
-                }
-                StoredSession session = dao.getSessionById(siteId, sesId);
-                func.call(session, this);
-                return session;
-            },
-            "session name=%s in with %s", newSession.getName(), relation);
-    }
-
-    public Optional<RevisionInfo> getAssociatedRevisionInfo(long sesId)
-    {
-        return Optional.fromNullable(dao.findAssociatedRevisionInfo(sesId));
-    }
-
-    //public SessionRelation getSessionRelationById(long sessionId)
-    //    throws ResourceNotFoundException
-    //{
-    //    return requiredResource(
-    //            dao.getSessionRelationById(sessionId),
-    //            "session id=%d", sessionId);
-    //}
-
-    @Override
-    public <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func)
-    {
-        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
-        dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
-        dao.insertEmptyTaskStateDetails(taskId);
-        TaskControl control = new TaskControl(this, taskId, task.getState());
-        StoredTask stored;
-        try {
-            stored = getTaskById(taskId);
-        }
-        catch (ResourceNotFoundException ex) {
-            throw new IllegalStateException("Database state error", ex);
-        }
-        return func.call(control, stored);
-    }
-
-    @Override
-    public long addSubtask(Task task)
-    {
-        long taskId = dao.insertTask(task.getSessionId(), task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
+        long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
         dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
         dao.insertEmptyTaskStateDetails(taskId);
         return taskId;
-    }
-
-    @Override
-    public void addMonitors(long sessionId, List<SessionMonitor> monitors)
-    {
-        for (SessionMonitor monitor : monitors) {
-            dao.insertSessionMonitor(sessionId, monitor.getNextRunTime().getTime() / 1000, monitor.getType(), monitor.getConfig());  // session_monitors table don't have unique index
-        }
     }
 
     @Override
@@ -471,17 +383,17 @@ public class DatabaseSessionStoreManager
     //}
 
     @Override
-    public void lockReadySessionMonitors(Date currentTime, SessionMonitorAction func)
+    public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
         List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
-            return dao.lockReadySessionMonitors(currentTime.getTime() / 1000, 10)  // TODO 10 should be configurable?
+            return dao.lockReadySessionMonitors(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(monitor -> {
                     try {
-                        Optional<Date> nextRunTime = func.schedule(monitor);
+                        Optional<Instant> nextRunTime = func.schedule(monitor);
                         if (nextRunTime.isPresent()) {
                             dao.updateNextSessionMonitorRunTime(monitor.getId(),
-                                    nextRunTime.get().getTime() / 1000);
+                                    nextRunTime.get().getEpochSecond());
                         }
                         else {
                             dao.deleteSessionMonitor(monitor.getId());
@@ -505,15 +417,15 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public List<TaskRelation> getTaskRelations(long sesId)
+    public List<TaskRelation> getTaskRelations(long attemptId)
     {
         return handle.createQuery(
                 "select id, parent_id," +
                 " (select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
                 " from tasks t " +
-                " where session_id = :id"
+                " where attempt_id = :attemptId"
             )
-            .bind("id", sesId)
+            .bind("attemptId", attemptId)
             .map(new TaskRelationMapper())
             .list();
     }
@@ -567,7 +479,7 @@ public class DatabaseSessionStoreManager
     }
 
     private class DatabaseSessionStore
-            implements SessionStore
+            implements SessionStore, SessionControlStore
     {
         // TODO retry
         private final int siteId;
@@ -577,56 +489,128 @@ public class DatabaseSessionStoreManager
             this.siteId = siteId;
         }
 
+        @Override
+        public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
+            throws ResourceConflictException
+        {
+            // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
+            return handle.inTransaction((handle, handleSession) -> {
+                long sesId;
+                try {
+                    sesId = catchConflict(() ->
+                            dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond()),
+                            "session instant=%s in repository_id=%d and workflow_name=%s", session.getInstant(), session.getRepositoryId(), session.getWorkflowName());
+                }
+                catch (ResourceConflictException ex) {
+                    StoredSession storedSession = dao.getSessionByNamesInternal(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond());
+                    if (storedSession == null) {
+                        throw new IllegalStateException("Database state error", ex);
+                    }
+                    sesId = storedSession.getId();
+                }
+
+                StoredSession storedSession = dao.lockSession(sesId);
+                if (storedSession == null) {
+                    throw new IllegalStateException("Database state error");
+                }
+
+                return func.call(this, storedSession);
+            });
+        }
+
+        @Override
+        public Optional<StoredSessionAttempt> tryLastAttempt(long sessionId)
+        {
+            return Optional.fromNullable(dao.getLastAttemptInternal(sessionId));
+        }
+
+        @Override
+        public StoredSessionAttempt insertAttempt(long sessionId, SessionAttempt attempt)
+            throws ResourceConflictException
+        {
+            long attemptId = catchConflict(() ->
+                dao.insertAttempt(sessionId,
+                        attempt.getAttemptName(), attempt.getWorkflowDefinitionId().orNull(),
+                        SessionStatusFlags.empty().get(), attempt.getParams()),
+                "session attempt name=%s in session id=%d", attempt.getAttemptName(), sessionId);
+            dao.updateLastAttemptId(sessionId, attemptId);
+            return dao.getAttemptByIdInternal(attemptId);
+        }
+
+        @Override
+        public <T> T insertRootTask(long attemptId, Task task, SessionBuilderAction<T> func)
+        {
+            long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
+            dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
+            dao.insertEmptyTaskStateDetails(taskId);
+            StoredTask stored;
+            try {
+                stored = getTaskById(taskId);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
+            }
+            return func.call(DatabaseSessionStoreManager.this, stored);
+        }
+
+        @Override
+        public void insertMonitors(long attemptId, List<SessionMonitor> monitors)
+        {
+            for (SessionMonitor monitor : monitors) {
+                dao.insertSessionMonitor(attemptId, monitor.getNextRunTime().getEpochSecond(), monitor.getType(), monitor.getConfig());  // session_monitors table don't have unique index
+            }
+        }
+
         //public List<StoredSession> getAllSessions()
         //{
         //    return dao.getSessions(siteId, Integer.MAX_VALUE, 0L);
         //}
 
-        @Override
-        public List<StoredSession> getSessions(int pageSize, Optional<Long> lastId)
-        {
-            return dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE));
-        }
+        //@Override
+        //public List<StoredSession> getSessions(int pageSize, Optional<Long> lastId)
+        //{
+        //    return dao.getSessions(siteId, pageSize, lastId.or(Long.MAX_VALUE));
+        //}
 
-        @Override
-        public List<StoredSession> getSessionsOfRepository(int repositoryId, int pageSize, Optional<Long> lastId)
-        {
-            return dao.getSessionsOfRepository(siteId, repositoryId, pageSize, lastId.or(Long.MAX_VALUE));
-        }
+        //@Override
+        //public List<StoredSession> getSessionsOfRepository(int repositoryId, int pageSize, Optional<Long> lastId)
+        //{
+        //    return dao.getSessionsOfRepository(siteId, repositoryId, pageSize, lastId.or(Long.MAX_VALUE));
+        //}
 
-        @Override
-        public List<StoredSession> getSessionsOfWorkflow(int workflowSourceId, int pageSize, Optional<Long> lastId)
-        {
-            return dao.getSessionsOfWorkflow(siteId, workflowSourceId, pageSize, lastId.or(Long.MAX_VALUE));
-        }
+        //@Override
+        //public List<StoredSession> getSessionsOfWorkflow(long workflowDefinitionId, int pageSize, Optional<Long> lastId)
+        //{
+        //    return dao.getSessionsOfWorkflow(siteId, workflowDefinitionId, pageSize, lastId.or(Long.MAX_VALUE));
+        //}
 
-        @Override
-        public StoredSession getSessionById(long sesId)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getSessionById(siteId, sesId),
-                    "session id=%d", sesId);
-        }
+        //@Override
+        //public StoredSession getSessionById(long sesId)
+        //    throws ResourceNotFoundException
+        //{
+        //    return requiredResource(
+        //            dao.getSessionById(siteId, sesId),
+        //            "session id=%d", sesId);
+        //}
 
-        @Override
-        public StoredSession getSessionByName(String sesName)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getSessionByName(siteId, sesName),
-                    "session id=%s", sesName);
-        }
+        //@Override
+        //public StoredSession getSessionByName(String sesName)
+        //    throws ResourceNotFoundException
+        //{
+        //    return requiredResource(
+        //            dao.getSessionByName(siteId, sesName),
+        //            "session id=%s", sesName);
+        //}
 
-        @Override
-        public TaskStateCode getRootState(long sesId)
-            throws ResourceNotFoundException
-        {
-            return TaskStateCode.of(
-                    requiredResource(
-                        dao.getRootState(siteId, sesId),
-                        "session id=%d", sesId));
-        }
+        //@Override
+        //public TaskStateCode getSessionStateFlags(long sesId)
+        //    throws ResourceNotFoundException
+        //{
+        //    return TaskStateCode.of(
+        //            requiredResource(
+        //                dao.getSessionStateFlags(siteId, sesId),
+        //                "session id=%d", sesId));
+        //}
 
         //public List<StoredTask> getAllTasks()
         //{
@@ -640,18 +624,18 @@ public class DatabaseSessionStoreManager
         //}
 
         @Override
-        public List<StoredTask> getTasks(long sesId, int pageSize, Optional<Long> lastId)
+        public List<StoredTask> getTasksOfAttempt(long aId, int pageSize, Optional<Long> lastId)
         {
             return handle.createQuery(
                     selectTaskDetailsQuery() +
                     " where t.id > :lastId" +
                     " and s.site_id = :siteId" +
-                    " and t.session_id = :sesId" +
+                    " and t.attempt_id = :aId" +
                     " order by t.id" +
                     " limit :limit"
                 )
                 .bind("siteId", siteId)
-                .bind("sesId", sesId)
+                .bind("aId", aId)
                 .bind("lastId", lastId.or(0L))
                 .bind("limit", pageSize)
                 .map(stm)
@@ -662,8 +646,7 @@ public class DatabaseSessionStoreManager
     public interface Dao
     {
         @SqlQuery("select now() as date")
-        //Date now();
-        java.sql.Timestamp now();
+        Instant now();
 
         @SqlQuery("select * from sessions s" +
                 " where site_id = :siteId" +
@@ -684,11 +667,29 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select s.* from sessions s" +
                 " join session_relations sr on s.id = sr.id" +
                 " where site_id = :siteId" +
-                " and sr.workflow_source_id = :wfId" +
+                " and sr.workflow_definition_id = :wfId" +
                 " and s.id < :lastId" +
                 " order by s.id desc" +
                 " limit :limit")
-        List<StoredSession> getSessionsOfWorkflow(@Bind("siteId") int siteId, @Bind("wfId") int wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredSession> getSessionsOfWorkflow(@Bind("siteId") int siteId, @Bind("wfId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select * from session_attempts sa" +
+                " where id = :id limit 1")
+        StoredSessionAttempt getAttemptByIdInternal(@Bind("id") long id);
+
+        @SqlQuery("select sa.*, s.repository_id, s.workflow_name, s.instant," +
+                " repo.site_id, repo.name as repo_name" +
+                " from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " join repositories repo on repo.id = s.repository_id" +
+                " where sa.id = :attemptId limit 1")
+        StoredSessionAttemptWithSession getAttemptWithSessionByIdInternal(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select sa.* from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " where s.id = :sessionId" +
+                " limit 1")
+        StoredSessionAttempt getLastAttemptInternal(@Bind("sessionId") long sessionId);
 
         @SqlQuery("select * from sessions where id = :id limit 1")
         StoredSession getSessionById(@Bind("id") long id);
@@ -696,50 +697,62 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from sessions where site_id = :siteId and id = :id limit 1")
         StoredSession getSessionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select * from sessions where site_id = :siteId and name = :name limit 1")
-        StoredSession getSessionByName(@Bind("siteId") int siteId, @Bind("name") String name);
+        @SqlQuery("select * from sessions where id = :sessionId for update")
+        StoredSession lockSession(@Bind("sessionId") long sessionId);
 
-        @SqlUpdate("insert into sessions (site_id, namespace_type, namespace_id, name, params, options, created_at)" +
-                " values (:siteId, :namespaceType, :namespaceId, :name, :params, :options, now())")
+        @SqlUpdate("insert into sessions (repository_id, workflow_name, instant, last_attempt_id)" +
+                " values (:repositoryId, :workflowName, :instant, NULL)")
         @GetGeneratedKeys
-        long insertSession(@Bind("siteId") int siteId, @Bind("namespaceType") short namespaceType,
-                @Bind("namespaceId") int namespaceId, @Bind("name") String name, @Bind("params") Config params, @Bind("options") SessionOptions options);
+        long insertSession(@Bind("repositoryId") int repositoryId,
+                @Bind("workflowName") String workflowName, @Bind("instant") long instant);
 
-        @SqlUpdate("insert into session_relations (id, repository_id, revision_id, workflow_source_id)" +
-                " values (:id, :repositoryId, :revisionId, :workflowSourceId)")
-        void insertSessionRelation(@Bind("id") long id,  @Bind("repositoryId") int repositoryId, @Bind("revisionId") int revisionId,
-                @Bind("workflowSourceId") Integer workflowSourceId);
+        @SqlQuery("select * from sessions" +
+                " where repository_id = :repositoryId" +
+                " and workflow_name = :workflowName" +
+                " and instant = :instant" +
+                " limit 1")
+        StoredSession getSessionByNamesInternal(@Bind("repositoryId") int repositoryId,
+                @Bind("workflowName") String workflowName, @Bind("instant") long instant);
 
-        @SqlQuery("select * from session_relations where id = :id")
-        SessionRelation getSessionRelationById(@Bind("id") long sessionId);
+        @SqlUpdate("insert into session_attempts (session_id, attempt_name, workflow_definition_id, state_flags, params, created_at)" +
+                " values (:sessionId, :attemptName, :workflowDefinitionId, :statusFlags, :params, now())")
+        @GetGeneratedKeys
+        long insertAttempt(@Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("statusFlags") int statusFlags, @Bind("params") Config params);
+
+        @SqlUpdate("update sessions" +
+                " set last_attempt_id = :attemptId" +
+                " where id = :sessionId")
+        int updateLastAttemptId(@Bind("sessionId") long sessionId, @Bind("attemptId") long attemptId);
 
         @SqlQuery("select state from tasks t" +
-                " join sessions s on t.session_id = s.id" +
-                " where s.site_id = :siteId" +
-                " and s.id = :id" +
+                " join attempts a on t.attempt_id = s.id" +
+                " where a.site_id = :siteId" +
+                " and a.id = :id" +
                 " and t.parent_id is null" +
                 " limit 1")
-        Short getRootState(@Bind("siteId") int siteId, @Bind("id") long id);
+        Short getSessionStateFlags(@Bind("siteId") int siteId, @Bind("id") long sesId);
 
-        @SqlUpdate("insert into session_monitors (session_id, next_run_time, type, config, created_at, updated_at)" +
-                " values (:sessionId, :nextRunTime, :type, :config, now(), now())")
+        @SqlUpdate("insert into session_monitors (attempt_id, next_run_time, type, config, created_at, updated_at)" +
+                " values (:attemptId, :nextRunTime, :type, :config, now(), now())")
         @GetGeneratedKeys
-        long insertSessionMonitor(@Bind("sessionId") long sessionId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
+        long insertSessionMonitor(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
 
+        /*
         @SqlQuery("select rev.id, repo.name as repository_name, rev.name "+
                 " from session_relations sr" +
                 " join repositories repo on sr.repository_id = repo.id" +
                 " join revisions rev on sr.revision_id = rev.id" +
                 " where sr.id = :id")
         RevisionInfo findAssociatedRevisionInfo(@Bind("id") long sessionId);
+        */
 
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
 
-        @SqlUpdate("insert into tasks (session_id, parent_id, task_type, state, state_flags, updated_at)" +
-                " values (:sessionId, :parentId, :taskType, :state, 0, now())")
+        @SqlUpdate("insert into tasks (attempt_id, parent_id, task_type, state, state_flags, updated_at)" +
+                " values (:attemptId, :parentId, :taskType, :state, 0, now())")
         @GetGeneratedKeys
-        long insertTask(@Bind("sessionId") long sessionId, @Bind("parentId") Long parentId,
+        long insertTask(@Bind("attemptId") long attemptId, @Bind("parentId") Long parentId,
                 @Bind("taskType") int taskType, @Bind("state") short state);
 
         @SqlUpdate("insert into task_details (id, full_name, local_config, export_config)" +
@@ -760,7 +773,7 @@ public class DatabaseSessionStoreManager
                 " or (updated_at = :updatedSince and id > :lastId)" +
                 " order by updated_at asc, id asc" +
                 " limit :limit")
-        List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Date updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
+        List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Instant updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
         @SqlQuery("select id, parent_id, state, updated_at " +
                 " from tasks " +
@@ -770,25 +783,16 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<TaskStateSummary> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
-        @SqlQuery("select id, parent_id, state, updated_at " +
-                " from tasks " +
+        @SqlQuery("select id from tasks " +
                 " where id = :id" +
                 " for update")
-        TaskStateSummary lockTask(@Bind("id") long taskId);
+        Long lockTask(@Bind("id") long taskId);
 
-        @SqlQuery("select id, parent_id, state, updated_at " +
-                " from tasks" +
-                " where session_id = :sessionId" +
+        @SqlQuery("select id from tasks" +
+                " where attemptId = :attemptId" +  // TODO
                 " and parent_id is null" +
                 " for update")
-        TaskStateSummary lockRootTask(@Bind("sessionId") long sessionId);
-
-        @SqlQuery("select t.*, s.site_id, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report " +
-                " from tasks t " +
-                " join sessions s on s.id = t.session_id " +
-                " join task_details td on t.id = td.id " +
-                " join task_state_details ts on t.id = ts.id ")
-        List<StoredTask> findAllTasks();
+        Long lockRootTask(@Bind("attemptId") long attemptId);
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), state = :newState" +
@@ -828,14 +832,20 @@ public class DatabaseSessionStoreManager
         void deleteSessionMonitor(@Bind("id") long id);
     }
 
-    private static class DateMapper
-            implements ResultSetMapper<Date>
+    private static class InstantMapper
+            implements ResultSetMapper<Instant>
     {
         @Override
-        public Date map(int index, ResultSet r, StatementContext ctx)
+        public Instant map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return r.getTimestamp("date");
+            java.sql.Timestamp t = r.getTimestamp("date");
+            if (t == null) {
+                return null;
+            }
+            else {
+                return t.toInstant();
+            }
         }
     }
 
@@ -843,12 +853,10 @@ public class DatabaseSessionStoreManager
             implements ResultSetMapper<StoredSession>
     {
         private final ConfigMapper cfm;
-        private final JsonMapper<SessionOptions> opm;
 
-        public StoredSessionMapper(ConfigMapper cfm, JsonMapper<SessionOptions> opm)
+        public StoredSessionMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
-            this.opm = opm;
         }
 
         @Override
@@ -857,11 +865,70 @@ public class DatabaseSessionStoreManager
         {
             return ImmutableStoredSession.builder()
                 .id(r.getLong("id"))
-                .siteId(r.getInt("site_id"))
-                .createdAt(r.getTimestamp("created_at"))
-                .name(r.getString("name"))
+                .repositoryId(r.getInt("repository_id"))
+                .workflowName(r.getString("workflow_name"))
+                .instant(Instant.ofEpochSecond(r.getLong("instant")))
+                .lastAttemptId(r.getLong("last_attempt_id"))
+                .build();
+        }
+    }
+
+    private static class StoredSessionAttemptMapper
+            implements ResultSetMapper<StoredSessionAttempt>
+    {
+        private final ConfigMapper cfm;
+
+        public StoredSessionAttemptMapper(ConfigMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredSessionAttempt map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredSessionAttempt.builder()
+                .id(r.getLong("id"))
+                .sessionId(r.getLong("session_id"))
+                .attemptName(r.getString("attempt_name"))
+                .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
+                .statusFlags(SessionStatusFlags.of(r.getInt("state_flags")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
-                .options(opm.fromResultSet(r, "options"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .build();
+        }
+    }
+
+    private static class StoredSessionAttemptWithSessionMapper
+            implements ResultSetMapper<StoredSessionAttemptWithSession>
+    {
+        private final ConfigMapper cfm;
+
+        public StoredSessionAttemptWithSessionMapper(ConfigMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public StoredSessionAttemptWithSession map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredSessionAttemptWithSession.builder()
+                .id(r.getLong("id"))
+                .sessionId(r.getLong("session_id"))
+                .attemptName(r.getString("attempt_name"))
+                .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
+                .statusFlags(SessionStatusFlags.of(r.getInt("state_flags")))
+                .params(cfm.fromResultSetOrEmpty(r, "params"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .siteId(r.getInt("site_id"))
+                .session(
+                    ImmutableSession.builder()
+                        .repositoryId(r.getInt("repository_id"))
+                        .workflowName(r.getString("workflow_name"))
+                        .instant(Instant.ofEpochSecond(r.getLong("instant")))
+                        .build())
+                .repositoryName(r.getString("repo_name"))
                 .build();
         }
     }
@@ -891,14 +958,13 @@ public class DatabaseSessionStoreManager
 
             return ImmutableStoredTask.builder()
                 .id(r.getLong("id"))
-                .siteId(r.getInt("site_id"))
                 .upstreams(getLongIdList(r, "upstream_ids"))
-                .updatedAt(r.getTimestamp("updated_at"))
-                .retryAt(getOptionalDate(r, "retry_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
+                .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
                 .report(report)
                 .error(cfm.fromResultSet(r, "error"))
-                .sessionId(r.getLong("session_id"))
+                .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
                 .config(
@@ -923,22 +989,7 @@ public class DatabaseSessionStoreManager
                 .id(r.getLong("id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .state(TaskStateCode.of(r.getInt("state")))
-                .updatedAt(r.getTimestamp("updated_at"))
-                .build();
-        }
-    }
-
-    private static class SessionRelationMapper
-            implements ResultSetMapper<SessionRelation>
-    {
-        @Override
-        public SessionRelation map(int index, ResultSet r, StatementContext ctx)
-                throws SQLException
-        {
-            return ImmutableSessionRelation.builder()
-                .repositoryId(r.getInt("repository_id"))
-                .revisionId(r.getInt("revision_id"))
-                .workflowSourceId(getOptionalInt(r, "workflow_source_id"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();
         }
     }
@@ -958,20 +1009,6 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private static class RevisionInfoMapper
-            implements ResultSetMapper<RevisionInfo>
-    {
-        @Override
-        public RevisionInfo map(int index, ResultSet r, StatementContext ctx)
-                throws SQLException
-        {
-            return RevisionInfo.of(
-                    r.getInt("id"),
-                    r.getString("repository_name"),
-                    r.getString("name"));
-        }
-    }
-
     private static class StoredSessionMonitorMapper
             implements ResultSetMapper<StoredSessionMonitor>
     {
@@ -988,12 +1025,12 @@ public class DatabaseSessionStoreManager
         {
             return ImmutableStoredSessionMonitor.builder()
                 .id(r.getLong("id"))
-                .sessionId(r.getInt("session_id"))
-                .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
+                .attemptId(r.getLong("attempt_id"))
+                .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
                 .type(r.getString("type"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
-                .createdAt(r.getTimestamp("created_at"))
-                .updatedAt(r.getTimestamp("updated_at"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();
         }
     }

@@ -1,6 +1,6 @@
 package io.digdag.spi;
 
-import java.util.Date;
+import java.time.Instant;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -11,16 +11,16 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableScheduleTime.class)
 public abstract class ScheduleTime
 {
-    public abstract Date getRunTime();
+    public abstract Instant getRunTime();
 
-    public abstract Date getScheduleTime();
+    public abstract Instant getScheduleTime();
 
     public static ImmutableScheduleTime.Builder builder()
     {
         return ImmutableScheduleTime.builder();
     }
 
-    public static ScheduleTime of(Date nextRunTime, Date nextScheduleTime)
+    public static ScheduleTime of(Instant nextRunTime, Instant nextScheduleTime)
     {
         return builder()
             .runTime(nextRunTime)
@@ -31,7 +31,7 @@ public abstract class ScheduleTime
     @Value.Check
     protected void check()
     {
-        checkState(getRunTime().getTime() % (1000) == 0, "Run time must be aligned with second");
-        checkState(getScheduleTime().getTime() % (60*1000) == 0, "Schedule time must be aligned with minute");
+        checkState(getRunTime().getNano() == 0, "Run time must be aligned with second");
+        checkState(getScheduleTime().getEpochSecond() % 60 == 0, "Schedule time must be aligned with minute");
     }
 }

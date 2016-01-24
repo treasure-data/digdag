@@ -1,7 +1,8 @@
 package io.digdag.core.schedule;
 
-import java.util.Date;
+import java.time.Instant;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public class ScheduleControl
 {
@@ -14,23 +15,33 @@ public class ScheduleControl
         this.schedule = schedule;
     }
 
-    public StoredSchedule getSchedule()
+    public StoredSchedule get()
     {
         return schedule;
     }
 
-    public boolean updateNextScheduleTime(ScheduleTime nextTime)
+    public StoredSchedule updateNextScheduleTime(ScheduleTime nextTime)
+        throws ResourceNotFoundException
     {
         if (store.updateNextScheduleTime(schedule.getId(), nextTime)) {
-            this.schedule = ImmutableStoredSchedule.builder()
+            return ImmutableStoredSchedule.builder()
                 .from(schedule)
                 .nextRunTime(nextTime.getRunTime())
                 .nextScheduleTime(nextTime.getScheduleTime())
                 .build();
-            return true;
         }
         else {
-            return false;
+            throw new ResourceNotFoundException("schedule id=" + schedule.getId());
         }
+    }
+
+    public boolean tryUpdateNextScheduleTime(ScheduleTime nextTime)
+    {
+        return store.updateNextScheduleTime(schedule.getId(), nextTime);
+    }
+
+    public boolean tryUpdateNextScheduleTimeAndLastSessionInstant(ScheduleTime nextTime, Instant lastSessionInstant)
+    {
+        return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionInstant);
     }
 }

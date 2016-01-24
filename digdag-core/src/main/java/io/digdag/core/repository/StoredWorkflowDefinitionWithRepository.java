@@ -8,10 +8,10 @@ import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredWorkflowSourceWithRepository.class)
-@JsonDeserialize(as = ImmutableStoredWorkflowSourceWithRepository.class)
-public abstract class StoredWorkflowSourceWithRepository
-        extends StoredWorkflowSource
+@JsonSerialize(as = ImmutableStoredWorkflowDefinitionWithRepository.class)
+@JsonDeserialize(as = ImmutableStoredWorkflowDefinitionWithRepository.class)
+public abstract class StoredWorkflowDefinitionWithRepository
+        extends StoredWorkflowDefinition
 {
     public abstract StoredRepository getRepository();
 

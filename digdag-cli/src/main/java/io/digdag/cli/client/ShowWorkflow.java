@@ -3,7 +3,7 @@ package io.digdag.cli.client;
 import java.util.List;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestWorkflow;
+import io.digdag.client.api.RestWorkflowDefinition;
 import static io.digdag.cli.Main.systemExit;
 
 public class ShowWorkflow
@@ -33,7 +33,7 @@ public class ShowWorkflow
         throws Exception
     {
         DigdagClient client = buildClient();
-        List<RestWorkflow> workflows = client.getWorkflows();
-        modelPrinter().printList(workflows);
+        List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions();
+        modelPrinter().printList(defs);
     }
 }

@@ -1,6 +1,6 @@
 package io.digdag.server;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.io.File;
@@ -31,7 +31,6 @@ import io.digdag.client.api.*;
 public class WorkflowResource
 {
     // [*] GET  /api/workflows                                   # list workflows of the latest revision of all repositories
-    // [*] GET  /api/workflows/<id>                              # show a particular workflow (which belongs to a revision)
 
     private final RepositoryStoreManager rm;
 
@@ -44,26 +43,15 @@ public class WorkflowResource
         this.rm = rm;
     }
 
-    @GET
-    @Path("/api/workflows")
-    public List<RestWorkflow> getWorkflows()
-    {
-        // TODO paging
-        final ImmutableList.Builder<RestWorkflow> builder = ImmutableList.builder();
-        return rm.getRepositoryStore(siteId).getLatestActiveWorkflowSources(100, Optional.absent())
-            .stream()
-            .map(wfDetails -> RestModels.workflow(wfDetails))
-            .collect(Collectors.toList());
-    }
-
-    @GET
-    @Path("/api/workflows/{id}")
-    public RestWorkflow getWorkflow(@PathParam("id") int wfId)
-            throws ResourceNotFoundException
-    {
-        StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(wfId);
-        StoredRevision rev = rm.getRepositoryStore(siteId).getRevisionById(wf.getRevisionId());
-        StoredRepository repo = rm.getRepositoryStore(siteId).getRepositoryById(rev.getRepositoryId());
-        return RestModels.workflow(repo, rev, wf);
-    }
+    //@GET
+    //@Path("/api/workflows")
+    //public List<RestWorkflowDefinition> getWorkflows()
+    //{
+    //    // TODO paging
+    //    final ImmutableList.Builder<RestWorkflowDefinition> builder = ImmutableList.builder();
+    //    return rm.getRepositoryStore(siteId).getLatestWorkflowDefinitions(100, Optional.absent())
+    //        .stream()
+    //        .map(wfDetails -> RestModels.workflowDefinition(wfDetails))
+    //        .collect(Collectors.toList());
+    //}
 }

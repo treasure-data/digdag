@@ -1,9 +1,9 @@
 package io.digdag.core.schedule;
 
-import java.util.Date;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.time.Instant;
+import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
@@ -12,8 +12,11 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
+import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.session.SessionMonitor;
@@ -24,24 +27,29 @@ public class ScheduleExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
 
-    private final ExecutorService executor;
+    private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
-    private final SchedulerManager scheds;
+    private final SchedulerManager srm;
     private final ScheduleHandler handler;
+    private final ExecutorService executor;
 
     @Inject
-    public ScheduleExecutor(ScheduleStoreManager sm, SchedulerManager scheds,
+    public ScheduleExecutor(
+            RepositoryStoreManager rm,
+            ScheduleStoreManager sm,
+            SchedulerManager srm,
             ScheduleHandler handler)
     {
+        this.rm = rm;
+        this.sm = sm;
+        this.srm = srm;
+        this.handler = handler;
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("scheduler-%d")
                 .build()
                 );
-        this.sm = sm;
-        this.scheds = scheds;
-        this.handler = handler;
     }
 
     public void start()
@@ -54,8 +62,8 @@ public class ScheduleExecutor
         try {
             while (true) {
                 Thread.sleep(1000);  // TODO sleep interval
-                sm.lockReadySchedules(new Date(), (storedSchedule) -> {
-                    return schedule(storedSchedule);
+                sm.lockReadySchedules(Instant.now(), (store, storedSchedule) -> {
+                    schedule(new ScheduleControl(store, storedSchedule));
                 });
             }
         }
@@ -64,88 +72,109 @@ public class ScheduleExecutor
         }
     }
 
-    // used by RepositoryControl.syncLatestRevision and startSchedule
-    public static TaskMatchPattern getScheduleWorkflowMatchPattern(Config scheduleConfig)
+    // used by RepositoryControl.updateSchedules and startSchedule
+    public static Optional<Config> getScheduleConfig(WorkflowDefinition def)
     {
-        String pattern = scheduleConfig.get("workflow", String.class);
-        TaskMatchPattern compiled = TaskMatchPattern.compile(pattern);
-        if (compiled.getSubtaskMatchPattern().isPresent()) {
-            throw new ConfigException("workflow: option doesn't accept subtask name");
-        }
-        return compiled;
+        return def.getConfig().getOptional("schedule", Config.class);
     }
 
-    public ScheduleTime schedule(StoredSchedule sched)
+    public static ZoneId getWorkflowTimeZone(Config defaultParams, WorkflowDefinition def)
     {
+        return def.getConfig().get("timezone", ZoneId.class,
+                defaultParams.get("timezone", ZoneId.class,
+                    ZoneId.of("UTC")));
+    }
+
+    public boolean schedule(ScheduleControl lockedSched)
+    {
+        StoredSchedule sched = lockedSched.get();
+
         // TODO If a workflow has wait-until-last-schedule attribute, don't start
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
-        Scheduler sr = scheds.getScheduler(sched.getConfig());
         try {
-            return startSchedule(sched, sr);
+            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+
+            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
+            Config schedConfig = getScheduleConfig(wf).get();
+
+            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
+
+            try {
+                ScheduleTime nextTime = startSchedule(sched, sr, wf);
+                return lockedSched.tryUpdateNextScheduleTimeAndLastSessionInstant(nextTime, sched.getNextScheduleTime());
+            }
+            catch (ResourceConflictException ex) {
+                Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
+                logger.error("Database state error during scheduling. Skipping this schedule", error);
+                ScheduleTime nextTime = sr.nextScheduleTime(sched.getNextScheduleTime());
+                return lockedSched.tryUpdateNextScheduleTime(nextTime);
+            }
+            catch (RuntimeException ex) {
+                logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
+                ScheduleTime nextTime = ScheduleTime.of(
+                        sched.getNextRunTime().plusSeconds(3600),
+                        sched.getNextScheduleTime());
+                return lockedSched.tryUpdateNextScheduleTime(nextTime);
+            }
         }
         catch (ResourceNotFoundException ex) {
-            Exception error = new IllegalStateException("Workflow for a schedule id="+sched.getId()+" is scheduled but does not exist.", ex);
+            Exception error = new IllegalStateException("Workflow for a schedule id=" + sched.getId() + " is scheduled but does not exist.", ex);
             logger.error("Database state error during scheduling. Pending this schedule for 1 hour", error);
-            return ScheduleTime.of(
-                    new Date(sched.getNextRunTime().getTime() + 3600*1000),
+            ScheduleTime nextTime = ScheduleTime.of(
+                    sched.getNextRunTime().plusSeconds(3600),
                     sched.getNextScheduleTime());
-        }
-        catch (ResourceConflictException ex) {
-            Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
-            logger.error("Database state error during scheduling. Skipping this schedule", error);
-            return sr.nextScheduleTime(sched.getNextScheduleTime());
-        }
-        catch (RuntimeException ex) {
-            logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
-            return ScheduleTime.of(
-                    new Date(sched.getNextRunTime().getTime() + 3600*1000),
-                    sched.getNextScheduleTime());
+            return lockedSched.tryUpdateNextScheduleTime(nextTime);
         }
     }
 
-    private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr)
+    private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
+            StoredWorkflowDefinitionWithRepository wf)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        Date scheduleTime = sched.getNextScheduleTime();
-        Date runTime = sched.getNextRunTime();
-        TimeZone timeZone = sr.getTimeZone();
+        Instant scheduleTime = sched.getNextScheduleTime();
+        Instant runTime = sched.getNextRunTime();
+        ZoneId timeZone = sr.getTimeZone();
 
-        Optional<SubtaskMatchPattern> subtaskMatchPattern =
-            getScheduleWorkflowMatchPattern(sched.getConfig()).getSubtaskMatchPattern();
-
+        // TODO move this to WorkflowExecutor?
         ImmutableList.Builder<SessionMonitor> monitors = ImmutableList.builder();
-        if (sched.getConfig().has("sla")) {
-            Config slaConfig = sched.getConfig().getNestedOrGetEmpty("sla");
+        if (wf.getConfig().has("sla")) {
+            Config slaConfig = wf.getConfig().getNestedOrGetEmpty("sla");
             // TODO support multiple SLAs
-            Date triggerTime = SlaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
+            Instant triggerTime = SlaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
             monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));
         }
 
-        handler.start(sched.getWorkflowSourceId(), subtaskMatchPattern, monitors.build(),
+        handler.start(wf, monitors.build(),
                 timeZone, ScheduleTime.of(runTime, scheduleTime));
         return sr.nextScheduleTime(scheduleTime);
     }
 
-    public StoredSchedule skipScheduleToTime(int siteId, long schedId, Date nextTime, Optional<Date> runTime, boolean dryRun)
+    public StoredSchedule skipScheduleToTime(int siteId, long schedId, Instant nextTime, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
 
-        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (ScheduleControl control) -> {
-            StoredSchedule sched = control.getSchedule();
-            Scheduler sr = scheds.getScheduler(sched.getConfig());
+        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (store, sched) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
-            ScheduleTime alignedNextTime = sr.getFirstScheduleTime(new Date(nextTime.getTime() - 1));
-            if (sched.getNextScheduleTime().getTime() < alignedNextTime.getScheduleTime().getTime()) {
+            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+
+            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
+            Config schedConfig = getScheduleConfig(wf).get();
+
+            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
+
+            ScheduleTime alignedNextTime = sr.getFirstScheduleTime(nextTime.minusSeconds(1));
+            if (sched.getNextScheduleTime().isBefore(alignedNextTime.getScheduleTime())) {
                 // OK
                 if (runTime.isPresent()) {
                     alignedNextTime = ScheduleTime.of(runTime.get(), alignedNextTime.getScheduleTime());
                 }
                 if (!dryRun) {
-                    control.updateNextScheduleTime(alignedNextTime); // TODO validate return value is true, otherwise throw ResourceConflictException
+                    sched = lockedSched.updateNextScheduleTime(alignedNextTime); // TODO validate return value is true, otherwise throw ResourceConflictException
                 }
-                return Optional.of(control.getSchedule());
+                return Optional.of(sched);  // return updated StoredSchedule
             }
             else {
                 // NG
@@ -160,28 +189,34 @@ public class ScheduleExecutor
         }
     }
 
-    public StoredSchedule skipScheduleByCount(int siteId, long schedId, Date currentTime, int count, Optional<Date> runTime, boolean dryRun)
+    public StoredSchedule skipScheduleByCount(int siteId, long schedId, Instant currentTime, int count, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
 
-        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (ScheduleControl control) -> {
-            StoredSchedule sched = control.getSchedule();
-            Scheduler sr = scheds.getScheduler(sched.getConfig());
+        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (store, sched) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, sched);
+
+            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+
+            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
+            Config schedConfig = getScheduleConfig(wf).get();
+
+            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
 
             ScheduleTime time = sr.getFirstScheduleTime(currentTime);
             for (int i=0; i < count; i++) {
                 time = sr.nextScheduleTime(time.getScheduleTime());
             }
-            if (sched.getNextScheduleTime().getTime() < time.getScheduleTime().getTime()) {
+            if (sched.getNextScheduleTime().isBefore(time.getScheduleTime())) {
                 // OK
                 if (runTime.isPresent()) {
                     time = ScheduleTime.of(runTime.get(), time.getScheduleTime());
                 }
                 if (!dryRun) {
-                    control.updateNextScheduleTime(time); // TODO validate return value is true, otherwise throw ResourceConflictException
+                    sched = lockedSched.updateNextScheduleTime(time); // TODO validate return value is true, otherwise throw ResourceConflictException
                 }
-                return Optional.of(control.getSchedule());
+                return Optional.of(sched);
             }
             else {
                 // NG

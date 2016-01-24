@@ -1,6 +1,6 @@
 package io.digdag.core.session;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.immutables.value.Value;
@@ -15,14 +15,14 @@ public abstract class SessionMonitor
 
     public abstract Config getConfig();
 
-    public abstract Date getNextRunTime();
+    public abstract Instant getNextRunTime();
 
     public static ImmutableSessionMonitor.Builder sessionMonitorBuilder()
     {
         return ImmutableSessionMonitor.builder();
     }
 
-    public static SessionMonitor of(String type, Config config, Date nextRunTime)
+    public static SessionMonitor of(String type, Config config, Instant nextRunTime)
     {
         return sessionMonitorBuilder()
             .type(type)

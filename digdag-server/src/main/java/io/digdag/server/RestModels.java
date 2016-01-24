@@ -1,21 +1,26 @@
 package io.digdag.server;
 
+import java.time.Instant;
+import com.google.common.base.Optional;
 import io.digdag.client.api.RestRepository;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSession;
-import io.digdag.client.api.RestWorkflow;
+import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.IdName;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.StoredRepository;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.session.StoredSession;
-import io.digdag.core.repository.StoredWorkflowSource;
-import io.digdag.core.repository.StoredWorkflowSourceWithRepository;
-import io.digdag.core.schedule.StoredSchedule;
+import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.schedule.StoredSchedule;
+import io.digdag.core.workflow.AttemptRequest;
 
 public final class RestModels
 {
@@ -35,37 +40,39 @@ public final class RestModels
             .build();
     }
 
-    public static RestWorkflow workflow(StoredRepository repo, StoredRevision rev, StoredWorkflowSource workflow)
+    public static RestWorkflowDefinition workflowDefinition(StoredRepository repo, Revision rev,
+            WorkflowDefinition def, Optional<ScheduleTime> nextTime)
     {
-        return workflow(repo, rev.getName(), workflow);
+        return workflowDefinition(repo, rev.getName(), def, nextTime);
     }
 
-    public static RestWorkflow workflow(StoredWorkflowSourceWithRepository wfDetails)
+    public static RestWorkflowDefinition workflowDefinition(StoredWorkflowDefinitionWithRepository wfDetails,
+            Optional<ScheduleTime> nextTime)
     {
-        return workflow(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails);
+        return workflowDefinition(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails, nextTime);
     }
 
-    private static RestWorkflow workflow(StoredRepository repo, String revName, StoredWorkflowSource workflow)
+    private static RestWorkflowDefinition workflowDefinition(StoredRepository repo, String revName,
+            WorkflowDefinition def, Optional<ScheduleTime> nextTime)
     {
-        return RestWorkflow.builder()
-            .id(workflow.getId())
-            .name(workflow.getName())
-            .config(workflow.getConfig())
+        return RestWorkflowDefinition.builder()
+            .name(def.getName())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)
+            .config(def.getConfig())
+            .nextScheduleTime(nextTime.transform(t -> t.getScheduleTime().getEpochSecond()))
+            .nextRunTime(nextTime.transform(t -> t.getRunTime().getEpochSecond()))
             .build();
     }
 
-    public static RestSchedule schedule(StoredSchedule sched, StoredWorkflowSource wf)
+    public static RestSchedule schedule(StoredSchedule sched, StoredRepository repo)
     {
         return RestSchedule.builder()
             .id(sched.getId())
-            .config(sched.getConfig())
-            .nextRunTime(sched.getNextRunTime().getTime() / 1000)
-            .nextScheduleTime(sched.getNextScheduleTime().getTime() / 1000)
-            .createdAt(sched.getCreatedAt())
-            .updatedAt(sched.getCreatedAt())
-            .workflow(IdName.of(wf.getId(), wf.getName()))
+            .repository(IdName.of(repo.getId(), repo.getName()))
+            .workflowName(sched.getWorkflowName())
+            .nextRunTime(sched.getNextRunTime().getEpochSecond())
+            .nextScheduleTime(sched.getNextScheduleTime().getEpochSecond())
             .build();
     }
 
@@ -73,20 +80,42 @@ public final class RestModels
     {
         return RestScheduleSummary.builder()
             .id(sched.getId())
-            .nextRunTime(sched.getNextRunTime().getTime() / 1000)
-            .nextScheduleTime(sched.getNextScheduleTime().getTime() / 1000)
+            .workflowName(sched.getWorkflowName())
+            .nextRunTime(sched.getNextRunTime().getEpochSecond())
+            .nextScheduleTime(sched.getNextScheduleTime().getEpochSecond())
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
             .build();
     }
 
-    public static RestSession session(StoredSession session)
+    public static RestSession session(StoredSessionAttemptWithSession attempt)
+    {
+        return session(attempt, attempt.getSession(), attempt.getRepositoryName());
+    }
+
+    public static RestSession session(StoredSessionAttempt attempt, Session session, String repositoryName)
+    {
+        return session(attempt, session.getRepositoryId(), repositoryName, session.getWorkflowName(), session.getInstant());
+    }
+
+    public static RestSession session(StoredSessionAttempt attempt, AttemptRequest ar, String repositoryName)
+    {
+        return session(attempt, ar.getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getInstant());
+    }
+
+    private static RestSession session(StoredSessionAttempt attempt,
+            int repositoryId, String repositoryName, String workflowName, Instant sessionTime)
     {
         return RestSession.builder()
-            .id(session.getId())
-            .name(session.getName())
-            .params(session.getParams())
-            .createdAt(session.getCreatedAt())
+            .id(attempt.getId())
+            .repository(IdName.of(repositoryId, repositoryName))
+            .workflowName(workflowName)
+            .sessionTime(sessionTime.getEpochSecond())
+            .attemptName(attempt.getAttemptName())
+            .success(attempt.getStatusFlags().isSuccess())
+            .cancelRequested(attempt.getStatusFlags().isCancelRequested())
+            .params(attempt.getParams())
+            .createdAt(attempt.getCreatedAt())
             .build();
     }
 

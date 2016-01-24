@@ -37,8 +37,8 @@ public class YamlTagResolver
         }
         else if (tag.equals(Tag.TIMESTAMP)) {
             // This solves some unexpected behavior that snakeyaml
-            // deserializes "2015-01-01 00:00:00" to java.util.Date
-            // but jackson serializes java.util.Date to an integer.
+            // deserializes "2015-01-01 00:00:00" to java.time.Instant
+            // but jackson serializes java.util.Instant to an integer.
             return;
         }
         else {

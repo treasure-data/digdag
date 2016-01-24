@@ -1,9 +1,8 @@
 package io.digdag.core.session;
 
 import java.util.List;
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
-import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.RevisionInfo;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
@@ -13,36 +12,36 @@ public interface SessionStoreManager
 {
     SessionStore getSessionStore(int siteId);
 
-    Date getStoreTime();
+    Instant getStoreTime();
 
-    // for WorkflowExecutorManager.runUntilAny
-    boolean isAnyNotDoneWorkflows();
-
-    // for WorkflowExecutorManager.enqueueReadyTasks
-    List<Long> findAllReadyTaskIds(int maxEntries);
-
-    // for WorkflowExecutorManager.enqueueTask
-    StoredSession getSessionById(long sesId)
+    // for WorkflowExecutor.enqueueTask
+    StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
         throws ResourceNotFoundException;
 
+    // for WorkflowExecutor.runUntilAny
+    boolean isAnyNotDoneSessions();
+
+    // for WorkflowExecutor.enqueueReadyTasks
+    List<Long> findAllReadyTaskIds(int maxEntries);
+
     // for WorkflowExecutorManager.IncrementalStatusPropagator.propagateStatus
-    List<TaskStateSummary> findRecentlyChangedTasks(Date updatedSince, long lastId);
+    List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId);
 
     // for WorkflowExecutorManager.propagateAllBlockedToReady
     List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
 
-    boolean requestCancelSession(long sesId);
+    boolean requestCancelAttempt(long attemptId);
 
     int trySetRetryWaitingToReady();
 
     interface TaskLockAction <T>
     {
-        T call(TaskControl lockedTask);
+        T call(TaskControlStore lockedTask);
     }
 
     interface TaskLockActionWithDetails <T>
     {
-        T call(TaskControl lockedTask, StoredTask task);
+        T call(TaskControlStore lockedTask, StoredTask storedTask);
     }
 
     // overload for polling
@@ -52,33 +51,16 @@ public interface SessionStoreManager
     <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func);
 
     // overload for SessionMonitorExecutor
-    <T> Optional<T> lockRootTaskIfExists(long sessionId, TaskLockActionWithDetails<T> func);
-
-    interface SessionBuilderStore
-    {
-        <T> T addRootTask(Task task, TaskLockActionWithDetails<T> func);
-
-        void addMonitors(long sessionId, List<SessionMonitor> monitors);
-    }
-
-    interface SessionBuilderAction
-    {
-        void call(StoredSession session, SessionBuilderStore store);
-    }
-
-    StoredSession newSession(int siteId, Session newSession, Optional<SessionRelation> relation, SessionBuilderAction func)
-        throws ResourceConflictException;
-
-    Optional<RevisionInfo> getAssociatedRevisionInfo(long sesId);
+    <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func);
 
     interface SessionMonitorAction
     {
-        Optional<Date> schedule(StoredSessionMonitor monitor);
+        Optional<Instant> schedule(StoredSessionMonitor monitor);
     }
 
-    void lockReadySessionMonitors(Date currentTime, SessionMonitorAction func);
+    void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func);
 
-    List<TaskRelation> getTaskRelations(long sesId);
+    List<TaskRelation> getTaskRelations(long attemptId);
 
     List<Config> getExportParams(List<Long> idList);
 

@@ -1,7 +1,7 @@
 package io.digdag.core.database;
 
 import java.util.List;
-import java.util.Date;
+import java.time.Instant;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -64,19 +64,16 @@ public class DatabaseScheduleStoreManager
     }
 
     @Override
-    public void lockReadySchedules(Date currentTime, ScheduleAction func)
+    public void lockReadySchedules(Instant currentTime, ScheduleAction func)
     {
         List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
-            return dao.lockReadySchedules(currentTime.getTime() / 1000, 10)  // TODO 10 should be configurable?
+            return dao.lockReadySchedules(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(schedId -> {
                     // TODO JOIN + FOR UPDATE doesn't work with H2 database
                     StoredSchedule sched = dao.getScheduleByIdInternal(schedId);
                     try {
-                        ScheduleTime nextTime = func.schedule(sched);
-                        dao.updateNextScheduleTime(sched.getId(),
-                                nextTime.getRunTime().getTime() / 1000,
-                                nextTime.getScheduleTime().getTime() / 1000);
+                        func.schedule(this, sched);
                         return null;
                     }
                     catch (RuntimeException ex) {
@@ -96,12 +93,22 @@ public class DatabaseScheduleStoreManager
     }
 
     @Override
-    public boolean updateNextScheduleTime(long schedId,
-            ScheduleTime nextTime)
+    public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime)
     {
         int n = dao.updateNextScheduleTime(schedId,
-                nextTime.getRunTime().getTime() / 1000,
-                nextTime.getScheduleTime().getTime() / 1000);
+                nextTime.getRunTime().getEpochSecond(),
+                nextTime.getScheduleTime().getEpochSecond());
+        return n > 0;
+    }
+
+    @Override
+    public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime,
+            Instant lastSessionInstant)
+    {
+        int n = dao.updateNextScheduleTime(schedId,
+                nextTime.getRunTime().getEpochSecond(),
+                nextTime.getScheduleTime().getEpochSecond(),
+                lastSessionInstant.getEpochSecond());
         return n > 0;
     }
 
@@ -115,8 +122,7 @@ public class DatabaseScheduleStoreManager
             if (schedule == null) {
                 return Optional.<T>absent();
             }
-            ScheduleControl control = new ScheduleControl(this, schedule);
-            T result = func.call(control);
+            T result = func.call(this, schedule);
             return Optional.of(result);
         });
         return requiredResource(
@@ -158,34 +164,31 @@ public class DatabaseScheduleStoreManager
 
     public interface Dao
     {
-        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
-                " join schedule_sources ss on s.source_id = ss.id" +
-                " join revisions rev on ss.revision_id = rev.id" +
-                " join repositories repo on rev.repository_id = repo.id" +
-                " where repo.site_id = :siteId" +
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " where s.id = :schedId")
+        StoredSchedule getScheduleByIdInternal(@Bind("schedId") long schedId);
+
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " where s.repository_id in (" +
+                    "select id from repositories repo" +
+                    " where repo.site_id = :siteId" +
+                ")" +
                 " and s.id > :lastId" +
                 " order by s.id asc" +
                 " limit :limit")
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
-                " join schedule_sources ss on s.source_id = ss.id" +
-                " where s.id = :schedId")
-        StoredSchedule getScheduleByIdInternal(@Bind("schedId") long schedId);
-
-        @SqlQuery("select s.*, ss.name as name, ss.config as config from schedules s" +
-                " join schedule_sources ss on s.source_id = ss.id" +
-                " join revisions rev on ss.revision_id = rev.id" +
-                " join repositories repo on rev.repository_id = repo.id" +
-                " where repo.site_id = :siteId" +
-                " and s.id = :schedId")
+        @SqlQuery("select s.*, wd.name as name, from schedules s" +
+                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " where s.id = :schedId" +
+                " and exists (" +
+                    "select * from repositories repo" +
+                    " where repo.id = s.repository_id" +
+                    " and repo.site_id = :siteId" +
+                ")")
         StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
-
-        @SqlUpdate("insert into schedules" +
-                " (source_id, workflow_id, next_run_time, next_schedule_time, created_at, updated_at)" +
-                " values (:sourceId, :workflowId, :nextRunTime, :nextScheduleTime, now(), now())")
-        @GetGeneratedKeys
-        long insertRepositorySchedule(@Bind("sourceId") int sourceId, @Bind("workflowId") int workflowId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlQuery("select id from schedules" +
                 " where next_run_time <= :currentTime" +
@@ -202,6 +205,11 @@ public class DatabaseScheduleStoreManager
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
                 " where id = :id")
         int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+
+        @SqlUpdate("update schedules" +
+                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, :last_session_instant = :lastSessionInstant, updated_at = now()" +
+                " where id = :id")
+        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionInstant") long lastSessionInstant);
     }
 
     private static class StoredScheduleMapper
@@ -219,15 +227,14 @@ public class DatabaseScheduleStoreManager
                 throws SQLException
         {
             return ImmutableStoredSchedule.builder()
-                .id(r.getLong("id"))
-                .scheduleSourceId(r.getInt("source_id"))
-                .workflowSourceId(r.getInt("workflow_id"))
-                .name(r.getString("name"))
-                .config(cfm.fromResultSetOrEmpty(r, "config"))
-                .nextRunTime(new Date(r.getLong("next_run_time") * 1000))
-                .nextScheduleTime(new Date(r.getLong("next_schedule_time") * 1000))
-                .createdAt(r.getTimestamp("created_at"))
-                .updatedAt(r.getTimestamp("updated_at"))
+                .id(r.getInt("id"))
+                .repositoryId(r.getInt("repository_id"))
+                .workflowDefinitionId(r.getLong("workflow_definition_id"))
+                .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
+                .nextScheduleTime(Instant.ofEpochSecond(r.getLong("next_schedule_time")))
+                .workflowName(r.getString("name"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();
         }
     }

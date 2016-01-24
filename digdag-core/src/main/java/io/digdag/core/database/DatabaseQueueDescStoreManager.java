@@ -173,8 +173,8 @@ public class DatabaseQueueDescStoreManager
             return ImmutableStoredQueueDesc.builder()
                 .id(r.getInt("id"))
                 .siteId(r.getInt("site_id"))
-                .createdAt(r.getTimestamp("created_at"))
-                .updatedAt(r.getTimestamp("updated_at"))
+                .createdAt(getTimestampInstant(r, "created_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();

@@ -1,6 +1,6 @@
 package io.digdag.client.api;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,13 +13,17 @@ public abstract class RestScheduleSummary
 {
     public abstract long getId();
 
+    public abstract String getWorkflowName();
+
+    // unix timestamp in seconds
     public abstract long getNextRunTime();
 
+    // unix timestamp in seconds
     public abstract long getNextScheduleTime();
 
-    public abstract Date getCreatedAt();
+    public abstract Instant getCreatedAt();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 
     public static ImmutableRestScheduleSummary.Builder builder()
     {

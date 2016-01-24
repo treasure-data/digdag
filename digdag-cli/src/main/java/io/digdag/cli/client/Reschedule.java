@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import java.util.Date;
 import java.util.List;
+import java.time.Instant;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -72,7 +73,7 @@ public class Reschedule
         }
         else {
             updated = client.skipSchedulesByCount(schedId,
-                    new Date(System.currentTimeMillis()), skipCount,
+                    Date.from(Instant.now()), skipCount,
                     Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
                     dryRun);
         }
@@ -82,7 +83,7 @@ public class Reschedule
     private Date parseDate(String s)
     {
         try {
-            return new Date(Long.parseLong(s) * 1000);
+            return Date.from(Instant.ofEpochSecond(Long.parseLong(s)));
         }
         catch (NumberFormatException ex) {
             throw new UnsupportedOperationException("Setting time in YYYY-MM-dd hh:mm:SS format is not implemented yet. Please set it using UNIX timestamp (seconds)");  // TODO implement this

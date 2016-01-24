@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Value.Immutable
 @ImmutableImplStyle
-@JsonSerialize(as = ImmutableStoredWorkflowSource.class)
-public abstract class StoredWorkflowSourceImpl
-        extends StoredWorkflowSource
+@JsonSerialize(as = ImmutableWorkflowDefinition.class)
+public abstract class WorkflowDefinitionImpl
+        extends WorkflowDefinition
 { }

@@ -1,6 +1,6 @@
 package io.digdag.core.session;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -15,7 +15,5 @@ public abstract class StoredSession
 {
     public abstract long getId();
 
-    public abstract int getSiteId();
-
-    public abstract Date getCreatedAt();
+    public abstract long getLastAttemptId();
 }

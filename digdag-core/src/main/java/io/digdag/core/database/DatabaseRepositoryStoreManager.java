@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
+import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import com.google.common.base.*;
@@ -32,16 +33,17 @@ public class DatabaseRepositoryStoreManager
 {
     private final Handle handle;
     private final Dao dao;
+    private final ConfigMapper cfm;
 
     @Inject
     public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm)
     {
         this.handle = dbi.open();
+        this.cfm = cfm;
         handle.registerMapper(new StoredRepositoryMapper(cfm));
         handle.registerMapper(new StoredRevisionMapper(cfm));
-        handle.registerMapper(new StoredWorkflowSourceMapper(cfm));
-        handle.registerMapper(new StoredScheduleSourceMapper(cfm));
-        handle.registerMapper(new StoredWorkflowSourceWithRepositoryMapper(cfm));
+        handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
+        handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
         handle.registerMapper(new IdNameMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
@@ -54,12 +56,21 @@ public class DatabaseRepositoryStoreManager
     }
 
     @Override
-    public StoredWorkflowSourceWithRepository getWorkflowDetailsById(int wfId)
+    public StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(long wfId)
             throws ResourceNotFoundException
     {
         return requiredResource(
                 dao.getWorkflowDetailsById(wfId),
                 "workflow id=%s", wfId);
+    }
+
+    @Override
+    public StoredRepository getRepositoryByIdInternal(int repoId)
+        throws ResourceNotFoundException
+    {
+        return requiredResource(
+                dao.getRepositoryByIdInternal(repoId),
+                "repository id=%s", repoId);
     }
 
     private class DatabaseRepositoryStore
@@ -103,27 +114,30 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public <T> T putRepository(Repository repository, RepositoryLockAction<T> func)
+        public <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
         {
+            // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
             return handle.inTransaction((handle, session) -> {
-                StoredRepository repo;
+                int repoId;
                 try {
-                    int repoId = catchConflict(() ->
+                    repoId = catchConflict(() ->
                             dao.insertRepository(siteId, repository.getName()),
                             "repository name=%s", repository.getName());
-                    repo = getRepositoryById(repoId);
-                    if (repo == null) {
-                        throw new IllegalStateException("Database state error");
-                    }
                 }
                 catch (ResourceConflictException ex) {
-                    repo = dao.getRepositoryByName(siteId, repository.getName());
+                    StoredRepository repo = dao.getRepositoryByName(siteId, repository.getName());
                     if (repo == null) {
                         throw new IllegalStateException("Database state error", ex);
                     }
+                    repoId = repo.getId();
                 }
-                RepositoryControl control = new RepositoryControl(this, repo);
-                return func.call(control);
+
+                StoredRepository repo = dao.lockRepository(repoId);
+                if (repo == null) {
+                    throw new IllegalStateException("Database state error");
+                }
+
+                return func.call(this, repo);
             });
         }
 
@@ -165,6 +179,15 @@ public class DatabaseRepositoryStoreManager
                     "repository id=%d", repoId);
         }
 
+        @Override
+        public byte[] getRevisionArchiveData(int revId)
+                throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    dao.selectRevisionArchiveData(revId),
+                    "revisin id=%d", revId);
+        }
+
         /**
          * Create or overwrite a revision.
          *
@@ -177,11 +200,12 @@ public class DatabaseRepositoryStoreManager
             try {
                 try {
                     int revId = catchConflict(() ->
-                        dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getArchiveData().orNull()),
+                        dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
                         "revision=%s in repository id=%d", revision.getName(), repoId);
                     return getRevisionById(revId);
                 }
                 catch (ResourceConflictException ex) {
+                    // TODO delete archive data first?
                     StoredRevision rev = getRevisionByName(repoId, revision.getName());
                     if (revision.equals(Revision.revisionBuilder().from(rev).build())) {
                         return rev;
@@ -195,65 +219,53 @@ public class DatabaseRepositoryStoreManager
             }
         }
 
-
-        //public List<StoredWorkflowSource> getAllWorkflowSources(int revId)
-        //{
-        //    return dao.getWorkflowSources(siteId, revId, Integer.MAX_VALUE, 0);
-        //}
-
         @Override
-        public List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId)
+        public void insertRevisionArchiveData(int revId, byte[] data)
+            throws ResourceConflictException
         {
-            return dao.getWorkflowSources(siteId, revId, pageSize, lastId.or(0));
+            // TODO catch conflict and overwrite it
+            catchConflict(() -> {
+                    dao.insertRevisionArchiveData(revId, data);
+                    return true;
+                },
+                "revision archive=%d", revId);
         }
 
         @Override
-        public StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(int repoId, String name)
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
+        {
+            return dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0));
+        }
+
+        @Override
+        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
             throws ResourceNotFoundException
         {
-            return dao.getLatestActiveWorkflowSourceByName(siteId, repoId, name);
+            return dao.getLatestWorkflowDefinitionByName(siteId, repoId, name);
         }
 
         @Override
-        public List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(int pageSize, Optional<Integer> lastId)
+        public List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId)
         {
-            return dao.getLatestActiveWorkflowSources(siteId, pageSize, lastId.or(0));
+            return dao.getLatestWorkflowDefinitions(siteId, pageSize, lastId.or(0));
         }
 
         @Override
-        public StoredWorkflowSource getWorkflowSourceById(int wfId)
+        public StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getWorkflowSourceByid(siteId, wfId),
+                    dao.getWorkflowDefinitionById(siteId, wfId),
                     "workflow id=%d", wfId);
         }
 
         @Override
-        public StoredWorkflowSource getWorkflowSourceByName(int revId, String name)
+        public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getWorkflowSourceByName(siteId, revId, name),
+                    dao.getWorkflowDefinitionByName(siteId, revId, name),
                     "workflow name=%s in revision id=%d", name, revId);
-        }
-
-        //@Override
-        public StoredScheduleSource getScheduleSourceById(int wfId)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getScheduleSourceByid(siteId, wfId),
-                    "schedule id=%d", wfId);
-        }
-
-        //@Override
-        public StoredScheduleSource getScheduleSourceByName(int revId, String name)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getScheduleSourceByName(siteId, revId, name),
-                    "schedule name=%s in revision id=%d", name, revId);
         }
 
         /**
@@ -263,14 +275,18 @@ public class DatabaseRepositoryStoreManager
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredWorkflowSource insertWorkflowSource(int revId, WorkflowSource source)
+        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition source)
             throws ResourceConflictException
         {
             try {
-                int wfId = catchConflict(() ->
-                    dao.insertWorkflowSource(revId, source.getName(), source.getConfig()),
+                String text = cfm.toText(source.getConfig());
+                long configDigest = cfm.toConfigDigest(text);
+                // TODO get or insert
+                int configId = dao.insertWorkflowConfig(repoId, text, configDigest);
+                long wfId = catchConflict(() ->
+                    dao.insertWorkflowDefinition(revId, source.getName(), configId),
                     "workflow=%s in revision id=%d", source.getName(), revId);
-                return getWorkflowSourceById(wfId);
+                return getWorkflowDefinitionById(wfId);
             }
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
@@ -278,126 +294,50 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredScheduleSource insertScheduleSource(int revId, ScheduleSource source)
-            throws ResourceConflictException
-        {
-            try {
-                int wfId = catchConflict(() ->
-                    dao.insertScheduleSource(revId, source.getName(), source.getConfig()),
-                    "schedule=%s in revision id=%d", source.getName(), revId);
-                return getScheduleSourceById(wfId);
-            }
-            catch (ResourceNotFoundException ex) {
-                throw new IllegalStateException("Database state error", ex);
-            }
-        }
-
-        @Override
-        public void syncWorkflowsToRevision(int repoId, List<StoredWorkflowSource> sources)
-            throws ResourceConflictException
-        {
-            if (sources.isEmpty()) {
-                return;
-            }
-            int revId = sources.get(0).getRevisionId();
-
-            Map<String, Long> oldNames = idNameListToHashMap(dao.getLatestWorkflowNamesOfRepository(repoId));
-            if (oldNames == null) {
-                oldNames = ImmutableMap.of();
-            }
-
-            for (StoredWorkflowSource source : sources) {
-                // validate workflows
-                checkArgument(source.getRevisionId() == revId);
-
-                if (oldNames.containsKey(source.getName())) {
-                    // found the same name. overwriting source_id.
-                    int n = handle.createStatement(
-                            "update workflows" +
-                            " set source_id = :sourceId" +
-                            " where id = :id"
-                        )
-                        .bind("sourceId", source.getId())
-                        .bind("id", oldNames.get(source.getName()))
-                        .execute();
-                    if (n <= 0) {
-                        // TODO exception?
-                    }
-                    oldNames.remove(source.getName());
-                }
-                else {
-                    // not found this name. inserting new entry.
-                    // TODO this INSERT can be optimized by using lazy multiple-value insert
-                    catchConflict(() ->
-                            handle.createStatement(
-                                "insert into workflows" +
-                                " (source_id, repository_id, name)" +
-                                " values (:sourceId, :repoId, :name)"
-                            )
-                            .bind("sourceId", source.getId())
-                            .bind("repoId", repoId)
-                            .bind("name", source.getName())
-                            .execute(),
-                            "workflow name=%s", source.getName());
-                }
-            }
-            if (!oldNames.isEmpty()) {
-                // those names don exist any more.
-                handle.createStatement(
-                        "delete from workflows" +
-                        " where id in (" +
-                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")");
-            }
-        }
-
-        @Override
-        public void syncSchedulesToRevision(int repoId, List<Schedule> schedules)
+        public void updateSchedules(int repoId, List<Schedule> schedules)
             throws ResourceConflictException
         {
             if (schedules.isEmpty()) {
                 return;
             }
 
-            Map<String, Long> oldNames = idNameListToHashMap(dao.getLatestScheduleNamesOfRepository(repoId));
+            Map<String, Long> oldNames = idNameListToHashMap(dao.getScheduleNames(repoId));
             if (oldNames == null) {
                 oldNames = ImmutableMap.of();
             }
 
             for (Schedule schedule : schedules) {
-                if (oldNames.containsKey(schedule.getName())) {
-                    // found the same name. overwriting source_id.
+                if (oldNames.containsKey(schedule.getWorkflowName())) {
+                    // found the same name. overwriting workflow_definition_id
                     int n = handle.createStatement(
                             "update schedules" +
-                            " set source_id = :sourceId, workflow_source_id = :workflowSourceId" +
+                            " set workflow_definition_id = :workflowDefinitionId, updated_at = now()" +
                             // TODO should here update next_run_time nad next_schedule_time?
                             " where id = :id"
                         )
-                        .bind("sourceId", schedule.getScheduleSourceId())
-                        .bind("workflowSourceId", schedule.getWorkflowSourceId())
-                        .bind("id", oldNames.get(schedule.getName()))
+                        .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
+                        .bind("id", oldNames.get(schedule.getWorkflowName()))
                         .execute();
                     if (n <= 0) {
                         // TODO exception?
                     }
-                    oldNames.remove(schedule.getName());
+                    oldNames.remove(schedule.getWorkflowName());
                 }
                 else {
-                    // not found this name. inserting new entry.
+                    // not found this name. inserting a new entry.
                     // TODO this INSERT can be optimized by using lazy multiple-value insert
                     catchConflict(() ->
                             handle.createStatement(
                                 "insert into schedules" +
-                                " (source_id, repository_id, name, workflow_source_id, next_run_time, next_schedule_time)" +
-                                " values (:sourceId, :repoId, :name, :workflowSourceId, :nextRunTime, :nextScheduleTime)"
+                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, created_at, last_session_instant, updated_at)" +
+                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
                             )
-                            .bind("sourceId", schedule.getScheduleSourceId())
                             .bind("repoId", repoId)
-                            .bind("name", schedule.getName())
-                            .bind("workflowSourceId", schedule.getWorkflowSourceId())
-                            .bind("nextRunTime", schedule.getNextRunTime().getTime() / 1000)
-                            .bind("nextScheduleTime", schedule.getNextScheduleTime().getTime() / 1000)
+                            .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
+                            .bind("nextRunTime", schedule.getNextRunTime().getEpochSecond())
+                            .bind("nextScheduleTime", schedule.getNextScheduleTime().getEpochSecond())
                             .execute(),
-                            "schedule name=%s", schedule.getName());
+                            "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
                 }
             }
             if (!oldNames.isEmpty()) {
@@ -421,9 +361,12 @@ public class DatabaseRepositoryStoreManager
 
         @SqlQuery("select * from repositories" +
                 " where site_id = :siteId" +
-                " and id = :id" +
-                " limit 1")
+                " and id = :id")
         StoredRepository getRepositoryById(@Bind("siteId") int siteId, @Bind("id") int id);
+
+        @SqlQuery("select * from repositories" +
+                " where id = :id")
+        StoredRepository getRepositoryByIdInternal(@Bind("id") int id);
 
         @SqlQuery("select * from repositories" +
                 " where site_id = :siteId" +
@@ -431,9 +374,13 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredRepository getRepositoryByName(@Bind("siteId") int siteId, @Bind("name") String name);
 
+        @SqlQuery("select * from repositories where id = :id" +
+                " for update")
+        StoredRepository lockRepository(@Bind("id") int id);
+
         @SqlUpdate("insert into repositories" +
-                " (site_id, name, created_at, updated_at)" +
-                " values (:siteId, :name, now(), now())")
+                " (site_id, name, created_at)" +
+                " values (:siteId, :name, now())")
         @GetGeneratedKeys
         int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name);
 
@@ -450,8 +397,7 @@ public class DatabaseRepositoryStoreManager
         @SqlQuery("select t.* from revisions t" +
                 " join repositories on repositories.id = t.repository_id" +
                 " where site_id = :siteId" +
-                " and t.id = :id" +
-                " limit 1")
+                " and t.id = :id")
         StoredRevision getRevisionById(@Bind("siteId") int siteId, @Bind("id") int id);
 
         @SqlQuery("select t.* from revisions t" +
@@ -471,107 +417,100 @@ public class DatabaseRepositoryStoreManager
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
         @SqlUpdate("insert into revisions" +
-                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, archive_data, created_at)" +
-                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, :archiveData, now())")
+                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
+                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("archiveData") byte[] archiveData);
+        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
 
+        @SqlUpdate("insert into revision_archives" +
+                " (id, data)" +
+                " values (:revId, :data)")
+        void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
 
-        @SqlQuery("select ws.* from workflow_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
+        @SqlQuery("select data from revision_archives" +
+                " where id = :revId")
+        byte[] selectRevisionArchiveData(@Bind("revId") int revId);
+
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " where ws.revision_id = :revId" +
-                " and ws.id > :lastId" +
-                " order by ws.id asc" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.revision_id = :revId" +
+                " and wd.id > :lastId" +
+                " and repo.site_id = :siteId" +
+                " order by wd.id asc" +
                 " limit :limit")
-        List<StoredWorkflowSource> getWorkflowSources(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select w.source_id as id, ws.revision_id, ws.name, ws.config," +
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.revision_id = (" +
+                    "select max(id) from revisions" +
+                    " where repository_id = :repoId" +
+                ")" +
+                " and wd.name = :name" +
+                " and repo.site_id = :siteId" +
+                " limit 1")
+        StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
+
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.revision_id = (" +
+                    "select max(id) from revisions" +
+                    " where repository_id = :repoId" +
+                ")" +
+                " and repo.site_id = :siteId" +
+                " order by wd.id desc")
+        List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+
+        @SqlQuery("select wd.id, wd.revision_id, wd.name, wc.config,"+
                 " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflows w" +
-                " join repositories repo on w.repository_id = repo.id" +
-                " join workflow_sources ws on w.source_id = ws.id" +
-                " join revisions rev on ws.revision_id = rev.id" +
-                " where repo.site_id = :siteId" +
-                " and w.repository_id = :repoId" +
-                " and w.name = :name")
-        StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
-
-        @SqlQuery("select w.source_id as id, ws.revision_id, ws.name, ws.config," +
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
-                " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflows w" +
-                " join repositories repo on w.repository_id = repo.id" +
-                " join workflow_sources ws on w.source_id = ws.id" +
-                " join revisions rev on ws.revision_id = rev.id" +
-                " where repo.site_id = :siteId" +
-                " and ws.id > :lastId" +
-                " order by w.source_id")
-        List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
-
-        @SqlQuery("select ws.id, ws.revision_id, ws.name, ws.config,"+
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
-                " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflow_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
+                " from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " where ws.id = :wfId")
-        StoredWorkflowSourceWithRepository getWorkflowDetailsById(@Bind("wfId") int wfId);
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.id = :wfId")
+        StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(@Bind("wfId") long wfId);
 
-        @SqlQuery("select ws.* from workflow_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and ws.id = :id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.id = :id" +
+                " and site_id = :siteId")
+        StoredWorkflowDefinition getWorkflowDefinitionById(@Bind("siteId") int siteId, @Bind("id") long id);
+
+        @SqlQuery("select wd.* from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where revision_id = :revId" +
+                " and wd.name = :name" +
+                " and site_id = :siteId" +
                 " limit 1")
-        StoredWorkflowSource getWorkflowSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
+        StoredWorkflowDefinition getWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
-        @SqlQuery("select ws.* from workflow_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and revision_id = :revId" +
-                " and ws.name = :name" +
-                " limit 1")
-        StoredWorkflowSource getWorkflowSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
-
-        @SqlQuery("select ws.* from schedule_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and ws.id = :id" +
-                " limit 1")
-        StoredScheduleSource getScheduleSourceByid(@Bind("siteId") int siteId, @Bind("id") int id);
-
-        @SqlQuery("select ws.* from schedule_sources ws" +
-                " join revisions rev on rev.id = ws.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and revision_id = :revId" +
-                " and ws.name = :name" +
-                " limit 1")
-        StoredScheduleSource getScheduleSourceByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
-
-        @SqlUpdate("insert into workflow_sources" +
-                " (revision_id, name, config)" +
-                " values (:revId, :name, :config)")
+        @SqlUpdate("insert into workflow_configs" +
+                " (repository_id, config, config_digest)" +
+                " values (:repoId, :config, :configDigest)")
         @GetGeneratedKeys
-        int insertWorkflowSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
+        int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("configDigest") long configDigest);
 
-        @SqlUpdate("insert into schedule_sources" +
-                " (revision_id, name, config)" +
-                " values (:revId, :name, :config)")
+        @SqlUpdate("insert into workflow_definitions" +
+                " (revision_id, name, config_id)" +
+                " values (:revId, :name, :configId)")
         @GetGeneratedKeys
-        int insertScheduleSource(@Bind("revId") int revId, @Bind("name") String name, @Bind("config") Config config);
+        int insertWorkflowDefinition(@Bind("revId") int revId, @Bind("name") String name, @Bind("configId") int configId);
 
-        @SqlQuery("select name, id from workflows" +
-                " where repository_id = :repoId")
-        List<IdName> getLatestWorkflowNamesOfRepository(@Bind("repoId") int repoId);
-
-        @SqlQuery("select name, id from schedules" +
-                " where repository_id = :repoId")
-        List<IdName> getLatestScheduleNamesOfRepository(@Bind("repoId") int repoId);
+        @SqlQuery("select wd.name, schedules.id from schedules" +
+                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " where schedules.repository_id = :repoId")
+        List<IdName> getScheduleNames(@Bind("repoId") int repoId);
     }
 
     private static class StoredRepositoryMapper
@@ -590,10 +529,9 @@ public class DatabaseRepositoryStoreManager
         {
             return ImmutableStoredRepository.builder()
                 .id(r.getInt("id"))
-                .siteId(r.getInt("site_id"))
-                .createdAt(r.getTimestamp("created_at"))
-                .updatedAt(r.getTimestamp("updated_at"))
                 .name(r.getString("name"))
+                .siteId(r.getInt("site_id"))
+                .createdAt(getTimestampInstant(r, "created_at"))
                 .build();
         }
     }
@@ -615,33 +553,32 @@ public class DatabaseRepositoryStoreManager
             return ImmutableStoredRevision.builder()
                 .id(r.getInt("id"))
                 .repositoryId(r.getInt("repository_id"))
-                .createdAt(r.getTimestamp("created_at"))
+                .createdAt(getTimestampInstant(r, "created_at"))
                 .name(r.getString("name"))
                 .defaultParams(cfm.fromResultSetOrEmpty(r, "default_params"))
                 .archiveType(r.getString("archive_type"))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))
-                .archiveData(getOptionalBytes(r, "archive_data"))
                 .build();
         }
     }
 
-    private static class StoredWorkflowSourceMapper
-            implements ResultSetMapper<StoredWorkflowSource>
+    private static class StoredWorkflowDefinitionMapper
+            implements ResultSetMapper<StoredWorkflowDefinition>
     {
         private final ConfigMapper cfm;
 
-        public StoredWorkflowSourceMapper(ConfigMapper cfm)
+        public StoredWorkflowDefinitionMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
 
         @Override
-        public StoredWorkflowSource map(int index, ResultSet r, StatementContext ctx)
+        public StoredWorkflowDefinition map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return ImmutableStoredWorkflowSource.builder()
-                .id(r.getInt("id"))
+            return ImmutableStoredWorkflowDefinition.builder()
+                .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
@@ -649,55 +586,31 @@ public class DatabaseRepositoryStoreManager
         }
     }
 
-    private static class StoredScheduleSourceMapper
-            implements ResultSetMapper<StoredScheduleSource>
+    private static class StoredWorkflowDefinitionWithRepositoryMapper
+            implements ResultSetMapper<StoredWorkflowDefinitionWithRepository>
     {
         private final ConfigMapper cfm;
 
-        public StoredScheduleSourceMapper(ConfigMapper cfm)
+        public StoredWorkflowDefinitionWithRepositoryMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
 
         @Override
-        public StoredScheduleSource map(int index, ResultSet r, StatementContext ctx)
+        public StoredWorkflowDefinitionWithRepository map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return ImmutableStoredScheduleSource.builder()
-                .id(r.getInt("id"))
-                .revisionId(r.getInt("revision_id"))
-                .name(r.getString("name"))
-                .config(cfm.fromResultSetOrEmpty(r, "config"))
-                .build();
-        }
-    }
-
-    private static class StoredWorkflowSourceWithRepositoryMapper
-            implements ResultSetMapper<StoredWorkflowSourceWithRepository>
-    {
-        private final ConfigMapper cfm;
-
-        public StoredWorkflowSourceWithRepositoryMapper(ConfigMapper cfm)
-        {
-            this.cfm = cfm;
-        }
-
-        @Override
-        public StoredWorkflowSourceWithRepository map(int index, ResultSet r, StatementContext ctx)
-                throws SQLException
-        {
-            return ImmutableStoredWorkflowSourceWithRepository.builder()
-                .id(r.getInt("id"))
+            return ImmutableStoredWorkflowDefinitionWithRepository.builder()
+                .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .repository(
                         ImmutableStoredRepository.builder()
                             .id(r.getInt("repo_id"))
-                            .siteId(r.getInt("site_id"))
-                            .createdAt(r.getTimestamp("repo_created_at"))
-                            .updatedAt(r.getTimestamp("repo_updated_at"))
                             .name(r.getString("repo_name"))
+                            .siteId(r.getInt("site_id"))
+                            .createdAt(getTimestampInstant(r, "repo_created_at"))
                             .build())
                 .revisionName("rev_name")
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))

@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.stream.Collectors;
 import java.io.File;
 import org.slf4j.Logger;
@@ -20,10 +20,10 @@ import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.repository.Dagfile;
-import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.SessionOptions;
-import io.digdag.core.session.StoredSession;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.TaskMatchPattern;
@@ -153,18 +153,18 @@ public class Run
                             "default: option is not written at %s file. Please add default: option or add +NAME option to command line", dagfilePath));
             }
         }
-        WorkflowSourceList workflowSources = dagfile.getWorkflowList();
+        WorkflowDefinitionList workflowSources = dagfile.getWorkflowList();
 
-        SessionOptions options = SessionOptions.builder()
-            .skipTaskMap(successfulTaskReports)
-            .build();
+        // TODO
+        //SessionOptions options = SessionOptions.builder()
+        //    .skipTaskMap(successfulTaskReports)
+        //    .build();
 
-        StoredSession session = localSite.storeAndStartWorkflows(
-                TimeZone.getDefault(),  // TODO configurable by cmdline argument
+        StoredSessionAttempt session = localSite.storeAndStartWorkflows(
+                ZoneId.systemDefault(),  // TODO configurable by cmdline argument
                 workflowSources,
                 TaskMatchPattern.compile(taskNamePattern),
-                overwriteParams,
-                options);
+                overwriteParams);
         logger.debug("Submitting {}", session);
 
         localSite.startLocalAgent();
@@ -177,6 +177,7 @@ public class Run
         localSite.runUntilAny();
 
         ArrayList<StoredTask> failedTasks = new ArrayList<>();
+        /*
         for (StoredTask task : localSite.getSessionStore().getTasks(session.getId(), 100, Optional.absent())) {  // TODO paging
             if (task.getState() == TaskStateCode.ERROR) {
                 failedTasks.add(task);
@@ -194,6 +195,7 @@ public class Run
             logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());
         }
+        */
 
         //if (visualizePath != null) {
         //    List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())

@@ -7,19 +7,19 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
-@JsonDeserialize(as = ImmutableWorkflowSource.class)
-public abstract class WorkflowSource
+@JsonDeserialize(as = ImmutableWorkflowDefinition.class)
+public abstract class WorkflowDefinition
 {
     public abstract String getName();
 
     public abstract Config getConfig();
 
-    public static ImmutableWorkflowSource.Builder workflowSourceBuilder()
+    public static ImmutableWorkflowDefinition.Builder workflowSourceBuilder()
     {
-        return ImmutableWorkflowSource.builder();
+        return ImmutableWorkflowDefinition.builder();
     }
 
-    public static WorkflowSource of(String name, Config config)
+    public static WorkflowDefinition of(String name, Config config)
     {
         return workflowSourceBuilder()
             .name(name)

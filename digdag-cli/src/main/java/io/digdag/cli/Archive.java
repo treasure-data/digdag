@@ -1,12 +1,12 @@
 package io.digdag.cli;
 
 import java.util.List;
+import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.Date;
 import java.util.stream.Collectors;
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +25,7 @@ import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.ArchiveMetadata;
-import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.ScheduleSource;
+import io.digdag.core.repository.WorkflowDefinition;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.client.config.Config;
@@ -109,7 +108,6 @@ public class Archive
         Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
         ArchiveMetadata meta = ArchiveMetadata.of(
             dagfile.getWorkflowList(),
-            dagfile.getScheduleList(),
             dagfile.getDefaultParams().setAll(overwriteParams));
 
         List<String> stdinLines;
@@ -164,12 +162,8 @@ public class Archive
         }
 
         System.out.println("  Workflows:");
-        for (WorkflowSource workflow : meta.getWorkflowList().get()) {
+        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
             System.out.println("    "+workflow.getName());
-        }
-        System.out.println("  Schedules:");
-        for (ScheduleSource schedule : meta.getScheduleList().get()) {
-            System.out.println("    "+schedule.getName());
         }
     }
 }

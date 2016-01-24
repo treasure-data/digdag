@@ -2,11 +2,12 @@ package io.digdag.core.database;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.Instant;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
-import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import com.google.common.base.*;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
@@ -65,11 +66,22 @@ public abstract class BasicDatabaseStoreManager
         return optional(r.wasNull(), v);
     }
 
-    public static Optional<Date> getOptionalDate(ResultSet r, String column)
+    public static Instant getTimestampInstant(ResultSet r, String column)
             throws SQLException
     {
-        Date v = r.getDate(column);
-        return optional(r.wasNull(), v);
+        return r.getTimestamp(column).toInstant();
+    }
+
+    public static Optional<Instant> getOptionalTimestampInstant(ResultSet r, String column)
+            throws SQLException
+    {
+        Timestamp t = r.getTimestamp(column);
+        if (r.wasNull()) {
+            return Optional.absent();
+        }
+        else {
+            return Optional.of(t.toInstant());
+        }
     }
 
     public static Optional<String> getOptionalString(ResultSet r, String column)

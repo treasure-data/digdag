@@ -18,7 +18,7 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.session.StoredSession;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskStateCode;
@@ -74,9 +74,9 @@ public class ResumeStateManager
         }
     }
 
-    public void startUpdate(File dir, StoredSession session)
+    public void startUpdate(File dir, StoredSessionAttempt attempt)
     {
-        managedDirs.add(new ResumeStateDir(dir, session));
+        managedDirs.add(new ResumeStateDir(dir, attempt));
         startScheduleIfNotStarted();
     }
 
@@ -112,28 +112,29 @@ public class ResumeStateManager
     private class ResumeStateDir
     {
         private final File dir;
-        private final StoredSession session;
+        private final StoredSessionAttempt attempt;
         private final Set<Long> doneTaskIdList = new HashSet<>();
 
-        public ResumeStateDir(File dir, StoredSession session)
+        public ResumeStateDir(File dir, StoredSessionAttempt attempt)
         {
             this.dir = dir;
-            this.session = session;
+            this.attempt = attempt;
         }
 
-        public StoredSession getSession()
+        public StoredSessionAttempt getSessionAttempt()
         {
-            return session;
+            return attempt;
         }
 
         public void update()
         {
-            List<StoredTask> tasks = sessionStoreManager
-                .getSessionStore(session.getSiteId())
-                .getTasks(session.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
-            for (StoredTask task : tasks) {
-                tryWriteStateFile(task);
-            }
+            // TODO
+            //List<StoredTask> tasks = sessionStoreManager
+            //    .getSessionStore(attempt.getSiteId())
+            //    .getTasks(attempt.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
+            //for (StoredTask task : tasks) {
+            //    tryWriteStateFile(task);
+            //}
         }
 
         private void tryWriteStateFile(StoredTask task)

@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import com.google.common.base.Optional;
-import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 
 public class TaskMatchPattern
 {
@@ -88,13 +88,13 @@ public class TaskMatchPattern
         return rootWorkflowName;
     }
 
-    public WorkflowSource findRootWorkflow(WorkflowSourceList sources)
+    public WorkflowDefinition findRootWorkflow(WorkflowDefinitionList sources)
         throws NoMatchException
     {
         return findRootWorkflow(sources.get());
     }
 
-    public <T extends WorkflowSource> T findRootWorkflow(List<T> sources)
+    public <T extends WorkflowDefinition> T findRootWorkflow(List<T> sources)
         throws NoMatchException
     {
         for (T source : sources) {

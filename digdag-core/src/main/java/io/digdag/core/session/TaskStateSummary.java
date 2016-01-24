@@ -1,6 +1,6 @@
 package io.digdag.core.session;
 
-import java.util.Date;
+import java.time.Instant;
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -18,5 +18,5 @@ public abstract class TaskStateSummary
 
     public abstract TaskStateCode getState();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 }

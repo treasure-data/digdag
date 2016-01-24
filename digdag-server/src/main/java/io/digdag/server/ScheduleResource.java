@@ -1,8 +1,9 @@
 package io.digdag.server;
 
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.Instant;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,14 +63,17 @@ public class ScheduleResource
     public List<RestSchedule> getSchedules()
     {
         // TODO paging
-        // TODO n-m db access
+        Map<Integer, StoredRepository> repos = getRepositories();
         return sm.getScheduleStore(siteId)
             .getSchedules(100, Optional.absent())
             .stream()
             .map(sched -> {
                 try {
-                    StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowSourceId());
-                    return RestModels.schedule(sched, wf);
+                    StoredRepository repo = repos.get(sched.getRepositoryId());
+                    if (repo == null) {
+                        throw new ResourceNotFoundException("repository id=" + sched.getRepositoryId());
+                    }
+                    return RestModels.schedule(sched, repo);
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -79,14 +83,27 @@ public class ScheduleResource
             .collect(Collectors.toList());
     }
 
+    private Map<Integer, StoredRepository> getRepositories()
+    {
+        List<StoredRepository> repos = rm.getRepositoryStore(siteId)
+            .getRepositories(Integer.MAX_VALUE, Optional.absent());
+        ImmutableMap.Builder<Integer, StoredRepository> builder = ImmutableMap.builder();
+        for (StoredRepository repo : repos) {
+            builder.put(repo.getId(), repo);
+        }
+        return builder.build();
+    }
+
     @GET
     @Path("/api/schedules/{id}")
     public RestSchedule getSchedules(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
-        StoredSchedule sched = sm.getScheduleStore(siteId).getScheduleById(id);
-        StoredWorkflowSource wf = rm.getRepositoryStore(siteId).getWorkflowSourceById(sched.getWorkflowSourceId());
-        return RestModels.schedule(sched, wf);
+        StoredSchedule sched = sm.getScheduleStore(siteId)
+            .getScheduleById(id);
+        StoredRepository repo = rm.getRepositoryStore(siteId)
+            .getRepositoryById(sched.getRepositoryId());
+        return RestModels.schedule(sched, repo);
     }
 
     @POST
@@ -98,15 +115,15 @@ public class ScheduleResource
         StoredSchedule updated;
         if (request.getNextTime().isPresent()) {
             updated = exec.skipScheduleToTime(siteId, id,
-                    new Date(request.getNextTime().get() * 1000),
-                    request.getNextRunTime().transform(t -> new Date(t * 1000)),
+                    Instant.ofEpochSecond(request.getNextTime().get()),
+                    request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
                     request.getDryRun());
         }
         else {
             updated = exec.skipScheduleByCount(siteId, id,
-                    new Date(request.getFromTime().get() * 1000),
+                    Instant.ofEpochSecond(request.getFromTime().get()),
                     request.getCount().get(),
-                    request.getNextRunTime().transform(t -> new Date(t * 1000)),
+                    request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
                     request.getDryRun());
         }
         return RestModels.scheduleSummary(updated);

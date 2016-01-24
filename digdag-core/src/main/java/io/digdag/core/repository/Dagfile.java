@@ -15,32 +15,23 @@ import java.util.regex.Pattern;
 @Value.Immutable
 public abstract class Dagfile
 {
-    @JsonProperty("run")
-    public abstract Optional<String> getDefaultTaskName();
+    public abstract Optional<String> getDefaultTaskName();  // "run"
 
-    public abstract WorkflowSourceList getWorkflowList();
+    public abstract WorkflowDefinitionList getWorkflowList();   // "+..."
 
-    public abstract ScheduleSourceList getScheduleList();
-
-    public abstract Config getDefaultParams();
+    public abstract Config getDefaultParams();  // the other keys
 
     @JsonCreator
     public static Dagfile fromConfig(Config config)
     {
         Config others = config.deepCopy();
         Config workflowList = config.getFactory().create();
-        Config scheduleList = config.getFactory().create();
 
         for (String key : others.getKeys()) {
             if (key.startsWith("+")) {
                 workflowList.set(key, others.get(key, JsonNode.class));
                 others.remove(key);
             }
-            else if (key.startsWith("-")) {
-                scheduleList.set(key, others.get(key, JsonNode.class));
-                others.remove(key);
-            }
-            // TODO validate key
         }
 
         Optional<String> defaultTaskName = config.getOptional("run", String.class);
@@ -48,8 +39,7 @@ public abstract class Dagfile
 
         return builder()
             .defaultTaskName(defaultTaskName)
-            .workflowList(workflowList.convert(WorkflowSourceList.class))
-            .scheduleList(scheduleList.convert(ScheduleSourceList.class))
+            .workflowList(workflowList.convert(WorkflowDefinitionList.class))
             .defaultParams(others)
             .build();
     }
@@ -73,14 +63,14 @@ public abstract class Dagfile
             builder.put(key, defaultParams.get(key, JsonNode.class));
         }
 
-        for (WorkflowSource source : getWorkflowList().get()) {
-            builder.put(source.getName(), source.getConfig());
-        }
-
-        for (ScheduleSource source : getScheduleList().get()) {
+        for (WorkflowDefinition source : getWorkflowList().get()) {
             builder.put(source.getName(), source.getConfig());
         }
 
         return builder.build();
     }
+
+    // check
+    // TODO validate default task name begins with +
+    // TODO validate key names of defaultParams
 }

@@ -1,8 +1,9 @@
 package io.digdag.server;
 
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.Instant;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +30,7 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.yaml.YamlConfigLoader;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import io.digdag.server.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -53,7 +55,8 @@ public class RepositoryResource
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
     private final RepositoryStoreManager rm;
-    private final SchedulerManager scheds;
+    private final ScheduleStoreManager sm;
+    private final SchedulerManager srm;
     private final TempFileManager temp;
 
     private int siteId = 0;  // TODO get site id from context
@@ -64,14 +67,16 @@ public class RepositoryResource
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
             RepositoryStoreManager rm,
-            SchedulerManager scheds,
+            ScheduleStoreManager sm,
+            SchedulerManager srm,
             TempFileManager temp)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
-        this.scheds = scheds;
+        this.srm = srm;
         this.compiler = compiler;
         this.rm = rm;
+        this.sm = sm;
         this.temp = temp;
     }
 
@@ -123,12 +128,13 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}/workflows")
-    public List<RestWorkflow> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
+    public List<RestWorkflowDefinition> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
         // TODO paging
         RepositoryStore rs = rm.getRepositoryStore(siteId);
         StoredRepository repo = rs.getRepositoryById(repoId);
+
         StoredRevision rev;
         if (revName == null) {
             rev = rs.getLatestRevision(repo.getId());
@@ -136,11 +142,27 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        List<StoredWorkflowSource> workflows = rs.getWorkflowSources(rev.getId(), 100, Optional.absent());
+        List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), 100, Optional.absent());
 
-        return workflows.stream()
-            .map(workflow -> RestModels.workflow(repo, rev, workflow))
+        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
+
+        return defs.stream()
+            .map(def -> RestModels.workflowDefinition(
+                        repo, rev, def,
+                        Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextRunTime(), sched.getNextScheduleTime()))
+                        ))
             .collect(Collectors.toList());
+    }
+
+    private Map<Long, Schedule> getWorkflowScheduleMap()
+    {
+        List<StoredSchedule> schedules = sm.getScheduleStore(siteId)
+            .getSchedules(Integer.MAX_VALUE, Optional.absent());
+        ImmutableMap.Builder<Long, Schedule> builder = ImmutableMap.builder();
+        for (Schedule schedule : schedules) {
+            builder.put(schedule.getWorkflowDefinitionId(), schedule);
+        }
+        return builder.build();
     }
 
     @GET
@@ -158,7 +180,7 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        return rev.getArchiveData().get();
+        return rs.getRevisionArchiveData(rev.getId());
     }
 
     @PUT
@@ -175,34 +197,32 @@ public class RepositoryResource
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }
-            // jinja and !!include are disabled
+            // jinja is disabled
             Config renderedConfig = rawLoader.loadFile(
                     dir.child(ArchiveMetadata.FILE_NAME),
                     Optional.absent(), Optional.absent());
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
-        RestRepository stored = rm.getRepositoryStore(siteId).putRepository(
+        RestRepository stored = rm.getRepositoryStore(siteId).putAndLockRepository(
                 Repository.of(name),
-                (RepositoryControl repoControl) -> {
-                    StoredRevision rev = repoControl.putRevision(
+                (store, storedRepo) -> {
+                    RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
+                    StoredRevision rev = lockedRepo.putRevision(
                             Revision.revisionBuilder()
                                 .name(revision)
                                 .defaultParams(meta.getDefaultParams())
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
-                                .archiveData(data)
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))
                                 .build()
                             );
-                    List<StoredWorkflowSource> storedWorkflows =
-                        repoControl.insertWorkflowSources(rev.getId(), meta.getWorkflowList().get());
-                    List<StoredScheduleSource> storedSchedules =
-                        repoControl.insertScheduleSources(rev.getId(), meta.getScheduleList().get());
-                    repoControl.syncLatestRevision(rev,
-                            storedWorkflows, storedSchedules,
-                            scheds, new Date());
-                    return RestModels.repository(repoControl.get(), rev);
+                    lockedRepo.insertRevisionArchiveData(rev.getId(), data);
+                    List<StoredWorkflowDefinition> defs =
+                        lockedRepo.insertWorkflowDefinitions(rev,
+                                meta.getWorkflowList().get(),
+                                srm, Instant.now());
+                    return RestModels.repository(storedRepo, rev);
                 });
 
         return stored;

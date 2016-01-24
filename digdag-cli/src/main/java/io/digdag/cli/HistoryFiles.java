@@ -1,10 +1,10 @@
 package io.digdag.cli;
 
 import java.io.File;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.text.SimpleDateFormat;
-import io.digdag.core.repository.WorkflowSource;
+import io.digdag.core.repository.WorkflowDefinition;
 
 public class HistoryFiles
 {
@@ -16,7 +16,7 @@ public class HistoryFiles
     }
 
     // returns dir/workflowName/yyyy-MM-dd-HHmmss
-    public File getSessionDir(WorkflowSource wf, TimeZone timeZone, Date scheduleTime)
+    public File getSessionDir(WorkflowDefinition wf, ZoneId timeZone, Instant scheduleTime)
     {
         String name = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(scheduleTime);
         return new File(new File(dir, wf.getName()), name);

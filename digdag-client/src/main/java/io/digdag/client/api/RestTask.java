@@ -1,6 +1,6 @@
 package io.digdag.client.api;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -30,9 +30,9 @@ public abstract class RestTask
 
     public abstract Config getStateParams();
 
-    public abstract Date getUpdatedAt();
+    public abstract Instant getUpdatedAt();
 
-    public abstract Date getRetryAt();
+    public abstract Instant getRetryAt();
 
     // TODO in out Report
 

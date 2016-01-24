@@ -7,8 +7,8 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.repository.WorkflowSource;
-import io.digdag.core.repository.WorkflowSourceList;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.client.config.ConfigFactory;
@@ -56,7 +56,7 @@ public class Show
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        List<WorkflowSource> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowSourceList.class).get();
+        List<WorkflowDefinition> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowDefinitionList.class).get();
 
         List<Workflow> workflows = workflowSources
             .stream()

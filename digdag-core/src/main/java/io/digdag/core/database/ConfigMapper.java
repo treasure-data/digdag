@@ -70,17 +70,20 @@ public class ConfigMapper
         }
     }
 
-    private String toText(Config config)
+    public String toText(Config config)
     {
-        if (config.isEmpty()) {
-            return null;
-        }
         try {
             return jsonTreeMapper.writeValueAsString(config);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
+    }
+
+    public long toConfigDigest(String configText)
+    {
+        // TODO
+        return 0L;
     }
 
     public class ConfigArgumentFactory

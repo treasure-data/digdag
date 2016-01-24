@@ -1,13 +1,13 @@
 package io.digdag.spi;
 
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
 
 public interface Scheduler
 {
-    TimeZone getTimeZone();
+    ZoneId getTimeZone();
 
-    ScheduleTime getFirstScheduleTime(Date currentTime);
+    ScheduleTime getFirstScheduleTime(Instant currentTime);
 
-    ScheduleTime nextScheduleTime(Date lastScheduleTime);
+    ScheduleTime nextScheduleTime(Instant lastScheduleTime);
 }

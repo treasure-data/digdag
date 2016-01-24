@@ -1,10 +1,10 @@
 package io.digdag.core;
 
 import java.util.List;
-import java.util.Date;
 import java.util.UUID;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.time.Instant;
+import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -37,7 +37,7 @@ public class LocalSite
     private final TaskQueueDispatcher dispatcher;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
-    private final SchedulerManager scheds;
+    private final SchedulerManager srm;
     private final ScheduleExecutor scheduleExecutor;
     private final SessionMonitorExecutor sessionMonitorExecutor;
     private boolean schedulerStarted;
@@ -53,7 +53,7 @@ public class LocalSite
             TaskQueueDispatcher dispatcher,
             LocalAgentManager localAgentManager,
             DatabaseMigrator databaseMigrator,
-            SchedulerManager scheds,
+            SchedulerManager srm,
             ScheduleExecutor scheduleExecutor,
             SessionMonitorExecutor sessionMonitorExecutor)
     {
@@ -67,7 +67,7 @@ public class LocalSite
         this.dispatcher = dispatcher;
         this.localAgentManager = localAgentManager;
         this.databaseMigrator = databaseMigrator;
-        this.scheds = scheds;
+        this.srm = srm;
         this.scheduleExecutor = scheduleExecutor;
         this.sessionMonitorExecutor = sessionMonitorExecutor;
     }
@@ -100,14 +100,12 @@ public class LocalSite
     private class StoreWorkflow
     {
         private final StoredRevision revision;
-        private final List<StoredWorkflowSource> workflows;
-        private final List<StoredScheduleSource> schedules;
+        private final List<StoredWorkflowDefinition> workflows;
 
-        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowSource> workflows, List<StoredScheduleSource> schedules)
+        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowDefinition> workflows)
         {
             this.revision = revision;
             this.workflows = workflows;
-            this.schedules = schedules;
         }
 
         public StoredRevision getRevision()
@@ -115,53 +113,43 @@ public class LocalSite
             return revision;
         }
 
-        public List<StoredWorkflowSource> getWorkflows()
+        public List<StoredWorkflowDefinition> getWorkflows()
         {
             return workflows;
-        }
-
-        public List<StoredScheduleSource> getSchedules()
-        {
-            return schedules;
         }
     }
 
     private StoreWorkflow storeLocalWorkflowsImpl(String repositoryName, Revision revision,
-            WorkflowSourceList workflowSources, ScheduleSourceList scheduleSources,
-            Optional<Date> currentTimeToSchedule)
+            WorkflowDefinitionList defs,
+            Optional<Instant> currentTimeToSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
         // validate workflow
         // TODO move this to RepositoryControl
-        workflowSources.get()
+        defs.get()
             .stream()
             .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
 
-        return repoStore.putRepository(
+        return repoStore.putAndLockRepository(
                 Repository.of(repositoryName),
-                (repoControl) -> {
-                    StoredRevision rev = repoControl.putRevision(revision);
-                    List<StoredWorkflowSource> storedWorkflows =
-                        repoControl.insertWorkflowSources(rev.getId(), workflowSources.get());
-                    List<StoredScheduleSource> storedSchedules =
-                        repoControl.insertScheduleSources(rev.getId(), scheduleSources.get());
+                (store, storedRepo) -> {
+                    RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
+                    StoredRevision rev = lockedRepo.putRevision(revision);
+                    List<StoredWorkflowDefinition> storedDefs;
                     if (currentTimeToSchedule.isPresent()) {
-                        repoControl.syncLatestRevision(
-                                rev, storedWorkflows, storedSchedules,
-                                scheds, currentTimeToSchedule.get());
+                        storedDefs = lockedRepo.insertWorkflowDefinitions(rev, defs.get(), srm, currentTimeToSchedule.get());
                     }
                     else {
-                        repoControl.syncLatestRevision(rev, storedWorkflows);
+                        storedDefs = lockedRepo.insertWorkflowDefinitionsWithoutSchedules(rev, defs.get());
                     }
-                    return new StoreWorkflow(rev, storedWorkflows, storedSchedules);
+                    return new StoreWorkflow(rev, storedDefs);
                 });
     }
 
     private StoreWorkflow storeLocalWorkflows(
             String revisionName,
-            WorkflowSourceList workflowSources,
-            ScheduleSourceList scheduleSources,
-            Optional<Date> currentTimeToSchedule,
+            WorkflowDefinitionList defs,
+            Optional<Instant> currentTimeToSchedule,
             Config defaultParams)
         throws ResourceConflictException, ResourceNotFoundException
     {
@@ -172,39 +160,41 @@ public class LocalSite
                     .archiveType("db")
                     .defaultParams(defaultParams)
                     .build(),
-                workflowSources,
-                scheduleSources,
+                defs,
                 currentTimeToSchedule);
     }
 
-    public StoredSession storeAndStartWorkflows(
-            TimeZone defaultTimeZone,
-            WorkflowSourceList workflowSources,
+    public StoredSessionAttempt storeAndStartWorkflows(
+            ZoneId defaultTimeZone,
+            WorkflowDefinitionList defs,
             TaskMatchPattern taskMatchPattern,
-            Config overwriteParams,
-            SessionOptions options)
+            Config overwriteParams)
         throws ResourceConflictException, ResourceNotFoundException
     {
-        StoreWorkflow revWfs = storeLocalWorkflows("revision", workflowSources,
-                ScheduleSourceList.of(ImmutableList.of()), Optional.absent(),
-                overwriteParams);
+        StoreWorkflow revWfs = storeLocalWorkflows("revision", defs,
+                Optional.absent(), overwriteParams);
         final StoredRevision revision = revWfs.getRevision();
-        final List<StoredWorkflowSource> sources = revWfs.getWorkflows();
+        final List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
 
         try {
-            StoredWorkflowSource source = taskMatchPattern.findRootWorkflow(sources);
+            StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            Session trigger = Session.sessionBuilder(
-                    "session-" + UUID.randomUUID().toString(),
-                    defaultTimeZone,
-                    cf.create(), source, cf.create())
-                .options(options)
+            AttemptRequest ar = AttemptRequest.builder()
+                .repositoryId(revision.getRepositoryId())
+                .workflowName(def.getName())
+                .instant(Instant.now())
+                .retryAttemptName(Optional.absent())
+                .defaultTimeZone(defaultTimeZone)
+                .defaultParams(cf.create())
+                .overwriteParams(overwriteParams)
                 .build();
 
-            SessionRelation rel = SessionRelation.ofWorkflow(revision.getRepositoryId(), revision.getId(), source.getId());
-            return exec.submitWorkflow(0, source, taskMatchPattern.getSubtaskMatchPattern(),
-                    trigger, Optional.of(rel),
-                    ImmutableList.of());
+            if (taskMatchPattern.getSubtaskMatchPattern().isPresent()) {
+                return exec.submitSubworkflow(0, ar, def, taskMatchPattern.getSubtaskMatchPattern().get(), ImmutableList.of());
+            }
+            else {
+                return exec.submitWorkflow(0, ar, def, ImmutableList.of());
+            }
         }
         catch (NoMatchException ex) {
             //logger.error("No task matched with '{}'", fromTaskName.orNull());
@@ -217,16 +207,14 @@ public class LocalSite
 
     public StoredRevision storeWorkflows(
             String revisionName,
-            WorkflowSourceList workflowSources,
-            ScheduleSourceList scheduleSources,
-            Date currentTime,
+            WorkflowDefinitionList defs,
+            Instant currentTime,
             Config defaultParams)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflows(
                 revisionName,
-                workflowSources,
-                scheduleSources,
+                defs,
                 Optional.of(currentTime),
                 defaultParams)
             .getRevision();

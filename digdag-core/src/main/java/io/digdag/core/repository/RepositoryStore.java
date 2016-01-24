@@ -15,11 +15,11 @@ public interface RepositoryStore
 
     interface RepositoryLockAction <T>
     {
-        T call(RepositoryControl lockedRepository)
+        T call(RepositoryControlStore store, StoredRepository storedRepo)
             throws ResourceNotFoundException, ResourceConflictException;
     }
 
-    <T> T putRepository(Repository repository, RepositoryLockAction<T> func)
+    <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
         throws ResourceNotFoundException, ResourceConflictException;
 
 
@@ -34,28 +34,20 @@ public interface RepositoryStore
     StoredRevision getLatestRevision(int repoId)
         throws ResourceNotFoundException;
 
+    byte[] getRevisionArchiveData(int revId)
+            throws ResourceNotFoundException;
 
-    List<StoredWorkflowSource> getWorkflowSources(int revId, int pageSize, Optional<Integer> lastId);
 
-    StoredWorkflowSourceWithRepository getLatestActiveWorkflowSourceByName(int repoId, String name)
+    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
+
+    StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
-    List<StoredWorkflowSourceWithRepository> getLatestActiveWorkflowSources(int pageSize, Optional<Integer> lastId);
-
-    StoredWorkflowSource getWorkflowSourceById(int wfId)
+    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
 
-    StoredWorkflowSource getWorkflowSourceByName(int revId, String name)
+    List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId);
+
+    StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
         throws ResourceNotFoundException;
-
-
-    //List<StoredScheduleSource> getScheduleSources(int revId, int pageSize, Optional<Integer> lastId);
-
-    //List<StoredScheduleSourceWithRepository> getLatestActiveScheduleSources(int pageSize, Optional<Integer> lastId);
-
-    //StoredScheduleSource getScheduleSourceById(int wfId)
-    //    throws ResourceNotFoundException;
-
-    //StoredScheduleSource getScheduleSourceByName(int revId, String name)
-    //    throws ResourceNotFoundException;
 }

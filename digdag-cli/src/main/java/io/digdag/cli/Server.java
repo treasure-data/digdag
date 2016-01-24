@@ -1,7 +1,7 @@
 package io.digdag.cli;
 
 import java.util.List;
-import java.util.TimeZone;
+import java.time.ZoneId;
 import java.io.File;
 import java.io.IOException;
 import javax.servlet.ServletException;
@@ -157,7 +157,7 @@ public class Server
                 ConfigFactory cf = injector.getInstance(ConfigFactory.class);
                 RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
                 try {
-                    autoReloader.loadFile(new File(cmd.autoLoadFile), TimeZone.getDefault(), cf.create());
+                    autoReloader.loadFile(new File(cmd.autoLoadFile), ZoneId.systemDefault(), cf.create());
                 }
                 catch (Exception ex) {
                     throw new RuntimeException(ex);
