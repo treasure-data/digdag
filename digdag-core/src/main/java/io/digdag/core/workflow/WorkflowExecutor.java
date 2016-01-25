@@ -140,7 +140,7 @@ public class WorkflowExecutor
         StoredSessionAttempt stored = sm
             .getSessionStore(siteId)
             .putAndLockSession(session, (store, storedSession) -> {
-                StoredSessionAttempt storedAttempt = store.insertAttempt(storedSession.getId(), attempt);
+                StoredSessionAttempt storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);
                 final Task rootTask = Task.taskBuilder()
                     .parentId(Optional.absent())
                     .fullName(root.getName())
@@ -161,35 +161,20 @@ public class WorkflowExecutor
         return stored;
     }
 
-    //public boolean killSessionById(int siteId, long sesId)
-    //    throws ResourceNotFoundException
-    //{
-    //    StoredSession s = sm.getSessionStore(siteId).getSessionById(sesId);
-    //    boolean updated = sm.requestCancelAttempt(s.getId());
+    public boolean killSessionById(int siteId, long attemptId)
+        throws ResourceNotFoundException
+    {
+        StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId).getSessionAttemptById(attemptId);
+        boolean updated = sm.requestCancelAttempt(attempt.getId());
 
-    //    if (updated) {
-    //        noticeStatusPropagate();
-    //    }
+        if (updated) {
+            noticeStatusPropagate();
+        }
 
-    //    // TODO sync kill requests to already-running tasks in queue
+        // TODO sync kill requests to already-running tasks in queue
 
-    //    return updated;
-    //}
-
-    //public boolean killSessionByName(int siteId, String sesName)
-    //    throws ResourceNotFoundException
-    //{
-    //    StoredSession s = sm.getSessionStore(siteId).getSessionByName(sesName);
-    //    boolean updated = sm.requestCancelAttempt(s.getId());
-
-    //    if (updated) {
-    //        noticeStatusPropagate();
-    //    }
-
-    //    // TODO sync kill requests to already-running tasks in queue
-
-    //    return updated;
-    //}
+        return updated;
+    }
 
     private void noticeStatusPropagate()
     {

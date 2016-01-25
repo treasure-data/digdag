@@ -11,8 +11,6 @@ public abstract class StoredSessionAttempt
 {
     public abstract long getId();
 
-    public abstract int getSiteId();
-
     public abstract SessionStatusFlags getStatusFlags();
 
     public abstract long getSessionId();

@@ -8,7 +8,7 @@ public interface SessionControlStore
 {
     Optional<StoredSessionAttempt> tryLastAttempt(long sessionId);
 
-    StoredSessionAttempt insertAttempt(long sessionId, SessionAttempt attempt)
+    StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
         throws ResourceConflictException;
 
     interface SessionBuilderAction <T>

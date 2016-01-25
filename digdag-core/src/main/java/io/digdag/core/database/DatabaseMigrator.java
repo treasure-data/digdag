@@ -305,7 +305,8 @@ public class DatabaseMigrator
                     new CreateTableBuilder("session_attempts")
                     .addLongId("id")
                     .addLong("session_id", "not null references sessions (id)")
-                    .addInt("site_id", "not null")
+                    .addInt("site_id", "not null")  // denormalized for performance
+                    .addInt("repository_id", "not null references repositories (id)")  // denormalized for performance
                     .addString("attempt_name", "not null")
                     .addLong("workflow_definition_id", "references workflow_definitions (id)")
                     .addShort("state_flags", "not null")  // 0=running or blocked, 1=cancel_requested, 2=done, 4=success
@@ -313,7 +314,9 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index if not exists session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
-            handle.update("create index if not exists session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id)");
+            handle.update("create index if not exists session_attempts_on_site_id on session_attempts (site_id, id)");
+            handle.update("create index if not exists session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id)");
+            handle.update("create index if not exists session_attempts_on_repository_id on session_attempts (repository_id, id)");
 
             // task_archives
             handle.update(

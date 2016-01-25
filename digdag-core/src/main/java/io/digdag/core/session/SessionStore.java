@@ -7,17 +7,17 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionStore
 {
-    //List<StoredSession> getSessions(int pageSize, Optional<Long> lastId);
+    List<StoredSessionAttemptWithSession> getSessions(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
 
-    //List<StoredSession> getSessionsOfRepository(int repositoryId, int pageSize, Optional<Long> lastId);
+    List<StoredSessionAttemptWithSession> getSessionsOfRepository(boolean withRetriedAttempts, int repositoryId, int pageSize, Optional<Long> lastId);
 
-    //List<StoredSession> getSessionsOfWorkflow(long workflowId, int pageSize, Optional<Long> lastId);
+    List<StoredSessionAttemptWithSession> getSessionsOfWorkflow(boolean withRetriedAttempts, long workflowDefinitionId, int pageSize, Optional<Long> lastId);
 
-    //StoredSession getSessionById(long sesId)
-    //    throws ResourceNotFoundException;
+    StoredSessionAttemptWithSession getSessionAttemptById(long attemptId)
+        throws ResourceNotFoundException;
 
-    //StoredSession getSessionByName(String sesName)
-    //    throws ResourceNotFoundException;
+    List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)
+        throws ResourceNotFoundException;
 
     //SessionStatusFlags getStatusFlags(long sesId)
     //    throws ResourceNotFoundException;
