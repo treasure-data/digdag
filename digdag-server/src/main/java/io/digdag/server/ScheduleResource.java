@@ -1,7 +1,6 @@
 package io.digdag.server;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.time.Instant;
 import java.io.File;
@@ -63,17 +62,13 @@ public class ScheduleResource
     public List<RestSchedule> getSchedules()
     {
         // TODO paging
-        Map<Integer, StoredRepository> repos = getRepositories();
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
         return sm.getScheduleStore(siteId)
             .getSchedules(100, Optional.absent())
             .stream()
             .map(sched -> {
                 try {
-                    StoredRepository repo = repos.get(sched.getRepositoryId());
-                    if (repo == null) {
-                        throw new ResourceNotFoundException("repository id=" + sched.getRepositoryId());
-                    }
-                    return RestModels.schedule(sched, repo);
+                    return RestModels.schedule(sched, repos.get(sched.getRepositoryId()));
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -81,17 +76,6 @@ public class ScheduleResource
             })
             .filter(sched -> sched != null)
             .collect(Collectors.toList());
-    }
-
-    private Map<Integer, StoredRepository> getRepositories()
-    {
-        List<StoredRepository> repos = rm.getRepositoryStore(siteId)
-            .getRepositories(Integer.MAX_VALUE, Optional.absent());
-        ImmutableMap.Builder<Integer, StoredRepository> builder = ImmutableMap.builder();
-        for (StoredRepository repo : repos) {
-            builder.put(repo.getId(), repo);
-        }
-        return builder.build();
     }
 
     @GET

@@ -95,8 +95,18 @@ public class SessionResource
             attempts = ss.getSessions(includeRetried, 100, Optional.fromNullable(lastId));
         }
 
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+
         return attempts.stream()
-            .map(attempt -> RestModels.session(attempt))
+            .map(attempt -> {
+                try {
+                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                }
+                catch (ResourceNotFoundException ex) {
+                    return null;
+                }
+            })
+            .filter(a -> a != null)
             .collect(Collectors.toList());
     }
 
@@ -107,7 +117,10 @@ public class SessionResource
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId)
             .getSessionAttemptById(id);
-        return RestModels.session(attempt);
+
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+
+        return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
     }
 
     @GET
@@ -117,8 +130,19 @@ public class SessionResource
     {
         List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(siteId)
             .getOtherAttempts(id);
+
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+
         return attempts.stream()
-            .map(attempt -> RestModels.session(attempt))
+            .map(attempt -> {
+                try {
+                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                }
+                catch (ResourceNotFoundException ex) {
+                    return null;
+                }
+            })
+            .filter(a -> a != null)
             .collect(Collectors.toList());
     }
 

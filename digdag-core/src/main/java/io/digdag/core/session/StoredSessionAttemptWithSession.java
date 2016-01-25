@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredSessionAttempt.class)
-@JsonDeserialize(as = ImmutableStoredSessionAttempt.class)
+@JsonSerialize(as = ImmutableStoredSessionAttemptWithSession.class)
+@JsonDeserialize(as = ImmutableStoredSessionAttemptWithSession.class)
 public abstract class StoredSessionAttemptWithSession
         extends StoredSessionAttempt
 {
@@ -15,7 +15,20 @@ public abstract class StoredSessionAttemptWithSession
 
     public abstract Session getSession();
 
-    public abstract String getRepositoryName();
-
     //public abstract Optional<String> getRevisionName();
+
+    public static StoredSessionAttemptWithSession of(int siteId, Session session, StoredSessionAttempt attempt)
+    {
+        return ImmutableStoredSessionAttemptWithSession.builder()
+            .id(attempt.getId())
+            .attemptName(attempt.getAttemptName())
+            .workflowDefinitionId(attempt.getWorkflowDefinitionId())
+            .params(attempt.getParams())
+            .statusFlags(attempt.getStatusFlags())
+            .sessionId(attempt.getSessionId())
+            .createdAt(attempt.getCreatedAt())
+            .siteId(siteId)
+            .session(session)
+            .build();
+    }
 }

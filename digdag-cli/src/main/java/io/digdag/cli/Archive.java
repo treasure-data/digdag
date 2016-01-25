@@ -50,8 +50,6 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "archive.tar.gz";
 
-    // TODO support -p option? for jinja template rendering
-
     @Override
     public void main()
             throws Exception
@@ -150,8 +148,7 @@ public class Archive
             }
 
             // create .digdag.yml
-            // TODO make ScheduleSourceList from Dagfile
-            // TODO set default time zone if not set
+            // TODO set default time zone if not set?
             byte[] metaBody = mapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(metaBody.length);

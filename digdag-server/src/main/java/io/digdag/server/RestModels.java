@@ -88,9 +88,9 @@ public final class RestModels
             .build();
     }
 
-    public static RestSession session(StoredSessionAttemptWithSession attempt)
+    public static RestSession session(StoredSessionAttemptWithSession attempt, String repositoryName)
     {
-        return session(attempt, attempt.getSession(), attempt.getRepositoryName());
+        return session(attempt, attempt.getSession(), repositoryName);
     }
 
     public static RestSession session(StoredSessionAttempt attempt, Session session, String repositoryName)

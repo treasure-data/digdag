@@ -70,7 +70,7 @@ public class WorkflowExecutor
         this.archiveMapper = archiveMapper;
     }
 
-    public StoredSessionAttempt submitSubworkflow(int siteId, AttemptRequest ar,
+    public StoredSessionAttemptWithSession submitSubworkflow(int siteId, AttemptRequest ar,
             WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern,
             List<SessionMonitor> monitors)
         throws ResourceConflictException, NoMatchException, MultipleTaskMatchException
@@ -92,7 +92,7 @@ public class WorkflowExecutor
         return submitTasks(siteId, ar, tasks, monitors);
     }
 
-    public StoredSessionAttempt submitWorkflow(int siteId,
+    public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
             WorkflowDefinition def,
             List<SessionMonitor> monitors)
@@ -109,7 +109,7 @@ public class WorkflowExecutor
         return submitTasks(siteId, ar, tasks, monitors);
     }
 
-    public StoredSessionAttempt submitTasks(int siteId, AttemptRequest ar,
+    public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks, List<SessionMonitor> monitors)
         throws ResourceConflictException
     {
@@ -158,7 +158,7 @@ public class WorkflowExecutor
 
         noticeStatusPropagate();  // TODO is this necessary?
 
-        return stored;
+        return StoredSessionAttemptWithSession.of(siteId, session, stored);
     }
 
     public boolean killSessionById(int siteId, long attemptId)

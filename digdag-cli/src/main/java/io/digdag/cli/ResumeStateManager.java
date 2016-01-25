@@ -18,7 +18,7 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskStateCode;
@@ -74,7 +74,7 @@ public class ResumeStateManager
         }
     }
 
-    public void startUpdate(File dir, StoredSessionAttempt attempt)
+    public void startUpdate(File dir, StoredSessionAttemptWithSession attempt)
     {
         managedDirs.add(new ResumeStateDir(dir, attempt));
         startScheduleIfNotStarted();
@@ -112,29 +112,28 @@ public class ResumeStateManager
     private class ResumeStateDir
     {
         private final File dir;
-        private final StoredSessionAttempt attempt;
+        private final StoredSessionAttemptWithSession attempt;
         private final Set<Long> doneTaskIdList = new HashSet<>();
 
-        public ResumeStateDir(File dir, StoredSessionAttempt attempt)
+        public ResumeStateDir(File dir, StoredSessionAttemptWithSession attempt)
         {
             this.dir = dir;
             this.attempt = attempt;
         }
 
-        public StoredSessionAttempt getSessionAttempt()
+        public StoredSessionAttemptWithSession getSessionAttempt()
         {
             return attempt;
         }
 
         public void update()
         {
-            // TODO
-            //List<StoredTask> tasks = sessionStoreManager
-            //    .getSessionStore(attempt.getSiteId())
-            //    .getTasks(attempt.getId(), Integer.MAX_VALUE, Optional.absent());  // TODO paging
-            //for (StoredTask task : tasks) {
-            //    tryWriteStateFile(task);
-            //}
+            List<StoredTask> tasks = sessionStoreManager
+                .getSessionStore(attempt.getSiteId())
+                .getTasksOfAttempt(attempt.getId());
+            for (StoredTask task : tasks) {
+                tryWriteStateFile(task);
+            }
         }
 
         private void tryWriteStateFile(StoredTask task)

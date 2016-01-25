@@ -19,7 +19,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -41,7 +41,7 @@ public class ScheduleHandler
         this.exec = exec;
     }
 
-    public StoredSessionAttempt start(StoredWorkflowDefinitionWithRepository def,
+    public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithRepository def,
             List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time)
             throws ResourceNotFoundException, ResourceConflictException
     {

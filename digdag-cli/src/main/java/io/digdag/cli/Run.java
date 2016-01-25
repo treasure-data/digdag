@@ -23,7 +23,7 @@ import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.SessionOptions;
-import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.TaskMatchPattern;
@@ -160,7 +160,7 @@ public class Run
         //    .skipTaskMap(successfulTaskReports)
         //    .build();
 
-        StoredSessionAttempt attempt = localSite.storeAndStartWorkflows(
+        StoredSessionAttemptWithSession attempt = localSite.storeAndStartWorkflows(
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
                 workflowSources,
                 TaskMatchPattern.compile(taskNamePattern),

@@ -28,7 +28,6 @@ public class ArgumentConfigLoader
     public Config load(File path, Config params)
         throws IOException
     {
-        // TODO use yaml if file path ends with yml, otherwise use json?
         return loader.loadFile(
                 path,
                 Optional.of(

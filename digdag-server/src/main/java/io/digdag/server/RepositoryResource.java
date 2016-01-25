@@ -44,6 +44,7 @@ public class RepositoryResource
 {
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
+    // [ ] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
     // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
@@ -82,23 +83,16 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories")
-    public List<RestRepository> getRepositories(@QueryParam("revision") String revName)
+    public List<RestRepository> getRepositories()
         throws ResourceNotFoundException
     {
-        // TODO paging
         // TODO n-m db access
         RepositoryStore rs = rm.getRepositoryStore(siteId);
         return rs.getRepositories(100, Optional.absent())
             .stream()
             .map(repo -> {
                 try {
-                    StoredRevision rev;
-                    if (revName == null) {
-                        rev = rs.getLatestRevision(repo.getId());
-                    }
-                    else {
-                        rev = rs.getRevisionByName(repo.getId(), revName);
-                    }
+                    StoredRevision rev = rs.getLatestRevision(repo.getId());
                     return RestModels.repository(repo, rev);
                 }
                 catch (ResourceNotFoundException ex) {

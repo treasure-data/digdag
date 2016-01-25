@@ -164,7 +164,7 @@ public class LocalSite
                 currentTimeToSchedule);
     }
 
-    public StoredSessionAttempt storeAndStartWorkflows(
+    public StoredSessionAttemptWithSession storeAndStartWorkflows(
             ZoneId defaultTimeZone,
             WorkflowDefinitionList defs,
             TaskMatchPattern taskMatchPattern,
