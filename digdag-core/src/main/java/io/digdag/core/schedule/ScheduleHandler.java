@@ -9,7 +9,6 @@ import java.text.SimpleDateFormat;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.core.session.SessionOptions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -58,27 +57,4 @@ public class ScheduleHandler
         return exec.submitWorkflow(def.getRepository().getSiteId(),
                 ar, def, monitors);
     }
-
-    /*
-    private static Session createScheduleSession(ConfigFactory cf,
-            Config revisionDefaultParams, WorkflowDefinition workflow,
-            ZoneId timeZone, Instant scheduleTime)
-    {
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH);
-        df.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-        String sessionName = df.format(scheduleTime);
-
-        Config overwriteParams = cf.create()
-            .set("schedule_time", scheduleTime.getEpochSecond());
-
-        return Session.sessionBuilder(
-                sessionName,
-                revisionDefaultParams,
-                workflow,
-                overwriteParams)
-            .options(SessionOptions.empty())
-            .build();
-    }
-    */
 }

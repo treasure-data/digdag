@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.time.Instant;
@@ -13,22 +14,30 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import com.google.common.base.Optional;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
-import io.digdag.core.session.SessionOptions;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.TaskCallbackApi;
+import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -53,8 +62,8 @@ public class Run
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-G", "--graph"})
-    String visualizePath = null;
+    //@Parameter(names = {"-G", "--graph"})
+    //String visualizePath = null;
 
     // TODO dry run
 
@@ -105,7 +114,7 @@ public class Run
         System.err.println("    -s, --session PATH               use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
+        //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         //System.err.println("    -d, --dry-run                    dry run mode");
         Main.showCommonOptions();
         return systemExit(error);
@@ -118,7 +127,11 @@ public class Run
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                 binder.bind(FileMapper.class).in(Scopes.SINGLETON);
                 binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+                binder.bind(Run.class).toInstance(this);  // used by TaskRunnerManagerWithSkip
             })
+            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+                binder.bind(TaskRunnerManager.class).to(TaskRunnerManagerWithSkip.class).in(Scopes.SINGLETON);
+            })))
             .initialize()
             .getInjector();
 
@@ -138,9 +151,8 @@ public class Run
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        Map<String, TaskReport> successfulTaskReports = ImmutableMap.of();
         if (sessionStatePath != null) {
-            successfulTaskReports = rsm.readSuccessfulTaskReports(new File(sessionStatePath));
+            this.skipTaskReports = (fullName) -> rsm.readSuccessfulTaskReport(new File(sessionStatePath), fullName);
         }
 
         Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
@@ -154,11 +166,6 @@ public class Run
             }
         }
         WorkflowDefinitionList workflowSources = dagfile.getWorkflowList();
-
-        // TODO
-        //SessionOptions options = SessionOptions.builder()
-        //    .skipTaskMap(successfulTaskReports)
-        //    .build();
 
         StoredSessionAttemptWithSession attempt = localSite.storeAndStartWorkflows(
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
@@ -217,6 +224,42 @@ public class Run
         else if (sessionStatePath == null) {
             rsm.shutdown();
             resumeResultPath.delete();
+        }
+    }
+
+    private Function<String, TaskReport> skipTaskReports = (fullName) -> null;
+
+    public static class TaskRunnerManagerWithSkip
+            extends TaskRunnerManager
+    {
+        private final TaskCallbackApi callback;
+        private final ConfigFactory cf;
+        private final Run cmd;
+
+        @Inject
+        public TaskRunnerManagerWithSkip(TaskCallbackApi callback, ConfigFactory cf,
+                ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
+                Run cmd)
+        {
+            super(callback, cf, evalEngine, factories);
+            this.callback = callback;
+            this.cf = cf;
+            this.cmd = cmd;
+        }
+
+        @Override
+        public void run(TaskRequest request)
+        {
+            String fullName = request.getTaskInfo().getFullName();
+            TaskReport report = cmd.skipTaskReports.apply(fullName);
+            if (report != null) {
+                callback.taskSucceeded(request.getTaskInfo().getId(),
+                        cf.create(), cf.create(),
+                        report);
+            }
+            else {
+                super.run(request);
+            }
         }
     }
 }

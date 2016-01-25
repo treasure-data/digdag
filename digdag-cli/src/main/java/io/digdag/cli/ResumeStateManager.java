@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
@@ -48,20 +47,15 @@ public class ResumeStateManager
         this.managedDirs = new CopyOnWriteArrayList<>();
     }
 
-    public Map<String, TaskReport> readSuccessfulTaskReports(File dir)
+    public TaskReport readSuccessfulTaskReport(File dir, String fname)
     {
-        ImmutableMap.Builder<String, TaskReport> builder = ImmutableMap.builder();
-        String[] fnames = dir.list((d, name) -> name.startsWith("+") && name.endsWith(".yml"));
-        if (fnames != null) {
-            for (String fname : fnames) {
-                TaskResumeState resumeState = mapper.readFile(new File(dir, fname), TaskResumeState.class);
-                if (resumeState.getState() == TaskStateCode.SUCCESS) {
-
-                    builder.put(resumeState.getFullName(), resumeState.getReport());
-                }
-            }
+        TaskResumeState resumeState = mapper.readFile(new File(dir, fname), TaskResumeState.class);
+        if (resumeState.getState() == TaskStateCode.SUCCESS) {
+            return resumeState.getReport();
         }
-        return builder.build();
+        else {
+            return null;
+        }
     }
 
     @PreDestroy
