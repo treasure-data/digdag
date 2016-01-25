@@ -15,6 +15,7 @@ import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.Schedule;
+import io.digdag.spi.RevisionInfo;
 import io.digdag.client.api.IdName;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
@@ -45,6 +46,7 @@ public class DatabaseRepositoryStoreManager
         handle.registerMapper(new StoredRevisionMapper(cfm));
         handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
         handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
+        handle.registerMapper(new RevisionInfoMapper());
         handle.registerMapper(new WorkflowConfigMapper());
         handle.registerMapper(new IdNameMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
@@ -73,6 +75,15 @@ public class DatabaseRepositoryStoreManager
         return requiredResource(
                 dao.getRepositoryByIdInternal(repoId),
                 "repository id=%s", repoId);
+    }
+
+    @Override
+    public String getRevisionOfWorkflowDefinition(long wfId)
+        throws ResourceNotFoundException
+    {
+        return requiredResource(
+                dao.getRevisionOfWorkflowDefinition(wfId),
+                "revision of workflow definition id=%s", wfId);
     }
 
     private class DatabaseRepositoryStore
@@ -378,6 +389,12 @@ public class DatabaseRepositoryStoreManager
                 " where id = :id")
         StoredRepository getRepositoryByIdInternal(@Bind("id") int id);
 
+        @SqlQuery("select rev.name" +
+                " from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " where wd.id = :id")
+        String getRevisionOfWorkflowDefinition(@Bind("id") long wfId);
+
         @SqlQuery("select * from repositories" +
                 " where site_id = :siteId" +
                 " and name = :name" +
@@ -638,6 +655,20 @@ public class DatabaseRepositoryStoreManager
                 .revisionName("rev_name")
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))
                 .build();
+        }
+    }
+
+    private static class RevisionInfoMapper
+            implements ResultSetMapper<RevisionInfo>
+    {
+        @Override
+        public RevisionInfo map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return RevisionInfo.of(
+                    r.getInt("id"),
+                    r.getString("repo_name"),
+                    r.getString("name"));
         }
     }
 

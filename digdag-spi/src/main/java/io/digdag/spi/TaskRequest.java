@@ -13,7 +13,7 @@ public abstract class TaskRequest
 {
     public abstract TaskInfo getTaskInfo();
 
-    public abstract Optional<RevisionInfo> getRevisionInfo();
+    public abstract Optional<String> getRevision();
 
     public abstract Config getConfig();
 

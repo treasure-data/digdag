@@ -925,15 +925,6 @@ public class DatabaseSessionStoreManager
         @GetGeneratedKeys
         long insertSessionMonitor(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime, @Bind("type") String type, @Bind("config") Config config);
 
-        /*
-        @SqlQuery("select rev.id, repo.name as repository_name, rev.name "+
-                " from session_relations sr" +
-                " join repositories repo on sr.repository_id = repo.id" +
-                " join revisions rev on sr.revision_id = rev.id" +
-                " where sr.id = :id")
-        RevisionInfo findAssociatedRevisionInfo(@Bind("id") long sessionId);
-        */
-
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
 

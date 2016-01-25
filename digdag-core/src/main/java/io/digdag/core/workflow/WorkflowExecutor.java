@@ -602,10 +602,15 @@ public class WorkflowExecutor
                                 attempt.getId(),
                                 attempt.getAttemptName(),
                                 fullName))
-                    /*
-                    .revisionInfo(
-                            sm.getAssociatedRevisionInfo(attempt.getId()))
-                            */
+                    .revision(
+                            attempt.getWorkflowDefinitionId().transform(wfId -> {
+                                try {
+                                    return rm.getRevisionOfWorkflowDefinition(wfId);
+                                }
+                                catch (ResourceNotFoundException ex) {
+                                    throw new RuntimeException(ex);
+                                }
+                            }))
                     .config(config)
                     .lastStateParams(task.getStateParams())
                     .build();

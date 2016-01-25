@@ -10,12 +10,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.io.File;
+import java.io.IOException;
+import java.io.FileNotFoundException;
 import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredTask;
@@ -49,8 +52,18 @@ public class ResumeStateManager
 
     public TaskReport readSuccessfulTaskReport(File dir, String fname)
     {
-        TaskResumeState resumeState = mapper.readFile(new File(dir, fname), TaskResumeState.class);
+        TaskResumeState resumeState;
+        try {
+            resumeState = mapper.readFile(new File(dir, fname + ".yml"), TaskResumeState.class);
+        }
+        catch (FileNotFoundException ex) {
+            return null;
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
         if (resumeState.getState() == TaskStateCode.SUCCESS) {
+            logger.info("Skipping " + fname);
             return resumeState.getReport();
         }
         else {
@@ -139,12 +152,19 @@ public class ResumeStateManager
                 return;
             }
             if (task.getState() == TaskStateCode.SUCCESS) {
-                writeStateFile(task);
+                try {
+                    writeStateFile(task);
+                }
+                catch (IOException ex) {
+                    logger.error("Failed to write state file", ex);
+                    return;
+                }
             }
             doneTaskIdList.add(task.getId());
         }
 
         private void writeStateFile(StoredTask task)
+            throws IOException
         {
             // grouping-only tasks don't have reports
             TaskResumeState state = TaskResumeState.of(

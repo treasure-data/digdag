@@ -6,7 +6,6 @@ import java.io.StringWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
@@ -25,17 +24,13 @@ public class FileMapper
     }
 
     public <T> void writeFile(File file, T value)
+        throws IOException
     {
         file.getParentFile().mkdirs();
-        try {
-            // TODO use yaml if file path ends with yml, otherwise use json?
-            try (YAMLGenerator out = yaml.createGenerator(new FileOutputStream(file))) {
-                // TODO write to a String first, then write to file. to not create partially-written broken file
-                mapper.writeValue(out, value);
-            }
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
+        // TODO use yaml if file path ends with yml, otherwise use json?
+        try (YAMLGenerator out = yaml.createGenerator(new FileOutputStream(file))) {
+            // TODO write to a String first, then write to file. to not create partially-written broken file
+            mapper.writeValue(out, value);
         }
     }
 
@@ -50,16 +45,12 @@ public class FileMapper
     }
 
     public <T> T readFile(File file, Class<T> type)
+        throws IOException
     {
-        try {
-            // TODO use yaml if file path ends with yml, otherwise use json?
-            try (YAMLParser out = yaml.createParser(new FileInputStream(file))) {
-                // TODO write to a String first, then write to file. to not create partially-written broken file
-                return mapper.readValue(out, type);
-            }
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
+        // TODO use yaml if file path ends with yml, otherwise use json?
+        try (YAMLParser out = yaml.createParser(new FileInputStream(file))) {
+            // TODO write to a String first, then write to file. to not create partially-written broken file
+            return mapper.readValue(out, type);
         }
     }
 }

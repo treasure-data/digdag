@@ -22,7 +22,7 @@ public class SimpleCommandExecutor
     public Process start(TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
-        if (request.getRevisionInfo().isPresent() && extractArchive) {
+        if (request.getRevision().isPresent() && extractArchive) {
             // TODO get File of RevisionInfo from the injected ArchiveManager and
             //      extract it to a new temp directory (archiveBuildPath/${repositoryName}/${revisionName}.${revisionId}.tmp)
             //      use Files.move to move _tmp to the actual dir with CopyOption.ATOMIC_MOVE
