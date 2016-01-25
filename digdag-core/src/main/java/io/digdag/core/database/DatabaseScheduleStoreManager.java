@@ -36,7 +36,6 @@ public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager
         implements ScheduleStoreManager, ScheduleControlStore
 {
-    private final StoredScheduleMapper ssm;
     private final ConfigMapper cfm;
     private final Handle handle;
     private final Dao dao;
@@ -46,8 +45,7 @@ public class DatabaseScheduleStoreManager
     {
         this.handle = dbi.open();
         this.cfm = cfm;
-        this.ssm = new StoredScheduleMapper(cfm);
-        handle.registerMapper(ssm);
+        handle.registerMapper(new StoredScheduleMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
     }

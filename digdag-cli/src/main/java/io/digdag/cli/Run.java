@@ -160,25 +160,24 @@ public class Run
         //    .skipTaskMap(successfulTaskReports)
         //    .build();
 
-        StoredSessionAttempt session = localSite.storeAndStartWorkflows(
+        StoredSessionAttempt attempt = localSite.storeAndStartWorkflows(
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
                 workflowSources,
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams);
-        logger.debug("Submitting {}", session);
+        logger.debug("Submitting {}", attempt);
 
         localSite.startLocalAgent();
         localSite.startMonitor();
 
         // if sessionStatePath is not set, use workflow.yml.resume.yml
         File resumeResultPath = new File(Optional.fromNullable(sessionStatePath).or("digdag.status"));
-        rsm.startUpdate(resumeResultPath, session);
+        rsm.startUpdate(resumeResultPath, attempt);
 
         localSite.runUntilAny();
 
         ArrayList<StoredTask> failedTasks = new ArrayList<>();
-        /*
-        for (StoredTask task : localSite.getSessionStore().getTasks(session.getId(), 100, Optional.absent())) {  // TODO paging
+        for (StoredTask task : localSite.getSessionStore().getTasksOfAttempt(attempt.getId())) {
             if (task.getState() == TaskStateCode.ERROR) {
                 failedTasks.add(task);
             }
@@ -195,10 +194,9 @@ public class Run
             logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());
         }
-        */
 
         //if (visualizePath != null) {
-        //    List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(session.getId(), 1024, Optional.absent())
+        //    List<WorkflowVisualizerNode> nodes = localSite.getSessionStore().getTasks(attempt.getId(), 1024, Optional.absent())
         //        .stream()
         //        .map(it -> WorkflowVisualizerNode.of(it))
         //        .collect(Collectors.toList());

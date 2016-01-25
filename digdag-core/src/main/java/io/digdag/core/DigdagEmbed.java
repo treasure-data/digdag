@@ -22,6 +22,7 @@ import io.digdag.core.database.DatabaseStoreConfig;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.repository.JacksonTimeModule;
 import io.digdag.core.session.SessionMonitorExecutor;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -88,7 +89,8 @@ public class DigdagEmbed
     {
         return Arrays.asList(
                 new ObjectMapperModule()
-                    .registerModule(new GuavaModule()),
+                    .registerModule(new GuavaModule())
+                    .registerModule(new JacksonTimeModule()),
                     //.registerModule(new JodaModule()),
                 new DatabaseModule(DatabaseStoreConfig.builder()
                     .type("h2")

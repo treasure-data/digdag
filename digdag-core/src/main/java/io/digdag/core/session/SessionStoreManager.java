@@ -24,11 +24,22 @@ public interface SessionStoreManager
     // for WorkflowExecutor.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);
 
+    interface AttemptLockAction <T>
+    {
+        T call(SessionAttemptControlStore store, SessionAttemptSummary summary);
+    }
+
+    // for WorkflowExecutor.propagateSessionArchive
+    <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func);
+
     // for WorkflowExecutorManager.IncrementalStatusPropagator.propagateStatus
     List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId);
 
     // for WorkflowExecutorManager.propagateAllBlockedToReady
     List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
+
+    // for WorkflowExecutorManager.propagateSessionArchive
+    List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId);
 
     boolean requestCancelAttempt(long attemptId);
 

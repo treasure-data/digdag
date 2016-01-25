@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.immutables.value.Value;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
@@ -44,6 +45,7 @@ public class DatabaseRepositoryStoreManager
         handle.registerMapper(new StoredRevisionMapper(cfm));
         handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
         handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
+        handle.registerMapper(new WorkflowConfigMapper());
         handle.registerMapper(new IdNameMapper());
         handle.registerArgumentFactory(cfm.getArgumentFactory());
         this.dao = handle.attach(Dao.class);
@@ -275,17 +277,25 @@ public class DatabaseRepositoryStoreManager
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition source)
+        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def)
             throws ResourceConflictException
         {
             try {
-                String text = cfm.toText(source.getConfig());
+                String text = cfm.toText(def.getConfig());
                 long configDigest = cfm.toConfigDigest(text);
-                // TODO get or insert
-                int configId = dao.insertWorkflowConfig(repoId, text, configDigest);
+
+                int configId;
+                WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
+                if (found != null && found.getConfig().equals(def.getConfig())) {
+                    configId = found.getId();
+                }
+                else {
+                    configId = dao.insertWorkflowConfig(repoId, text, configDigest);
+                }
+
                 long wfId = catchConflict(() ->
-                    dao.insertWorkflowDefinition(revId, source.getName(), configId),
-                    "workflow=%s in revision id=%d", source.getName(), revId);
+                    dao.insertWorkflowDefinition(revId, def.getName(), configId),
+                    "workflow=%s in revision id=%d", def.getName(), revId);
                 return getWorkflowDefinitionById(wfId);
             }
             catch (ResourceNotFoundException ex) {
@@ -495,6 +505,11 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowDefinition getWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
+        @SqlQuery("select id, config" +
+                " from workflow_configs" +
+                " where repository_id = :repoId and config_digest = :configDigest")
+        WorkflowConfig findWorkflowConfigByDigest(@Bind("repoId") int repoId, @Bind("configDigest") long configDigest);
+
         @SqlUpdate("insert into workflow_configs" +
                 " (repository_id, config, config_digest)" +
                 " values (:repoId, :config, :configDigest)")
@@ -511,6 +526,14 @@ public class DatabaseRepositoryStoreManager
                 " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
                 " where schedules.repository_id = :repoId")
         List<IdName> getScheduleNames(@Bind("repoId") int repoId);
+    }
+
+    @Value.Immutable
+    static abstract class WorkflowConfig
+    {
+        public abstract int getId();
+
+        public abstract String getConfig();
     }
 
     private static class StoredRepositoryMapper
@@ -614,6 +637,20 @@ public class DatabaseRepositoryStoreManager
                             .build())
                 .revisionName("rev_name")
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))
+                .build();
+        }
+    }
+
+    private static class WorkflowConfigMapper
+            implements ResultSetMapper<WorkflowConfig>
+    {
+        @Override
+        public WorkflowConfig map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableWorkflowConfig.builder()
+                .id(r.getInt("id"))
+                .config(r.getString("config"))
                 .build();
         }
     }

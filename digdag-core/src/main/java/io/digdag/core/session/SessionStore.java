@@ -22,7 +22,7 @@ public interface SessionStore
     //SessionStatusFlags getStatusFlags(long sesId)
     //    throws ResourceNotFoundException;
 
-    List<StoredTask> getTasksOfAttempt(long aId, int pageSize, Optional<Long> lastId);
+    List<StoredTask> getTasksOfAttempt(long attemptId);
 
     interface SessionLockAction <T>
     {

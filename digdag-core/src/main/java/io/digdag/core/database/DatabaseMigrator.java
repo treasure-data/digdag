@@ -305,6 +305,7 @@ public class DatabaseMigrator
                     new CreateTableBuilder("session_attempts")
                     .addLongId("id")
                     .addLong("session_id", "not null references sessions (id)")
+                    .addInt("site_id", "not null")
                     .addString("attempt_name", "not null")
                     .addLong("workflow_definition_id", "references workflow_definitions (id)")
                     .addShort("state_flags", "not null")  // 0=running or blocked, 1=cancel_requested, 2=done, 4=success
@@ -314,14 +315,13 @@ public class DatabaseMigrator
             handle.update("create unique index if not exists session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
             handle.update("create index if not exists session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id)");
 
-            //// session_attempt_archives
-            //handle.update(
-            //        new CreateTableBuilder("session_attempt_archives")
-            //        .addLongId("id")
-            //        // TODO save state
-            //        .addLongText("tasks", "")  // collection of tasks, delete tasks transactionally when archived
-            //        .addTimestamp("updated_at", "not null")
-            //        .build());
+            // task_archives
+            handle.update(
+                    new CreateTableBuilder("task_archives")
+                    .addLongId("id", "references session_attempts (id)")
+                    .addLongText("tasks", "not null")  // collection of tasks, delete tasks transactionally when archived
+                    .addTimestamp("created_at", "not null")
+                    .build());
 
             // session_monitors
             handle.update(
@@ -374,8 +374,8 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("task_dependencies")
                     .addLongId("id")
-                    .addLong("upstream_id", "")
-                    .addLong("downstream_id", "")
+                    .addLong("upstream_id", "not null")
+                    .addLong("downstream_id", "not null")
                     .build());
             handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
 

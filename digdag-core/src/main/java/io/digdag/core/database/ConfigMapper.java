@@ -5,6 +5,10 @@ import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.sql.ResultSet;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -80,10 +84,26 @@ public class ConfigMapper
         }
     }
 
+    private static final MessageDigest md5;
+
+    static {
+        try {
+            md5 = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public long toConfigDigest(String configText)
     {
-        // TODO
-        return 0L;
+        try {
+            byte[] digest = ((MessageDigest) md5.clone()).digest(configText.getBytes(StandardCharsets.UTF_8));
+            return ByteBuffer.wrap(digest).getLong(0);
+        }
+        catch (CloneNotSupportedException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public class ConfigArgumentFactory

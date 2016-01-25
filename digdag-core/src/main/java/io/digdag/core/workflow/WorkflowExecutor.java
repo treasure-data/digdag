@@ -20,6 +20,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.session.*;
@@ -48,6 +49,7 @@ public class WorkflowExecutor
     private final SessionStoreManager sm;
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
+    private final ObjectMapper archiveMapper;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -58,12 +60,14 @@ public class WorkflowExecutor
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             WorkflowCompiler compiler,
-            ConfigFactory cf)
+            ConfigFactory cf,
+            ObjectMapper archiveMapper)
     {
         this.rm = rm;
         this.sm = sm;
         this.compiler = compiler;
         this.cf = cf;
+        this.archiveMapper = archiveMapper;
     }
 
     public StoredSessionAttempt submitSubworkflow(int siteId, AttemptRequest ar,
@@ -221,6 +225,7 @@ public class WorkflowExecutor
             Instant date = sm.getStoreTime();
             propagateAllBlockedToReady();
             propagateAllPlannedToDone();
+            propagateSessionArchive();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
 
             IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
@@ -234,6 +239,7 @@ public class WorkflowExecutor
                 //}
                 propagateAllBlockedToReady();
                 propagateAllPlannedToDone();
+                propagateSessionArchive();
                 enqueueReadyTasks(queuer);
 
                 propagatorLock.lock();
@@ -408,6 +414,31 @@ public class WorkflowExecutor
     {
         Preconditions.checkState(!childrenErrors.isEmpty(), "errors must not be empty to migrate to children_error state");
         return childrenErrors.get(0).getFactory().create().set("errors", childrenErrors);
+    }
+
+    private boolean propagateSessionArchive()
+    {
+        boolean anyChanged = false;
+        long lastTaskId = 0;
+        while (true) {
+            List<TaskAttemptSummary> tasks = sm.findRootTasksByStates(TaskStateCode.doneStates(), lastTaskId);
+            if (tasks.isEmpty()) {
+                break;
+            }
+            anyChanged =
+                tasks
+                .stream()
+                .map(task -> {
+                    return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
+                        SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
+                        control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
+                        return true;
+                    }).or(false);
+                })
+                .reduce(anyChanged, (a, b) -> a || b);
+            lastTaskId = tasks.get(tasks.size() - 1).getId();
+        }
+        return anyChanged;
     }
 
     private class IncrementalStatusPropagator
