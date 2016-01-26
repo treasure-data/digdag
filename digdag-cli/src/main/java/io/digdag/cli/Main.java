@@ -40,10 +40,12 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("archive", new Archive());
         jc.addCommand("init", new Init());
         jc.addCommand("run", new Run(), "r");
         jc.addCommand("check", new Check(), "c");
+        jc.addCommand("scheduler", new Sched(), "sched");
+
+        jc.addCommand("archive", new Archive());
         jc.addCommand("server", new Server());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
@@ -171,6 +173,7 @@ public class Main
         System.err.println("    init                             generate a new sample digdag.yml");
         System.err.println("    r[un] [+name]                    run a workflow");
         System.err.println("    c[heck]                          show workflow definitions");
+        System.err.println("    sched[uler]                      run a scheduler server");
         System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    server                           start digdag server");
