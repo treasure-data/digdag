@@ -166,11 +166,11 @@ public class Run
                             "default: option is not written at %s file. Please add default: option or add +NAME option to command line", dagfilePath));
             }
         }
-        WorkflowDefinitionList workflowSources = dagfile.getWorkflowList();
+        WorkflowDefinitionList defs = dagfile.getWorkflowList();
 
         StoredSessionAttemptWithSession attempt = localSite.storeAndStartWorkflows(
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
-                workflowSources,
+                defs,
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams);
         logger.debug("Submitting {}", attempt);

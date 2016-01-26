@@ -43,8 +43,8 @@ public class Main
         jc.addCommand("archive", new Archive());
         jc.addCommand("init", new Init());
         jc.addCommand("run", new Run(), "r");
+        jc.addCommand("check", new Check(), "c");
         jc.addCommand("server", new Server());
-        jc.addCommand("show", new Show());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
@@ -170,6 +170,7 @@ public class Main
         System.err.println("  Commands:");
         System.err.println("    init                             generate a new sample digdag.yml");
         System.err.println("    r[un] [+name]                    run a workflow");
+        System.err.println("    c[heck]                          show workflow definitions");
         System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    server                           start digdag server");

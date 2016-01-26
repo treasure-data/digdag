@@ -19,7 +19,8 @@ public class FileMapper
     @Inject
     public FileMapper(ObjectMapper mapper)
     {
-        this.yaml = new YAMLFactory();
+        this.yaml = new YAMLFactory()
+            .configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false);
         this.mapper = mapper;
     }
 
@@ -35,13 +36,17 @@ public class FileMapper
     }
 
     public <T> String toYaml(T value)
-            throws IOException
     {
-        StringWriter writer = new StringWriter();
-        try (YAMLGenerator yamlOut = yaml.createGenerator(writer)) {
-            mapper.writeValue(yamlOut, value);
+        try {
+            StringWriter writer = new StringWriter();
+            try (YAMLGenerator out = yaml.createGenerator(writer)) {
+                mapper.writeValue(out, value);
+            }
+            return writer.toString();
         }
-        return writer.toString();
+        catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public <T> T readFile(File file, Class<T> type)
