@@ -1,9 +1,11 @@
 package io.digdag.core.schedule;
 
 import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.time.Instant;
 import java.time.ZoneId;
+import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +33,7 @@ public class ScheduleExecutor
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
-    private final ExecutorService executor;
+    private final ScheduledExecutorService executor;
 
     @Inject
     public ScheduleExecutor(
@@ -44,7 +46,7 @@ public class ScheduleExecutor
         this.sm = sm;
         this.srm = srm;
         this.handler = handler;
-        this.executor = Executors.newCachedThreadPool(
+        this.executor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("scheduler-%d")
@@ -52,23 +54,28 @@ public class ScheduleExecutor
                 );
     }
 
+    @PreDestroy
+    public void shutdown()
+    {
+        executor.shutdown();
+        // TODO wait for shutdown completion?
+    }
+
     public void start()
     {
-        executor.submit(() -> run());
+        executor.scheduleWithFixedDelay(() -> run(),
+                1, 1, TimeUnit.SECONDS);
     }
 
     public void run()
     {
         try {
-            while (true) {
-                Thread.sleep(1000);  // TODO sleep interval
-                sm.lockReadySchedules(Instant.now(), (store, storedSchedule) -> {
-                    schedule(new ScheduleControl(store, storedSchedule));
-                });
-            }
+            sm.lockReadySchedules(Instant.now(), (store, storedSchedule) -> {
+                schedule(new ScheduleControl(store, storedSchedule));
+            });
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception", t);
+            logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
         }
     }
 
@@ -106,12 +113,12 @@ public class ScheduleExecutor
             }
             catch (ResourceConflictException ex) {
                 Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
-                logger.error("Database state error during scheduling. Skipping this schedule", error);
+                logger.error("Database state error during scheduling. Skipping this schedule: {}", sched, error);
                 ScheduleTime nextTime = sr.nextScheduleTime(sched.getNextScheduleTime());
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
             catch (RuntimeException ex) {
-                logger.error("Error during scheduling. Pending this schedule for 1 hour", ex);
+                logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
                 ScheduleTime nextTime = ScheduleTime.of(
                         sched.getNextRunTime().plusSeconds(3600),
                         sched.getNextScheduleTime());
@@ -120,7 +127,7 @@ public class ScheduleExecutor
         }
         catch (ResourceNotFoundException ex) {
             Exception error = new IllegalStateException("Workflow for a schedule id=" + sched.getId() + " is scheduled but does not exist.", ex);
-            logger.error("Database state error during scheduling. Pending this schedule for 1 hour", error);
+            logger.error("Database state error during scheduling. Pending this schedule for 1 hour: {}", sched, error);
             ScheduleTime nextTime = ScheduleTime.of(
                     sched.getNextRunTime().plusSeconds(3600),
                     sched.getNextScheduleTime());

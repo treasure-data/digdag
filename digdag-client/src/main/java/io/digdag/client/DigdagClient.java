@@ -64,6 +64,7 @@ public class DigdagClient
 
         this.headers = new MultivaluedHashMap<>();
 
+        // TODO set ObjectMapper.setInjectableValues(InjectableValues.Std.addValue(ObjectMapper.class, objmapper)) so that here doesn't have to create guice
         // here uses Guice to make @JacksonInject work which is used at io.digdag.client.config.Config.<init>
         Injector injector = buildInjector();
         this.client = new ResteasyClientBuilder()

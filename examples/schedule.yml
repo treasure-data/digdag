@@ -10,6 +10,6 @@ run: +schedule
     cron: "* * * * *"  # every minute
 
   +task:
-    sh>: echo "This schedule is for $schedule_time $timezone"
+    sh>: echo "This schedule is for $session_time"
 
   # See also sla.yml

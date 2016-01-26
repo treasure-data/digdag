@@ -163,12 +163,12 @@ public class DatabaseScheduleStoreManager
     public interface Dao
     {
         @SqlQuery("select s.*, wd.name as name from schedules s" +
-                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId")
         StoredSchedule getScheduleByIdInternal(@Bind("schedId") long schedId);
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
-                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.repository_id in (" +
                     "select id from repositories repo" +
                     " where repo.site_id = :siteId" +
@@ -179,7 +179,7 @@ public class DatabaseScheduleStoreManager
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select s.*, wd.name as name, from schedules s" +
-                " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId" +
                 " and exists (" +
                     "select * from repositories repo" +
@@ -205,7 +205,7 @@ public class DatabaseScheduleStoreManager
         int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlUpdate("update schedules" +
-                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, :last_session_instant = :lastSessionInstant, updated_at = now()" +
+                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, last_session_instant = :lastSessionInstant, updated_at = now()" +
                 " where id = :id")
         int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionInstant") long lastSessionInstant);
     }

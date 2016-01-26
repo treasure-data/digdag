@@ -50,7 +50,8 @@ public class Sched
     {
         System.err.println("Usage: digdag sched [options...]");
         System.err.println("  Options:");
-        System.err.println("    -t, --port PORT                  port number to listen HTTP clients (default: 9090)");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: 9090)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         Main.showCommonOptions();
         return systemExit(error);
@@ -82,7 +83,7 @@ public class Sched
         // parameters for ServerBootstrap
         ImmutableMap.Builder<String, String> params = ImmutableMap.builder();
         params.put("io.digdag.cli.server.autoLoadFile", dagfilePath);
-        params.put("io.digdag.cli.server.disableUpload", "true");
+        //params.put("io.digdag.cli.server.disableUpload", "true");
         params.put("io.digdag.cli.server.disableArchiveExtract", "true");
 
         Server.start(port, bind, params.build());

@@ -350,7 +350,7 @@ public class DatabaseRepositoryStoreManager
                     catchConflict(() ->
                             handle.createStatement(
                                 "insert into schedules" +
-                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, created_at, last_session_instant, updated_at)" +
+                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_instant, created_at, updated_at)" +
                                 " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
                             )
                             .bind("repoId", repoId)

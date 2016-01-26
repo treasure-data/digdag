@@ -46,7 +46,7 @@ public class Server
     {
         System.err.println("Usage: digdag server [options...]");
         System.err.println("  Options:");
-        System.err.println("    -t, --port PORT                  port number to listen HTTP clients (default: 9090)");
+        System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: 9090)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         Main.showCommonOptions();
         return systemExit(error);
