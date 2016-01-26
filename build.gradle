@@ -65,7 +65,12 @@ project(':digdag-cli') {
                        'Specification-Version': project.version,
                        'Main-Class': 'io.digdag.cli.Main'
         }
-        //append("${rootProject.projectDir}/COPYING")
+        //include "${rootProject.projectDir}/COPYING"
+        exclude 'io/digdag/**/*.java'
+        dependencies {
+            exclude(dependency("org.immutables:value"))
+            exclude(dependency("org.immutables:builder"))
+        }
     }
 
     task classpath(type: Copy) {
