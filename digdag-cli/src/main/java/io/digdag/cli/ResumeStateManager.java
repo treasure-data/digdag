@@ -50,11 +50,11 @@ public class ResumeStateManager
         this.managedDirs = new CopyOnWriteArrayList<>();
     }
 
-    public TaskReport readSuccessfulTaskReport(File dir, String fname)
+    public TaskReport readSuccessfulTaskReport(File dir, String fullName)
     {
         TaskResumeState resumeState;
         try {
-            resumeState = mapper.readFile(new File(dir, fname + ".yml"), TaskResumeState.class);
+            resumeState = mapper.readFile(new File(dir, fullName + ".yml"), TaskResumeState.class);
         }
         catch (FileNotFoundException ex) {
             return null;
@@ -63,7 +63,6 @@ public class ResumeStateManager
             throw Throwables.propagate(ex);
         }
         if (resumeState.getState() == TaskStateCode.SUCCESS) {
-            logger.info("Skipping " + fname);
             return resumeState.getReport();
         }
         else {

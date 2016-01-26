@@ -32,6 +32,7 @@ import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.TaskCallbackApi;
+import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.yaml.YamlConfigLoader;
@@ -253,6 +254,9 @@ public class Run
             String fullName = request.getTaskInfo().getFullName();
             TaskReport report = cmd.skipTaskReports.apply(fullName);
             if (report != null) {
+                try (SetThreadName threadName = new SetThreadName(fullName)) {
+                    logger.info("Skipped");
+                }
                 callback.taskSucceeded(request.getTaskInfo().getId(),
                         cf.create(), cf.create(),
                         report);
