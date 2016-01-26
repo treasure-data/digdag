@@ -41,8 +41,6 @@ import io.digdag.client.config.ConfigFactory;
 
 public class WorkflowExecutor
 {
-    private static final String DEFAULT_ATTEMPT_NAME = "";
-
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
     private final RepositoryStoreManager rm;
@@ -73,7 +71,7 @@ public class WorkflowExecutor
     public StoredSessionAttemptWithSession submitSubworkflow(int siteId, AttemptRequest ar,
             WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern,
             List<SessionMonitor> monitors)
-        throws ResourceConflictException, NoMatchException, MultipleTaskMatchException
+        throws NoMatchException, MultipleTaskMatchException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList sourceTasks = workflow.getTasks();
@@ -96,7 +94,6 @@ public class WorkflowExecutor
             AttemptRequest ar,
             WorkflowDefinition def,
             List<SessionMonitor> monitors)
-        throws ResourceConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
@@ -111,7 +108,6 @@ public class WorkflowExecutor
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks, List<SessionMonitor> monitors)
-        throws ResourceConflictException
     {
         for (WorkflowTask task : tasks) {
             logger.trace("  Step["+task.getIndex()+"]: "+task.getName());
@@ -133,14 +129,27 @@ public class WorkflowExecutor
             .setAll(ar.getOverwriteParams());
 
         SessionAttempt attempt = SessionAttempt.of(
-                ar.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME),
+                ar.getRetryAttemptName(),
                 sessionParams, ar.getStoredWorkflowDefinitionId());
+
+        TaskConfig.validateAttempt(attempt);
 
         final WorkflowTask root = tasks.get(0);
         StoredSessionAttempt stored = sm
             .getSessionStore(siteId)
             .putAndLockSession(session, (store, storedSession) -> {
-                StoredSessionAttempt storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);
+                StoredSessionAttempt storedAttempt;
+                try {
+                    storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);
+                }
+                catch (ResourceConflictException ex) {
+                    try {
+                        return store.getLastAttempt(storedSession.getId());
+                    }
+                    catch (ResourceNotFoundException shouldNotHappen) {
+                        throw new IllegalStateException("Database state error", shouldNotHappen);
+                    }
+                }
                 final Task rootTask = Task.taskBuilder()
                     .parentId(Optional.absent())
                     .fullName(root.getName())
@@ -209,6 +218,7 @@ public class WorkflowExecutor
         try (TaskQueuer queuer = new TaskQueuer(dispatcher)) {
             Instant date = sm.getStoreTime();
             propagateAllBlockedToReady();
+            retryRetryWaitingTasks();
             propagateAllPlannedToDone();
             propagateSessionArchive();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
@@ -223,6 +233,7 @@ public class WorkflowExecutor
                 //    propagatorNotice = true;
                 //}
                 propagateAllBlockedToReady();
+                retryRetryWaitingTasks();
                 propagateAllPlannedToDone();
                 propagateSessionArchive();
                 enqueueReadyTasks(queuer);
@@ -593,14 +604,14 @@ public class WorkflowExecutor
             }
 
             try {
-                Config config = collectTaskConfig(task, attempt);
+                Config config = TaskConfig.setRuntimeBuiltInConfig(collectTaskConfig(task, attempt), attempt);
                 TaskRequest request = TaskRequest.builder()
                     .taskInfo(
                             TaskInfo.of(
                                 task.getId(),
                                 attempt.getSiteId(),
                                 attempt.getId(),
-                                attempt.getAttemptName(),
+                                attempt.getRetryAttemptName(),
                                 fullName))
                     .revision(
                             attempt.getWorkflowDefinitionId().transform(wfId -> {

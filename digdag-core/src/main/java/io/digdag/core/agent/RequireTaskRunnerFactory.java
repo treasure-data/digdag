@@ -2,6 +2,8 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.Instant;
+import java.time.ZoneId;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
@@ -15,6 +17,7 @@ import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.core.agent.RetryControl;
+import io.digdag.core.session.SessionStateFlags;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 
@@ -61,9 +64,10 @@ public class RequireTaskRunnerFactory
         @Override
         public TaskResult run()
         {
-            RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, true);
+            RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, false);
+            boolean isDone;
             try {
-                runTask();
+                isDone = runTask();
             }
             catch (RuntimeException ex) {
                 Config error = TaskRunnerManager.makeExceptionError(request.getConfig().getFactory(), ex);
@@ -77,22 +81,41 @@ public class RequireTaskRunnerFactory
                 }
             }
 
-            return TaskResult.builder()
-                .subtaskConfig(cf.create())
-                .report(
-                    TaskReport.builder()
-                    .inputs(ImmutableList.of())
-                    .outputs(ImmutableList.of())
-                    .carryParams(cf.create())
-                    .build())
-                .build();
+            if (isDone) {
+                return TaskResult.builder()
+                    .subtaskConfig(cf.create())
+                    .report(
+                        TaskReport.builder()
+                        .inputs(ImmutableList.of())
+                        .outputs(ImmutableList.of())
+                        .carryParams(cf.create())
+                        .build())
+                    .build();
+            }
+            else {
+                // TODO use exponential-backoff to calculate retry interval
+                throw new TaskExecutionException(1);
+            }
         }
 
-        private void runTask()
+        private boolean runTask()
         {
-            String workflowName = request.getConfig().get("command", String.class);
-            //callback.startSession(
-            //        workflowName);
+            Config config = request.getConfig();
+            String workflowName = config.get("command", String.class);
+            int repositoryId = config.get("repository_id", int.class);
+            Instant instant = config.get("session_time", Instant.class);
+            Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
+            ZoneId defaultTimeZone = config.get("timezone", ZoneId.class);
+            Config overwriteParams = config.getNestedOrGetEmpty("params");
+            SessionStateFlags flags = callback.startSession(
+                    repositoryId,
+                    workflowName,
+                    instant,
+                    retryAttemptName,
+                    defaultTimeZone,
+                    overwriteParams);
+
+            return flags.isDone();
         }
 
         @Override

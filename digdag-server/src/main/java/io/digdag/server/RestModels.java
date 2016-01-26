@@ -111,9 +111,9 @@ public final class RestModels
             .repository(IdName.of(repositoryId, repositoryName))
             .workflowName(workflowName)
             .sessionTime(sessionTime.getEpochSecond())
-            .attemptName(attempt.getAttemptName())
-            .success(attempt.getStatusFlags().isSuccess())
-            .cancelRequested(attempt.getStatusFlags().isCancelRequested())
+            .retryAttemptName(attempt.getRetryAttemptName())
+            .success(attempt.getStateFlags().isSuccess())
+            .cancelRequested(attempt.getStateFlags().isCancelRequested())
             .params(attempt.getParams())
             .createdAt(attempt.getCreatedAt())
             .build();

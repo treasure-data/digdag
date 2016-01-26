@@ -1,0 +1,20 @@
+run: +require
+
++require:
+  +task1:
+    +require_data:
+      require>: +make_data
+    +use_data:
+      sh>: echo "task1 is using the data"
+
+  +task2:
+    +require_data:
+      require>: +make_data
+    +use_data:
+      sh>: echo "task2 is using the data"
+
++make_data:
+  +step1:
+    sh>: echo "creating data..."
+  +step2:
+    sh>: echo "done."

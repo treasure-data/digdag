@@ -469,7 +469,10 @@ public class DatabaseRepositoryStoreManager
                 " limit :limit")
         List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config," +
+                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
@@ -482,7 +485,10 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
 
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config," +
+                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
@@ -494,8 +500,8 @@ public class DatabaseRepositoryStoreManager
                 " order by wd.id desc")
         List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select wd.id, wd.revision_id, wd.name, wc.config,"+
-                " repo.id as repo_id, repo.site_id, repo.created_at as repo_created_at, repo.updated_at as repo_updated_at, repo.name as repo_name," +
+        @SqlQuery("select wd.*, wc.config," +
+                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +

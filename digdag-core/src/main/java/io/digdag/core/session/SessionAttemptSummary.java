@@ -15,6 +15,6 @@ public abstract class SessionAttemptSummary
 
     public abstract long getSessionId();
 
-    public abstract SessionStatusFlags getStatusFlags();
+    public abstract SessionStateFlags getStateFlags();
 }
 

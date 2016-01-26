@@ -259,16 +259,10 @@ public class TaskControl
     // to retry without error
     public boolean setRunningToRetry(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.absent())) {
+        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }
         return false;
     }
-
-
-    ////
-    // for control interface
-    //
-    //public void setAnyToCanceled();
 }

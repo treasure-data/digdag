@@ -1,10 +1,12 @@
 package io.digdag.core.agent;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.SessionStatusFlags;
+import io.digdag.core.session.SessionStateFlags;
 
 public interface TaskCallbackApi
 {
@@ -19,8 +21,11 @@ public interface TaskCallbackApi
     void taskPollNext(long taskId,
             Config stateParams, int retryInterval);
 
-    //SessionStatusFlags startSession(
-    //        String repositoryName,
-    //        String workflowName,
-    //        Session session);
+    SessionStateFlags startSession(
+            int repositoryId,
+            String workflowName,
+            Instant instant,
+            Optional<String> retryAttemptName,
+            ZoneId defaultTimeZone,
+            Config overwriteParams);
 }

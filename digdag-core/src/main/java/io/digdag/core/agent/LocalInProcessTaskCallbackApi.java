@@ -1,5 +1,7 @@
 package io.digdag.core.agent;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -13,11 +15,12 @@ import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.StoredSession;
-import io.digdag.core.session.SessionStatusFlags;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 
 public class LocalInProcessTaskCallbackApi
         implements TaskCallbackApi
@@ -62,53 +65,41 @@ public class LocalInProcessTaskCallbackApi
         exec.taskPollNext(taskId, stateParams, retryInterval);
     }
 
-    /*
     @Override
-    public SessionStatusFlags startSession(String repositoryName,
-            String workflowName, Session session)
+    public SessionStateFlags startSession(
+            int repositoryId,
+            String workflowName,
+            Instant instant,
+            Optional<String> retryAttemptName,
+            ZoneId defaultTimeZone,
+            Config overwriteParams)
     {
         RepositoryStore repoStore = rm.getRepositoryStore(siteId);
         SessionStore sessionStore = sm.getSessionStore(siteId);
 
-        StoredWorkflowDefinitionWithRepository wf;
+        StoredWorkflowDefinitionWithRepository def;
         try {
-            StoredRepository repo = repoStore.getRepositoryByName(repositoryName);
-            wf = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
+            StoredRepository repo = repoStore.getRepositoryById(repositoryId);
+            def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
         }
         catch (ResourceNotFoundException ex) {
             throw new RuntimeException(ex);
         }
 
-        StoredSession stored;
-        try {
-            stored = sessionStore.getSessionByName(session.getName());
-        }
-        catch (ResourceNotFoundException try1) {
-            try {
-                stored = exec.submitWorkflow(siteId,
-                        wf, Optional.absent(),
-                        session, Optional.of(SessionRelation.ofWorkflow(wf.getRepository().getId(), wf.getRevisionId(), wf.getId())),
-                        ImmutableList.of());
-            }
-            catch (ResourceConflictException try2) {
-                try {
-                    stored = sessionStore.getSessionByName(session.getName());
-                }
-                catch (ResourceNotFoundException asyncDeleted) {
-                    throw new RuntimeException(asyncDeleted);
-                }
-            }
-            catch  (TaskMatchPattern.NoMatchException | TaskMatchPattern.MultipleTaskMatchException neverHappens) {
-                throw new RuntimeException(neverHappens);
-            }
-        }
+        AttemptRequest ar = AttemptRequest.builder()
+            .repositoryId(def.getRepository().getId())
+            .workflowName(def.getName())
+            .instant(instant)
+            .retryAttemptName(retryAttemptName)
+            .defaultTimeZone(defaultTimeZone)
+            .defaultParams(def.getRevisionDefaultParams())
+            .overwriteParams(overwriteParams)
+            .storedWorkflowDefinitionId(Optional.of(def.getId()))
+            .build();
 
-        try {
-            return sessionStore.getStatusFlags(stored.getId());
-        }
-        catch (ResourceNotFoundException asyncDeleted) {
-            throw new RuntimeException(asyncDeleted);
-        }
+        // TODO FIXME SessionMonitor monitors is not set
+        StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def, ImmutableList.of());
+
+        return attempt.getStateFlags();
     }
-    */
 }

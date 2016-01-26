@@ -3,13 +3,15 @@ package io.digdag.core.session;
 import java.util.List;
 import com.google.common.base.Optional;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionControlStore
 {
-    Optional<StoredSessionAttempt> tryLastAttempt(long sessionId);
-
     StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
         throws ResourceConflictException;
+
+    StoredSessionAttempt getLastAttempt(long sessionId)
+        throws ResourceNotFoundException;
 
     interface SessionBuilderAction <T>
     {

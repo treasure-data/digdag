@@ -254,7 +254,7 @@ public class DatabaseMigrator
             // workflow_configs
             handle.update(
                     new CreateTableBuilder("workflow_configs")
-                    .addIntId("id", "references revisions (id)")
+                    .addIntId("id")
                     .addInt("repository_id", "not null references repositories (id)")
                     .addMediumText("config", "not null")
                     .addLong("config_digest", "not null")

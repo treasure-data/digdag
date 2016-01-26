@@ -98,13 +98,14 @@ public class TaskRunnerManager
 
         }
         catch (TaskExecutionException ex) {
-            logger.error("Task failed", ex);
             if (ex.getError().isPresent()) {
+                logger.error("Task failed", ex);
                 callback.taskFailed(taskId,
                         ex.getError().get(), nextState,
                         ex.getRetryInterval());
             }
             else {
+                logger.debug("Retrying task", ex);
                 callback.taskPollNext(
                         taskId,
                         nextState, ex.getRetryInterval().get());

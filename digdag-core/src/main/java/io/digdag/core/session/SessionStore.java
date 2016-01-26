@@ -19,17 +19,12 @@ public interface SessionStore
     List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)
         throws ResourceNotFoundException;
 
-    //SessionStatusFlags getStatusFlags(long sesId)
-    //    throws ResourceNotFoundException;
-
     List<StoredTask> getTasksOfAttempt(long attemptId);
 
     interface SessionLockAction <T>
     {
-        T call(SessionControlStore store, StoredSession storedSession)
-            throws ResourceConflictException;
+        T call(SessionControlStore store, StoredSession storedSession);
     }
 
-    <T> T putAndLockSession(Session session, SessionLockAction<T> func)
-        throws ResourceConflictException;
+    <T> T putAndLockSession(Session session, SessionLockAction<T> func);
 }

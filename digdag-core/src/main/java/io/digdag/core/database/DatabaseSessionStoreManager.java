@@ -34,6 +34,8 @@ public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager
         implements SessionStoreManager, SessionAttemptControlStore, TaskControlStore
 {
+    private static final String DEFAULT_ATTEMPT_NAME = "";
+
     private final String databaseType;
 
     private final ObjectMapper mapper;
@@ -130,7 +132,7 @@ public class DatabaseSessionStoreManager
         return handle.createQuery(
                 "select count(*) from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
-                " where " + bitAnd("state_flags", Integer.toString(SessionStatusFlags.DONE_CODE)) + " = 0"
+                " where " + bitAnd("state_flags", Integer.toString(SessionStateFlags.DONE_CODE)) + " = 0"
             )
             .mapTo(long.class)
             .first() > 0L;
@@ -203,7 +205,7 @@ public class DatabaseSessionStoreManager
                 .execute();
             if (n > 0) {
                 handle.createStatement("update session_attempts" +
-                        " set state_flags = " + bitOr("state_flags", Integer.toString(SessionStatusFlags.CANCEL_REQUESTED_CODE)) +
+                        " set state_flags = " + bitOr("state_flags", Integer.toString(SessionStateFlags.CANCEL_REQUESTED_CODE)) +
                         " where attempt_id = :attemptId")
                     .bind("attemptId", attemptId)
                     .execute();
@@ -585,9 +587,9 @@ public class DatabaseSessionStoreManager
     @Override
     public boolean setDoneToAttemptState(long attemptId, boolean success)
     {
-        int code = SessionStatusFlags.DONE_CODE;
+        int code = SessionStateFlags.DONE_CODE;
         if (success) {
-            code |= SessionStatusFlags.SUCCESS_CODE;
+            code |= SessionStateFlags.SUCCESS_CODE;
         }
         int n = handle.createStatement(
                 "update session_attempts" +
@@ -611,7 +613,6 @@ public class DatabaseSessionStoreManager
 
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
-            throws ResourceConflictException
         {
             // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
             return handle.inTransaction((handle, handleSession) -> {
@@ -639,22 +640,25 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public Optional<StoredSessionAttempt> tryLastAttempt(long sessionId)
-        {
-            return Optional.fromNullable(dao.getLastAttemptInternal(sessionId));
-        }
-
-        @Override
         public StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
             throws ResourceConflictException
         {
             long attemptId = catchConflict(() ->
                 dao.insertAttempt(siteId, repoId, sessionId,
-                        attempt.getAttemptName(), attempt.getWorkflowDefinitionId().orNull(),
-                        SessionStatusFlags.empty().get(), attempt.getParams()),
-                "session attempt name=%s in session id=%d", attempt.getAttemptName(), sessionId);
+                        attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
+                        SessionStateFlags.empty().get(), attempt.getParams()),
+                "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId);
             dao.updateLastAttemptId(sessionId, attemptId);
             return dao.getAttemptByIdInternal(attemptId);
+        }
+
+        @Override
+        public StoredSessionAttempt getLastAttempt(long sessionId)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    dao.getLastAttemptInternal(sessionId),
+                    "latest attempt of session id=%d", sessionId);
         }
 
         //public List<StoredSessionAttemptWithSession> getAllSessions()
@@ -903,9 +907,9 @@ public class DatabaseSessionStoreManager
                 @Bind("workflowName") String workflowName, @Bind("instant") long instant);
 
         @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, params, created_at)" +
-                " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :statusFlags, :params, now())")
+                " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :stateFlags, :params, now())")
         @GetGeneratedKeys
-        long insertAttempt(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("statusFlags") int statusFlags, @Bind("params") Config params);
+        long insertAttempt(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("params") Config params);
 
         @SqlUpdate("update sessions" +
                 " set last_attempt_id = :attemptId" +
@@ -984,7 +988,7 @@ public class DatabaseSessionStoreManager
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks " +
-                " set updated_at = now(), state = :newState, retry_at = now() + interval :retryInterval seconds" +
+                " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
                 " where id = :id" +
                 " and state = :oldState")
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState, @Bind("retryInterval") int retryInterval);
@@ -996,7 +1000,8 @@ public class DatabaseSessionStoreManager
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), state = " + TaskStateCode.READY_CODE +
-                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")")
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")"+
+                " and retry_at >= now()")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select * from session_monitors" +
@@ -1098,12 +1103,13 @@ public class DatabaseSessionStoreManager
         public StoredSessionAttempt map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
+            String attemptName = r.getString("attempt_name");
             return ImmutableStoredSessionAttempt.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
-                .attemptName(r.getString("attempt_name"))
+                .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
-                .statusFlags(SessionStatusFlags.of(r.getInt("state_flags")))
+                .stateFlags(SessionStateFlags.of(r.getInt("state_flags")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .build();
@@ -1124,12 +1130,13 @@ public class DatabaseSessionStoreManager
         public StoredSessionAttemptWithSession map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
+            String attemptName = r.getString("attempt_name");
             return ImmutableStoredSessionAttemptWithSession.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
-                .attemptName(r.getString("attempt_name"))
+                .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
-                .statusFlags(SessionStatusFlags.of(r.getInt("state_flags")))
+                .stateFlags(SessionStateFlags.of(r.getInt("state_flags")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .siteId(r.getInt("site_id"))
@@ -1153,7 +1160,7 @@ public class DatabaseSessionStoreManager
             return ImmutableSessionAttemptSummary.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
-                .statusFlags(SessionStatusFlags.of(r.getInt("state_flags")))
+                .stateFlags(SessionStateFlags.of(r.getInt("state_flags")))
                 .build();
         }
     }

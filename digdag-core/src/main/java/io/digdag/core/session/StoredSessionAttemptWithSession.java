@@ -21,10 +21,10 @@ public abstract class StoredSessionAttemptWithSession
     {
         return ImmutableStoredSessionAttemptWithSession.builder()
             .id(attempt.getId())
-            .attemptName(attempt.getAttemptName())
+            .retryAttemptName(attempt.getRetryAttemptName())
             .workflowDefinitionId(attempt.getWorkflowDefinitionId())
             .params(attempt.getParams())
-            .statusFlags(attempt.getStatusFlags())
+            .stateFlags(attempt.getStateFlags())
             .sessionId(attempt.getSessionId())
             .createdAt(attempt.getCreatedAt())
             .siteId(siteId)

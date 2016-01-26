@@ -9,11 +9,14 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.LocalInProcessTaskCallbackApi;
+import io.digdag.core.agent.RequireTaskRunnerFactory;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
@@ -115,6 +118,9 @@ public class DigdagEmbed
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
+
+                    Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
+                    taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
                 },
                 new ExtensionServiceLoaderModule()
         );
