@@ -1,7 +1,8 @@
 run: +main
+
 +main:
   +task1:
-    sh>: "echo this task runs first."
+    sh>: echo "this task runs first."
 
   +my_task_2:
-    sh>: "echo this task runs next."
+    sh>: echo "this task runs next."

@@ -48,7 +48,7 @@ public class Archive
     String paramsFile = null;
 
     @Parameter(names = {"-o", "--output"})
-    String output = "archive.tar.gz";
+    String output = "digdag.archive.tar.gz";
 
     @Override
     public void main()
@@ -66,15 +66,15 @@ public class Archive
         System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -o, --output ARCHIVE.tar.gz      output path");
+        System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         //System.err.println("    -C           DIR                  change directory before reading files");
         Main.showCommonOptions();
         System.err.println("  Stdin:");
         System.err.println("    Names of the files to add the archive.");
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ find . | digdag archive");
-        System.err.println("    $ git ls-files | digdag archive -o archive.tar.gz workflows/*.yml");
+        System.err.println("    $ git ls-files | digdag archive");
+        System.err.println("    $ find . | digdag archive -o digdag.archive.tar.gz");
         return systemExit(error);
     }
 
@@ -126,7 +126,7 @@ public class Archive
                 if (file.isDirectory()) {
                     continue;
                 }
-                System.out.println("   Archiving "+file);
+                System.out.println("  Archiving "+file);
 
                 tar.putArchiveEntry(new TarArchiveEntry(file));
                 if (file.isFile()) {
@@ -158,9 +158,11 @@ public class Archive
             tar.closeArchiveEntry();
         }
 
-        System.out.println("  Workflows:");
+        System.out.println("Workflows:");
         for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
-            System.out.println("    "+workflow.getName());
+            System.out.println("  "+workflow.getName());
         }
+
+        System.out.println("Created "+output+".");
     }
 }

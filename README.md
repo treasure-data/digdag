@@ -12,13 +12,17 @@
 
 ```
 Usage: digdag <command> [options...]
-  Commands:
-    init                             generate a new sample digdag.yml
-    run [+name]                      run a workflow
+  Local-mode commands:
+    init <path>                      create a new workflow project
+    r[un] [+name]                    run a workflow
+    c[heck]                          show workflow definitions
+    sched[uler]                      run a scheduler server
 
   Server-mode commands:
-    archive <workflow.yml...>        create a project archive
     server                           start digdag server
+
+  Client-mode commands:
+    archive <workflow.yml...>        create a project archive
 
   Options:
     -g, --log PATH                   output log messages to a file (default: -)
@@ -28,46 +32,125 @@ Usage: digdag <command> [options...]
 
 Use `<command> --help` to see detailed usage of a command.
 
-## CLI-mode
+## Local mode
 
-With Command-Line-Interface, Digdag runs workflows on local machine.
+With local mode, Digdag runs workflows on the local machine.
+
+### Creating a new project
+
+First, you can use `digdag init` command to create a new project. Example:
+
+```
+$ digdag init my-workflow
+```
+
+This command creates my-workflow directory and puts a sample workflow definition file.
 
 ### Running a workflow
 
-`digdag -f <workflow.yml>` executes a workflow. A workflow is defined in a YAML file with Jinja2 template.
-
-All keys starting with `+` are tasks. Tasks run from the top task to the bottom one by one. A task can be nested. If a group of tasks have `parallel: true` option, tasks in the group runs in parallel. For details, checkout example definitions at [examples/](https://github.com/treasure-data/digdag/blob/master/examples).
+At above section, `digdag init` creates `my-workflow/digdag` file. You can use this executable file to run a workflow:
 
 ```
-digdag -f examples/check_task.yml
+$ cd my-workflow
+$ ./digdag run
+```
+
+This `./digdag run` command reads `./digdag.yml` file and runs a workflow defined in the file.
+
+All keys starting with `+` are tasks. Tasks in a workflow run from the top to the bottom one by one. A task can be nested, a nested group has `parallel: true` option, tasks in the group runs in parallel. For more examples, checkout example definitions at [examples/](https://github.com/treasure-data/digdag/blob/master/examples).
+
+### Adding another workflow
+
+You can define multiple workflows at the `digdag.yml` file. For exaple,
+
+```
+run: +main
+
++main:
+  +task1:
+    sh>: echo "this main task."
+
++sub:
+  +task1:
+    sh>: echo "this a sub task."
+```
+
+To run the new workflow named `+sub`, you can use following command:
+
+```
+$ ./digdag run +sub
+```
+
+### Including files
+
+You can use `{% load ... %}` syntax to organize a large workflow definition. For example,
+
+```
+<<: {% load 'workflow1.yml' %}
+<<: {% load 'workflow2.yml' %}
+<<: {% load 'workflow3.yml' %}
+run: +workflow1
 ```
 
 ### Resuming a session
 
-Digdag supports resuming a failed session. When a workflow fails, you can restart it with `-r` option to skip tasks that succeeded before.
+When a workflow runs, digdag saves successful tasks at `./digdag.status` directory. You can use `-s` option to skip previously succeeded tasks:
 
 ```
-digdag -f config.yml -r config.yml.resume.yml
+$ digdag run -s digdag.status
 ```
+
+If you want to retry successful tasks, simply delete files from the directory and run the same command.
+
+
+### Resuming a sub workflow
+
+You can run a workflow from the middle.
+
+```
+$ digdag run +main+task2
+```
+
+This command skips tasks before `+task2`, and runs `+task2` and tasks after `+tasks2`. This is useful when you'r developing or debugging a workflow.
+
+
+### Scheduling a workflow
+
+Above `run` command runs a workflow once. To run workflow periodically, you can use `scheduler` command instead of `run`:
+
+```
+$ digdag scheduler
+```
+
+A workflow definition needs to include scheduling options:
+
+```
+run: +main
+  timezone: Europe/Paris
+  schedule:
+    hourly>: 30:00   # runs at 30-minute every hour
+  +task:
+    sh>: echo "This schedule is for $session_time"
+```
+
+This `digdag scheduler` reloads workflow definition file automatically when it's updated.
+
 
 ## Server-mode
 
 ### 1. Creating a project archive
 
-A project archive is a package that contains workflow definitions, schedule definitions, scripts, and configuration files in a single file.
-You can register workflows to a server by uploading an archive. The server schedules the workflows, and extracts the archive into a temporary directory when it runs a workflow.
+A project archive is a package that contains workflow definitions, configuration files, scripts, and other data files in a single package. You can register workflows to a server by uploading an archive. The server schedules the workflows, and extracts the archive into a temporary directory when it runs a workflow.
 
 It's recommended to manage files using `git`. You can create a project archive as following:
 
 ```
+$ digdag init .
 $ git init
-$ git add workflows/*.yml
-$ git commit -a -m "first commit"
-$ git ls-files | digdag archive -o archive.tar.gz workflows/*.yml
+$ git add digdag*
+$ git commit -a -m "the first commit"
+$ git ls-files | digdag archive
 ```
-
-* `archive.tar.gz`: output file path.
-* `workflows/*.yml`: path to workflow definition files.
 
 ### 2. Starting the server
 

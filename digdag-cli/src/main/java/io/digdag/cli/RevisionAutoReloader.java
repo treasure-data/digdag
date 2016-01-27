@@ -71,7 +71,7 @@ public class RevisionAutoReloader
                     .setNameFormat("revision-auto-reloader-%d")
                     .build()
                     );
-            executor.scheduleWithFixedDelay(() -> backgroundUpdateAll(), 30, 30, TimeUnit.SECONDS);
+            executor.scheduleWithFixedDelay(() -> backgroundUpdateAll(), 5, 5, TimeUnit.SECONDS);
             this.executor = executor;
         }
     }

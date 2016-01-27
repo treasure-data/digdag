@@ -17,36 +17,27 @@ public class Init
     public void main()
         throws Exception
     {
-        // TODO use dir instead of file path
-        String dagfilePath;
-        switch (args.size()) {
-        case 0:
-            dagfilePath = Run.DEFAULT_DAGFILE;
-            break;
-        case 1:
-            dagfilePath = args.get(0);
-            break;
-        default:
+        if (args.size() != 1) {
             throw usage(null);
         }
-        init(dagfilePath);
+        init(args.get(0));
     }
 
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag init [PATH.yml]");
+        System.err.println("Usage: digdag init <path>");
         Main.showCommonOptions();
         return systemExit(error);
     }
 
-    private void init(String dagfilePath)
+    private void init(String path)
         throws Exception
     {
-        File file = new File(dagfilePath);
-        File dir = file.getParentFile();
+        File dir = new File(path);
 
         ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", dir);
+        gen.mkdir(".");
 
         if (!gen.exists("digdag")) {
             gen.cp("digdag.sh", "digdag");
@@ -59,12 +50,17 @@ public class Init
             gen.setExecutable(".digdag-wrapper/digdag.jar");
         }
 
-        if (file.exists()) {
-            System.out.println("File "+file+" already exists. Canceled");
+        if (gen.exists(Run.DEFAULT_DAGFILE)) {
+            System.out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
         }
         else {
-            gen.cpAbsoluteDest("digdag.yml", file);
-            System.out.println("Done. Use `./digdag r` to run this workflow.");
+            gen.cp("digdag.yml", Run.DEFAULT_DAGFILE);
+            if (path.equals(".")) {
+                System.out.println("Done. Run `./digdag r` to run. Enjoy!");
+            }
+            else {
+                System.out.println("Done. Run `cd " + path +"` and `./digdag r` to run. Enjoy!");
+            }
         }
     }
 
