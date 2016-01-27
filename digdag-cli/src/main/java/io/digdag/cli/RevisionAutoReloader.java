@@ -22,6 +22,7 @@ import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.core.LocalSite;
 
@@ -30,12 +31,12 @@ public class RevisionAutoReloader
     private static Logger logger = LoggerFactory.getLogger(RevisionAutoReloader.class);
 
     private final LocalSite localSite;
-    private final ArgumentConfigLoader loader;
+    private final ConfigLoaderManager loader;
     private ScheduledExecutorService executor = null;
     private List<ReloadTarget> targets;
 
     @Inject
-    public RevisionAutoReloader(LocalSite localSite, ArgumentConfigLoader loader)
+    public RevisionAutoReloader(LocalSite localSite, ConfigLoaderManager loader)
     {
         this.localSite = localSite;
         this.loader = loader;
@@ -145,7 +146,7 @@ public class RevisionAutoReloader
         private Dagfile readDagfile()
             throws IOException
         {
-            return loader.load(file, overwriteParams).convert(Dagfile.class);
+            return loader.loadParameterizedFile(file, overwriteParams).convert(Dagfile.class);
         }
 
         private String makeRevisionName()

@@ -35,14 +35,14 @@ public class ResumeStateManager
 
     private final ConfigFactory cf;
     private final SessionStoreManager sessionStoreManager;
-    private final FileMapper mapper;
+    private final YamlMapper mapper;
     private final List<ResumeStateDir> managedDirs;
     private final YAMLFactory yaml = new YAMLFactory();
 
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, FileMapper mapper)
+    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, YamlMapper mapper)
     {
         this.cf = cf;
         this.sessionStoreManager = sessionStoreManager;

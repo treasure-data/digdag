@@ -1,4 +1,4 @@
-package io.digdag.core.yaml;
+package io.digdag.core.config;
 
 import java.util.Map;
 import java.util.HashMap;

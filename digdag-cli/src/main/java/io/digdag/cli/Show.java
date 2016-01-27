@@ -11,6 +11,7 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
 
@@ -46,17 +47,14 @@ public class Show
             throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
-            .addModules(binder -> {
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
-            })
             .initialize()
             .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        List<WorkflowDefinition> workflowSources = loader.load(new File(workflowPath), cf.create()).convert(WorkflowDefinitionList.class).get();
+        List<WorkflowDefinition> workflowSources = loader.loadParameterizedFile(new File(workflowPath), cf.create()).convert(WorkflowDefinitionList.class).get();
 
         List<Workflow> workflows = workflowSources
             .stream()

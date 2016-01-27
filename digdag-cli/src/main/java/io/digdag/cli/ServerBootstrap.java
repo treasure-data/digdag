@@ -37,7 +37,6 @@ public class ServerBootstrap
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(new ServerModule())
             .addModules((binder) -> {
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
                 binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
             })
             .initialize()

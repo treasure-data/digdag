@@ -11,13 +11,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class FileMapper
+public class YamlMapper
 {
     private final YAMLFactory yaml;
     private final ObjectMapper mapper;
 
     @Inject
-    public FileMapper(ObjectMapper mapper)
+    public YamlMapper(ObjectMapper mapper)
     {
         this.yaml = new YAMLFactory()
             .configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false);

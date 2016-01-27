@@ -29,7 +29,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
-import io.digdag.core.yaml.YamlConfigLoader;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import io.digdag.server.TempFileManager.TempDir;

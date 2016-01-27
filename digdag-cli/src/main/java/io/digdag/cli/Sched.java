@@ -14,6 +14,7 @@ import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
@@ -62,19 +63,15 @@ public class Sched
     {
         // TODO inject smaller module
         Injector injector = new DigdagEmbed.Bootstrap()
-            .addModules(binder -> {
-                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
-            })
             .initialize()
             .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             overwriteParams.set(pair.getKey(), pair.getValue());

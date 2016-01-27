@@ -12,7 +12,8 @@ import com.beust.jcommander.DynamicParameter;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.cli.ArgumentConfigLoader;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSession;
@@ -56,17 +57,17 @@ public class Start
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+                binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
             })
             .initialize()
             .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         Config sessionParams = cf.create();
         if (paramsFile != null) {
-            sessionParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            sessionParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             sessionParams.set(pair.getKey(), pair.getValue());

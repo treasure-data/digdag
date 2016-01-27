@@ -18,6 +18,7 @@ import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.LocalInProcessTaskCallbackApi;
 import io.digdag.core.agent.RequireTaskRunnerFactory;
 import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
@@ -35,7 +36,7 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 //import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.yaml.YamlConfigLoader;
+import io.digdag.core.config.YamlConfigLoader;
 
 public class DigdagEmbed
 {
@@ -103,6 +104,7 @@ public class DigdagEmbed
                 (binder) -> {
                     binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
+                    binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);

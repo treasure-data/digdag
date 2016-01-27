@@ -22,12 +22,13 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
@@ -85,25 +86,24 @@ public class Archive
 
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
-                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
             })
             .initialize()
             .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
-        final FileMapper mapper = injector.getInstance(FileMapper.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
         ArchiveMetadata meta = ArchiveMetadata.of(
             dagfile.getWorkflowList(),
             dagfile.getDefaultParams().setAll(overwriteParams));
@@ -149,7 +149,7 @@ public class Archive
 
             // create .digdag.yml
             // TODO set default time zone if not set?
-            byte[] metaBody = mapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
+            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(metaBody.length);
             metaEntry.setModTime(new Date());

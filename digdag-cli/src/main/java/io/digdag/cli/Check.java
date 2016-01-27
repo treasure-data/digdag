@@ -29,6 +29,7 @@ import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -79,31 +80,30 @@ public class Check
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
-                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
             })
             .initialize()
             .getInjector();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
 
         showDagfile(injector, dagfile);
     }
 
     public static void showDagfile(Injector injector, Dagfile dagfile)
     {
-        final FileMapper fileMapper = injector.getInstance(FileMapper.class);
+        final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
         WorkflowDefinitionList defs = dagfile.getWorkflowList();
@@ -146,7 +146,7 @@ public class Check
         {
             ln("  Parameters:");
             Formatter f = new Formatter("    ");
-            f.ln(fileMapper.toYaml(dagfile.getDefaultParams()));
+            f.ln(yamlMapper.toYaml(dagfile.getDefaultParams()));
             f.print();
             ln("");
         }
@@ -159,7 +159,7 @@ public class Check
                 if (config.isPresent()) {
                     f.ln("%s:", def.getName());
                     f.indent = "      ";
-                    f.ln(fileMapper.toYaml(config));
+                    f.ln(yamlMapper.toYaml(config));
                     f.indent = "    ";
                     count++;
                 }

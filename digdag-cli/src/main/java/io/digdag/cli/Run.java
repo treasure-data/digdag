@@ -35,6 +35,7 @@ import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskRunnerFactory;
@@ -125,8 +126,7 @@ public class Run
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
-                binder.bind(FileMapper.class).in(Scopes.SINGLETON);
-                binder.bind(ArgumentConfigLoader.class).in(Scopes.SINGLETON);
+                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                 binder.bind(Run.class).toInstance(this);  // used by TaskRunnerManagerWithSkip
             })
             .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
@@ -139,12 +139,12 @@ public class Run
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
+        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            overwriteParams.setAll(loader.load(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             overwriteParams.set(pair.getKey(), pair.getValue());
@@ -154,7 +154,7 @@ public class Run
             this.skipTaskReports = (fullName) -> rsm.readSuccessfulTaskReport(new File(sessionStatePath), fullName);
         }
 
-        Dagfile dagfile = loader.load(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
         if (taskNamePattern == null) {
             if (dagfile.getDefaultTaskName().isPresent()) {
                 taskNamePattern = dagfile.getDefaultTaskName().get();

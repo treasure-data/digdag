@@ -1,4 +1,4 @@
-package io.digdag.core.yaml;
+package io.digdag.core.config;
 
 import com.hubspot.jinjava.tree.TagNode;
 import com.hubspot.jinjava.lib.tag.IncludeTag;
