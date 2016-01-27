@@ -34,6 +34,7 @@ import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
+import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskReport;
@@ -237,11 +238,11 @@ public class Run
         private final Run cmd;
 
         @Inject
-        public TaskRunnerManagerWithSkip(TaskCallbackApi callback, ConfigFactory cf,
+        public TaskRunnerManagerWithSkip(TaskCallbackApi callback, ArchiveManager archiveManager, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
                 Run cmd)
         {
-            super(callback, cf, evalEngine, factories);
+            super(callback, archiveManager, cf, evalEngine, factories);
             this.callback = callback;
             this.cf = cf;
             this.cmd = cmd;

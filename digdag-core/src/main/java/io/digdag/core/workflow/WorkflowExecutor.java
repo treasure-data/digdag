@@ -652,6 +652,7 @@ public class WorkflowExecutor
                                 attempt.getId(),
                                 attempt.getRetryAttemptName(),
                                 fullName))
+                    .repositoryId(attempt.getSession().getRepositoryId())
                     .revision(rev.transform(it -> it.getName()))
                     .config(config)
                     .lastStateParams(task.getStateParams())

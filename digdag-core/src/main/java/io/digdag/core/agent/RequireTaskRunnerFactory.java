@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.nio.file.Path;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Inject;
@@ -40,7 +41,7 @@ public class RequireTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
         return new RequireTaskRunner(callback, request);
     }

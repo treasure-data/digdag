@@ -1,6 +1,7 @@
 package io.digdag.standards.task.td;
 
 import java.util.List;
+import java.nio.file.Path;
 import java.io.File;
 import java.io.PrintStream;
 import java.io.IOException;
@@ -36,17 +37,17 @@ public class TdTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new TdTaskRunner(request);
+        return new TdTaskRunner(archivePath, request);
     }
 
     private class TdTaskRunner
             extends BaseTaskRunner
     {
-        public TdTaskRunner(TaskRequest request)
+        public TdTaskRunner(Path archivePath, TaskRequest request)
         {
-            super(request);
+            super(archivePath, request);
         }
 
         @Override

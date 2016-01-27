@@ -2,6 +2,7 @@ package io.digdag.standards.task;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.nio.file.Path;
 import com.google.common.collect.*;
 import com.google.common.base.*;
 import io.digdag.core.agent.RetryControl;
@@ -13,6 +14,7 @@ import io.digdag.spi.TaskRunner;
 public abstract class BaseTaskRunner
         implements TaskRunner
 {
+    protected final Path archivePath;
     protected final TaskRequest request;
     protected Config stateParams;
 
@@ -20,8 +22,9 @@ public abstract class BaseTaskRunner
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
-    public BaseTaskRunner(TaskRequest request)
+    public BaseTaskRunner(Path archivePath, TaskRequest request)
     {
+        this.archivePath = archivePath;
         this.request = request;
         this.stateParams = request.getLastStateParams().deepCopy();
         this.subtaskConfig = request.getConfig().getFactory().create();

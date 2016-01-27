@@ -2,6 +2,7 @@ package io.digdag.standards.task;
 
 import java.util.List;
 import java.util.Properties;
+import java.nio.file.Path;
 import javax.mail.Authenticator;
 import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
@@ -42,17 +43,17 @@ public class MailTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new MailTaskRunner(request);
+        return new MailTaskRunner(archivePath, request);
     }
 
     private class MailTaskRunner
             extends BaseTaskRunner
     {
-        public MailTaskRunner(TaskRequest request)
+        public MailTaskRunner(Path archivePath, TaskRequest request)
         {
-            super(request);
+            super(archivePath, request);
         }
 
         @Override

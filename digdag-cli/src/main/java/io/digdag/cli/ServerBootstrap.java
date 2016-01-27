@@ -11,9 +11,13 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
+import com.google.common.collect.ImmutableList;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.server.ServerModule;
+import io.digdag.core.agent.ArchiveManager;
+import io.digdag.core.agent.InProcessArchiveManager;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.client.config.ConfigFactory;
@@ -39,6 +43,9 @@ public class ServerBootstrap
             .addModules((binder) -> {
                 binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
             })
+            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+            })))
             .initialize()
             .getInjector();
 

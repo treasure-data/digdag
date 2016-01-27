@@ -24,7 +24,7 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalInProcessTaskCallbackApi
+public class InProcessTaskCallbackApi
         implements TaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -35,7 +35,7 @@ public class LocalInProcessTaskCallbackApi
     private final WorkflowExecutor exec;
 
     @Inject
-    public LocalInProcessTaskCallbackApi(
+    public InProcessTaskCallbackApi(
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             WorkflowExecutor exec)

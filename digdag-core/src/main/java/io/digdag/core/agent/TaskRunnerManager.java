@@ -4,6 +4,8 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.io.IOException;
+import java.nio.file.Path;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -19,15 +21,17 @@ public class TaskRunnerManager
     private static Logger logger = LoggerFactory.getLogger(TaskRunnerManager.class);
 
     private final TaskCallbackApi callback;
+    private final ArchiveManager archiveManager;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final Map<String, TaskRunnerFactory> executorTypes;
 
     @Inject
-    public TaskRunnerManager(TaskCallbackApi callback, ConfigFactory cf,
+    public TaskRunnerManager(TaskCallbackApi callback, ArchiveManager archiveManager, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
     {
         this.callback = callback;
+        this.archiveManager = archiveManager;
         this.cf = cf;
         this.evalEngine = evalEngine;
 
@@ -40,14 +44,37 @@ public class TaskRunnerManager
 
     public void run(TaskRequest request)
     {
-        long taskId = request.getTaskInfo().getId();
-        Config config = request.getConfig().deepCopy();
+        // nextState is mutable
         Config nextState = request.getLastStateParams();
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskInfo().getFullName())) {
+            archiveManager.withExtractedArchive(request, (archivePath) -> {
+                runWithArchive(archivePath, request, nextState);
+                return true;
+            });
+        }
+        catch (RuntimeException | IOException ex) {
+            logger.error("Task failed", ex);
+            Config error = makeExceptionError(cf, ex);
+            callback.taskFailed(request.getTaskInfo().getId(),
+                    error, nextState,
+                    Optional.absent());  // no retry
+        }
+    }
 
-            config = evalEngine.eval(config);
+    private void runWithArchive(Path archivePath, TaskRequest request, Config nextState)
+    {
+        long taskId = request.getTaskInfo().getId();
+
+        try {
+            Config config;
+            try {
+                config = evalEngine.eval(archivePath, request.getConfig().deepCopy());
+            }
+            catch (ConfigEvalException ex) {
+                throw new RuntimeException("Failed to evaluate config", ex);
+            }
             logger.trace("evaluated config: {}", config);
 
             String type;
@@ -79,6 +106,7 @@ public class TaskRunnerManager
                 throw new ConfigException("Unknown task type: " + type);
             }
             TaskRunner executor = factory.newTaskExecutor(
+                    archivePath,
                     TaskRequest.builder()
                         .from(request)
                         .config(config)
@@ -95,7 +123,6 @@ public class TaskRunnerManager
             callback.taskSucceeded(taskId,
                     nextState, result.getSubtaskConfig(),
                     result.getReport());
-
         }
         catch (TaskExecutionException ex) {
             if (ex.getError().isPresent()) {
@@ -110,13 +137,6 @@ public class TaskRunnerManager
                         taskId,
                         nextState, ex.getRetryInterval().get());
             }
-        }
-        catch (Exception ex) {
-            logger.error("Task failed", ex);
-            Config error = makeExceptionError(cf, ex);
-            callback.taskFailed(taskId,
-                    error, nextState,
-                    Optional.absent());  // no retry
         }
     }
 

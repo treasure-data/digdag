@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Path;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.google.common.base.*;
@@ -39,17 +40,17 @@ public class ShTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new ShTaskRunner(request);
+        return new ShTaskRunner(archivePath, request);
     }
 
     private class ShTaskRunner
             extends BaseTaskRunner
     {
-        public ShTaskRunner(TaskRequest request)
+        public ShTaskRunner(Path archivePath, TaskRequest request)
         {
-            super(request);
+            super(archivePath, request);
         }
 
         @Override
@@ -82,7 +83,7 @@ public class ShTaskRunnerFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                Process p = exec.start(request, pb);
+                Process p = exec.start(archivePath, request, pb);
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, buffer);

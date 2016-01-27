@@ -1,6 +1,7 @@
 package io.digdag.standards.task.td;
 
 import java.util.List;
+import java.nio.file.Path;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -31,17 +32,17 @@ public class TdDdlTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new TdDdlTaskRunner(request);
+        return new TdDdlTaskRunner(archivePath, request);
     }
 
     private class TdDdlTaskRunner
             extends BaseTaskRunner
     {
-        public TdDdlTaskRunner(TaskRequest request)
+        public TdDdlTaskRunner(Path archivePath, TaskRequest request)
         {
-            super(request);
+            super(archivePath, request);
         }
 
         @Override

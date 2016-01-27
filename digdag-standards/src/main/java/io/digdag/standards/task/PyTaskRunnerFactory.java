@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -60,17 +61,17 @@ public class PyTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(TaskRequest request)
+    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new PyTaskRunner(request);
+        return new PyTaskRunner(archivePath, request);
     }
 
     private class PyTaskRunner
             extends BaseTaskRunner
     {
-        public PyTaskRunner(TaskRequest request)
+        public PyTaskRunner(Path archivePath, TaskRequest request)
         {
-            super(request);
+            super(archivePath, request);
         }
 
         @Override
@@ -127,7 +128,7 @@ public class PyTaskRunnerFactory
                     .build();
                 ProcessBuilder pb = new ProcessBuilder(cmdline);
                 pb.redirectErrorStream(true);
-                Process p = exec.start(request, pb);
+                Process p = exec.start(archivePath, request, pb);
 
                 // feed script to stdin
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {

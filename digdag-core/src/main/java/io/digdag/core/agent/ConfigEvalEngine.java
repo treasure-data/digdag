@@ -2,6 +2,7 @@ package io.digdag.core.agent;
 
 import java.util.Map;
 import java.io.IOException;
+import java.nio.file.Path;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -40,7 +41,7 @@ public class ConfigEvalEngine
         }
     }
 
-    public Config eval(Config config)
+    public Config eval(Path archivePath, Config config)
         throws ConfigEvalException
     {
         ObjectNode object = config.convert(ObjectNode.class);
