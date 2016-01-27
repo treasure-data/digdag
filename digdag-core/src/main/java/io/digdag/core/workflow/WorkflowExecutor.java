@@ -30,6 +30,7 @@ import io.digdag.spi.TaskInfo;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredRepository;
+import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
@@ -615,8 +616,34 @@ public class WorkflowExecutor
                 return false;
             }
 
+            Optional<StoredRevision> rev = Optional.absent();
+            if (attempt.getWorkflowDefinitionId().isPresent()) {
+                try {
+                    rev = Optional.of(rm.getRevisionOfWorkflowDefinition(attempt.getWorkflowDefinitionId().get()));
+                }
+                catch (ResourceNotFoundException ex) {
+                    Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated workflow definition does not exist.", ex);
+                    logger.error("Database state error enquing task.", error);
+                    return false;
+                }
+            }
+
             try {
-                Config config = TaskConfig.setRuntimeBuiltInConfig(collectTaskConfig(task, attempt), attempt);
+                // merge order is:
+                //   revision default < attempt < task
+                Config config;
+                if (rev.isPresent()) {
+                    config = rev.get().getDefaultParams().deepCopy()
+                        .setAll(attempt.getParams());
+                }
+                else {
+                    config = attempt.getParams().deepCopy();
+                }
+
+                collectTaskConfig(config, task, attempt);
+
+                TaskConfig.setRuntimeBuiltInConfig(config, attempt);
+
                 TaskRequest request = TaskRequest.builder()
                     .taskInfo(
                             TaskInfo.of(
@@ -625,15 +652,7 @@ public class WorkflowExecutor
                                 attempt.getId(),
                                 attempt.getRetryAttemptName(),
                                 fullName))
-                    .revision(
-                            attempt.getWorkflowDefinitionId().transform(wfId -> {
-                                try {
-                                    return rm.getRevisionOfWorkflowDefinition(wfId);
-                                }
-                                catch (ResourceNotFoundException ex) {
-                                    throw new RuntimeException(ex);
-                                }
-                            }))
+                    .revision(rev.transform(it -> it.getName()))
                     .config(config)
                     .lastStateParams(task.getStateParams())
                     .build();
@@ -788,7 +807,7 @@ public class WorkflowExecutor
         return updated;
     }
 
-    private Config collectTaskConfig(StoredTask task, StoredSessionAttempt attempt)
+    private Config collectTaskConfig(Config config, StoredTask task, StoredSessionAttempt attempt)
     {
         List<Long> parentsFromRoot;
         List<Long> upstreamsFromFar;
@@ -798,9 +817,8 @@ public class WorkflowExecutor
             upstreamsFromFar = Lists.reverse(tree.getRecursiveParentsUpstreamChildrenIdList(task.getId()));
         }
 
-        // merge order is:
-        //   attempt < export < carry from parents < carry from upstreams < local
-        Config config = attempt.getParams().deepCopy();
+        // task merge order is:
+        //   export < carry from parents < carry from upstreams < local
         sm.getExportParams(parentsFromRoot)
             .stream().forEach(node -> config.setAll(node));
         config.setAll(task.getConfig().getExport());

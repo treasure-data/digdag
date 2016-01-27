@@ -78,7 +78,7 @@ public class DatabaseRepositoryStoreManager
     }
 
     @Override
-    public String getRevisionOfWorkflowDefinition(long wfId)
+    public StoredRevision getRevisionOfWorkflowDefinition(long wfId)
         throws ResourceNotFoundException
     {
         return requiredResource(
@@ -430,11 +430,11 @@ public class DatabaseRepositoryStoreManager
                 " where id = :id")
         StoredRepository getRepositoryByIdInternal(@Bind("id") int id);
 
-        @SqlQuery("select rev.name" +
+        @SqlQuery("select rev.*" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " where wd.id = :id")
-        String getRevisionOfWorkflowDefinition(@Bind("id") long wfId);
+        StoredRevision getRevisionOfWorkflowDefinition(@Bind("id") long wfId);
 
         @SqlQuery("select * from repositories" +
                 " where site_id = :siteId" +
@@ -453,34 +453,34 @@ public class DatabaseRepositoryStoreManager
         int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name);
 
 
-        @SqlQuery("select t.* from revisions t" +
-                " join repositories on repositories.id = t.repository_id" +
-                " where t.site_id = :siteId" +
-                " and t.repository_id = :repoId" +
-                " and t.id > :lastId" +
-                " order by t.id asc" +
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories on repositories.id = rev.repository_id" +
+                " where rev.site_id = :siteId" +
+                " and rev.repository_id = :repoId" +
+                " and rev.id > :lastId" +
+                " order by rev.id asc" +
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select t.* from revisions t" +
-                " join repositories on repositories.id = t.repository_id" +
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories on repositories.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and t.id = :id")
+                " and rev.id = :id")
         StoredRevision getRevisionById(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select t.* from revisions t" +
-                " join repositories on repositories.id = t.repository_id" +
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories on repositories.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and t.repository_id = :repoId" +
-                " and t.name = :name" +
+                " and rev.repository_id = :repoId" +
+                " and rev.name = :name" +
                 " limit 1")
         StoredRevision getRevisionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
 
-        @SqlQuery("select t.* from revisions t" +
-                " join repositories on repositories.id = t.repository_id" +
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories on repositories.id = rev.repository_id" +
                 " where site_id = :siteId" +
-                " and t.repository_id = :repoId" +
-                " order by t.id asc" +
+                " and rev.repository_id = :repoId" +
+                " order by rev.id asc" +
                 " limit 1")
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 

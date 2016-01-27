@@ -168,11 +168,12 @@ public class LocalSite
             ZoneId defaultTimeZone,
             WorkflowDefinitionList defs,
             TaskMatchPattern taskMatchPattern,
+            Config defaultParams,
             Config overwriteParams)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflow revWfs = storeLocalWorkflows("revision", defs,
-                Optional.absent(), overwriteParams);
+                Optional.absent(), defaultParams);
         final StoredRevision revision = revWfs.getRevision();
         final List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
 
@@ -183,6 +184,7 @@ public class LocalSite
                 .repositoryId(revision.getRepositoryId())
                 .workflowName(def.getName())
                 .instant(Instant.now())
+                .storedWorkflowDefinitionId(Optional.of(def.getId()))
                 .retryAttemptName(Optional.absent())
                 .defaultTimeZone(defaultTimeZone)
                 .defaultParams(cf.create())

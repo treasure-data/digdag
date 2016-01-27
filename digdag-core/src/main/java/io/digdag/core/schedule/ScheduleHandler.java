@@ -48,6 +48,7 @@ public class ScheduleHandler
             .repositoryId(def.getRepository().getId())
             .workflowName(def.getName())
             .instant(time.getScheduleTime())
+            .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(Optional.absent())
             .defaultTimeZone(timeZone)
             .defaultParams(def.getRevisionDefaultParams())

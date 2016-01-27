@@ -11,6 +11,6 @@ public interface RepositoryStoreManager
     StoredRepository getRepositoryByIdInternal(int repoId)
         throws ResourceNotFoundException;
 
-    String getRevisionOfWorkflowDefinition(long wfId)
+    StoredRevision getRevisionOfWorkflowDefinition(long wfId)
         throws ResourceNotFoundException;
 }

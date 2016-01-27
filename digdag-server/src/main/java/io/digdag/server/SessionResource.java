@@ -174,6 +174,7 @@ public class SessionResource
             .repositoryId(repo.getId())
             .workflowName(def.getName())
             .instant(request.getInstant())
+            .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(request.getRetryAttemptName())
             .defaultTimeZone(ZoneId.of("UTC"))
             .defaultParams(rev.getDefaultParams())

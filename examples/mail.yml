@@ -1,0 +1,17 @@
+run: +mail_test
+
+mail:
+  # Note to use Gmail SMTP server, access for less secure apps must be enabled.
+  # Go to https://www.google.com/settings/security/lesssecureapps to turn it on.
+  host: smtp.gmail.com
+  port: 587
+  from: "you@gmail.com..."
+  username: "you@gmail.com"
+  password: "...password of you@gmail.com..."
+  debug: true
+
++mail_test:
+  mail>: this is a smtp test mail
+  to: [to1@example.com, to2@example.com]
+  body: email body
+

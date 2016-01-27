@@ -172,6 +172,7 @@ public class Run
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
                 defs,
                 TaskMatchPattern.compile(taskNamePattern),
+                dagfile.getDefaultParams(),
                 overwriteParams);
         logger.debug("Submitting {}", attempt);
 

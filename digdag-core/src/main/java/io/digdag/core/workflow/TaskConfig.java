@@ -21,7 +21,7 @@ public class TaskConfig
         return new TaskConfig(copy, export);
     }
 
-    public static Config setRuntimeBuiltInConfig(Config config,
+    public static void setRuntimeBuiltInConfig(Config config,
             StoredSessionAttemptWithSession attempt)
     {
         if (!config.has("timezone")) {
@@ -30,7 +30,6 @@ public class TaskConfig
         config.set("repository_id", attempt.getSession().getRepositoryId());
         config.set("session_time", attempt.getSession().getInstant());
         config.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
-        return config;
     }
 
     @JsonCreator
