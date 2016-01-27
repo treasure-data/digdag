@@ -61,9 +61,9 @@ All keys starting with `+` are tasks. Tasks in a workflow run from the top to th
 
 ### Adding another workflow
 
-You can define multiple workflows at the `digdag.yml` file. For exaple,
+You can define multiple workflows in a `digdag.yml` file. For exaple,
 
-```
+```yaml
 run: +main
 
 +main:
@@ -85,7 +85,7 @@ $ ./digdag run +sub
 
 You can use `{% load ... %}` syntax to organize a large workflow definition. For example,
 
-```
+```yaml
 <<: {% load 'workflow1.yml' %}
 <<: {% load 'workflow2.yml' %}
 <<: {% load 'workflow3.yml' %}
@@ -103,7 +103,7 @@ $ digdag run -s digdag.status
 If you want to retry successful tasks, simply delete files from the directory and run the same command.
 
 
-### Resuming a sub workflow
+### Running sub tasks only
 
 You can run a workflow from the middle.
 
@@ -111,7 +111,7 @@ You can run a workflow from the middle.
 $ digdag run +main+task2
 ```
 
-This command skips tasks before `+task2`, and runs `+task2` and tasks after `+tasks2`. This is useful when you'r developing or debugging a workflow.
+This command skips tasks before `+task2`, and runs `+task2` and tasks after `+tasks2`. This is useful when you're developing or debugging a workflow.
 
 
 ### Scheduling a workflow
@@ -124,7 +124,7 @@ $ digdag scheduler
 
 A workflow definition needs to include scheduling options:
 
-```
+```yaml
 run: +main
   timezone: Europe/Paris
   schedule:
