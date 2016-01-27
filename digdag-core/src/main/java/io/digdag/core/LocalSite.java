@@ -21,14 +21,12 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
-import io.digdag.core.yaml.YamlConfigLoader;
 
 public class LocalSite
 {
     private static Logger logger = LoggerFactory.getLogger(LocalSite.class);
 
     private final ConfigFactory cf;
-    private final YamlConfigLoader loader;
     private final WorkflowCompiler compiler;
     private final RepositoryStore repoStore;
     private final SessionStoreManager sessionStoreManager;
@@ -45,7 +43,6 @@ public class LocalSite
     @Inject
     public LocalSite(
             ConfigFactory cf,
-            YamlConfigLoader loader,
             WorkflowCompiler compiler,
             RepositoryStoreManager repoStoreManager,
             SessionStoreManager sessionStoreManager,
@@ -58,7 +55,6 @@ public class LocalSite
             SessionMonitorExecutor sessionMonitorExecutor)
     {
         this.cf = cf;
-        this.loader = loader;
         this.compiler = compiler;
         this.repoStore = repoStoreManager.getRepositoryStore(0);
         this.sessionStoreManager = sessionStoreManager;

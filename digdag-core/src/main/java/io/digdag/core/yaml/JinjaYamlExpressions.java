@@ -2,8 +2,9 @@ package io.digdag.core.yaml;
 
 import java.util.Objects;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import com.google.common.base.CharMatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -23,6 +24,8 @@ import com.hubspot.jinjava.tree.TagNode;
 
 public class JinjaYamlExpressions
 {
+    private static final Logger logger = LoggerFactory.getLogger(JinjaYamlExpressions.class);
+
     private static final Yaml yaml;
 
     static {
@@ -97,10 +100,10 @@ public class JinjaYamlExpressions
     public static String include(String templateFile)
     {
         JinjavaInterpreter interpreter = JinjavaInterpreter.getCurrent();
-        Context rootContext = getRootContext(interpreter);
+        Context context = interpreter.getContext();
 
         try {
-            rootContext.pushIncludePath(templateFile, -1);
+            context.pushIncludePath(templateFile, -1);
         }
         catch (IncludeTagCycleException e) {
             interpreter.addError(new TemplateError(ErrorType.WARNING, ErrorReason.EXCEPTION,
@@ -112,7 +115,7 @@ public class JinjaYamlExpressions
             String template = interpreter.getResource(templateFile);
             Node node = interpreter.parse(template);
 
-            rootContext.addDependency("coded_files", templateFile);
+            context.addDependency("coded_files", templateFile);
 
             JinjavaInterpreter child = new JinjavaInterpreter(interpreter);
             String result = child.render(node);
@@ -125,7 +128,7 @@ public class JinjaYamlExpressions
             throw new InterpretException(e.getMessage(), e);
         }
         finally {
-            rootContext.popIncludePath();
+            context.popIncludePath();
         }
     }
 

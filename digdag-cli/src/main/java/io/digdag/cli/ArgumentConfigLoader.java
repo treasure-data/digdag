@@ -11,13 +11,11 @@ import io.digdag.core.yaml.YamlConfigLoader;
 public class ArgumentConfigLoader
 {
     private final YamlConfigLoader loader;
-    private final ConfigFactory cf;
 
     @Inject
-    public ArgumentConfigLoader(YamlConfigLoader loader, ConfigFactory cf)
+    public ArgumentConfigLoader(YamlConfigLoader loader)
     {
         this.loader = loader;
-        this.cf = cf;
     }
 
     public boolean checkExists(File file)
@@ -28,11 +26,6 @@ public class ArgumentConfigLoader
     public Config load(File path, Config params)
         throws IOException
     {
-        return loader.loadFile(
-                path,
-                Optional.of(
-                    new File(new File(path.getAbsolutePath()).getParent())
-                ),
-                Optional.of(cf.create()));
+        return loader.loadFile(path, Optional.of(new File(path.getAbsolutePath())), Optional.of(params));
     }
 }

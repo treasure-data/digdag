@@ -29,7 +29,6 @@ import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;

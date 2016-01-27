@@ -35,7 +35,6 @@ import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.workflow.TaskMatchPattern;
-import io.digdag.core.yaml.YamlConfigLoader;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskRunnerFactory;
@@ -140,7 +139,6 @@ public class Run
         localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final YamlConfigLoader rawLoader = injector.getInstance(YamlConfigLoader.class);
         final ArgumentConfigLoader loader = injector.getInstance(ArgumentConfigLoader.class);
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
