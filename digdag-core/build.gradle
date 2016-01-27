@@ -11,6 +11,6 @@ dependencies {
     compile 'com.zaxxer:HikariCP:2.4.3'
     compile 'com.h2database:h2:1.4.190'
     compile 'org.yaml:snakeyaml:1.14'
-    compile 'com.hubspot.jinjava:jinjava:2.1.0'
+    compile 'com.hubspot.jinjava:jinjava:2.1.2'
     compile project(':digdag-spi')
 }

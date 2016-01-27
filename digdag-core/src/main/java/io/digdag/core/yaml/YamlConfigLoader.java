@@ -31,6 +31,7 @@ import com.hubspot.jinjava.JinjavaConfig;
 import com.hubspot.jinjava.lib.fn.ELFunctionDefinition;
 import com.hubspot.jinjava.loader.FileLocator;
 import com.hubspot.jinjava.loader.ResourceNotFoundException;
+import static io.digdag.core.yaml.JinjaYamlExpressions.getRootContext;
 
 public class YamlConfigLoader
 {
@@ -135,6 +136,9 @@ public class YamlConfigLoader
                     JinjaYamlExpressions.class, "dump", Object.class));
         jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "parse",
                     JinjaYamlExpressions.class, "parse", String.class));
+        jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "load",
+                    JinjaYamlExpressions.class, "load", String.class));
+
         jinjava.getGlobalContext().registerTag(new JinjaLoadTag());
         jinjava.getGlobalContext().registerTag(new JinjaYamlExpressions.DumpTag());
         jinjava.getGlobalContext().registerTag(new JinjaYamlExpressions.ParseTag());

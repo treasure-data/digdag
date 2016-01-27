@@ -1,13 +1,24 @@
 package io.digdag.core.yaml;
 
 import java.util.Objects;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import com.google.common.base.CharMatcher;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.representer.Representer;
+import com.hubspot.jinjava.Jinjava;
+import com.hubspot.jinjava.interpret.Context;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.tag.Tag;
+import com.hubspot.jinjava.tree.TagNode;
+import com.hubspot.jinjava.interpret.IncludeTagCycleException;
+import com.hubspot.jinjava.interpret.InterpretException;
+import com.hubspot.jinjava.interpret.TemplateError;
+import com.hubspot.jinjava.interpret.TemplateError.ErrorReason;
+import com.hubspot.jinjava.interpret.TemplateError.ErrorType;
+import com.hubspot.jinjava.tree.Node;
 import com.hubspot.jinjava.tree.TagNode;
 
 public class JinjaYamlExpressions
@@ -76,5 +87,57 @@ public class JinjaYamlExpressions
         {
             return null;
         }
+    }
+
+    public static String load(String templateFile)
+    {
+        return parse(include(templateFile));
+    }
+
+    public static String include(String templateFile)
+    {
+        JinjavaInterpreter interpreter = JinjavaInterpreter.getCurrent();
+        Context rootContext = getRootContext(interpreter);
+
+        try {
+            rootContext.pushIncludePath(templateFile, -1);
+        }
+        catch (IncludeTagCycleException e) {
+            interpreter.addError(new TemplateError(ErrorType.WARNING, ErrorReason.EXCEPTION,
+                        "Include cycle detected for path: '" + templateFile + "'", null, -1, e));
+            return "";
+        }
+
+        try {
+            String template = interpreter.getResource(templateFile);
+            Node node = interpreter.parse(template);
+
+            rootContext.addDependency("coded_files", templateFile);
+
+            JinjavaInterpreter child = new JinjavaInterpreter(interpreter);
+            String result = child.render(node);
+
+            interpreter.getErrors().addAll(child.getErrors());
+
+            return result;
+        }
+        catch (IOException e) {
+            throw new InterpretException(e.getMessage(), e);
+        }
+        finally {
+            rootContext.popIncludePath();
+        }
+    }
+
+    static Context getRootContext(JinjavaInterpreter interpreter)
+    {
+        Context context = interpreter.getContext();
+        Context lastContext;
+        do {
+            lastContext = context;
+            context = context.getParent();
+        } while (context.getParent() != null);
+        // context is the global context. root context is lastContext.
+        return lastContext;
     }
 }
