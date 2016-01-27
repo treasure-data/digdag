@@ -130,18 +130,24 @@ public class DatabaseRepositoryStoreManager
         public <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
                 throws ResourceConflictException
         {
-            // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
             return transaction((handle, dao, ts) -> {
                 int repoId;
-                try {
-                    repoId = catchConflict(() ->
-                            dao.insertRepository(siteId, repository.getName()),
-                            "repository name=%s", repository.getName());
+
+                if (!ts.isRetried()) {
+                    try {
+                        repoId = catchConflict(() ->
+                                dao.insertRepository(siteId, repository.getName()),
+                                "repository name=%s", repository.getName());
+                    }
+                    catch (ResourceConflictException ex) {
+                        ts.retry(ex);
+                        return null;
+                    }
                 }
-                catch (ResourceConflictException ex) {
+                else {
                     StoredRepository repo = dao.getRepositoryByName(siteId, repository.getName());
                     if (repo == null) {
-                        throw new IllegalStateException("Database state error", ex);
+                        throw new IllegalStateException("Database state error", ts.getLastException());
                     }
                     repoId = repo.getId();
                 }
