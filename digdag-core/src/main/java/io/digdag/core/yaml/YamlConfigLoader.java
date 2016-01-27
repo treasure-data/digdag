@@ -38,7 +38,6 @@ import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.fn.ELFunctionDefinition;
 import com.hubspot.jinjava.loader.FileLocator;
 import com.hubspot.jinjava.loader.ResourceNotFoundException;
-import static io.digdag.core.yaml.JinjaYamlExpressions.getRootContext;
 
 public class YamlConfigLoader
 {
@@ -175,65 +174,70 @@ public class YamlConfigLoader
         return getRelativeIncludePath(interpreter, rootDir, fname);
     }
 
-    private static File getRelativeIncludePath(JinjavaInterpreter interpreter, File rootDir, String fname)
+    //private static File getRelativeIncludePath0(JinjavaInterpreter interpreter, File rootDir, String fname)
+    //{
+    //    System.out.println("loading file: "+fname);
+
+    //    Context context = interpreter.getContext();
+    //    System.out.println("current context: "+context);
+    //    // this context already includes `fname`. Skip it and add it the end.
+    //    Context stackTop = context.getParent();
+    //    List<String> reverseStack = new ArrayList<>();
+
+    //    // context.getParent() == null means that the context is global context.
+    //    // Global context should be skpped because the child of global context
+    //    // is the root context.
+    //    Context parent;
+    //    while ((parent = stackTop.getParent()) != null) {
+    //        String subdir = getCurrentIncludingSubdir(stackTop);
+    //        System.out.println("stacking: "+subdir);
+    //        if (subdir != null) {
+    //            reverseStack.add(subdir);
+    //        }
+    //        stackTop = parent;
+    //    }
+
+    //    File dir = rootDir;
+    //    for (String subdir : Lists.reverse(reverseStack)) {
+    //        dir = new File(dir, subdir);
+    //    }
+
+    //    return new File(dir, fname);
+    //}
+
+    //@SuppressWarnings("unchecked")
+    //private static String getCurrentIncludingSubdir(Context context)
+    //{
+    //    Stack<String> includingFileNameStack;
+    //    try {
+    //        Field field = Context.class.getDeclaredField("includePathStack");
+    //        field.setAccessible(true);
+    //        includingFileNameStack = (Stack<String>) field.get(context);
+    //    }
+    //    catch (NoSuchFieldException | IllegalAccessException | ClassCastException ex) {
+    //        throw new RuntimeException(ex);
+    //    }
+    //    System.out.println("includingFileNameStack: "+includingFileNameStack);
+    //    String fname = includingFileNameStack.peek();
+    //    if (fname == null) {  // this should not happen
+    //        return null;
+    //    }
+    //    else {
+    //        return new File(fname).getParent();
+    //    }
+    //}
+
+    @SuppressWarnings("unchecked")
+    private static File getRelativeIncludePath(JinjavaInterpreter interpreter, File rootDir, String includingFileName)
     {
         // TODO This code still has a bug because of a bug in jinja2. Context.popIncludePath wrongly pops a path
         //      from the parent Context. To fix it, popIncludePath shouldn't change parent Context, or pushIncludePath
-        //      should push a path to the parent Context. Either ways, this method should work. But with the later
-        //      fix, getRelativeIncludePath2 is simpler code.
+        //      should push a path to the parent Context. This method works only with the latter fix. With the first fix,
+        //      getRelativeIncludePath0 may work but then it doesn't work with JinjaYamlExpressions.include function.
 
-        Context context = interpreter.getContext();
-        // this context already includes `fname`. Skip it and add it the end.
-        Context stackTop = context.getParent();
-        List<String> reverseStack = new ArrayList<>();
-
-        // context.getParent() == null means that the context is global context.
-        // Global context should be skpped because the child of global context
-        // is the root context.
-        Context parent;
-        while ((parent = stackTop.getParent()) != null) {
-            String subdir = getCurrentIncludingSubdir(stackTop);
-            if (subdir != null) {
-                reverseStack.add(subdir);
-            }
-            stackTop = parent;
-        }
-
-        File dir = rootDir;
-        for (String subdir : Lists.reverse(reverseStack)) {
-            dir = new File(dir, subdir);
-        }
-
-        return new File(dir, fname);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static String getCurrentIncludingSubdir(Context context)
-    {
-        Stack<String> includingFileNameStack;
-        try {
-            Field field = Context.class.getDeclaredField("includePathStack");
-            field.setAccessible(true);
-            includingFileNameStack = (Stack<String>) field.get(context);
-        }
-        catch (NoSuchFieldException | IllegalAccessException | ClassCastException ex) {
-            throw new RuntimeException(ex);
-        }
-        String fname = includingFileNameStack.peek();
-        if (fname == null) {  // this should not happen
-            return null;
-        }
-        else {
-            return new File(fname).getParent();
-        }
-    }
-
-    /*
-    @SuppressWarnings("unchecked")
-    private static File getRelativeIncludePath2(JinjavaInterpreter interpreter, File rootDir, String includingFileName)
-    {
-        System.out.println("including : "+includingFileName);
-        Context rootContext = getRootContext(interpreter);
+        //System.out.println("including : "+includingFileName);
+        //Context rootContext = getRootContext(interpreter);
+        Context rootContext = interpreter.getCurrent().getContext();
         Stack<String> stack;
         try {
             Field field = Context.class.getDeclaredField("includePathStack");
@@ -245,14 +249,14 @@ public class YamlConfigLoader
         }
 
         // If the stack already includes `includingFileName`, skip it here because it will be added at the end.
-        System.out.println("original stack: "+stack);
+        //System.out.println("original stack: "+stack);
         if (!stack.isEmpty() && includingFileName.equals(stack.peek())) {
             Stack<String> ns = new Stack<>();
             ns.addAll(stack);
             ns.pop();
             stack = ns;
         }
-        System.out.println("stack: "+stack);
+        //System.out.println("stack: "+stack);
 
         // but the stack doesn't include the root dir
         if (stack.isEmpty()) {
@@ -261,16 +265,27 @@ public class YamlConfigLoader
         else {
             File currentDir = rootDir;
             for (String fname : stack) {
-                System.out.println("fname: "+fname);
+                //System.out.println("fname: "+fname);
                 String subdir = new File(fname).getParent();
-                System.out.println("subdir: "+subdir);
+                //System.out.println("subdir: "+subdir);
                 if (subdir != null) {
                     currentDir = new File(currentDir, subdir);
-                    System.out.println("currentDir: "+currentDir);
+                    //System.out.println("currentDir: "+currentDir);
                 }
             }
             return new File(currentDir, includingFileName);
         }
     }
-    */
+
+    //static Context getRootContext(JinjavaInterpreter interpreter)
+    //{
+    //    Context context = interpreter.getContext();
+    //    Context lastContext;
+    //    do {
+    //        lastContext = context;
+    //        context = context.getParent();
+    //    } while (context.getParent() != null);
+    //    // context is the global context. root context is lastContext.
+    //    return lastContext;
+    //}
 }

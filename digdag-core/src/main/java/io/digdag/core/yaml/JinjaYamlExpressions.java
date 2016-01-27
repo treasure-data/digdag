@@ -99,11 +99,12 @@ public class JinjaYamlExpressions
 
     public static String include(String templateFile)
     {
+        // this assumes that JinjavaInterpreter.getCurrent().getContext()
+        // (root context) includes all file names added by pushIncludePath.
         JinjavaInterpreter interpreter = JinjavaInterpreter.getCurrent();
-        Context context = interpreter.getContext();
 
         try {
-            context.pushIncludePath(templateFile, -1);
+            interpreter.getContext().pushIncludePath(templateFile, -1);
         }
         catch (IncludeTagCycleException e) {
             interpreter.addError(new TemplateError(ErrorType.WARNING, ErrorReason.EXCEPTION,
@@ -115,7 +116,7 @@ public class JinjaYamlExpressions
             String template = interpreter.getResource(templateFile);
             Node node = interpreter.parse(template);
 
-            context.addDependency("coded_files", templateFile);
+            interpreter.getContext().addDependency("coded_files", templateFile);
 
             JinjavaInterpreter child = new JinjavaInterpreter(interpreter);
             String result = child.render(node);
@@ -128,19 +129,7 @@ public class JinjaYamlExpressions
             throw new InterpretException(e.getMessage(), e);
         }
         finally {
-            context.popIncludePath();
+            interpreter.getContext().popIncludePath();
         }
-    }
-
-    static Context getRootContext(JinjavaInterpreter interpreter)
-    {
-        Context context = interpreter.getContext();
-        Context lastContext;
-        do {
-            lastContext = context;
-            context = context.getParent();
-        } while (context.getParent() != null);
-        // context is the global context. root context is lastContext.
-        return lastContext;
     }
 }
