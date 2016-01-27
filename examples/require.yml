@@ -1,6 +1,8 @@
 run: +require
 
 +require:
+  parallel: true
+
   +task1:
     +require_data:
       require>: +make_data

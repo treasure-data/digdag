@@ -105,7 +105,7 @@ public class TaskRunnerManager
                         ex.getRetryInterval());
             }
             else {
-                logger.debug("Retrying task", ex);
+                logger.debug("Retrying task {}", ex.toString());
                 callback.taskPollNext(
                         taskId,
                         nextState, ex.getRetryInterval().get());

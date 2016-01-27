@@ -25,25 +25,18 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public class DatabaseQueueDescStoreManager
-        extends BasicDatabaseStoreManager
+        extends BasicDatabaseStoreManager<DatabaseQueueDescStoreManager.Dao>
         implements QueueDescStoreManager
 {
-    private final ConfigMapper cfm;
-    private final Dao dao;
-
     @Inject
     public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        super(config.getType(), dbi.open());
-        this.cfm = cfm;
-        handle.registerMapper(new StoredQueueDescMapper(cfm));
-        handle.registerArgumentFactory(cfm.getArgumentFactory());
-        this.dao = handle.attach(Dao.class);
-    }
-
-    public void close()
-    {
-        handle.close();
+        super(config.getType(), Dao.class, () -> {
+            Handle handle = dbi.open();
+            handle.registerMapper(new StoredQueueDescMapper(cfm));
+            handle.registerArgumentFactory(cfm.getArgumentFactory());
+            return handle;
+        });
     }
 
     public QueueDescStore getQueueDescStore(int siteId)
@@ -70,7 +63,9 @@ public class DatabaseQueueDescStoreManager
         @Override
         public List<StoredQueueDesc> getQueueDescs(int pageSize, Optional<Long> lastId)
         {
-            return dao.getQueueDescs(siteId, pageSize, lastId.or(0L));
+            return autoCommit((handle, dao) -> {
+                return dao.getQueueDescs(siteId, pageSize, lastId.or(0L));
+            });
         }
 
         @Override
@@ -78,7 +73,7 @@ public class DatabaseQueueDescStoreManager
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getQueueDescById(siteId, qdId),
+                    (handle, dao) -> dao.getQueueDescById(siteId, qdId),
                     "queue id=%d", qdId);
         }
 
@@ -87,21 +82,23 @@ public class DatabaseQueueDescStoreManager
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getQueueDescByName(siteId, name),
+                    (handle, dao) -> dao.getQueueDescByName(siteId, name),
                     "queue name=%s", name);
         }
 
         @Override
         public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, Config defaultConfig)
         {
-            return transaction(ts -> {
+            return transaction((handle, dao, ts) -> {
                 try {
                     try {
                         long qdId = catchConflict(() ->
                                 dao.insertQueueDesc(siteId, name, defaultConfig),
                                 "queue name=%s", name);
-                        return getQueueDescById(qdId);
-                    }
+                        return requiredResource(
+                                dao.getQueueDescById(siteId, qdId),
+                                "queue id=%d", qdId);
+                                }
                     catch (ResourceConflictException ex) {
                         return getQueueDescByName(name);
                     }
@@ -114,9 +111,9 @@ public class DatabaseQueueDescStoreManager
 
         public void updateQueueDescConfig(long qdId, Config newConfig)
         {
-            int n = dao.updateQueueDescConfig(siteId, qdId, newConfig);
+            int n = autoCommit((handle, dao) -> dao.updateQueueDescConfig(siteId, qdId, newConfig));
             if (n <= 0) {
-                // TODO throw not-found exception
+                // TODO throw not-found exception?
             }
         }
     }

@@ -81,7 +81,7 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        logger.info("Starting a new session of workflow '{}' ({}) from task {} with overwrite parameters: {}",
+        logger.debug("Checking a session of workflow '{}' ({}) from task {} with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
@@ -99,7 +99,7 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
 
-        logger.info("Starting a new session of workflow '{}' ({}) with overwrite parameters: {}",
+        logger.debug("Checking a session of workflow '{}' ({}) with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 ar.getOverwriteParams());
@@ -130,9 +130,6 @@ public class WorkflowExecutor
                 ar.getRetryAttemptName(),
                 sessionParams, ar.getStoredWorkflowDefinitionId());
 
-        logger.debug("Checking session repository id={} workflow name={} instant={}",
-                ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
-
         TaskConfig.validateAttempt(attempt);
 
         StoredSessionAttempt stored;
@@ -143,6 +140,10 @@ public class WorkflowExecutor
                 .putAndLockSession(session, (store, storedSession) -> {
                     StoredSessionAttempt storedAttempt;
                     storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);  // this may throw ResourceConflictException:
+
+                    logger.info("Starting a new session repository id={} workflow name={} instant={}",
+                            ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
+
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())
                         .fullName(root.getName())

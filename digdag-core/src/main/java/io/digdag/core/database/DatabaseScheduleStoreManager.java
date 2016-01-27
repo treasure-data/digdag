@@ -33,25 +33,18 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
 
 public class DatabaseScheduleStoreManager
-        extends BasicDatabaseStoreManager
-        implements ScheduleStoreManager, ScheduleControlStore
+        extends BasicDatabaseStoreManager<DatabaseScheduleStoreManager.Dao>
+        implements ScheduleStoreManager
 {
-    private final ConfigMapper cfm;
-    private final Dao dao;
-
     @Inject
     public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        super(config.getType(), dbi.open());
-        this.cfm = cfm;
-        handle.registerMapper(new StoredScheduleMapper(cfm));
-        handle.registerArgumentFactory(cfm.getArgumentFactory());
-        this.dao = handle.attach(Dao.class);
-    }
-
-    public void close()
-    {
-        handle.close();
+        super(config.getType(), Dao.class, () -> {
+            Handle handle = dbi.open();
+            handle.registerMapper(new StoredScheduleMapper(cfm));
+            handle.registerArgumentFactory(cfm.getArgumentFactory());
+            return handle;
+        });
     }
 
     @Override
@@ -63,14 +56,14 @@ public class DatabaseScheduleStoreManager
     @Override
     public void lockReadySchedules(Instant currentTime, ScheduleAction func)
     {
-        List<RuntimeException> exceptions = transaction(ts -> {
+        List<RuntimeException> exceptions = transaction((handle, dao, ts) -> {
             return dao.lockReadySchedules(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(schedId -> {
                     // TODO JOIN + FOR UPDATE doesn't work with H2 database
                     StoredSchedule sched = dao.getScheduleByIdInternal(schedId);
                     try {
-                        func.schedule(this, sched);
+                        func.schedule(new DatabaseScheduleControlStore(handle), sched);
                         return null;
                     }
                     catch (RuntimeException ex) {
@@ -80,6 +73,7 @@ public class DatabaseScheduleStoreManager
                 .filter(exception -> exception != null)
                 .collect(Collectors.toList());
         });
+
         if (!exceptions.isEmpty()) {
             RuntimeException first = exceptions.get(0);
             for (RuntimeException ex : exceptions.subList(1, exceptions.size())) {
@@ -89,42 +83,19 @@ public class DatabaseScheduleStoreManager
         }
     }
 
-    @Override
-    public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime)
-    {
-        int n = dao.updateNextScheduleTime(schedId,
-                nextTime.getRunTime().getEpochSecond(),
-                nextTime.getScheduleTime().getEpochSecond());
-        return n > 0;
-    }
-
-    @Override
-    public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime,
-            Instant lastSessionInstant)
-    {
-        int n = dao.updateNextScheduleTime(schedId,
-                nextTime.getRunTime().getEpochSecond(),
-                nextTime.getScheduleTime().getEpochSecond(),
-                lastSessionInstant.getEpochSecond());
-        return n > 0;
-    }
-
     public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
         throws ResourceNotFoundException
     {
-        Optional<T> ret = transaction(ts -> {
-            // TODO JOIN + FOR UPDATE doesn't work with H2 database
-            dao.lockScheduleById(schedId);
-            StoredSchedule schedule = dao.getScheduleByIdInternal(schedId);
-            if (schedule == null) {
-                return Optional.<T>absent();
+        return transaction((handle, dao, ts) -> {
+            // JOIN + FOR UPDATE doesn't work with H2 database. So here locks it first then get columns.
+            if (dao.lockScheduleById(schedId) == 0) {
+                throw new ResourceNotFoundException("schedule id="+schedId);
             }
-            T result = func.call(this, schedule);
-            return Optional.of(result);
+            StoredSchedule schedule = requiredResource(
+                    dao.getScheduleByIdInternal(schedId),
+                    "schedule id=%d", schedId);
+            return func.call(new DatabaseScheduleControlStore(handle), schedule);
         }, ResourceNotFoundException.class);
-        return requiredResource(
-                ret.orNull(),
-                "schedule id=%d", schedId);
     }
 
     private class DatabaseScheduleStore
@@ -146,7 +117,7 @@ public class DatabaseScheduleStoreManager
         @Override
         public List<StoredSchedule> getSchedules(int pageSize, Optional<Long> lastId)
         {
-            return dao.getSchedules(siteId, pageSize, lastId.or(0L));
+            return autoCommit((handle, dao) -> dao.getSchedules(siteId, pageSize, lastId.or(0L)));
         }
 
         @Override
@@ -154,8 +125,41 @@ public class DatabaseScheduleStoreManager
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getScheduleById(siteId, schedId),
+                    (handle, dao) -> dao.getScheduleById(siteId, schedId),
                     "schedule id=%d", schedId);
+        }
+    }
+
+    private class DatabaseScheduleControlStore
+            implements ScheduleControlStore
+    {
+        private final Handle handle;
+        private final Dao dao;
+
+        public DatabaseScheduleControlStore(Handle handle)
+        {
+            this.handle = handle;
+            this.dao = handle.attach(Dao.class);
+        }
+
+        @Override
+        public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime)
+        {
+            int n = dao.updateNextScheduleTime(schedId,
+                    nextTime.getRunTime().getEpochSecond(),
+                    nextTime.getScheduleTime().getEpochSecond());
+            return n > 0;
+        }
+
+        @Override
+        public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime,
+                Instant lastSessionInstant)
+        {
+            int n = dao.updateNextScheduleTime(schedId,
+                    nextTime.getRunTime().getEpochSecond(),
+                    nextTime.getScheduleTime().getEpochSecond(),
+                    lastSessionInstant.getEpochSecond());
+            return n > 0;
         }
     }
 

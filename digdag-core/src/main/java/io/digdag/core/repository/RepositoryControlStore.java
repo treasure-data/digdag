@@ -6,9 +6,9 @@ import io.digdag.core.schedule.Schedule;
 
 public interface RepositoryControlStore
 {
-    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
-
     StoredRevision putRevision(int repoId, Revision revision);
+
+    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
 
     void insertRevisionArchiveData(int revId, byte[] data)
             throws ResourceConflictException;

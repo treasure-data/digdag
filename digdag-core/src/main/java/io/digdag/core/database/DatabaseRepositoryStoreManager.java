@@ -30,26 +30,27 @@ import io.digdag.client.config.Config;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class DatabaseRepositoryStoreManager
-        extends BasicDatabaseStoreManager
+        extends BasicDatabaseStoreManager<DatabaseRepositoryStoreManager.Dao>
         implements RepositoryStoreManager
 {
-    private final Dao dao;
     private final ConfigMapper cfm;
 
     @Inject
     public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        super(config.getType(), dbi.open());
+        super(config.getType(), Dao.class, () -> {
+            Handle handle = dbi.open();
+            handle.registerMapper(new StoredRepositoryMapper(cfm));
+            handle.registerMapper(new StoredRevisionMapper(cfm));
+            handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
+            handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
+            handle.registerMapper(new RevisionInfoMapper());
+            handle.registerMapper(new WorkflowConfigMapper());
+            handle.registerMapper(new IdNameMapper());
+            handle.registerArgumentFactory(cfm.getArgumentFactory());
+            return handle;
+        });
         this.cfm = cfm;
-        handle.registerMapper(new StoredRepositoryMapper(cfm));
-        handle.registerMapper(new StoredRevisionMapper(cfm));
-        handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
-        handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
-        handle.registerMapper(new RevisionInfoMapper());
-        handle.registerMapper(new WorkflowConfigMapper());
-        handle.registerMapper(new IdNameMapper());
-        handle.registerArgumentFactory(cfm.getArgumentFactory());
-        this.dao = handle.attach(Dao.class);
     }
 
     @Override
@@ -63,7 +64,7 @@ public class DatabaseRepositoryStoreManager
             throws ResourceNotFoundException
     {
         return requiredResource(
-                dao.getWorkflowDetailsById(wfId),
+                (handle, dao) -> dao.getWorkflowDetailsById(wfId),
                 "workflow id=%s", wfId);
     }
 
@@ -72,7 +73,7 @@ public class DatabaseRepositoryStoreManager
         throws ResourceNotFoundException
     {
         return requiredResource(
-                dao.getRepositoryByIdInternal(repoId),
+                (handle, dao) -> dao.getRepositoryByIdInternal(repoId),
                 "repository id=%s", repoId);
     }
 
@@ -81,12 +82,12 @@ public class DatabaseRepositoryStoreManager
         throws ResourceNotFoundException
     {
         return requiredResource(
-                dao.getRevisionOfWorkflowDefinition(wfId),
+                (handle, dao) -> dao.getRevisionOfWorkflowDefinition(wfId),
                 "revision of workflow definition id=%s", wfId);
     }
 
     private class DatabaseRepositoryStore
-            implements RepositoryStore, RepositoryControlStore
+            implements RepositoryStore
     {
         // TODO retry
         private final int siteId;
@@ -104,7 +105,7 @@ public class DatabaseRepositoryStoreManager
         @Override
         public List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId)
         {
-            return dao.getRepositories(siteId, pageSize, lastId.or(0));
+            return autoCommit((handle, dao) -> dao.getRepositories(siteId, pageSize, lastId.or(0)));
         }
 
         @Override
@@ -112,7 +113,7 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getRepositoryById(siteId, repoId),
+                    (handle, dao) -> dao.getRepositoryById(siteId, repoId),
                     "repository id=%d", repoId);
         }
 
@@ -121,15 +122,16 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getRepositoryByName(siteId, repoName),
+                    (handle, dao) -> dao.getRepositoryByName(siteId, repoName),
                     "repository name=%s", repoName);
         }
 
         @Override
         public <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
+                throws ResourceConflictException
         {
             // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
-            return handle.inTransaction((handle, session) -> {
+            return transaction((handle, dao, ts) -> {
                 int repoId;
                 try {
                     repoId = catchConflict(() ->
@@ -149,8 +151,8 @@ public class DatabaseRepositoryStoreManager
                     throw new IllegalStateException("Database state error");
                 }
 
-                return func.call(this, repo);
-            });
+                return func.call(new DatabaseRepositoryControlStore(handle, siteId), repo);
+            }, ResourceConflictException.class);
         }
 
         //public List<StoredRevision> getAllRevisions(int repoId)
@@ -161,7 +163,7 @@ public class DatabaseRepositoryStoreManager
         @Override
         public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
         {
-            return dao.getRevisions(siteId, repoId, pageSize, lastId.or(0));
+            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(0)));
         }
 
         @Override
@@ -169,7 +171,7 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getRevisionById(siteId, revId),
+                    (handle, dao) -> dao.getRevisionById(siteId, revId),
                     "revision id=%d", revId);
         }
 
@@ -178,7 +180,7 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getRevisionByName(siteId, repoId, revName),
+                    (handle, dao) -> dao.getRevisionByName(siteId, repoId, revName),
                     "revision name=%s in repository id=%d", revName, repoId);
         }
 
@@ -187,7 +189,7 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.getLatestRevision(siteId, repoId),
+                    (handle, dao) -> dao.getLatestRevision(siteId, repoId),
                     "repository id=%d", repoId);
         }
 
@@ -196,8 +198,60 @@ public class DatabaseRepositoryStoreManager
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    dao.selectRevisionArchiveData(revId),
+                    (handle, dao) -> dao.selectRevisionArchiveData(revId),
                     "revisin id=%d", revId);
+        }
+
+        @Override
+        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
+            throws ResourceNotFoundException
+        {
+            return autoCommit((handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, name));
+        }
+
+        @Override
+        public List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getLatestWorkflowDefinitions(siteId, pageSize, lastId.or(0)));
+        }
+
+        @Override
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0)));
+        }
+
+        @Override
+        public StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    (handle, dao) -> dao.getWorkflowDefinitionById(siteId, wfId),
+                    "workflow id=%d", wfId);
+        }
+
+        @Override
+        public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
+            throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    (handle, dao) -> dao.getWorkflowDefinitionByName(siteId, revId, name),
+                    "workflow name=%s in revision id=%d", name, revId);
+        }
+    }
+
+    private class DatabaseRepositoryControlStore
+            implements RepositoryControlStore
+    {
+        private final Handle handle;
+        private final int siteId;
+        private final Dao dao;
+
+        public DatabaseRepositoryControlStore(Handle handle, int siteId)
+        {
+            this.handle = handle;
+            this.siteId = siteId;
+            this.dao = handle.attach(Dao.class);
         }
 
         /**
@@ -210,25 +264,41 @@ public class DatabaseRepositoryStoreManager
         public StoredRevision putRevision(int repoId, Revision revision)
         {
             try {
+                int revId = catchConflict(() ->
+                    dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
+                    "revision=%s in repository id=%d", revision.getName(), repoId);
                 try {
-                    int revId = catchConflict(() ->
-                        dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
-                        "revision=%s in repository id=%d", revision.getName(), repoId);
-                    return getRevisionById(revId);
+                    return requiredResource(
+                            dao.getRevisionById(siteId, revId),
+                            "revision id=%d", revId);
                 }
-                catch (ResourceConflictException ex) {
-                    // TODO delete archive data first?
-                    StoredRevision rev = getRevisionByName(repoId, revision.getName());
-                    if (revision.equals(Revision.revisionBuilder().from(rev).build())) {
-                        return rev;
-                    }
-                    // TODO once implement deleteRevision, delete the current revision and overwrite it
-                    throw new UnsupportedOperationException("Revision already exists. Overwriting an existing revision is not supported.", ex);
+                catch (ResourceNotFoundException ex) {
+                    throw new IllegalStateException("Database state error", ex);
                 }
             }
-            catch (ResourceNotFoundException ex) {
-                throw new IllegalStateException("Database state error", ex);
+            catch (ResourceConflictException ex) {
+                // TODO delete archive data first?
+                StoredRevision rev;
+                try {
+                    rev = requiredResource(
+                            dao.getRevisionByName(siteId, repoId, revision.getName()),
+                            "revision name=%s in repository id=%d", revision.getName(), repoId);
+                }
+                catch (ResourceNotFoundException ex2) {
+                    throw new IllegalStateException("Database state error", ex2);
+                }
+                if (revision.equals(Revision.revisionBuilder().from(rev).build())) {
+                    return rev;
+                }
+                // TODO once implement deleteRevision, delete the current revision and overwrite it
+                throw new UnsupportedOperationException("Revision already exists. Overwriting an existing revision is not supported.", ex);
             }
+        }
+
+        @Override
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
+        {
+            return dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0));
         }
 
         @Override
@@ -243,43 +313,6 @@ public class DatabaseRepositoryStoreManager
                 "revision archive=%d", revId);
         }
 
-        @Override
-        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
-        {
-            return dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0));
-        }
-
-        @Override
-        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
-            throws ResourceNotFoundException
-        {
-            return dao.getLatestWorkflowDefinitionByName(siteId, repoId, name);
-        }
-
-        @Override
-        public List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId)
-        {
-            return dao.getLatestWorkflowDefinitions(siteId, pageSize, lastId.or(0));
-        }
-
-        @Override
-        public StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getWorkflowDefinitionById(siteId, wfId),
-                    "workflow id=%d", wfId);
-        }
-
-        @Override
-        public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
-            throws ResourceNotFoundException
-        {
-            return requiredResource(
-                    dao.getWorkflowDefinitionByName(siteId, revId, name),
-                    "workflow name=%s in revision id=%d", name, revId);
-        }
-
         /**
          * Create a revision.
          *
@@ -290,23 +323,26 @@ public class DatabaseRepositoryStoreManager
         public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def)
             throws ResourceConflictException
         {
+            String text = cfm.toText(def.getConfig());
+            long configDigest = cfm.toConfigDigest(text);
+
+            int configId;
+            WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
+            if (found != null && found.getConfig().equals(def.getConfig())) {
+                configId = found.getId();
+            }
+            else {
+                configId = dao.insertWorkflowConfig(repoId, text, configDigest);
+            }
+
+            long wfId = catchConflict(() ->
+                dao.insertWorkflowDefinition(revId, def.getName(), configId),
+                "workflow=%s in revision id=%d", def.getName(), revId);
+
             try {
-                String text = cfm.toText(def.getConfig());
-                long configDigest = cfm.toConfigDigest(text);
-
-                int configId;
-                WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
-                if (found != null && found.getConfig().equals(def.getConfig())) {
-                    configId = found.getId();
-                }
-                else {
-                    configId = dao.insertWorkflowConfig(repoId, text, configDigest);
-                }
-
-                long wfId = catchConflict(() ->
-                    dao.insertWorkflowDefinition(revId, def.getName(), configId),
-                    "workflow=%s in revision id=%d", def.getName(), revId);
-                return getWorkflowDefinitionById(wfId);
+                return requiredResource(
+                        dao.getWorkflowDefinitionById(siteId, wfId),
+                        "workflow id=%d", wfId);
             }
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
@@ -442,31 +478,9 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
-        @SqlUpdate("insert into revisions" +
-                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
-                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
-        @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
-
-        @SqlUpdate("insert into revision_archives" +
-                " (id, data)" +
-                " values (:revId, :data)")
-        void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
-
         @SqlQuery("select data from revision_archives" +
                 " where id = :revId")
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);
-
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
-                " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " join workflow_configs wc on wc.id = wd.config_id" +
-                " where wd.revision_id = :revId" +
-                " and wd.id > :lastId" +
-                " and repo.site_id = :siteId" +
-                " order by wd.id asc" +
-                " limit :limit")
-        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select wd.*, wc.config," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
@@ -537,6 +551,28 @@ public class DatabaseRepositoryStoreManager
                 " values (:repoId, :config, :configDigest)")
         @GetGeneratedKeys
         int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("configDigest") long configDigest);
+
+        @SqlUpdate("insert into revisions" +
+                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
+                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
+        @GetGeneratedKeys
+        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
+
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.revision_id = :revId" +
+                " and wd.id > :lastId" +
+                " and repo.site_id = :siteId" +
+                " order by wd.id asc" +
+                " limit :limit")
+        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+
+        @SqlUpdate("insert into revision_archives" +
+                " (id, data)" +
+                " values (:revId, :data)")
+        void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
 
         @SqlUpdate("insert into workflow_definitions" +
                 " (revision_id, name, config_id)" +
