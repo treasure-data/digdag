@@ -1,15 +1,22 @@
-run: +schedule
-+schedule:
-  meta:
-    owner: Sadayuki Furuhashi
-    created_at: 2015-11-02 18:18 -0700
+run: +daily1
 
+# See also sla.yml
+
++daily1:
   timezone: America/Los_Angeles   # this considers daylight saving time
 
   schedule:
-    cron: "* * * * *"  # every minute
+    daily>: 10:00:00   # daily at 10 AM
 
   +task:
     sh>: echo "This schedule is for $session_time"
 
-  # See also sla.yml
++hourly1:
+  timezone: Europe/Paris
+
+  schedule:
+    hourly>: 30:00   # hourly at 30 minute
+
+  +task:
+    sh>: echo "This schedule is for $session_time"
+

@@ -22,6 +22,9 @@ public class YamlTagResolver
     public static final Pattern FLOAT_EXCEPTING_ZERO_START = Pattern
         .compile("^([-+]?(\\.[0-9]+|[1-9][0-9_]*(\\.[0-9_]*)?)([eE][-+]?[0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$");
 
+    public static final Pattern INT_EXCEPTING_COLON = Pattern
+        .compile("^(?:[-+]?0b[0-1_]+|[-+]?0[0-7_]+|[-+]?(?:0|[1-9][0-9_]*)|[-+]?0x[0-9a-fA-F_]+|[-+]?[1-9][0-9_]*)$");
+
     @Override
     public void addImplicitResolver(Tag tag, Pattern regexp, String first)
     {
@@ -29,7 +32,13 @@ public class YamlTagResolver
         // to setup default implicit resolvers.
 
         if (tag.equals(Tag.FLOAT)) {
-            super.addImplicitResolver(Tag.FLOAT, FLOAT_EXCEPTING_ZERO_START, "-+0123456789.");
+            super.addImplicitResolver(tag, FLOAT_EXCEPTING_ZERO_START, first);
+        }
+        else if (tag.equals(Tag.INT)) {
+            // This solves some unexpected behavior that snakeyaml
+            // deserializes "10:00:00" to 3600.
+            // See also org.yaml.snakeyaml.constructor.SafeConstructor.ConstructYamlInt
+            super.addImplicitResolver(tag, INT_EXCEPTING_COLON, first);
         }
         else if (tag.equals(Tag.BOOL)) {
             // use stricter rule (reject 'On', 'Off', 'Yes', 'No')
@@ -37,8 +46,9 @@ public class YamlTagResolver
         }
         else if (tag.equals(Tag.TIMESTAMP)) {
             // This solves some unexpected behavior that snakeyaml
-            // deserializes "2015-01-01 00:00:00" to java.time.Instant
-            // but jackson serializes java.util.Instant to an integer.
+            // deserializes "2015-01-01 00:00:00" to java.util.Date
+            // but jackson serializes java.util.Date to an integer.
+            // See also org.yaml.snakeyaml.constructor.SafeConstructor.ConstructYamlTimestamp
             return;
         }
         else {

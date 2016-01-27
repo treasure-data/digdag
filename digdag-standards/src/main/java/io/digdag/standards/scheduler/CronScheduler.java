@@ -9,14 +9,14 @@ import io.digdag.spi.Scheduler;
 import it.sauronsoftware.cron4j.SchedulingPattern;
 import it.sauronsoftware.cron4j.Predictor;
 
-public abstract class AbstractCronScheduler
+public class CronScheduler
         implements Scheduler
 {
     private final SchedulingPattern pattern;
     private final ZoneId timeZone;
     private final long delaySeconds;
 
-    AbstractCronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
+    CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
     {
         this.pattern = new SchedulingPattern(cronPattern);
         this.timeZone = timeZone;

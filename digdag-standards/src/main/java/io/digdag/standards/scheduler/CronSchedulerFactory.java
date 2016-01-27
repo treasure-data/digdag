@@ -9,9 +9,9 @@ public class CronSchedulerFactory
         implements SchedulerFactory
 {
     @Override
-    public boolean matches(Config config)
+    public String getType()
     {
-        return config.has("cron");
+        return "cron";
     }
 
     @Override
@@ -21,14 +21,5 @@ public class CronSchedulerFactory
                 config.get("cron", String.class),
                 timeZone,
                 config.get("delay", Integer.class, 0));
-    }
-
-    public static class CronScheduler
-            extends AbstractCronScheduler
-    {
-        public CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
-        {
-            super(cronPattern, timeZone, delaySeconds);
-        }
     }
 }

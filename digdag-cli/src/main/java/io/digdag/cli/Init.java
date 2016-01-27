@@ -17,6 +17,7 @@ public class Init
     public void main()
         throws Exception
     {
+        // TODO use dir instead of file path
         String dagfilePath;
         switch (args.size()) {
         case 0:
