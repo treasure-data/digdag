@@ -19,6 +19,7 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.Config;
@@ -124,8 +125,8 @@ public class RevisionAutoReloader
             try {
                 Dagfile dagfile = readDagfile();  // TODO optimize this code
                 if (!dagfile.equals(lastDagfile)) {
-                    logger.info("Reloading " + file);
-                    localSite.storeWorkflows(
+                    logger.info("Reloading {}", file);
+                    StoredRevision rev = localSite.storeWorkflows(
                             makeRevisionName(),
                             dagfile.getWorkflowList(),
                             Instant.now(),
@@ -133,6 +134,7 @@ public class RevisionAutoReloader
                                 .deepCopy()
                                 .setAll(overwriteParams));
                     lastDagfile = dagfile;
+                    logger.info("Added new revision {}", rev.getName());
                 }
             }
             catch (RuntimeException | ResourceConflictException | ResourceNotFoundException | IOException ex) {
