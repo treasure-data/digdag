@@ -29,13 +29,12 @@ public class DatabaseQueueDescStoreManager
         implements QueueDescStoreManager
 {
     private final ConfigMapper cfm;
-    private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm)
+    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        this.handle = dbi.open();
+        super(config.getType(), dbi.open());
         this.cfm = cfm;
         handle.registerMapper(new StoredQueueDescMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
@@ -95,7 +94,7 @@ public class DatabaseQueueDescStoreManager
         @Override
         public StoredQueueDesc getQueueDescByNameOrCreateDefault(String name, Config defaultConfig)
         {
-            return handle.inTransaction((handle, session) -> {
+            return transaction(ts -> {
                 try {
                     try {
                         long qdId = catchConflict(() ->

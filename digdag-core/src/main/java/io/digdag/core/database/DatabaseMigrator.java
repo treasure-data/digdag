@@ -86,7 +86,7 @@ public class DatabaseMigrator
             return add(column, "int primary key AUTO_INCREMENT");
         }
 
-        public CreateTableBuilder addIntId(String column, String options)
+        public CreateTableBuilder addIntIdNoAutoIncrement(String column, String options)
         {
             return add(column, "int primary key AUTO_INCREMENT " + options);
         }
@@ -96,9 +96,9 @@ public class DatabaseMigrator
             return add(column, "bigint primary key AUTO_INCREMENT");
         }
 
-        public CreateTableBuilder addLongId(String column, String options)
+        public CreateTableBuilder addLongIdNoAutoIncrement(String column, String options)
         {
-            return add(column, "bigint primary key AUTO_INCREMENT " + options);
+            return add(column, "bigint primary key " + options);
         }
 
         public CreateTableBuilder addShort(String column, String options)
@@ -247,7 +247,7 @@ public class DatabaseMigrator
             // revision_archives
             handle.update(
                     new CreateTableBuilder("revision_archives")
-                    .addIntId("id", "references revisions (id)")
+                    .addIntIdNoAutoIncrement("id", "references revisions (id)")
                     .addLongBinary("archive_data", "not null")
                     .build());
 
@@ -321,7 +321,7 @@ public class DatabaseMigrator
             // task_archives
             handle.update(
                     new CreateTableBuilder("task_archives")
-                    .addLongId("id", "references session_attempts (id)")
+                    .addLongIdNoAutoIncrement("id", "references session_attempts (id)")
                     .addLongText("tasks", "not null")  // collection of tasks, delete tasks transactionally when archived
                     .addTimestamp("created_at", "not null")
                     .build());
@@ -358,7 +358,7 @@ public class DatabaseMigrator
 
             handle.update(
                     new CreateTableBuilder("task_details")
-                    .addLongId("id", "references tasks (id)")
+                    .addLongIdNoAutoIncrement("id", "references tasks (id)")
                     .addMediumText("full_name", "not null")
                     .addMediumText("local_config", "")
                     .addMediumText("export_config", "")
@@ -366,7 +366,7 @@ public class DatabaseMigrator
 
             handle.update(
                     new CreateTableBuilder("task_state_details")
-                    .addLongId("id", "references tasks (id)")
+                    .addLongIdNoAutoIncrement("id", "references tasks (id)")
                     .addMediumText("state_params", "")
                     .addMediumText("carry_params", "")
                     .addMediumText("error", "")

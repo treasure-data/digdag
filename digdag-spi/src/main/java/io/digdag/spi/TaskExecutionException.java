@@ -20,6 +20,7 @@ public class TaskExecutionException
 
     public TaskExecutionException(int retryInterval)
     {
+        super("Retrying this task after "+retryInterval+" seconds");
         this.error = Optional.absent();
         this.retryInterval = Optional.of(retryInterval);
     }

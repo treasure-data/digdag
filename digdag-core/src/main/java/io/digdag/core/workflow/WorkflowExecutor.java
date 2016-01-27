@@ -71,7 +71,7 @@ public class WorkflowExecutor
     public StoredSessionAttemptWithSession submitSubworkflow(int siteId, AttemptRequest ar,
             WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern,
             List<SessionMonitor> monitors)
-        throws NoMatchException, MultipleTaskMatchException
+        throws SessionAttemptConflictException, NoMatchException, MultipleTaskMatchException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList sourceTasks = workflow.getTasks();
@@ -94,6 +94,7 @@ public class WorkflowExecutor
             AttemptRequest ar,
             WorkflowDefinition def,
             List<SessionMonitor> monitors)
+        throws SessionAttemptConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
@@ -108,6 +109,7 @@ public class WorkflowExecutor
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks, List<SessionMonitor> monitors)
+        throws SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
             logger.trace("  Step["+task.getIndex()+"]: "+task.getName());
@@ -116,11 +118,7 @@ public class WorkflowExecutor
             logger.trace("    config: "+task.getConfig());
         }
 
-        Session session = Session.sessionBuilder()
-            .repositoryId(ar.getRepositoryId())
-            .workflowName(ar.getWorkflowName())
-            .instant(ar.getInstant())
-            .build();
+        Session session = Session.of(ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
 
         // TODO get tiemzone from default params, overwrite params, or ar.getDefaultTimeZone
         // TODO set timezone, session_time, etc.
@@ -132,38 +130,51 @@ public class WorkflowExecutor
                 ar.getRetryAttemptName(),
                 sessionParams, ar.getStoredWorkflowDefinitionId());
 
+        logger.debug("Checking session repository id={} workflow name={} instant={}",
+                ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
+
         TaskConfig.validateAttempt(attempt);
 
-        final WorkflowTask root = tasks.get(0);
-        StoredSessionAttempt stored = sm
-            .getSessionStore(siteId)
-            .putAndLockSession(session, (store, storedSession) -> {
-                StoredSessionAttempt storedAttempt;
-                try {
-                    storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);
-                }
-                catch (ResourceConflictException ex) {
-                    try {
-                        return store.getLastAttempt(storedSession.getId());
-                    }
-                    catch (ResourceNotFoundException shouldNotHappen) {
-                        throw new IllegalStateException("Database state error", shouldNotHappen);
-                    }
-                }
-                final Task rootTask = Task.taskBuilder()
-                    .parentId(Optional.absent())
-                    .fullName(root.getName())
-                    .config(TaskConfig.validate(root.getConfig()))
-                    .taskType(root.getTaskType())
-                    .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
-                    .build();
-                store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTask) -> {
-                    new TaskControl(taskStore, storedTask).addTasksExceptingRootTask(tasks);
-                    return null;
+        StoredSessionAttempt stored;
+        try {
+            final WorkflowTask root = tasks.get(0);
+            stored = sm
+                .getSessionStore(siteId)
+                .putAndLockSession(session, (store, storedSession) -> {
+                    StoredSessionAttempt storedAttempt;
+                    storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);  // this may throw ResourceConflictException:
+                    final Task rootTask = Task.taskBuilder()
+                        .parentId(Optional.absent())
+                        .fullName(root.getName())
+                        .config(TaskConfig.validate(root.getConfig()))
+                        .taskType(root.getTaskType())
+                        .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
+                        .build();
+                    store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTask) -> {
+                        new TaskControl(taskStore, storedTask).addTasksExceptingRootTask(tasks);
+                        return null;
+                    });
+                    store.insertMonitors(storedAttempt.getId(), monitors);
+                    return storedAttempt;
                 });
-                store.insertMonitors(storedAttempt.getId(), monitors);
-                return storedAttempt;
-            });
+        }
+        catch (ResourceConflictException sessionAlreadyExists) {
+            try {
+                StoredSessionAttemptWithSession conflicted;
+                if (ar.getRetryAttemptName().isPresent()) {
+                    conflicted = sm.getSessionStore(siteId)
+                        .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getInstant(), ar.getRetryAttemptName().get());
+                }
+                else {
+                    conflicted = sm.getSessionStore(siteId)
+                        .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getInstant());
+                }
+                throw new SessionAttemptConflictException("Session already exists", conflicted);
+            }
+            catch (ResourceNotFoundException shouldNotHappen) {
+                throw new IllegalStateException("Database state error", shouldNotHappen);
+            }
+        }
 
         noticeStatusPropagate();  // TODO is this necessary?
 

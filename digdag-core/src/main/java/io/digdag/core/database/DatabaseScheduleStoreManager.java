@@ -37,13 +37,12 @@ public class DatabaseScheduleStoreManager
         implements ScheduleStoreManager, ScheduleControlStore
 {
     private final ConfigMapper cfm;
-    private final Handle handle;
     private final Dao dao;
 
     @Inject
-    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm)
+    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        this.handle = dbi.open();
+        super(config.getType(), dbi.open());
         this.cfm = cfm;
         handle.registerMapper(new StoredScheduleMapper(cfm));
         handle.registerArgumentFactory(cfm.getArgumentFactory());
@@ -64,7 +63,7 @@ public class DatabaseScheduleStoreManager
     @Override
     public void lockReadySchedules(Instant currentTime, ScheduleAction func)
     {
-        List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
+        List<RuntimeException> exceptions = transaction(ts -> {
             return dao.lockReadySchedules(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(schedId -> {
@@ -113,7 +112,7 @@ public class DatabaseScheduleStoreManager
     public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
         throws ResourceNotFoundException
     {
-        Optional<T> ret = handle.inTransaction((handle, session) -> {
+        Optional<T> ret = transaction(ts -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
             dao.lockScheduleById(schedId);
             StoredSchedule schedule = dao.getScheduleByIdInternal(schedId);
@@ -122,7 +121,7 @@ public class DatabaseScheduleStoreManager
             }
             T result = func.call(this, schedule);
             return Optional.of(result);
-        });
+        }, ResourceNotFoundException.class);
         return requiredResource(
                 ret.orNull(),
                 "schedule id=%d", schedId);

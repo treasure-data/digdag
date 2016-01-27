@@ -13,18 +13,22 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.RepositoryStore;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LocalInProcessTaskCallbackApi
         implements TaskCallbackApi
 {
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final int siteId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
@@ -98,8 +102,12 @@ public class LocalInProcessTaskCallbackApi
             .build();
 
         // TODO FIXME SessionMonitor monitors is not set
-        StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def, ImmutableList.of());
-
-        return attempt.getStateFlags();
+        try {
+            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def, ImmutableList.of());
+            return attempt.getStateFlags();
+        }
+        catch (SessionAttemptConflictException ex) {
+            return ex.getConflictedSession().getStateFlags();
+        }
     }
 }

@@ -169,7 +169,7 @@ public class LocalSite
             WorkflowDefinitionList defs,
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams)
-        throws ResourceConflictException, ResourceNotFoundException
+        throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflow revWfs = storeLocalWorkflows("revision", defs,
                 Optional.absent(), overwriteParams);

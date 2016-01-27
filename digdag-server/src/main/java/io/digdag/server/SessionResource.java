@@ -181,7 +181,13 @@ public class SessionResource
             .build();
 
         // TODO how to make session monitors?
-        StoredSessionAttempt stored = executor.submitWorkflow(siteId, ar, def, ImmutableList.of());
+        StoredSessionAttempt stored;
+        try {
+            stored = executor.submitWorkflow(siteId, ar, def, ImmutableList.of());
+        }
+        catch (SessionAttemptConflictException ex) {
+            stored = ex.getConflictedSession();
+        }
 
         return RestModels.session(stored, ar, repo.getName());
     }

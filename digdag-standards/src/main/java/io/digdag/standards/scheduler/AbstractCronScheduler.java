@@ -33,8 +33,7 @@ public abstract class AbstractCronScheduler
     public ScheduleTime getFirstScheduleTime(Instant currentTime)
     {
         Instant startTime = currentTime;  // TODO make this from config
-        // align to the scheduling time. cron4j uses per-minute scheduling
-        return nextScheduleTime(startTime.minusSeconds(60));
+        return nextScheduleTime(startTime);
     }
 
     @Override

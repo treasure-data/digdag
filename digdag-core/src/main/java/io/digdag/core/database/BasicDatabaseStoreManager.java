@@ -8,13 +8,28 @@ import java.util.stream.Collectors;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import com.google.common.base.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 
 public abstract class BasicDatabaseStoreManager
 {
-    public static <T> T requiredResource(T resource, String messageFormat, Object... messageParameters)
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected final String databaseType;
+    protected final Handle handle;
+
+    protected BasicDatabaseStoreManager(String databaseType, Handle handle)
+    {
+        this.databaseType = databaseType;
+        this.handle = handle;
+    }
+
+    public <T> T requiredResource(T resource, String messageFormat, Object... messageParameters)
             throws ResourceNotFoundException
     {
         if (resource == null) {
@@ -28,28 +43,126 @@ public abstract class BasicDatabaseStoreManager
         public T call() throws ResourceConflictException;
     }
 
-    public static <T> T catchConflict(NewResourceAction<T> function,
+    public <T> T catchConflict(NewResourceAction<T> function,
             String messageFormat, Object... messageParameters)
             throws ResourceConflictException
     {
         try {
             return function.call();
         }
-        catch (RuntimeException ex) {
-            if (isConflictException(ex)) {
-                throw new ResourceConflictException("Resource already exists: " + String.format(messageFormat, messageParameters));
+        catch (UnableToExecuteStatementException ex) {
+            if (ex.getCause() instanceof SQLException) {
+                SQLException sqlEx = (SQLException) ex.getCause();
+                if (isConflictException(sqlEx)) {
+                    throw new ResourceConflictException("Resource already exists: " + String.format(messageFormat, messageParameters));
+                }
             }
             throw ex;
         }
     }
 
-    public static boolean isConflictException(Exception ex)
+    public boolean isConflictException(SQLException ex)
     {
-        if (ex.toString().contains("Unique index or primary key violation")) {
-            // h2 database
-            return true;
+        switch (databaseType) {
+        case "h2":
+            if ("23505".equals(ex.getSQLState())) {
+                return true;
+            }
+            return false;
+        default:
+            return false;
         }
-        return false;
+    }
+
+    public interface TransactionAction <T> {
+        T call(TransactionState ts);
+    }
+
+    public interface TransactionActionWithException <T, E extends Exception> {
+        T call(TransactionState ts) throws E;
+    }
+
+    public class TransactionState {
+        private boolean retryNext = false;
+        private int retryCount = 0;
+        private Throwable lastException;
+
+        public boolean isRetried()
+        {
+            return retryCount > 0;
+        }
+
+        public Throwable getLastException()
+        {
+            return lastException;
+        }
+
+        public void retry()
+        {
+            retryNext = true;
+            lastException = null;
+        }
+
+        public void retry(Throwable exception)
+        {
+            retryNext = true;
+            lastException = exception;
+        }
+    }
+
+    private static class InnerException
+            extends RuntimeException
+    {
+        public InnerException(Throwable cause)
+        {
+            super(cause);
+        }
+    }
+
+    public <T> T transaction(TransactionAction<T> action)
+    {
+        TransactionState ts = new TransactionState();
+        while (true) {
+            T retval = handle.inTransaction((handle, session) -> action.call(ts));
+            if (ts.retryNext) {
+                ts.retryNext = false;
+                ts.retryCount += 1;
+            }
+            else {
+                return retval;
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, E extends Exception> T transaction(TransactionActionWithException<T, E> action, Class<E> exClass) throws E
+    {
+        TransactionState ts = new TransactionState();
+        try {
+            while (true) {
+                T retval = handle.inTransaction((handle, session) -> {
+                    try {
+                        return action.call(ts);
+                    }
+                    catch (Exception ex) {
+                        if (exClass.isAssignableFrom(ex.getClass())) {
+                            throw new InnerException(ex);
+                        }
+                        throw ex;
+                    }
+                });
+                if (ts.retryNext) {
+                    ts.retryNext = false;
+                    ts.retryCount += 1;
+                }
+                else {
+                    return retval;
+                }
+            }
+        }
+        catch (InnerException ex) {
+            throw (E) ex.getCause();
+        }
     }
 
     public static Optional<Integer> getOptionalInt(ResultSet r, String column)

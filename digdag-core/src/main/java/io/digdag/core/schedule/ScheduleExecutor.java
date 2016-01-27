@@ -21,6 +21,7 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
+import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,8 +153,13 @@ public class ScheduleExecutor
             monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));
         }
 
-        handler.start(wf, monitors.build(),
-                timeZone, ScheduleTime.of(runTime, scheduleTime));
+        try {
+            handler.start(wf, monitors.build(),
+                    timeZone, ScheduleTime.of(runTime, scheduleTime));
+        }
+        catch (SessionAttemptConflictException ex) {
+            logger.debug("Scheduled attempt {} is already executed. Skipping", ex.getConflictedSession());
+        }
         return sr.nextScheduleTime(scheduleTime);
     }
 

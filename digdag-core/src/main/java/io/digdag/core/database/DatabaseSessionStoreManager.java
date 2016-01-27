@@ -36,20 +36,16 @@ public class DatabaseSessionStoreManager
 {
     private static final String DEFAULT_ATTEMPT_NAME = "";
 
-    private final String databaseType;
-
     private final ObjectMapper mapper;
     private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
     private final TaskAttemptSummaryMapper tasm;
-    private final Handle handle;
     private final Dao dao;
 
     @Inject
     public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper, DatabaseStoreConfig config)
     {
-        this.databaseType = config.getType();
-        this.handle = dbi.open();
+        super(config.getType(), dbi.open());
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
         this.mapper = mapper;
         this.cfm = cfm;
@@ -147,7 +143,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
-        return handle.inTransaction((handle, handleSession) -> {
+        return transaction(ts -> {
             SessionAttemptSummary locked = dao.lockAttempt(attemptId);
             if (locked != null) {
                 return Optional.of(func.call(this, locked));
@@ -193,7 +189,7 @@ public class DatabaseSessionStoreManager
     @Override
     public boolean requestCancelAttempt(long attemptId)
     {
-        return handle.inTransaction((handle, handleSession) -> {
+        return transaction(ts -> {
             int n = handle.createStatement("update tasks " +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
@@ -223,7 +219,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
-        return handle.inTransaction((handle, ses) -> {
+        return transaction(ts -> {
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(this);
@@ -236,13 +232,18 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
-        return handle.inTransaction((handle, ses) -> {
+        return transaction(ts -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
-                StoredTask task = getTaskById(taskId);
-                T result = func.call(this, task);
-                return Optional.of(result);
+                try {
+                    StoredTask task = getTaskById(taskId);
+                    T result = func.call(this, task);
+                    return Optional.of(result);
+                }
+                catch (ResourceNotFoundException ex) {
+                    throw new IllegalStateException("Database state error", ex);
+                }
             }
             return Optional.<T>absent();
         });
@@ -251,12 +252,17 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func)
     {
-        return handle.inTransaction((handle, ses) -> {
+        return transaction(ts -> {
             Long taskId = dao.lockRootTask(attemptId);
             if (taskId != null) {
-                StoredTask task = getTaskById(taskId);
-                T result = func.call(this, task);
-                return Optional.of(result);
+                try {
+                    StoredTask task = getTaskById(taskId);
+                    T result = func.call(this, task);
+                    return Optional.of(result);
+                }
+                catch (ResourceNotFoundException ex) {
+                    throw new IllegalStateException("Database state error", ex);
+                }
             }
             return Optional.<T>absent();
         });
@@ -265,7 +271,9 @@ public class DatabaseSessionStoreManager
     @Override
     public long addSubtask(long attemptId, Task task)
     {
+        System.out.println("add subtask: "+task+" attemptId: "+attemptId);
         long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
+        System.out.println("inserted task id: "+taskId);
         dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
         dao.insertEmptyTaskStateDetails(taskId);
         return taskId;
@@ -437,7 +445,7 @@ public class DatabaseSessionStoreManager
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
-        List<RuntimeException> exceptions = handle.inTransaction((handle, session) -> {
+        List<RuntimeException> exceptions = transaction(ts -> {
             return dao.lockReadySessionMonitors(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(monitor -> {
@@ -613,21 +621,36 @@ public class DatabaseSessionStoreManager
 
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
+            throws ResourceConflictException
         {
-            // TODO this code should use MERGE (h2) or INSERT ... ON CONFLICT (PostgreSQL)
-            return handle.inTransaction((handle, handleSession) -> {
+            return transaction(ts -> {
                 long sesId;
-                try {
-                    sesId = catchConflict(() ->
-                            dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond()),
-                            "session instant=%s in repository_id=%d and workflow_name=%s", session.getInstant(), session.getRepositoryId(), session.getWorkflowName());
-                }
-                catch (ResourceConflictException ex) {
-                    StoredSession storedSession = dao.getSessionByNamesInternal(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond());
-                    if (storedSession == null) {
-                        throw new IllegalStateException("Database state error", ex);
+
+                switch (databaseType) {
+                //// This query doesn't work because ID increments when keys conflicted
+                //case "h2":
+                //    "merge into sessions key (repository_id, workflow_name, instant) values (DEFAULT, :repositoryId, :workflowName, :instant, NULL)";
+                //    break;
+                default:
+                    if (!ts.isRetried()) {
+                        // first try
+                        try {
+                            sesId = catchConflict(() ->
+                                    dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond()),
+                                    "session instant=%s in repository_id=%d and workflow_name=%s", session.getInstant(), session.getRepositoryId(), session.getWorkflowName());
+                        }
+                        catch (ResourceConflictException ex) {
+                            ts.retry(ex);
+                            return null;
+                        }
                     }
-                    sesId = storedSession.getId();
+                    else {
+                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getRepositoryId(), session.getWorkflowName(), session.getInstant().getEpochSecond());
+                        if (storedSession == null) {
+                            throw new IllegalStateException("Database state error", ts.getLastException());
+                        }
+                        sesId = storedSession.getId();
+                    }
                 }
 
                 StoredSession storedSession = dao.lockSession(sesId);
@@ -636,7 +659,7 @@ public class DatabaseSessionStoreManager
                 }
 
                 return func.call(this, storedSession);
-            });
+            }, ResourceConflictException.class);
         }
 
         @Override
@@ -649,7 +672,14 @@ public class DatabaseSessionStoreManager
                         SessionStateFlags.empty().get(), attempt.getParams()),
                 "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId);
             dao.updateLastAttemptId(sessionId, attemptId);
-            return dao.getAttemptByIdInternal(attemptId);
+            try {
+                return requiredResource(
+                        dao.getAttemptByIdInternal(attemptId),
+                        "attempt id=%d", attemptId);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
+            }
         }
 
         @Override
@@ -659,6 +689,12 @@ public class DatabaseSessionStoreManager
             return requiredResource(
                     dao.getLastAttemptInternal(sessionId),
                     "latest attempt of session id=%d", sessionId);
+        }
+
+        @Override
+        public Optional<StoredSessionAttempt> getLastAttemptIfExists(long sessionId)
+        {
+            return Optional.fromNullable(dao.getLastAttemptInternal(sessionId));
         }
 
         //public List<StoredSessionAttemptWithSession> getAllSessions()
@@ -706,6 +742,32 @@ public class DatabaseSessionStoreManager
             return requiredResource(
                     dao.getSessionAttemptById(siteId, attemptId),
                     "session attempt id=%d", attemptId);
+        }
+
+        @Override
+        public StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, String workflowName, Instant instant)
+            throws ResourceNotFoundException
+        {
+            StoredSessionAttempt attempt = requiredResource(
+                    dao.getLastSessionAttemptByNames(siteId, repositoryId, workflowName, instant.getEpochSecond()),
+                    "session instant=%s in repository id=%d workflow name=%s", instant, repositoryId, workflowName);
+            return StoredSessionAttemptWithSession.of(
+                    siteId,
+                    Session.of(repositoryId, workflowName, instant),
+                    attempt);
+        }
+
+        @Override
+        public StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, String workflowName, Instant instant, String retryAttemptName)
+            throws ResourceNotFoundException
+        {
+            StoredSessionAttempt attempt = requiredResource(
+                    dao.getSessionAttemptByNames(siteId, repositoryId, workflowName, instant.getEpochSecond(), retryAttemptName),
+                    "session attempt name=%s in session repository id=%d workflow name=%s instant=%s", retryAttemptName, repositoryId, workflowName, instant);
+            return StoredSessionAttemptWithSession.of(
+                    siteId,
+                    Session.of(repositoryId, workflowName, instant),
+                    attempt);
         }
 
         @Override
@@ -859,6 +921,23 @@ public class DatabaseSessionStoreManager
                 " and s.last_attempt_id is not null")
         StoredSessionAttemptWithSession getSessionAttemptById(@Bind("siteId") int siteId, @Bind("id") long id);
 
+        @SqlQuery("select sa.* from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " where s.repository_id = :repositoryId" +
+                " and s.workflow_name = :workflowName" +
+                " and s.instant = :instant" +
+                " and sa.site_id = :siteId")
+        StoredSessionAttempt getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("instant") long instant);
+
+        @SqlQuery("select sa.* from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " where s.repository_id = :repositoryId" +
+                " and s.workflow_name = :workflowName" +
+                " and s.instant = :instant" +
+                " and sa.site_id = :site_id" +
+                " limit 1")
+        StoredSessionAttempt getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("instant") long instant, @Bind("attemptName") String attemptName);
+
         @SqlQuery("select sa.*, s.workflow_name, s.instant" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
@@ -873,6 +952,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select * from session_attempts sa" +
                 " where id = :id limit 1")
         StoredSessionAttempt getAttemptByIdInternal(@Bind("id") long id);
+
 
         @SqlQuery("select sa.* from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
@@ -901,9 +981,8 @@ public class DatabaseSessionStoreManager
                 " where repository_id = :repositoryId" +
                 " and workflow_name = :workflowName" +
                 " and instant = :instant" +
-                " and last_attempt_id is not null" +  // last_attempt_id == NULL is considered deleted
-                " limit 1")
-        StoredSession getSessionByNamesInternal(@Bind("repositoryId") int repositoryId,
+                " limit 1")  // here allows last_attempt_id == NULL
+        StoredSession getSessionByConflictedNamesInternal(@Bind("repositoryId") int repositoryId,
                 @Bind("workflowName") String workflowName, @Bind("instant") long instant);
 
         @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, params, created_at)" +

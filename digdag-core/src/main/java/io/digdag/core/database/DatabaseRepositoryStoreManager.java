@@ -33,14 +33,13 @@ public class DatabaseRepositoryStoreManager
         extends BasicDatabaseStoreManager
         implements RepositoryStoreManager
 {
-    private final Handle handle;
     private final Dao dao;
     private final ConfigMapper cfm;
 
     @Inject
-    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm)
+    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
     {
-        this.handle = dbi.open();
+        super(config.getType(), dbi.open());
         this.cfm = cfm;
         handle.registerMapper(new StoredRepositoryMapper(cfm));
         handle.registerMapper(new StoredRevisionMapper(cfm));
