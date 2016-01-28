@@ -16,6 +16,8 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.core.repository.RepositoryStore;
 import io.digdag.core.repository.StoredRepository;
@@ -26,6 +28,8 @@ import io.digdag.core.repository.ResourceNotFoundException;
 public class InProcessArchiveManager
     implements ArchiveManager
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final RepositoryStoreManager rm;
     private final Path tempDir;
 
@@ -40,6 +44,7 @@ public class InProcessArchiveManager
         catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+        logger.warn("Using {} for working extract path", tempDir);
     }
 
     @Override

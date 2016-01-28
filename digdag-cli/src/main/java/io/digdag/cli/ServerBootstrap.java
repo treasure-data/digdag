@@ -47,7 +47,12 @@ public class ServerBootstrap
                 binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
             })
             .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
-                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+                if ("true".equals(context.getInitParameter("io.digdag.cli.server.useCurrentDirectoryArchiveManager"))) {
+                    // default is CurrentDirectoryArchiveManager
+                }
+                else {
+                    binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+                }
                 if (database != null) {
                     new File(database).mkdirs();
                     // override default memory database

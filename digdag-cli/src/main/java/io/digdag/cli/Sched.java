@@ -82,6 +82,7 @@ public class Sched
         // parameters for ServerBootstrap
         ImmutableMap.Builder<String, String> params = ImmutableMap.builder();
         params.put("io.digdag.cli.server.autoLoadFile", dagfilePath);
+        params.put("io.digdag.cli.server.useCurrentDirectoryArchiveManager", "true");
         //params.put("io.digdag.cli.server.disableUpload", "true");
 
         // use memory database by default
