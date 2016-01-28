@@ -202,6 +202,7 @@ uploadRootFiles {
         }
     }
 }
+uploadRootFiles.dependsOn(uploadReleases)
 
 task classpath(dependsOn: ['build', ':digdag-cli:classpath']) << { }
 clean { delete 'classpath' }
