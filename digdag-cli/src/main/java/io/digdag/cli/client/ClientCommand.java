@@ -3,6 +3,8 @@ package io.digdag.cli.client;
 import java.util.Locale;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
@@ -104,6 +106,41 @@ public abstract class ClientCommand
     protected String formatTime(Instant instant)
     {
         return formatter.format(instant);
+    }
+
+    protected static String formatTimeDiff(Instant now, long from)
+    {
+        long seconds = now.until(Instant.ofEpochSecond(from), ChronoUnit.SECONDS);
+        long hours = seconds / 3600;
+        seconds %= 3600;
+        long minutes = seconds / 60;
+        seconds %= 60;
+        if (hours > 0) {
+            return String.format("%2dh %2dm %2ds", hours, minutes, seconds);
+        }
+        else if (minutes > 0) {
+            return String.format("    %2dm %2ds", minutes, seconds);
+        }
+        else {
+            return String.format("        %2ds", seconds);
+        }
+    }
+
+    private final DateTimeFormatter parser =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
+        .withZone(ZoneId.systemDefault());
+
+    protected Instant parseTime(String s)
+        throws DateTimeParseException
+    {
+        try {
+            Instant i = Instant.ofEpochSecond(Long.parseLong(s));
+            System.err.println("Using unix timestamp " + i);
+            return i;
+        }
+        catch (NumberFormatException ex) {
+            return Instant.from(parser.parse(s));
+        }
     }
 
     protected static YamlMapper yamlMapper()

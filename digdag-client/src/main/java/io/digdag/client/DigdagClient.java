@@ -166,25 +166,31 @@ public class DigdagClient
                 .resolveTemplate("id", id));
     }
 
-    public List<RestSession> getSessions()
-    {
-        return doGet(new GenericType<List<RestSession>>() { },
-                target("/api/sessions"));
-    }
-
-    public List<RestSession> getSessions(String repoName)
+    public List<RestSession> getSessions(boolean includeRetried, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSession>>() { },
                 target("/api/sessions")
-                .queryParam("repository", repoName));
+                .queryParam("include_retried", includeRetried)
+                .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSession> getSessions(String repoName, String workflowName)
+    public List<RestSession> getSessions(String repoName, boolean includeRetried, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSession>>() { },
                 target("/api/sessions")
                 .queryParam("repository", repoName)
-                .queryParam("workflow", workflowName));
+                .queryParam("include_retried", includeRetried)
+                .queryParam("last_id", lastId.orNull()));
+    }
+
+    public List<RestSession> getSessions(String repoName, String workflowName, boolean includeRetried, Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestSession>>() { },
+                target("/api/sessions")
+                .queryParam("repository", repoName)
+                .queryParam("workflow", workflowName)
+                .queryParam("include_retried", includeRetried)
+                .queryParam("last_id", lastId.orNull()));
     }
 
     public RestSession getSession(long sessionId)

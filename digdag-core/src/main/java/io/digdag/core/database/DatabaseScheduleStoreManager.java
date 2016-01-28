@@ -181,7 +181,7 @@ public class DatabaseScheduleStoreManager
                 " limit :limit")
         List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, wd.name as name, from schedules s" +
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId" +
                 " and exists (" +

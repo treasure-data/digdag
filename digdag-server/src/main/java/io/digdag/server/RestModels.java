@@ -112,6 +112,7 @@ public final class RestModels
             .workflowName(workflowName)
             .sessionTime(sessionTime.getEpochSecond())
             .retryAttemptName(attempt.getRetryAttemptName())
+            .done(attempt.getStateFlags().isDone())
             .success(attempt.getStateFlags().isSuccess())
             .cancelRequested(attempt.getStateFlags().isCancelRequested())
             .params(attempt.getParams())

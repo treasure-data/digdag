@@ -184,9 +184,18 @@ public class ScheduleExecutor
                 if (runTime.isPresent()) {
                     alignedNextTime = ScheduleTime.of(runTime.get(), alignedNextTime.getScheduleTime());
                 }
-                if (!dryRun) {
+
+                if (dryRun) {
+                    sched = ImmutableStoredSchedule.builder()
+                        .from(sched)
+                        .nextRunTime(alignedNextTime.getRunTime())
+                        .nextScheduleTime(alignedNextTime.getScheduleTime())
+                        .build();
+                }
+                else {
                     sched = lockedSched.updateNextScheduleTime(alignedNextTime); // TODO validate return value is true, otherwise throw ResourceConflictException
                 }
+
                 return Optional.of(sched);  // return updated StoredSchedule
             }
             else {
@@ -226,9 +235,18 @@ public class ScheduleExecutor
                 if (runTime.isPresent()) {
                     time = ScheduleTime.of(runTime.get(), time.getScheduleTime());
                 }
-                if (!dryRun) {
+
+                if (dryRun) {
+                    sched = ImmutableStoredSchedule.builder()
+                        .from(sched)
+                        .nextRunTime(time.getRunTime())
+                        .nextScheduleTime(time.getScheduleTime())
+                        .build();
+                }
+                else {
                     sched = lockedSched.updateNextScheduleTime(time); // TODO validate return value is true, otherwise throw ResourceConflictException
                 }
+
                 return Optional.of(sched);
             }
             else {

@@ -2,7 +2,6 @@ package io.digdag.cli.client;
 
 import java.util.List;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
@@ -52,23 +51,5 @@ public class ShowSchedule
         }
         ln("%d entries.", count);
         System.err.println("Use `digdag workflows +NAME` to show workflow details.");
-    }
-
-    private static String formatTimeDiff(Instant now, long from)
-    {
-        long seconds = now.until(Instant.ofEpochSecond(from), ChronoUnit.SECONDS);
-        long hours = seconds / 3600;
-        seconds %= 3600;
-        long minutes = seconds / 60;
-        seconds %= 60;
-        if (hours > 0) {
-            return String.format("%2dh %2dm %2ds", hours, minutes, seconds);
-        }
-        else if (minutes > 0) {
-            return String.format("    %2dm %2ds", minutes, seconds);
-        }
-        else {
-            return String.format("        %2ds", seconds);
-        }
     }
 }

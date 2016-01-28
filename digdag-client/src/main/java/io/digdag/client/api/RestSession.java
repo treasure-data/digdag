@@ -24,6 +24,8 @@ public abstract class RestSession
 
     public abstract Optional<String> getRetryAttemptName();
 
+    public abstract boolean getDone();
+
     public abstract boolean getSuccess();
 
     public abstract boolean getCancelRequested();

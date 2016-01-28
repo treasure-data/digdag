@@ -35,7 +35,7 @@ public class Reschedule
         throws Exception
     {
         if (args.size() != 1) {
-            usage(null);
+            throw usage(null);
         }
         long schedId = parseLongOrUsage(args.get(0));
 
@@ -52,9 +52,9 @@ public class Reschedule
     {
         System.err.println("Usage: digdag reschedule <schedule-id>");
         System.err.println("  Options:");
-        System.err.println("    -s, --skip N                     skips specified number of schedules");
-        System.err.println("    -t, --skip-to 'YYYY-MM-DD hh:mm:SS'  skips schedules until the specified time (exclusive)");
-        System.err.println("    -a, --run-at 'YYYY-MM-DD hh:mm:SS'   set next run time to this time");
+        System.err.println("    -s, --skip N                     skips specified number of schedules from now");
+        System.err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
+        System.err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
         System.err.println("    -d, --dry-run                    try to reschedule and validates the results but does nothing");
         ClientCommand.showCommonOptions();
         return systemExit(error);
@@ -63,6 +63,8 @@ public class Reschedule
     public void reschedule(long schedId)
         throws Exception
     {
+        Instant now = Instant.now();
+
         DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
@@ -73,20 +75,27 @@ public class Reschedule
         }
         else {
             updated = client.skipSchedulesByCount(schedId,
-                    Date.from(Instant.now()), skipCount,
+                    Date.from(now), skipCount,
                     Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
                     dryRun);
         }
-        modelPrinter().print(updated);
+
+        ln("  id: %d", updated.getId());
+        ln("  workflow: %s", updated.getWorkflowName());
+        ln("  next session time: %s", formatTime(updated.getNextScheduleTime()));
+        ln("  next runs at: %s (%s later)", formatTime(updated.getNextRunTime()), formatTimeDiff(now, updated.getNextRunTime()));
+        ln("");
+
+        if (dryRun) {
+            System.err.println("Schedule is not updated.");
+        }
+        else {
+            System.err.println("Use `digdag schedules` to show schedules.");
+        }
     }
 
     private Date parseDate(String s)
     {
-        try {
-            return Date.from(Instant.ofEpochSecond(Long.parseLong(s)));
-        }
-        catch (NumberFormatException ex) {
-            throw new UnsupportedOperationException("Setting time in YYYY-MM-dd hh:mm:SS format is not implemented yet. Please set it using UNIX timestamp (seconds)");  // TODO implement this
-        }
+        return Date.from(parseTime(s));
     }
 }

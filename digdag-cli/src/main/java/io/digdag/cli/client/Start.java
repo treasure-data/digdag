@@ -3,12 +3,7 @@ package io.digdag.cli.client;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -40,23 +35,6 @@ public class Start
 
     @Parameter(names = {"--now"})
     boolean now = false;
-
-    private final DateTimeFormatter parser =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
-        .withZone(ZoneId.systemDefault());
-
-    private Instant parseTime(String s)
-        throws DateTimeParseException
-    {
-        try {
-            Instant i = Instant.ofEpochSecond(Long.parseLong(s));
-            System.err.println("Using unix timestamp " + i);
-            return i;
-        }
-        catch (NumberFormatException ex) {
-            return Instant.from(parser.parse(s));
-        }
-    }
 
     @Override
     public void mainWithClientException()
@@ -129,6 +107,6 @@ public class Start
         ln("  created at: %s", formatTime(session.getId()));
         ln("");
 
-        System.err.println("Use `digdag session NAME` to show session status.");
+        System.err.println("Use `digdag sessions` to show session status.");
     }
 }
