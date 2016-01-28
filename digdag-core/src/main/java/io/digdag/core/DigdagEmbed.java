@@ -24,7 +24,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
-import io.digdag.core.database.DatabaseStoreConfig;
+import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
@@ -98,7 +98,7 @@ public class DigdagEmbed
                     .registerModule(new GuavaModule())
                     .registerModule(new JacksonTimeModule()),
                     //.registerModule(new JodaModule()),
-                new DatabaseModule(DatabaseStoreConfig.builder()
+                new DatabaseModule(DatabaseConfig.builder()
                     .type("h2")
                     //.url("jdbc:h2:./test;DB_CLOSE_ON_EXIT=FALSE")
                     .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB

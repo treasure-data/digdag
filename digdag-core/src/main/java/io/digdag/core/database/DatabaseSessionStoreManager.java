@@ -42,7 +42,7 @@ public class DatabaseSessionStoreManager
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper, DatabaseStoreConfig config)
+    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, () -> {
             Handle handle = dbi.open();

@@ -37,7 +37,7 @@ public class DatabaseScheduleStoreManager
         implements ScheduleStoreManager
 {
     @Inject
-    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
+    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, () -> {
             Handle handle = dbi.open();

@@ -36,7 +36,7 @@ public class DatabaseRepositoryStoreManager
     private final ConfigMapper cfm;
 
     @Inject
-    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
+    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, () -> {
             Handle handle = dbi.open();

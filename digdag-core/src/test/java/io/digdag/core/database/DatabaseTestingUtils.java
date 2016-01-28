@@ -12,7 +12,7 @@ public class DatabaseTestingUtils
 
     public static DbiProvider setupDatabase()
     {
-        DatabaseStoreConfig config = DatabaseStoreConfig.builder()
+        DatabaseConfig config = DatabaseConfig.builder()
             .type("h2")
             .url("jdbc:h2:mem:test" + System.nanoTime())
             .build();

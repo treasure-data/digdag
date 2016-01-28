@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.server.ServerModule;
-import io.digdag.core.database.DatabaseStoreConfig;
+import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.agent.InProcessArchiveManager;
 import io.digdag.core.DigdagEmbed;
@@ -57,8 +57,8 @@ public class ServerBootstrap
                     new File(database).mkdirs();
                     // override default memory database
                     String path = database + "/digdag";
-                    binder.bind(DatabaseStoreConfig.class).toInstance(
-                            DatabaseStoreConfig.builder()
+                    binder.bind(DatabaseConfig.class).toInstance(
+                            DatabaseConfig.builder()
                             .type("h2")
                             .url("jdbc:h2:" + path + ";DB_CLOSE_ON_EXIT=FALSE")
                             .build());

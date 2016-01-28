@@ -16,7 +16,7 @@ public class DatabaseMigrator
     private final String databaseType;
 
     @Inject
-    public DatabaseMigrator(IDBI dbi, DatabaseStoreConfig config)
+    public DatabaseMigrator(IDBI dbi, DatabaseConfig config)
     {
         this(dbi, config.getType());
     }

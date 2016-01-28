@@ -29,7 +29,7 @@ public class DatabaseQueueDescStoreManager
         implements QueueDescStoreManager
 {
     @Inject
-    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseStoreConfig config)
+    public DatabaseQueueDescStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, () -> {
             Handle handle = dbi.open();

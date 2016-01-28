@@ -9,7 +9,7 @@ import com.google.inject.Provider;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import io.digdag.core.database.DatabaseMigrator;
-import io.digdag.core.database.DatabaseStoreConfig;
+import io.digdag.core.database.DatabaseConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,11 +18,11 @@ public class PooledDataSourceProvider
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final DatabaseStoreConfig config;
+    private final DatabaseConfig config;
     private HikariDataSource ds;
 
     @Inject
-    public PooledDataSourceProvider(DatabaseStoreConfig config)
+    public PooledDataSourceProvider(DatabaseConfig config)
     {
         this.config = config;
     }
