@@ -35,7 +35,7 @@ public class PooledDataSourceProvider
             //this.errorRetryWaitLimit = conf.getErrorRetryWaitLimit();
             //this.autoExplainDuration = conf.getAutoExplainDuration();
 
-            logger.info("Using database URL {}", config.getUrl());
+            logger.debug("Using database URL {}", config.getUrl());
             Properties props = new Properties();
             props.setProperty("driverClassName", DatabaseMigrator.getDriverClassName(config.getType()));
             props.setProperty("jdbcUrl", config.getUrl());

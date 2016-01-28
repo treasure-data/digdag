@@ -593,7 +593,7 @@ public class DatabaseRepositoryStoreManager
     }
 
     @Value.Immutable
-    static abstract class WorkflowConfig
+    public static abstract class WorkflowConfig
     {
         public abstract int getId();
 
