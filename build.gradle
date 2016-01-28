@@ -15,11 +15,36 @@ allprojects {
 
 subprojects {
     apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+    apply plugin: 'findbugs'
     apply plugin: 'jacoco'
 
     repositories {
         mavenCentral()
         jcenter()
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                //groupId 'io.digdag'
+                //artifactId 'digdag'
+                from components.java
+            }
+        }
+        repositories {
+            maven {
+                name 's3Release'
+                url 's3://digdag-beta-release/maven'
+                credentials(AwsCredentials) {
+                    // write at your S3 keys to ~/.gradle/gradle.properties file:
+                    // digdag_beta_release_s3_access_key=ABCDEFGHIJKLMN
+                    // digdag_beta_release_s3_secret_key=DEADBEEF/PUTYOURAPIKEY
+                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
+                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                }
+            }
+        }
     }
 
     sourceCompatibility = 1.8
@@ -36,21 +61,47 @@ subprojects {
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
 
+    tasks.withType(FindBugs) {
+        reports {
+            xml.enabled = false
+            html.enabled = true
+        }
+    }
+
+    findbugs {
+        ignoreFailures = true
+    }
+
+    javadoc {
+        options {
+            locale = 'en_US'
+            encoding = 'UTF-8'
+        }
+    }
+
     task testsJar(type: Jar, dependsOn: classes) {
         classifier = 'tests'
         from sourceSets.test.output
     }
-
-    artifacts {
-        archives testsJar
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
     }
 
     task deps(type: DependencyReportTask) {
     }
+
+    //artifacts {
+    //    archives testsJar, sourcesJar, javadocJar
+    //}
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.6'
+    gradleVersion = '2.10'
 }
 
 project(':digdag-cli') {
@@ -79,19 +130,90 @@ project(':digdag-cli') {
         from configurations.runtime
         into dest
     }
+
+    task versionFile << {
+        File f = file("src/main/resources/digdag/cli/version.txt")
+        if (f.text != rootProject.version) {
+            f.write(rootProject.version)
+        }
+    }
+    processResources.dependsOn("versionFile")
+
+    //publishing {
+    //    publications {
+    //        shadowJar(MavenPublication) {
+    //            artifactId 'digdag'
+    //            artifact cliBuildFile
+    //        }
+    //    }
+    //}
 }
+
+def cliBuildFile = file("pkg/digdag-${project.version}.jar")
 
 task cli(dependsOn: ':digdag-cli:shadowJar') << {
     file('pkg').mkdirs()
-    File f = file("pkg/digdag-${project.version}.jar")
-    f.write("")
-    f.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
-    f.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
-    f.setExecutable(true)
+    cliBuildFile.write("")
+    cliBuildFile.append(file("digdag-cli/src/main/sh/selfrun.sh").readBytes())
+    cliBuildFile.append(file("digdag-cli/build/libs/digdag-cli-${project.version}-all.jar").readBytes())
+    cliBuildFile.setExecutable(true)
+}
+
+configurations {
+    releases
+    rootFiles
+}
+
+artifacts {
+    releases file: cliBuildFile, name: 'digdag', type: 'text', builtBy: cli
+    rootFiles file: file("digdag-cli/src/main/resources/digdag/cli/version.txt"), name: 'LATEST', type: 'text'
+}
+
+uploadReleases {
+    repositories {
+        repositories {
+            ivy {
+                name 's3PackageRelease'
+                artifactPattern 's3://digdag-beta-release/releases/[artifact]-[revision].[ext]'
+                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact]-[revision].[ext]'
+                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
+                credentials(AwsCredentials) {
+                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
+                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                }
+            }
+        }
+    }
+}
+
+uploadRootFiles {
+    repositories {
+        repositories {
+            ivy {
+                name 's3RootFiles'
+                artifactPattern 's3://digdag-beta-release/releases/[artifact].[ext]'
+                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact].[ext]'
+                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
+                credentials(AwsCredentials) {
+                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
+                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                }
+            }
+        }
+    }
 }
 
 task classpath(dependsOn: ['build', ':digdag-cli:classpath']) << { }
 clean { delete 'classpath' }
+
+task release() {
+    dependsOn subprojects.publish
+    dependsOn uploadReleases
+    dependsOn uploadRootFiles
+    doLast {
+        println("done.")
+    }
+}
 
 task pydist(type: Exec) {
     commandLine 'python', 'setup.py', 'sdist'
