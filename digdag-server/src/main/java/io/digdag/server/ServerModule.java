@@ -5,6 +5,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
+import javax.ws.rs.NotSupportedException;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.client.config.ConfigException;
 
 public class ServerModule
         extends GuiceRsModule
@@ -30,6 +32,8 @@ public class ServerModule
             .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .withProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
             .withProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
+            .withProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
+            .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .withProvider(CorsFilter.class);
         binder().bind(ServerStarter.class).asEagerSingleton();
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);

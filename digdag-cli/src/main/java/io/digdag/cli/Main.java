@@ -20,6 +20,7 @@ import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Kill;
+import io.digdag.cli.client.Upload;
 
 public class Main
 {
@@ -45,8 +46,10 @@ public class Main
         jc.addCommand("check", new Check(), "c");
         jc.addCommand("scheduler", new Sched(), "sched");
 
-        jc.addCommand("archive", new Archive());
         jc.addCommand("server", new Server());
+
+        jc.addCommand("archive", new Archive());
+        jc.addCommand("upload", new Upload());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());

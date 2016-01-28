@@ -13,9 +13,6 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestSessionRequest.class)
 public abstract class RestSessionRequest
 {
-    @JsonProperty("name")
-    public abstract String getName();
-
     @JsonProperty("repository")
     public abstract String getRepositoryName();
 

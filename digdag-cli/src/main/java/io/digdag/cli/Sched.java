@@ -52,7 +52,7 @@ public class Sched
         System.err.println("Usage: digdag sched [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: 9090)");
+        System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         Main.showCommonOptions();
         return systemExit(error);

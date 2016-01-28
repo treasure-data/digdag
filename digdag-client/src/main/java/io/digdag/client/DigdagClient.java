@@ -3,8 +3,12 @@ package io.digdag.client;
 import java.util.List;
 import java.util.Date;
 import java.util.HashMap;
+import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.client.Entity;
@@ -86,8 +90,7 @@ public class DigdagClient
             },
             new ObjectMapperModule()
                 .registerModule(new GuavaModule())
-                //.registerModule(new JodaModule())
-
+                .registerModule(new JacksonTimeModule())
             );
     }
 
@@ -127,8 +130,28 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
+    public RestRepository putRepositoryRevision(String repoName, String revision, File body)
+        throws IOException
+    {
+        return doPut(RestRepository.class,
+                "application/x-gzip",
+                body,  // TODO does this work?
+                target("/api/repositories")
+                .queryParam("repository", repoName)
+                .queryParam("revision", revision));
+    }
+
     // TODO getArchive with streaming
-    // TODO putArchive with streaming
+    public InputStream getRepositoryArchive(int repoId, String revision)
+    {
+        Response res = target("/api/repositories/{id]}/archive")
+            .resolveTemplate("id", repoId)
+            .queryParam("revision", revision)
+            .request()
+            .headers(headers)
+            .get();
+        return res.readEntity(InputStream.class);  // TODO does this work?
+    }
 
     public List<RestSchedule> getSchedules()
     {
@@ -178,22 +201,12 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    public RestSession startSession(String name, String repoName, String workflowName)
-    {
-        return startSession(name, repoName, workflowName, newConfig());
-    }
 
-    public RestSession startSession(String name, String repoName, String workflowName, Config params)
+    public RestSession startSession(RestSessionRequest request)
     {
-        RestSessionRequest req =
-            RestSessionRequest.builder()
-            .name(name)
-            .repositoryName(repoName)
-            .workflowName(workflowName)
-            .params(params)
-            .build();
         return doPut(RestSession.class,
-                req,
+                "application/json",
+                request,
                 target("/api/sessions"));
     }
 
@@ -205,11 +218,11 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions()
-    {
-        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
-                target("/api/workflows"));
-    }
+    //public List<RestWorkflowDefinition> getWorkflowDefinitions()
+    //{
+    //    return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
+    //            target("/api/workflows"));
+    //}
 
     public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
     {
@@ -262,11 +275,11 @@ public class DigdagClient
             .get(type);
     }
 
-    private <T> T doPut(Class<T> type, Object body, WebTarget target)
+    private <T> T doPut(Class<T> type, String contentType, Object body, WebTarget target)
     {
         return target.request("application/json")
             .headers(headers)
-            .put(Entity.entity(body, "application/json"), type);
+            .put(Entity.entity(body, contentType), type);
     }
 
     private <T> T doPost(Class<T> type, Object body, WebTarget target)

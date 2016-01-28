@@ -1,5 +1,9 @@
 package io.digdag.cli.client;
 
+import java.util.Locale;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 import com.beust.jcommander.Parameter;
@@ -7,13 +11,14 @@ import io.digdag.cli.Main;
 import io.digdag.cli.Command;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.cli.YamlMapper;
 import static io.digdag.cli.Main.systemExit;
 
 public abstract class ClientCommand
     extends Command
 {
-    @Parameter(names = {"-e", "--endpoint"}, required = true)
-    protected String endpoint;
+    @Parameter(names = {"-e", "--endpoint"})
+    protected String endpoint = "127.0.0.1:65432";
 
     @Override
     public void main()
@@ -62,7 +67,7 @@ public abstract class ClientCommand
 
     public static void showCommonOptions()
     {
-        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint");
+        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: 127.0.0.1:65432)");
         Main.showCommonOptions();
     }
 
@@ -80,5 +85,29 @@ public abstract class ClientCommand
     protected ModelPrinter modelPrinter()
     {
         return new ModelPrinter();
+    }
+
+    protected static void ln(String format, Object... args)
+    {
+        System.out.println(String.format(format, args));
+    }
+
+    private final DateTimeFormatter formatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
+        .withZone(ZoneId.systemDefault());
+
+    protected String formatTime(long unix)
+    {
+        return formatTime(Instant.ofEpochSecond(unix));
+    }
+
+    protected String formatTime(Instant instant)
+    {
+        return formatter.format(instant);
+    }
+
+    protected static YamlMapper yamlMapper()
+    {
+        return new YamlMapper(ModelPrinter.objectMapper());
     }
 }

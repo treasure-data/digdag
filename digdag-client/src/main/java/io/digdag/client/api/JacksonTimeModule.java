@@ -1,4 +1,4 @@
-package io.digdag.core.repository;
+package io.digdag.client.api;
 
 import java.util.Locale;
 import java.time.ZoneId;

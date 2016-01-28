@@ -13,6 +13,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
+import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.collect.*;
 import com.google.common.base.Optional;
@@ -160,7 +161,7 @@ public class SessionResource
     @PUT
     @Consumes("application/json")
     @Path("/api/sessions")
-    public RestSession startSession(RestSessionRequest request)
+    public Response startSession(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException
     {
         RepositoryStore rs = rm.getRepositoryStore(siteId);
@@ -182,15 +183,16 @@ public class SessionResource
             .build();
 
         // TODO how to make session monitors?
-        StoredSessionAttempt stored;
         try {
-            stored = executor.submitWorkflow(siteId, ar, def, ImmutableList.of());
+            StoredSessionAttempt stored = executor.submitWorkflow(siteId, ar, def, ImmutableList.of());
+            RestSession res = RestModels.session(stored, ar, repo.getName());
+            return Response.ok(res).build();
         }
         catch (SessionAttemptConflictException ex) {
-            stored = ex.getConflictedSession();
+            StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
+            RestSession res = RestModels.session(conflicted, repo.getName());
+            return Response.status(Response.Status.CONFLICT).entity(res).build();
         }
-
-        return RestModels.session(stored, ar, repo.getName());
     }
 
     @POST

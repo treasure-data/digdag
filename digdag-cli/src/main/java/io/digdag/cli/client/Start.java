@@ -3,10 +3,16 @@ package io.digdag.cli.client;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.UUID;
+import java.util.List;
+import java.util.Locale;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.client.config.Config;
@@ -17,6 +23,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionRequest;
 import static io.digdag.cli.Main.systemExit;
 
 public class Start
@@ -28,31 +35,59 @@ public class Start
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-u", "--unique"})
-    String uniqueName = null;
+    @Parameter(names = {"-R", "--retry"})
+    String retryAttemptName = null;
+
+    @Parameter(names = {"--now"})
+    boolean now = false;
+
+    private final DateTimeFormatter parser =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
+        .withZone(ZoneId.systemDefault());
+
+    private Instant parseTime(String s)
+        throws DateTimeParseException
+    {
+        try {
+            Instant i = Instant.ofEpochSecond(Long.parseLong(s));
+            System.err.println("Using unix timestamp " + i);
+            return i;
+        }
+        catch (NumberFormatException ex) {
+            return Instant.from(parser.parse(s));
+        }
+    }
 
     @Override
     public void mainWithClientException()
         throws Exception
     {
-        if (args.size() != 2) {
-            throw usage(null);
+        if (now) {
+            if (args.size() != 2) {
+                throw usage(null);
+            }
+            start(args.get(0), args.get(1), Instant.now());
         }
-        start(args.get(0), args.get(1));
+        else {
+            if (args.size() != 3) {
+                throw usage(null);
+            }
+            start(args.get(0), args.get(1), parseTime(args.get(2)));
+        }
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <repo-name> <workflow-name>");
+        System.err.println("Usage: digdag start <repoName> <workflowName> [--now or \"yyyy-MM-dd HH:mm:ss Z\"]");
         System.err.println("  Options:");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        System.err.println("    -u, --unique NAME                unique name of this session");
+        System.err.println("    -R, --retry NAME                 set attempt name to retry a session");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void start(String repoName, String workflowName)
+    public void start(String repoName, String workflowName, Instant sessiontime)
         throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
@@ -65,22 +100,35 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config sessionParams = cf.create();
+        Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            sessionParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
+            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
-            sessionParams.set(pair.getKey(), pair.getValue());
+            overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        String sessionName = uniqueName;
-        if (sessionName == null) {
-            sessionName = UUID.randomUUID().toString();
-        }
+        RestSessionRequest request = RestSessionRequest.builder()
+            .repositoryName(repoName)
+            .workflowName(workflowName)
+            .instant(sessiontime)
+            .retryAttemptName(Optional.fromNullable(retryAttemptName))
+            .params(overwriteParams)
+            .build();
 
         DigdagClient client = buildClient();
-        RestSession session = client.startSession(sessionName, repoName, workflowName, sessionParams);
+        RestSession session = client.startSession(request);
 
-        modelPrinter().print(session);
+        ln("Started a session:");
+        ln("  id: %d", session.getId());
+        ln("  repository: %s", session.getRepository().getName());
+        ln("  workflow: %s", session.getWorkflowName());
+        ln("  session time: %s", formatTime(session.getSessionTime()));
+        ln("  retry attempt name: %s", session.getRetryAttemptName().or(""));
+        ln("  params: %s", session.getParams());
+        ln("  created at: %s", formatTime(session.getId()));
+        ln("");
+
+        System.err.println("Use `digdag session NAME` to show session status.");
     }
 }

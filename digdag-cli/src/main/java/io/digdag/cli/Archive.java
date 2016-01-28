@@ -163,6 +163,13 @@ public class Archive
             System.out.println("  "+workflow.getName());
         }
 
+        System.out.println("");
         System.out.println("Created "+output+".");
+        System.out.println("Use `digdag upload <path.tar.gz> <repository> <revision>` to upload it a server.");
+        System.out.println("");
+        System.out.println("  Examples:");
+        System.out.println("    $ digdag upload "+output+" $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");
+        System.out.println("    $ digdag upload "+output+" $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)");
+        System.out.println("");
     }
 }

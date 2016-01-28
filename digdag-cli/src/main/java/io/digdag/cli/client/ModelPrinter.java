@@ -5,21 +5,22 @@ import java.util.Map;
 import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import io.digdag.client.api.JacksonTimeModule;
 
 public class ModelPrinter
 {
-    private static ObjectMapper buildObjectMapper()
+    public static ObjectMapper objectMapper()
     {
         return new ObjectMapper()
-            .registerModule(new GuavaModule());
-            //.registerModule(new JodaModule());
+            .registerModule(new GuavaModule())
+            .registerModule(new JacksonTimeModule());
     }
 
     private final ObjectMapper mapper;
 
     public ModelPrinter()
     {
-        this.mapper = buildObjectMapper();
+        this.mapper = objectMapper();
     }
 
     @SuppressWarnings("unchecked")

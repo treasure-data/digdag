@@ -28,7 +28,6 @@ import io.digdag.core.database.DatabaseStoreConfig;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.repository.JacksonTimeModule;
 import io.digdag.core.session.SessionMonitorExecutor;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -38,6 +37,7 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 //import com.fasterxml.jackson.datatype.joda.JodaModule;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.core.config.YamlConfigLoader;
 
 public class DigdagEmbed

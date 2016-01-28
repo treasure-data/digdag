@@ -484,7 +484,7 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
-        @SqlQuery("select data from revision_archives" +
+        @SqlQuery("select archive_data from revision_archives" +
                 " where id = :revId")
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);
 
@@ -576,7 +576,7 @@ public class DatabaseRepositoryStoreManager
         List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlUpdate("insert into revision_archives" +
-                " (id, data)" +
+                " (id, archive_data)" +
                 " values (:revId, :data)")
         void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
 

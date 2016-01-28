@@ -112,6 +112,7 @@ public class Check
             Formatter f = new Formatter("    ");
             for (WorkflowDefinition def : defs.get()) {
                 Workflow wf = compiler.compile(def.getName(), def.getConfig());
+                // TODO validate workflow and schedule
                 f.ln("%s (%d tasks)", def.getName(), wf.getTasks().size());
                 Set<String> required = new HashSet<>();
                 for (WorkflowTask task : wf.getTasks()) {
