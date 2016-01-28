@@ -55,7 +55,6 @@ public class ServerBootstrap
                     binder.bind(DatabaseStoreConfig.class).toInstance(
                             DatabaseStoreConfig.builder()
                             .type("h2")
-                            //.url("jdbc:h2:./test;DB_CLOSE_ON_EXIT=FALSE")
                             .url("jdbc:h2:" + path + ";DB_CLOSE_ON_EXIT=FALSE")
                             .build());
                 }

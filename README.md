@@ -23,6 +23,12 @@ Usage: digdag <command> [options...]
 
   Client-mode commands:
     archive <workflow.yml...>        create a project archive
+    start <repo-name> <+name>        start a new session of a workflow
+    kill <session-id>                kill a running session
+    workflows [+name]                show registered workflow definitions
+    schedules                        show registered schedules
+    sessions [repo-name] [+name]     show past and current sessions
+    tasks <session-id>               show tasks of a session
 
   Options:
     -g, --log PATH                   output log messages to a file (default: -)
@@ -135,6 +141,8 @@ run: +main
 
 This `digdag scheduler` reloads workflow definition file automatically when it's updated.
 
+You can use client-mode commands (such as `schedules`, `sessions`, and `kill`) to check and manage schedules.
+
 
 ## Server-mode
 
@@ -155,7 +163,7 @@ $ git ls-files | digdag archive
 ### 2. Starting the server
 
 ```
-$ digdag server
+$ digdag server --memory
 ```
 
 ### 3. Uploading the project archive
