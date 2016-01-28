@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import java.util.List;
 import java.util.Map;
+import java.io.File;
 import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,12 @@ public class Server
     @Parameter(names = {"-b", "--bind"})
     String bind = "127.0.0.1";
 
+    @Parameter(names = {"-o", "--database"})
+    String database = null;
+
+    @Parameter(names = {"-m", "--memory"})
+    boolean memoryDatabase = false;
+
     @Override
     public void main()
             throws Exception
@@ -38,6 +45,11 @@ public class Server
         if (args.size() != 0) {
             throw usage(null);
         }
+
+        if (database == null && memoryDatabase == false) {
+            throw usage("--database or --memory is required");
+        }
+
         server();
     }
 
@@ -48,6 +60,8 @@ public class Server
         System.err.println("  Options:");
         System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
+        System.err.println("    -o, --database DIR               store status to this database");
+        System.err.println("    -m, --memory                     uses memory database");
         Main.showCommonOptions();
         return systemExit(error);
     }
@@ -55,12 +69,20 @@ public class Server
     private void server()
             throws ServletException
     {
-        start(port, bind, ImmutableMap.of());
+        startServer(ImmutableMap.of());
     }
 
-    public static void start(int port, String bind, Map<String, String> initParams)
+    protected void startServer(Map<String, String> initParams)
             throws ServletException
     {
+        // parameters for ServerBootstrap
+        if (database != null) {
+            initParams = ImmutableMap.<String,String>builder()
+                .putAll(initParams)
+                .put("io.digdag.cli.server.database", new File(database).getAbsolutePath())
+                .build();
+        }
+
         DeploymentInfo servletBuilder = Servlets.deployment()
             .setClassLoader(Main.class.getClassLoader())
             .setContextPath("/digdag/server")

@@ -10,10 +10,14 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseStoreConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PooledDataSourceProvider
         implements Provider<DataSource>, AutoCloseable
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final DatabaseStoreConfig config;
     private HikariDataSource ds;
 
@@ -31,6 +35,7 @@ public class PooledDataSourceProvider
             //this.errorRetryWaitLimit = conf.getErrorRetryWaitLimit();
             //this.autoExplainDuration = conf.getAutoExplainDuration();
 
+            logger.info("Using database URL {}", config.getUrl());
             Properties props = new Properties();
             props.setProperty("driverClassName", DatabaseMigrator.getDriverClassName(config.getType()));
             props.setProperty("jdbcUrl", config.getUrl());
