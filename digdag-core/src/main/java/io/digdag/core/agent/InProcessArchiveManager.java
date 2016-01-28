@@ -44,7 +44,7 @@ public class InProcessArchiveManager
         catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        logger.warn("Using {} for working extract path", tempDir);
+        logger.debug("Using {} for working extract path", tempDir);
     }
 
     @Override
