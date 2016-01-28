@@ -56,7 +56,7 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <repoName> <workflowName> [--now or \"yyyy-MM-dd HH:mm:ss Z\"]");
+        System.err.println("Usage: digdag start <repo-name> <+name> [--now or \"yyyy-MM-dd HH:mm:ss Z\"]");
         System.err.println("  Options:");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");

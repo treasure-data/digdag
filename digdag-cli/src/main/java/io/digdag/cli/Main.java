@@ -185,12 +185,12 @@ public class Main
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    archive <workflow.yml...>        create a project archive");
-        System.err.println("    start <repo-name> <workflow-name>   start a new session of a workflow");
+        System.err.println("    start <repo-name> <+name>        start a new session of a workflow");
         System.err.println("    kill <session-id>                kill a running session");
-        System.err.println("    workflows                        show registered workflows");
+        System.err.println("    workflows [+name]                show registered workflow definitions");
         System.err.println("    schedules                        show registered schedules");
-        System.err.println("    sessions                         show past and current sessions");
-        System.err.println("    tasks <session-id>               show status of a session");
+        System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
+        System.err.println("    tasks <session-id>               show tasks of a session");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();

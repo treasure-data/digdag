@@ -196,7 +196,7 @@ public class DigdagClient
     public RestSession getSession(long sessionId)
     {
         return doGet(RestSession.class,
-                target("/api/session/{id}")
+                target("/api/sessions/{id}")
                 .resolveTemplate("id", sessionId));
     }
 

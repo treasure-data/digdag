@@ -33,7 +33,7 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag workflows [name]");
+        System.err.println("Usage: digdag workflows [+name]");
         System.err.println("  Options:");
         System.err.println("    -r, --repository NAME            repository name");
         ClientCommand.showCommonOptions();

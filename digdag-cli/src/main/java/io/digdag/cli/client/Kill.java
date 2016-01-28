@@ -44,5 +44,6 @@ public class Kill
     {
         DigdagClient client = buildClient();
         client.killSession(sessionId);
+        ln("Kill requirested session " + sessionId);
     }
 }

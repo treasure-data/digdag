@@ -125,13 +125,15 @@ public final class RestModels
         return RestTask.builder()
             .id(task.getId())
             .fullName(task.getFullName())
-            .parentId(task.getParentId().orNull())
+            .parentId(task.getParentId())
             .config(task.getConfig().getNonValidated())
             .upstreams(task.getUpstreams())
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
             .carryParams(task.getReport().transform(report -> report.getCarryParams()).or(task.getConfig().getLocal().getFactory().create()))
             .stateParams(task.getStateParams())
+            .updatedAt(task.getUpdatedAt())
+            .retryAt(task.getRetryAt())
             .build();
     }
 }

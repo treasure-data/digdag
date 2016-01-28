@@ -31,7 +31,24 @@ public class ShowTask
         throws Exception
     {
         DigdagClient client = buildClient();
-        List<RestTask> tasks = client.getTasks(sessionId);
-        modelPrinter().printList(tasks);
+
+        int count = 0;
+        for (RestTask task : client.getTasks(sessionId)) {
+            ln("   id: %d", task.getId());
+            ln("   name: %s", task.getFullName());
+            ln("   state: %s", task.getState());
+            ln("   config: %s", task.getConfig());
+            ln("   parent: %d", task.getParentId().orNull());
+            ln("   upstreamds: %s", task.getUpstreams());
+            ln("   carry params: %s", task.getCarryParams());
+            ln("   state params: %s", task.getStateParams());
+            ln("");
+            count++;
+        }
+
+        if (count == 0) {
+            client.getSession(sessionId);  // throws exception if session doesn't exist
+        }
+        ln("%d entries.", count);
     }
 }

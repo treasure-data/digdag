@@ -2,6 +2,7 @@ package io.digdag.client.api;
 
 import java.time.Instant;
 import java.util.List;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -16,7 +17,7 @@ public abstract class RestTask
 
     public abstract String getFullName();
 
-    public abstract Long getParentId();
+    public abstract Optional<Long> getParentId();
 
     public abstract Config getConfig();
 
@@ -32,7 +33,7 @@ public abstract class RestTask
 
     public abstract Instant getUpdatedAt();
 
-    public abstract Instant getRetryAt();
+    public abstract Optional<Instant> getRetryAt();
 
     // TODO in out Report
 

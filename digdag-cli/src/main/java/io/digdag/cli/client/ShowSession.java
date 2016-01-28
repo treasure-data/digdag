@@ -38,7 +38,7 @@ public class ShowSession
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag sessions [repo] [workflow]");
+        System.err.println("Usage: digdag sessions [repo-name] [+name]");
         System.err.println("  Options:");
         System.err.println("    -i, --last-id ID                 shows more sessions from this id");
         ClientCommand.showCommonOptions();

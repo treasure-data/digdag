@@ -203,7 +203,7 @@ public class DatabaseSessionStoreManager
             if (n > 0) {
                 handle.createStatement("update session_attempts" +
                         " set state_flags = " + bitOr("state_flags", Integer.toString(SessionStateFlags.CANCEL_REQUESTED_CODE)) +
-                        " where attempt_id = :attemptId")
+                        " where id = :attemptId")
                     .bind("attemptId", attemptId)
                     .execute();
             }
