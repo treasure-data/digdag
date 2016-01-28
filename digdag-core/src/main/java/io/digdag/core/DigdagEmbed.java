@@ -39,6 +39,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.config.HoconParameterizedConfigLoader;
 
 public class DigdagEmbed
 {
@@ -110,6 +111,7 @@ public class DigdagEmbed
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
+                    binder.bind(HoconParameterizedConfigLoader.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);

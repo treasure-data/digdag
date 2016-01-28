@@ -19,6 +19,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -29,8 +31,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.JinjavaConfig;
 import com.hubspot.jinjava.interpret.Context;
@@ -41,7 +41,7 @@ import com.hubspot.jinjava.loader.ResourceNotFoundException;
 
 public class YamlConfigLoader
 {
-    private static final Logger logger = LoggerFactory.getLogger(YamlConfigLoader.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static Pattern validIncludePattern = Pattern.compile("^(?:(?:[\\/\\:\\\\\\;])?(?![^a-zA-Z0-9_]+[\\/\\:\\\\\\;])[^\\/\\:\\\\\\;]*)+$");
 
@@ -56,47 +56,49 @@ public class YamlConfigLoader
         this.cf = cf;
     }
 
-    public Config loadFile(File file, Optional<File> filePath, Optional<Config> jinjaParams)
-            throws IOException
-    {
-        try (FileInputStream in = new FileInputStream(file)) {
-            return load(in, filePath, jinjaParams);
-        }
-    }
-
-    private Config load(InputStream in, Optional<File> filePath, Optional<Config> jinjaParams)
-            throws IOException
-    {
-        return loadString(
-                CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8)),
-                filePath, jinjaParams);
-    }
-
-    public Config loadString(String content, Optional<File> filePath, Optional<Config> jinjaParams)
+    public Config loadFile(File file)
         throws IOException
     {
-        String data;
-        if (jinjaParams.isPresent()) {
-            Jinjava jinjava = newJinjava(filePath, jinjaParams);
-
-            Map<String, Object> bindings = new HashMap<>();
-            for (String key : jinjaParams.get().getKeys()) {
-                bindings.put(key, jinjaParams.get().get(key, Object.class));
-            }
-
-            data = jinjava.render(content, bindings);
-
-            logger.debug("rendered config:\n---\n{}\n---", data);
+        try (FileInputStream in = new FileInputStream(file)) {
+            String content = CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8));
+            return loadString(content);
         }
-        else {
-            data = content;
-        }
+    }
 
+    public Config loadString(String content)
+        throws IOException
+    {
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
-        Object object = newYaml().load(data);
+        Object object = newYaml().load(content);
         JsonNode node = treeObjectMapper.readTree(treeObjectMapper.writeValueAsString(object));
         return cf.create(validateJsonNode(node));
+    }
+
+    public Config loadParameterizedFile(File file, Config params)
+        throws IOException
+    {
+        try (FileInputStream in = new FileInputStream(file)) {
+            String content = CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8));
+            return loadParameterizedString(content, file.getAbsoluteFile(), params);
+        }
+    }
+
+    private Config loadParameterizedString(String content, File filePath, Config params)
+        throws IOException
+    {
+        Jinjava jinjava = newJinjava(filePath);
+
+        Map<String, Object> bindings = new HashMap<>();
+        for (String key : params.getKeys()) {
+            bindings.put(key, params.get(key, Object.class));
+        }
+
+        String rendered = jinjava.render(content, bindings);
+
+        logger.debug("rendered config:\n---\n{}\n---", rendered);
+
+        return loadString(rendered);
     }
 
     private static ObjectNode validateJsonNode(JsonNode node)
@@ -112,7 +114,7 @@ public class YamlConfigLoader
         return new Yaml(new SafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
     }
 
-    private Jinjava newJinjava(Optional<File> filePath, Optional<Config> renderParams)
+    private Jinjava newJinjava(File filePath)
     {
         Jinjava jinjava = new Jinjava(
                 JinjavaConfig.newBuilder()
@@ -121,8 +123,8 @@ public class YamlConfigLoader
                 //.withTimeZone(TimeZone.UTC)
                 .build());
 
-        if (filePath.isPresent()) {
-            File rootDir = filePath.get().getParentFile();
+        //if (filePath.isPresent()) {
+            File rootDir = filePath.getParentFile();
             jinjava.setResourceLocator((name, encoding, interpreter) -> {
                 File path;
                 try {
@@ -145,12 +147,12 @@ public class YamlConfigLoader
                     throw ex;
                 }
             });
-        }
-        else {
-            jinjava.setResourceLocator((name, encoding, interpreter) -> {
-                throw new RuntimeException("include and load tags are not allowed in this context");
-            });
-        }
+        //}
+        //else {
+        //    jinjava.setResourceLocator((name, encoding, interpreter) -> {
+        //        throw new RuntimeException("include and load tags are not allowed in this context");
+        //    });
+        //}
 
         jinjava.getGlobalContext().registerFunction(new ELFunctionDefinition("", "dump",
                     JinjaYamlExpressions.class, "dump", Object.class));

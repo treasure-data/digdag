@@ -191,10 +191,9 @@ public class RepositoryResource
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }
-            // jinja is disabled
+            // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
-                    dir.child(ArchiveMetadata.FILE_NAME),
-                    Optional.absent(), Optional.absent());
+                    dir.child(ArchiveMetadata.FILE_NAME));
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 

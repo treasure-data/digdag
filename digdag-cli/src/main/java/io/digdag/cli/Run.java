@@ -162,7 +162,7 @@ public class Run
             }
             else {
                 throw new ConfigException(String.format(
-                            "default: option is not written at %s file. Please add default: option or add +NAME option to command line", dagfilePath));
+                            "run: option is not written at %s file. Please add run: option or add +NAME option to command line", dagfilePath));
             }
         }
         WorkflowDefinitionList defs = dagfile.getWorkflowList();
