@@ -1,7 +1,7 @@
 run: +basic
 +basic:
   +my_task_1:
-    sh>: "echo this task runs first {{ session_time }}."
+    sh>: "echo this task runs first."
 
   +my_task_2:
     sh>: "echo this task runs next."

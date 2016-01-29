@@ -178,8 +178,6 @@ public class TaskRunnerManager
             Config params, Config localConfig)
         throws IOException, ConfigEvalException
     {
-        System.out.println("Reevaluating config using params: "+params);
-
         if (dagfilePath.isPresent()) {
             Dagfile dagfile = configLoader.loadParameterizedFile(
                     archivePath.resolve(dagfilePath.get()).toFile(),
@@ -188,9 +186,6 @@ public class TaskRunnerManager
             Workflow workflow = compiler.compile(def.getName(), def.getConfig());
             WorkflowTask task = findTask(workflow, taskFullName);
             localConfig = task.getConfig();
-
-            System.out.println("Reevaluated local config: "+localConfig);
-
         }
 
         Config config =

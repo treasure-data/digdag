@@ -2,6 +2,10 @@ run: +params
 +params:
   # If you haven't checked python_args.yml, please check it first.
 
+  +builtin:
+    # You can use some built-in parameters
+    sh>: echo workflow is running for {{ session_time }}
+
   +simple:
     # Local parameters are only for this task.
     py>: examples.params.simple
