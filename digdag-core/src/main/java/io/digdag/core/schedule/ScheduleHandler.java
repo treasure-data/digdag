@@ -51,7 +51,7 @@ public class ScheduleHandler
             .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(Optional.absent())
             .defaultTimeZone(timeZone)
-            .defaultParams(def.getRevisionDefaultParams())
+            .revisionDefaultParams(def.getRevisionDefaultParams())
             .overwriteParams(cf.create())
             .build();
 

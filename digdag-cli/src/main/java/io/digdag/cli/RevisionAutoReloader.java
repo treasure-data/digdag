@@ -19,6 +19,7 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
@@ -54,10 +55,10 @@ public class RevisionAutoReloader
 
     public void loadFile(File file,
             ZoneId defaultTimeZone,
-            Config overwriteParams)
+            Config additionalDefaultParams)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(file, defaultTimeZone, overwriteParams);
+        ReloadTarget target = new ReloadTarget(file, defaultTimeZone, additionalDefaultParams);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -94,17 +95,17 @@ public class RevisionAutoReloader
 
     private class ReloadTarget
     {
-        private final File file;
+        private final File dagfilePath;
         private final ZoneId defaultTimeZone;
-        private final Config overwriteParams;
+        private final Config additionalDefaultParams;
         private int lastRevId;
         private Dagfile lastDagfile;
 
-        public ReloadTarget(File file, ZoneId defaultTimeZone, Config overwriteParams)
+        public ReloadTarget(File dagfilePath, ZoneId defaultTimeZone, Config additionalDefaultParams)
         {
-            this.file = file;
+            this.dagfilePath = dagfilePath;
             this.defaultTimeZone = defaultTimeZone;
-            this.overwriteParams = overwriteParams;
+            this.additionalDefaultParams = additionalDefaultParams;
             this.lastDagfile = null;
         }
 
@@ -114,11 +115,11 @@ public class RevisionAutoReloader
             lastDagfile = readDagfile();
             localSite.storeWorkflows(
                     makeRevisionName(),
-                    lastDagfile.getWorkflowList(),
-                    Instant.now(),
-                    lastDagfile.getDefaultParams()
-                        .deepCopy()
-                        .setAll(overwriteParams));
+                    ArchiveMetadata.of(
+                        lastDagfile.getWorkflowList(),
+                        lastDagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
+                        dagfilePath.toString()),
+                    Instant.now());
         }
 
         public void tryReload()
@@ -126,14 +127,14 @@ public class RevisionAutoReloader
             try {
                 Dagfile dagfile = readDagfile();  // TODO optimize this code
                 if (!dagfile.equals(lastDagfile)) {
-                    logger.info("Reloading {}", file);
+                    logger.info("Reloading {}", dagfilePath);
                     StoredRevision rev = localSite.storeWorkflows(
                             makeRevisionName(),
-                            dagfile.getWorkflowList(),
-                            Instant.now(),
-                            dagfile.getDefaultParams()
-                                .deepCopy()
-                                .setAll(overwriteParams));
+                            ArchiveMetadata.of(
+                                dagfile.getWorkflowList(),
+                                dagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
+                                dagfilePath.toString()),
+                            Instant.now());
                     lastDagfile = dagfile;
                     logger.info("Added new revision {}", rev.getName());
                 }
@@ -146,7 +147,7 @@ public class RevisionAutoReloader
         private Dagfile readDagfile()
             throws IOException
         {
-            return loader.loadParameterizedFile(file, overwriteParams).convert(Dagfile.class);
+            return loader.loadParameterizedFile(dagfilePath, additionalDefaultParams).convert(Dagfile.class);
         }
 
         private String makeRevisionName()

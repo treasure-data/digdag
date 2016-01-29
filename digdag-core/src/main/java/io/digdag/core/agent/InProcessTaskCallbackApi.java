@@ -96,7 +96,7 @@ public class InProcessTaskCallbackApi
             .instant(instant)
             .retryAttemptName(retryAttemptName)
             .defaultTimeZone(defaultTimeZone)
-            .defaultParams(def.getRevisionDefaultParams())
+            .revisionDefaultParams(def.getRevisionDefaultParams())
             .overwriteParams(overwriteParams)
             .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .build();

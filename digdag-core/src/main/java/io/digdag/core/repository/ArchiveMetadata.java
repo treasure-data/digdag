@@ -16,6 +16,9 @@ public abstract class ArchiveMetadata
     @JsonProperty("workflows")
     public abstract WorkflowDefinitionList getWorkflowList();
 
+    @JsonProperty("dagfile_path")
+    public abstract String getDagfilePath();
+
     @JsonProperty("params")
     public abstract Config getDefaultParams();
 
@@ -24,10 +27,16 @@ public abstract class ArchiveMetadata
         return ImmutableArchiveMetadata.builder();
     }
 
-    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams)
+    public static ArchiveMetadata of(Dagfile dagfile, String dagfilePath)
+    {
+        return of(dagfile.getWorkflowList(), dagfile.getDefaultParams(), dagfilePath);
+    }
+
+    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams, String dagfilePath)
     {
         return builder()
             .workflowList(workflows)
+            .dagfilePath(dagfilePath)
             .defaultParams(defaultParams)
             .build();
     }

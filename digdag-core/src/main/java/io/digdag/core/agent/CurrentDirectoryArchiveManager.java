@@ -16,7 +16,7 @@ public class CurrentDirectoryArchiveManager
     @Override
     public <T> T withExtractedArchive(TaskRequest request, WithArchiveAction<T> func)
     {
-        Path archivePath = FileSystems.getDefault().getPath(".").toAbsolutePath();
+        Path archivePath = FileSystems.getDefault().getPath("").toAbsolutePath();
         return func.run(archivePath);
     }
 }

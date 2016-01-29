@@ -23,7 +23,7 @@ public abstract class AttemptRequest
 
     public abstract ZoneId getDefaultTimeZone();
 
-    public abstract Config getDefaultParams();
+    public abstract Config getRevisionDefaultParams();
 
     public abstract Config getOverwriteParams();
 

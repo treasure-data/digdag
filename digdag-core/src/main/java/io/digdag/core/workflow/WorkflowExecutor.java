@@ -124,7 +124,7 @@ public class WorkflowExecutor
         // TODO get tiemzone from default params, overwrite params, or ar.getDefaultTimeZone
         // TODO set timezone, session_time, etc.
         Config sessionParams =
-            ar.getDefaultParams().deepCopy()
+            ar.getRevisionDefaultParams().deepCopy()
             .setAll(ar.getOverwriteParams());
 
         SessionAttempt attempt = SessionAttempt.of(

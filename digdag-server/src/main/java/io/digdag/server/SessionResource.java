@@ -178,7 +178,7 @@ public class SessionResource
             .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(request.getRetryAttemptName())
             .defaultTimeZone(ZoneId.of("UTC"))
-            .defaultParams(rev.getDefaultParams())
+            .revisionDefaultParams(rev.getDefaultParams())
             .overwriteParams(request.getParams())
             .build();
 

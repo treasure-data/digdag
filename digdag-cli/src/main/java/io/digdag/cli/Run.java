@@ -25,6 +25,7 @@ import com.google.inject.util.Modules;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -165,13 +166,11 @@ public class Run
                             "run: option is not written at %s file. Please add run: option or add +NAME option to command line", dagfilePath));
             }
         }
-        WorkflowDefinitionList defs = dagfile.getWorkflowList();
 
-        StoredSessionAttemptWithSession attempt = localSite.storeAndStartWorkflows(
+        StoredSessionAttemptWithSession attempt = localSite.storeAndStartLocalWorkflows(
+                ArchiveMetadata.of(dagfile, dagfilePath),
                 ZoneId.systemDefault(),  // TODO configurable by cmdline argument
-                defs,
                 TaskMatchPattern.compile(taskNamePattern),
-                dagfile.getDefaultParams(),
                 overwriteParams);
         logger.debug("Submitting {}", attempt);
 

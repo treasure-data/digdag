@@ -93,12 +93,12 @@ public class LocalSite
         sessionMonitorExecutor.start();
     }
 
-    private class StoreWorkflow
+    private class StoreWorkflowResult
     {
         private final StoredRevision revision;
         private final List<StoredWorkflowDefinition> workflows;
 
-        public StoreWorkflow(StoredRevision revision, List<StoredWorkflowDefinition> workflows)
+        public StoreWorkflowResult(StoredRevision revision, List<StoredWorkflowDefinition> workflows)
         {
             this.revision = revision;
             this.workflows = workflows;
@@ -115,7 +115,8 @@ public class LocalSite
         }
     }
 
-    private StoreWorkflow storeLocalWorkflowsImpl(String repositoryName, Revision revision,
+    private StoreWorkflowResult storeLocalWorkflowsImpl(
+            String repositoryName, Revision revision,
             WorkflowDefinitionList defs,
             Optional<Instant> currentTimeToSchedule)
         throws ResourceConflictException, ResourceNotFoundException
@@ -138,38 +139,46 @@ public class LocalSite
                     else {
                         storedDefs = lockedRepo.insertWorkflowDefinitionsWithoutSchedules(rev, defs.get());
                     }
-                    return new StoreWorkflow(rev, storedDefs);
+                    return new StoreWorkflowResult(rev, storedDefs);
                 });
     }
 
-    private StoreWorkflow storeLocalWorkflows(
-            String revisionName,
-            WorkflowDefinitionList defs,
-            Optional<Instant> currentTimeToSchedule,
-            Config defaultParams)
+    private StoreWorkflowResult storeLocalWorkflows(
+            String revisionName, ArchiveMetadata archive,
+            Optional<Instant> currentTimeToSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
                 "default",
                 Revision.revisionBuilder()
                     .name(revisionName)
-                    .archiveType("db")
-                    .defaultParams(defaultParams)
+                    .dagfilePath(archive.getDagfilePath())
+                    .archiveType("null")
+                    .defaultParams(archive.getDefaultParams())
                     .build(),
-                defs,
+                archive.getWorkflowList(),
                 currentTimeToSchedule);
     }
 
-    public StoredSessionAttemptWithSession storeAndStartWorkflows(
+    public StoredRevision storeWorkflows(
+            String revisionName,
+            ArchiveMetadata archive,
+            Instant currentTime)
+        throws ResourceConflictException, ResourceNotFoundException
+    {
+        return storeLocalWorkflows(revisionName, archive, Optional.of(currentTime))
+            .getRevision();
+    }
+
+    public StoredSessionAttemptWithSession storeAndStartLocalWorkflows(
+            ArchiveMetadata archive,
             ZoneId defaultTimeZone,
-            WorkflowDefinitionList defs,
             TaskMatchPattern taskMatchPattern,
-            Config defaultParams,
             Config overwriteParams)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
-        StoreWorkflow revWfs = storeLocalWorkflows("revision", defs,
-                Optional.absent(), defaultParams);
+        StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
+
         final StoredRevision revision = revWfs.getRevision();
         final List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
 
@@ -183,7 +192,7 @@ public class LocalSite
                 .storedWorkflowDefinitionId(Optional.of(def.getId()))
                 .retryAttemptName(Optional.absent())
                 .defaultTimeZone(defaultTimeZone)
-                .defaultParams(cf.create())
+                .revisionDefaultParams(archive.getDefaultParams())
                 .overwriteParams(overwriteParams)
                 .build();
 
@@ -201,21 +210,6 @@ public class LocalSite
         catch (MultipleTaskMatchException ex) {
             throw new IllegalArgumentException(ex);  // TODO exception class
         }
-    }
-
-    public StoredRevision storeWorkflows(
-            String revisionName,
-            WorkflowDefinitionList defs,
-            Instant currentTime,
-            Config defaultParams)
-        throws ResourceConflictException, ResourceNotFoundException
-    {
-        return storeLocalWorkflows(
-                revisionName,
-                defs,
-                Optional.of(currentTime),
-                defaultParams)
-            .getRevision();
     }
 
     public void run()

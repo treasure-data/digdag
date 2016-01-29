@@ -15,6 +15,8 @@ import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.FileSystems;
 import java.nio.charset.StandardCharsets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
@@ -103,10 +105,14 @@ public class Archive
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
+        Path absoluteCurrentPath = FileSystems.getDefault().getPath("").toAbsolutePath().normalize();
+
+        // normalize the path
+        String dagfileName = normalizeRelativePath(absoluteCurrentPath, dagfilePath);
+        boolean dagfileLoaded = false;
+
         Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
-        ArchiveMetadata meta = ArchiveMetadata.of(
-            dagfile.getWorkflowList(),
-            dagfile.getDefaultParams().setAll(overwriteParams));
+        ArchiveMetadata meta = ArchiveMetadata.of(dagfile, dagfileName);
 
         List<String> stdinLines;
         if (System.console() != null) {
@@ -116,32 +122,33 @@ public class Archive
             stdinLines = CharStreams.readLines(new BufferedReader(new InputStreamReader(System.in)));
         }
 
-        Set<File> requiredFiles = new HashSet<>();
-        requiredFiles.add(new File(dagfilePath));
-
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
             for (String line : stdinLines) {
                 File file = new File(line);
-
                 if (file.isDirectory()) {
                     continue;
                 }
-                System.out.println("  Archiving "+file);
 
-                tar.putArchiveEntry(new TarArchiveEntry(file));
+                String name = normalizeRelativePath(absoluteCurrentPath, line);
+                System.out.println("  Archiving "+name);
+
+                tar.putArchiveEntry(new TarArchiveEntry(new File(name)));
                 if (file.isFile()) {
                     try (FileInputStream in = new FileInputStream(file)) {
                         ByteStreams.copy(in, tar);
                     }
                     tar.closeArchiveEntry();
                 }
-                requiredFiles.remove(file);
+
+                if (name.equals(dagfileName)) {
+                    dagfileLoaded = true;
+                }
             }
 
-            for (File file : requiredFiles) {
-                System.out.println("  Archiving "+file);
-                tar.putArchiveEntry(new TarArchiveEntry(file));
-                try (FileInputStream in = new FileInputStream(file)) {
+            if (!dagfileLoaded) {
+                System.out.println("  Archiving "+dagfileName);
+                tar.putArchiveEntry(new TarArchiveEntry(new File(dagfileName)));
+                try (FileInputStream in = new FileInputStream(new File(dagfilePath))) {
                     ByteStreams.copy(in, tar);
                 }
                 tar.closeArchiveEntry();
@@ -171,5 +178,31 @@ public class Archive
         System.out.println("    $ digdag upload "+output+" $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");
         System.out.println("    $ digdag upload "+output+" $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)");
         System.out.println("");
+    }
+
+    private String normalizeRelativePath(Path absoluteCurrentPath, String rawPath)
+    {
+        Path absPath = FileSystems.getDefault().getPath(rawPath).toAbsolutePath().normalize();
+        Path relPath = absoluteCurrentPath.relativize(absPath).normalize();
+
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (Path fragment : relPath) {
+            String name = fragment.toString();
+            if (name.contains("/")) {
+                throw new IllegalArgumentException("File name can't include '/': " + rawPath);
+            }
+            else if (name.equals("..") || name.equals(".")) {
+                throw new IllegalArgumentException("Relative file path from current working directory can't include . or ..: " + relPath);
+            }
+            if (first) {
+                first = false;
+            }
+            else {
+                sb.append("/");
+            }
+            sb.append(name);
+        }
+        return sb.toString();
     }
 }
