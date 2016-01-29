@@ -15,7 +15,13 @@ public abstract class TaskRequest
 
     public abstract int getRepositoryId();
 
+    public abstract String getWorkflowName();
+
     public abstract Optional<String> getRevision();
+
+    public abstract Optional<String> getDagfilePath();
+
+    public abstract Config getLocalConfig();
 
     public abstract Config getConfig();
 

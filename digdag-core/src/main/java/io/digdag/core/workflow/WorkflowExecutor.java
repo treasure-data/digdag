@@ -631,19 +631,22 @@ public class WorkflowExecutor
             try {
                 // merge order is:
                 //   revision default < attempt < task
-                Config config;
+                Config params;
                 if (rev.isPresent()) {
-                    config = rev.get().getDefaultParams().deepCopy()
+                    params = rev.get().getDefaultParams().deepCopy()
                         .setAll(attempt.getParams());
                 }
                 else {
-                    config = attempt.getParams().deepCopy();
+                    params = attempt.getParams().deepCopy();
                 }
 
-                collectTaskConfig(config, task, attempt);
+                collectParams(params, task, attempt);
+                TaskConfig.setRuntimeBuiltInParams(params, attempt);
 
-                TaskConfig.setRuntimeBuiltInConfig(config, attempt);
-
+                // create TaskRequest for TaskRunnerManager.
+                // TaskRunnerManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
+                // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
+                // so that TaskRunnerManager can build it using the reloaded local config.
                 TaskRequest request = TaskRequest.builder()
                     .taskInfo(
                             TaskInfo.of(
@@ -653,8 +656,11 @@ public class WorkflowExecutor
                                 attempt.getRetryAttemptName(),
                                 fullName))
                     .repositoryId(attempt.getSession().getRepositoryId())
+                    .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
-                    .config(config)
+                    .dagfilePath(rev.transform(it -> it.getDagfilePath()))
+                    .localConfig(task.getConfig().getLocal())
+                    .config(params)
                     .lastStateParams(task.getStateParams())
                     .build();
 
@@ -808,7 +814,7 @@ public class WorkflowExecutor
         return updated;
     }
 
-    private Config collectTaskConfig(Config config, StoredTask task, StoredSessionAttempt attempt)
+    private Config collectParams(Config params, StoredTask task, StoredSessionAttempt attempt)
     {
         List<Long> parentsFromRoot;
         List<Long> upstreamsFromFar;
@@ -821,14 +827,14 @@ public class WorkflowExecutor
         // task merge order is:
         //   export < carry from parents < carry from upstreams < local
         sm.getExportParams(parentsFromRoot)
-            .stream().forEach(node -> config.setAll(node));
-        config.setAll(task.getConfig().getExport());
+            .stream().forEach(node -> params.setAll(node));
+        params.setAll(task.getConfig().getExport());
         sm.getCarryParams(parentsFromRoot)
-            .stream().forEach(node -> config.setAll(node));
+            .stream().forEach(node -> params.setAll(node));
         sm.getCarryParams(upstreamsFromFar)
-            .stream().forEach(node -> config.setAll(node));
-        config.setAll(task.getConfig().getLocal());
-        return config;
+            .stream().forEach(node -> params.setAll(node));
+
+        return params;
     }
 
     private Optional<StoredTask> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)

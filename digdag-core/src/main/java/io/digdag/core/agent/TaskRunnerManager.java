@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import com.google.inject.Inject;
@@ -14,6 +15,14 @@ import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.workflow.Workflow;
+import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.workflow.WorkflowTask;
+import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.workflow.SubtaskMatchPattern;
+import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.spi.*;
 
 public class TaskRunnerManager
@@ -22,16 +31,21 @@ public class TaskRunnerManager
 
     private final TaskCallbackApi callback;
     private final ArchiveManager archiveManager;
+    private final ConfigLoaderManager configLoader;
+    private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final Map<String, TaskRunnerFactory> executorTypes;
 
     @Inject
-    public TaskRunnerManager(TaskCallbackApi callback, ArchiveManager archiveManager, ConfigFactory cf,
+    public TaskRunnerManager(TaskCallbackApi callback, ArchiveManager archiveManager,
+            ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
     {
         this.callback = callback;
         this.archiveManager = archiveManager;
+        this.configLoader = configLoader;
+        this.compiler = compiler;
         this.cf = cf;
         this.evalEngine = evalEngine;
 
@@ -68,14 +82,27 @@ public class TaskRunnerManager
         long taskId = request.getTaskInfo().getId();
 
         try {
+            // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task.
+            // here reloads local config and creates the complete merged config.
             Config config;
             try {
-                config = evalEngine.eval(archivePath, request.getConfig().deepCopy());
+                // TODO here is a known bug:
+                //      if `digdag run` runs with a subtask option that points a nested task,
+                //      taskFullName doesn't match with reloaded config. So it throws following
+                //      RuntimeException.
+                config = evalTaskConfig(archivePath, request.getDagfilePath(),
+                        request.getWorkflowName(), request.getTaskInfo().getFullName(),
+                        request.getConfig(), request.getLocalConfig());
             }
-            catch (ConfigEvalException ex) {
-                throw new RuntimeException("Failed to evaluate config", ex);
+            catch (IOException | RuntimeException | ConfigEvalException ex) {
+                throw new RuntimeException("Failed to rebuild task config", ex);
             }
-            logger.trace("evaluated config: {}", config);
+            logger.debug("evaluated config: {}", config);
+
+            TaskRequest mergedRequest = TaskRequest.builder()
+                .from(request)
+                .config(config)
+                .build();
 
             String type;
             if (config.has("type")) {
@@ -105,12 +132,7 @@ public class TaskRunnerManager
             if (factory == null) {
                 throw new ConfigException("Unknown task type: " + type);
             }
-            TaskRunner executor = factory.newTaskExecutor(
-                    archivePath,
-                    TaskRequest.builder()
-                        .from(request)
-                        .config(config)
-                        .build());
+            TaskRunner executor = factory.newTaskExecutor(archivePath, mergedRequest);
 
             TaskResult result;
             try {
@@ -149,5 +171,53 @@ public class TaskRunnerManager
                     .stream()
                     .map(it -> it.toString())
                     .collect(Collectors.joining(", ")));
+    }
+
+    private Config evalTaskConfig(Path archivePath, Optional<String> dagfilePath,
+            String workflowName, String taskFullName,
+            Config params, Config localConfig)
+        throws IOException, ConfigEvalException
+    {
+        System.out.println("Reevaluating config using params: "+params);
+
+        if (dagfilePath.isPresent()) {
+            Dagfile dagfile = configLoader.loadParameterizedFile(
+                    archivePath.resolve(dagfilePath.get()).toFile(),
+                    params).convert(Dagfile.class);
+            WorkflowDefinition def = findDefinition(dagfile, workflowName);
+            Workflow workflow = compiler.compile(def.getName(), def.getConfig());
+            WorkflowTask task = findTask(workflow, taskFullName);
+            localConfig = task.getConfig();
+
+            System.out.println("Reevaluated local config: "+localConfig);
+
+        }
+
+        Config config =
+            localConfig.deepCopy()
+            .setAll(params);
+
+        return evalEngine.eval(archivePath, config);
+    }
+
+    private WorkflowDefinition findDefinition(Dagfile dagfile, String workflowName)
+    {
+        for (WorkflowDefinition def : dagfile.getWorkflowList().get()) {
+            if (def.getName().equals(workflowName)) {
+                return def;
+            }
+        }
+        throw new RuntimeException("Workflow doesn't exist in the reloaded workflow");
+    }
+
+    private WorkflowTask findTask(Workflow workflow, String taskFullName)
+    {
+        try {
+            int index = SubtaskMatchPattern.compile(taskFullName).findIndex(workflow.getTasks());
+            return workflow.getTasks().get(index);
+        }
+        catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
+        throw new RuntimeException("Task doesn't exist in the reloaded workflow");
+        }
     }
 }

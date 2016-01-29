@@ -5,7 +5,6 @@ import java.time.ZoneId;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
-import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStateFlags;
 
 public interface TaskCallbackApi

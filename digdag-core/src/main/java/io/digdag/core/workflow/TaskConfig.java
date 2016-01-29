@@ -21,15 +21,15 @@ public class TaskConfig
         return new TaskConfig(copy, export);
     }
 
-    public static void setRuntimeBuiltInConfig(Config config,
+    public static void setRuntimeBuiltInParams(Config params,
             StoredSessionAttemptWithSession attempt)
     {
-        if (!config.has("timezone")) {
-            config.set("timezone", "UTC");
+        if (!params.has("timezone")) {
+            params.set("timezone", "UTC");
         }
-        config.set("repository_id", attempt.getSession().getRepositoryId());
-        config.set("session_time", attempt.getSession().getInstant());
-        config.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
+        params.set("repository_id", attempt.getSession().getRepositoryId());
+        params.set("session_time", attempt.getSession().getInstant());
+        params.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
     }
 
     @JsonCreator
