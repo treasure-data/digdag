@@ -262,6 +262,18 @@ public class DigdagClient
                 .resolveTemplate("id", scheduleId));
     }
 
+    public List<RestSession> backfillSchedule(long scheduleId, Date fromTime, String attemptName, boolean dryRun)
+    {
+        return doPost(new GenericType<List<RestSession>>() { },
+                RestScheduleBackfillRequest.builder()
+                    .fromTime(fromTime.getTime() / 1000)
+                    .dryRun(dryRun)
+                    .attemptName(attemptName)
+                    .build(),
+                target("/api/schedules/{id}/backfill")
+                .resolveTemplate("id", scheduleId));
+    }
+
     private WebTarget target(String path)
     {
         return client.target(UriBuilder.fromUri(endpoint + path));
@@ -286,6 +298,13 @@ public class DigdagClient
         return target.request("application/json")
             .headers(headers)
             .put(Entity.entity(body, contentType), type);
+    }
+
+    private <T> T doPost(GenericType<T> type, Object body, WebTarget target)
+    {
+        return target.request("application/json")
+            .headers(headers)
+            .post(Entity.entity(body, "application/json"), type);
     }
 
     private <T> T doPost(Class<T> type, Object body, WebTarget target)

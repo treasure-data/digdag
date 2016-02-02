@@ -55,7 +55,7 @@ public class Reschedule
         System.err.println("    -s, --skip N                     skips specified number of schedules from now");
         System.err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
         System.err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
-        System.err.println("    -d, --dry-run                    try to reschedule and validates the results but does nothing");
+        System.err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }

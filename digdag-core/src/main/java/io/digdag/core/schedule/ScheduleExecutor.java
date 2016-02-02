@@ -1,5 +1,9 @@
 package io.digdag.core.schedule;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +26,13 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.core.session.Session;
+import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.session.SessionStore;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +44,7 @@ public class ScheduleExecutor
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
+    private final SessionStoreManager sessionStoreManager;  // used for validation at backfill
     private final ScheduledExecutorService executor;
 
     @Inject
@@ -41,12 +52,14 @@ public class ScheduleExecutor
             RepositoryStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            ScheduleHandler handler)
+            ScheduleHandler handler,
+            SessionStoreManager sessionStoreManager)
     {
         this.rm = rm;
         this.sm = sm;
         this.srm = srm;
         this.handler = handler;
+        this.sessionStoreManager = sessionStoreManager;
         this.executor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -101,15 +114,15 @@ public class ScheduleExecutor
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
         try {
-            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+            StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
-            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
-            Config schedConfig = getScheduleConfig(wf).get();
+            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            Config schedConfig = getScheduleConfig(def).get();
 
             Scheduler sr = srm.getScheduler(schedConfig, timeZone);
 
             try {
-                ScheduleTime nextTime = startSchedule(sched, sr, wf);
+                ScheduleTime nextTime = startSchedule(sched, sr, def);
                 return lockedSched.tryUpdateNextScheduleTimeAndLastSessionInstant(nextTime, sched.getNextScheduleTime());
             }
             catch (ResourceConflictException ex) {
@@ -137,7 +150,7 @@ public class ScheduleExecutor
     }
 
     private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
-            StoredWorkflowDefinitionWithRepository wf)
+            StoredWorkflowDefinitionWithRepository def)
         throws ResourceNotFoundException, ResourceConflictException
     {
         Instant scheduleTime = sched.getNextScheduleTime();
@@ -146,16 +159,17 @@ public class ScheduleExecutor
 
         // TODO move this to WorkflowExecutor?
         ImmutableList.Builder<SessionMonitor> monitors = ImmutableList.builder();
-        if (wf.getConfig().has("sla")) {
-            Config slaConfig = wf.getConfig().getNestedOrGetEmpty("sla");
+        if (def.getConfig().has("sla")) {
+            Config slaConfig = def.getConfig().getNestedOrGetEmpty("sla");
             // TODO support multiple SLAs
             Instant triggerTime = SlaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
             monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));
         }
 
         try {
-            handler.start(wf, monitors.build(),
-                    timeZone, ScheduleTime.of(runTime, scheduleTime));
+            handler.start(def, monitors.build(),
+                    timeZone, ScheduleTime.of(runTime, scheduleTime),
+                    Optional.absent());
         }
         catch (SessionAttemptConflictException ex) {
             logger.debug("Scheduled attempt {} is already executed. Skipping", ex.getConflictedSession());
@@ -243,9 +257,79 @@ public class ScheduleExecutor
     private Scheduler getSchedulerOfSchedule(StoredSchedule sched)
         throws ResourceNotFoundException
     {
-        StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-        ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
-        Config schedConfig = getScheduleConfig(wf).get();
-        return srm.getScheduler(schedConfig, timeZone);
+        StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+        ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+        return srm.getScheduler(getScheduleConfig(def).get(), timeZone);
+    }
+
+    public List<StoredSessionAttemptWithSession> backfill(int siteId, long schedId, Instant fromTime, String attemptName, boolean dryRun)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
+
+        SessionStore ss = sessionStoreManager.getSessionStore(siteId);
+
+        return sm.lockScheduleById(schedId, (store, sched) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, sched);
+
+            StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            Scheduler sr = srm.getScheduler(getScheduleConfig(def).get(), timeZone);
+
+            List<Instant> instants = new ArrayList<>();
+            Instant time = sr.getFirstScheduleTime(fromTime.minusSeconds(1)).getScheduleTime();
+            while (time.isBefore(sched.getNextScheduleTime())) {
+                instants.add(time);
+                time = sr.nextScheduleTime(time).getScheduleTime();
+            }
+            Collections.reverse(instants);  // submit from recent to old
+
+            // confirm sessions with the same attemptName doesn't exist
+            for (Instant instant : instants) {
+                try {
+                    ss.getSessionAttemptByNames(def.getRepository().getId(), def.getName(), instant, attemptName);
+                    throw new ResourceConflictException(String.format(Locale.ENGLISH,
+                                "Attempt of repository id=%d workflow=%s instant=%s attempt name=%s already exists",
+                                def.getRepository().getId(), def.getName(), instant, attemptName));
+                }
+                catch (ResourceNotFoundException ex) {
+                    // OK
+                }
+            }
+
+            // run sessions
+            ImmutableList.Builder<StoredSessionAttemptWithSession> attempts = ImmutableList.builder();
+            for (Instant instant : instants) {
+                if (dryRun) {
+                    attempts.add(
+                            StoredSessionAttemptWithSession.of(siteId,
+                                Session.of(def.getRepository().getId(), def.getName(), instant),
+                                ImmutableStoredSessionAttempt.builder()
+                                    .retryAttemptName(Optional.of(attemptName))
+                                    .workflowDefinitionId(Optional.of(def.getId()))
+                                    .id(0L)
+                                    .params(def.getConfig().getFactory().create())
+                                    .stateFlags(SessionStateFlags.empty())
+                                    .sessionId(0L)
+                                    .createdAt(Instant.now())
+                                    .build()
+                            )
+                        );
+                }
+                else {
+                    try {
+                        StoredSessionAttemptWithSession attempt = handler.start(def, ImmutableList.of(),
+                                timeZone, ScheduleTime.of(sched.getNextScheduleTime(), instant),
+                                Optional.of(attemptName));
+                        attempts.add(attempt);
+                    }
+                    catch (SessionAttemptConflictException ex) {
+                        // ignore because above start already committed other attempts. here can't rollback.
+                        logger.warn("Session attempt conflicted after validation", ex);
+                    }
+                }
+            }
+            return attempts.build();
+        });
     }
 }

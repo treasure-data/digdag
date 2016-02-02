@@ -41,7 +41,7 @@ public class ScheduleHandler
     }
 
     public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithRepository def,
-            List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time)
+            List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
         AttemptRequest ar = AttemptRequest.builder()
@@ -49,7 +49,7 @@ public class ScheduleHandler
             .workflowName(def.getName())
             .instant(time.getScheduleTime())
             .storedWorkflowDefinitionId(Optional.of(def.getId()))
-            .retryAttemptName(Optional.absent())
+            .retryAttemptName(retryAttemptName)
             .defaultTimeZone(timeZone)
             .revisionDefaultParams(def.getRevisionDefaultParams())
             .overwriteParams(cf.create())

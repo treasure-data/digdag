@@ -24,6 +24,7 @@ import com.google.common.base.Optional;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.client.api.*;
 import io.digdag.server.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -38,7 +39,7 @@ public class ScheduleResource
     // [*] GET  /api/schedules                                   # list schedules of the latest revision of all repositories
     // [*] GET  /api/schedules/<id>                              # show a particular schedule (which belongs to a workflow)
     // [*] POST /api/schedules/<id>/skip                         # skips schedules forward to a future time
-    // [ ] POST /api/schedules/<id>/backfill                     # run or re-run past schedules
+    // [*] POST /api/schedules/<id>/backfill                     # run or re-run past schedules
 
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
@@ -111,5 +112,29 @@ public class ScheduleResource
                     request.getDryRun());
         }
         return RestModels.scheduleSummary(updated);
+    }
+
+    @POST
+    @Consumes("application/json")
+    @Path("/api/schedules/{id}/backfill")
+    public List<RestSession> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        List<StoredSessionAttemptWithSession> attempts = exec.backfill(siteId, id, Instant.ofEpochSecond(request.getFromTime()), request.getAttemptName(), request.getDryRun());
+
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+
+        return attempts.stream()
+            .map(attempt -> {
+                try {
+                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                }
+                catch (ResourceNotFoundException ex) {
+                    // must not happen
+                    return null;
+                }
+            })
+            .filter(a -> a != null)
+            .collect(Collectors.toList());
     }
 }

@@ -992,6 +992,7 @@ public class DatabaseSessionStoreManager
                 " where s.repository_id = :repositoryId" +
                 " and s.workflow_name = :workflowName" +
                 " and s.instant = :instant" +
+                " and sa.attempt_name = :attemptName" +
                 " and sa.site_id = :siteId" +
                 " limit 1")
         StoredSessionAttempt getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("instant") long instant, @Bind("attemptName") String attemptName);
