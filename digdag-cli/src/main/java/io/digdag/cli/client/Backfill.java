@@ -19,8 +19,11 @@ public class Backfill
     @Parameter(names = {"-f", "--from"}, required = true)
     String fromTime;
 
-    @Parameter(names = {"-n", "--attempt-name"}, required = true)
+    @Parameter(names = {"-R", "--attempt-name"}, required = true)
     String attemptName;
+
+    // TODO -n for count
+    // TODO -t for to-time
 
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
@@ -42,7 +45,7 @@ public class Backfill
         System.err.println("Usage: digdag backfill <schedule-id>");
         System.err.println("  Options:");
         System.err.println("    -f, --from 'yyyy-MM-dd HH:mm:ss Z'  timestamp to start backfill from (required)");
-        System.err.println("    -n, --attempt-name NAME          session attempt name (required)");
+        System.err.println("    -R, --attempt-name NAME          session attempt name (required)");
         System.err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
         ClientCommand.showCommonOptions();
         return systemExit(error);
