@@ -23,13 +23,13 @@ public class WorkflowCompiler
         return Workflow.builder()
             .name(name)
             .meta(config.getNestedOrGetEmpty("meta"))
-            .tasks(compileTasks(name, config))
+            .tasks(compileTasks("", name, config))
             .build();
     }
 
-    public WorkflowTaskList compileTasks(String name, Config config)
+    public WorkflowTaskList compileTasks(String parentFullName, String name, Config config)
     {
-        return new Context().compile(name, config);
+        return new Context().compile(parentFullName, name, config);
     }
 
     private static class TaskBuilder
@@ -37,17 +37,20 @@ public class WorkflowCompiler
         private final int index;
         private final Optional<TaskBuilder> parent;
         private final String name;
+        private final String fullName;
         private final TaskType taskType;
         private final Config config;
         private final List<TaskBuilder> children = new ArrayList<TaskBuilder>();
         private final List<TaskBuilder> upstreams = new ArrayList<TaskBuilder>();
 
-        public TaskBuilder(int index, Optional<TaskBuilder> parent, String name,
+        public TaskBuilder(int index, Optional<TaskBuilder> parent,
+                String name, String fullName,
                 TaskType taskType, Config config)
         {
             this.index = index;
             this.parent = parent;
             this.name = name;
+            this.fullName = fullName;
             this.taskType = taskType;
             this.config = config;
             if (parent.isPresent()) {
@@ -84,9 +87,9 @@ public class WorkflowCompiler
         {
             return new WorkflowTask.Builder()
                 .name(name)
+                .fullName(fullName)
                 .index(index)
-                .parentIndex(
-                        parent.transform(it -> it.index))
+                .parentIndex(parent.transform(it -> it.index))
                 .upstreamIndexes(
                         upstreams
                             .stream()
@@ -102,10 +105,10 @@ public class WorkflowCompiler
     {
         private List<TaskBuilder> tasks = new ArrayList<>();
 
-        public WorkflowTaskList compile(String name, Config config)
+        public WorkflowTaskList compile(String parentFullName, String name, Config config)
         {
             try {
-                collect(Optional.absent(), config.getFactory().create(), name, config);
+                collect(Optional.absent(), config.getFactory().create(), parentFullName, name, config);
                 return WorkflowTaskList.of(
                         tasks
                         .stream()
@@ -122,7 +125,7 @@ public class WorkflowCompiler
 
         public TaskBuilder collect(
                 Optional<TaskBuilder> parent, Config parentDefaultConfig,
-                String name, Config originalConfig)
+                String parentFullName, String name, Config originalConfig)
         {
             Config thisDefaultConfig = originalConfig.getNestedOrGetEmpty("default");
             final Config defaultConfig = parentDefaultConfig.deepCopy().setAll(thisDefaultConfig);
@@ -141,20 +144,22 @@ public class WorkflowCompiler
                 .filter(key -> key.startsWith("+"))
                 .forEach(key -> config.remove(key));
 
+            String fullName = parentFullName + name;
+
             if (config.has("type") || config.has("type=") || config.getKeys().stream().anyMatch(key -> key.endsWith(">") || key.endsWith(">="))) {
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);
                 }
-                return addTask(parent, name, false, config);
+                return addTask(parent, name, fullName, false, config);
             }
             else {
                 // group node
-                final TaskBuilder tb = addTask(parent, name, true, config);
+                final TaskBuilder tb = addTask(parent, name, fullName, true, config);
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()
-                    .map(pair -> collect(Optional.of(tb), defaultConfig, pair.getKey(), pair.getValue()))
+                    .map(pair -> collect(Optional.of(tb), defaultConfig, fullName, pair.getKey(), pair.getValue()))
                     .collect(Collectors.toList());
 
                 if (config.get("parallel", boolean.class, false)) {
@@ -190,10 +195,10 @@ public class WorkflowCompiler
         }
 
         private TaskBuilder addTask(
-                Optional<TaskBuilder> parent, String name,
+                Optional<TaskBuilder> parent, String name, String fullName,
                 boolean groupingOnly, Config config)
         {
-            TaskBuilder tb = new TaskBuilder(tasks.size(), parent, name,
+            TaskBuilder tb = new TaskBuilder(tasks.size(), parent, name, fullName,
                     extractTaskOption(config, groupingOnly), config);
             tasks.add(tb);
             return tb;

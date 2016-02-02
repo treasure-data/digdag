@@ -147,7 +147,7 @@ public class WorkflowExecutor
 
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())
-                        .fullName(root.getName())
+                        .fullName(root.getFullName())
                         .config(TaskConfig.validate(root.getConfig()))
                         .taskType(root.getTaskType())
                         .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
@@ -843,7 +843,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(":sub", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":sub", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -864,7 +864,7 @@ public class WorkflowExecutor
         Config export = subtaskConfig.getNestedOrSetEmpty("export");
         export.set("error", error);
 
-        WorkflowTaskList tasks = compiler.compileTasks(":error", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":error", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -881,7 +881,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(":check", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":check", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -893,7 +893,7 @@ public class WorkflowExecutor
 
     public Optional<StoredTask> addMonitorTask(TaskControl lockedTask, String type, Config taskConfig)
     {
-        WorkflowTaskList tasks = compiler.compileTasks(":" + type, taskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":" + type, taskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }

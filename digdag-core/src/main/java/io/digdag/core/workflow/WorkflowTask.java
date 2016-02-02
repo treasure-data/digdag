@@ -17,6 +17,8 @@ public abstract class WorkflowTask
 {
     public abstract String getName();
 
+    public abstract String getFullName();
+
     public abstract int getIndex();
 
     public abstract Optional<Integer> getParentIndex();

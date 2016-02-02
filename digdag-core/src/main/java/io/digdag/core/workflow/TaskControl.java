@@ -63,7 +63,6 @@ public class TaskControl
         Preconditions.checkArgument(getId() == parentTask.getId());
 
         List<Long> indexToId = new ArrayList<>();
-        List<String> indexToFullName = new ArrayList<>();
 
         StoredTask rootTask;
         if (firstTaskIsRootParentTask) {
@@ -78,15 +77,9 @@ public class TaskControl
         for (WorkflowTask wt : tasks) {
             if (firstTask && firstTaskIsRootParentTask) {
                 indexToId.add(rootTask.getId());
-                indexToFullName.add(rootTask.getFullName());
                 firstTask = false;
                 continue;
             }
-
-            String parentFullName = wt.getParentIndex()
-                .transform(index -> indexToFullName.get(index))
-                .or(parentTask.getFullName());
-            String fullName = parentFullName + wt.getName();
 
             if (firstTask && cancelSiblings) {
                 // TODO not implemented yet
@@ -98,7 +91,7 @@ public class TaskControl
                                 .transform(index -> indexToId.get(index))
                                 .or(parentTask.getId())
                             ))
-                .fullName(fullName)
+                .fullName(wt.getFullName())
                 .config(TaskConfig.validate(wt.getConfig()))
                 .taskType(wt.getTaskType())
                 .state(TaskStateCode.BLOCKED)
@@ -106,7 +99,6 @@ public class TaskControl
 
             long id = store.addSubtask(parentTask.getAttemptId(), task);
             indexToId.add(id);
-            indexToFullName.add(fullName);
             if (!wt.getUpstreamIndexes().isEmpty()) {
                 store.addDependencies(
                         id,

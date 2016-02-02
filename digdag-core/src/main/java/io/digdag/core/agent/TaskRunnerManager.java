@@ -86,10 +86,6 @@ public class TaskRunnerManager
             // here reloads local config and creates the complete merged config.
             Config config;
             try {
-                // TODO here is a known bug:
-                //      if `digdag run` runs with a subtask option that points a nested task,
-                //      taskFullName doesn't match with reloaded config. So it throws following
-                //      RuntimeException.
                 config = evalTaskConfig(archivePath, request.getDagfilePath(),
                         request.getWorkflowName(), request.getTaskInfo().getFullName(),
                         request.getConfig(), request.getLocalConfig());
