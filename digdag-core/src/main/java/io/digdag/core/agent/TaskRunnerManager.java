@@ -208,7 +208,7 @@ public class TaskRunnerManager
             return workflow.getTasks().get(index);
         }
         catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
-        throw new RuntimeException("Task doesn't exist in the reloaded workflow");
+            throw new RuntimeException("Task doesn't exist in the reloaded workflow");
         }
     }
 }

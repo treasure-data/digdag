@@ -84,9 +84,9 @@ public class DatabaseScheduleStoreManager
     }
 
     public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
-        throws ResourceNotFoundException
+        throws ResourceNotFoundException, ResourceConflictException
     {
-        return transaction((handle, dao, ts) -> {
+        return this.<T, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao, ts) -> {
             // JOIN + FOR UPDATE doesn't work with H2 database. So here locks it first then get columns.
             if (dao.lockScheduleById(schedId) == 0) {
                 throw new ResourceNotFoundException("schedule id="+schedId);
@@ -95,7 +95,7 @@ public class DatabaseScheduleStoreManager
                     dao.getScheduleByIdInternal(schedId),
                     "schedule id=%d", schedId);
             return func.call(new DatabaseScheduleControlStore(handle), schedule);
-        }, ResourceNotFoundException.class);
+        }, ResourceNotFoundException.class, ResourceConflictException.class);
     }
 
     private class DatabaseScheduleStore

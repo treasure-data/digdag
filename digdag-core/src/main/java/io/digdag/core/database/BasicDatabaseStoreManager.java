@@ -108,6 +108,10 @@ public abstract class BasicDatabaseStoreManager <D>
         T call(Handle handle, D dao, TransactionState ts) throws E;
     }
 
+    public interface TransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
+        T call(Handle handle, D dao, TransactionState ts) throws E1, E2;
+    }
+
     public static class TransactionState {
         private boolean retryNext = false;
         private int retryCount = 0;
@@ -202,6 +206,45 @@ public abstract class BasicDatabaseStoreManager <D>
             }
             catch (InnerException ex) {
                 throw (E) ex.getCause();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, E1 extends Exception, E2 extends Exception> T transaction(TransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
+    {
+        TransactionState ts = new TransactionState();
+        while (true) {
+            try (Handle handle = handleFactory.open()) {
+                T retval = handle.inTransaction((h, session) -> {
+                    try {
+                        return action.call(h, h.attach(daoIface), ts);
+                    }
+                    catch (Exception ex) {
+                        if (exClass1.isAssignableFrom(ex.getClass())) {
+                            throw new InnerException(ex, 1);
+                        }
+                        if (exClass2.isAssignableFrom(ex.getClass())) {
+                            throw new InnerException(ex, 2);
+                        }
+                        throw ex;
+                    }
+                });
+                if (ts.retryNext) {
+                    ts.retryNext = false;
+                    ts.retryCount += 1;
+                }
+                else {
+                    return retval;
+                }
+            }
+            catch (InnerException ex) {
+                if (ex.getIndex() == 1) {
+                    throw (E1) ex.getCause();
+                }
+                else {
+                    throw (E2) ex.getCause();
+                }
             }
         }
     }

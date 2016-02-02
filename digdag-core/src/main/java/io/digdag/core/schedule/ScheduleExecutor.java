@@ -168,15 +168,10 @@ public class ScheduleExecutor
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
 
-        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (store, sched) -> {
+        return sm.lockScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
-            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-
-            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
-            Config schedConfig = getScheduleConfig(wf).get();
-
-            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
+            Scheduler sr = getSchedulerOfSchedule(sched);
 
             ScheduleTime alignedNextTime = sr.getFirstScheduleTime(nextTime.minusSeconds(1));
             if (sched.getNextScheduleTime().isBefore(alignedNextTime.getScheduleTime())) {
@@ -193,22 +188,16 @@ public class ScheduleExecutor
                         .build();
                 }
                 else {
-                    sched = lockedSched.updateNextScheduleTime(alignedNextTime); // TODO validate return value is true, otherwise throw ResourceConflictException
+                    // TODO validate return value is true, otherwise throw ResourceConflictException
+                    sched = lockedSched.updateNextScheduleTime(alignedNextTime);
                 }
-
-                return Optional.of(sched);  // return updated StoredSchedule
+                return sched;  // return updated StoredSchedule
             }
             else {
                 // NG
-                return Optional.<StoredSchedule>absent();
+                throw new ResourceConflictException("Specified time to skip schedules is already past");
             }
         });
-        if (optional.isPresent()) {
-            return optional.get();
-        }
-        else {
-            throw new ResourceConflictException("Specified time to skip schedules is already past");
-        }
     }
 
     public StoredSchedule skipScheduleByCount(int siteId, long schedId, Instant currentTime, int count, Optional<Instant> runTime, boolean dryRun)
@@ -216,15 +205,10 @@ public class ScheduleExecutor
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
 
-        Optional<StoredSchedule> optional = sm.lockScheduleById(schedId, (store, sched) -> {
+        return sm.lockScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
-            StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-
-            ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
-            Config schedConfig = getScheduleConfig(wf).get();
-
-            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
+            Scheduler sr = getSchedulerOfSchedule(sched);
 
             ScheduleTime time = sr.getFirstScheduleTime(currentTime);
             for (int i=0; i < count; i++) {
@@ -244,21 +228,24 @@ public class ScheduleExecutor
                         .build();
                 }
                 else {
-                    sched = lockedSched.updateNextScheduleTime(time); // TODO validate return value is true, otherwise throw ResourceConflictException
+                    // TODO validate return value is true, otherwise throw ResourceConflictException
+                    sched = lockedSched.updateNextScheduleTime(time);
                 }
-
-                return Optional.of(sched);
+                return sched;  // return updated StoredSchedule
             }
             else {
                 // NG
-                return Optional.<StoredSchedule>absent();
+                throw new ResourceConflictException("Specified time to skip schedules is already past");
             }
         });
-        if (optional.isPresent()) {
-            return optional.get();
-        }
-        else {
-            throw new ResourceConflictException("Specified time to skip schedules is already past");
-        }
+    }
+
+    private Scheduler getSchedulerOfSchedule(StoredSchedule sched)
+        throws ResourceNotFoundException
+    {
+        StoredWorkflowDefinitionWithRepository wf = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+        ZoneId timeZone = getWorkflowTimeZone(wf.getRevisionDefaultParams(), wf);
+        Config schedConfig = getScheduleConfig(wf).get();
+        return srm.getScheduler(schedConfig, timeZone);
     }
 }
