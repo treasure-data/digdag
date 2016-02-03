@@ -12,16 +12,19 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.client.config.ConfigElement;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.server.ServerModule;
+import io.digdag.server.ServerConfig;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.agent.InProcessArchiveManager;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
-import io.digdag.client.config.ConfigFactory;
 
 public class ServerBootstrap
     implements GuiceRsBootstrap
@@ -39,29 +42,31 @@ public class ServerBootstrap
     @Override
     public Injector initialize(ServletContext context)
     {
-        final String database = context.getInitParameter("io.digdag.cli.server.database");
+        ConfigElement systemConfig;
+        String configJson = context.getInitParameter("io.digdag.cli.server.config");
+        if (configJson == null) {
+            systemConfig = ConfigElement.empty();
+        }
+        else {
+            systemConfig = ConfigElement.fromJson(configJson);
+        }
+
+        ServerConfig serverConfig = ServerConfig.convertFrom(systemConfig);
+        Optional<String> autoLoadLocalDagfile = serverConfig.getAutoLoadLocalDagfile();
 
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(new ServerModule())
             .addModules((binder) -> {
                 binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
+                binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
             .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
-                if ("true".equals(context.getInitParameter("io.digdag.cli.server.useCurrentDirectoryArchiveManager"))) {
+                binder.bind(ConfigElement.class).toInstance(systemConfig);
+                if (autoLoadLocalDagfile.isPresent()) {
                     // default is CurrentDirectoryArchiveManager
                 }
                 else {
                     binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
-                }
-                if (database != null) {
-                    new File(database).mkdirs();
-                    // override default memory database
-                    String path = database + "/digdag";
-                    binder.bind(DatabaseConfig.class).toInstance(
-                            DatabaseConfig.builder()
-                            .type("h2")
-                            .url("jdbc:h2:" + path + ";DB_CLOSE_ON_EXIT=FALSE")
-                            .build());
                 }
             })))
             .initialize()
@@ -70,12 +75,11 @@ public class ServerBootstrap
         // TODO create global site
         LocalSite site = injector.getInstance(LocalSite.class);
 
-        String autoLoadFile = context.getInitParameter("io.digdag.cli.server.autoLoadFile");
-        if (autoLoadFile != null) {
+        if (autoLoadLocalDagfile.isPresent()) {
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
             try {
-                autoReloader.loadFile(new File(autoLoadFile), ZoneId.systemDefault(), cf.create());
+                autoReloader.loadFile(new File(autoLoadLocalDagfile.get()), ZoneId.systemDefault(), cf.create());
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

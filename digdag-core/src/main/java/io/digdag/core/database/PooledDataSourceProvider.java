@@ -35,10 +35,12 @@ public class PooledDataSourceProvider
             //this.errorRetryWaitLimit = conf.getErrorRetryWaitLimit();
             //this.autoExplainDuration = conf.getAutoExplainDuration();
 
-            logger.debug("Using database URL {}", config.getUrl());
+            String url = DatabaseConfig.buildJdbcUrl(config);
+
+            logger.debug("Using database URL {}", url);
             Properties props = new Properties();
             props.setProperty("driverClassName", DatabaseMigrator.getDriverClassName(config.getType()));
-            props.setProperty("jdbcUrl", config.getUrl());
+            props.setProperty("jdbcUrl", url);
             HikariConfig hikari = new HikariConfig(props);
             ds = new HikariDataSource(hikari);
 

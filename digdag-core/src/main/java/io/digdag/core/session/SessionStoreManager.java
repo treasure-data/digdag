@@ -61,9 +61,6 @@ public interface SessionStoreManager
     // overload for taskFinished
     <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func);
 
-    //// overload for SessionMonitorExecutor
-    //<T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func);
-
     interface SessionMonitorAction
     {
         // returns next run time

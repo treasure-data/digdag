@@ -8,6 +8,7 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -23,12 +24,6 @@ public class Sched
     extends Server
 {
     private static final Logger logger = LoggerFactory.getLogger(Sched.class);
-
-    @DynamicParameter(names = {"-p", "--param"})
-    Map<String, String> params = new HashMap<>();
-
-    @Parameter(names = {"-P", "--params-file"})
-    String paramsFile = null;
 
     @Parameter(names = {"-f", "--file"})
     String dagfilePath = Run.DEFAULT_DAGFILE;
@@ -56,6 +51,7 @@ public class Sched
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -m, --memory                     uses memory database (default: true)");
+        System.err.println("    -k, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);
     }
@@ -63,33 +59,12 @@ public class Sched
     private void sched()
             throws ServletException, IOException
     {
-        // TODO inject smaller module
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .initialize()
-            .getInjector();
-
-        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
-
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
-
-        // parameters for ServerBootstrap
-        ImmutableMap.Builder<String, String> params = ImmutableMap.builder();
-        params.put("io.digdag.cli.server.autoLoadFile", dagfilePath);
-        params.put("io.digdag.cli.server.useCurrentDirectoryArchiveManager", "true");
-        //params.put("io.digdag.cli.server.disableUpload", "true");
 
         // use memory database by default
         if (database == null) {
             memoryDatabase = true;
         }
 
-        startServer(params.build());  // Server.start
+        startServer(Optional.of(dagfilePath));
     }
 }

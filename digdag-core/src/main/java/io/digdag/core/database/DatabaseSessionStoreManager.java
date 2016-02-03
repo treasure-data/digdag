@@ -250,25 +250,6 @@ public class DatabaseSessionStoreManager
         });
     }
 
-    //@Override
-    //public <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func)
-    //{
-    //    return transaction((handle, dao, ts) -> {
-    //        Long taskId = dao.lockRootTask(attemptId);
-    //        if (taskId != null) {
-    //            try {
-    //                StoredTask task = getTaskById(handle, taskId);
-    //                T result = func.call(new DatabaseTaskControlStore(handle), task);
-    //                return Optional.of(result);
-    //            }
-    //            catch (ResourceNotFoundException ex) {
-    //                throw new IllegalStateException("Database state error", ex);
-    //            }
-    //        }
-    //        return Optional.<T>absent();
-    //    });
-    //}
-
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {

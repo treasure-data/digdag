@@ -10,16 +10,17 @@ import io.digdag.client.config.ConfigFactory;
 public class DatabaseConfigProvider
     implements Provider<DatabaseConfig>
 {
+    private final DatabaseConfig config;
+
     @Inject
-    public DatabaseConfigProvider(Optional<ConfigElement> ce, ConfigFactory cf)
+    public DatabaseConfigProvider(ConfigElement ce, ConfigFactory cf)
     {
-        Config config = ce.transform(e -> e.toConfig(cf)).or(cf.create());
+        this.config = DatabaseConfig.convertFrom(ce.toConfig(cf));
     }
 
     @Override
     public DatabaseConfig get()
     {
-        return DatabaseConfig.builder()
-            .build();
+        return config;
     }
 }

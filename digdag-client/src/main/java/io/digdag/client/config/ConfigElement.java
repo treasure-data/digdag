@@ -3,6 +3,7 @@ package io.digdag.client.config;
 import java.util.Properties;
 import java.util.Iterator;
 import java.util.Map;
+import java.io.IOException;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,6 +27,41 @@ public class ConfigElement
     public static ConfigElement empty()
     {
         return new ConfigElement(JsonNodeFactory.instance.objectNode());
+    }
+
+    public static ConfigElement fromProperties(Properties props)
+    {
+        Config builder = new Config(new ObjectMapper());
+        for (String key : props.stringPropertyNames()) {
+            Config nest = builder;
+            String[] nestKeys = key.split("\\.");
+            try {
+                for (int i = 0; i < nestKeys.length - 1; i++) {
+                    nest = nest.getNestedOrSetEmpty(nestKeys[i]);
+                }
+            }
+            catch (ConfigException e) {
+                // if nest1.nest2 = 1 and nest1 = 1 are set together, this error happens. keep nest1.
+                continue;
+            }
+            nest.set(nestKeys[nestKeys.length - 1], props.getProperty(key));
+        }
+        return new ConfigElement(builder.object);
+    }
+
+    public static ConfigElement fromJson(String json)
+    {
+        JsonNode js;
+        try {
+            js = new ObjectMapper().readTree(json);
+        }
+        catch (IOException ex) {
+            throw new ConfigException(ex);
+        }
+        if (!js.isObject()) {
+            throw new ConfigException("Expected an object but got " + js);
+        }
+        return new ConfigElement((ObjectNode) js);
     }
 
     private final ObjectNode object;  // this is immutable

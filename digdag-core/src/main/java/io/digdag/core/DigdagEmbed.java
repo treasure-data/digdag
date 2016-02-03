@@ -10,7 +10,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.OptionalBinder;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
@@ -101,11 +100,7 @@ public class DigdagEmbed
                     .registerModule(new GuavaModule())
                     .registerModule(new JacksonTimeModule()),
                     //.registerModule(new JodaModule()),
-                new DatabaseModule(DatabaseConfig.builder()
-                    .type("h2")
-                    //.url("jdbc:h2:./test;DB_CLOSE_ON_EXIT=FALSE")
-                    .url("jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE")  // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
-                    .build()),
+                new DatabaseModule(),
                 (binder) -> {
                     binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
@@ -127,10 +122,7 @@ public class DigdagEmbed
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
-
-                    OptionalBinder.newOptionalBinder(binder, ConfigElement.class)
-                        .setDefault().toInstance(ConfigElement.empty());
-
+                    binder.bind(ConfigElement.class).toInstance(ConfigElement.empty());
                     Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
                     taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
                 },

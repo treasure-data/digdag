@@ -8,6 +8,7 @@ import javax.ws.rs.ext.Provider;
 import javax.ws.rs.NotSupportedException;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.OptionalBinder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.digdag.guice.rs.GuiceRsModule;
@@ -37,7 +38,6 @@ public class ServerModule
             .withProvider(CorsFilter.class);
         binder().bind(ServerStarter.class).asEagerSingleton();
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
-        binder().bind(ServerConfig.class).toProvider(ServerConfigProvider.class).in(Scopes.SINGLETON);
     }
 
     public static class JsonProviderProvider

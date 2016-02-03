@@ -18,17 +18,10 @@ import org.h2.jdbcx.JdbcConnectionPool;
 public class DatabaseModule
         implements Module
 {
-    private final DatabaseConfig config;
-
-    public DatabaseModule(DatabaseConfig config)
-    {
-        this.config = config;
-    }
-
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(DatabaseConfig.class).toInstance(config);
+        binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(PooledDataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(IDBI.class).toProvider(IdbiProvider.class);
         binder.bind(RepositoryStoreManager.class).to(DatabaseRepositoryStoreManager.class).in(Scopes.SINGLETON);
