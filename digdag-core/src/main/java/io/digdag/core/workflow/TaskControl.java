@@ -58,14 +58,14 @@ public class TaskControl
     }
 
     private StoredTask addTasks(StoredTask parentTask, WorkflowTaskList tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootParentTask)
+            List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask)
     {
         Preconditions.checkArgument(getId() == parentTask.getId());
 
         List<Long> indexToId = new ArrayList<>();
 
         StoredTask rootTask;
-        if (firstTaskIsRootParentTask) {
+        if (firstTaskIsRootStoredParentTask) {
             // tasks.get(0) == parentTask == root task
             rootTask = parentTask;
         }
@@ -75,10 +75,10 @@ public class TaskControl
 
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
-            if (firstTask && firstTaskIsRootParentTask) {
+            if (firstTask && firstTaskIsRootStoredParentTask) {
                 indexToId.add(rootTask.getId());
                 firstTask = false;
-                continue;
+                continue;  // skip storing this task because (tasks.get(0) == parentTask == root task) is already stored as parentTask
             }
 
             if (firstTask && cancelSiblings) {
@@ -110,7 +110,7 @@ public class TaskControl
             }
 
             if (firstTask) {
-                // this is root task
+                // the root task was stored right now.
                 store.addDependencies(id, rootUpstreamIds);
                 try {
                     rootTask = store.getTaskById(id);

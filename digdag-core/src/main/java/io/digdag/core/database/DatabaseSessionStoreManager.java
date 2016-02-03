@@ -92,10 +92,10 @@ public class DatabaseSessionStoreManager
     {
         return "select t.*, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
                 "(select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
-            " from tasks t " +
-            " join session_attempts sa on sa.id = t.attempt_id " +
-            " join task_details td on t.id = td.id " +
-            " join task_state_details ts on t.id = ts.id ";
+            " from tasks t" +
+            " join session_attempts sa on sa.id = t.attempt_id" +
+            " join task_details td on t.id = td.id" +
+            " join task_state_details ts on t.id = ts.id";
     }
 
     @Override
@@ -250,24 +250,24 @@ public class DatabaseSessionStoreManager
         });
     }
 
-    @Override
-    public <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func)
-    {
-        return transaction((handle, dao, ts) -> {
-            Long taskId = dao.lockRootTask(attemptId);
-            if (taskId != null) {
-                try {
-                    StoredTask task = getTaskById(handle, taskId);
-                    T result = func.call(new DatabaseTaskControlStore(handle), task);
-                    return Optional.of(result);
-                }
-                catch (ResourceNotFoundException ex) {
-                    throw new IllegalStateException("Database state error", ex);
-                }
-            }
-            return Optional.<T>absent();
-        });
-    }
+    //@Override
+    //public <T> Optional<T> lockRootTaskIfExists(long attemptId, TaskLockActionWithDetails<T> func)
+    //{
+    //    return transaction((handle, dao, ts) -> {
+    //        Long taskId = dao.lockRootTask(attemptId);
+    //        if (taskId != null) {
+    //            try {
+    //                StoredTask task = getTaskById(handle, taskId);
+    //                T result = func.call(new DatabaseTaskControlStore(handle), task);
+    //                return Optional.of(result);
+    //            }
+    //            catch (ResourceNotFoundException ex) {
+    //                throw new IllegalStateException("Database state error", ex);
+    //            }
+    //        }
+    //        return Optional.<T>absent();
+    //    });
+    //}
 
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
@@ -446,6 +446,18 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public <T> T lockRootTask(long attemptId, TaskLockActionWithDetails<T> func)
+            throws ResourceNotFoundException
+        {
+            long taskId = requiredResource(
+                    dao.lockRootTask(attemptId),
+                    "root task of attempt id=%d", attemptId);
+            StoredTask task = getTaskById(handle, taskId);
+            T result = func.call(new DatabaseTaskControlStore(handle), task);
+            return result;
+        }
+
+        @Override
         public int deleteAllTasksOfAttempt(long attemptId)
         {
             dao.deleteTaskDependencies(attemptId);
@@ -496,7 +508,7 @@ public class DatabaseSessionStoreManager
         public StoredTask getTaskById(long taskId)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> DatabaseSessionStoreManager.this.getTaskById(handle, taskId), ResourceNotFoundException.class);
+            return DatabaseSessionStoreManager.this.getTaskById(handle, taskId);
         }
 
         @Override
@@ -1114,7 +1126,7 @@ public class DatabaseSessionStoreManager
         Long lockTask(@Bind("id") long taskId);
 
         @SqlQuery("select id from tasks" +
-                " where attemptId = :attemptId" +  // TODO
+                " where attempt_id = :attemptId" +  // TODO
                 " and parent_id is null" +
                 " for update")
         Long lockRootTask(@Bind("attemptId") long attemptId);

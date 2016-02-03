@@ -26,6 +26,8 @@ public class LocalAgentManager
         this.taskRunnerManager = taskRunnerManager;
     }
 
+    // TODO stop LocalAgent at @PreDestroy
+
     public void startLocalAgent(int siteId, String queueName)
     {
         executor.submit(new LocalAgent(

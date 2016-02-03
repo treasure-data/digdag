@@ -73,7 +73,7 @@ public class YamlConfigLoader
         // and Composer. See also YamlTagResolver.
         Object object = newYaml().load(content);
         JsonNode node = treeObjectMapper.readTree(treeObjectMapper.writeValueAsString(object));
-        return new ConfigElement(validateJsonNode(node));
+        return ConfigElement.of(validateJsonNode(node));
     }
 
     public ConfigElement loadParameterizedFile(File file, Config params)

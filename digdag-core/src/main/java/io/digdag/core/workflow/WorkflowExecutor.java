@@ -578,7 +578,7 @@ public class WorkflowExecutor
                     enqueueTask(dispatcher, taskId);
                 }
                 catch (Throwable t) {
-                    logger.error("Uncaught exception", t);
+                    logger.error("Uncaught exception during enquing a task request. This enqueue attempt will be retried", t);
                 }
                 finally {
                     waiting.remove(taskId);

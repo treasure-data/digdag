@@ -10,6 +10,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
@@ -36,6 +37,7 @@ import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 //import com.fasterxml.jackson.datatype.joda.JodaModule;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.core.config.YamlConfigLoader;
@@ -125,6 +127,9 @@ public class DigdagEmbed
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
+
+                    OptionalBinder.newOptionalBinder(binder, ConfigElement.class)
+                        .setDefault().toInstance(ConfigElement.empty());
 
                     Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
                     taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);

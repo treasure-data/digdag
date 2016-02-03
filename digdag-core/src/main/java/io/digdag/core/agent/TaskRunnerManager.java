@@ -174,7 +174,7 @@ public class TaskRunnerManager
             Config params, Config localConfig)
         throws IOException, ConfigEvalException
     {
-        if (dagfilePath.isPresent()) {
+        if (dagfilePath.isPresent() && !isGeneratedTask(taskFullName)) {  // TODO generated tasks (such as :sla or :error) can't be rebuilt from workflow definition bacause matching with full task name doesn't work
             Dagfile dagfile = configLoader.loadParameterizedFile(
                     archivePath.resolve(dagfilePath.get()).toFile(),
                     params).convert(Dagfile.class);
@@ -210,5 +210,10 @@ public class TaskRunnerManager
         catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
             throw new RuntimeException("Task doesn't exist in the reloaded workflow");
         }
+    }
+
+    private boolean isGeneratedTask(String taskFullName)
+    {
+        return taskFullName.contains(":");
     }
 }

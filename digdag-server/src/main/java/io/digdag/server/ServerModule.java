@@ -37,6 +37,7 @@ public class ServerModule
             .withProvider(CorsFilter.class);
         binder().bind(ServerStarter.class).asEagerSingleton();
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
+        binder().bind(ServerConfig.class).toProvider(ServerConfigProvider.class).in(Scopes.SINGLETON);
     }
 
     public static class JsonProviderProvider

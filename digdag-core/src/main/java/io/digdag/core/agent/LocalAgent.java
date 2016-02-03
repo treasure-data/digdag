@@ -17,6 +17,7 @@ public class LocalAgent
     private final ExecutorService executor;
     private final TaskQueue queue;
     private final TaskRunnerManager runner;
+    private volatile boolean stop = false;
 
     public LocalAgent(TaskQueue queue, TaskRunnerManager runner)
     {
@@ -30,11 +31,22 @@ public class LocalAgent
         this.runner = runner;
     }
 
+    public void stop()
+    {
+        stop = true;
+    }
+
+    public void shutdown()
+    {
+        executor.shutdown();
+        // TODO wait for shutdown completion?
+    }
+
     @Override
     public void run()
     {
-        try {
-            while (true) {
+        while (!stop) {
+            try {
                 Optional<TaskRequest> req = queue.receive(10_000);
                 if (req.isPresent()) {
                     executor.submit(() -> {
@@ -42,15 +54,14 @@ public class LocalAgent
                             runner.run(req.get());
                         }
                         catch (Throwable t) {
-                            System.err.println("Uncaught exception: "+t);
-                            t.printStackTrace(System.err);
+                            logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
                         }
                     });
                 }
             }
-        }
-        catch (Throwable t) {
-            logger.error("Uncaught exception", t);
+            catch (Throwable t) {
+                logger.error("Uncaught exception", t);
+            }
         }
     }
 }

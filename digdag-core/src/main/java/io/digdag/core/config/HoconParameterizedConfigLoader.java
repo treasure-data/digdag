@@ -59,7 +59,7 @@ public class HoconParameterizedConfigLoader
         String json = parsed.root().render(ConfigRenderOptions.concise().setJson(true));
 
         JsonNode node = treeObjectMapper.readTree(json);
-        return new ConfigElement(validateJsonNode(node));
+        return ConfigElement.of(validateJsonNode(node));
     }
 
     private static ObjectNode validateJsonNode(JsonNode node)
