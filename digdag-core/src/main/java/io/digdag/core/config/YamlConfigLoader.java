@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
@@ -56,7 +57,7 @@ public class YamlConfigLoader
         this.cf = cf;
     }
 
-    public Config loadFile(File file)
+    public ConfigElement loadFile(File file)
         throws IOException
     {
         try (FileInputStream in = new FileInputStream(file)) {
@@ -65,17 +66,17 @@ public class YamlConfigLoader
         }
     }
 
-    public Config loadString(String content)
+    public ConfigElement loadString(String content)
         throws IOException
     {
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
         Object object = newYaml().load(content);
         JsonNode node = treeObjectMapper.readTree(treeObjectMapper.writeValueAsString(object));
-        return cf.create(validateJsonNode(node));
+        return new ConfigElement(validateJsonNode(node));
     }
 
-    public Config loadParameterizedFile(File file, Config params)
+    public ConfigElement loadParameterizedFile(File file, Config params)
         throws IOException
     {
         try (FileInputStream in = new FileInputStream(file)) {
@@ -84,7 +85,7 @@ public class YamlConfigLoader
         }
     }
 
-    private Config loadParameterizedString(String content, File filePath, Config params)
+    private ConfigElement loadParameterizedString(String content, File filePath, Config params)
         throws IOException
     {
         Jinjava jinjava = newJinjava(filePath);

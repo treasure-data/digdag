@@ -14,6 +14,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import com.typesafe.config.ConfigIncluder;
 import com.typesafe.config.ConfigIncludeContext;
@@ -31,14 +32,12 @@ public class HoconParameterizedConfigLoader
 
     private final ObjectMapper treeObjectMapper = new ObjectMapper();
     private final ObjectMapper dumper;
-    private final ConfigFactory cf;
     private ConfigLoaderManager nested = null;
 
     @Inject
-    public HoconParameterizedConfigLoader(ObjectMapper dumper, ConfigFactory cf)
+    public HoconParameterizedConfigLoader(ObjectMapper dumper)
     {
         this.dumper = dumper;
-        this.cf = cf;
     }
 
     public void setNestedLoader(ConfigLoaderManager nested)
@@ -46,7 +45,7 @@ public class HoconParameterizedConfigLoader
         this.nested = nested;
     }
 
-    public Config loadParameterizedFile(File file, Config params)
+    public ConfigElement loadParameterizedFile(File file, Config params)
         throws IOException
     {
         com.typesafe.config.Config parsed =
@@ -60,7 +59,7 @@ public class HoconParameterizedConfigLoader
         String json = parsed.root().render(ConfigRenderOptions.concise().setJson(true));
 
         JsonNode node = treeObjectMapper.readTree(json);
-        return cf.create(validateJsonNode(node));
+        return new ConfigElement(validateJsonNode(node));
     }
 
     private static ObjectNode validateJsonNode(JsonNode node)

@@ -9,12 +9,14 @@ import io.digdag.client.config.ConfigFactory;
 
 public class ConfigLoaderManager
 {
+    private final ConfigFactory cf;
     private final YamlConfigLoader yaml;
     private final HoconParameterizedConfigLoader hocon;
 
     @Inject
-    public ConfigLoaderManager(YamlConfigLoader yaml, HoconParameterizedConfigLoader hocon)
+    public ConfigLoaderManager(ConfigFactory cf, YamlConfigLoader yaml, HoconParameterizedConfigLoader hocon)
     {
+        this.cf = cf;
         this.yaml = yaml;
         this.hocon = hocon;
     }
@@ -23,10 +25,10 @@ public class ConfigLoaderManager
         throws IOException
     {
         if (path.toString().endsWith(".conf")) {
-            return hocon.loadParameterizedFile(path, params);
+            return hocon.loadParameterizedFile(path, params).toConfig(cf);
         }
         else {
-            return yaml.loadParameterizedFile(path, params);
+            return yaml.loadParameterizedFile(path, params).toConfig(cf);
         }
     }
 }

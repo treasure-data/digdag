@@ -24,12 +24,12 @@ public class Config
     protected final ObjectMapper mapper;
     protected final ObjectNode object;
 
-    public Config(ObjectMapper mapper)
+    Config(ObjectMapper mapper)
     {
         this(mapper, new ObjectNode(JsonNodeFactory.instance));
     }
 
-    public Config(ObjectMapper mapper, JsonNode object)
+    Config(ObjectMapper mapper, JsonNode object)
     {
         this.mapper = mapper;
         this.object = (ObjectNode) object;

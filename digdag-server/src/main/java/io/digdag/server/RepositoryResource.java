@@ -193,7 +193,7 @@ public class RepositoryResource
             }
             // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
-                    dir.child(ArchiveMetadata.FILE_NAME));
+                    dir.child(ArchiveMetadata.FILE_NAME)).toConfig(cf);
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 

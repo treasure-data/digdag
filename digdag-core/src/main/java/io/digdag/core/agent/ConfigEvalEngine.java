@@ -46,7 +46,7 @@ public class ConfigEvalEngine
     {
         ObjectNode object = config.convert(ObjectNode.class);
         evalRecursive(object, object);
-        return config.getFactory().wrap(object);
+        return config.getFactory().create(object);
     }
 
     private void evalRecursive(ObjectNode object, ObjectNode root)
