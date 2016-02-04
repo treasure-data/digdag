@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.util.List;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.google.common.collect.Lists;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSession;
@@ -62,7 +63,7 @@ public class ShowSession
         }
 
         ln("Sessions:");
-        for (RestSession session : sessions) {
+        for (RestSession session : Lists.reverse(sessions)) {
             String status;
             if (session.getSuccess()) {
                 status = "success";
