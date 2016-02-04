@@ -48,7 +48,7 @@ public class Server
     @Parameter(names = {"-m", "--memory"})
     boolean memoryDatabase = false;
 
-    @Parameter(names = {"-k", "--config"})
+    @Parameter(names = {"-c", "--config"})
     String configPath = null;
 
     @Override
@@ -75,7 +75,7 @@ public class Server
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
         System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -m, --memory                     uses memory database");
-        System.err.println("    -k, --config PATH.properties     server configuration property path");
+        System.err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);
     }

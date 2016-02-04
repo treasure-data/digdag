@@ -11,6 +11,7 @@ dependencies {
 
     compile 'org.jboss.resteasy:resteasy-client:3.0.13.Final'
     compile 'org.apache.commons:commons-compress:1.10'
+    compile 'io.jsonwebtoken:jjwt:0.6.0'
 
     compile  'org.immutables:value:2.0.21'
     compile  'org.immutables:builder:2.0.21'

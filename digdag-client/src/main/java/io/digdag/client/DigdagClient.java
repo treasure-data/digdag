@@ -3,6 +3,8 @@ package io.digdag.client;
 import java.util.List;
 import java.util.Date;
 import java.util.HashMap;
+import java.time.Instant;
+import java.security.Key;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
@@ -21,6 +23,9 @@ import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.impl.crypto.MacProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import com.fasterxml.jackson.databind.InjectableValues;
 import io.digdag.client.config.Config;
@@ -33,6 +38,7 @@ public class DigdagClient
     {
         private String host;
         private int port;
+        private Optional<RestApiKey> apiKey;
 
         public Builder host(String host)
         {
@@ -43,6 +49,17 @@ public class DigdagClient
         public Builder port(int port)
         {
             this.port = port;
+            return this;
+        }
+
+        public Builder apiKey(RestApiKey apiKey)
+        {
+            return apiKey(Optional.of(apiKey));
+        }
+
+        public Builder apiKey(Optional<RestApiKey> apiKey)
+        {
+            this.apiKey = apiKey;
             return this;
         }
 
@@ -68,6 +85,9 @@ public class DigdagClient
         this.endpoint = "http://" + builder.host + ":" + builder.port;
 
         this.headers = new MultivaluedHashMap<>();
+        if (builder.apiKey.isPresent()) {
+            headers.putSingle("Authorization", buildAuthorizationHeader(builder.apiKey.get()));
+        }
 
         Injector injector = buildInjector();
         ObjectMapper mapper = new ObjectMapper();
@@ -83,6 +103,22 @@ public class DigdagClient
             .register(new JacksonJsonProvider(mapper))
             .build();
         this.cf = new ConfigFactory(mapper);
+    }
+
+    private static String buildAuthorizationHeader(RestApiKey apiKey)
+    {
+        Instant now = Instant.now();
+
+        String sharedKey =
+            Jwts.builder()
+            .setSubject(apiKey.getIdString())
+            .setExpiration(Date.from(now.plusSeconds(300)))
+            // TODO add a header that means a pre-shared key
+            .setIssuedAt(Date.from(now))
+            .signWith(SignatureAlgorithm.HS512, apiKey.getSecret())
+            .compact();
+
+        return "Bearer " + sharedKey;
     }
 
     public Config newConfig()

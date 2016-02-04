@@ -1,6 +1,9 @@
 package io.digdag.cli.client;
 
 import java.util.Locale;
+import java.util.Properties;
+import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -8,19 +11,29 @@ import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
+import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.Main;
 import io.digdag.cli.Command;
 import io.digdag.cli.SystemExitException;
-import io.digdag.client.DigdagClient;
 import io.digdag.cli.YamlMapper;
+import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestApiKey;
 import static io.digdag.cli.Main.systemExit;
 
 public abstract class ClientCommand
     extends Command
 {
+    private static final String DEFAULT_ENDPOINT = "127.0.0.1:65432";
+
     @Parameter(names = {"-e", "--endpoint"})
-    protected String endpoint = "127.0.0.1:65432";
+    protected String endpoint = null;
+
+    @Parameter(names = {"-k", "--apikey"})
+    protected String apiKey = null;
+
+    @Parameter(names = {"-c", "--config"})
+    protected String configPath = null;
 
     @Override
     public void main()
@@ -48,7 +61,35 @@ public abstract class ClientCommand
         throws Exception;
 
     protected DigdagClient buildClient()
+        throws IOException
     {
+        // load config file
+        Properties props;
+        if (configPath == null) {
+            try {
+                props = Main.loadProperties(FileSystems.getDefault().getPath(System.getProperty("user.home")).resolve("digdag").resolve("client.properties").toString());
+            }
+            catch (IOException ex) {
+                props = Main.loadProperties(null);
+            }
+        }
+        else {
+            props = Main.loadProperties(configPath);
+        }
+
+        if (endpoint == null) {
+            endpoint = props.getProperty("endpoint", DEFAULT_ENDPOINT);
+        }
+
+        if (apiKey == null) {
+            apiKey = props.getProperty("apikey");
+        }
+
+        Optional<RestApiKey> key = Optional.absent();
+        if (apiKey != null) {
+            key = Optional.of(RestApiKey.of(apiKey));
+        }
+
         String[] fragments = endpoint.split(":", 2);
         String host;
         int port;
@@ -64,6 +105,7 @@ public abstract class ClientCommand
         return DigdagClient.builder()
             .host(host)
             .port(port)
+            .apiKey(key)
             .build();
     }
 
