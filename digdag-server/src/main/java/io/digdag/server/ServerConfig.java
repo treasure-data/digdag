@@ -38,10 +38,9 @@ public abstract class ServerConfig
 
     public static ServerConfig convertFrom(Config config)
     {
-        Config sv = config.getNestedOrGetEmpty("server");
         return defaultBuilder()
-            .port(sv.get("port", int.class, DEFAULT_PORT))
-            .bind(sv.get("bind", String.class, DEFAULT_BIND))
+            .port(config.get("server.port", int.class, DEFAULT_PORT))
+            .bind(config.get("server.bind", String.class, DEFAULT_BIND))
             .build();
     }
 

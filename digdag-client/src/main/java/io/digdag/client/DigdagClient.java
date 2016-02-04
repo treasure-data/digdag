@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import com.fasterxml.jackson.databind.InjectableValues;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
@@ -68,13 +69,20 @@ public class DigdagClient
 
         this.headers = new MultivaluedHashMap<>();
 
-        // TODO set ObjectMapper.setInjectableValues(InjectableValues.Std.addValue(ObjectMapper.class, objmapper)) so that here doesn't have to create guice
-        // here uses Guice to make @JacksonInject work which is used at io.digdag.client.config.Config.<init>
         Injector injector = buildInjector();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new GuavaModule());
+        mapper.registerModule(new JacksonTimeModule());
+
+        // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
+        InjectableValues.Std injects = new InjectableValues.Std();
+        injects.addValue(ObjectMapper.class, mapper);
+        mapper.setInjectableValues(injects);
+
         this.client = new ResteasyClientBuilder()
-            .register(new JacksonJsonProvider(injector.getInstance(ObjectMapper.class)))
+            .register(new JacksonJsonProvider(mapper))
             .build();
-        this.cf = injector.getInstance(ConfigFactory.class);
+        this.cf = new ConfigFactory(mapper);
     }
 
     public Config newConfig()

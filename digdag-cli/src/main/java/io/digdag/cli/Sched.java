@@ -65,6 +65,6 @@ public class Sched
             memoryDatabase = true;
         }
 
-        startServer(Optional.of(dagfilePath));
+        startServer(dagfilePath);
     }
 }

@@ -24,10 +24,9 @@ public abstract class DatabaseConfig
 
     public static DatabaseConfig convertFrom(Config config)
     {
-        Config db = config.getNestedOrGetEmpty("database");
         return DatabaseConfig.builder()
-            .type(db.get("type", String.class, "h2"))
-            .path(db.getOptional("path", String.class))
+            .type(config.get("database.type", String.class, "h2"))
+            .path(config.getOptional("database.path", String.class))
             .build();
     }
 

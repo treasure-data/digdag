@@ -47,6 +47,7 @@ public class DigdagEmbed
     public static class Bootstrap
     {
         private final List<Function<? super List<Module>, ? extends Iterable<? extends Module>>> moduleOverrides = new ArrayList<>();
+        private ConfigElement systemConfig = ConfigElement.empty();
 
         public Bootstrap addModules(Module... additionalModules)
         {
@@ -65,6 +66,12 @@ public class DigdagEmbed
             return this;
         }
 
+        public Bootstrap setSystemConfig(ConfigElement systemConfig)
+        {
+            this.systemConfig = systemConfig;
+            return this;
+        }
+
         public DigdagEmbed initialize()
         {
             return build(true);
@@ -79,7 +86,7 @@ public class DigdagEmbed
         {
             final org.embulk.guice.Bootstrap bootstrap = new org.embulk.guice.Bootstrap()
                 .requireExplicitBindings(true)
-                .addModules(DigdagEmbed.standardModules());
+                .addModules(DigdagEmbed.standardModules(systemConfig));
             moduleOverrides.stream().forEach(override -> bootstrap.overrideModules(override));
 
             LifeCycleInjector injector;
@@ -93,7 +100,7 @@ public class DigdagEmbed
         }
     }
 
-    private static List<Module> standardModules()
+    private static List<Module> standardModules(ConfigElement systemConfig)
     {
         return Arrays.asList(
                 new ObjectMapperModule()
@@ -122,7 +129,7 @@ public class DigdagEmbed
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigElement.class).toInstance(ConfigElement.empty());
+                    binder.bind(ConfigElement.class).toInstance(systemConfig);
                     Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
                     taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
                 },

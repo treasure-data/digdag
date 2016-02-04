@@ -1,10 +1,14 @@
 package io.digdag.cli;
 
+import java.util.Properties;
 import java.util.Map;
 import java.util.Date;
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.base.Optional;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -14,6 +18,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.MissingCommandException;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
@@ -170,6 +175,22 @@ public class Main
         if (logger instanceof ch.qos.logback.classic.Logger) {
             ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
         }
+    }
+
+    public static Properties loadProperties(String additionalConfigFile)
+        throws IOException
+    {
+        Properties props = new Properties();
+
+        // load from a file
+        if (additionalConfigFile != null) {
+            props.putAll(PropertyUtils.loadFile(new File(additionalConfigFile)));
+        }
+
+        // system property overwrites params
+        props.putAll(System.getProperties());
+
+        return props;
     }
 
     // called also by Run

@@ -29,25 +29,25 @@ public class ConfigElement
         return new ConfigElement(JsonNodeFactory.instance.objectNode());
     }
 
-    public static ConfigElement fromProperties(Properties props)
-    {
-        Config builder = new Config(new ObjectMapper());
-        for (String key : props.stringPropertyNames()) {
-            Config nest = builder;
-            String[] nestKeys = key.split("\\.");
-            try {
-                for (int i = 0; i < nestKeys.length - 1; i++) {
-                    nest = nest.getNestedOrSetEmpty(nestKeys[i]);
-                }
-            }
-            catch (ConfigException e) {
-                // if nest1.nest2 = 1 and nest1 = 1 are set together, this error happens. keep nest1.
-                continue;
-            }
-            nest.set(nestKeys[nestKeys.length - 1], props.getProperty(key));
-        }
-        return new ConfigElement(builder.object);
-    }
+    //public static ConfigElement fromProperties(Properties props)
+    //{
+    //    Config builder = new Config(new ObjectMapper());
+    //    for (String key : props.stringPropertyNames()) {
+    //        Config nest = builder;
+    //        String[] nestKeys = key.split("\\.");
+    //        try {
+    //            for (int i = 0; i < nestKeys.length - 1; i++) {
+    //                nest = nest.getNestedOrSetEmpty(nestKeys[i]);
+    //            }
+    //        }
+    //        catch (ConfigException e) {
+    //            // if nest1.nest2 = 1 and nest1 = 1 are set together, this error happens. keep nest1.
+    //            continue;
+    //        }
+    //        nest.set(nestKeys[nestKeys.length - 1], props.getProperty(key));
+    //    }
+    //    return new ConfigElement(builder.object);
+    //}
 
     public static ConfigElement fromJson(String json)
     {
@@ -77,30 +77,30 @@ public class ConfigElement
         return new Config(factory.objectMapper, object.deepCopy());
     }
 
-    public Properties toProperties()
-    {
-        Properties props = new Properties();
-        setToPropertiesRecursive(props, "", object);
-        return props;
-    }
+    //public Properties toProperties()
+    //{
+    //    Properties props = new Properties();
+    //    setToPropertiesRecursive(props, "", object);
+    //    return props;
+    //}
 
-    private static void setToPropertiesRecursive(Properties props, String keyPrefix, ObjectNode object)
-    {
-        Iterator<Map.Entry<String, JsonNode>> ite = object.fields();
-        while (ite.hasNext()) {
-            Map.Entry<String, JsonNode> pair = ite.next();
-            JsonNode value = pair.getValue();
-            if (value.isObject()) {
-                setToPropertiesRecursive(props, keyPrefix + pair.getKey() + ".", (ObjectNode) value);
-            }
-            else if (value.isTextual()) {
-                props.put(keyPrefix + pair.getKey(), value.asText());
-            }
-            else {
-                props.put(keyPrefix + pair.getKey(), value.toString());
-            }
-        }
-    }
+    //private static void setToPropertiesRecursive(Properties props, String keyPrefix, ObjectNode object)
+    //{
+    //    Iterator<Map.Entry<String, JsonNode>> ite = object.fields();
+    //    while (ite.hasNext()) {
+    //        Map.Entry<String, JsonNode> pair = ite.next();
+    //        JsonNode value = pair.getValue();
+    //        if (value.isObject()) {
+    //            setToPropertiesRecursive(props, keyPrefix + pair.getKey() + ".", (ObjectNode) value);
+    //        }
+    //        else if (value.isTextual()) {
+    //            props.put(keyPrefix + pair.getKey(), value.asText());
+    //        }
+    //        else {
+    //            props.put(keyPrefix + pair.getKey(), value.toString());
+    //        }
+    //    }
+    //}
 
     @JsonValue
     @Deprecated  // this method is only for ObjectMapper

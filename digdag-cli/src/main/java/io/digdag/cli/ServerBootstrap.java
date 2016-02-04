@@ -31,6 +31,8 @@ public class ServerBootstrap
 {
     private static final Logger logger = LoggerFactory.getLogger(ServerBootstrap.class);
 
+    public static final String CONFIG_INIT_PARAMETER_KEY = "io.digdag.cli.server.config";
+
     private GuiceRsServerControl control;
 
     @Inject
@@ -43,7 +45,7 @@ public class ServerBootstrap
     public Injector initialize(ServletContext context)
     {
         ConfigElement systemConfig;
-        String configJson = context.getInitParameter("io.digdag.cli.server.config");
+        String configJson = context.getInitParameter(CONFIG_INIT_PARAMETER_KEY);
         if (configJson == null) {
             systemConfig = ConfigElement.empty();
         }
@@ -55,13 +57,13 @@ public class ServerBootstrap
         Optional<String> autoLoadLocalDagfile = serverConfig.getAutoLoadLocalDagfile();
 
         Injector injector = new DigdagEmbed.Bootstrap()
+            .setSystemConfig(systemConfig)
             .addModules(new ServerModule())
             .addModules((binder) -> {
                 binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
             .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
-                binder.bind(ConfigElement.class).toInstance(systemConfig);
                 if (autoLoadLocalDagfile.isPresent()) {
                     // default is CurrentDirectoryArchiveManager
                 }

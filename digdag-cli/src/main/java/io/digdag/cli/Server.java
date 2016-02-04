@@ -25,6 +25,7 @@ import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.guice.rs.GuiceRsServerControlModule;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.server.ServerConfig;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
@@ -74,7 +75,7 @@ public class Server
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
         System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -m, --memory                     uses memory database");
-        System.err.println("    -f, --config PATH.properties     server configuration property path");
+        System.err.println("    -k, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);
     }
@@ -82,26 +83,14 @@ public class Server
     private void server()
             throws ServletException, IOException
     {
-        startServer(Optional.absent());
+        startServer(null);
     }
 
-    protected void startServer(Optional<String> autoloadLocalDagFile)
+    protected void startServer(String autoloadLocalDagFile)
             throws ServletException, IOException
     {
         // parameters for ServerBootstrap
-        Properties props = new Properties();
-
-        // 1. merge system property with prefix to props
-        props.putAll(System.getProperties());
-
-        // 2. merge config file
-        if (configPath != null) {
-            Properties file = new Properties();
-            try (FileInputStream in = new FileInputStream(new File(configPath))) {
-                file.load(in);
-            }
-            props.putAll(file);
-        }
+        Properties props = Main.loadProperties(configPath);
 
         // 3. overwrite by command-line parameters
         if (database != null) {
@@ -114,12 +103,12 @@ public class Server
         if (bind != null) {
             props.setProperty("server.bind", bind);
         }
-        if (autoloadLocalDagFile.isPresent()) {
-            props.setProperty("server.autoLoadLocalDagfile", autoloadLocalDagFile.get());
+        if (autoloadLocalDagFile != null) {
+            props.setProperty("server.autoLoadLocalDagfile", autoloadLocalDagFile);
         }
 
         // convert params to ConfigElement used for DatabaseConfig and other configs
-        ConfigElement ce = ConfigElement.fromProperties(props);
+        ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig config = ServerConfig.convertFrom(ce);
 
         DeploymentInfo servletBuilder = Servlets.deployment()
@@ -131,7 +120,7 @@ public class Server
                         GuiceRsServletContainerInitializer.class,
                         ImmutableSet.of(ServerBootstrap.class)))
             .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
-            .addInitParameter("io.digdag.cli.server.config", ce.toString())
+            .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, ce.toString())
             ;
 
         DeploymentManager manager = Servlets.defaultContainer()
