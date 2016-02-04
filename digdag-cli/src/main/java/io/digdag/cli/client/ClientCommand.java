@@ -67,7 +67,7 @@ public abstract class ClientCommand
         Properties props;
         if (configPath == null) {
             try {
-                props = Main.loadProperties(FileSystems.getDefault().getPath(System.getProperty("user.home")).resolve("digdag").resolve("client.properties").toString());
+                props = Main.loadProperties(FileSystems.getDefault().getPath(System.getProperty("user.home")).resolve(".digdag").resolve("client.properties").toString());
             }
             catch (IOException ex) {
                 props = Main.loadProperties(null);
