@@ -4,7 +4,6 @@ import java.util.HashMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.core.MediaType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,8 +29,13 @@ public abstract class GenericJsonExceptionHandler<T extends Throwable>
     @Override
     public Response toResponse(T exception)
     {
+        return toResponse(exception.getMessage());
+    }
+
+    public Response toResponse(String message)
+    {
         HashMap<String, Object> map = new HashMap<>();
-        map.put("message", exception.getMessage());
+        map.put("message", message);
         map.put("status", statusCode);
 
         try {

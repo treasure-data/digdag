@@ -113,7 +113,7 @@ public class DigdagClient
             Jwts.builder()
             .setSubject(apiKey.getIdString())
             .setExpiration(Date.from(now.plusSeconds(300)))
-            // TODO add a header that means a pre-shared key
+            .setHeaderParam("knd", "ps1")
             .setIssuedAt(Date.from(now))
             .signWith(SignatureAlgorithm.HS512, apiKey.getSecret())
             .compact();

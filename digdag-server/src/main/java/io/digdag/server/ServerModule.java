@@ -31,9 +31,11 @@ public class ServerModule
                     WorkflowResource.class
                 )
             .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
+            .withProvider(JwtAuthInterceptor.class)
             .withProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
             .withProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
             .withProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
+            .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .withProvider(CorsFilter.class);
         binder().bind(ServerStarter.class).asEagerSingleton();

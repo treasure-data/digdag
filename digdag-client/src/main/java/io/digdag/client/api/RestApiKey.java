@@ -3,9 +3,13 @@ package io.digdag.client.api;
 import java.util.Arrays;
 import java.util.Base64;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public class RestApiKey
 {
+    @JsonCreator
     public static RestApiKey of(String key)
     {
         String[] fragments = key.split("/", 2);
@@ -20,10 +24,16 @@ public class RestApiKey
         long id = ByteBuffer.wrap(idData).getLong();
 
         byte[] secret = Base64.getUrlDecoder().decode(fragments[1]);
-        if (secret.length != 32) {
-            throw new IllegalArgumentException("Invalid API key format");
-        }
 
+        return new RestApiKey(id, secret);
+    }
+
+    public static RestApiKey randomGenerate()
+    {
+        SecureRandom random = new SecureRandom();
+        long id = random.nextLong();
+        byte[] secret = new byte[32];
+        random.nextBytes(secret);
         return new RestApiKey(id, secret);
     }
 
@@ -32,6 +42,9 @@ public class RestApiKey
 
     private RestApiKey(long id, byte[] secret)
     {
+        if (secret.length != 32) {
+            throw new IllegalArgumentException("Invalid API key format");
+        }
         this.id = id;
         this.secret = secret;
     }
@@ -45,7 +58,7 @@ public class RestApiKey
     {
         byte[] idData = new byte[8];
         ByteBuffer.wrap(idData).putLong(id);
-        return Base64.getUrlEncoder().encodeToString(idData);
+        return Base64.getUrlEncoder().encodeToString(idData).replaceAll("=", "");
     }
 
     public byte[] getSecret()
@@ -54,9 +67,10 @@ public class RestApiKey
     }
 
     @Override
+    @JsonValue
     public String toString()
     {
-        String secretPart = Base64.getUrlEncoder().encodeToString(secret);
+        String secretPart = Base64.getUrlEncoder().encodeToString(secret).replaceAll("=", "");
         String idPart = getIdString();
         return idPart + "/" + secretPart;
     }

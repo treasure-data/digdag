@@ -112,6 +112,8 @@ public abstract class ClientCommand
     public static void showCommonOptions()
     {
         System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: 127.0.0.1:65432)");
+        System.err.println("    -k, --apikey APIKEY              authentication API key");
+        System.err.println("    -c, --config PATH.properties     configuration file path (default: ~/.digdag/client.properties)");
         Main.showCommonOptions();
     }
 

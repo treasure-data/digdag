@@ -24,10 +24,23 @@ public abstract class DatabaseConfig
 
     public static DatabaseConfig convertFrom(Config config)
     {
-        return DatabaseConfig.builder()
-            .type(config.get("database.type", String.class, "h2"))
-            .path(config.getOptional("database.path", String.class))
-            .build();
+        ImmutableDatabaseConfig.Builder builder = builder();
+
+        String type = config.get("database.type", String.class, "memory");
+        switch (type) {
+        case "h2":
+            builder.type("h2");
+            builder.path(Optional.of(config.get("database.path", String.class)));
+            break;
+        case "memory":
+            builder.type("h2");
+            builder.path(Optional.absent());
+            break;
+        default:
+            throw new ConfigException("Unknown database.type: " + type);
+        }
+
+        return builder.build();
     }
 
     public static String buildJdbcUrl(DatabaseConfig config)

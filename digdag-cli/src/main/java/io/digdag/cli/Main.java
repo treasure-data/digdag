@@ -54,6 +54,7 @@ public class Main
         jc.addCommand("scheduler", new Sched(), "sched");
 
         jc.addCommand("server", new Server());
+        jc.addCommand("genapikey", new GenApiKey());
 
         jc.addCommand("archive", new Archive());
         jc.addCommand("upload", new Upload());
@@ -205,6 +206,7 @@ public class Main
         System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    server                           start digdag server");
+        System.err.println("    genapikey -o <dir>               generates an API key for authentication");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    archive <workflow.yml...>        create a project archive");

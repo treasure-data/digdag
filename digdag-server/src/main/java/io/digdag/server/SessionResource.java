@@ -35,6 +35,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 @Path("/")
 @Produces("application/json")
 public class SessionResource
+    extends AuthenticatedResource
 {
     // [*] GET  /api/sessions                                    # list sessions from recent to old
     // [*] GET  /api/sessions?include_retried=1                  # list sessions from recent to old
@@ -50,8 +51,6 @@ public class SessionResource
     private final SessionStoreManager sm;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
-
-    private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public SessionResource(
@@ -77,8 +76,8 @@ public class SessionResource
     {
         List<StoredSessionAttemptWithSession> attempts;
 
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
-        SessionStore ss = sm.getSessionStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        SessionStore ss = sm.getSessionStore(getSiteId());
         if (repoName != null) {
             StoredRepository repo = rs.getRepositoryByName(repoName);
             if (wfName != null) {
@@ -96,7 +95,7 @@ public class SessionResource
             attempts = ss.getSessions(includeRetried, 100, Optional.fromNullable(lastId));
         }
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 
         return attempts.stream()
             .map(attempt -> {
@@ -116,10 +115,10 @@ public class SessionResource
     public RestSession getSession(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
-        StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId)
+        StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
             .getSessionAttemptById(id);
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 
         return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
     }
@@ -129,10 +128,10 @@ public class SessionResource
     public List<RestSession> getSessionRetries(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
-        List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(siteId)
+        List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
             .getOtherAttempts(id);
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 
         return attempts.stream()
             .map(attempt -> {
@@ -151,7 +150,7 @@ public class SessionResource
     @Path("/api/sessions/{id}/tasks")
     public List<RestTask> getTasks(@PathParam("id") long id)
     {
-        return sm.getSessionStore(siteId)
+        return sm.getSessionStore(getSiteId())
             .getTasksOfAttempt(id)
             .stream()
             .map(task -> RestModels.task(task))
@@ -164,7 +163,7 @@ public class SessionResource
     public Response startSession(RestSessionRequest request)
         throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException
     {
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
 
         StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
@@ -184,7 +183,7 @@ public class SessionResource
 
         // TODO how to make session monitors?
         try {
-            StoredSessionAttempt stored = executor.submitWorkflow(siteId, ar, def, ImmutableList.of());
+            StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def, ImmutableList.of());
             RestSession res = RestModels.session(stored, ar, repo.getName());
             return Response.ok(res).build();
         }
@@ -201,7 +200,7 @@ public class SessionResource
     public void killSession(@PathParam("id") long id)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        boolean updated = executor.killSessionById(siteId, id);
+        boolean updated = executor.killSessionById(getSiteId(), id);
         if (!updated) {
             throw new ResourceConflictException("Session already killed or finished");
         }

@@ -59,7 +59,6 @@ public class Sched
     private void sched()
             throws ServletException, IOException
     {
-
         // use memory database by default
         if (database == null) {
             memoryDatabase = true;

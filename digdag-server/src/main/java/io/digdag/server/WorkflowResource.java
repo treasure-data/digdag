@@ -29,12 +29,11 @@ import io.digdag.client.api.*;
 @Path("/")
 @Produces("application/json")
 public class WorkflowResource
+    extends AuthenticatedResource
 {
     // [*] GET  /api/workflows                                   # list workflows of the latest revision of all repositories
 
     private final RepositoryStoreManager rm;
-
-    private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public WorkflowResource(
@@ -49,7 +48,7 @@ public class WorkflowResource
     //{
     //    // TODO paging
     //    final ImmutableList.Builder<RestWorkflowDefinition> builder = ImmutableList.builder();
-    //    return rm.getRepositoryStore(siteId).getLatestWorkflowDefinitions(100, Optional.absent())
+    //    return rm.getRepositoryStore(getSiteId()).getLatestWorkflowDefinitions(100, Optional.absent())
     //        .stream()
     //        .map(wfDetails -> RestModels.workflowDefinition(wfDetails))
     //        .collect(Collectors.toList());

@@ -27,6 +27,7 @@ public class Init
     public SystemExitException usage(String error)
     {
         System.err.println("Usage: digdag init <path>");
+        System.err.println("  Options:");
         Main.showCommonOptions();
         return systemExit(error);
     }

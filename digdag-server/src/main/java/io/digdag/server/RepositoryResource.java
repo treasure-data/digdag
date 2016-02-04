@@ -41,6 +41,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 @Path("/")
 @Produces("application/json")
 public class RepositoryResource
+    extends AuthenticatedResource
 {
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
@@ -59,8 +60,6 @@ public class RepositoryResource
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TempFileManager temp;
-
-    private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public RepositoryResource(
@@ -87,7 +86,7 @@ public class RepositoryResource
         throws ResourceNotFoundException
     {
         // TODO n-m db access
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         return rs.getRepositories(100, Optional.absent())
             .stream()
             .map(repo -> {
@@ -108,7 +107,7 @@ public class RepositoryResource
     public RestRepository getRepository(@PathParam("id") int repoId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
         StoredRevision rev;
         if (revName == null) {
@@ -126,7 +125,7 @@ public class RepositoryResource
         throws ResourceNotFoundException
     {
         // TODO paging
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
 
         StoredRevision rev;
@@ -150,7 +149,7 @@ public class RepositoryResource
 
     private Map<Long, Schedule> getWorkflowScheduleMap()
     {
-        List<StoredSchedule> schedules = sm.getScheduleStore(siteId)
+        List<StoredSchedule> schedules = sm.getScheduleStore(getSiteId())
             .getSchedules(Integer.MAX_VALUE, Optional.absent());
         ImmutableMap.Builder<Long, Schedule> builder = ImmutableMap.builder();
         for (Schedule schedule : schedules) {
@@ -165,7 +164,7 @@ public class RepositoryResource
     public byte[] getArchive(@PathParam("id") int repoId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
-        RepositoryStore rs = rm.getRepositoryStore(siteId);
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
         StoredRevision rev;
         if (revName == null) {
@@ -197,7 +196,7 @@ public class RepositoryResource
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
-        RestRepository stored = rm.getRepositoryStore(siteId).putAndLockRepository(
+        RestRepository stored = rm.getRepositoryStore(getSiteId()).putAndLockRepository(
                 Repository.of(name),
                 (store, storedRepo) -> {
                     RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);

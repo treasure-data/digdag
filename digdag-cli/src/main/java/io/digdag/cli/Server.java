@@ -62,6 +62,9 @@ public class Server
         if (database == null && memoryDatabase == false && configPath == null) {
             throw usage("--database, --memory, or --config option is required");
         }
+        if (database != null && memoryDatabase == true) {
+            throw usage("Setting both --database and --memory is invalid");
+        }
 
         server();
     }
@@ -96,6 +99,9 @@ public class Server
         if (database != null) {
             props.setProperty("database.type", "h2");
             props.setProperty("database.path", FileSystems.getDefault().getPath(database).toAbsolutePath().toString());
+        }
+        else if (memoryDatabase) {
+            props.setProperty("database.type", "memory");
         }
         if (port != null) {
             props.setProperty("server.port", Integer.toString(port));

@@ -35,6 +35,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 @Path("/")
 @Produces("application/json")
 public class ScheduleResource
+    extends AuthenticatedResource
 {
     // [*] GET  /api/schedules                                   # list schedules of the latest revision of all repositories
     // [*] GET  /api/schedules/<id>                              # show a particular schedule (which belongs to a workflow)
@@ -44,8 +45,6 @@ public class ScheduleResource
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
     private final ScheduleExecutor exec;
-
-    private int siteId = 0;  // TODO get site id from context
 
     @Inject
     public ScheduleResource(
@@ -63,8 +62,8 @@ public class ScheduleResource
     public List<RestSchedule> getSchedules()
     {
         // TODO paging
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
-        return sm.getScheduleStore(siteId)
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
+        return sm.getScheduleStore(getSiteId())
             .getSchedules(100, Optional.absent())
             .stream()
             .map(sched -> {
@@ -84,9 +83,9 @@ public class ScheduleResource
     public RestSchedule getSchedules(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
-        StoredSchedule sched = sm.getScheduleStore(siteId)
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
             .getScheduleById(id);
-        StoredRepository repo = rm.getRepositoryStore(siteId)
+        StoredRepository repo = rm.getRepositoryStore(getSiteId())
             .getRepositoryById(sched.getRepositoryId());
         return RestModels.schedule(sched, repo);
     }
@@ -99,13 +98,13 @@ public class ScheduleResource
     {
         StoredSchedule updated;
         if (request.getNextTime().isPresent()) {
-            updated = exec.skipScheduleToTime(siteId, id,
+            updated = exec.skipScheduleToTime(getSiteId(), id,
                     Instant.ofEpochSecond(request.getNextTime().get()),
                     request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
                     request.getDryRun());
         }
         else {
-            updated = exec.skipScheduleByCount(siteId, id,
+            updated = exec.skipScheduleByCount(getSiteId(), id,
                     Instant.ofEpochSecond(request.getFromTime().get()),
                     request.getCount().get(),
                     request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
@@ -120,9 +119,9 @@ public class ScheduleResource
     public List<RestSession> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        List<StoredSessionAttemptWithSession> attempts = exec.backfill(siteId, id, Instant.ofEpochSecond(request.getFromTime()), request.getAttemptName(), request.getDryRun());
+        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, Instant.ofEpochSecond(request.getFromTime()), request.getAttemptName(), request.getDryRun());
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(siteId));
+        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 
         return attempts.stream()
             .map(attempt -> {
