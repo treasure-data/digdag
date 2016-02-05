@@ -25,6 +25,7 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -71,9 +72,27 @@ public class SessionResource
             @QueryParam("repository") String repoName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
+            @QueryParam("status") String status,
             @QueryParam("last_id") Long lastId)
         throws ResourceNotFoundException
     {
+        /* TODO
+        Optional<SessionStateFlags> searchFlags = Optional.absent();
+        if (status != null) {
+            switch (status) {
+            case "error":
+            case "success":
+                searchFlags = Optional.of(SessionStateFlags.empty().withDone());
+                break;
+            case "running":
+                searchFlags = Optional.of(SessionStateFlags.empty().withDone());
+                break;
+            default:
+                throw new ConfigException("Unknown stauts= option");
+            }
+        }
+        */
+
         List<StoredSessionAttemptWithSession> attempts;
 
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());

@@ -13,14 +13,29 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.Result;
+import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.JSError;
 
 public class ConfigEvalEngine
 {
+    private static Logger logger = LoggerFactory.getLogger(ConfigEvalEngine.class);
+
     private static final String evalCodeScript =
+        //"function evalCode(code, js) {" +
+        //    "return JSON.stringify((new Function(\"with(this) { return (\" + code + \") }\")).call(JSON.parse(js)))" +
+        //"}";
+        //"function evalCode(code, js) {" +
+        //    "return JSON.stringify((new Function(\"with(this) { \" + code + \" }\")).call(JSON.parse(js)))" +
+        //"}";
         "function evalCode(code, js) {" +
-            "return JSON.stringify((new Function(\"with(this) { \" + code + \" }\")).call(JSON.parse(js)))" +
+            "return JSON.stringify((new Function(\"with(this) { \" + code + \"; return result }\")).call(JSON.parse(js)))" +
         "}";
 
     private final ObjectMapper jsonMapper;
@@ -95,7 +110,8 @@ public class ConfigEvalEngine
     {
         try {
             String js = jsonMapper.writeValueAsString(params);
-            String result = (String) invocable.invokeFunction("evalCode", code, js);
+            String result = (String) invocable.invokeFunction("evalCode", supportEs6(code), js);
+            //String result = (String) invocable.invokeFunction("evalCode", code, js);
             if (result == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }
@@ -106,5 +122,45 @@ public class ConfigEvalEngine
         catch (ScriptException | NoSuchMethodException | IOException ex) {
             throw new ConfigEvalException("Failed to evaluate JavaScript code: " + code, ex);
         }
+    }
+
+    private String supportEs6(String code)
+        throws ConfigEvalException, IOException
+    {
+        code = "var result = (`" + code + "`)";
+
+        Compiler compiler = new Compiler();
+        SourceFile src = SourceFile.fromCode("config", code);
+        SourceFile extern = SourceFile.fromCode("/dev/null", "{}");
+        CompilerOptions options = new CompilerOptions();
+        options.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT6_STRICT);
+        options.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
+        Result result = compiler.compile(extern, src, options);
+        if (!result.success) {
+            StringBuilder sb = new StringBuilder();
+            for (JSError error : result.errors) {
+                sb.append("\n");
+                sb.append(error.toString());
+            }
+            throw new ConfigEvalException("Failed to evaluate JavaScript code: " + code + "\nErrors:" + sb.toString());
+        }
+        return compiler.toSource();
+        //StringBuilder output = new StringBuilder();
+        //logger.warn("js result:");
+        //logger.warn("  success: {}", result.success);
+        //logger.warn("  warnings: {}", result.warnings);
+        //logger.warn("  variableMap: {}", result.variableMap);
+        //logger.warn("  propertyMap: {}", result.propertyMap);
+        //logger.warn("  namedAnonFunctionMap: {}", result.namedAnonFunctionMap);
+        //logger.warn("  stringMap: {}", result.stringMap);
+        //logger.warn("  functionInformationMap: {}", result.functionInformationMap);
+        //logger.warn("  sourceMap: {}", result.sourceMap);
+        //logger.warn("  externExport: {}", result.externExport);
+        //logger.warn("  cssNames: {}", result.cssNames);
+        //logger.warn("  idGeneratorMap: {}", result.idGeneratorMap);
+        //logger.warn("  success: {}", result.success);
+        //logger.warn("  success: {}", result.success);
+        //result.sourceMap.appendTo(output, "config");
+        //compiler.getSourceMap().appendTo(output, "config");
     }
 }

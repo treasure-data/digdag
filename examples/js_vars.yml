@@ -6,12 +6,11 @@ run: +js_vars
 
   +task2:
     sh>: "echo $val"
-    val=: return 1 + 1
+    val=: ${1 + 1}
 
   +task3:
-    export:
-      command: "echo $val"
     +run_command:
-      sh>=: return command
-      val=: return 2 + 3
+      val=: ${2 + 3}
+      command=: echo ${val}
+      sh>=: ${command}
 
