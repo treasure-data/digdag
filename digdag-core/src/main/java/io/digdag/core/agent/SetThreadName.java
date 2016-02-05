@@ -1,5 +1,7 @@
 package io.digdag.core.agent;
 
+import static java.util.Locale.ENGLISH;
+
 public class SetThreadName
     implements AutoCloseable
 {
@@ -15,7 +17,7 @@ public class SetThreadName
     {
         this.thread = thread;
         this.savedName = thread.getName();
-        thread.setName(name);
+        thread.setName(String.format(ENGLISH, "%04d:", thread.getId()) + name);
     }
 
     @Override
