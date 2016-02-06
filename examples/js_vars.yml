@@ -1,16 +1,16 @@
 run: +js_vars
 +js_vars:
   +task1:
-    sh>: "echo $val"
     val: 1
+    sh>: echo ${val}
 
   +task2:
-    sh>: "echo $val"
-    val=: ${1 + 1}
+    val: ${1 + 1}
+    sh>: echo ${val}
 
   +task3:
     +run_command:
-      val=: ${2 + 3}
-      command=: echo ${val}
-      sh>=: ${command}
+      val: ${2 + 3}
+      command: echo ${val}
+      sh>: ${command}
 

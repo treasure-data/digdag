@@ -83,14 +83,12 @@ public class TaskRunnerManager
 
         try {
             // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task.
-            // here reloads local config and creates the complete merged config.
+            // here evaluates local config and creates the complete merged config.
             Config config;
             try {
-                config = evalTaskConfig(archivePath, request.getDagfilePath(),
-                        request.getWorkflowName(), request.getTaskInfo().getFullName(),
-                        request.getConfig(), request.getLocalConfig());
+                config = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
             }
-            catch (IOException | RuntimeException | ConfigEvalException ex) {
+            catch (RuntimeException | ConfigEvalException ex) {
                 throw new RuntimeException("Failed to rebuild task config", ex);
             }
             logger.debug("evaluated config: {}", config);
@@ -167,53 +165,5 @@ public class TaskRunnerManager
                     .stream()
                     .map(it -> it.toString())
                     .collect(Collectors.joining(", ")));
-    }
-
-    private Config evalTaskConfig(Path archivePath, Optional<String> dagfilePath,
-            String workflowName, String taskFullName,
-            Config params, Config localConfig)
-        throws IOException, ConfigEvalException
-    {
-        if (dagfilePath.isPresent() && !isGeneratedTask(taskFullName)) {  // TODO generated tasks (such as :sla or :error) can't be rebuilt from workflow definition bacause matching with full task name doesn't work
-            Dagfile dagfile = configLoader.loadParameterizedFile(
-                    archivePath.resolve(dagfilePath.get()).toFile(),
-                    params).convert(Dagfile.class);
-            WorkflowDefinition def = findDefinition(dagfile, workflowName);
-            Workflow workflow = compiler.compile(def.getName(), def.getConfig());
-            WorkflowTask task = findTask(workflow, taskFullName);
-            localConfig = task.getConfig();
-        }
-
-        Config config =
-            localConfig.deepCopy()
-            .setAll(params);
-
-        return evalEngine.eval(archivePath, config);
-    }
-
-    private WorkflowDefinition findDefinition(Dagfile dagfile, String workflowName)
-    {
-        for (WorkflowDefinition def : dagfile.getWorkflowList().get()) {
-            if (def.getName().equals(workflowName)) {
-                return def;
-            }
-        }
-        throw new RuntimeException("Workflow doesn't exist in the reloaded workflow");
-    }
-
-    private WorkflowTask findTask(Workflow workflow, String taskFullName)
-    {
-        try {
-            int index = SubtaskMatchPattern.compile(taskFullName).findIndex(workflow.getTasks());
-            return workflow.getTasks().get(index);
-        }
-        catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
-            throw new RuntimeException("Task doesn't exist in the reloaded workflow");
-        }
-    }
-
-    private boolean isGeneratedTask(String taskFullName)
-    {
-        return taskFullName.contains(":");
     }
 }

@@ -1,6 +1,7 @@
 package io.digdag.core.agent;
 
 import java.util.Map;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.script.ScriptEngine;
@@ -12,155 +13,152 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.Result;
-import com.google.javascript.jscomp.SourceFile;
-import com.google.javascript.jscomp.JSError;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ConfigEvalEngine
 {
     private static Logger logger = LoggerFactory.getLogger(ConfigEvalEngine.class);
 
-    private static final String evalCodeScript =
-        //"function evalCode(code, js) {" +
-        //    "return JSON.stringify((new Function(\"with(this) { return (\" + code + \") }\")).call(JSON.parse(js)))" +
-        //"}";
-        //"function evalCode(code, js) {" +
-        //    "return JSON.stringify((new Function(\"with(this) { \" + code + \" }\")).call(JSON.parse(js)))" +
-        //"}";
-        "function evalCode(code, js) {" +
-            "return JSON.stringify((new Function(\"with(this) { \" + code + \"; return result }\")).call(JSON.parse(js)))" +
-        "}";
+    private static final String DIGDAG_JS_RESOURCE_PATH = "/digdag/agent/digdag.js";
+    private static final String DIGDAG_JS;
+
+    static {
+        try (InputStreamReader r = new InputStreamReader(ConfigEvalException.class.getResourceAsStream(DIGDAG_JS_RESOURCE_PATH), UTF_8)) {
+            DIGDAG_JS = CharStreams.toString(r);
+        }
+        catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 
     private final ObjectMapper jsonMapper;
-    private final ScriptEngine scriptEngine;
-    private final Invocable invocable;
+    private final NashornScriptEngineFactory jsEngineFactory;
 
     @Inject
     public ConfigEvalEngine()
     {
         this.jsonMapper = new ObjectMapper();
-        this.scriptEngine = new ScriptEngineManager().getEngineByExtension("js");
-        try {
-            scriptEngine.eval(evalCodeScript);
-            invocable = (Invocable) scriptEngine;
-        }
-        catch (ScriptException | ClassCastException ex) {
-            throw new IllegalStateException("Unexpected script evaluation failure", ex);
-        }
+        this.jsEngineFactory = new NashornScriptEngineFactory();
     }
 
-    public Config eval(Path archivePath, Config config)
+    protected Config eval(Path archivePath, Config config, Config params)
         throws ConfigEvalException
     {
         ObjectNode object = config.convert(ObjectNode.class);
-        evalRecursive(object, object);
-        return config.getFactory().create(object);
+        ObjectNode built = new Context(archivePath, params).evalObjectRecursive(object);
+        return config.getFactory().create(built);
     }
 
-    private void evalRecursive(ObjectNode object, ObjectNode root)
-        throws ConfigEvalException
+    private class Context
     {
-        for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(object.fields())) {  // copy to prevent concurrent modification
-            String key = pair.getKey();
-            JsonNode value = pair.getValue();
-            if (key.endsWith("=")) {
-                String name = key.substring(0, key.length() - 1);
-                String code;
-                if (value.isTextual()) {
-                    code = value.textValue();
-                }
-                else {
-                    code = value.toString();
-                }
-                object.set(name, evalValue(code, root));
+        private final Path archivePath;
+        private final Config params;
+        private final Invocable invocable;
+
+        public Context(Path archivePath, Config params)
+        {
+            this.archivePath = archivePath;
+            this.params = params;
+
+            ScriptEngine jsEngine = jsEngineFactory.getScriptEngine(new String[] {
+                "--language=es6",
+                "--no-java",
+                "--no-syntax-extensions",
+                "-timezone=" + params.get("timezone", String.class),  // TODO is this working?
+            });
+            try {
+                jsEngine.eval(DIGDAG_JS);
             }
-            else {
-                if (value.isObject()) {
-                    evalRecursive((ObjectNode) value, root);
+            catch (ScriptException | ClassCastException ex) {
+                throw new IllegalStateException("Unexpected script evaluation failure", ex);
+            }
+            this.invocable = (Invocable) jsEngine;
+        }
+
+        private ObjectNode evalObjectRecursive(ObjectNode local)
+            throws ConfigEvalException
+        {
+            ObjectNode built = local.objectNode();
+            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {  // copy to prevent concurrent modification
+                JsonNode value = pair.getValue();
+                JsonNode evaluated;
+                if (value.isTextual()) {
+                    // eval using template engine
+                    String code = value.textValue();
+                    evaluated = evalValue(built, code);
+                }
+                else if (value.isObject()) {
+                    evaluated = evalArrayRecursive(built, (ArrayNode) value);
                 }
                 else if (value.isArray()) {
-                    evalRecursiveArray((ArrayNode) value, root);
+                    evaluated = evalArrayRecursive(built, (ArrayNode) value);
+                }
+                else {
+                    evaluated = value;
+                }
+                built.set(pair.getKey(), evaluated);
+            }
+            return built;
+        }
+
+        private ArrayNode evalArrayRecursive(ObjectNode local, ArrayNode array)
+            throws ConfigEvalException
+        {
+            ArrayNode built = array.arrayNode();
+            for (JsonNode value : array) {
+                JsonNode evaluated;
+                if (value.isTextual()) {
+                    // eval using template engine
+                    String code = value.textValue();
+                    evaluated = evalValue(local, code);
+                }
+                else if (value.isObject()) {
+                    evaluated = evalObjectRecursive((ObjectNode) value);
+                }
+                else if (value.isArray()) {
+                    evaluated = evalArrayRecursive(local, (ArrayNode) value);
+                }
+                else {
+                    evaluated = value;
+                }
+                built.add(evaluated);
+            }
+            return built;
+        }
+
+        private JsonNode evalValue(ObjectNode local, String code)
+            throws ConfigEvalException
+        {
+            Config scopedParams = params.deepCopy();
+            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
+                scopedParams.set(pair.getKey(), pair.getValue());
+            }
+            return evalTemplate(archivePath, code, scopedParams);
+        }
+
+        private JsonNode evalTemplate(Path archivePath, String code, Config params)
+            throws ConfigEvalException
+        {
+            try {
+                String context = jsonMapper.writeValueAsString(params);
+                String resultText = (String) invocable.invokeFunction("template", code, context);
+                if (resultText == null) {
+                    return jsonMapper.getNodeFactory().nullNode();
+                }
+                else {
+                    return jsonMapper.getNodeFactory().textNode(resultText);
                 }
             }
-        }
-    }
-
-    private void evalRecursiveArray(ArrayNode array, ObjectNode root)
-        throws ConfigEvalException
-    {
-        for (JsonNode element : array) {
-            if (element.isObject()) {
-                evalRecursive((ObjectNode) element, root);
-            }
-            else if (element.isArray()) {
-                evalRecursiveArray((ArrayNode) element, root);
+            catch (ScriptException | NoSuchMethodException | IOException ex) {
+                throw new ConfigEvalException("Failed to evaluate JavaScript code: " + code, ex);
             }
         }
-    }
-
-    private JsonNode evalValue(String code, ObjectNode params)
-        throws ConfigEvalException
-    {
-        try {
-            String js = jsonMapper.writeValueAsString(params);
-            String result = (String) invocable.invokeFunction("evalCode", supportEs6(code), js);
-            //String result = (String) invocable.invokeFunction("evalCode", code, js);
-            if (result == null) {
-                return jsonMapper.getNodeFactory().nullNode();
-            }
-            else {
-                return jsonMapper.readTree(result);
-            }
-        }
-        catch (ScriptException | NoSuchMethodException | IOException ex) {
-            throw new ConfigEvalException("Failed to evaluate JavaScript code: " + code, ex);
-        }
-    }
-
-    private String supportEs6(String code)
-        throws ConfigEvalException, IOException
-    {
-        code = "var result = (`" + code + "`)";
-
-        Compiler compiler = new Compiler();
-        SourceFile src = SourceFile.fromCode("config", code);
-        SourceFile extern = SourceFile.fromCode("/dev/null", "{}");
-        CompilerOptions options = new CompilerOptions();
-        options.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT6_STRICT);
-        options.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
-        Result result = compiler.compile(extern, src, options);
-        if (!result.success) {
-            StringBuilder sb = new StringBuilder();
-            for (JSError error : result.errors) {
-                sb.append("\n");
-                sb.append(error.toString());
-            }
-            throw new ConfigEvalException("Failed to evaluate JavaScript code: " + code + "\nErrors:" + sb.toString());
-        }
-        return compiler.toSource();
-        //StringBuilder output = new StringBuilder();
-        //logger.warn("js result:");
-        //logger.warn("  success: {}", result.success);
-        //logger.warn("  warnings: {}", result.warnings);
-        //logger.warn("  variableMap: {}", result.variableMap);
-        //logger.warn("  propertyMap: {}", result.propertyMap);
-        //logger.warn("  namedAnonFunctionMap: {}", result.namedAnonFunctionMap);
-        //logger.warn("  stringMap: {}", result.stringMap);
-        //logger.warn("  functionInformationMap: {}", result.functionInformationMap);
-        //logger.warn("  sourceMap: {}", result.sourceMap);
-        //logger.warn("  externExport: {}", result.externExport);
-        //logger.warn("  cssNames: {}", result.cssNames);
-        //logger.warn("  idGeneratorMap: {}", result.idGeneratorMap);
-        //logger.warn("  success: {}", result.success);
-        //logger.warn("  success: {}", result.success);
-        //result.sourceMap.appendTo(output, "config");
-        //compiler.getSourceMap().appendTo(output, "config");
     }
 }
