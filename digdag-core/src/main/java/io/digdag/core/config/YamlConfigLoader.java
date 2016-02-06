@@ -28,13 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
-import com.hubspot.jinjava.Jinjava;
-import com.hubspot.jinjava.JinjavaConfig;
-import com.hubspot.jinjava.interpret.Context;
-import com.hubspot.jinjava.interpret.JinjavaInterpreter;
-import com.hubspot.jinjava.lib.fn.ELFunctionDefinition;
-import com.hubspot.jinjava.loader.FileLocator;
-import com.hubspot.jinjava.loader.ResourceNotFoundException;
 
 public class YamlConfigLoader
 {
