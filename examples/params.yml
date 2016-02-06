@@ -4,7 +4,7 @@ run: +params
 
   +builtin:
     # You can use some built-in parameters
-    sh>: echo workflow is running for {{ session_time }}
+    sh>: echo workflow is running for ${session_time}
 
   +simple:
     # Local parameters are only for this task.

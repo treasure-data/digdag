@@ -1,3 +1,3 @@
 run: +basic
-<<: {{ load('basic.yml') }}
-<<: {{ load('conditions.yml') }}
+!include : basic.yml
+!include : conditions.yml

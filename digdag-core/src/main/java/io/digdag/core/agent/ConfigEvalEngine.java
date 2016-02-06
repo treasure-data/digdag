@@ -86,19 +86,19 @@ public class ConfigEvalEngine
             throws ConfigEvalException
         {
             ObjectNode built = local.objectNode();
-            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {  // copy to prevent concurrent modification
+            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 JsonNode value = pair.getValue();
                 JsonNode evaluated;
-                if (value.isTextual()) {
-                    // eval using template engine
-                    String code = value.textValue();
-                    evaluated = evalValue(built, code);
-                }
-                else if (value.isObject()) {
-                    evaluated = evalArrayRecursive(built, (ArrayNode) value);
+                if (value.isObject()) {
+                    evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
                     evaluated = evalArrayRecursive(built, (ArrayNode) value);
+                }
+                else if (value.isTextual()) {
+                    // eval using template engine
+                    String code = value.textValue();
+                    evaluated = evalValue(built, code);
                 }
                 else {
                     evaluated = value;
@@ -114,16 +114,16 @@ public class ConfigEvalEngine
             ArrayNode built = array.arrayNode();
             for (JsonNode value : array) {
                 JsonNode evaluated;
-                if (value.isTextual()) {
-                    // eval using template engine
-                    String code = value.textValue();
-                    evaluated = evalValue(local, code);
-                }
-                else if (value.isObject()) {
+                if (value.isObject()) {
                     evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
                     evaluated = evalArrayRecursive(local, (ArrayNode) value);
+                }
+                else if (value.isTextual()) {
+                    // eval using template engine
+                    String code = value.textValue();
+                    evaluated = evalValue(local, code);
                 }
                 else {
                     evaluated = value;

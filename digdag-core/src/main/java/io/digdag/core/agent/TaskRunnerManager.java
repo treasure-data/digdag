@@ -84,9 +84,10 @@ public class TaskRunnerManager
         try {
             // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task.
             // here evaluates local config and creates the complete merged config.
-            Config config;
+            Config config = request.getConfig().deepCopy();
             try {
-                config = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
+                Config evaluatedLocalConfig = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
+                config.setAll(evaluatedLocalConfig);
             }
             catch (RuntimeException | ConfigEvalException ex) {
                 throw new RuntimeException("Failed to rebuild task config", ex);

@@ -8,7 +8,7 @@ function template(code, variables)
   var index = 0;
   var source = "__p+='";
   code.replace(matcher, function(match, statement, expression, offset) {
-    source += code.slice(index, offset).replace(/\$\$/g, "$");
+    source += code.slice(index, offset).replace(/\$\$/g, "$").replace(/\\|'/g, function(c) { return '\\' + c });
     index = offset + match.length;
 
     if (statement) {
