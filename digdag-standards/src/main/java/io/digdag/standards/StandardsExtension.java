@@ -19,6 +19,7 @@ import io.digdag.standards.task.PyTaskRunnerFactory;
 import io.digdag.standards.task.RbTaskRunnerFactory;
 import io.digdag.standards.task.ShTaskRunnerFactory;
 import io.digdag.standards.task.MailTaskRunnerFactory;
+import io.digdag.standards.task.EmbulkTaskRunnerFactory;
 import io.digdag.standards.task.td.TdTaskRunnerFactory;
 import io.digdag.standards.task.td.TdDdlTaskRunnerFactory;
 import io.digdag.standards.command.SimpleCommandExecutor;
@@ -46,6 +47,7 @@ public class StandardsExtension
             taskExecutorBinder.addBinding().to(RbTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(ShTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(MailTaskRunnerFactory.class).in(Scopes.SINGLETON);
+            taskExecutorBinder.addBinding().to(EmbulkTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdDdlTaskRunnerFactory.class).in(Scopes.SINGLETON);
 
