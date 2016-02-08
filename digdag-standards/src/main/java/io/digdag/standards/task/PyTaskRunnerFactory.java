@@ -77,8 +77,13 @@ public class PyTaskRunnerFactory
         @Override
         public Config runTask()
         {
-            Config taskEnv = request.getConfig().deepCopy()
-                .setAll(request.getLastStateParams());
+            Config config = request.getConfig().getNestedOrGetEmpty("py")
+                .deepCopy()
+                .setAll(request.getConfig());
+
+            // merge state parameters in addition to regular config
+            Config taskEnv = config.setAll(request.getLastStateParams());
+
             Config data;
             try {
                 data = runCode(request.getConfig(), taskEnv);

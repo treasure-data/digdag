@@ -48,7 +48,9 @@ public class TdDdlTaskRunnerFactory
         @Override
         public Config runTask()
         {
-            Config config = request.getConfig();
+            Config config = request.getConfig().getNestedOrGetEmpty("td")
+                .deepCopy()
+                .setAll(request.getConfig());
 
             List<String> deleteList = config.getListOrEmpty("drop_table", String.class);
             List<String> createList = config.getListOrEmpty("create_table", String.class);

@@ -3,10 +3,10 @@ package io.digdag.core.config;
 import java.util.Map;
 import java.util.ArrayDeque;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class YamlConfigLoader
 {
@@ -47,8 +48,8 @@ public class YamlConfigLoader
     public ConfigElement loadFile(File file)
         throws IOException
     {
-        try (FileInputStream in = new FileInputStream(file)) {
-            String content = CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8));
+        try (InputStream in = Files.newInputStream(file.toPath())) {
+            String content = CharStreams.toString(new InputStreamReader(in, UTF_8));
             return loadString(content);
         }
     }
@@ -158,7 +159,7 @@ public class YamlConfigLoader
         {
             Path path = includeDir.resolve(name).toAbsolutePath().normalize();
             if (!path.toString().startsWith(includeDir.toString())) {
-                throw new RuntimeException("file name must not include ..: " + name);
+                throw new FileNotFoundException("file name must not include ..: " + name);
             }
 
             return loadParameterized(path, params);

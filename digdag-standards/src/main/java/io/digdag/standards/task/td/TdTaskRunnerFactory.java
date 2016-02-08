@@ -11,6 +11,8 @@ import com.google.common.collect.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.TemplateEngine;
+import io.digdag.spi.TemplateException;
 import io.digdag.standards.task.BaseTaskRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,15 +23,20 @@ import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdTaskRunnerFactory
         implements TaskRunnerFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdTaskRunnerFactory.class);
 
+    private final TemplateEngine templateEngine;
+
     @Inject
-    public TdTaskRunnerFactory()
-    { }
+    public TdTaskRunnerFactory(TemplateEngine templateEngine)
+    {
+        this.templateEngine = templateEngine;
+    }
 
     public String getType()
     {
@@ -53,9 +60,18 @@ public class TdTaskRunnerFactory
         @Override
         public Config runTask()
         {
-            Config config = request.getConfig();
+            Config config = request.getConfig().getNestedOrGetEmpty("td")
+                .deepCopy()
+                .setAll(request.getConfig());
 
             String command = config.get("command", String.class);
+            String source;
+            try {
+                source = templateEngine.templateFile(archivePath, command, UTF_8, config);
+            }
+            catch (IOException | TemplateException ex) {
+                throw new ConfigException("Failed to load query file", ex);
+            }
 
             Optional<String> insertInto = config.getOptional("insert_into", String.class);
             Optional<String> createTable = config.getOptional("create_table", String.class);
@@ -79,28 +95,28 @@ public class TdTaskRunnerFactory
                 case "presto":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(insertInto.get());
-                        query = "INSERT INTO " + op.escapeIdentPresto(insertInto.get()) + "\n" + command;
+                        query = "INSERT INTO " + op.escapeIdentPresto(insertInto.get()) + "\n" + source;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableDeleted(createTable.get());
-                        query = "CREATE TABLE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + command;
+                        query = "CREATE TABLE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + source;
                     }
                     else {
-                        query = command;
+                        query = source;
                     }
                     break;
 
                 case "hive":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + command;
+                        query = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + source;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + command;
+                        query = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + source;
                     }
                     else {
-                        query = command;
+                        query = source;
                     }
                     break;
 
@@ -159,7 +175,8 @@ public class TdTaskRunnerFactory
                 }
 
                 return request.getConfig().getFactory().create()
-                    .set("td_job_id", q.getJobId());
+                    .getNestedOrSetEmpty("td")
+                    .set("last_job_id", q.getJobId());
             }
         }
     }

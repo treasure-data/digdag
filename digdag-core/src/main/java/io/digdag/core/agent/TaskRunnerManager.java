@@ -89,7 +89,7 @@ public class TaskRunnerManager
                 Config evaluatedLocalConfig = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
                 config.setAll(evaluatedLocalConfig);
             }
-            catch (RuntimeException | ConfigEvalException ex) {
+            catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to rebuild task config", ex);
             }
             logger.debug("evaluated config: {}", config);

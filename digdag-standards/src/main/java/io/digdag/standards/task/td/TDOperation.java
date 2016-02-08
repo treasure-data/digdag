@@ -14,16 +14,12 @@ public class TDOperation
 {
     public static TDOperation fromConfig(Config config)
     {
-        Config apiConfig = config.getNestedOrGetEmpty("td")
-            .deepCopy()
-            .setAll(config);
-
-        String database = apiConfig.get("database", String.class);
+        String database = config.get("database", String.class);
 
         TDClientBuilder builder = new TDClientBuilder(false);
-        builder.setEndpoint(apiConfig.get("endpoint", String.class, "api.treasuredata.com"));
-        builder.setUseSSL(apiConfig.get("use_ssl", boolean.class, true));
-        builder.setApiKey(apiConfig.get("apikey", String.class));
+        builder.setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"));
+        builder.setUseSSL(config.get("use_ssl", boolean.class, true));
+        builder.setApiKey(config.get("apikey", String.class));
 
         return new TDOperation(builder.build(), database);
     }

@@ -11,6 +11,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.TemplateEngine;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.ConfigEvalEngine;
@@ -128,6 +129,7 @@ public class DigdagEmbed
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigElement.class).toInstance(systemConfig);
+                    binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
                     Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
                     taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
                 },
