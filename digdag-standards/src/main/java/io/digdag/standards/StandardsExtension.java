@@ -16,6 +16,7 @@ import io.digdag.standards.scheduler.DailySchedulerFactory;
 import io.digdag.standards.scheduler.HourlySchedulerFactory;
 import io.digdag.standards.queue.MemoryTaskQueueFactory;
 import io.digdag.standards.task.PyTaskRunnerFactory;
+import io.digdag.standards.task.RbTaskRunnerFactory;
 import io.digdag.standards.task.ShTaskRunnerFactory;
 import io.digdag.standards.task.MailTaskRunnerFactory;
 import io.digdag.standards.task.td.TdTaskRunnerFactory;
@@ -42,6 +43,7 @@ public class StandardsExtension
 
             Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
             taskExecutorBinder.addBinding().to(PyTaskRunnerFactory.class).in(Scopes.SINGLETON);
+            taskExecutorBinder.addBinding().to(RbTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(ShTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(MailTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdTaskRunnerFactory.class).in(Scopes.SINGLETON);

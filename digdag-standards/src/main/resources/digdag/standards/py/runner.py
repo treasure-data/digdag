@@ -24,6 +24,7 @@ import digdag_env
 sys.path.append(os.path.abspath(os.getcwd()))
 
 def digdag_inspect_command(command):
+    # package.name.Class.method
     fragments = command.split(".")
     method_name = fragments.pop()
     class_type = None
