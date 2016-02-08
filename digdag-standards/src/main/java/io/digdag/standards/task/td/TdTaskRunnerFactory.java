@@ -64,13 +64,18 @@ public class TdTaskRunnerFactory
                 .deepCopy()
                 .setAll(request.getConfig());
 
-            String command = config.get("command", String.class);
-            String source;
-            try {
-                source = templateEngine.templateFile(archivePath, command, UTF_8, config);
+            String query;
+            if (config.has("command")) {
+                String command = config.get("command", String.class);
+                try {
+                    query = templateEngine.templateFile(archivePath, command, UTF_8, config);
+                }
+                catch (IOException | TemplateException ex) {
+                    throw new ConfigException("Failed to load query file", ex);
+                }
             }
-            catch (IOException | TemplateException ex) {
-                throw new ConfigException("Failed to load query file", ex);
+            else {
+                query = config.get("query", String.class);
             }
 
             Optional<String> insertInto = config.getOptional("insert_into", String.class);
@@ -89,34 +94,34 @@ public class TdTaskRunnerFactory
             Optional<String> downloadFile = config.getOptional("download_file", String.class);
 
             try (TDOperation op = TDOperation.fromConfig(config)) {
-                String query;
+                String stmt;
 
                 switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(insertInto.get());
-                        query = "INSERT INTO " + op.escapeIdentPresto(insertInto.get()) + "\n" + source;
+                        stmt = "INSERT INTO " + op.escapeIdentPresto(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableDeleted(createTable.get());
-                        query = "CREATE TABLE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + source;
+                        stmt = "CREATE TABLE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + query;
                     }
                     else {
-                        query = source;
+                        stmt = query;
                     }
                     break;
 
                 case "hive":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + source;
+                        stmt = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        query = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + source;
+                        stmt = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + query;
                     }
                     else {
-                        query = source;
+                        stmt = query;
                     }
                     break;
 
@@ -128,13 +133,13 @@ public class TdTaskRunnerFactory
                     .setResultOutput(resultUrl.orNull())
                     .setType(engine)
                     .setDatabase(op.getDatabase())
-                    .setQuery(query)
+                    .setQuery(stmt)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .createTDJobRequest();
 
                 TDQuery q = new TDQuery(op.getClient(), req);
-                logger.info("Started {} query id={}:\n{}", q.getJobId(), engine, query);
+                logger.info("Started {} job id={}:\n{}", q.getJobId(), engine, stmt);
 
                 try {
                     q.ensureSucceeded();
