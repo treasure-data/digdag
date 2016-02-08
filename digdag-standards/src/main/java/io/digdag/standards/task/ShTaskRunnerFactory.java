@@ -2,6 +2,7 @@ package io.digdag.standards.task;
 
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -77,6 +78,15 @@ public class ShTaskRunnerFactory
                         logger.trace("Ignoring invalid env var key: {}", key);
                     }
                 });
+
+            // add archive path to the end of $PATH so that bin/cmd works without ./ at the beginning
+            String pathEnv = System.getenv("PATH");
+            if (pathEnv == null) {
+                pathEnv = archivePath.toAbsolutePath().toString();
+            }
+            else {
+                pathEnv = pathEnv + File.pathSeparator + archivePath.toAbsolutePath().toString();
+            }
 
             pb.redirectErrorStream(true);
 
