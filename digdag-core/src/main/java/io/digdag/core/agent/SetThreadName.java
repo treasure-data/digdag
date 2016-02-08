@@ -17,7 +17,7 @@ public class SetThreadName
     {
         this.thread = thread;
         this.savedName = thread.getName();
-        thread.setName(String.format(ENGLISH, "%04d:", thread.getId()) + name);
+        thread.setName(String.format(ENGLISH, "%04d@", thread.getId()) + name);
     }
 
     @Override
