@@ -29,6 +29,8 @@ public class Init
         System.err.println("Usage: digdag init <path>");
         System.err.println("  Options:");
         Main.showCommonOptions();
+        System.err.println("  Example:");
+        System.err.println("    $ digdag init \".\"");
         return systemExit(error);
     }
 

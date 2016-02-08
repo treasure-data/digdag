@@ -52,14 +52,39 @@ def digdag_inspect_command(command)
   return clazz, method_name, is_instance_method
 end
 
+def digdag_inspect_arguments(receiver, method_name, config)
+  arity = receiver.method(method_name).arity
+  if method_name == :new
+    begin
+      initialize_arity = receiver.instance_method(:initialize).arity
+      if arity < 0 && initialize_arity < 0
+        arity = [arity, initialize_arity].min
+      else
+        arity = [arity, initialize_arity].max
+      end
+    rescue NameError => e
+    end
+  end
+
+  if arity == 0
+    return []
+  else
+    return [config]
+  end
+end
+
 clazz, method_name, is_instance_method = digdag_inspect_command(command)
 
 if is_instance_method
-  instance = clazz.new(Digdag.config)
-  result = instance.send(method_name, Digdag.config)
+  new_args = digdag_inspect_arguments(clazz, :new, Digdag.config)
+  instance = clazz.new(*new_args)
+
+  method_args = digdag_inspect_arguments(instance, method_name, Digdag.config)
+  result = instance.send(method_name, *method_args)
 
 else
-  result = clazz.send(method_name, Digdag.config)
+  method_args = digdag_inspect_arguments(clazz, method_name, Digdag.config)
+  result = clazz.send(method_name, *method_args)
 end
 
 out = {
