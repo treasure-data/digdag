@@ -1,14 +1,30 @@
+// Code from Underscore.js
 function template(code, variables)
 {
   var matcher = RegExp([
-    (/\${%([\s\S]+?)%}/g).source,
-    (/\${([\s\S]+?)}/g).source
+    (/(?!\$)\${%([\s\S]+?)%}/g).source,
+    (/(?!\$)\${([\s\S]+?)}/g).source
   ].join('|') + '|$', 'g');
+
+  var escapes = {
+    "'":      "'",
+    '\\':     '\\',
+    '\r':     'r',
+    '\n':     'n',
+    '\u2028': 'u2028',
+    '\u2029': 'u2029'
+  };
+
+  var escaper = /\\|'|\r|\n|\u2028|\u2029/g;
+
+  var escapeChar = function(match) {
+    return '\\' + escapes[match];
+  };
 
   var index = 0;
   var source = "__p+='";
   code.replace(matcher, function(match, statement, expression, offset) {
-    source += code.slice(index, offset).replace(/\$\$/g, "$").replace(/\\|'/g, function(c) { return '\\' + c });
+    source += code.slice(index, offset).replace(/\$\$/g, "$").replace(escaper, escapeChar);
     index = offset + match.length;
 
     if (statement) {

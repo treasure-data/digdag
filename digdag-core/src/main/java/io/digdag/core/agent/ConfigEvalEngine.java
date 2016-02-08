@@ -193,7 +193,7 @@ public class ConfigEvalEngine
     {
         basePath = basePath.toAbsolutePath().normalize();
         Path absPath = basePath.resolve(fileName).normalize();
-        if (absPath.toString().startsWith(basePath.toString())) {
+        if (!absPath.toString().startsWith(basePath.toString())) {
             throw new FileNotFoundException("file name must not include ..: " + fileName);
         }
 
