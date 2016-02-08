@@ -19,8 +19,6 @@ public abstract class TaskRequest
 
     public abstract Optional<String> getRevision();
 
-    public abstract Optional<String> getDagfilePath();
-
     public abstract Config getLocalConfig();
 
     public abstract Config getConfig();

@@ -236,7 +236,6 @@ public class DatabaseMigrator
                     .addString("name", "not null")
                     // TODO disabled flag
                     .addMediumText("default_params", "")
-                    .addString("dagfile_path", "not null")
                     .addString("archive_type", "not null")
                     .addString("archive_path", "")
                     .addBinary("archive_md5", "")

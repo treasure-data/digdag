@@ -16,6 +16,7 @@ public abstract class ArchiveMetadata
     @JsonProperty("workflows")
     public abstract WorkflowDefinitionList getWorkflowList();
 
+    // TODO this is not used since c545f2d24049c4d1ebfbdf0594681dfdf501fb6d. should be removed?
     @JsonProperty("dagfile_path")
     public abstract String getDagfilePath();
 

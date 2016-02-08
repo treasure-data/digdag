@@ -152,7 +152,6 @@ public class LocalSite
                 "default",
                 Revision.revisionBuilder()
                     .name(revisionName)
-                    .dagfilePath(archive.getDagfilePath())
                     .archiveType("null")
                     .defaultParams(archive.getDefaultParams())
                     .build(),

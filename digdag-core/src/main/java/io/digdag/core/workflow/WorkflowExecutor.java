@@ -658,7 +658,6 @@ public class WorkflowExecutor
                     .repositoryId(attempt.getSession().getRepositoryId())
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
-                    .dagfilePath(rev.transform(it -> it.getDagfilePath()))
                     .localConfig(task.getConfig().getLocal())
                     .config(params)
                     .lastStateParams(task.getStateParams())

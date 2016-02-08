@@ -271,7 +271,7 @@ public class DatabaseRepositoryStoreManager
         {
             try {
                 int revId = catchConflict(() ->
-                    dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getDagfilePath(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
+                    dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
                     "revision=%s in repository id=%d", revision.getName(), repoId);
                 try {
                     return requiredResource(
@@ -559,10 +559,10 @@ public class DatabaseRepositoryStoreManager
         int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into revisions" +
-                " (repository_id, name, default_params, dagfile_path, archive_type, archive_md5, archive_path, created_at)" +
-                " values (:repoId, :name, :defaultParams, :dagfilePath, :archiveType, :archiveMd5, :archivePath, now())")
+                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
+                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("dagfilePath") String dagfilePath, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
+        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
 
         @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
@@ -643,7 +643,6 @@ public class DatabaseRepositoryStoreManager
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .name(r.getString("name"))
                 .defaultParams(cfm.fromResultSetOrEmpty(r, "default_params"))
-                .dagfilePath(r.getString("dagfile_path"))
                 .archiveType(r.getString("archive_type"))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))

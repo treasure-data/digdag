@@ -204,7 +204,6 @@ public class RepositoryResource
                             Revision.revisionBuilder()
                                 .name(revision)
                                 .defaultParams(meta.getDefaultParams())
-                                .dagfilePath(meta.getDagfilePath())
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))
