@@ -35,21 +35,35 @@ class Env(object):
     def set_state(self, key, value):
         self.state_params[key] = value
 
-    def export_param(self, key, value):
+    def export(self, key, value):
+        self.export_params[key] = value
+
+    def export_children(self, key, value):
         if "export" not in self.subtask_config:
             self.subtask_config["export"] = {}
         return self.subtask_config["export"]
 
-    def carry_param(self, key, value):
-        self.export_params[key] = value
-
-    def add_subtask(self, function, **params):
-        if hasattr(function, "im_class"):
-            command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
+    def add_subtask(self, function=None, **params):
+        if function is not None and not isinstance(function, dict):
+            if hasattr(function, "im_class"):
+                # Python 2
+                command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
+            else:
+                # Python 3
+                command = ".".join([function.__module__, function.__name__])
+            config = params
+            config["py>"] = command
         else:
-            command = ".".join([function.__module__, function.__name__])
-        params["py>"] = command
-        self.subtask_config["+subtask" + str(self.subtask_index)] = params
+            if isinstance(function, dict):
+                config = function.copy()
+                config.update(params)
+            else:
+                config = params
+        try:
+            json.dumps(config)
+        except Exception as error:
+            raise TypeError("Parameters must be serializable using JSON: %s" % str(error))
+        self.subtask_config["+subtask" + str(self.subtask_index)] = config
         self.subtask_index += 1
 
 digdag_mod.env = Env(digdag_env_mod)
