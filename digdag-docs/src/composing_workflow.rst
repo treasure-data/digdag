@@ -38,14 +38,12 @@ An example digdag.yml file is like this:
 "+" is a task
 ----------------------------------
 
-Key names starting with ``+`` sign is a task. Tasks run from the beggning to the end in order.
-
-A task can be nested as a child of another task. In above example, ``+step2`` runs after ``+step1`` as a child of ``+main`` task.
+Key names starting with ``+`` sign is a task. Tasks run from the top to bottom in order. A task can be nested as a child of another task. In above example, ``+step2`` runs after ``+step1`` as a child of ``+main`` task.
 
 task types>
 ----------------------------------
 
-A task with ``type>: command`` parameter runs an action. You can choose various kinds of actions such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Task types <task_types.html>`_ page for the list of available types and examples.
+A task with ``type>: command`` parameter executes an action. You can choose various kinds of actions such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Task types <task_types.html>`_ page for the list of built-in types.
 
 .. note::
 
@@ -55,7 +53,7 @@ A task with ``type>: command`` parameter runs an action. You can choose various 
 Using ${variables}
 ----------------------------------
 
-A workflow can embed variables using ``${...}`` syntax. You can use built-in variables or define your own variables in the workflow.
+A workflow can embed variables using ``${...}`` syntax. You can use built-in variables or define your own variables.
 
 Here is the list of built-in variables:
 
@@ -69,7 +67,7 @@ Name                  Description                                  Example
 Defining variables
 ----------------------------------
 
-You can define variables using 3 ways:
+You can define variables in 3 ways:
 
 * Using ``export`` parameter in YAML
 * Setting variable programmably using API
@@ -78,18 +76,21 @@ You can define variables using 3 ways:
 Using export parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In YAML file, ``export:`` directive defines a variable. Following tasks can use the defined variables. With following example, ``+step3`` can see ``my_var=1``.
+In YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. With following example, ``+step1`` can use ``foo=1``, and ``+step3`` can use ``foo=1`` and ``bar=2``.
 
 .. code-block:: yaml
 
     +workflow1:
+      export:
+        foo: 1
+
       +step1:
         py>: tasks.MyWorkflow.step1
 
       +step2:
         py>: tasks.MyWorkflow.step2
         export:
-          my_var: 1
+          bar: 2
 
       +step3:
         py>: tasks.MyWorkflow.step3
@@ -97,7 +98,7 @@ In YAML file, ``export:`` directive defines a variable. Following tasks can use 
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With API, you can set variables programmably. For exampe, Python API is ``digdag.task.export_params``:
+You can set variables programmably using language API. For exampe, Python API provides ``digdag.task.export_params``:
 
 .. code-block:: python
 
@@ -110,6 +111,12 @@ With API, you can set variables programmably. For exampe, Python API is ``digdag
       def step3(self, my_var):
         print("my_var should be 2: %d" % my_var)
 
+See language API documents for details:
+
+* `Python API <python_api.html>`_
+* `Ruby API <ruby_api.html>`_
+* `Shell script API <shell_api.html>`_
+
 Starting a session with variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -117,7 +124,7 @@ You can set variables when you start a new workflow session. To set variables, u
 
 .. code-block:: console
 
-    $ digdag run -p my_var1=1 -p foo=bar
+    $ digdag run -p my_var1=1 -p my_var2=foo
 
 !include another file
 ----------------------------------
@@ -141,16 +148,19 @@ If ``parallel: true`` parameter is set, child tasks run in parallel:
     run: +main
 
     +main:
-      parallel: true
+      +prepare
+        # +data1, +data2, and +data3 run in parallel.
+        parallel: true
 
-      # +step1, +step2, and +step3 run in parallel
+        +data1:
+          sh>: tasks/prepare_data1.sh
 
-      +step1:
-        sh>: tasks/step1.sh
+        +data2:
+          sh>: tasks/prepare_data2.sh
 
-      +step2:
-        sh>: tasks/step2.sh
+        +data3:
+          sh>: tasks/prepare_data3.sh
 
-      +step3:
-        sh>: tasks/step3.sh
+      +analyze
+          sh>: tasks/analyze_prepared_data_sets.sh
 
