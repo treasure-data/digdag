@@ -13,13 +13,49 @@ with open(in_file) as f:
     in_data = json.load(f)
     config = in_data['config']
 
-mod = sys.modules['digdag_env'] = imp.new_module('digdag_env')
-mod.config = config
-mod.subtask_config = collections.OrderedDict()
-mod.state_params = {}
-mod.export_params = {}
+# fake digdag_env module already imported
+digdag_env_mod = sys.modules['digdag_env'] = imp.new_module('digdag_env')
+digdag_env_mod.config = config
+digdag_env_mod.subtask_config = collections.OrderedDict()
+digdag_env_mod.state_params = {}
+digdag_env_mod.export_params = {}
 import digdag_env
 
+# fake digdag module already imported
+digdag_mod = sys.modules['digdag'] = imp.new_module('digdag')
+
+class Env(object):
+    def __init__(self, digdag_env_mod):
+        self.config = digdag_env_mod.config
+        self.subtask_config = digdag_env_mod.subtask_config
+        self.state_params = digdag_env_mod.state_params
+        self.export_params = digdag_env_mod.export_params
+        self.subtask_index = 0
+
+    def set_state(self, key, value):
+        self.state_params[key] = value
+
+    def export_param(self, key, value):
+        if "export" not in self.subtask_config:
+            self.subtask_config["export"] = {}
+        return self.subtask_config["export"]
+
+    def carry_param(self, key, value):
+        self.export_params[key] = value
+
+    def add_subtask(self, function, **params):
+        if hasattr(function, "im_class"):
+            command = ".".join([function.im_class.__module__, function.im_class.__name__, function.__name__])
+        else:
+            command = ".".join([function.__module__, function.__name__])
+        params["py>"] = command
+        self.subtask_config["+subtask" + str(self.subtask_index)] = params
+        self.subtask_index += 1
+
+digdag_mod.env = Env(digdag_env_mod)
+import digdag
+
+# add the archive path to improt path
 sys.path.append(os.path.abspath(os.getcwd()))
 
 def digdag_inspect_command(command):

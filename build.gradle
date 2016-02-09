@@ -216,6 +216,3 @@ task release() {
     }
 }
 
-task pydist(type: Exec) {
-    commandLine 'python', 'setup.py', 'sdist'
-}

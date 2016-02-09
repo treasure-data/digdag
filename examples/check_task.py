@@ -1,7 +1,6 @@
 from __future__ import print_function
 import digdag
 
-
 def generate():
     with open("result.csv", "w") as f:
         f.write("ok")
@@ -14,12 +13,11 @@ def check_generated():
         raise Exception("Output data is too small")
     print("ok.")
 
-
-class Generator(digdag.BaseTask):
+class Generator(object):
     def run(self):
         with open("result.csv", "w") as f:
             f.write("ok")
-        digdag.task.export_params["path"] = "result.csv"
+        digdag.env.export_params["path"] = "result.csv"
 
     def check(self, path):
         print("checking "+path)

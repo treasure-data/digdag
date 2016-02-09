@@ -16,7 +16,7 @@ module DigdagEnv
   CARRY_PARAMS = {}
 end
 
-# TODO move this to digdag.gem
+# should this be a digdag.gem so that users can unit-test a command without running digdag?
 module Digdag
   def self.config
     DigdagEnv::CONFIG
@@ -39,7 +39,7 @@ module Digdag
   end
 end
 
-# add current directory to LOAD_PATH
+# add the archive path to LOAD_PATH
 $LOAD_PATH << File.expand_path(Dir.pwd)
 
 def digdag_inspect_command(command)
