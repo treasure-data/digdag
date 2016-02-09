@@ -97,8 +97,8 @@ public class PyTaskRunnerFactory
             inputs.addAll(data.getListOrEmpty("inputs", Config.class));
             outputs.addAll(data.getListOrEmpty("outputs", Config.class));
 
-            Config carryParams = data.getNestedOrGetEmpty("carry_params");
-            return carryParams;
+            Config exportParams = data.getNestedOrGetEmpty("export_params");
+            return exportParams;
         }
 
         private Config runCode(Config config, Config taskEnv)

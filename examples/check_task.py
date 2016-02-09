@@ -19,7 +19,7 @@ class Generator(digdag.BaseTask):
     def run(self):
         with open("result.csv", "w") as f:
             f.write("ok")
-        digdag.task.carry_params["path"] = "result.csv"
+        digdag.task.export_params["path"] = "result.csv"
 
     def check(self, path):
         print("checking "+path)

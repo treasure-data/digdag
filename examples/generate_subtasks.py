@@ -3,7 +3,7 @@ import digdag
 
 class ParallelProcess(digdag.BaseTask):
     def split(self):
-        self.carry_params["task_count"] = 3
+        self.export_params["task_count"] = 3
 
     def run(self, task_count):
         for i in range(task_count):

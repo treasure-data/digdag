@@ -18,7 +18,6 @@ mod.config = config
 mod.subtask_config = collections.OrderedDict()
 mod.state_params = {}
 mod.export_params = {}
-mod.carry_params = {}
 import digdag_env
 
 sys.path.append(os.path.abspath(os.getcwd()))
@@ -87,7 +86,6 @@ out = {
     'subtask_config': digdag_env.subtask_config,
     'export_params': digdag_env.export_params,
     'state_params': digdag_env.state_params,
-    'carry_params': digdag_env.carry_params,
 }
 
 with open(out_file, 'w') as f:

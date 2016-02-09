@@ -18,7 +18,7 @@ class SplitFiles(digdag.BaseTask):
             paths.append(path)
             self.outputs.append({"file": path})  # reports data lineage tracking
 
-        self.carry_params["paths"] = paths
+        self.export_params["paths"] = paths
 
 class CheckFiles(digdag.BaseTask):
     def run(self):

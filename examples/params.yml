@@ -45,11 +45,11 @@ run: +params
       py>: examples.params.export_params_step3
 
   # To carry parameters to dependent tasks, you can set parameters
-  # to "digdag.task.carry_params". Those carry_params are global
+  # to "digdag.task.export_params". Those export_params are global
   # parameters that affect all following tasks.
-  +carry_params:
-    +set_carry:
-      py>: examples.params.set_carry
+  +export_params:
+    +set_export:
+      py>: examples.params.set_export
 
     # dependent tasks use carried parameters
     +dependent1:

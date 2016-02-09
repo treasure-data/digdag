@@ -91,7 +91,6 @@ out = {
   'subtask_config' => Digdag.subtask_config,
   'export_params' => Digdag.export_params,
   'state_params' => Digdag.state_params,
-  'carry_params' => Digdag.carry_params,
 }
 
 File.open(out_file, "w") {|f| f.write out.to_json }

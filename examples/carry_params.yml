@@ -1,8 +1,0 @@
-run: +carry_params
-+carry_params:
-  +set:
-    py>: examples.carry_params.set_my_param
-
-  +get:
-    py>: examples.carry_params.show_my_param
-

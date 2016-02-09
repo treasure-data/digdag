@@ -18,8 +18,8 @@ def export_params_step3(mysql):
 def export_overwrite(mysql):
     print("export_overwrite: mysql = "+str(mysql))
 
-def set_carry():
-    digdag.task.carry_params["table"] = "carried information"
+def set_export():
+    digdag.task.export_params["table"] = "carried information"
 
 def show_carry(table):
     print("show_carry: table = "+table)
