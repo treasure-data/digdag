@@ -53,24 +53,96 @@ def digdag_inspect_command(command)
 end
 
 def digdag_inspect_arguments(receiver, method_name, config)
-  arity = receiver.method(method_name).arity
-  if method_name == :new
+  parameters = receiver.method(method_name).parameters
+
+  if method_name == :new && parameters == [[:rest]]
+    # This is Object.new that forwards all arguments to #initialize
     begin
-      initialize_arity = receiver.instance_method(:initialize).arity
-      if arity < 0 && initialize_arity < 0
-        arity = [arity, initialize_arity].min
-      else
-        arity = [arity, initialize_arity].max
-      end
+      parameters = receiver.instance_method(:initialize).parameters
     rescue NameError => e
     end
   end
 
-  if arity == 0
-    return []
-  else
-    return [config]
+  args = []
+  keywords = nil
+  parameters.each do |kind,name|
+    key = name.to_s
+    case kind
+    when :req
+      # required argument like a
+      unless config.has_key?(key)
+        if receiver.is_a?(Class)
+          raise ArgumentError, "Method '#{receiver}.#{method_name}' requiers parameter '#{key}' but not set"
+        else
+          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requiers parameter '#{key}' but not set"
+        end
+      end
+      args << config[key]
+
+    when :opt
+      # optional argument like a=nil
+      if config.has_key?(key)
+        args << config[key]
+      else
+        # use the default value.
+      end
+
+    when :rest
+      # variable-length arguments like *a
+      # there're really we can do here to keep consistency with :opt.
+      # should this be an error?
+
+    when :keyreq
+      # required keyword argument like a:
+      unless config.has_key?(key)
+        if receiver.is_a?(Class)
+          raise ArgumentError, "Method '#{receiver}.#{method_name}' requiers parameter '#{key}' but not set"
+        else
+          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requiers parameter '#{key}' but not set"
+        end
+      end
+      if keywords.nil?
+        keywords = {}
+        args << keywords
+      end
+      keywords[name] = config[key]
+
+    when :key
+      # optional keyword argument like a: nil
+      if config.has_key?(key)
+        if keywords.nil?
+          keywords = {}
+          args << keywords
+        end
+        keywords[name] = config[key]
+      else
+        # use the default value.
+      end
+
+    when :keyrest
+      # rest-of-keywords argument like **a
+      # symbolize keys otherwise method call causes error:
+      # "TypeError: wrong argument type String (expected Symbol)"
+      if keywords.nil?
+        keywords = {}
+        args << keywords
+      end
+      keywords.merge!(digdag_symbolize_keys(config))
+    end
   end
+
+  return args
+end
+
+def digdag_symbolize_keys(hash)
+  built = {}
+  hash.each_pair do |k,v|
+    if v.is_a?(Hash)
+      v = digdag_symbolize_keys(v)
+    end
+    built[k.to_s.to_sym] = v
+  end
+  return built
 end
 
 clazz, method_name, is_instance_method = digdag_inspect_command(command)

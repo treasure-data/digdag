@@ -33,14 +33,14 @@ def digdag_inspect_command(command):
         try:
             callable_type = getattr(mod, method_name)
         except AttributeError as error:
-            raise AttributeError("Module '"+".".join(fragments)+"' has no attribute '"+method_name+"'")
+            raise AttributeError("Module '%s' has no attribute '%s'" % (".".join(fragments), method_name))
     except ImportError as error:
         class_name = fragments.pop()
         mod = __import__(".".join(fragments), fromlist=[class_name])
         try:
             class_type = getattr(mod, class_name)
         except AttributeError as error:
-            raise AttributeError("Module '"+".".join(fragments)+"' has no attribute '"+class_name+"'")
+            raise AttributeError("Module '%s' has no attribute '%s'" % (".".join(fragments), method_name))
 
     if type(callable_type) == type:
         class_type = callable_type
@@ -52,20 +52,32 @@ def digdag_inspect_command(command):
         return (callable_type, None)
 
 def digdag_inspect_arguments(callable_type, exclude_self, config):
+    if callable_type == object.__init__:
+        # object.__init__ accepts *varargs and **keywords but it throws exception
+        return {}
     spec = inspect.getargspec(callable_type)
+    args = {}
+    for idx, key in enumerate(spec.args):
+        if exclude_self and idx == 0:
+            continue
+        if key in config:
+            args[key] = config[key]
+        else:
+            if spec.defaults is None or len(spec.defaults) < idx:
+                # this keyword is required but not in config. raising an error.
+                if hasattr(callable_type, '__qualname__'):
+                    # Python 3
+                    name = callable_type.__qualname__
+                elif hasattr(callable_type, 'im_class'):
+                    # Python 2
+                    name = "%s.%s" % (callable_type.im_class.__name__, callable_type.__name__)
+                else:
+                    name = callable_type.__name__
+                raise TypeError("Method '%s' requires parameter '%s' but not set" % (name, key))
     if spec.keywords:
+        # above code was only for validation
         return config
     else:
-        if exclude_self:
-            keys = spec.args[1:]
-        else:
-            keys = spec.args
-        args = {}
-        for key in keys:
-            if key in config:
-                args[key] = config[key]
-            else:
-                args[key] = None
         return args
 
 callable_type, method_name = digdag_inspect_command(command)
