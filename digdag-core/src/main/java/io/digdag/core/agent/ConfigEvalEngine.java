@@ -66,10 +66,10 @@ public class ConfigEvalEngine
     private Invocable newTemplateInvocable(Config params)
     {
         ScriptEngine jsEngine = jsEngineFactory.getScriptEngine(new String[] {
-            "--language=es6",
-                "--no-java",
-                "--no-syntax-extensions",
-                "-timezone=" + params.get("timezone", String.class),
+            //"--language=es6",  // this is not even accepted with jdk1.8.0_20 and has a bug with jdk1.8.0_51
+            "--no-java",
+            "--no-syntax-extensions",
+            "-timezone=" + params.get("timezone", String.class),
         });
         try {
             jsEngine.eval(DIGDAG_JS);
