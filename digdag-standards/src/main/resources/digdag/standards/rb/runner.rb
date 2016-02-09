@@ -72,9 +72,9 @@ def digdag_inspect_arguments(receiver, method_name, config)
       # required argument like a
       unless config.has_key?(key)
         if receiver.is_a?(Class)
-          raise ArgumentError, "Method '#{receiver}.#{method_name}' requiers parameter '#{key}' but not set"
+          raise ArgumentError, "Method '#{receiver}.#{method_name}' requires parameter '#{key}' but not set"
         else
-          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requiers parameter '#{key}' but not set"
+          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requires parameter '#{key}' but not set"
         end
       end
       args << config[key]
@@ -96,9 +96,9 @@ def digdag_inspect_arguments(receiver, method_name, config)
       # required keyword argument like a:
       unless config.has_key?(key)
         if receiver.is_a?(Class)
-          raise ArgumentError, "Method '#{receiver}.#{method_name}' requiers parameter '#{key}' but not set"
+          raise ArgumentError, "Method '#{receiver}.#{method_name}' requires parameter '#{key}' but not set"
         else
-          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requiers parameter '#{key}' but not set"
+          raise ArgumentError, "Method '#{receiver.class}##{method_name}' requires parameter '#{key}' but not set"
         end
       end
       if keywords.nil?

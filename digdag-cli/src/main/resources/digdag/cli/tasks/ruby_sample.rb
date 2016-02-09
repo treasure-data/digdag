@@ -1,6 +1,6 @@
 
 class MyWorkflow
-  def step3(config)
-    puts "Step3 of session #{config['session_time']}"
+  def step3(session_time:)
+    puts "Step3 of session #{session_time}"
   end
 end
