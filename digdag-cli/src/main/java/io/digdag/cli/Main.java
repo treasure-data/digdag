@@ -48,7 +48,7 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init());
+        jc.addCommand("new", new Init(), "init");
         jc.addCommand("run", new Run(), "r");
         jc.addCommand("check", new Check(), "c");
         jc.addCommand("scheduler", new Sched(), "sched");
@@ -199,7 +199,7 @@ public class Main
     {
         System.err.println("Usage: digdag <command> [options...]");
         System.err.println("  Local-mode commands:");
-        System.err.println("    init <path>                      create a new workflow project");
+        System.err.println("    new <path>                       create a new workflow project");
         System.err.println("    r[un] [+name]                    run a workflow");
         System.err.println("    c[heck]                          show workflow definitions");
         System.err.println("    sched[uler]                      run a scheduler server");

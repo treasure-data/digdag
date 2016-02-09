@@ -1,8 +1,14 @@
 run: +main
 
 +main:
-  +task1:
-    sh>: echo "this task runs first."
+  +step1:
+    sh>: tasks/shell_sample.sh
 
-  +my_task_2:
-    sh>: echo "this task runs next."
+  +step2:
+    # defined at tasks/__init__.py
+    py>: tasks.MyWorkflow.step2
+
+  +step3:
+    rb>: MyWorkflow.step3
+    require: tasks/ruby_sample.rb
+

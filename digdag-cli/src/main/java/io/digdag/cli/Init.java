@@ -26,11 +26,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag init <path>");
+        System.err.println("Usage: digdag new <path>");
         System.err.println("  Options:");
         Main.showCommonOptions();
         System.err.println("  Example:");
-        System.err.println("    $ digdag init \".\"");
+        System.err.println("    $ digdag init mydag");
         return systemExit(error);
     }
 
@@ -40,29 +40,39 @@ public class Init
         File dir = new File(path);
 
         ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", dir);
-        gen.mkdir(".");
+        gen.mkdir(".");  // creates `dir`
 
         if (!gen.exists("digdag")) {
             gen.cp("digdag.sh", "digdag");
             gen.setExecutable("digdag");
         }
+
         gen.mkdir(".digdag-wrapper");
-        File f = getFatJarPath();
-        if (f != null) {
-            gen.cpAbsoluteSource(f, ".digdag-wrapper/digdag.jar");
+        File localJarPath = getFatJarPath();
+        if (localJarPath != null) {
+            gen.cpAbsoluteSource(localJarPath, ".digdag-wrapper/digdag.jar");
             gen.setExecutable(".digdag-wrapper/digdag.jar");
+        }
+
+        if (!gen.exists(".gitignore")) {
+            gen.cp("gitignore", ".gitignore");
         }
 
         if (gen.exists(Run.DEFAULT_DAGFILE)) {
             System.out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
         }
         else {
+            gen.mkdir("tasks");
+            gen.cp("tasks/shell_sample.sh", "tasks/shell_sample.sh");
+            gen.setExecutable("tasks/shell_sample.sh");
+            gen.cp("tasks/ruby_sample.rb", "tasks/ruby_sample.rb");
+            gen.cp("tasks/__init__.py", "tasks/__init__.py");
             gen.cp("digdag.yml", Run.DEFAULT_DAGFILE);
             if (path.equals(".")) {
-                System.out.println("Done. Run `./digdag r` to run. Enjoy!");
+                System.out.println("Done. Type `./digdag r` to run the workflow. Enjoy!");
             }
             else {
-                System.out.println("Done. Run `cd " + path +"` and `./digdag r` to run. Enjoy!");
+                System.out.println("Done. Type `cd " + path +"` and `./digdag r` to run the workflow. Enjoy!");
             }
         }
     }
