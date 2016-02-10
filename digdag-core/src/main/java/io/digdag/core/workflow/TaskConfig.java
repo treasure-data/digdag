@@ -1,14 +1,68 @@
 package io.digdag.core.workflow;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.chrono.IsoChronology;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.digdag.core.session.SessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.client.config.Config;
+import static java.util.Locale.ENGLISH;
 
 public class TaskConfig
 {
+    public static void setRuntimeBuiltInParams(Config params,
+            StoredSessionAttemptWithSession attempt)
+    {
+        // timezone
+        if (!params.has("timezone")) {
+            params.set("timezone", "UTC");
+        }
+        ZoneId timeZone = params.get("timezone", ZoneId.class);
+
+        // session_*
+        setTimeParameters(params, "session_", timeZone, attempt.getSession().getInstant());
+
+        // repository_*
+        params.set("repository_id", attempt.getSession().getRepositoryId());
+
+        params.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
+    }
+
+    private static final DateTimeFormatter TIME_FORMAT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
+
+    private static final DateTimeFormatter DATE_FORMAT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd", ENGLISH);
+
+    private static final DateTimeFormatter DATE_COMPACT_FORMAT =
+        DateTimeFormatter.ofPattern("yyyyMMdd", ENGLISH);
+
+    private static final DateTimeFormatter DATETIME_FORMAT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", ENGLISH);
+
+    private static final DateTimeFormatter DATETIME_COMPACT_FORMAT =
+        DateTimeFormatter.ofPattern("yyyyMMddHHmmss", ENGLISH);
+
+    private static final DateTimeFormatter TZ_OFFSET_FORMAT =
+        DateTimeFormatter.ofPattern("xx", ENGLISH);
+
+    private static void setTimeParameters(Config params, String prefix, ZoneId timeZone, Instant instant)
+    {
+        params.set(prefix + "time", TIME_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "date", DATE_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "date_compact", DATE_COMPACT_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "datetime", DATETIME_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "datetime_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "tz_offset", TZ_OFFSET_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "unixtime", instant.getEpochSecond());
+    }
+
     public static void validateAttempt(SessionAttempt attempt)
     {
     }
@@ -19,17 +73,6 @@ public class TaskConfig
         Config export = copy.getNestedOrGetEmpty("export");
         copy.remove("export");
         return new TaskConfig(copy, export);
-    }
-
-    public static void setRuntimeBuiltInParams(Config params,
-            StoredSessionAttemptWithSession attempt)
-    {
-        if (!params.has("timezone")) {
-            params.set("timezone", "UTC");
-        }
-        params.set("repository_id", attempt.getSession().getRepositoryId());
-        params.set("session_time", attempt.getSession().getInstant());
-        params.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
     }
 
     @JsonCreator
