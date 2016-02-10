@@ -5,6 +5,10 @@ It handles dependency resolution so that tasks run in order or in parallel.
 
 Digdag fits simple replacement of cron, IT operations automation, data analytics batch jobs, machine learning pipelines, and many more by using Directed Acyclic Graphs (DAG) as the infrastructure.
 
+Get Started in 5 Minutes
+==================================
+Click here
+
 Concepts
 ==================================
 
