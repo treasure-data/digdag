@@ -35,7 +35,7 @@ Got error?
 
 If you got an error such as **'Unsupported major.minor version 52.0'**, please download and install the latest `Java SE Development Kit 8 <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_ (must be newer than **8u72**).
 
-3. (Adding a data loding task from MySQL to local CSV...)
+3. (Adding a data loding task from MySQL to CSV files...)
 ----------------------------------
 
 4. (Adding a Python task with variables ...)
@@ -44,10 +44,13 @@ If you got an error such as **'Unsupported major.minor version 52.0'**, please d
 5. (Sending an email if a task fails)
 ----------------------------------
 
+6. (Resuming a failed session from the middle)
+----------------------------------
+
 Next steps
 ----------------------------------
 
 * `Scheduling workflow <scheduling_workflow.html>`_
-* `Detailed documents about workflow definition <scheduling_workflow.html>`_
+* `Detailed documents about workflow definition <workflow_definition.html>`_
 * `More choices of task types <task_types.html>`_
 
