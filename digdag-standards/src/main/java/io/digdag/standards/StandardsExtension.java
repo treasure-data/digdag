@@ -14,6 +14,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.DailySchedulerFactory;
 import io.digdag.standards.scheduler.HourlySchedulerFactory;
+import io.digdag.standards.scheduler.MinutesIntervalSchedulerFactory;
 import io.digdag.standards.queue.MemoryTaskQueueFactory;
 import io.digdag.standards.task.PyTaskRunnerFactory;
 import io.digdag.standards.task.RbTaskRunnerFactory;
@@ -55,6 +56,7 @@ public class StandardsExtension
             schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(DailySchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(HourlySchedulerFactory.class).in(Scopes.SINGLETON);
+            schedulerBinder.addBinding().to(MinutesIntervalSchedulerFactory.class).in(Scopes.SINGLETON);
         }
     }
 }
