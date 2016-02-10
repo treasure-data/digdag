@@ -106,14 +106,12 @@ public class RequireTaskRunnerFactory
             int repositoryId = config.get("repository_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
-            ZoneId defaultTimeZone = config.get("timezone", ZoneId.class);
             Config overwriteParams = config.getNestedOrGetEmpty("params");
             SessionStateFlags flags = callback.startSession(
                     repositoryId,
                     workflowName,
                     instant,
                     retryAttemptName,
-                    defaultTimeZone,
                     overwriteParams);
 
             return flags.isDone();

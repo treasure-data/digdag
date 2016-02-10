@@ -1,7 +1,6 @@
 package io.digdag.core.agent;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
@@ -25,6 +24,5 @@ public interface TaskCallbackApi
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
-            ZoneId defaultTimeZone,
             Config overwriteParams);
 }

@@ -6,24 +6,36 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
 import java.time.chrono.IsoChronology;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.digdag.core.session.SessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigException;
 import static java.util.Locale.ENGLISH;
 
 public class TaskConfig
 {
-    public static void setRuntimeBuiltInParams(Config params,
+    public static Config setRuntimeBuiltInParams(Config taskLocalParams,
+            Optional<StoredRevision> stored,
             StoredSessionAttemptWithSession attempt)
     {
-        // timezone
-        if (!params.has("timezone")) {
-            params.set("timezone", "UTC");
+        Config params = taskLocalParams.getFactory().create();
+
+        ZoneId timeZone;
+        try {
+            timeZone = ScheduleExecutor.getTaskTimeZone(taskLocalParams, stored.transform(it -> it.getDefaultParams()));
         }
-        ZoneId timeZone = params.get("timezone", ZoneId.class);
+        catch (ConfigException ce) {
+            timeZone = ZoneId.of("UTC");
+        }
+        params.set("timezone", timeZone);
 
         // session_*
         setTimeParameters(params, "session_", timeZone, attempt.getSession().getInstant());
@@ -32,6 +44,8 @@ public class TaskConfig
         params.set("repository_id", attempt.getSession().getRepositoryId());
 
         params.set("retry_attempt_name", attempt.getRetryAttemptName().orNull());
+
+        return params;
     }
 
     private static final DateTimeFormatter TIME_FORMAT =
@@ -57,8 +71,8 @@ public class TaskConfig
         params.set(prefix + "time", TIME_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "date", DATE_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "date_compact", DATE_COMPACT_FORMAT.withZone(timeZone).format(instant));
-        params.set(prefix + "datetime", DATETIME_FORMAT.withZone(timeZone).format(instant));
-        params.set(prefix + "datetime_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "local_time", DATETIME_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "local_time_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "tz_offset", TZ_OFFSET_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "unixtime", instant.getEpochSecond());
     }

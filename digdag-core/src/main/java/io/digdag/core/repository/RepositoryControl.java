@@ -85,7 +85,7 @@ public class RepositoryControl
             Optional<Config> schedConfig = ScheduleExecutor.getScheduleConfig(def);
 
             if (schedConfig.isPresent()) {
-                ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(revision.getDefaultParams(), def);
+                ZoneId timeZone = ScheduleExecutor.getRevisionTimeZone(revision.getDefaultParams(), def);
                 Scheduler sr = srm.getScheduler(schedConfig.get(), timeZone);
                 ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
                 Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getScheduleTime());

@@ -293,7 +293,7 @@ public class DatabaseRepositoryStoreManager
                 catch (ResourceNotFoundException ex2) {
                     throw new IllegalStateException("Database state error", ex2);
                 }
-                if (revision.equals(Revision.revisionBuilder().from(rev).build())) {
+                if (revision.equals(Revision.copyOf(rev))) {
                     return rev;
                 }
                 // TODO once implement deleteRevision, delete the current revision and overwrite it

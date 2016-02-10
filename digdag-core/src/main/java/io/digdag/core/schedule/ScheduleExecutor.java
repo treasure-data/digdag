@@ -99,11 +99,24 @@ public class ScheduleExecutor
         return def.getConfig().getOptional("schedule", Config.class);
     }
 
-    public static ZoneId getWorkflowTimeZone(Config defaultParams, WorkflowDefinition def)
+    public static ZoneId getRevisionTimeZone(Config revisionDefaultParams, WorkflowDefinition def)
     {
-        return def.getConfig().get("timezone", ZoneId.class,
-                defaultParams.get("timezone", ZoneId.class,
-                    ZoneId.of("UTC")));
+        return revisionDefaultParams.get("timezone", ZoneId.class,
+                    ZoneId.of("UTC"));
+    }
+
+    // used by WorkflowExecutor
+    public static ZoneId getTaskTimeZone(Config taskLocalParams, Optional<Config> revisionDefaultParams)
+    {
+        if (revisionDefaultParams.isPresent()) {
+            return taskLocalParams.get("timezone", ZoneId.class,
+                    revisionDefaultParams.get().get("timezone", ZoneId.class,
+                        ZoneId.of("UTC")));
+        }
+        else {
+            return taskLocalParams.get("timezone", ZoneId.class,
+                    ZoneId.of("UTC"));
+        }
     }
 
     public boolean schedule(ScheduleControl lockedSched)
@@ -116,7 +129,7 @@ public class ScheduleExecutor
         try {
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
-            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            ZoneId timeZone = getRevisionTimeZone(def.getRevisionDefaultParams(), def);
             Config schedConfig = getScheduleConfig(def).get();
 
             Scheduler sr = srm.getScheduler(schedConfig, timeZone);
@@ -258,7 +271,7 @@ public class ScheduleExecutor
         throws ResourceNotFoundException
     {
         StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-        ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+        ZoneId timeZone = getRevisionTimeZone(def.getRevisionDefaultParams(), def);
         return srm.getScheduler(getScheduleConfig(def).get(), timeZone);
     }
 
@@ -273,7 +286,7 @@ public class ScheduleExecutor
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            ZoneId timeZone = getRevisionTimeZone(def.getRevisionDefaultParams(), def);
             Scheduler sr = srm.getScheduler(getScheduleConfig(def).get(), timeZone);
 
             List<Instant> instants = new ArrayList<>();

@@ -118,7 +118,7 @@ public class RevisionAutoReloader
                     ArchiveMetadata.of(
                         lastDagfile.getWorkflowList(),
                         lastDagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
-                        dagfilePath.toString()),
+                        lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
                     Instant.now());
         }
 
@@ -133,7 +133,7 @@ public class RevisionAutoReloader
                             ArchiveMetadata.of(
                                 dagfile.getWorkflowList(),
                                 dagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
-                                dagfilePath.toString()),
+                                lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
                             Instant.now());
                     lastDagfile = dagfile;
                     logger.info("Added new revision {}", rev.getName());

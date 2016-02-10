@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -150,10 +149,8 @@ public class LocalSite
     {
         return storeLocalWorkflowsImpl(
                 "default",
-                Revision.revisionBuilder()
-                    .name(revisionName)
+                Revision.builderFromArchive(revisionName, archive)
                     .archiveType("null")
-                    .defaultParams(archive.getDefaultParams())
                     .build(),
                 archive.getWorkflowList(),
                 currentTimeToSchedule);
@@ -171,27 +168,23 @@ public class LocalSite
 
     public StoredSessionAttemptWithSession storeAndStartLocalWorkflows(
             ArchiveMetadata archive,
-            ZoneId defaultTimeZone,
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
 
-        final StoredRevision revision = revWfs.getRevision();
-        final List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
+        StoredRevision rev = revWfs.getRevision();
+        List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
 
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
             AttemptRequest ar = AttemptRequest.builder()
-                .repositoryId(revision.getRepositoryId())
+                .stored(AttemptRequest.Stored.of(rev, def.getId()))
                 .workflowName(def.getName())
                 .instant(Instant.now())
-                .storedWorkflowDefinitionId(Optional.of(def.getId()))
                 .retryAttemptName(Optional.absent())
-                .defaultTimeZone(defaultTimeZone)
-                .revisionDefaultParams(archive.getDefaultParams())
                 .overwriteParams(overwriteParams)
                 .build();
 

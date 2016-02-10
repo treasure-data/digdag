@@ -169,8 +169,10 @@ public class Run
         }
 
         StoredSessionAttemptWithSession attempt = localSite.storeAndStartLocalWorkflows(
-                ArchiveMetadata.of(dagfile, dagfilePath),
-                ZoneId.systemDefault(),  // TODO configurable by cmdline argument
+                ArchiveMetadata.of(
+                    dagfile.getWorkflowList(),
+                    dagfile.getDefaultParams(),
+                    dagfile.getDefaultTimeZone().or(ZoneId.systemDefault())),  // TODO should this systemDefault be configurable by cmdline argument?
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams);
         logger.debug("Submitting {}", attempt);

@@ -187,16 +187,11 @@ public class SessionResource
         StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
 
-        StoredRevision rev = rs.getRevisionById(def.getRevisionId());
-
         AttemptRequest ar = AttemptRequest.builder()
-            .repositoryId(repo.getId())
+            .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
             .instant(request.getInstant())
-            .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(request.getRetryAttemptName())
-            .defaultTimeZone(ZoneId.of("UTC"))
-            .revisionDefaultParams(rev.getDefaultParams())
             .overwriteParams(request.getParams())
             .build();
 

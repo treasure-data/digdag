@@ -31,6 +31,7 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
@@ -119,17 +120,13 @@ public class WorkflowExecutor
             logger.trace("    config: "+task.getConfig());
         }
 
-        Session session = Session.of(ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
-
-        // TODO get tiemzone from default params, overwrite params, or ar.getDefaultTimeZone
-        // TODO set timezone, session_time, etc.
-        Config sessionParams =
-            ar.getRevisionDefaultParams().deepCopy()
-            .setAll(ar.getOverwriteParams());
+        int repoId = ar.getStored().getRepositoryId();
+        Session session = Session.of(repoId, ar.getWorkflowName(), ar.getInstant());
 
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
-                sessionParams, ar.getStoredWorkflowDefinitionId());
+                ar.getOverwriteParams(),
+                Optional.of(ar.getStored().getWorkflowDefinitionId()));
 
         TaskConfig.validateAttempt(attempt);
 
@@ -140,10 +137,10 @@ public class WorkflowExecutor
                 .getSessionStore(siteId)
                 .putAndLockSession(session, (store, storedSession) -> {
                     StoredSessionAttempt storedAttempt;
-                    storedAttempt = store.insertAttempt(storedSession.getId(), ar.getRepositoryId(), attempt);  // this may throw ResourceConflictException:
+                    storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException:
 
                     logger.info("Starting a new session repository id={} workflow name={} instant={}",
-                            ar.getRepositoryId(), ar.getWorkflowName(), ar.getInstant());
+                            repoId, ar.getWorkflowName(), ar.getInstant());
 
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())
@@ -630,18 +627,14 @@ public class WorkflowExecutor
 
             try {
                 // merge order is:
-                //   revision default < attempt < task
-                Config params;
+                //   revision default < attempt < task < runtime
+                Config params = attempt.getParams().getFactory().create();
                 if (rev.isPresent()) {
-                    params = rev.get().getDefaultParams().deepCopy()
-                        .setAll(attempt.getParams());
+                    params.setAll(rev.get().getDefaultParams());
                 }
-                else {
-                    params = attempt.getParams().deepCopy();
-                }
-
+                params.setAll(attempt.getParams());
                 collectParams(params, task, attempt);
-                TaskConfig.setRuntimeBuiltInParams(params, attempt);
+                params.setAll(TaskConfig.setRuntimeBuiltInParams(params, rev, attempt));
 
                 // create TaskRequest for TaskRunnerManager.
                 // TaskRunnerManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.

@@ -1,7 +1,6 @@
 package io.digdag.core.agent;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -75,7 +74,6 @@ public class InProcessTaskCallbackApi
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
-            ZoneId defaultTimeZone,
             Config overwriteParams)
     {
         RepositoryStore repoStore = rm.getRepositoryStore(siteId);
@@ -91,14 +89,11 @@ public class InProcessTaskCallbackApi
         }
 
         AttemptRequest ar = AttemptRequest.builder()
-            .repositoryId(def.getRepository().getId())
+            .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
             .instant(instant)
             .retryAttemptName(retryAttemptName)
-            .defaultTimeZone(defaultTimeZone)
-            .revisionDefaultParams(def.getRevisionDefaultParams())
             .overwriteParams(overwriteParams)
-            .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .build();
 
         // TODO FIXME SessionMonitor monitors is not set

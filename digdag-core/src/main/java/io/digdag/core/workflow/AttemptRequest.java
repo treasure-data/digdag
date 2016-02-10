@@ -7,13 +7,53 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableAttemptRequest.class)
 @JsonDeserialize(as = ImmutableAttemptRequest.class)
 public abstract class AttemptRequest
 {
-    public abstract int getRepositoryId();
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableStored.class)
+    @JsonDeserialize(as = ImmutableStored.class)
+    public static abstract class Stored
+    {
+        public abstract long getWorkflowDefinitionId();
+
+        public abstract int getRevisionId();
+
+        public abstract String getRevisionName();
+
+        public abstract int getRepositoryId();
+
+        public abstract Config getRevisionDefaultParams();
+
+        public static Stored of(StoredRevision rev, long workflowDefinitionId)
+        {
+            return ImmutableStored.builder()
+                .workflowDefinitionId(workflowDefinitionId)
+                .revisionId(rev.getId())
+                .revisionName(rev.getName())
+                .repositoryId(rev.getRepositoryId())
+                .revisionDefaultParams(rev.getDefaultParams())
+                .build();
+        }
+
+        public static Stored of(StoredWorkflowDefinitionWithRepository def)
+        {
+            return ImmutableStored.builder()
+                .workflowDefinitionId(def.getId())
+                .revisionId(def.getRevisionId())
+                .revisionName(def.getRevisionName())
+                .repositoryId(def.getRepository().getId())
+                .revisionDefaultParams(def.getRevisionDefaultParams())
+                .build();
+        }
+    }
+
+    public abstract Stored getStored();
 
     public abstract String getWorkflowName();
 
@@ -21,13 +61,7 @@ public abstract class AttemptRequest
 
     public abstract Optional<String> getRetryAttemptName();
 
-    public abstract ZoneId getDefaultTimeZone();
-
-    public abstract Config getRevisionDefaultParams();
-
     public abstract Config getOverwriteParams();
-
-    public abstract Optional<Long> getStoredWorkflowDefinitionId();
 
     public static ImmutableAttemptRequest.Builder builder()
     {

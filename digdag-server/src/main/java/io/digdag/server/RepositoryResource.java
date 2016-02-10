@@ -201,9 +201,7 @@ public class RepositoryResource
                 (store, storedRepo) -> {
                     RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
                     StoredRevision rev = lockedRepo.putRevision(
-                            Revision.revisionBuilder()
-                                .name(revision)
-                                .defaultParams(meta.getDefaultParams())
+                            Revision.builderFromArchive(revision, meta)
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))

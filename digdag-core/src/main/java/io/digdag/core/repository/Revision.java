@@ -19,9 +19,17 @@ public abstract class Revision
 
     public abstract Optional<String> getArchivePath();
 
-    public static ImmutableRevision.Builder revisionBuilder()
+    public static Revision copyOf(Revision other)
     {
-        return ImmutableRevision.builder();
+        return ImmutableRevision.builder().from(other).build();
+    }
+
+    public static ImmutableRevision.Builder builderFromArchive(String name, ArchiveMetadata meta)
+    {
+        return ImmutableRevision.builder()
+            .name(name)
+            .defaultParams(
+                    meta.getDefaultParams().deepCopy().set("timezone", meta.getDefaultTimeZone()));
     }
 
     @Value.Check

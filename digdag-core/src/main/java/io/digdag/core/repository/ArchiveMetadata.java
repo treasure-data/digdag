@@ -1,5 +1,6 @@
 package io.digdag.core.repository;
 
+import java.time.ZoneId;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,9 +17,8 @@ public abstract class ArchiveMetadata
     @JsonProperty("workflows")
     public abstract WorkflowDefinitionList getWorkflowList();
 
-    // TODO this is not used since c545f2d24049c4d1ebfbdf0594681dfdf501fb6d. should be removed?
-    @JsonProperty("dagfile_path")
-    public abstract String getDagfilePath();
+    @JsonProperty("timezone")
+    public abstract ZoneId getDefaultTimeZone();
 
     @JsonProperty("params")
     public abstract Config getDefaultParams();
@@ -28,16 +28,11 @@ public abstract class ArchiveMetadata
         return ImmutableArchiveMetadata.builder();
     }
 
-    public static ArchiveMetadata of(Dagfile dagfile, String dagfilePath)
-    {
-        return of(dagfile.getWorkflowList(), dagfile.getDefaultParams(), dagfilePath);
-    }
-
-    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams, String dagfilePath)
+    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams, ZoneId defaultTimeZone)
     {
         return builder()
             .workflowList(workflows)
-            .dagfilePath(dagfilePath)
+            .defaultTimeZone(defaultTimeZone)
             .defaultParams(defaultParams)
             .build();
     }

@@ -1,6 +1,7 @@
 package io.digdag.core.repository;
 
 import java.util.Map;
+import java.time.ZoneId;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,8 @@ import java.util.regex.Pattern;
 public abstract class Dagfile
 {
     public abstract Optional<String> getDefaultTaskName();  // "run"
+
+    public abstract Optional<ZoneId> getDefaultTimeZone();  // "timezone"
 
     public abstract WorkflowDefinitionList getWorkflowList();   // "+..."
 
@@ -35,10 +38,12 @@ public abstract class Dagfile
         }
 
         Optional<String> defaultTaskName = config.getOptional("run", String.class);
+        Optional<ZoneId> defaultTimeZone = config.getOptional("timezone", ZoneId.class);
         others.remove("run");
 
         return builder()
             .defaultTaskName(defaultTaskName)
+            .defaultTimeZone(defaultTimeZone)
             .workflowList(workflowList.convert(WorkflowDefinitionList.class))
             .defaultParams(others)
             .build();

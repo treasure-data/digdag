@@ -55,18 +55,18 @@ A workflow can embed variables using ``${...}`` syntax. You can use built-in var
 
 Here is the list of built-in variables:
 
-============================= =========================================== ==========================
-Name                          Description                                 Example
-============================= =========================================== ==========================
-**timezone**                  Timezone of this workflow                   America/Los_Angeles
-**session_time**              Time of this session with timezone          2016-01-31T12:45:56-08:00
-**session_date**              Date part of session_time                   2016-01-31
-**session_date_compact**      Date part of session_time (compact)         20160131
-**session_datetime**          Local time format of session_time           2016-01-31 12:45:56
-**session_datetime_compact**  Local time format of session_time (compact) 20160131124556
-**session_tz_offset**         Timezone offset part of session_time        -0800
-**unixtime**                  Seconds since the epoch time                1454273156
-============================= =========================================== ==========================
+=============================== =========================================== ==========================
+Name                            Description                                 Example
+=============================== =========================================== ==========================
+**timezone**                    Timezone of this workflow                   America/Los_Angeles
+**session_time**                Time of this session with time zone         2016-01-31T12:45:56-08:00
+**session_date**                Date part of session_time                   2016-01-31
+**session_date_compact**        Date part of session_time (compact)         20160131
+**session_local_time**          Local time format of session_time           2016-01-31 12:45:56
+**session_local_time_compact**  Local time format of session_time (compact) 20160131124556
+**session_tz_offset**           Time zone offset part of session_time       -0800
+**session_unixtime**            Seconds since the epoch time                1454273156
+=============================== =========================================== ==========================
 
 Defining variables
 ----------------------------------

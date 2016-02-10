@@ -1,11 +1,7 @@
 run: +sla
+timezone: America/Los_Angeles   # this considers daylight saving time
+
 +sla:
-  meta:
-    owner: Sadayuki Furuhashi
-    created_at: 2015-11-02 18:20 -0700
-
-  timezone: America/Los_Angeles   # this considers daylight saving time
-
   schedule:
     daily>: 02:00:00  # runs at 02:00 midnight
 

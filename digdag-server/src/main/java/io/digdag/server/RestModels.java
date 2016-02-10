@@ -100,7 +100,7 @@ public final class RestModels
 
     public static RestSession session(StoredSessionAttempt attempt, AttemptRequest ar, String repositoryName)
     {
-        return session(attempt, ar.getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getInstant());
+        return session(attempt, ar.getStored().getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getInstant());
     }
 
     private static RestSession session(StoredSessionAttempt attempt,

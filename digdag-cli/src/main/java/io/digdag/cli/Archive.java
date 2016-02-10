@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.time.ZoneId;
 import java.nio.file.Path;
 import java.nio.file.FileSystems;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -112,7 +114,15 @@ public class Archive
         boolean dagfileLoaded = false;
 
         Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
-        ArchiveMetadata meta = ArchiveMetadata.of(dagfile, dagfileName);
+
+        if (!dagfile.getDefaultTimeZone().isPresent()) {
+            throw new ConfigException("timezone: parameter is required but not set at " + dagfilePath + ". Example is 'timezone: " + ZoneId.systemDefault() + "'.");
+        }
+
+        ArchiveMetadata meta = ArchiveMetadata.of(
+                dagfile.getWorkflowList(),
+                dagfile.getDefaultParams(),
+                dagfile.getDefaultTimeZone().get());  // TODO validate before upload
 
         List<String> stdinLines;
         if (System.console() != null) {

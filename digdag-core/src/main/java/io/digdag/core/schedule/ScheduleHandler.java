@@ -45,14 +45,11 @@ public class ScheduleHandler
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
         AttemptRequest ar = AttemptRequest.builder()
-            .repositoryId(def.getRepository().getId())
+            .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
             .instant(time.getScheduleTime())
-            .storedWorkflowDefinitionId(Optional.of(def.getId()))
             .retryAttemptName(retryAttemptName)
-            .defaultTimeZone(timeZone)
-            .revisionDefaultParams(def.getRevisionDefaultParams())
-            .overwriteParams(cf.create())
+            .overwriteParams(cf.create())  // TODO add schedules.params and copy it here
             .build();
 
         return exec.submitWorkflow(def.getRepository().getSiteId(),
