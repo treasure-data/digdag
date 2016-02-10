@@ -138,21 +138,21 @@ public abstract class ClientCommand
         System.out.println(String.format(format, args));
     }
 
-    private final DateTimeFormatter formatter =
+    private static final DateTimeFormatter formatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
         .withZone(ZoneId.systemDefault());
 
-    protected String formatTime(long unix)
+    public static String formatTime(long unix)
     {
         return formatTime(Instant.ofEpochSecond(unix));
     }
 
-    protected String formatTime(Instant instant)
+    public static String formatTime(Instant instant)
     {
         return formatter.format(instant);
     }
 
-    protected static String formatTimeDiff(Instant now, long from)
+    public static String formatTimeDiff(Instant now, long from)
     {
         long seconds = now.until(Instant.ofEpochSecond(from), ChronoUnit.SECONDS);
         long hours = seconds / 3600;

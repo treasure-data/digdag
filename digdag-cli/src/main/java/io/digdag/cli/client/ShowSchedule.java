@@ -34,7 +34,6 @@ public class ShowSchedule
     public void showSchedules()
         throws Exception
     {
-
         Instant now = Instant.now();
 
         DigdagClient client = buildClient();

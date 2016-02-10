@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.io.File;
 import java.io.PrintStream;
 import org.slf4j.Logger;
@@ -29,10 +30,15 @@ import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.spi.Scheduler;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import static io.digdag.cli.client.ClientCommand.formatTime;
+import static io.digdag.cli.client.ClientCommand.formatTimeDiff;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.cli.Run.DEFAULT_DAGFILE;
 
@@ -96,15 +102,25 @@ public class Check
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
+        showSystemDefaults();
+
         Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
 
         showDagfile(injector, dagfile);
+    }
+
+    public static void showSystemDefaults()
+    {
+        ln("  System default timezone: %s",
+                ZoneId.systemDefault());
+        ln("");
     }
 
     public static void showDagfile(Injector injector, Dagfile dagfile)
     {
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
+        final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
         WorkflowDefinitionList defs = dagfile.getWorkflowList();
 
@@ -156,12 +172,11 @@ public class Check
             Formatter f = new Formatter("    ");
             int count = 0;
             for (WorkflowDefinition def : defs.get()) {
-                Optional<Config> config = ScheduleExecutor.getScheduleConfig(def);
-                if (config.isPresent()) {
-                    f.ln("%s:", def.getName());
-                    f.indent = "      ";
-                    f.ln(yamlMapper.toYaml(config));
-                    f.indent = "    ";
+                Optional<Config> schedConfig = ScheduleExecutor.getScheduleConfig(def);
+                if (schedConfig.isPresent()) {
+                    showSchedule(schedulerManager, yamlMapper,
+                            f, dagfile.getDefaultParams(),
+                            def, schedConfig.get());
                     count++;
                 }
             }
@@ -169,6 +184,25 @@ public class Check
             f.print();
             ln("");
         }
+    }
+
+    private static void showSchedule(
+            SchedulerManager schedulerManager, YamlMapper yamlMapper,
+            Formatter f, Config revisionDefaultParams,
+            WorkflowDefinition def, Config schedConfig)
+    {
+        Scheduler sr = schedulerManager.getScheduler(schedConfig,
+                ScheduleExecutor.getRevisionTimeZone(revisionDefaultParams, def));
+
+        Instant now = Instant.now();
+        ScheduleTime firstTime = sr.getFirstScheduleTime(now);
+
+        f.ln("%s:", def.getName());
+        f.indent = "      ";
+        f.ln(yamlMapper.toYaml(schedConfig));
+        f.ln("first session time: %s", formatTime(firstTime.getScheduleTime()));
+        f.ln("first runs at: %s (%s later)", formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime().getEpochSecond()));
+        f.indent = "    ";
     }
 
     private static void ln(String format, Object... args)
