@@ -19,7 +19,7 @@ sh>: Shell scripts
 
 TODO
 
-td>: Treasure Data Queries
+td>: Treasure Data queries
 ----------------------------------
 
 TODO
@@ -29,7 +29,7 @@ mail>: Sending email
 
 TODO
 
-embulk>: Embulk bulk ETL
+embulk>: Embulk data transfer
 ----------------------------------
 
 TODO

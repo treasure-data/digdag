@@ -38,7 +38,7 @@ Digdag is a simple executable file. You can download the file using ``curl`` com
 
 .. code-block:: console
 
-    $ curl -u beta -o ~/bin/digdag -L "http://localhost:8580/digdag-latest"
+    $ curl -u beta -o ~/bin/digdag -L "https://digdag-beta-release.herokuapp.com/digdag-latest"
     $ chmod +x ~/bin/digdag
 
 If ``digdag --help`` command works, Digdag is installed successfully.
@@ -70,8 +70,9 @@ Table of Contents
    composing_workflow.rst
    scheduling_workflow.rst
    task_types.rst
-   command_line_interface.rst
+   mastering_sessions.rst
    digdag_server.rst
+   command_reference.rst
    python_api.rst
    ruby_api.rst
 

@@ -4,9 +4,7 @@ Composing workflow
 digdag.yml
 ----------------------------------
 
-Workflow is defined in a YAML file named "digdag.yml".
-
-An example digdag.yml file is like this:
+Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 .. code-block:: yaml
 
@@ -60,7 +58,7 @@ Here is the list of built-in variables:
 ====================  ============================================ ==========================
 Name                  Description                                  Example
 ====================  ============================================ ==========================
-**${session_name}**   Unique time of the session                   2016-02-09T03:19:21.597Z
+**${session_time}**   Unique time of the session                   2016-02-09T03:19:21.597Z
 **${timezone}**       Configured timezone of the workflow          America/Los_Angeles
 ====================  ============================================ ==========================
 
@@ -73,7 +71,7 @@ You can define variables in 3 ways:
 * Setting variable programmably using API
 * Starting a session with variables
 
-Using export parameter
+Using export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. With following example, ``+step1`` can use ``foo=1``, and ``+step3`` can use ``foo=1`` and ``bar=2``.
