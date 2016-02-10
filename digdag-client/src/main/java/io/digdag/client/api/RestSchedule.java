@@ -18,6 +18,8 @@ public abstract class RestSchedule
 
     public abstract String getWorkflowName();
 
+    // TODO add timezone here so that Check and ShowSchedule can show "next session time" in this timezone
+
     // unix timestamp in seconds
     public abstract long getNextRunTime();
 
