@@ -9,6 +9,7 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 .. code-block:: yaml
 
     run: +main
+    timezone: America/Los_Angeles
     
     +main:
       +step1:
@@ -31,6 +32,8 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 
 ``run:`` parameter is used to declare the default workflow to run. ``$ digdag run`` command runs this workflow. You can run another workflow using ``$ digdag run +another_workflow`` command.
+
+``timezone:`` parameter is used to format timestamp.
 
 
 "+" is a task

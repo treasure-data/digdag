@@ -124,8 +124,17 @@ public class YamlConfigLoader
                     }
                     ObjectNode included = include(name);
                     for (Map.Entry<String, JsonNode> merging : ImmutableList.copyOf(included.fields())) {
-                        built.set(merging.getKey(), merging.getValue());
+                        JsonNode dest = built.get(merging.getKey());
+                        if (dest != null && dest.isObject() && merging.getValue().isObject()) {
+                            mergeObject((ObjectNode) dest, (ObjectNode) merging.getValue());
+                        }
+                        else {
+                            built.set(merging.getKey(), merging.getValue());
+                        }
                     }
+                }
+                else if (value.isTextual() && value.textValue().startsWith("!include:")) {
+                    built.set(pair.getKey(), include(value.textValue()));
                 }
                 else {
                     built.set(pair.getKey(), value);
@@ -146,6 +155,9 @@ public class YamlConfigLoader
                 else if (value.isArray()) {
                     evaluated = evalArrayRecursive((ArrayNode) value);
                 }
+                else if (value.isTextual() && value.textValue().startsWith("!include:")) {
+                    evaluated = include(value.textValue());
+                }
                 else {
                     evaluated = value;
                 }
@@ -154,7 +166,7 @@ public class YamlConfigLoader
             return built;
         }
 
-        public ObjectNode include(String name)
+        private ObjectNode include(String name)
             throws IOException
         {
             Path path = includeDir.resolve(name).toAbsolutePath().normalize();
@@ -163,6 +175,19 @@ public class YamlConfigLoader
             }
 
             return loadParameterized(path, params);
+        }
+
+        private void mergeObject(ObjectNode dest, ObjectNode src)
+        {
+            for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(src.fields())) {
+                JsonNode d = dest.get(pair.getKey());
+                JsonNode v = pair.getValue();
+                if (d != null && d.isObject() && v.isObject()) {
+                    mergeObject((ObjectNode) d, (ObjectNode) v);
+                } else {
+                    dest.replace(pair.getKey(), v);
+                }
+            }
         }
     }
 

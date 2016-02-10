@@ -1,5 +1,4 @@
 run: +main
-timezone: UTC   # America/Los_Angeles, Europe/Berlin, Asia/Tokyo, ...
 
 +main:
   +step1:

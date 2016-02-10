@@ -39,13 +39,13 @@ public abstract class Dagfile
 
         Optional<String> defaultTaskName = config.getOptional("run", String.class);
         Optional<ZoneId> defaultTimeZone = config.getOptional("timezone", ZoneId.class);
-        others.remove("run");
+        Config defaultParams = config.getNestedOrGetEmpty("export");
 
         return builder()
             .defaultTaskName(defaultTaskName)
             .defaultTimeZone(defaultTimeZone)
             .workflowList(workflowList.convert(WorkflowDefinitionList.class))
-            .defaultParams(others)
+            .defaultParams(defaultParams)
             .build();
     }
 
