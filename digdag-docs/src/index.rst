@@ -5,11 +5,12 @@ It handles dependency resolution so that tasks run in order or in parallel.
 
 Digdag fits simple replacement of cron, IT operations automation, data analytics batch jobs, machine learning pipelines, and many more by using Directed Acyclic Graphs (DAG) as the infrastructure.
 
-Get Started in 5 Minutes
+`Getting started <getting_started.html>`_
 ==================================
-Click here
 
-Concepts
+`> Starting Digdag in 5 minutes. <getting_started.html>`_
+
+Concepts of Digdag
 ==================================
 
 * **Easy to use**
@@ -32,38 +33,6 @@ Digdag workflow is defined as code. This brings best practice of software develo
 
 Workflow definition gets complicated quickly. Digdag lets you organize tasks by creating nested groups so that you can see from a bird's view, then dive in to details. Well-organized pipelines make it easy to review your achievement as well as preventing mistakes.
 
-Getting started
-==================================
-
-1. Downloading the latest version
-----------------------------------
-
-Digdag is a simple executable file. You can download the file using ``curl`` command as following:
-
-.. code-block:: console
-
-    $ curl -u beta -o ~/bin/digdag -L "https://digdag-beta-release.herokuapp.com/digdag-latest"
-    $ chmod +x ~/bin/digdag
-
-If ``digdag --help`` command works, Digdag is installed successfully.
-
-2. Creating sample workflow
-----------------------------------
-
-``embulk new <dir>`` command generates sample workflow for you:
-
-.. code-block:: console
-
-    $ digdag new mydag
-    $ cd mydag
-    $ ./digdag run
-
-Did it work? Next step is `adding tasks <composing_workflow.html>`_ to ``digdag.yml`` file to automate your jobs.
-
-Got error?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you got an error such as **'Unsupported major.minor version 52.0'**, please download and install the latest `Java SE Development Kit 8 <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_ (must be newer than **8u72**).
 
 Table of Contents
 ----------------------------------
@@ -71,7 +40,8 @@ Table of Contents
 .. toctree::
    :maxdepth: 2
 
-   composing_workflow.rst
+   getting_started.rst
+   workflow_definition.rst
    scheduling_workflow.rst
    task_types.rst
    mastering_sessions.rst

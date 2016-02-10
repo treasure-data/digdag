@@ -1,4 +1,4 @@
-Composing workflow
+Workflow definition
 ==================================
 
 .. contents::
