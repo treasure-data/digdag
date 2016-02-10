@@ -1,6 +1,9 @@
 Composing workflow
 ==================================
 
+.. contents::
+   :local:
+
 digdag.yml
 ----------------------------------
 
@@ -9,7 +12,6 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 .. code-block:: yaml
 
     run: +main
-    timezone: America/Los_Angeles
     
     +main:
       +step1:
@@ -32,8 +34,6 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 
 ``run:`` parameter is used to declare the default workflow to run. ``$ digdag run`` command runs this workflow. You can run another workflow using ``$ digdag run +another_workflow`` command.
-
-``timezone:`` parameter is used to format timestamp.
 
 
 "+" is a task
@@ -83,14 +83,16 @@ You can define variables in 3 ways:
 Using export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. With following example, ``+step1`` can use ``foo=1``, and ``+step3`` can use ``foo=1`` and ``bar=2``.
+In YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. This is useful to load static configurations such as host name of a database.
+
+With following example, all tasks can use ``foo=1``, and ``+step3`` can use ``foo=1`` and ``bar=2``.
 
 .. code-block:: yaml
 
-    +workflow1:
-      export:
-        foo: 1
+    export:
+      foo: 1
 
+    +workflow1:
       +step1:
         py>: tasks.MyWorkflow.step1
 
@@ -131,7 +133,7 @@ You can set variables when you start a new workflow session. To set variables, u
 
 .. code-block:: console
 
-    $ digdag run -p my_var1=1 -p my_var2=foo
+    $ digdag run -p my_var1=foo -p my_var2=abc
 
 !include another file
 ----------------------------------
@@ -143,7 +145,11 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
     run: +main
     !include : 'main.yml'
     !include : 'another.yml'
-    !include : 'theother.yml'
+    export:
+      mysql:
+        !include : 'config/mysql.yml'
+      hive:
+        !include : 'config/hive.yml'
 
 Parallel execution
 ----------------------------------
