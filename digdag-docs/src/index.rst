@@ -45,8 +45,5 @@ Table of Contents
    scheduling_workflow.rst
    task_types.rst
    mastering_sessions.rst
-   digdag_server.rst
    command_reference.rst
-   python_api.rst
-   ruby_api.rst
 

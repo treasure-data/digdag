@@ -256,7 +256,7 @@ debug: BOOLEAN                  Shows debug logs                                
 embulk>: Embulk data transfer
 ----------------------------------
 
-**embulk>:** task runs [Embulk](http://www.embulk.org) to transfer data across storages including local files.
+**embulk>:** task runs `Embulk `http://www.embulk.org>`_ to transfer data across storages including local files.
 
 Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

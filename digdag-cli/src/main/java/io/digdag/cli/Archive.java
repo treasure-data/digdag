@@ -80,6 +80,7 @@ public class Archive
         System.err.println("  Examples:");
         System.err.println("    $ git ls-files | digdag archive");
         System.err.println("    $ find . | digdag archive -o digdag.archive.tar.gz");
+        System.err.println("");
         return systemExit(error);
     }
 
