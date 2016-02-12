@@ -182,6 +182,7 @@ public class LocalSite
                 .workflowName(def.getName())
                 .instant(Instant.now())
                 .retryAttemptName(Optional.absent())
+                .defaultParams(rev.getDefaultParams())
                 .overwriteParams(overwriteParams)
                 .build();
 

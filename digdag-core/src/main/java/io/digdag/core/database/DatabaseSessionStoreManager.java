@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -840,7 +841,7 @@ public class DatabaseSessionStoreManager
             long attemptId = catchConflict(() ->
                 dao.insertAttempt(siteId, repoId, sessionId,
                         attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
-                        SessionStateFlags.empty().get(), attempt.getParams()),
+                        SessionStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()),
                 "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId);
             dao.updateLastAttemptId(sessionId, attemptId);
             try {
@@ -1037,10 +1038,10 @@ public class DatabaseSessionStoreManager
         StoredSession getSessionByConflictedNamesInternal(@Bind("repositoryId") int repositoryId,
                 @Bind("workflowName") String workflowName, @Bind("instant") long instant);
 
-        @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, params, created_at)" +
-                " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :stateFlags, :params, now())")
+        @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
+                " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
         @GetGeneratedKeys
-        long insertAttempt(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("params") Config params);
+        long insertAttempt(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
 
         @SqlUpdate("update sessions" +
                 " set last_attempt_id = :attemptId" +
@@ -1241,6 +1242,7 @@ public class DatabaseSessionStoreManager
                 .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
                 .stateFlags(SessionStateFlags.of(r.getInt("state_flags")))
+                .timeZone(ZoneId.of(r.getString("timezone")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .build();
@@ -1268,6 +1270,7 @@ public class DatabaseSessionStoreManager
                 .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
                 .stateFlags(SessionStateFlags.of(r.getInt("state_flags")))
+                .timeZone(ZoneId.of(r.getString("timezone")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .siteId(r.getInt("site_id"))

@@ -89,13 +89,15 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
+        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(ar.getDefaultParams(), def);
+
         logger.debug("Checking a session of workflow '{}' ({}) from task {} with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, monitors);
+        return submitTasks(siteId, ar, tasks, timeZone, monitors);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -107,16 +109,18 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
 
+        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(ar.getDefaultParams(), def);
+
         logger.debug("Checking a session of workflow '{}' ({}) with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, monitors);
+        return submitTasks(siteId, ar, tasks, timeZone, monitors);
     }
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
-            WorkflowTaskList tasks, List<SessionMonitor> monitors)
+            WorkflowTaskList tasks, ZoneId timeZone, List<SessionMonitor> monitors)
         throws SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
@@ -132,6 +136,7 @@ public class WorkflowExecutor
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
                 ar.getOverwriteParams(),
+                timeZone,
                 Optional.of(ar.getStored().getWorkflowDefinitionId()));
 
         TaskConfig.validateAttempt(attempt);
@@ -638,14 +643,6 @@ public class WorkflowExecutor
                 params.setAll(attempt.getParams());
                 collectParams(params, task, attempt);
 
-                ZoneId timeZone;
-                try {
-                    timeZone = ScheduleExecutor.getTaskTimeZone(params, rev.transform(it -> it.getDefaultParams()));
-                }
-                catch (ConfigException ce) {
-                    timeZone = ZoneId.of("UTC");
-                }
-
                 // create TaskRequest for TaskRunnerManager.
                 // TaskRunnerManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
                 // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
@@ -664,8 +661,9 @@ public class WorkflowExecutor
                     // TODO support queue resourceType
                     .lockId("")   // this will be overwritten by TaskQueueServer
                     .priority(0)  // TODO make this configurable
-                    .timeZone(timeZone)
+                    .timeZone(attempt.getTimeZone())
                     .sessionTime(attempt.getSession().getInstant())
+                    .createdAt(Instant.now())
                     .localConfig(task.getConfig().getLocal())
                     .config(params)
                     .lastStateParams(task.getStateParams())

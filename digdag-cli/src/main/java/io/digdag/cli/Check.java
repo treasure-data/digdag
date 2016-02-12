@@ -192,7 +192,7 @@ public class Check
             WorkflowDefinition def, Config schedConfig)
     {
         Scheduler sr = schedulerManager.getScheduler(schedConfig,
-                ScheduleExecutor.getRevisionTimeZone(revisionDefaultParams, def));
+                ScheduleExecutor.getWorkflowTimeZone(revisionDefaultParams, def));
 
         Instant now = Instant.now();
         ScheduleTime firstTime = sr.getFirstScheduleTime(now);

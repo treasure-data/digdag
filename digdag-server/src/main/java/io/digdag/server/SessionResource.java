@@ -192,6 +192,7 @@ public class SessionResource
             .workflowName(def.getName())
             .instant(request.getInstant())
             .retryAttemptName(request.getRetryAttemptName())
+            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(request.getParams())
             .build();
 

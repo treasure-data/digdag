@@ -49,6 +49,7 @@ public class ScheduleHandler
             .workflowName(def.getName())
             .instant(time.getScheduleTime())
             .retryAttemptName(retryAttemptName)
+            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(cf.create())  // TODO add schedules.params and copy it here
             .build();
 

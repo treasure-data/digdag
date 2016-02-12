@@ -1,5 +1,6 @@
 package io.digdag.core.session;
 
+import java.time.ZoneId;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
@@ -11,32 +12,28 @@ public abstract class SessionAttempt
 
     public abstract Optional<Long> getWorkflowDefinitionId();
 
+    public abstract ZoneId getTimeZone();
+
     public abstract Config getParams();
 
-    public static SessionAttempt ofStoredWorkflowDefinition(Optional<String> retryAttemptName, Config params, long storedWorkflowDefinitionId)
+    public static SessionAttempt ofStoredWorkflowDefinition(Optional<String> retryAttemptName, Config params, ZoneId timeZone, long storedWorkflowDefinitionId)
     {
-        return ImmutableSessionAttempt.builder()
-            .retryAttemptName(retryAttemptName)
-            .params(params)
-            .workflowDefinitionId(Optional.of(storedWorkflowDefinitionId))
-            .build();
+        return of(retryAttemptName, params, timeZone,
+                Optional.of(storedWorkflowDefinitionId));
     }
 
-    public static SessionAttempt ofOneShotWorkflow(Optional<String> retryAttemptName, Config params)
+    public static SessionAttempt ofOneShotWorkflow(Optional<String> retryAttemptName, ZoneId timeZone, Config params)
     {
-        return ImmutableSessionAttempt.builder()
-            .retryAttemptName(retryAttemptName)
-            .params(params)
-            .workflowDefinitionId(Optional.absent())
-            .build();
+        return of(retryAttemptName, params, timeZone, Optional.absent());
     }
 
-    public static SessionAttempt of(Optional<String> retryAttemptName, Config params, Optional<Long> storedWorkflowDefinitionId)
+    public static SessionAttempt of(Optional<String> retryAttemptName, Config params, ZoneId timeZone, Optional<Long> storedWorkflowDefinitionId)
     {
         return ImmutableSessionAttempt.builder()
             .retryAttemptName(retryAttemptName)
-            .params(params)
             .workflowDefinitionId(storedWorkflowDefinitionId)
+            .timeZone(timeZone)
+            .params(params)
             .build();
     }
 }

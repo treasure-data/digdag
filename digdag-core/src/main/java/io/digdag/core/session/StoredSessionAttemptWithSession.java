@@ -23,6 +23,7 @@ public abstract class StoredSessionAttemptWithSession
             .id(attempt.getId())
             .retryAttemptName(attempt.getRetryAttemptName())
             .workflowDefinitionId(attempt.getWorkflowDefinitionId())
+            .timeZone(attempt.getTimeZone())
             .params(attempt.getParams())
             .stateFlags(attempt.getStateFlags())
             .sessionId(attempt.getSessionId())

@@ -41,6 +41,8 @@ public abstract class TaskRequest
 
     public abstract Instant getSessionTime();
 
+    public abstract Instant getCreatedAt();
+
     public abstract Config getLocalConfig();
 
     public abstract Config getConfig();

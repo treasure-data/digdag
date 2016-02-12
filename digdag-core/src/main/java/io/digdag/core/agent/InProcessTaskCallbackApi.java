@@ -111,6 +111,7 @@ public class InProcessTaskCallbackApi
             .workflowName(def.getName())
             .instant(instant)
             .retryAttemptName(retryAttemptName)
+            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(overwriteParams)
             .build();
 

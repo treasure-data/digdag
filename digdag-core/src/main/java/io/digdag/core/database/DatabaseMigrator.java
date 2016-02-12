@@ -310,6 +310,7 @@ public class DatabaseMigrator
                     .addString("attempt_name", "not null")
                     .addLong("workflow_definition_id", "references workflow_definitions (id)")
                     .addShort("state_flags", "not null")  // 0=running or blocked, 1=cancel_requested, 2=done, 4=success
+                    .addString("timezone", "not null")
                     .addMediumText("params", "")
                     .addTimestamp("created_at", "not null")
                     .build());
