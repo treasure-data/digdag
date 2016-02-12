@@ -50,6 +50,7 @@ public class SessionResource
 
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
+    private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
 
@@ -57,11 +58,13 @@ public class SessionResource
     public SessionResource(
             RepositoryStoreManager rm,
             SessionStoreManager sm,
+            AttemptBuilder attemptBuilder,
             WorkflowExecutor executor,
             ConfigFactory cf)
     {
         this.rm = rm;
         this.sm = sm;
+        this.attemptBuilder = attemptBuilder;
         this.executor = executor;
         this.cf = cf;
     }
@@ -187,15 +190,15 @@ public class SessionResource
         StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
 
-        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
+        // use the HTTP request time as the runTime
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, Instant.now())
             .instant(request.getInstant())
             .retryAttemptName(request.getRetryAttemptName())
             .overwriteParams(request.getParams())
             .build();
 
-        // TODO how to make session monitors?
         try {
-            StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def, ImmutableList.of());
+            StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def);
             RestSession res = RestModels.session(stored, ar, repo.getName());
             return Response.ok(res).build();
         }

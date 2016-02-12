@@ -30,6 +30,7 @@ public class LocalSite
     private final RepositoryStore repoStore;
     private final SessionStoreManager sessionStoreManager;
     private final SessionStore sessionStore;
+    private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
@@ -44,6 +45,7 @@ public class LocalSite
             WorkflowCompiler compiler,
             RepositoryStoreManager repoStoreManager,
             SessionStoreManager sessionStoreManager,
+            AttemptBuilder attemptBuilder,
             WorkflowExecutor exec,
             LocalAgentManager localAgentManager,
             DatabaseMigrator databaseMigrator,
@@ -56,6 +58,7 @@ public class LocalSite
         this.repoStore = repoStoreManager.getRepositoryStore(0);
         this.sessionStoreManager = sessionStoreManager;
         this.sessionStore = sessionStoreManager.getSessionStore(0);
+        this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.localAgentManager = localAgentManager;
         this.databaseMigrator = databaseMigrator;
@@ -166,7 +169,8 @@ public class LocalSite
     public StoredSessionAttemptWithSession storeAndStartLocalWorkflows(
             ArchiveMetadata archive,
             TaskMatchPattern taskMatchPattern,
-            Config overwriteParams)
+            Config overwriteParams,
+            Instant runTime)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
@@ -177,17 +181,17 @@ public class LocalSite
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(rev, def)
+            AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(rev, def, runTime)
                 .instant(Instant.now())
                 .retryAttemptName(Optional.absent())
                 .overwriteParams(overwriteParams)
                 .build();
 
             if (taskMatchPattern.getSubtaskMatchPattern().isPresent()) {
-                return exec.submitSubworkflow(0, ar, def, taskMatchPattern.getSubtaskMatchPattern().get(), ImmutableList.of());
+                return exec.submitSubworkflow(0, ar, def, taskMatchPattern.getSubtaskMatchPattern().get());
             }
             else {
-                return exec.submitWorkflow(0, ar, def, ImmutableList.of());
+                return exec.submitWorkflow(0, ar, def);
             }
         }
         catch (NoMatchException ex) {

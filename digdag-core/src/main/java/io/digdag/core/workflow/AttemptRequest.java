@@ -1,5 +1,6 @@
 package io.digdag.core.workflow;
 
+import java.util.List;
 import java.time.Instant;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
@@ -10,7 +11,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
-import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.session.SessionMonitor;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableAttemptRequest.class)
@@ -67,21 +68,7 @@ public abstract class AttemptRequest
 
     public abstract Config getOverwriteParams();
 
-    public static ImmutableAttemptRequest.Builder builderFromStoredWorkflow(StoredRevision rev, StoredWorkflowDefinition def)
-    {
-        return ImmutableAttemptRequest.builder()
-            .stored(Stored.of(rev, def))
-            .workflowName(def.getName())
-            .timeZone(ScheduleExecutor.getWorkflowTimeZone(rev.getDefaultParams(), def));
-    }
-
-    public static ImmutableAttemptRequest.Builder builderFromStoredWorkflow(StoredWorkflowDefinitionWithRepository def)
-    {
-        return ImmutableAttemptRequest.builder()
-            .stored(Stored.of(def))
-            .workflowName(def.getName())
-            .timeZone(ScheduleExecutor.getWorkflowTimeZone(def.getRevisionDefaultParams(), def));
-    }
+    public abstract List<SessionMonitor> getSessionMonitors();
 
     @Value.Check
     protected void check()

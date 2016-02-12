@@ -156,17 +156,8 @@ public class ScheduleExecutor
         Instant runTime = sched.getNextRunTime();
         ZoneId timeZone = sr.getTimeZone();
 
-        // TODO move this to WorkflowExecutor?
-        ImmutableList.Builder<SessionMonitor> monitors = ImmutableList.builder();
-        if (def.getConfig().has("sla")) {
-            Config slaConfig = def.getConfig().getNestedOrGetEmpty("sla");
-            // TODO support multiple SLAs
-            Instant triggerTime = SlaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
-            monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));
-        }
-
         try {
-            handler.start(def, monitors.build(),
+            handler.start(def,
                     timeZone, ScheduleTime.of(runTime, scheduleTime),
                     Optional.absent());
         }
@@ -317,7 +308,7 @@ public class ScheduleExecutor
                 }
                 else {
                     try {
-                        StoredSessionAttemptWithSession attempt = handler.start(def, ImmutableList.of(),
+                        StoredSessionAttemptWithSession attempt = handler.start(def,
                                 timeZone, ScheduleTime.of(sched.getNextScheduleTime(), instant),
                                 Optional.of(attemptName));
                         attempts.add(attempt);

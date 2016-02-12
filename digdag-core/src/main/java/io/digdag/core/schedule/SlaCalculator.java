@@ -1,64 +1,94 @@
 package io.digdag.core.schedule;
 
 import java.util.List;
-import java.time.Instant;
-import java.util.Locale;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.Calendar;
 import java.time.ZoneId;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import static java.util.Locale.ENGLISH;
 
-class SlaCalculator
+public class SlaCalculator
 {
-    public static Instant getTriggerTime(Config slaConfig, Instant currentTime, ZoneId timeZone)
+    @Inject
+    public SlaCalculator()
+    { }
+
+    public Instant getTriggerTime(Config slaConfig, Instant currentTime, ZoneId timeZone)
     {
         TimeCalculator calc = getCalculator(slaConfig);
         return calc.calculateTime(currentTime, timeZone);
     }
 
-    private static TimeCalculator getCalculator(Config slaConfig)
+    private TimeCalculator getCalculator(Config slaConfig)
     {
-        // TODO improve parse logic
-        int hour;
-        int minute;
+        String time = slaConfig.get("time", String.class);
+        String[] fragments = time.split(":");
+
+        Integer hour;
+        Integer minute;
+        Integer second;
         try {
-            int seconds = slaConfig.get("time", Integer.class);
-            hour = seconds / 60 / 60;
-            minute = seconds / 60 % 60;
+            switch (fragments.length) {
+            case 3:
+                hour = Integer.parseInt(fragments[0]);
+                minute = Integer.parseInt(fragments[1]);
+                second = Integer.parseInt(fragments[2]);
+                break;
+            case 2:
+                hour = Integer.parseInt(fragments[0]);
+                minute = Integer.parseInt(fragments[1]);
+                second = 0;
+                break;
+            default:
+                throw new ConfigException("SLA time option needs to be HH:MM or HH:MM:SS format: " + time);
+            }
         }
-        catch (RuntimeException ex) {
-            String time = slaConfig.get("time", String.class);
-            String[] hm = time.split(":", 2);
-            hour = Integer.parseInt(hm[0]);
-            minute = Integer.parseInt(hm[1]);
+        catch (NumberFormatException ex) {
+            throw new ConfigException("SLA time option needs to be HH:MM or HH:MM:SS format: " + time);
         }
-        return new TimeCalculator(hour, minute);
+
+        return new TimeCalculator(hour, minute, second);
     }
 
     static class TimeCalculator
     {
-        private final int hour;
-        private final int minute;
+        private final Integer hour;
+        private final Integer minute;
+        private final Integer second;
 
-        private TimeCalculator(int hour, int minute)
+        private TimeCalculator(Integer hour, Integer minute, Integer second)
         {
             this.hour = hour;
             this.minute = minute;
+            this.second = second;
         }
 
         public Instant calculateTime(Instant time, ZoneId timeZone)
         {
-            // TODO
-            return time;
-            /*
-            Calendar cal = Calendar.getInstance(timeZone, Locale.ENGLISH);
-            cal.setTime(time);
-            cal.set(Calendar.HOUR_OF_DAY, hour);
-            cal.set(Calendar.MINUTE, minute);
-            if (cal.getTime().isBefore(time)) {
-                cal.add(Calendar.DATE, 1);
+            Calendar cal = Calendar.getInstance(TimeZone.getTimeZone(timeZone), ENGLISH);
+
+            cal.setTime(Date.from(time));
+            if (hour != null) {
+                cal.set(Calendar.HOUR_OF_DAY, hour);
             }
-            return cal.getTime();
-            */
+            if (minute != null) {
+                cal.set(Calendar.MINUTE, minute);
+            }
+
+            // if the time is already passed, subtract 1 day
+            // TODO this assumes daily SLA
+            Instant result = cal.getTime().toInstant();
+            if (result.isBefore(time)) {
+                result = result.plus(1, ChronoUnit.DAYS);
+            }
+
+            System.out.println("will trigger SLA at :" + result);
+            return result;
         }
     }
 }

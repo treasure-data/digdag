@@ -12,4 +12,4 @@ timezone: America/Los_Angeles   # this considers daylight saving time
     time: "02:02"
     +notice:
       # this task runs if this workflow is not finished at 02:02
-      sh>: echo "Workflow $session_name for time $schedule_time is not finished yet!"
+      sh>: echo "Workflow session $session_time is not finished yet!"

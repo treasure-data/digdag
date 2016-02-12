@@ -176,7 +176,8 @@ public class Run
                     dagfile.getDefaultParams(),
                     dagfile.getDefaultTimeZone().or(ZoneId.systemDefault())),  // TODO should this systemDefault be configurable by cmdline argument?
                 TaskMatchPattern.compile(taskNamePattern),
-                overwriteParams);
+                overwriteParams,
+                Instant.now());
         logger.debug("Submitting {}", attempt);
 
         localSite.startLocalAgent();

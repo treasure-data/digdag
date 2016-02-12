@@ -177,7 +177,7 @@ public class Config
     {
         JsonNode value = object.get(key);
         if (value == null) {
-            throw new ConfigException("Attribute "+key+" is required but not set");
+            throw new ConfigException("Parameter ''"+key+"'' is required but not set");
         }
         return readObject(type, value);
     }
@@ -186,7 +186,7 @@ public class Config
     {
         JsonNode value = object.get(key);
         if (value == null) {
-            throw new ConfigException("Attribute "+key+" is required but not set");
+            throw new ConfigException("Parameter ''"+key+"'' is required but not set");
         }
         return readObject(type, value);
     }
@@ -255,10 +255,10 @@ public class Config
     {
         JsonNode value = object.get(key);
         if (value == null) {
-            throw new ConfigException("Attribute "+key+" is required but not set");
+            throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
         if (!value.isObject()) {
-            throw new ConfigException("Attribute "+key+" must be an object");
+            throw new ConfigException("Parameter '"+key+"' must be an object");
         }
         return new Config(mapper, (ObjectNode) value);
     }
@@ -271,7 +271,7 @@ public class Config
             object.set(key, value);
         }
         else if (!value.isObject()) {
-            throw new ConfigException("Attribute "+key+" must be an object");
+            throw new ConfigException("Parameter '"+key+"' must be an object");
         }
         return new Config(mapper, (ObjectNode) value);
     }
@@ -283,7 +283,7 @@ public class Config
             value = object.objectNode();
         }
         else if (!value.isObject()) {
-            throw new ConfigException("Attribute "+key+" must be an object");
+            throw new ConfigException("Parameter '"+key+"' must be an object");
         }
         return new Config(mapper, (ObjectNode) value);
     }
@@ -308,7 +308,7 @@ public class Config
             return config;
         }
         else if (!value.isObject()) {
-            throw new ConfigException("Attribute "+key+" must be an object or array of objects");
+            throw new ConfigException("Parameter '"+key+"' must be an object or array of objects");
         }
         return new Config(mapper, (ObjectNode) value);
     }

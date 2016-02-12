@@ -271,12 +271,18 @@ public class DatabaseTaskQueueStore
 
     private void expireLocks()
     {
+        expireLocks("queued_shared_task_locks");
+        expireLocks("queued_task_locks");
+    }
+
+    private void expireLocks(String tableName)
+    {
         try {
             // TODO use this syntax for PostgreSQL
             // (statement_timestamp() + (interval '1' second) * hold_timeout)
             int c = autoCommit((handle, dao) ->
                 handle.createStatement(
-                        "update locks" +
+                        "update " + tableName +
                         " set hold_expire_time = NULL, hold_agent_id = NULL, retry_count = retry_count + 1" +
                         " where hold_expire_time is not null" +
                         " and hold_expire_time < :expireTime"

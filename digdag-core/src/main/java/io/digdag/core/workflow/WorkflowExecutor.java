@@ -76,8 +76,7 @@ public class WorkflowExecutor
     }
 
     public StoredSessionAttemptWithSession submitSubworkflow(int siteId, AttemptRequest ar,
-            WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern,
-            List<SessionMonitor> monitors)
+            WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern)
         throws SessionAttemptConflictException, NoMatchException, MultipleTaskMatchException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
@@ -94,13 +93,12 @@ public class WorkflowExecutor
                 fromIndex,
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, monitors);
+        return submitTasks(siteId, ar, tasks);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
-            WorkflowDefinition def,
-            List<SessionMonitor> monitors)
+            WorkflowDefinition def)
         throws SessionAttemptConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
@@ -111,11 +109,11 @@ public class WorkflowExecutor
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, monitors);
+        return submitTasks(siteId, ar, tasks);
     }
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
-            WorkflowTaskList tasks, List<SessionMonitor> monitors)
+            WorkflowTaskList tasks)
         throws SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
@@ -159,7 +157,10 @@ public class WorkflowExecutor
                         new TaskControl(taskStore, storedTask).addTasksExceptingRootTask(tasks);
                         return null;
                     });
-                    store.insertMonitors(storedAttempt.getId(), monitors);
+                    for (SessionMonitor monitor : ar.getSessionMonitors()) {
+                        logger.debug("Using session monitor: {}", monitor);
+                    }
+                    store.insertMonitors(storedAttempt.getId(), ar.getSessionMonitors());
                     return storedAttempt;
                 });
         }

@@ -35,10 +35,12 @@ import io.digdag.core.database.DatabaseTaskQueueFactory;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.schedule.SlaCalculator;
 import io.digdag.core.session.SessionMonitorExecutor;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.core.workflow.AttemptBuilder;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -120,6 +122,7 @@ public class DigdagEmbed
                     binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
                     binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(AttemptBuilder.class).in(Scopes.SINGLETON);
                     binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
@@ -135,6 +138,7 @@ public class DigdagEmbed
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
+                    binder.bind(SlaCalculator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigElement.class).toInstance(systemConfig);
                     binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);

@@ -4,7 +4,6 @@ import java.util.List;
 import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskReport;
 import io.digdag.core.session.Session;
@@ -13,8 +12,9 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.RepositoryStore;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.workflow.AttemptBuilder;
+import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
@@ -35,6 +35,7 @@ public class InProcessTaskCallbackApi
     private final AgentId localAgentId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
+    private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
     private final TaskQueueClient queueClient;
 
@@ -44,12 +45,14 @@ public class InProcessTaskCallbackApi
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             TaskQueueManager qm,
+            AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
         this.localSiteId = 0;
         this.localAgentId = localAgentId;
         this.rm = rm;
         this.sm = sm;
+        this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.queueClient = qm.getInProcessTaskQueueClient(localSiteId);
     }
@@ -106,7 +109,8 @@ public class InProcessTaskCallbackApi
             throw new RuntimeException(ex);
         }
 
-        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
+        // use the HTTP request time as the runTime
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, Instant.now())
             .instant(instant)
             .retryAttemptName(retryAttemptName)
             .overwriteParams(overwriteParams)
@@ -114,7 +118,7 @@ public class InProcessTaskCallbackApi
 
         // TODO FIXME SessionMonitor monitors is not set
         try {
-            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(localSiteId, ar, def, ImmutableList.of());
+            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(localSiteId, ar, def);
             return attempt.getStateFlags();
         }
         catch (SessionAttemptConflictException ex) {

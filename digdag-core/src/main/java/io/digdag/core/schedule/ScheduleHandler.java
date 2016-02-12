@@ -18,39 +18,42 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 public class ScheduleHandler
 {
     private final ConfigFactory cf;
     private final RepositoryStoreManager rm;
+    private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
 
     @Inject
     public ScheduleHandler(
             ConfigFactory cf,
             RepositoryStoreManager rm,
+            AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
         this.cf = cf;
         this.rm = rm;
+        this.attemptBuilder = attemptBuilder;
         this.exec = exec;
     }
 
     public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithRepository def,
-            List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
+            ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
-        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, time.getRunTime())
             .instant(time.getScheduleTime())
             .retryAttemptName(retryAttemptName)
             .overwriteParams(cf.create())  // TODO add schedules.params and copy it here
             .build();
 
         return exec.submitWorkflow(def.getRepository().getSiteId(),
-                ar, def, monitors);
+                ar, def);
     }
 }
