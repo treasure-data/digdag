@@ -31,7 +31,6 @@ public class LocalSite
     private final SessionStoreManager sessionStoreManager;
     private final SessionStore sessionStore;
     private final WorkflowExecutor exec;
-    private final TaskQueueDispatcher dispatcher;
     private final LocalAgentManager localAgentManager;
     private final DatabaseMigrator databaseMigrator;
     private final SchedulerManager srm;
@@ -46,7 +45,6 @@ public class LocalSite
             RepositoryStoreManager repoStoreManager,
             SessionStoreManager sessionStoreManager,
             WorkflowExecutor exec,
-            TaskQueueDispatcher dispatcher,
             LocalAgentManager localAgentManager,
             DatabaseMigrator databaseMigrator,
             SchedulerManager srm,
@@ -59,7 +57,6 @@ public class LocalSite
         this.sessionStoreManager = sessionStoreManager;
         this.sessionStore = sessionStoreManager.getSessionStore(0);
         this.exec = exec;
-        this.dispatcher = dispatcher;
         this.localAgentManager = localAgentManager;
         this.databaseMigrator = databaseMigrator;
         this.srm = srm;
@@ -207,12 +204,12 @@ public class LocalSite
     public void run()
             throws InterruptedException
     {
-        exec.run(dispatcher);
+        exec.run();
     }
 
     public void runUntilAny()
             throws InterruptedException
     {
-        exec.runUntilAny(dispatcher);
+        exec.runUntilAny();
     }
 }

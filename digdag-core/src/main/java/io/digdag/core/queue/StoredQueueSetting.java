@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredQueueDesc.class)
-@JsonDeserialize(as = ImmutableStoredQueueDesc.class)
-public abstract class StoredQueueDesc
-        extends QueueDesc
+@JsonSerialize(as = ImmutableStoredQueueSetting.class)
+@JsonDeserialize(as = ImmutableStoredQueueSetting.class)
+public abstract class StoredQueueSetting
+        extends QueueSetting
 {
     public abstract long getId();
 

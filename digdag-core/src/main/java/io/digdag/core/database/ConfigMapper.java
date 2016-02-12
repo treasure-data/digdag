@@ -140,7 +140,14 @@ public class ConfigMapper
                 statement.setNull(position, Types.CLOB);
             }
             else {
-                statement.setString(position, toText(config));
+                String text = toText(config);
+                if ("{}".equals(text)) {
+                    text = null;
+                    statement.setNull(position, Types.CLOB);
+                }
+                else {
+                    statement.setString(position, text);
+                }
             }
         }
 

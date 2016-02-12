@@ -235,7 +235,7 @@ public class DatabaseMigrator
                     .addInt("repository_id", "not null references repositories (id)")
                     .addString("name", "not null")
                     // TODO disabled flag
-                    .addMediumText("default_params", "")
+                    .addMediumText("default_params", "")  // TODO move this to revision_params as like workflow_configs
                     .addString("archive_type", "not null")
                     .addString("archive_path", "")
                     .addBinary("archive_md5", "")
@@ -382,9 +382,9 @@ public class DatabaseMigrator
                     .build());
             handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
 
-            // queues
+            // queue_settings
             handle.update(
-                    new CreateTableBuilder("queues")
+                    new CreateTableBuilder("queue_settings")
                     .addIntId("id")
                     .addInt("site_id", "not null")
                     .addString("name", "not null")
@@ -392,8 +392,139 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create unique index if not exists queues_on_site_id_and_name on queues (site_id, name)");
-            handle.update("create index if not exists queues_on_site_id on queues (site_id, id)");
+            handle.update("create unique index if not exists queue_settings_on_site_id_and_name on queue_settings (site_id, name)");
+            handle.update("create index if not exists queue_settings_on_site_id on queue_settings (site_id, id)");
+
+            // queues
+            handle.update(
+                    new CreateTableBuilder("queues")
+                    .addIntIdNoAutoIncrement("id", "references queue_settings (id)")
+                    .addInt("max_concurrency", "not null")
+                    .build());
+
+            // resource_types
+            handle.update(
+                    new CreateTableBuilder("resource_types")
+                    .addIntId("id")
+                    .addInt("queue_id", "not null references queues (id)")
+                    .addInt("max_concurrency", "not null")
+                    .addString("name", "not null")
+                    .build());
+            handle.update("create unique index if not exists resource_types_on_queue_id_and_name on resource_types (queue_id, name)");
+
+            // queued_tasks
+            handle.update(
+                    new CreateTableBuilder("queued_tasks")
+                    .addLongId("id")
+                    .addInt("queue_id", "not null")
+                    .addInt("priority", "not null")
+                    .addInt("resource_type_id", "")
+                    .addLong("task_id", "not null")
+                    .addTimestamp("created_at", "not null")
+                    .addLongBinary("data", "not null")
+                    .build());
+            handle.update("create unique index if not exists queued_tasks_on_queue_id_task_id on queued_tasks (queue_id, task_id)");
+
+            // queued_shared_task_locks
+            handle.update(
+                    new CreateTableBuilder("queued_shared_task_locks")
+                    .addLongId("id")  // references queued_tasks.id
+                    .addInt("queue_id", "not null")
+                    .addInt("priority", "not null")
+                    .addInt("resource_type_id", "")
+                    .addInt("retry_count", "not null")
+                    .addLong("hold_expire_time", "")
+                    .addString("hold_agent_id", "")
+                    .build());
+
+            // queued_task_locks
+            handle.update(
+                    new CreateTableBuilder("queued_task_locks")
+                    .addLongId("id")  // references queued_tasks.id
+                    .addInt("queue_id", "not null")
+                    .addInt("priority", "not null")
+                    .addInt("resource_type_id", "")
+                    .addInt("retry_count", "not null")
+                    .addLong("hold_expire_time", "")
+                    .addString("hold_agent_id", "")
+                    .build());
+
+            switch (databaseType) {
+            case "postgresql":
+                handle.update("create index if not exists queued_shared_task_locks_grouping on queued_shared_tasks (queue_id, resource_type_id) where hold_expire_time is not null");
+                handle.update("create index if not exists queued_shared_task_locks_ordering on queued_shared_tasks (queue_id, priority desc, id) where hold_expire_time is null");
+                handle.update("create index if not exists queued_shared_task_locks_expiration on queued_shared_tasks (hold_expire_time) where hold_expire_time is not null");
+                handle.update("create index if not exists queued_task_locks_grouping on queued_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
+                handle.update("create index if not exists queued_task_locks_ordering on queued_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
+                handle.update("create index if not exists queued_task_locks_expiration on queued_task_locks (hold_expire_time) where hold_expire_time is not null");
+                // explain analyze verbose
+                // with rrs as (
+                //   select resource_type_id, count(*) as count
+                //   from queued_task_locks
+                //   where queue_id = 1
+                //   and hold_expire_time is not null
+                //   and resource_type_id is not null
+                //   group by resource_type_id
+                // ),
+                // resource_exceeds as (
+                //   select rt.id
+                //   from resource_types rt
+                //   left join rrs on rt.id = rrs.resource_type_id
+                //   where rt.max_concurrency <= coalesce(count, 0)
+                // )
+                // select ks.id
+                // from queued_task_locks ks
+                // where queue_id = (
+                //   select 1 as id
+                //   from queues
+                //   where id = 1
+                //   and max_concurrency > (
+                //     select sum(count) as count
+                //     from rrs
+                //   )
+                // )
+                // and not exists (
+                //   select * from resource_exceeds
+                //   where resource_exceeds.id = ks.resource_type_id
+                // )
+                // and hold_expire_time is null
+                // order by priority desc, id asc
+                // limit 1
+            default:
+                handle.update("create index queued_shared_task_locks_grouping on queued_shared_task_locks (hold_expire_time, queue_id, resource_type_id)");
+                handle.update("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, hold_expire_time, priority desc, id)");
+                handle.update("create index queued_task_locks_grouping on queued_task_locks (hold_expire_time, queue_id, resource_type_id)");
+                handle.update("create index queued_task_locks_ordering on queued_task_locks (queue_id, hold_expire_time, priority desc, id)");
+                // select ks.id
+                // from task_locks ks
+                // left join (
+                //     select rt.id
+                //     from resource_types rt
+                //     left join (
+                //         select resource_type_id, count(*) as count
+                //         from task_locks
+                //         where queue_id = 1
+                //         and hold_expire_time is not null
+                //         and resource_type_id is not null
+                //         group by resource_type_id
+                //     ) rr on rt.id = rr.resource_type_id
+                //     where rt.max_concurrency <= coalesce(count, 0)
+                // ) rc on ks.resource_type_id = rc.id
+                // where queue_id = (
+                //     select 1 from queues
+                //     where id = 1
+                //     and max_concurrency > (
+                //         select count(*) as count
+                //         from task_locks
+                //         where queue_id = 1
+                //         and hold_expire_time is not null
+                //     )
+                // )
+                // and hold_expire_time is null
+                // and rc.id is null
+                // order by priority desc, id asc
+                // limit 1
+            }
         }
     };
 

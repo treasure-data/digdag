@@ -12,6 +12,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.spi.TaskQueueFactory;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.ConfigEvalEngine;
@@ -26,6 +27,7 @@ import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.database.DatabaseConfig;
+import io.digdag.core.database.DatabaseTaskQueueFactory;
 import io.digdag.core.schedule.ScheduleHandler;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.ScheduleExecutor;
@@ -130,6 +132,10 @@ public class DigdagEmbed
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigElement.class).toInstance(systemConfig);
                     binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
+
+                    Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
+                    taskQueueBinder.addBinding().to(DatabaseTaskQueueFactory.class).in(Scopes.SINGLETON);
+
                     Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
                     taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
                 },

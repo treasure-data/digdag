@@ -15,7 +15,6 @@ import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.DailySchedulerFactory;
 import io.digdag.standards.scheduler.HourlySchedulerFactory;
 import io.digdag.standards.scheduler.MinutesIntervalSchedulerFactory;
-import io.digdag.standards.queue.MemoryTaskQueueFactory;
 import io.digdag.standards.task.PyTaskRunnerFactory;
 import io.digdag.standards.task.RbTaskRunnerFactory;
 import io.digdag.standards.task.ShTaskRunnerFactory;
@@ -39,9 +38,6 @@ public class StandardsExtension
         public void configure(Binder binder)
         {
             binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
-
-            Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
-            taskQueueBinder.addBinding().to(MemoryTaskQueueFactory.class).in(Scopes.SINGLETON);
 
             Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
             taskExecutorBinder.addBinding().to(PyTaskRunnerFactory.class).in(Scopes.SINGLETON);

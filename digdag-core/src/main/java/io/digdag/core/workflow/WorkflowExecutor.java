@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
 public class WorkflowExecutor
 {
@@ -48,6 +49,7 @@ public class WorkflowExecutor
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
     private final WorkflowCompiler compiler;
+    private final TaskQueueDispatcher dispatcher;
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
 
@@ -59,6 +61,7 @@ public class WorkflowExecutor
     public WorkflowExecutor(
             RepositoryStoreManager rm,
             SessionStoreManager sm,
+            TaskQueueDispatcher dispatcher,
             WorkflowCompiler compiler,
             ConfigFactory cf,
             ObjectMapper archiveMapper)
@@ -66,6 +69,7 @@ public class WorkflowExecutor
         this.rm = rm;
         this.sm = sm;
         this.compiler = compiler;
+        this.dispatcher = dispatcher;
         this.cf = cf;
         this.archiveMapper = archiveMapper;
     }
@@ -207,25 +211,25 @@ public class WorkflowExecutor
         }
     }
 
-    public void run(TaskQueueDispatcher dispatcher)
+    public void run()
             throws InterruptedException
     {
-        runUntil(dispatcher, () -> true);
+        runUntil(() -> true);
     }
 
-    public void runUntilAny(TaskQueueDispatcher dispatcher)
+    public void runUntilAny()
             throws InterruptedException
     {
-        runUntil(dispatcher, () -> sm.isAnyNotDoneSessions());
+        runUntil(() -> sm.isAnyNotDoneSessions());
     }
 
     private static final int INITIAL_INTERVAL = 100;
     private static final int MAX_INTERVAL = 5000;
 
-    private void runUntil(TaskQueueDispatcher dispatcher, BooleanSupplier cond)
+    private void runUntil(BooleanSupplier cond)
             throws InterruptedException
     {
-        try (TaskQueuer queuer = new TaskQueuer(dispatcher)) {
+        try (TaskQueuer queuer = new TaskQueuer()) {
             Instant date = sm.getStoreTime();
             propagateAllBlockedToReady();
             retryRetryWaitingTasks();
@@ -542,13 +546,11 @@ public class WorkflowExecutor
     private class TaskQueuer
             implements AutoCloseable
     {
-        private final TaskQueueDispatcher dispatcher;
         private final Map<Long, Future<Void>> waiting = new ConcurrentHashMap<>();
         private final ExecutorService executor;
 
-        public TaskQueuer(TaskQueueDispatcher dispatcher)
+        public TaskQueuer()
         {
-            this.dispatcher = dispatcher;
             this.executor = Executors.newCachedThreadPool(
                     new ThreadFactoryBuilder()
                     .setDaemon(true)
@@ -641,6 +643,9 @@ public class WorkflowExecutor
                 // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
                 // so that TaskRunnerManager can build it using the reloaded local config.
                 TaskRequest request = TaskRequest.builder()
+                    .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
+                    // TODO support queue resourceType
+                    .priority(0)  // TODO make this configurable
                     .taskInfo(
                             TaskInfo.of(
                                 task.getId(),
@@ -662,6 +667,10 @@ public class WorkflowExecutor
 
                 logger.debug("Queuing task: "+request);
                 dispatcher.dispatch(request);
+
+                ////
+                // don't throw exceptions after here. task is already dispatched to a queue
+                //
 
                 boolean updated = lockedTask.setReadyToRunning();
                 if (!updated) {
@@ -686,31 +695,43 @@ public class WorkflowExecutor
             final Config error, final Config stateParams,
             final Optional<Integer> retryInterval)
     {
-        return sm.lockTaskIfExists(taskId, (store, task) ->
+        boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
             taskFailed(new TaskControl(store, task),
                     error, stateParams,
                     retryInterval)
         ).or(false);
+        if (changed) {
+            dispatcher.taskFinished(taskId);
+        }
+        return changed;
     }
 
     public boolean taskSucceeded(long taskId,
             final Config stateParams, final Config subtaskConfig,
             final TaskReport report)
     {
-        return sm.lockTaskIfExists(taskId, (store, task) ->
+        boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
             taskSucceeded(new TaskControl(store, task),
                     stateParams, subtaskConfig,
                     report)
         ).or(false);
+        if (changed) {
+            dispatcher.taskFinished(taskId);
+        }
+        return changed;
     }
 
     public boolean taskPollNext(long taskId,
             final Config stateParams, final int retryInterval)
     {
-        return sm.lockTaskIfExists(taskId, (store, task) ->
+        boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
             taskPollNext(new TaskControl(store, task),
                     stateParams, retryInterval)
         ).or(false);
+        if (changed) {
+            dispatcher.taskFinished(taskId);
+        }
+        return changed;
     }
 
     private boolean taskFailed(TaskControl lockedTask,

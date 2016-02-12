@@ -6,5 +6,5 @@ public interface TaskQueueFactory
 {
     String getType();
 
-    TaskQueue getTaskQueue(int siteId, String name, Config config);
+    TaskQueue getTaskQueue(Config systemConfig);
 }

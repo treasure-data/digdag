@@ -30,8 +30,9 @@ public class LocalAgentManager
 
     public void startLocalAgent(int siteId, String queueName)
     {
-        executor.submit(new LocalAgent(
-                    queueManager.getOrCreateTaskQueue(siteId, queueName),
-                taskRunnerManager));
+        executor.submit(
+                new LocalAgent(
+                    queueManager.getInProcessTaskQueueClient(siteId, queueName),
+                    taskRunnerManager));
     }
 }

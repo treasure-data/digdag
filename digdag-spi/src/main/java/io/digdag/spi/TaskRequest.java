@@ -11,6 +11,10 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableTaskRequest.class)
 public abstract class TaskRequest
 {
+    public abstract String getQueueName();
+
+    public abstract int getPriority();
+
     public abstract TaskInfo getTaskInfo();
 
     public abstract int getRepositoryId();

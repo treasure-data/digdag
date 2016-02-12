@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Value.Immutable
 @ImmutableImplStyle
-@JsonSerialize(as = ImmutableQueueDesc.class)
-public abstract class QueueDescImpl
-        extends QueueDesc
+@JsonSerialize(as = ImmutableQueueSetting.class)
+public abstract class QueueSettingImpl
+        extends QueueSetting
 { }

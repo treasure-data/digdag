@@ -6,21 +6,21 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
-@JsonDeserialize(as = ImmutableQueueDesc.class)
-public abstract class QueueDesc
+@JsonDeserialize(as = ImmutableQueueSetting.class)
+public abstract class QueueSetting
 {
     public abstract String getName();
 
     public abstract Config getConfig();
 
-    public static ImmutableQueueDesc.Builder queueDescBuilder()
+    public static ImmutableQueueSetting.Builder queueSettingBuilder()
     {
-        return ImmutableQueueDesc.queueDescBuilder();
+        return ImmutableQueueSetting.queueSettingBuilder();
     }
 
-    public static QueueDesc of(String name, Config config)
+    public static QueueSetting of(String name, Config config)
     {
-        return queueDescBuilder()
+        return queueSettingBuilder()
             .name(name)
             .config(config)
             .build();

@@ -6,57 +6,54 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskQueue;
+import io.digdag.spi.TaskQueueServer;
+import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskQueueFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public class TaskQueueManager
 {
-    private final QueueDescStoreManager storeManager;
-    private final Config defaultQueueConfig;
-    private final Map<String, TaskQueueFactory> queueTypes;
+    private final QueueSettingStoreManager qm;
+    private final TaskQueue taskQueue;
 
     @Inject
-    public TaskQueueManager(QueueDescStoreManager storeManager, ConfigFactory cf, Set<TaskQueueFactory> factories)
+    public TaskQueueManager(QueueSettingStoreManager qm, ConfigElement ce, ConfigFactory cf, Set<TaskQueueFactory> factories)
     {
-        this.storeManager = storeManager;
-        this.defaultQueueConfig = cf.create().set("type", "memory"); // TODO inject
+        this.qm = qm;
 
         ImmutableMap.Builder<String, TaskQueueFactory> builder = ImmutableMap.builder();
         for (TaskQueueFactory factory : factories) {
             builder.put(factory.getType(), factory);
         }
-        this.queueTypes = builder.build();
+        Map<String, TaskQueueFactory> queueTypes = builder.build();
+
+        Config systemConfig = ce.toConfig(cf);
+        this.taskQueue = queueTypes.get("database").getTaskQueue(systemConfig);    // TODO make this configurable?
     }
 
-    // used by agents
-    public TaskQueue getOrCreateTaskQueue(int siteId, String name)
+    // used by executors through TaskQueueDispatcher
+    public TaskQueueServer getTaskQueueServer(int siteId, String queueName)
     {
-        Config config = storeManager.getQueueDescStore(siteId)
-            .getQueueDescByNameOrCreateDefault(name, defaultQueueConfig)
-            .getConfig();
-        return getTaskQueueFromConfig(siteId, name, config);
+        return taskQueue.getServer();
     }
 
-    // used by executors
-    public TaskQueue getTaskQueue(int siteId, String name)
-        throws ResourceNotFoundException
+    // used by agents excepting LocalAgentManager
+    public TaskQueueClient getTaskQueueClient(int siteId, String queueName)
     {
-        Config config = storeManager.getQueueDescStore(siteId)
-            .getQueueDescByName(name)
-            .getConfig();
-        return getTaskQueueFromConfig(siteId, name, config);
-    }
-
-    private TaskQueue getTaskQueueFromConfig(int siteId, String name, Config config)
-    {
-        String type = config.get("type", String.class);
-        TaskQueueFactory factory = queueTypes.get(type);
-        if (factory == null) {
-            throw new ConfigException("Queue type " + type + " is not available");
+        TaskQueueClient client = taskQueue.getDirectClientIfSupported();
+        if (client != null) {
+            return client;
         }
-        return factory.getTaskQueue(siteId, name, config);
+        throw new UnsupportedOperationException("HTTP task queue client is not implemented yet");  // TODO implement TaskQueueClient that calls REST API of this server
+    }
+
+    // used by LocalAgentManager and digdag-server (TaskResource, which is not implemented yet)
+    public TaskQueueClient getInProcessTaskQueueClient(int siteId, String queueName)
+    {
+        return getTaskQueueServer(siteId, queueName);
     }
 }

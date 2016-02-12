@@ -1,11 +1,8 @@
 package io.digdag.spi;
 
-import com.google.common.base.Optional;
-
 public interface TaskQueue
 {
-    void put(TaskRequest request);
+    public TaskQueueServer getServer();
 
-    Optional<TaskRequest> receive(long timeoutMillis)
-            throws InterruptedException;  // TODO receiver node options
+    public TaskQueueClient getDirectClientIfSupported();
 }
