@@ -56,30 +56,31 @@ public class TaskRunnerManager
         this.executorTypes = builder.build();
     }
 
-    public void run(TaskRequest request)
+    public void run(String agentId, TaskRequest request)
     {
         // nextState is mutable
         Config nextState = request.getLastStateParams();
 
         // set task name to thread name so that logger shows it
-        try (SetThreadName threadName = new SetThreadName(request.getTaskInfo().getFullName())) {
+        try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
             archiveManager.withExtractedArchive(request, (archivePath) -> {
-                runWithArchive(archivePath, request, nextState);
+                runWithArchive(agentId, archivePath, request, nextState);
                 return true;
             });
         }
         catch (RuntimeException | IOException ex) {
             logger.error("Task failed", ex);
             Config error = makeExceptionError(cf, ex);
-            callback.taskFailed(request.getTaskInfo().getId(),
+            callback.taskFailed(
+                    request.getTaskId(), request.getLockId(), agentId,
                     error, nextState,
                     Optional.absent());  // no retry
         }
     }
 
-    private void runWithArchive(Path archivePath, TaskRequest request, Config nextState)
+    private void runWithArchive(String agentId, Path archivePath, TaskRequest request, Config nextState)
     {
-        long taskId = request.getTaskInfo().getId();
+        long taskId = request.getTaskId();
 
         try {
             // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task.
@@ -111,7 +112,8 @@ public class TaskRunnerManager
                     .findFirst();
                 if (!commandKey.isPresent()) {
                     // TODO warning
-                    callback.taskSucceeded(taskId,
+                    callback.taskSucceeded(
+                            taskId, request.getLockId(), agentId,
                             nextState, cf.create(),
                             TaskReport.empty(cf));
                     return;
@@ -137,21 +139,23 @@ public class TaskRunnerManager
                 nextState = executor.getStateParams();
             }
 
-            callback.taskSucceeded(taskId,
+            callback.taskSucceeded(
+                    taskId, request.getLockId(), agentId,
                     nextState, result.getSubtaskConfig(),
                     result.getReport());
         }
         catch (TaskExecutionException ex) {
             if (ex.getError().isPresent()) {
                 logger.error("Task failed", ex);
-                callback.taskFailed(taskId,
+                callback.taskFailed(
+                        taskId, request.getLockId(), agentId,
                         ex.getError().get(), nextState,
                         ex.getRetryInterval());
             }
             else {
                 logger.debug("Retrying task {}", ex.toString());
                 callback.taskPollNext(
-                        taskId,
+                        taskId, request.getLockId(), agentId,
                         nextState, ex.getRetryInterval().get());
             }
         }

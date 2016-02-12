@@ -52,7 +52,7 @@ public class InProcessArchiveManager
             throws IOException
     {
         try {
-            RepositoryStore rs = rm.getRepositoryStore(request.getTaskInfo().getSiteId());
+            RepositoryStore rs = rm.getRepositoryStore(request.getSiteId());
             StoredRevision rev;
             if (request.getRevision().isPresent()) {
                 rev = rs.getRevisionByName(request.getRepositoryId(), request.getRevision().get());

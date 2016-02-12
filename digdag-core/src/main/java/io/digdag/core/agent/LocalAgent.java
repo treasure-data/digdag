@@ -53,7 +53,7 @@ public class LocalAgent
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {
-                            runner.run(req);
+                            runner.run("local", req);
                         }
                         catch (Throwable t) {
                             logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);

@@ -16,6 +16,7 @@ import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskStateException;
 import io.digdag.spi.TaskRequest;
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
+import io.digdag.core.database.DatabaseTaskQueueStore.LockResult;
 
 public class DatabaseTaskQueueFactory
     implements TaskQueueFactory
@@ -51,10 +52,10 @@ public class DatabaseTaskQueueFactory
         {
             try {
                 store.enqueue(
-                        request.getTaskInfo().getSiteId(),
+                        request.getSiteId(),
                         request.getQueueName(),
                         request.getPriority(),
-                        request.getTaskInfo().getId(),
+                        request.getTaskId(),
                         encodeTask(request));
                 if (request.getQueueName().equals(DEFAULT_QUEUE_NAME)) {
                     noticeEnqueue(sharedTaskSleepHelper);
@@ -82,9 +83,10 @@ public class DatabaseTaskQueueFactory
         public List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxSleepMillis)
         {
             ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
-            for (long lockedTaskId : store.lockSharedTasks(limit, agentId, lockSeconds)) {
+            for (LockResult lock : store.lockSharedTasks(limit, agentId, lockSeconds)) {
                 try {
-                    builder.add(decodeTask(store.getTaskData(lockedTaskId)));
+                    byte[] data = store.getTaskData(lock.getLockId());
+                    builder.add(decodeTask(data, lock));
                 }
                 catch (ResourceNotFoundException ex) {
                     continue;
@@ -117,18 +119,20 @@ public class DatabaseTaskQueueFactory
         }
 
         @Override
-        public void taskHeartbeat(int siteId, String queueName, long lockedTaskId, String agentId)
+        public void taskHeartbeat(int siteId, String lockId, String agentId)
             throws TaskStateException
         {
             // TODO not implemented yet
+            LockResult lock = decodeLockId(lockId);
         }
 
         @Override
-        public void delete(int siteId, String queueName, long lockedTaskId, String agentId)
+        public void delete(int siteId, String lockId, String agentId)
             throws TaskStateException
         {
             try {
-                store.delete(siteId, queueName, lockedTaskId, agentId);
+                LockResult lock = decodeLockId(lockId);
+                store.delete(siteId, lock, agentId);
             }
             catch (ResourceNotFoundException | ResourceConflictException ex) {
                 throw new TaskStateException(ex);
@@ -145,14 +149,33 @@ public class DatabaseTaskQueueFactory
             }
         }
 
-        private TaskRequest decodeTask(byte[] data)
+        private TaskRequest decodeTask(byte[] data, LockResult lock)
         {
             try {
-                return mapper.readValue(data, TaskRequest.class);
+                return TaskRequest.withLockId(
+                    mapper.readValue(data, TaskRequest.class),
+                    encodeLockId(lock));
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
             }
+        }
+
+        private String encodeLockId(LockResult lock)
+        {
+            if (lock.getSharedTask()) {
+                return "s" + lock.getLockId();
+            }
+            else {
+                return "k" + lock.getLockId();
+            }
+        }
+
+        private LockResult decodeLockId(String encoded)
+        {
+            boolean sharedTask = encoded.startsWith("s");
+            long lockId = Long.parseLong(encoded.substring(1));
+            return LockResult.of(sharedTask, lockId);
         }
     }
 }

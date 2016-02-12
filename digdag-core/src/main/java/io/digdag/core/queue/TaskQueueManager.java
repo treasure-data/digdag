@@ -36,13 +36,13 @@ public class TaskQueueManager
     }
 
     // used by executors through TaskQueueDispatcher
-    public TaskQueueServer getTaskQueueServer(int siteId, String queueName)
+    public TaskQueueServer getTaskQueueServer(int siteId)
     {
         return taskQueue.getServer();
     }
 
     // used by agents excepting LocalAgentManager
-    public TaskQueueClient getTaskQueueClient(int siteId, String queueName)
+    public TaskQueueClient getTaskQueueClient(int siteId)
     {
         TaskQueueClient client = taskQueue.getDirectClientIfSupported();
         if (client != null) {
@@ -52,8 +52,8 @@ public class TaskQueueManager
     }
 
     // used by LocalAgentManager and digdag-server (TaskResource, which is not implemented yet)
-    public TaskQueueClient getInProcessTaskQueueClient(int siteId, String queueName)
+    public TaskQueueClient getInProcessTaskQueueClient(int siteId)
     {
-        return getTaskQueueServer(siteId, queueName);
+        return getTaskQueueServer(siteId);
     }
 }

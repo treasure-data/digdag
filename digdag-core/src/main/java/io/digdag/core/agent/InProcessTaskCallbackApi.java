@@ -46,26 +46,35 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public void taskSucceeded(long taskId,
+    public void taskHeartbeat(int siteId, String lockId, String agentId)
+    {
+        exec.taskHeartbeat(siteId, lockId, agentId);
+    }
+
+    @Override
+    public void taskSucceeded(long taskId, String lockId, String agentId,
             Config stateParams, Config subtaskConfig,
             TaskReport report)
     {
-        exec.taskSucceeded(taskId, stateParams, subtaskConfig, report);
+        exec.taskSucceeded(siteId, taskId, lockId, agentId,
+                stateParams, subtaskConfig, report);
     }
 
     @Override
-    public void taskFailed(long taskId,
+    public void taskFailed(long taskId, String lockId, String agentId,
             Config error, Config stateParams,
             Optional<Integer> retryInterval)
     {
-        exec.taskFailed(taskId, error, stateParams, retryInterval);
+        exec.taskFailed(siteId, taskId, lockId, agentId,
+                error, stateParams, retryInterval);
     }
 
     @Override
-    public void taskPollNext(long taskId,
+    public void taskPollNext(long taskId, String lockId, String agentId,
             Config stateParams, int retryInterval)
     {
-        exec.taskPollNext(taskId, stateParams, retryInterval);
+        exec.taskPollNext(siteId, taskId, lockId, agentId,
+                stateParams, retryInterval);
     }
 
     @Override

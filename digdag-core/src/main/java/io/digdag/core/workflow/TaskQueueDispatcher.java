@@ -26,11 +26,11 @@ public class TaskQueueDispatcher
     public void dispatch(TaskRequest request)
         throws ResourceConflictException
     {
-        logger.trace("Dispatching request {}", request.getTaskInfo().getFullName());
+        logger.trace("Dispatching request {}", request.getTaskName());
         logger.trace("  config: {}", request.getConfig());
         logger.trace("  stateParams: {}", request.getLastStateParams());
 
-        TaskQueueServer queue = manager.getTaskQueueServer(request.getTaskInfo().getSiteId(), request.getQueueName());
+        TaskQueueServer queue = manager.getTaskQueueServer(request.getSiteId());
         try {
             queue.enqueue(request);
         }
@@ -42,10 +42,15 @@ public class TaskQueueDispatcher
         }
     }
 
-    // TODO taskHeartbeat
-
-    public void taskFinished(long taskId)
+    public void taskHeartbeat(int siteId, String lockId, String agentId)
     {
-        // TODO call queue.delete
+        TaskQueueServer queue = manager.getTaskQueueServer(siteId);
+        queue.taskHeartbeat(siteId, lockId, agentId);
+    }
+
+    public void taskFinished(int siteId, String lockId, String agentId)
+    {
+        TaskQueueServer queue = manager.getTaskQueueServer(siteId);
+        queue.delete(siteId, lockId, agentId);
     }
 }

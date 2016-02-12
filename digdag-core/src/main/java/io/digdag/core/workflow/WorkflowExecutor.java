@@ -26,7 +26,6 @@ import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.TaskInfo;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredRepository;
@@ -604,7 +603,6 @@ public class WorkflowExecutor
                 return false;
             }
 
-            String fullName = task.getFullName();
             StoredSessionAttemptWithSession attempt;
             try {
                 attempt = sm.getAttemptWithSessionById(task.getAttemptId());
@@ -643,19 +641,19 @@ public class WorkflowExecutor
                 // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
                 // so that TaskRunnerManager can build it using the reloaded local config.
                 TaskRequest request = TaskRequest.builder()
-                    .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
-                    // TODO support queue resourceType
-                    .priority(0)  // TODO make this configurable
-                    .taskInfo(
-                            TaskInfo.of(
-                                task.getId(),
-                                attempt.getSiteId(),
-                                attempt.getId(),
-                                attempt.getRetryAttemptName(),
-                                fullName))
+                    .siteId(attempt.getSiteId())
                     .repositoryId(attempt.getSession().getRepositoryId())
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
+                    .taskId(task.getId())
+                    //.sessionId(attempt.getSession().getId())
+                    .attemptId(attempt.getId())
+                    .retryAttemptName(attempt.getRetryAttemptName())
+                    .taskName(task.getFullName())
+                    .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
+                    // TODO support queue resourceType
+                    .lockId("")   // this will be overwritten by TaskQueueServer
+                    .priority(0)  // TODO make this configurable
                     .localConfig(task.getConfig().getLocal())
                     .config(params)
                     .lastStateParams(task.getStateParams())
@@ -683,6 +681,7 @@ public class WorkflowExecutor
                 return updated;
             }
             catch (Exception ex) {
+                logger.error("Enqueue error, making this task failed: {}", task, ex);
                 Config stateParams = cf.create().set("schedule_error", ex.toString());
                 return taskFailed(lockedTask,
                         TaskRunnerManager.makeExceptionError(cf, ex), stateParams,
@@ -691,7 +690,12 @@ public class WorkflowExecutor
         }).or(false);
     }
 
-    public boolean taskFailed(long taskId,
+    public void taskHeartbeat(int siteId, String lockId, String agentId)
+    {
+        dispatcher.taskHeartbeat(siteId, lockId, agentId);
+    }
+
+    public boolean taskFailed(int siteId, long taskId, String lockId, String agentId,
             final Config error, final Config stateParams,
             final Optional<Integer> retryInterval)
     {
@@ -701,12 +705,12 @@ public class WorkflowExecutor
                     retryInterval)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(taskId);
+            dispatcher.taskFinished(siteId, lockId, agentId);
         }
         return changed;
     }
 
-    public boolean taskSucceeded(long taskId,
+    public boolean taskSucceeded(int siteId, long taskId, String lockId, String agentId,
             final Config stateParams, final Config subtaskConfig,
             final TaskReport report)
     {
@@ -716,12 +720,12 @@ public class WorkflowExecutor
                     report)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(taskId);
+            dispatcher.taskFinished(siteId, lockId, agentId);
         }
         return changed;
     }
 
-    public boolean taskPollNext(long taskId,
+    public boolean taskPollNext(int siteId, long taskId, String lockId, String agentId,
             final Config stateParams, final int retryInterval)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
@@ -729,7 +733,7 @@ public class WorkflowExecutor
                     stateParams, retryInterval)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(taskId);
+            dispatcher.taskFinished(siteId, lockId, agentId);
         }
         return changed;
     }

@@ -22,6 +22,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -30,6 +31,22 @@ import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 public class DatabaseTaskQueueStore
         extends BasicDatabaseStoreManager<DatabaseTaskQueueStore.Dao>
 {
+    @Value.Immutable
+    public static interface LockResult
+    {
+        boolean getSharedTask();
+
+        long getLockId();
+
+        public static LockResult of(boolean sharedTask, long lockId)
+        {
+            return ImmutableLockResult.builder()
+                .sharedTask(sharedTask)
+                .lockId(lockId)
+                .build();
+        }
+    }
+
     private final QueueSettingStoreManager qm;
 
     @Inject
@@ -52,8 +69,8 @@ public class DatabaseTaskQueueStore
         return transaction((handle, dao, ts) -> {
             int queueId = qm.getQueueIdByNameOrInsertDefault(siteId, queueName);
             long queuedTaskId = catchConflict(() ->
-                dao.insertQueuedTask(queueId, priority, resourceTypeId, taskId, data),
-                "queued task id=%d in queue id=%d", taskId, queueId);
+                dao.insertQueuedTask(siteId, queueId, priority, resourceTypeId, taskId, data),
+                "lock id=%d in queue id=%d", taskId, queueId);
             if (useSharedTaskQueue) {
                 dao.insertQueuedSharedTaskLock(queuedTaskId, queueId, priority, resourceTypeId);
             }
@@ -64,29 +81,32 @@ public class DatabaseTaskQueueStore
         }, ResourceConflictException.class);
     }
 
-    public void delete(int siteId, String queueName, long lockedTaskId, String agentId)
+    public void delete(int siteId, LockResult lock, String agentId)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        boolean useSharedTaskQueue = queueName.equals(DEFAULT_QUEUE_NAME);
-
         this.<Boolean, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao, ts) -> {
-            int queueId = qm.getQueueIdByName(siteId, queueName);
             int deleted;
-            if (useSharedTaskQueue) {
-                deleted = dao.deleteSharedTaskLock(lockedTaskId, agentId);
+
+            deleted = dao.deleteTask(lock.getLockId(), siteId);
+            if (deleted == 0) {
+                throw new ResourceNotFoundException("Deleting lock does not exist: lock id=" + lock.getLockId() + " site id=" + siteId);
+            }
+
+            if (lock.getSharedTask()) {
+                deleted = dao.deleteSharedTaskLock(lock.getLockId(), agentId);
             }
             else {
-                deleted = dao.deleteTaskLock(lockedTaskId, agentId);
+                deleted = dao.deleteTaskLock(lock.getLockId(), agentId);
             }
             if (deleted == 0) {
-                throw new ResourceConflictException("Deleting task does not exist or preempted by another agent: task id=" + lockedTaskId + " agent id=" + agentId);
+                throw new ResourceConflictException("Deleting lock does not exist or preempted by another agent: lock id=" + lock.getLockId() + " agent id=" + agentId);
             }
-            dao.deleteTask(lockedTaskId);
+
             return true;
         }, ResourceNotFoundException.class, ResourceConflictException.class);
     }
 
-    public List<Long> lockSharedTasks(int limit, String agentId, int lockSeconds)
+    public List<LockResult> lockSharedTasks(int limit, String agentId, int lockSeconds)
     {
         // optimized implementation of
         //   select distinct queue_id as id from locks wherE hold_expire_time is null
@@ -110,48 +130,56 @@ public class DatabaseTaskQueueStore
                 )
                 .mapTo(int.class)
                 .list();
-            ImmutableList.Builder<Long> result = ImmutableList.builder();
+            ImmutableList.Builder<LockResult> builder = ImmutableList.builder();
             int remaining = limit;
             for (int queueId : queueIds) {
-                List<Long> locked = tryLockTasks(handle, "queued_shared_task_locks", queueId, remaining);
-                if (!locked.isEmpty()) {
-                    remaining -= locked.size();
-                    result.addAll(locked);
+                List<Long> lockIds = tryLockTasks(handle, "queued_shared_task_locks", queueId, remaining);
+                if (!lockIds.isEmpty()) {
+                    for (long lockId : lockIds) {
+                        builder.add(LockResult.of(true, lockId));
+                    }
+                    remaining -= lockIds.size();
                     if (remaining <= 0) {
                         break;
                     }
                 }
             }
-            List<Long> locked = result.build();
-            setHold(handle, "queued_shared_task_locks", locked, agentId, lockSeconds);
-            return locked;
+            List<LockResult> results = builder.build();
+            setHold(handle, "queued_shared_task_locks", results, agentId, lockSeconds);
+            return results;
         });
     }
 
-    public List<Long> lockTasks(int siteId, String queueName, int limit, String agentId, int lockSeconds)
+    public List<LockResult> lockTasks(int siteId, String queueName, int limit, String agentId, int lockSeconds)
         throws ResourceNotFoundException
     {
         int queueId = qm.getQueueIdByName(siteId, queueName);
         return transaction((handle, dao, ts) -> {
-            List<Long> locked = tryLockTasks(handle, "queued_task_locks", queueId, limit);
-            setHold(handle, "queued_task_locks", locked, agentId, lockSeconds);
-            return locked;
+            List<Long> lockIds = tryLockTasks(handle, "queued_task_locks", queueId, limit);
+            ImmutableList.Builder<LockResult> builder = ImmutableList.builder();
+            for (long lockId : lockIds) {
+                builder.add(LockResult.of(false, lockId));
+            }
+            List<LockResult> results = builder.build();
+            setHold(handle, "queued_task_locks", results, agentId, lockSeconds);
+            return results;
         });
     }
 
-    private void setHold(Handle handle, String tableName, List<Long> ids, String agentId, int lockSeconds)
+    private void setHold(Handle handle, String tableName, List<LockResult> locks, String agentId, int lockSeconds)
     {
         // TODO use this syntax for PostgreSQL
         // (statement_timestamp() + (interval '1' second) * hold_timeout)
         handle.createStatement(
                 "update " + tableName + " " +
-                " set hold_expire_time = :expireTime" +
+                " set hold_expire_time = :expireTime, hold_agent_id = :agentId" +
                 " where id in (" +
-                    ids.stream()
-                    .map(it -> it.toString()).collect(Collectors.joining(", ")) +
+                    locks.stream()
+                    .map(it -> Long.toString(it.getLockId())).collect(Collectors.joining(", ")) +
                 ")"
             )
             .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
+            .bind("agentId", agentId)
             .execute();
     }
 
@@ -192,22 +220,23 @@ public class DatabaseTaskQueueStore
             )
             .mapTo(long.class)
             .list();
-
     }
 
-    public byte[] getTaskData(long lockedTaskId)
+    // TODO implement background task expiration thread
+
+    public byte[] getTaskData(long lockId)
         throws ResourceNotFoundException
     {
-        return autoCommit((handle, dao) -> dao.getTaskData(lockedTaskId));
+        return autoCommit((handle, dao) -> dao.getTaskData(lockId));
     }
 
     public interface Dao
     {
         @SqlUpdate("insert into queued_tasks" +
-                " (queue_id, priority, resource_type_id, task_id, data, created_at)" +
-                " values (:queueId, :priority, :resourceTypeId, :taskId, :data, now())")
+                " (site_id, queue_id, priority, resource_type_id, task_id, data, created_at)" +
+                " values (:siteId, :queueId, :priority, :resourceTypeId, :taskId, :data, now())")
         @GetGeneratedKeys
-        long insertQueuedTask(@Bind("queueId") int queueId, @Bind("priority") int priority,
+        long insertQueuedTask(@Bind("siteId") int siteId, @Bind("queueId") int queueId, @Bind("priority") int priority,
                 @Bind("resourceTypeId") Integer resourceTypeId, @Bind("taskId") long taskId,
                 @Bind("data") byte[] data);
 
@@ -238,7 +267,8 @@ public class DatabaseTaskQueueStore
                 " and hold_agent_id = :agentId")
         int deleteTaskLock(@Bind("taskId") long taskId, @Bind("agentId") String agentId);
 
-        @SqlUpdate("delete from queued_tasks where id = :taskId")
-        int deleteTask(@Bind("taskId") long taskId);
+        @SqlUpdate("delete from queued_tasks" +
+                " where id = :taskId and site_id = :siteId")
+        int deleteTask(@Bind("taskId") long taskId, @Bind("siteId") int siteId);
     }
 }

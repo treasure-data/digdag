@@ -32,7 +32,7 @@ public class LocalAgentManager
     {
         executor.submit(
                 new LocalAgent(
-                    queueManager.getInProcessTaskQueueClient(siteId, queueName),
+                    queueManager.getInProcessTaskQueueClient(siteId),
                     taskRunnerManager));
     }
 }

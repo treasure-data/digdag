@@ -252,20 +252,21 @@ public class Run
         }
 
         @Override
-        public void run(TaskRequest request)
+        public void run(String agentId, TaskRequest request)
         {
-            String fullName = request.getTaskInfo().getFullName();
+            String fullName = request.getTaskName();
             TaskReport report = cmd.skipTaskReports.apply(fullName);
             if (report != null) {
                 try (SetThreadName threadName = new SetThreadName(fullName)) {
                     logger.info("Skipped");
                 }
-                callback.taskSucceeded(request.getTaskInfo().getId(),
+                callback.taskSucceeded(
+                        request.getTaskId(), request.getLockId(), agentId,
                         cf.create(), cf.create(),
                         report);
             }
             else {
-                super.run(request);
+                super.run(agentId, request);
             }
         }
     }

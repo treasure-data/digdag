@@ -3,7 +3,6 @@ package io.digdag.core.session;
 import java.util.List;
 import java.time.Instant;
 import com.google.common.base.*;
-import io.digdag.spi.RevisionInfo;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;

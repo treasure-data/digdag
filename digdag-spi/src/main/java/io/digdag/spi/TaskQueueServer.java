@@ -12,9 +12,9 @@ public interface TaskQueueServer
 
     // TODO lockTasks (of custom queue) is not implemented yet
 
-    void taskHeartbeat(int siteId, String queueName, long lockedTaskId, String agentId)
+    void taskHeartbeat(int siteId, String lockId, String agentId)
         throws TaskStateException;
 
-    void delete(int siteId, String queueName, long lockedTaskId, String agentId)
+    void delete(int siteId, String lockId, String agentId)
         throws TaskStateException;
 }

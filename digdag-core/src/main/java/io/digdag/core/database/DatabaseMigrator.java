@@ -416,6 +416,7 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("queued_tasks")
                     .addLongId("id")
+                    .addInt("site_id", "not null")  // denormalized for performance
                     .addInt("queue_id", "not null")
                     .addInt("priority", "not null")
                     .addInt("resource_type_id", "")
