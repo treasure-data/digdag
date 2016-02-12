@@ -1,5 +1,7 @@
 package io.digdag.spi;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import org.immutables.value.Value;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -34,6 +36,10 @@ public abstract class TaskRequest
     public abstract String getLockId();
 
     public abstract int getPriority();
+
+    public abstract ZoneId getTimeZone();
+
+    public abstract Instant getSessionTime();
 
     public abstract Config getLocalConfig();
 

@@ -141,6 +141,7 @@ public class TaskRunnerManager
             try {
                 Config evaluatedLocalConfig = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
                 config.setAll(evaluatedLocalConfig);
+                config.setAll(RuntimeParams.buildRuntimeParams(config.getFactory(), request));
             }
             catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to rebuild task config", ex);

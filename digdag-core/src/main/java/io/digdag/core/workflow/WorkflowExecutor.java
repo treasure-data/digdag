@@ -34,11 +34,13 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
@@ -635,7 +637,14 @@ public class WorkflowExecutor
                 }
                 params.setAll(attempt.getParams());
                 collectParams(params, task, attempt);
-                params.setAll(TaskConfig.setRuntimeBuiltInParams(params, rev, attempt));
+
+                ZoneId timeZone;
+                try {
+                    timeZone = ScheduleExecutor.getTaskTimeZone(params, rev.transform(it -> it.getDefaultParams()));
+                }
+                catch (ConfigException ce) {
+                    timeZone = ZoneId.of("UTC");
+                }
 
                 // create TaskRequest for TaskRunnerManager.
                 // TaskRunnerManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
@@ -655,6 +664,8 @@ public class WorkflowExecutor
                     // TODO support queue resourceType
                     .lockId("")   // this will be overwritten by TaskQueueServer
                     .priority(0)  // TODO make this configurable
+                    .timeZone(timeZone)
+                    .sessionTime(attempt.getSession().getInstant())
                     .localConfig(task.getConfig().getLocal())
                     .config(params)
                     .lastStateParams(task.getStateParams())
