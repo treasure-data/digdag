@@ -187,12 +187,9 @@ public class SessionResource
         StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
 
-        AttemptRequest ar = AttemptRequest.builder()
-            .stored(AttemptRequest.Stored.of(def))
-            .workflowName(def.getName())
+        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
             .instant(request.getInstant())
             .retryAttemptName(request.getRetryAttemptName())
-            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(request.getParams())
             .build();
 

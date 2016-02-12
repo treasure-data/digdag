@@ -106,12 +106,9 @@ public class InProcessTaskCallbackApi
             throw new RuntimeException(ex);
         }
 
-        AttemptRequest ar = AttemptRequest.builder()
-            .stored(AttemptRequest.Stored.of(def))
-            .workflowName(def.getName())
+        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
             .instant(instant)
             .retryAttemptName(retryAttemptName)
-            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(overwriteParams)
             .build();
 

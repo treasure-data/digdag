@@ -177,12 +177,9 @@ public class LocalSite
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            AttemptRequest ar = AttemptRequest.builder()
-                .stored(AttemptRequest.Stored.of(rev, def.getId()))
-                .workflowName(def.getName())
+            AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(rev, def)
                 .instant(Instant.now())
                 .retryAttemptName(Optional.absent())
-                .defaultParams(rev.getDefaultParams())
                 .overwriteParams(overwriteParams)
                 .build();
 

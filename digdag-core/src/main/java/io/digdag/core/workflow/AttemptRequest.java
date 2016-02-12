@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.schedule.ScheduleExecutor;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableAttemptRequest.class)
@@ -28,13 +30,16 @@ public abstract class AttemptRequest
 
         public abstract int getRepositoryId();
 
-        public static Stored of(StoredRevision rev, long workflowDefinitionId)
+        public abstract Config getRevisionDefaultParams();
+
+        public static Stored of(StoredRevision rev, StoredWorkflowDefinition def)
         {
             return ImmutableStored.builder()
-                .workflowDefinitionId(workflowDefinitionId)
+                .workflowDefinitionId(def.getId())
                 .revisionId(rev.getId())
                 .revisionName(rev.getName())
                 .repositoryId(rev.getRepositoryId())
+                .revisionDefaultParams(rev.getDefaultParams())
                 .build();
         }
 
@@ -45,6 +50,7 @@ public abstract class AttemptRequest
                 .revisionId(def.getRevisionId())
                 .revisionName(def.getRevisionName())
                 .repositoryId(def.getRepository().getId())
+                .revisionDefaultParams(def.getRevisionDefaultParams())
                 .build();
         }
     }
@@ -55,15 +61,26 @@ public abstract class AttemptRequest
 
     public abstract Instant getInstant();
 
-    public abstract Optional<String> getRetryAttemptName();
+    public abstract ZoneId getTimeZone();
 
-    public abstract Config getDefaultParams();
+    public abstract Optional<String> getRetryAttemptName();
 
     public abstract Config getOverwriteParams();
 
-    public static ImmutableAttemptRequest.Builder builder()
+    public static ImmutableAttemptRequest.Builder builderFromStoredWorkflow(StoredRevision rev, StoredWorkflowDefinition def)
     {
-        return ImmutableAttemptRequest.builder();
+        return ImmutableAttemptRequest.builder()
+            .stored(Stored.of(rev, def))
+            .workflowName(def.getName())
+            .timeZone(ScheduleExecutor.getWorkflowTimeZone(rev.getDefaultParams(), def));
+    }
+
+    public static ImmutableAttemptRequest.Builder builderFromStoredWorkflow(StoredWorkflowDefinitionWithRepository def)
+    {
+        return ImmutableAttemptRequest.builder()
+            .stored(Stored.of(def))
+            .workflowName(def.getName())
+            .timeZone(ScheduleExecutor.getWorkflowTimeZone(def.getRevisionDefaultParams(), def));
     }
 
     @Value.Check

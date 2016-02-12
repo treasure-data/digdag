@@ -34,7 +34,6 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import org.slf4j.Logger;
@@ -89,15 +88,13 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(ar.getDefaultParams(), def);
-
         logger.debug("Checking a session of workflow '{}' ({}) from task {} with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, timeZone, monitors);
+        return submitTasks(siteId, ar, tasks, monitors);
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -109,18 +106,16 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
 
-        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(ar.getDefaultParams(), def);
-
         logger.debug("Checking a session of workflow '{}' ({}) with overwrite parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 ar.getOverwriteParams());
 
-        return submitTasks(siteId, ar, tasks, timeZone, monitors);
+        return submitTasks(siteId, ar, tasks, monitors);
     }
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
-            WorkflowTaskList tasks, ZoneId timeZone, List<SessionMonitor> monitors)
+            WorkflowTaskList tasks, List<SessionMonitor> monitors)
         throws SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
@@ -136,7 +131,7 @@ public class WorkflowExecutor
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
                 ar.getOverwriteParams(),
-                timeZone,
+                ar.getTimeZone(),
                 Optional.of(ar.getStored().getWorkflowDefinitionId()));
 
         TaskConfig.validateAttempt(attempt);

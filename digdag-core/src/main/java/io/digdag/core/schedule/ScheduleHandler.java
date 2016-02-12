@@ -44,12 +44,9 @@ public class ScheduleHandler
             List<SessionMonitor> monitors, ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
-        AttemptRequest ar = AttemptRequest.builder()
-            .stored(AttemptRequest.Stored.of(def))
-            .workflowName(def.getName())
+        AttemptRequest ar = AttemptRequest.builderFromStoredWorkflow(def)
             .instant(time.getScheduleTime())
             .retryAttemptName(retryAttemptName)
-            .defaultParams(def.getRevisionDefaultParams())
             .overwriteParams(cf.create())  // TODO add schedules.params and copy it here
             .build();
 
