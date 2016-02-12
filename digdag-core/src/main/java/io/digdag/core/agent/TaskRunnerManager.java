@@ -1,15 +1,23 @@
 package io.digdag.core.agent;
 
+import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -29,6 +37,7 @@ public class TaskRunnerManager
 {
     private static Logger logger = LoggerFactory.getLogger(TaskRunnerManager.class);
 
+    protected final AgentConfig config;
     protected final AgentId agentId;
     protected final TaskCallbackApi callback;
     private final ArchiveManager archiveManager;
@@ -38,14 +47,18 @@ public class TaskRunnerManager
     private final ConfigEvalEngine evalEngine;
     private final Map<String, TaskRunnerFactory> executorTypes;
 
+    private final ScheduledExecutorService heartbeatScheduler;
+    private final ConcurrentHashMap<Long, String> lockIdMap = new ConcurrentHashMap<>();
+
     @Inject
-    public TaskRunnerManager(AgentId agentId,
+    public TaskRunnerManager(AgentConfig config, AgentId agentId,
             TaskCallbackApi callback, ArchiveManager archiveManager,
             ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
     {
-        this.callback = callback;
+        this.config = config;
         this.agentId = agentId;
+        this.callback = callback;
         this.archiveManager = archiveManager;
         this.configLoader = configLoader;
         this.compiler = compiler;
@@ -57,6 +70,28 @@ public class TaskRunnerManager
             builder.put(factory.getType(), factory);
         }
         this.executorTypes = builder.build();
+
+        this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("heartbeat-%d")
+                .build()
+                );
+    }
+
+    @PostConstruct
+    public void start()
+    {
+        heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
+                config.getHeartbeatInterval(), config.getHeartbeatInterval(),
+                TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void shutdown()
+    {
+        heartbeatScheduler.shutdown();
+        // TODO wait for shutdown completion?
     }
 
     public void run(TaskRequest request)
@@ -66,10 +101,7 @@ public class TaskRunnerManager
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
-            archiveManager.withExtractedArchive(request, (archivePath) -> {
-                runWithArchive(archivePath, request, nextState);
-                return true;
-            });
+            runWithHeartbeat(request, nextState);
         }
         catch (RuntimeException | IOException ex) {
             logger.error("Task failed", ex);
@@ -78,6 +110,23 @@ public class TaskRunnerManager
                     request.getTaskId(), request.getLockId(), agentId,
                     error, nextState,
                     Optional.absent());  // no retry
+        }
+    }
+
+    private void runWithHeartbeat(TaskRequest request, Config nextState)
+        throws IOException
+    {
+        long taskId = request.getTaskId();
+
+        lockIdMap.put(taskId, request.getLockId());
+        try {
+            archiveManager.withExtractedArchive(request, (archivePath) -> {
+                runWithArchive(archivePath, request, nextState);
+                return true;
+            });
+        }
+        finally {
+            lockIdMap.remove(taskId);
         }
     }
 
@@ -173,5 +222,18 @@ public class TaskRunnerManager
                     .stream()
                     .map(it -> it.toString())
                     .collect(Collectors.joining(", ")));
+    }
+
+    private void heartbeat()
+    {
+        try {
+            List<String> lockedIds = ImmutableList.copyOf(lockIdMap.values());
+            if (!lockedIds.isEmpty()) {
+                callback.taskHeartbeat(lockedIds, agentId, config.getLockRetentionTime());
+            }
+        }
+        catch (Throwable t) {
+            logger.error("An uncaught exception is ignored. Heartbeat thread will be retried.", t);
+        }
     }
 }

@@ -9,16 +9,20 @@ import io.digdag.core.queue.TaskQueueManager;
 
 public class LocalAgentManager
 {
+    private final AgentConfig config;
     private final AgentId agentId;
     private final TaskQueueManager queueManager;
     private final TaskRunnerManager taskRunnerManager;
     private final ExecutorService executor;
 
     @Inject
-    public LocalAgentManager(AgentId agentId,
+    public LocalAgentManager(
+            AgentConfig config,
+            AgentId agentId,
             TaskQueueManager queueManager,
             TaskRunnerManager taskRunnerManager)
     {
+        this.config = config;
         this.agentId = agentId;
         this.queueManager = queueManager;
         this.taskRunnerManager = taskRunnerManager;
@@ -36,6 +40,7 @@ public class LocalAgentManager
     {
         executor.submit(
                 new LocalAgent(
+                    config,
                     agentId,
                     queueManager.getInProcessTaskQueueClient(siteId),
                     taskRunnerManager

@@ -31,14 +31,9 @@ public abstract class ServerConfig
 
     public abstract List<UserConfig> getApiKeyAuthUsers();
 
-    public static ImmutableServerConfig.Builder builder()
-    {
-        return ImmutableServerConfig.builder();
-    }
-
     private static ImmutableServerConfig.Builder defaultBuilder()
     {
-        return builder()
+        return ImmutableServerConfig.builder()
             .port(DEFAULT_PORT)
             .bind(DEFAULT_BIND);
     }

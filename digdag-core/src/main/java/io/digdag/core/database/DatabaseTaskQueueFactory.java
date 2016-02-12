@@ -119,11 +119,17 @@ public class DatabaseTaskQueueFactory
         }
 
         @Override
-        public void taskHeartbeat(int siteId, String lockId, String agentId)
+        public void taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
             throws TaskStateException
         {
-            // TODO not implemented yet
-            LockResult lock = decodeLockId(lockId);
+            // TODO this is insecure because siteId is not checked
+            System.out.println("heartbeat...: "+lockedIds);
+            for (String lockId : lockedIds) {
+                LockResult lock = decodeLockId(lockId);
+                boolean success = store.heartbeat(lock, agentId, lockSeconds);
+                // TODO throw if not success?
+                System.out.println("heartbeat success?: "+success+" :" + lock+" by "+agentId);
+            }
         }
 
         @Override

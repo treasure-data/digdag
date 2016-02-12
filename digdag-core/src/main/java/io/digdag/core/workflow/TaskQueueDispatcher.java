@@ -1,16 +1,17 @@
 package io.digdag.core.workflow;
 
+import java.util.List;
 import com.google.inject.Inject;
-import io.digdag.spi.TaskRequest;
-import io.digdag.core.queue.TaskQueueManager;
-import io.digdag.spi.TaskQueue;
-import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskQueue;
 import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskStateException;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.ResourceConflictException;
 
 public class TaskQueueDispatcher
 {
@@ -41,12 +42,6 @@ public class TaskQueueDispatcher
             }
             throw new ResourceConflictException(ex);
         }
-    }
-
-    public void taskHeartbeat(int siteId, String lockId, AgentId agentId)
-    {
-        TaskQueueServer queue = manager.getTaskQueueServer(siteId);
-        queue.taskHeartbeat(siteId, lockId, agentId.toString());
     }
 
     public void taskFinished(int siteId, String lockId, AgentId agentId)

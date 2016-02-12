@@ -691,11 +691,6 @@ public class WorkflowExecutor
         }).or(false);
     }
 
-    public void taskHeartbeat(int siteId, String lockId, AgentId agentId)
-    {
-        dispatcher.taskHeartbeat(siteId, lockId, agentId);
-    }
-
     public boolean taskFailed(int siteId, long taskId, String lockId, AgentId agentId,
             final Config error, final Config stateParams,
             final Optional<Integer> retryInterval)

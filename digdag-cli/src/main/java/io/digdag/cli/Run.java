@@ -37,6 +37,7 @@ import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.agent.AgentConfig;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.config.ConfigLoaderManager;
@@ -240,13 +241,14 @@ public class Run
         private final Run cmd;
 
         @Inject
-        public TaskRunnerManagerWithSkip(AgentId agentId,
+        public TaskRunnerManagerWithSkip(
+                AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, ArchiveManager archiveManager,
                 ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
                 Run cmd)
         {
-            super(agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
+            super(config, agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
         }

@@ -51,7 +51,7 @@ public class TaskQueueManager
         throw new UnsupportedOperationException("HTTP task queue client is not implemented yet");  // TODO implement TaskQueueClient that calls REST API of this server
     }
 
-    // used by LocalAgentManager and digdag-server (TaskResource, which is not implemented yet)
+    // used by LocalAgentManager, InProcessTaskCallbackApi digdag-server (TaskResource, which is not implemented yet)
     public TaskQueueClient getInProcessTaskQueueClient(int siteId)
     {
         return getTaskQueueServer(siteId);

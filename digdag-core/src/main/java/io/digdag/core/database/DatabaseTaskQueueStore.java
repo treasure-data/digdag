@@ -171,7 +171,7 @@ public class DatabaseTaskQueueStore
         // TODO use this syntax for PostgreSQL
         // (statement_timestamp() + (interval '1' second) * hold_timeout)
         handle.createStatement(
-                "update " + tableName + " " +
+                "update " + tableName +
                 " set hold_expire_time = :expireTime, hold_agent_id = :agentId" +
                 " where id in (" +
                     locks.stream()
@@ -181,6 +181,24 @@ public class DatabaseTaskQueueStore
             .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
             .bind("agentId", agentId)
             .execute();
+    }
+
+    public boolean heartbeat(LockResult lock, String agentId, int lockSeconds)
+    {
+        String tableName = lock.getSharedTask() ? "queued_shared_task_locks" : "queued_task_locks";
+
+        return autoCommit((handle, dao) ->
+            handle.createStatement(
+                    "update " + tableName +
+                    " set hold_expire_time = :expireTime" +
+                    " where id = :id" +
+                    " and hold_agent_id = :agentId"
+                )
+                .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
+                .bind("id", lock.getLockId())
+                .bind("agentId", agentId)
+                .execute()
+            ) > 0;
     }
 
     private List<Long> tryLockTasks(Handle handle, String tableName, int qId, int limit)

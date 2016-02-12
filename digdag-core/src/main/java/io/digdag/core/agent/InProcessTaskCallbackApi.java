@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import java.util.List;
 import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
@@ -20,6 +21,8 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.spi.TaskQueueClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +36,14 @@ public class InProcessTaskCallbackApi
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
+    private final TaskQueueClient queueClient;
 
     @Inject
     public InProcessTaskCallbackApi(
             AgentId localAgentId,
             RepositoryStoreManager rm,
             SessionStoreManager sm,
+            TaskQueueManager qm,
             WorkflowExecutor exec)
     {
         this.localSiteId = 0;
@@ -46,12 +51,13 @@ public class InProcessTaskCallbackApi
         this.rm = rm;
         this.sm = sm;
         this.exec = exec;
+        this.queueClient = qm.getInProcessTaskQueueClient(localSiteId);
     }
 
     @Override
-    public void taskHeartbeat(String lockId, AgentId agentId)
+    public void taskHeartbeat(List<String> lockedIds, AgentId agentId, int lockSeconds)
     {
-        exec.taskHeartbeat(localSiteId, lockId, agentId);
+        queueClient.taskHeartbeat(localSiteId, lockedIds, agentId.toString(), lockSeconds);
     }
 
     @Override

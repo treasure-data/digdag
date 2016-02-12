@@ -15,16 +15,18 @@ public class LocalAgent
 {
     private static final Logger logger = LoggerFactory.getLogger(LocalAgent.class);
 
+    private final AgentConfig config;
     private final AgentId agentId;
     private final TaskQueueClient queue;
     private final TaskRunnerManager runner;
     private final ExecutorService executor;
     private volatile boolean stop = false;
 
-    public LocalAgent(AgentId agentId,
+    public LocalAgent(AgentConfig config, AgentId agentId,
             TaskQueueClient queue, TaskRunnerManager runner)
     {
         this.agentId = agentId;
+        this.config = config;
         this.queue = queue;
         this.runner = runner;
         this.executor = Executors.newCachedThreadPool(
@@ -52,7 +54,7 @@ public class LocalAgent
         while (!stop) {
             try {
                 // TODO implement task heartbeat that calls queue.taskHeartbeat using a background thread
-                List<TaskRequest> reqs = queue.lockSharedTasks(3, agentId.toString(), 3600*8, 1000);
+                List<TaskRequest> reqs = queue.lockSharedTasks(3, agentId.toString(), config.getLockRetentionTime(), 1000);
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {

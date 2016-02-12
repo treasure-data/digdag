@@ -8,6 +8,6 @@ public interface TaskQueueClient
 
     // TODO lockTasks (of custom queue) is not implemented yet
 
-    void taskHeartbeat(int siteId, String lockId, String agentId)
+    void taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
         throws TaskStateException;
 }
