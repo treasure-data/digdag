@@ -13,6 +13,8 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TaskQueueFactory;
+import io.digdag.core.agent.AgentId;
+import io.digdag.core.agent.AgentIdProvider;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.ConfigEvalEngine;
@@ -120,6 +122,7 @@ public class DigdagEmbed
                     binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
                     binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
+                    binder.bind(AgentId.class).toProvider(AgentIdProvider.class).in(Scopes.SINGLETON);
                     binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
                     binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);

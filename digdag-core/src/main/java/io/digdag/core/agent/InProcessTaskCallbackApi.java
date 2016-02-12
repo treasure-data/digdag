@@ -28,52 +28,55 @@ public class InProcessTaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final int siteId;
+    private final int localSiteId;
+    private final AgentId localAgentId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
 
     @Inject
     public InProcessTaskCallbackApi(
+            AgentId localAgentId,
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             WorkflowExecutor exec)
     {
-        this.siteId = 0;
+        this.localSiteId = 0;
+        this.localAgentId = localAgentId;
         this.rm = rm;
         this.sm = sm;
         this.exec = exec;
     }
 
     @Override
-    public void taskHeartbeat(int siteId, String lockId, String agentId)
+    public void taskHeartbeat(String lockId, AgentId agentId)
     {
-        exec.taskHeartbeat(siteId, lockId, agentId);
+        exec.taskHeartbeat(localSiteId, lockId, agentId);
     }
 
     @Override
-    public void taskSucceeded(long taskId, String lockId, String agentId,
+    public void taskSucceeded(long taskId, String lockId, AgentId agentId,
             Config stateParams, Config subtaskConfig,
             TaskReport report)
     {
-        exec.taskSucceeded(siteId, taskId, lockId, agentId,
+        exec.taskSucceeded(localSiteId, taskId, lockId, agentId,
                 stateParams, subtaskConfig, report);
     }
 
     @Override
-    public void taskFailed(long taskId, String lockId, String agentId,
+    public void taskFailed(long taskId, String lockId, AgentId agentId,
             Config error, Config stateParams,
             Optional<Integer> retryInterval)
     {
-        exec.taskFailed(siteId, taskId, lockId, agentId,
+        exec.taskFailed(localSiteId, taskId, lockId, agentId,
                 error, stateParams, retryInterval);
     }
 
     @Override
-    public void taskPollNext(long taskId, String lockId, String agentId,
+    public void taskPollNext(long taskId, String lockId, AgentId agentId,
             Config stateParams, int retryInterval)
     {
-        exec.taskPollNext(siteId, taskId, lockId, agentId,
+        exec.taskPollNext(localSiteId, taskId, lockId, agentId,
                 stateParams, retryInterval);
     }
 
@@ -85,8 +88,8 @@ public class InProcessTaskCallbackApi
             Optional<String> retryAttemptName,
             Config overwriteParams)
     {
-        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
-        SessionStore sessionStore = sm.getSessionStore(siteId);
+        RepositoryStore repoStore = rm.getRepositoryStore(localSiteId);
+        SessionStore sessionStore = sm.getSessionStore(localSiteId);
 
         StoredWorkflowDefinitionWithRepository def;
         try {
@@ -107,7 +110,7 @@ public class InProcessTaskCallbackApi
 
         // TODO FIXME SessionMonitor monitors is not set
         try {
-            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def, ImmutableList.of());
+            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(localSiteId, ar, def, ImmutableList.of());
             return attempt.getStateFlags();
         }
         catch (SessionAttemptConflictException ex) {

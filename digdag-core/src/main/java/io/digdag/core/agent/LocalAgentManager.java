@@ -9,21 +9,25 @@ import io.digdag.core.queue.TaskQueueManager;
 
 public class LocalAgentManager
 {
-    private final ExecutorService executor;
+    private final AgentId agentId;
     private final TaskQueueManager queueManager;
     private final TaskRunnerManager taskRunnerManager;
+    private final ExecutorService executor;
 
     @Inject
-    public LocalAgentManager(TaskQueueManager queueManager, TaskRunnerManager taskRunnerManager)
+    public LocalAgentManager(AgentId agentId,
+            TaskQueueManager queueManager,
+            TaskRunnerManager taskRunnerManager)
     {
+        this.agentId = agentId;
+        this.queueManager = queueManager;
+        this.taskRunnerManager = taskRunnerManager;
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("local-agent-%d")
                 .build()
                 );
-        this.queueManager = queueManager;
-        this.taskRunnerManager = taskRunnerManager;
     }
 
     // TODO stop LocalAgent at @PreDestroy
@@ -32,7 +36,10 @@ public class LocalAgentManager
     {
         executor.submit(
                 new LocalAgent(
+                    agentId,
                     queueManager.getInProcessTaskQueueClient(siteId),
-                    taskRunnerManager));
+                    taskRunnerManager
+                )
+            );
     }
 }

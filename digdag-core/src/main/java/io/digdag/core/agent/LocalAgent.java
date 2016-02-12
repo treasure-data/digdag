@@ -15,21 +15,24 @@ public class LocalAgent
 {
     private static final Logger logger = LoggerFactory.getLogger(LocalAgent.class);
 
-    private final ExecutorService executor;
+    private final AgentId agentId;
     private final TaskQueueClient queue;
     private final TaskRunnerManager runner;
+    private final ExecutorService executor;
     private volatile boolean stop = false;
 
-    public LocalAgent(TaskQueueClient queue, TaskRunnerManager runner)
+    public LocalAgent(AgentId agentId,
+            TaskQueueClient queue, TaskRunnerManager runner)
     {
+        this.agentId = agentId;
+        this.queue = queue;
+        this.runner = runner;
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("task-thread-%d")
                 .build()
                 );
-        this.queue = queue;
-        this.runner = runner;
     }
 
     public void stop()
@@ -49,11 +52,11 @@ public class LocalAgent
         while (!stop) {
             try {
                 // TODO implement task heartbeat that calls queue.taskHeartbeat using a background thread
-                List<TaskRequest> reqs = queue.lockSharedTasks(3, "local", 3600*8, 1000);
+                List<TaskRequest> reqs = queue.lockSharedTasks(3, agentId.toString(), 3600*8, 1000);
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {
-                            runner.run("local", req);
+                            runner.run(req);
                         }
                         catch (Throwable t) {
                             logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);

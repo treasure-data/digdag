@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.AgentId;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskReport;
@@ -690,12 +691,12 @@ public class WorkflowExecutor
         }).or(false);
     }
 
-    public void taskHeartbeat(int siteId, String lockId, String agentId)
+    public void taskHeartbeat(int siteId, String lockId, AgentId agentId)
     {
         dispatcher.taskHeartbeat(siteId, lockId, agentId);
     }
 
-    public boolean taskFailed(int siteId, long taskId, String lockId, String agentId,
+    public boolean taskFailed(int siteId, long taskId, String lockId, AgentId agentId,
             final Config error, final Config stateParams,
             final Optional<Integer> retryInterval)
     {
@@ -710,7 +711,7 @@ public class WorkflowExecutor
         return changed;
     }
 
-    public boolean taskSucceeded(int siteId, long taskId, String lockId, String agentId,
+    public boolean taskSucceeded(int siteId, long taskId, String lockId, AgentId agentId,
             final Config stateParams, final Config subtaskConfig,
             final TaskReport report)
     {
@@ -725,7 +726,7 @@ public class WorkflowExecutor
         return changed;
     }
 
-    public boolean taskPollNext(int siteId, long taskId, String lockId, String agentId,
+    public boolean taskPollNext(int siteId, long taskId, String lockId, AgentId agentId,
             final Config stateParams, final int retryInterval)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->

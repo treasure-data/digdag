@@ -29,7 +29,8 @@ public class TaskRunnerManager
 {
     private static Logger logger = LoggerFactory.getLogger(TaskRunnerManager.class);
 
-    private final TaskCallbackApi callback;
+    protected final AgentId agentId;
+    protected final TaskCallbackApi callback;
     private final ArchiveManager archiveManager;
     private final ConfigLoaderManager configLoader;
     private final WorkflowCompiler compiler;
@@ -38,11 +39,13 @@ public class TaskRunnerManager
     private final Map<String, TaskRunnerFactory> executorTypes;
 
     @Inject
-    public TaskRunnerManager(TaskCallbackApi callback, ArchiveManager archiveManager,
+    public TaskRunnerManager(AgentId agentId,
+            TaskCallbackApi callback, ArchiveManager archiveManager,
             ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
     {
         this.callback = callback;
+        this.agentId = agentId;
         this.archiveManager = archiveManager;
         this.configLoader = configLoader;
         this.compiler = compiler;
@@ -56,7 +59,7 @@ public class TaskRunnerManager
         this.executorTypes = builder.build();
     }
 
-    public void run(String agentId, TaskRequest request)
+    public void run(TaskRequest request)
     {
         // nextState is mutable
         Config nextState = request.getLastStateParams();
@@ -64,7 +67,7 @@ public class TaskRunnerManager
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
             archiveManager.withExtractedArchive(request, (archivePath) -> {
-                runWithArchive(agentId, archivePath, request, nextState);
+                runWithArchive(archivePath, request, nextState);
                 return true;
             });
         }
@@ -78,7 +81,7 @@ public class TaskRunnerManager
         }
     }
 
-    private void runWithArchive(String agentId, Path archivePath, TaskRequest request, Config nextState)
+    private void runWithArchive(Path archivePath, TaskRequest request, Config nextState)
     {
         long taskId = request.getTaskId();
 

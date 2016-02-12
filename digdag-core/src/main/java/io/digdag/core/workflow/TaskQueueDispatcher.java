@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskStateException;
+import io.digdag.core.agent.AgentId;
 
 public class TaskQueueDispatcher
 {
@@ -42,15 +43,15 @@ public class TaskQueueDispatcher
         }
     }
 
-    public void taskHeartbeat(int siteId, String lockId, String agentId)
+    public void taskHeartbeat(int siteId, String lockId, AgentId agentId)
     {
         TaskQueueServer queue = manager.getTaskQueueServer(siteId);
-        queue.taskHeartbeat(siteId, lockId, agentId);
+        queue.taskHeartbeat(siteId, lockId, agentId.toString());
     }
 
-    public void taskFinished(int siteId, String lockId, String agentId)
+    public void taskFinished(int siteId, String lockId, AgentId agentId)
     {
         TaskQueueServer queue = manager.getTaskQueueServer(siteId);
-        queue.delete(siteId, lockId, agentId);
+        queue.delete(siteId, lockId, agentId.toString());
     }
 }

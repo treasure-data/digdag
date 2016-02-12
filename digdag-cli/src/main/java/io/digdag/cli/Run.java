@@ -36,6 +36,7 @@ import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.ArchiveManager;
+import io.digdag.core.agent.AgentId;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.config.ConfigLoaderManager;
@@ -235,24 +236,23 @@ public class Run
     public static class TaskRunnerManagerWithSkip
             extends TaskRunnerManager
     {
-        private final TaskCallbackApi callback;
         private final ConfigFactory cf;
         private final Run cmd;
 
         @Inject
-        public TaskRunnerManagerWithSkip(TaskCallbackApi callback, ArchiveManager archiveManager,
+        public TaskRunnerManagerWithSkip(AgentId agentId,
+                TaskCallbackApi callback, ArchiveManager archiveManager,
                 ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
                 Run cmd)
         {
-            super(callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
-            this.callback = callback;
+            super(agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
         }
 
         @Override
-        public void run(String agentId, TaskRequest request)
+        public void run(TaskRequest request)
         {
             String fullName = request.getTaskName();
             TaskReport report = cmd.skipTaskReports.apply(fullName);
@@ -266,7 +266,7 @@ public class Run
                         report);
             }
             else {
-                super.run(agentId, request);
+                super.run(request);
             }
         }
     }
