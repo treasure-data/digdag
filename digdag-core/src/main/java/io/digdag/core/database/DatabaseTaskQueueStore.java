@@ -1,12 +1,18 @@
 package io.digdag.core.database;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.queue.QueueSettingStore;
@@ -48,6 +54,8 @@ public class DatabaseTaskQueueStore
     }
 
     private final QueueSettingStoreManager qm;
+    private final int expireLockInterval;
+    private final ScheduledExecutorService expireExecutor;
 
     @Inject
     public DatabaseTaskQueueStore(IDBI dbi, DatabaseConfig config, QueueSettingStoreManager qm)
@@ -57,6 +65,27 @@ public class DatabaseTaskQueueStore
             return handle;
         });
         this.qm = qm;
+        this.expireLockInterval = config.getExpireLockInterval();
+        this.expireExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("lock=expire-%d")
+                .build()
+                );
+    }
+
+    @PostConstruct
+    public void start()
+    {
+        expireExecutor.scheduleWithFixedDelay(() -> expireLocks(),
+                expireLockInterval, expireLockInterval, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void shutdown()
+    {
+        expireExecutor.shutdown();
+        // TODO wait for shutdown completion?
     }
 
     // TODO support Optional<String> resourceType
@@ -240,7 +269,28 @@ public class DatabaseTaskQueueStore
             .list();
     }
 
-    // TODO implement background task expiration thread
+    private void expireLocks()
+    {
+        try {
+            // TODO use this syntax for PostgreSQL
+            // (statement_timestamp() + (interval '1' second) * hold_timeout)
+            int c = autoCommit((handle, dao) ->
+                handle.createStatement(
+                        "update locks" +
+                        " set hold_expire_time = NULL, hold_agent_id = NULL, retry_count = retry_count + 1" +
+                        " where hold_expire_time is not null" +
+                        " and hold_expire_time < :expireTime"
+                    )
+                    .bind("expireTime", Instant.now().getEpochSecond())
+                    .execute());
+            if (c > 0) {
+                logger.warn("{} task locks are expired. Tasks will be retried.", c);
+            }
+        }
+        catch (Throwable t) {
+            logger.error("An uncaught exception is ignored. Lock expireation thread will be retried.", t);
+        }
+    }
 
     public byte[] getTaskData(long lockId)
         throws ResourceNotFoundException

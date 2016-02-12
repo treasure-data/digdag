@@ -123,12 +123,10 @@ public class DatabaseTaskQueueFactory
             throws TaskStateException
         {
             // TODO this is insecure because siteId is not checked
-            System.out.println("heartbeat...: "+lockedIds);
             for (String lockId : lockedIds) {
                 LockResult lock = decodeLockId(lockId);
                 boolean success = store.heartbeat(lock, agentId, lockSeconds);
                 // TODO throw if not success?
-                System.out.println("heartbeat success?: "+success+" :" + lock+" by "+agentId);
             }
         }
 
