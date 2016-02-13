@@ -82,12 +82,9 @@ public class RepositoryControl
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         for (StoredWorkflowDefinition def : defs) {
-            Optional<Config> schedConfig = ScheduleExecutor.getScheduleConfig(def);
-
-            if (schedConfig.isPresent()) {
-                ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(revision.getDefaultParams(), def);
-                Scheduler sr = srm.getScheduler(schedConfig.get(), timeZone);
-                ScheduleTime firstTime = sr.getFirstScheduleTime(currentTime);
+            Optional<Scheduler> sr = srm.tryGetScheduler(revision.getDefaultParams(), def);
+            if (sr.isPresent()) {
+                ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);
                 Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getScheduleTime());
                 schedules.add(schedule);
             }

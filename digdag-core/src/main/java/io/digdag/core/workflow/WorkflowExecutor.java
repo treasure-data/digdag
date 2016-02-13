@@ -87,11 +87,11 @@ public class WorkflowExecutor
             SubtaskExtract.extract(sourceTasks, fromIndex) :
             sourceTasks;
 
-        logger.debug("Checking a session of workflow '{}' ({}) from task {} with overwrite parameters: {}",
+        logger.debug("Checking a session of workflow '{}' ({}) from task {} with session parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 fromIndex,
-                ar.getOverwriteParams());
+                ar.getSessionParams());
 
         return submitTasks(siteId, ar, tasks);
     }
@@ -104,10 +104,10 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
 
-        logger.debug("Checking a session of workflow '{}' ({}) with overwrite parameters: {}",
+        logger.debug("Checking a session of workflow '{}' ({}) with session parameters: {}",
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
-                ar.getOverwriteParams());
+                ar.getSessionParams());
 
         return submitTasks(siteId, ar, tasks);
     }
@@ -128,7 +128,7 @@ public class WorkflowExecutor
 
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
-                ar.getOverwriteParams(),
+                ar.getSessionParams(),
                 ar.getTimeZone(),
                 Optional.of(ar.getStored().getWorkflowDefinitionId()));
 

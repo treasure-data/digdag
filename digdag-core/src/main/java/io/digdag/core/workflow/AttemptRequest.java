@@ -66,7 +66,7 @@ public abstract class AttemptRequest
 
     public abstract Optional<String> getRetryAttemptName();
 
-    public abstract Config getOverwriteParams();
+    public abstract Config getSessionParams();
 
     public abstract List<SessionMonitor> getSessionMonitors();
 

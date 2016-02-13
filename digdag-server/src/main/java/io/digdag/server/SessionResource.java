@@ -191,10 +191,9 @@ public class SessionResource
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
 
         // use the HTTP request time as the runTime
-        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, Instant.now())
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, request.getParams(), Instant.now())
             .instant(request.getInstant())
             .retryAttemptName(request.getRetryAttemptName())
-            .overwriteParams(request.getParams())
             .build();
 
         try {

@@ -110,10 +110,9 @@ public class InProcessTaskCallbackApi
         }
 
         // use the HTTP request time as the runTime
-        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, Instant.now())
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, overwriteParams, Instant.now())
             .instant(instant)
             .retryAttemptName(retryAttemptName)
-            .overwriteParams(overwriteParams)
             .build();
 
         // TODO FIXME SessionMonitor monitors is not set

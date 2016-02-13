@@ -47,10 +47,9 @@ public class ScheduleHandler
             ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
-        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, time.getRunTime())
+        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, cf.create(), time.getRunTime())  // TODO add schedules.params and copy it here
             .instant(time.getScheduleTime())
             .retryAttemptName(retryAttemptName)
-            .overwriteParams(cf.create())  // TODO add schedules.params and copy it here
             .build();
 
         return exec.submitWorkflow(def.getRepository().getSiteId(),

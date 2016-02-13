@@ -181,10 +181,9 @@ public class LocalSite
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(rev, def, runTime)
+            AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(rev, def, overwriteParams, runTime)
                 .instant(Instant.now())
                 .retryAttemptName(Optional.absent())
-                .overwriteParams(overwriteParams)
                 .build();
 
             if (taskMatchPattern.getSubtaskMatchPattern().isPresent()) {

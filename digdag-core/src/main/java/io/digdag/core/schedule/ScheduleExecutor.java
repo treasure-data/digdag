@@ -93,10 +93,16 @@ public class ScheduleExecutor
         }
     }
 
-    // used by RepositoryControl.updateSchedules and startSchedule
-    public static Optional<Config> getScheduleConfig(WorkflowDefinition def)
+    // used by RepositoryControl.updateSchedules and Check command
+    public static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
     {
         return def.getConfig().getOptional("schedule", Config.class);
+    }
+
+    // used by SchedulerManager
+    static Config getScheduleConfig(WorkflowDefinition def)
+    {
+        return def.getConfig().getNested("schedule");
     }
 
     public static ZoneId getWorkflowTimeZone(Config revisionDefaultParams, WorkflowDefinition def)
@@ -116,9 +122,7 @@ public class ScheduleExecutor
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
             ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
-            Config schedConfig = getScheduleConfig(def).get();
-
-            Scheduler sr = srm.getScheduler(schedConfig, timeZone);
+            Scheduler sr = srm.getScheduler(def, timeZone);
 
             try {
                 ScheduleTime nextTime = startSchedule(sched, sr, def);
@@ -249,7 +253,7 @@ public class ScheduleExecutor
     {
         StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
         ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
-        return srm.getScheduler(getScheduleConfig(def).get(), timeZone);
+        return srm.getScheduler(def, timeZone);
     }
 
     public List<StoredSessionAttemptWithSession> backfill(int siteId, long schedId, Instant fromTime, String attemptName, boolean dryRun)
@@ -264,7 +268,7 @@ public class ScheduleExecutor
 
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
             ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
-            Scheduler sr = srm.getScheduler(getScheduleConfig(def).get(), timeZone);
+            Scheduler sr = srm.getScheduler(def, timeZone);
 
             List<Instant> instants = new ArrayList<>();
             Instant time = sr.getFirstScheduleTime(fromTime.minusSeconds(1)).getScheduleTime();

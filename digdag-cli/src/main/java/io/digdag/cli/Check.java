@@ -172,7 +172,7 @@ public class Check
             Formatter f = new Formatter("    ");
             int count = 0;
             for (WorkflowDefinition def : defs.get()) {
-                Optional<Config> schedConfig = ScheduleExecutor.getScheduleConfig(def);
+                Optional<Config> schedConfig = ScheduleExecutor.tryGetScheduleConfig(def);
                 if (schedConfig.isPresent()) {
                     showSchedule(schedulerManager, yamlMapper,
                             f, dagfile.getDefaultParams(),

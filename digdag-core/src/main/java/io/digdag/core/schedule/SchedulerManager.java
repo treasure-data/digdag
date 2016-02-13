@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.Map;
 import java.time.ZoneId;
 import com.google.inject.Inject;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.SchedulerFactory;
@@ -24,6 +25,25 @@ public class SchedulerManager
             builder.put(factory.getType(), factory);
         }
         this.types = builder.build();
+    }
+
+    public Optional<Scheduler> tryGetScheduler(Config revisionDefaultParams, WorkflowDefinition def)
+    {
+        return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
+                    getScheduler(it, ScheduleExecutor.getWorkflowTimeZone(revisionDefaultParams, def))
+                );
+    }
+
+    public Optional<Scheduler> tryGetScheduler(WorkflowDefinition def, ZoneId workflowTimeZone)
+    {
+        return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
+                    getScheduler(it, workflowTimeZone)
+                );
+    }
+
+    public Scheduler getScheduler(WorkflowDefinition def, ZoneId workflowTimeZone)
+    {
+        return getScheduler(ScheduleExecutor.getScheduleConfig(def), workflowTimeZone);
     }
 
     // get workflowTimeZone using ScheduleExecutor.getWorkflowTimeZone
