@@ -61,7 +61,7 @@ public class SchedulerManager
                 .filter(key -> key.endsWith(">"))
                 .findFirst();
             if (!commandKey.isPresent()) {
-                throw new ConfigException("Schedule config needs type> key: " + c);
+                throw new ConfigException("Schedule config requires 'type>: at' parameter: " + c);
             }
             type = commandKey.get().substring(0, commandKey.get().length() - 1);
             Object command = c.get(commandKey.get(), Object.class);

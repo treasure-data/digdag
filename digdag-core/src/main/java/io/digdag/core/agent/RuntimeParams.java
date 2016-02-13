@@ -3,8 +3,9 @@ package io.digdag.core.agent;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.TaskRequest;
 import static java.util.Locale.ENGLISH;
@@ -15,10 +16,38 @@ public class RuntimeParams
     {
         Config params = cf.create();
 
-        params.set("timezone", request.getTimeZone());
+        ZoneId timeZone = request.getTimeZone();
+        params.set("timezone", timeZone);
 
         // session_*
-        setTimeParameters(params, "session_", request.getTimeZone(), request.getSessionTime());
+        params.set("session_time", formatSessionTime(request.getSessionTime(), timeZone));
+        setTimeParameters(params, "session_", timeZone, request.getSessionTime());
+
+        // last_session_*
+        try {
+            // last_session_time is set by AttemptBuilder
+            String st = request.getConfig().get("last_session_time", String.class, null);
+            if (st != null) {
+                Instant instant = Instant.from(TIME_FORMAT.parse(st));
+                setTimeParameters(params, "last_", timeZone, instant);
+            }
+        }
+        catch (ConfigException | DateTimeParseException ex) {
+            // skip last_session_time
+        }
+
+        // next_session_*
+        try {
+            // next_session_time is set by AttemptBuilder
+            String st = request.getConfig().get("next_session_time", String.class, null);
+            if (st != null) {
+                Instant instant = Instant.from(TIME_FORMAT.parse(st));
+                setTimeParameters(params, "next_", timeZone, instant);
+            }
+        }
+        catch (ConfigException | DateTimeParseException ex) {
+            // skip next_session_time
+        }
 
         // repository_*
         params.set("repository_id", request.getRepositoryId());
@@ -48,7 +77,6 @@ public class RuntimeParams
 
     private static void setTimeParameters(Config params, String prefix, ZoneId timeZone, Instant instant)
     {
-        params.set(prefix + "time", formatSessionTime(instant, timeZone));
         params.set(prefix + "date", DATE_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "date_compact", DATE_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "local_time", DATETIME_FORMAT.withZone(timeZone).format(instant));

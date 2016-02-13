@@ -62,14 +62,35 @@ Here is the list of built-in variables:
 Name                            Description                                 Example
 =============================== =========================================== ==========================
 **timezone**                    Timezone of this workflow                   America/Los_Angeles
-**session_time**                Time of this session with time zone         2016-01-31T12:45:56-08:00
-**session_date**                Date part of session_time                   2016-01-31
-**session_date_compact**        Date part of session_time (compact)         20160131
-**session_local_time**          Local time format of session_time           2016-01-31 12:45:56
-**session_local_time_compact**  Local time format of session_time (compact) 20160131124556
+**session_time**                Time of this session with time zone         2016-01-30T00:00:00-08:00
+**session_date**                Date part of session_time                   2016-01-30
+**session_date_compact**        Date part of session_time (compact)         20160130
+**session_local_time**          Local time format of session_time           2016-01-30 00:00:00
+**session_local_time_compact**  Local time format of session_time (compact) 20160130000000
 **session_tz_offset**           Time zone offset part of session_time       -0800
-**session_unixtime**            Seconds since the epoch time                1454273156
+**session_unixtime**            Seconds since the epoch time                1454140800
 =============================== =========================================== ==========================
+
+If `schedule: option is set <scheduling_workflow.html>`_, ``last_session_time`` and ``next_session_time`` are also available. ``last_session_time`` is the timestamp of the last schedule. For example, if the schedule is hourly, it's the last hour. If the schedule is daily, it's yesterday. It doesn't matter whether the last schedule actually ran or not. It's simply set to the last timestamp of the current schedule.
+
+==================================== ========================== ==========================
+Name                                 Example (hourly schedule)  Example (daily schedule)
+==================================== ========================== ==========================
+**last_session_time**                2016-01-29T23:00:00-08:00  2016-01-29T00:00:00-08:00
+**last_session_date**                2016-01-29                 2016-01-29
+**last_session_date_compact**        20160129                   20160129
+**last_session_local_time**          2016-01-29 23:00:00        2016-01-29 00:00:00
+**last_session_local_time_compact**  20160129230000             20160129000000
+**last_session_tz_offset**           -0800                      -0800
+**last_session_unixtime**            1454137200                 1454054400
+**next_session_time**                2016-01-30T01:00:00-08:00  2016-01-31T00:00:00-08:00
+**next_session_date**                2016-01-30                 2016-01-31
+**next_session_date_compact**        20160130                   20160131
+**next_session_local_time**          2016-01-30 01:00:00        2016-01-31 00:00:00
+**next_session_local_time_compact**  20160130010000             20160131000000
+**next_session_tz_offset**           -0800                      -0800
+**next_session_unixtime**            1454144400                 1454227200
+==================================== ========================== ==========================
 
 Defining variables
 ----------------------------------
