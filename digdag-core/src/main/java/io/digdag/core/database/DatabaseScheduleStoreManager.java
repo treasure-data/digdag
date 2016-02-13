@@ -147,7 +147,7 @@ public class DatabaseScheduleStoreManager
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
-                    nextTime.getScheduleTime().getEpochSecond());
+                    nextTime.getTime().getEpochSecond());
             return n > 0;
         }
 
@@ -157,7 +157,7 @@ public class DatabaseScheduleStoreManager
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
-                    nextTime.getScheduleTime().getEpochSecond(),
+                    nextTime.getTime().getEpochSecond(),
                     lastSessionInstant.getEpochSecond());
             return n > 0;
         }

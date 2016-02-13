@@ -137,8 +137,8 @@ public class ScheduleExecutor
             catch (RuntimeException ex) {
                 logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
                 ScheduleTime nextTime = ScheduleTime.of(
-                        sched.getNextRunTime().plusSeconds(3600),
-                        sched.getNextScheduleTime());
+                        sched.getNextScheduleTime(),
+                        sched.getNextRunTime().plusSeconds(3600));
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
         }
@@ -146,8 +146,8 @@ public class ScheduleExecutor
             Exception error = new IllegalStateException("Workflow for a schedule id=" + sched.getId() + " is scheduled but does not exist.", ex);
             logger.error("Database state error during scheduling. Pending this schedule for 1 hour: {}", sched, error);
             ScheduleTime nextTime = ScheduleTime.of(
-                    sched.getNextRunTime().plusSeconds(3600),
-                    sched.getNextScheduleTime());
+                    sched.getNextScheduleTime(),
+                    sched.getNextRunTime().plusSeconds(3600));
             return lockedSched.tryUpdateNextScheduleTime(nextTime);
         }
     }
@@ -162,7 +162,7 @@ public class ScheduleExecutor
 
         try {
             handler.start(def,
-                    timeZone, ScheduleTime.of(runTime, scheduleTime),
+                    timeZone, ScheduleTime.of(scheduleTime, runTime),
                     Optional.absent());
         }
         catch (SessionAttemptConflictException ex) {
@@ -182,17 +182,17 @@ public class ScheduleExecutor
             Scheduler sr = getSchedulerOfSchedule(sched);
 
             ScheduleTime alignedNextTime = sr.getFirstScheduleTime(nextTime.minusSeconds(1));
-            if (sched.getNextScheduleTime().isBefore(alignedNextTime.getScheduleTime())) {
+            if (sched.getNextScheduleTime().isBefore(alignedNextTime.getTime())) {
                 // OK
                 if (runTime.isPresent()) {
-                    alignedNextTime = ScheduleTime.of(runTime.get(), alignedNextTime.getScheduleTime());
+                    alignedNextTime = ScheduleTime.of(alignedNextTime.getTime(), runTime.get());
                 }
 
                 if (dryRun) {
                     sched = ImmutableStoredSchedule.builder()
                         .from(sched)
                         .nextRunTime(alignedNextTime.getRunTime())
-                        .nextScheduleTime(alignedNextTime.getScheduleTime())
+                        .nextScheduleTime(alignedNextTime.getTime())
                         .build();
                 }
                 else {
@@ -220,19 +220,19 @@ public class ScheduleExecutor
 
             ScheduleTime time = sr.getFirstScheduleTime(currentTime);
             for (int i=0; i < count; i++) {
-                time = sr.nextScheduleTime(time.getScheduleTime());
+                time = sr.nextScheduleTime(time.getTime());
             }
-            if (sched.getNextScheduleTime().isBefore(time.getScheduleTime())) {
+            if (sched.getNextScheduleTime().isBefore(time.getTime())) {
                 // OK
                 if (runTime.isPresent()) {
-                    time = ScheduleTime.of(runTime.get(), time.getScheduleTime());
+                    time = ScheduleTime.of(time.getTime(), runTime.get());
                 }
 
                 if (dryRun) {
                     sched = ImmutableStoredSchedule.builder()
                         .from(sched)
                         .nextRunTime(time.getRunTime())
-                        .nextScheduleTime(time.getScheduleTime())
+                        .nextScheduleTime(time.getTime())
                         .build();
                 }
                 else {
@@ -271,10 +271,10 @@ public class ScheduleExecutor
             Scheduler sr = srm.getScheduler(def, timeZone);
 
             List<Instant> instants = new ArrayList<>();
-            Instant time = sr.getFirstScheduleTime(fromTime.minusSeconds(1)).getScheduleTime();
+            Instant time = sr.getFirstScheduleTime(fromTime.minusSeconds(1)).getTime();
             while (time.isBefore(sched.getNextScheduleTime())) {
                 instants.add(time);
-                time = sr.nextScheduleTime(time).getScheduleTime();
+                time = sr.nextScheduleTime(time).getTime();
             }
             Collections.reverse(instants);  // submit from recent to old
 
@@ -313,7 +313,7 @@ public class ScheduleExecutor
                 else {
                     try {
                         StoredSessionAttemptWithSession attempt = handler.start(def,
-                                timeZone, ScheduleTime.of(sched.getNextScheduleTime(), instant),
+                                timeZone, ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName));
                         attempts.add(attempt);
                     }

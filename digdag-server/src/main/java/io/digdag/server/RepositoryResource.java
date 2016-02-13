@@ -142,7 +142,7 @@ public class RepositoryResource
         return defs.stream()
             .map(def -> RestModels.workflowDefinition(
                         repo, rev, def,
-                        Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextRunTime(), sched.getNextScheduleTime()))
+                        Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime()))
                         ))
             .collect(Collectors.toList());
     }

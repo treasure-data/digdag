@@ -85,7 +85,7 @@ public class RepositoryControl
             Optional<Scheduler> sr = srm.tryGetScheduler(revision.getDefaultParams(), def);
             if (sr.isPresent()) {
                 ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);
-                Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getScheduleTime());
+                Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getTime());
                 schedules.add(schedule);
             }
         }

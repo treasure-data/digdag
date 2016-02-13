@@ -16,6 +16,7 @@ import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.schedule.SlaCalculator;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.spi.Scheduler;
+import io.digdag.spi.ScheduleTime;
 
 public class AttemptBuilder
 {
@@ -29,30 +30,41 @@ public class AttemptBuilder
         this.slaCalculator = slaCalculator;
     }
 
-    public ImmutableAttemptRequest.Builder builderFromStoredWorkflow(
-            StoredRevision rev, StoredWorkflowDefinition def,
-            Config overwriteParams, Instant runTime)
+    public AttemptRequest buildFromStoredWorkflow(
+            Optional<String> retryAttemptName,
+            StoredRevision rev,
+            StoredWorkflowDefinition def,
+            Config overwriteParams,
+            ScheduleTime time)
     {
         ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(rev.getDefaultParams(), def);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
             .workflowName(def.getName())
-            .sessionMonitors(buildSessionMonitors(def, runTime, timeZone))
+            .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone));
+            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone))
+            .retryAttemptName(retryAttemptName)
+            .instant(time.getTime())
+            .build();
     }
 
-    public ImmutableAttemptRequest.Builder builderFromStoredWorkflow(
+    public AttemptRequest buildFromStoredWorkflow(
+            Optional<String> retryAttemptName,
             StoredWorkflowDefinitionWithRepository def,
-            Config overwriteParams, Instant runTime)
+            Config overwriteParams,
+            ScheduleTime time)
     {
         ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
-            .sessionMonitors(buildSessionMonitors(def, runTime, timeZone))
+            .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone));
+            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone))
+            .retryAttemptName(retryAttemptName)
+            .instant(time.getTime())
+            .build();
     }
 
     private List<SessionMonitor> buildSessionMonitors(WorkflowDefinition def, Instant runTime, ZoneId timeZone)

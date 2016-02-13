@@ -200,7 +200,7 @@ public class Check
         f.ln("%s:", def.getName());
         f.indent = "      ";
         f.ln(yamlMapper.toYaml(schedConfig));
-        f.ln("first session time: %s", formatTime(firstTime.getScheduleTime()));
+        f.ln("first session time: %s", formatTime(firstTime.getTime()));
         f.ln("first runs at: %s (%s later)", formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime().getEpochSecond()));
         f.indent = "    ";
     }

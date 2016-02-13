@@ -27,7 +27,7 @@ public class ScheduleControl
             return ImmutableStoredSchedule.builder()
                 .from(schedule)
                 .nextRunTime(nextTime.getRunTime())
-                .nextScheduleTime(nextTime.getScheduleTime())
+                .nextScheduleTime(nextTime.getTime())
                 .build();
         }
         else {

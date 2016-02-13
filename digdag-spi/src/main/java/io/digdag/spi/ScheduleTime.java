@@ -13,25 +13,34 @@ public abstract class ScheduleTime
 {
     public abstract Instant getRunTime();
 
-    public abstract Instant getScheduleTime();
+    public abstract Instant getTime();
 
     public static ImmutableScheduleTime.Builder builder()
     {
         return ImmutableScheduleTime.builder();
     }
 
-    public static ScheduleTime of(Instant nextRunTime, Instant nextScheduleTime)
+    public static ScheduleTime of(Instant time, Instant runTime)
     {
         return builder()
-            .runTime(nextRunTime)
-            .scheduleTime(nextScheduleTime)
+            .time(time)
+            .runTime(runTime)
+            .build();
+    }
+
+    public static ScheduleTime runNow(Instant time)
+    {
+        return builder()
+            .time(time)
+            .runTime(Instant.now())
             .build();
     }
 
     @Value.Check
     protected void check()
     {
-        checkState(getRunTime().getNano() == 0, "Run time must be aligned with second");
-        checkState(getScheduleTime().getEpochSecond() % 60 == 0, "Schedule time must be aligned with minute");
+        //checkState(getTime().getEpochSecond() % 60 == 0, "Schedule time must be aligned with minute");
+        //checkState(getTime().getNano() == 0, "Schedule time must be aligned with second");
+        //checkState(getRunTime().getNano() == 0, "Run time must be aligned with second");
     }
 }

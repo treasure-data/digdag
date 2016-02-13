@@ -43,7 +43,7 @@ public class CronScheduler
         predictor.setTimeZone(TimeZone.getTimeZone(timeZone));
         long msec = predictor.nextMatchingTime();
         return ScheduleTime.of(
-                Instant.ofEpochSecond(msec / 1000 + delaySeconds),
-                Instant.ofEpochSecond(msec / 1000));
+                Instant.ofEpochSecond(msec / 1000),
+                Instant.ofEpochSecond(msec / 1000 + delaySeconds));
     }
 }

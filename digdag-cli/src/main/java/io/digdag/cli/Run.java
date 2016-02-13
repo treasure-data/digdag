@@ -44,6 +44,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -177,7 +178,7 @@ public class Run
                     dagfile.getDefaultTimeZone().or(ZoneId.systemDefault())),  // TODO should this systemDefault be configurable by cmdline argument?
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams,
-                Instant.now());
+                ScheduleTime.runNow(Instant.now()));   // TODO adjust to the scheduler's time
         logger.debug("Submitting {}", attempt);
 
         localSite.startLocalAgent();

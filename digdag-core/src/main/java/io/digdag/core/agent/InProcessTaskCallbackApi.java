@@ -23,6 +23,7 @@ import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.spi.TaskQueueClient;
+import io.digdag.spi.ScheduleTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,10 +111,11 @@ public class InProcessTaskCallbackApi
         }
 
         // use the HTTP request time as the runTime
-        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, overwriteParams, Instant.now())
-            .instant(instant)
-            .retryAttemptName(retryAttemptName)
-            .build();
+        AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
+                retryAttemptName,
+                def,
+                overwriteParams,
+                ScheduleTime.runNow(instant));
 
         // TODO FIXME SessionMonitor monitors is not set
         try {

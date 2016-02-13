@@ -60,7 +60,7 @@ public final class RestModels
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)
             .config(def.getConfig())
-            .nextScheduleTime(nextTime.transform(t -> t.getScheduleTime().getEpochSecond()))
+            .nextScheduleTime(nextTime.transform(t -> t.getTime().getEpochSecond()))
             .nextRunTime(nextTime.transform(t -> t.getRunTime().getEpochSecond()))
             .build();
     }

@@ -28,6 +28,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.spi.ScheduleTime;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -191,10 +192,11 @@ public class SessionResource
         StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
 
         // use the HTTP request time as the runTime
-        AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(def, request.getParams(), Instant.now())
-            .instant(request.getInstant())
-            .retryAttemptName(request.getRetryAttemptName())
-            .build();
+        AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
+                request.getRetryAttemptName(),
+                def,
+                request.getParams(),
+                ScheduleTime.runNow(request.getInstant()));
 
         try {
             StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def);

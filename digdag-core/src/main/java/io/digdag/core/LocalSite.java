@@ -7,6 +7,8 @@ import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.core.agent.LocalAgentManager;
 import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.repository.*;
@@ -14,12 +16,11 @@ import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 
 public class LocalSite
 {
@@ -170,7 +171,7 @@ public class LocalSite
             ArchiveMetadata archive,
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams,
-            Instant runTime)
+            ScheduleTime sessionTime)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
@@ -181,10 +182,12 @@ public class LocalSite
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            AttemptRequest ar = attemptBuilder.builderFromStoredWorkflow(rev, def, overwriteParams, runTime)
-                .instant(Instant.now())
-                .retryAttemptName(Optional.absent())
-                .build();
+            AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
+                    Optional.absent(),
+                    rev,
+                    def,
+                    overwriteParams,
+                    sessionTime);
 
             if (taskMatchPattern.getSubtaskMatchPattern().isPresent()) {
                 return exec.submitSubworkflow(0, ar, def, taskMatchPattern.getSubtaskMatchPattern().get());
