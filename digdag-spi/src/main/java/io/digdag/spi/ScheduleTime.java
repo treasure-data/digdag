@@ -36,11 +36,16 @@ public abstract class ScheduleTime
             .build();
     }
 
+    public static Instant alignedNow()
+    {
+        return Instant.ofEpochSecond(Instant.now().getEpochSecond());
+    }
+
     @Value.Check
     protected void check()
     {
         //checkState(getTime().getEpochSecond() % 60 == 0, "Schedule time must be aligned with minute");
-        //checkState(getTime().getNano() == 0, "Schedule time must be aligned with second");
+        checkState(getTime().getNano() == 0, "Schedule time must be aligned with second");
         //checkState(getRunTime().getNano() == 0, "Run time must be aligned with second");
     }
 }

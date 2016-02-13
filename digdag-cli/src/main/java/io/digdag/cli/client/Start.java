@@ -10,6 +10,7 @@ import com.google.inject.Scopes;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
@@ -44,7 +45,7 @@ public class Start
             if (args.size() != 2) {
                 throw usage(null);
             }
-            start(args.get(0), args.get(1), Instant.now());
+            start(args.get(0), args.get(1), ScheduleTime.alignedNow());
         }
         else {
             if (args.size() != 3) {

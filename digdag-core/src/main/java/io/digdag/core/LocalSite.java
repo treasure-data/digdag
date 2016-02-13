@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.time.Instant;
+import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -18,6 +19,7 @@ import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
 import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
 import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
+import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
@@ -167,11 +169,16 @@ public class LocalSite
             .getRevision();
     }
 
+    public interface SessionTimeSupplier
+    {
+        ScheduleTime get(Optional<Scheduler> sr, ZoneId timeZone);
+    }
+
     public StoredSessionAttemptWithSession storeAndStartLocalWorkflows(
             ArchiveMetadata archive,
             TaskMatchPattern taskMatchPattern,
             Config overwriteParams,
-            ScheduleTime sessionTime)
+            SessionTimeSupplier supplier)
         throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
     {
         StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
@@ -181,6 +188,9 @@ public class LocalSite
 
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
+
+            Optional<Scheduler> sr = srm.tryGetScheduler(rev.getDefaultParams(), def);
+            ScheduleTime sessionTime = supplier.get(sr, sr.transform(it -> it.getTimeZone()).or(archive.getDefaultTimeZone()));
 
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                     Optional.absent(),

@@ -48,7 +48,7 @@ public class RuntimeParams
 
     private static void setTimeParameters(Config params, String prefix, ZoneId timeZone, Instant instant)
     {
-        params.set(prefix + "time", TIME_FORMAT.withZone(timeZone).format(instant));
+        params.set(prefix + "time", formatSessionTime(instant, timeZone));
         params.set(prefix + "date", DATE_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "date_compact", DATE_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "local_time", DATETIME_FORMAT.withZone(timeZone).format(instant));
@@ -57,4 +57,9 @@ public class RuntimeParams
         params.set(prefix + "unixtime", instant.getEpochSecond());
     }
 
+    // also used by AttemptBuilder to set last_session_time and next_session_time
+    public static String formatSessionTime(Instant instant, ZoneId timeZone)
+    {
+        return TIME_FORMAT.withZone(timeZone).format(instant);
+    }
 }

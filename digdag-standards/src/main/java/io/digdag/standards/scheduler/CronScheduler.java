@@ -33,17 +33,54 @@ public class CronScheduler
     public ScheduleTime getFirstScheduleTime(Instant currentTime)
     {
         Instant startTime = currentTime;  // TODO make this from config
-        return nextScheduleTime(startTime);
+
+        // truncate to seconds
+        Instant truncated = Instant.ofEpochSecond(currentTime.getEpochSecond());
+        if (truncated.equals(currentTime)) {
+            // in this particular case, plus 1 second to include this currentTime
+            // because Predictor doesn't include this time at "next"MatchingTime() method
+            truncated = truncated.plusSeconds(1);
+        }
+
+        return nextScheduleTime(truncated);
     }
 
     @Override
     public ScheduleTime nextScheduleTime(Instant lastScheduleTime)
     {
-        Predictor predictor = new Predictor(pattern, Date.from(lastScheduleTime));
+        Instant next = next(lastScheduleTime);
+        return ScheduleTime.of(next, next.plusSeconds(delaySeconds));
+    }
+
+    @Override
+    public ScheduleTime lastScheduleTime(Instant currentScheduleTime)
+    {
+        // estimate interval (doesn't have to be exact value)
+        Instant next = next(currentScheduleTime);
+        Instant nextNext = next(next);
+        long estimatedInterval = nextNext.getEpochSecond() - next.getEpochSecond();
+
+        // get an aligned time that is before currentScheduleTime
+        Instant before = currentScheduleTime.minusSeconds(estimatedInterval);
+        do {
+            before = before.minusSeconds(estimatedInterval);
+        } while(!before.isBefore(currentScheduleTime));
+
+        // before is before currentScheduleTime but not sure how many times before. calculate it.
+        Instant nextOfBefore = next(before);
+        while (nextOfBefore.isBefore(currentScheduleTime)) {
+            before = nextOfBefore;
+            nextOfBefore = next(before);
+        }
+
+        // nextOfBefore is same with currentScheduleTime or after currentScheduleTime. nextOfBefore is next of before. done.
+        return ScheduleTime.of(before, before.plusSeconds(delaySeconds));
+    }
+
+    private Instant next(Instant time)
+    {
+        Predictor predictor = new Predictor(pattern, Date.from(time));
         predictor.setTimeZone(TimeZone.getTimeZone(timeZone));
-        long msec = predictor.nextMatchingTime();
-        return ScheduleTime.of(
-                Instant.ofEpochSecond(msec / 1000),
-                Instant.ofEpochSecond(msec / 1000 + delaySeconds));
+        return Instant.ofEpochMilli(predictor.nextMatchingTime());
     }
 }

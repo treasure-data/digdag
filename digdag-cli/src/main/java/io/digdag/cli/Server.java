@@ -36,7 +36,7 @@ public class Server
 {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-    @Parameter(names = {"-t", "--port"})
+    @Parameter(names = {"-n", "--port"})
     Integer port = null;
 
     @Parameter(names = {"-b", "--bind"})
@@ -74,7 +74,7 @@ public class Server
     {
         System.err.println("Usage: digdag server [options...]");
         System.err.println("  Options:");
-        System.err.println("    -t, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
+        System.err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
         System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -m, --memory                     uses memory database");

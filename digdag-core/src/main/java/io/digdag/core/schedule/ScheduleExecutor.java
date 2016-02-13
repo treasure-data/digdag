@@ -181,7 +181,7 @@ public class ScheduleExecutor
 
             Scheduler sr = getSchedulerOfSchedule(sched);
 
-            ScheduleTime alignedNextTime = sr.getFirstScheduleTime(nextTime.minusSeconds(1));
+            ScheduleTime alignedNextTime = sr.getFirstScheduleTime(nextTime);
             if (sched.getNextScheduleTime().isBefore(alignedNextTime.getTime())) {
                 // OK
                 if (runTime.isPresent()) {
@@ -271,7 +271,7 @@ public class ScheduleExecutor
             Scheduler sr = srm.getScheduler(def, timeZone);
 
             List<Instant> instants = new ArrayList<>();
-            Instant time = sr.getFirstScheduleTime(fromTime.minusSeconds(1)).getTime();
+            Instant time = sr.getFirstScheduleTime(fromTime).getTime();
             while (time.isBefore(sched.getNextScheduleTime())) {
                 instants.add(time);
                 time = sr.nextScheduleTime(time).getTime();

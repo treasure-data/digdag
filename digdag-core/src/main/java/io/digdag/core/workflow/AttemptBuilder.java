@@ -17,6 +17,7 @@ import io.digdag.core.schedule.SlaCalculator;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
+import static io.digdag.core.agent.RuntimeParams.formatSessionTime;
 
 public class AttemptBuilder
 {
@@ -43,7 +44,7 @@ public class AttemptBuilder
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone))
+            .sessionParams(buildSessionParameters(overwriteParams, def, time.getTime(), timeZone))
             .retryAttemptName(retryAttemptName)
             .instant(time.getTime())
             .build();
@@ -61,7 +62,7 @@ public class AttemptBuilder
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, timeZone))
+            .sessionParams(buildSessionParameters(overwriteParams, def, time.getTime(), timeZone))
             .retryAttemptName(retryAttemptName)
             .instant(time.getTime())
             .build();
@@ -80,10 +81,20 @@ public class AttemptBuilder
         return monitors.build();
     }
 
-    private Config buildSessionParameters(Config overwriteParams, WorkflowDefinition def, ZoneId timeZone)
+    private Config buildSessionParameters(Config overwriteParams, WorkflowDefinition def, Instant sessionTime, ZoneId timeZone)
     {
+        Config params;
         Optional<Scheduler> sr = schedulerManager.tryGetScheduler(def, timeZone);
-        // TODO calculate next_session_time and current_session_time
-        return overwriteParams;
+        if (sr.isPresent()) {
+            params = overwriteParams.deepCopy();
+            Instant lastSessionTime = sr.get().lastScheduleTime(sessionTime).getTime();
+            Instant nextSessionTime = sr.get().nextScheduleTime(sessionTime).getTime();
+            params.set("last_session_time", formatSessionTime(lastSessionTime, timeZone));
+            params.set("next_session_time", formatSessionTime(nextSessionTime, timeZone));
+        }
+        else {
+            params = overwriteParams;
+        }
+        return params;
     }
 }

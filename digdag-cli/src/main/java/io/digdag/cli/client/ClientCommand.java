@@ -1,6 +1,5 @@
 package io.digdag.cli.client;
 
-import java.util.Locale;
 import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -20,6 +19,7 @@ import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestApiKey;
 import static io.digdag.cli.Main.systemExit;
+import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
     extends Command
@@ -139,7 +139,7 @@ public abstract class ClientCommand
     }
 
     private static final DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
         .withZone(ZoneId.systemDefault());
 
     public static String formatTime(long unix)
@@ -171,7 +171,7 @@ public abstract class ClientCommand
     }
 
     private final DateTimeFormatter parser =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
         .withZone(ZoneId.systemDefault());
 
     protected Instant parseTime(String s)

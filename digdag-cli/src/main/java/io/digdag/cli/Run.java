@@ -7,6 +7,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.LocalDate;
+import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.stream.Collectors;
 import java.io.File;
 import org.slf4j.Logger;
@@ -49,6 +54,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
+import static java.util.Locale.ENGLISH;
 
 public class Run
     extends Command
@@ -68,6 +74,9 @@ public class Run
 
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
+
+    @Parameter(names = {"-t", "--session-time"})
+    String sessionTime = null;
 
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
@@ -121,11 +130,15 @@ public class Run
         System.err.println("    -s, --session PATH               use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
+        System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         //System.err.println("    -d, --dry-run                    dry run mode");
         Main.showCommonOptions();
         return systemExit(error);
     }
+
+    private final DateTimeFormatter sessionTimeParser =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
 
     public void run(String taskNamePattern) throws Exception
     {
@@ -178,7 +191,35 @@ public class Run
                     dagfile.getDefaultTimeZone().or(ZoneId.systemDefault())),  // TODO should this systemDefault be configurable by cmdline argument?
                 TaskMatchPattern.compile(taskNamePattern),
                 overwriteParams,
-                ScheduleTime.runNow(Instant.now()));   // TODO adjust to the scheduler's time
+                (sr, timeZone) -> {
+                    Instant time;
+                    if (sessionTime != null) {
+                        TemporalAccessor parsed;
+                        try {
+                            parsed = sessionTimeParser
+                                .withZone(timeZone)
+                                .parse(sessionTime);
+                        }
+                        catch (DateTimeParseException ex) {
+                            throw new ConfigException("-t, --session-time must be \"yyyy-MM-dd\" or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionTime);
+                        }
+                        try {
+                            time = Instant.from(parsed);
+                        }
+                        catch (DateTimeException ex) {
+                            time = LocalDate.from(parsed)
+                                .atStartOfDay(timeZone)
+                                .toInstant();
+                        }
+                    }
+                    else if (sr.isPresent()) {
+                        time = sr.get().lastScheduleTime(Instant.now()).getTime();
+                    }
+                    else {
+                        time = ScheduleTime.alignedNow();
+                    }
+                    return ScheduleTime.runNow(time);
+                });
         logger.debug("Submitting {}", attempt);
 
         localSite.startLocalAgent();

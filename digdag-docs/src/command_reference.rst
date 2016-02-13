@@ -66,7 +66,7 @@ scheduler
     Usage: digdag sched [options...]
       Options:
         -f, --file PATH                  use this file to load tasks (default: digdag.yml)
-        -t, --port PORT                  port number to listen for web interface and api clients (default: 65432)
+        -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)
         -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)
         -o, --database DIR               store status to this database
         -m, --memory                     uses memory database (default: true)
@@ -86,7 +86,7 @@ server
 
     Usage: digdag server [options...]
       Options:
-        -t, --port PORT                  port number to listen for web interface and api clients (default: 65432)
+        -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)
         -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)
         -o, --database DIR               store status to this database
         -m, --memory                     uses memory database
