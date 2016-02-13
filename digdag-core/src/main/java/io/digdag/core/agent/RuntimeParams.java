@@ -80,7 +80,7 @@ public class RuntimeParams
         params.set(prefix + "date", DATE_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "date_compact", DATE_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "local_time", DATETIME_FORMAT.withZone(timeZone).format(instant));
-        params.set(prefix + "local_time_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
+        //params.set(prefix + "local_time_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "tz_offset", TZ_OFFSET_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "unixtime", instant.getEpochSecond());
     }

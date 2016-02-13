@@ -4,7 +4,7 @@ Workflow definition
 .. contents::
    :local:
 
-digdag.yml
+digdag.yml: the entry point
 ----------------------------------
 
 Workflow is defined in a YAML file named "digdag.yml". An example is like this:
@@ -33,7 +33,7 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
         sh>: tasks/shell_sample.sh
 
 
-``run:`` parameter is used to declare the default workflow to run. ``$ digdag run`` command runs this workflow. You can run another workflow using ``$ digdag run +another_workflow`` command.
+``run:`` parameter is used to declare the default workflow to run. ``$ digdag run`` command finds runs this workflow from ``./digdag.yml`` file. You can run another workflow using ``$ digdag run +another_workflow`` command.
 
 
 "+" is a task
@@ -44,7 +44,7 @@ Key names starting with ``+`` sign is a task. Tasks run from the top to bottom i
 task types>
 ----------------------------------
 
-A task with ``type>: command`` parameter executes an action. You can choose various kinds of actions such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Task types <task_types.html>`_ page for the list of built-in types.
+A task with ``type>: command`` parameter executes an action. You can choose various kinds of operators such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Task types <task_types.html>`_ page for the list of built-in operators.
 
 .. note::
 
@@ -54,7 +54,7 @@ A task with ``type>: command`` parameter executes an action. You can choose vari
 Using ${variables}
 ----------------------------------
 
-A workflow can embed variables using ``${...}`` syntax. You can use built-in variables or define your own variables.
+Workflow can embed variables using ``${...}`` syntax. You can use built-in variables or define your own variables.
 
 Here is the list of built-in variables:
 
@@ -66,12 +66,11 @@ Name                            Description                                 Exam
 **session_date**                Date part of session_time                   2016-01-30
 **session_date_compact**        Date part of session_time (compact)         20160130
 **session_local_time**          Local time format of session_time           2016-01-30 00:00:00
-**session_local_time_compact**  Local time format of session_time (compact) 20160130000000
 **session_tz_offset**           Time zone offset part of session_time       -0800
 **session_unixtime**            Seconds since the epoch time                1454140800
 =============================== =========================================== ==========================
 
-If `schedule: option is set <scheduling_workflow.html>`_, ``last_session_time`` and ``next_session_time`` are also available. ``last_session_time`` is the timestamp of the last schedule. For example, if the schedule is hourly, it's the last hour. If the schedule is daily, it's yesterday. It doesn't matter whether the last schedule actually ran or not. It's simply set to the last timestamp of the current schedule.
+If `schedule: option is set <scheduling_workflow.html>`_, **last_session_time** and **next_session_time** are also available as following:
 
 ==================================== ========================== ==========================
 Name                                 Example (hourly schedule)  Example (daily schedule)
@@ -80,17 +79,17 @@ Name                                 Example (hourly schedule)  Example (daily s
 **last_session_date**                2016-01-29                 2016-01-29
 **last_session_date_compact**        20160129                   20160129
 **last_session_local_time**          2016-01-29 23:00:00        2016-01-29 00:00:00
-**last_session_local_time_compact**  20160129230000             20160129000000
 **last_session_tz_offset**           -0800                      -0800
 **last_session_unixtime**            1454137200                 1454054400
 **next_session_time**                2016-01-30T01:00:00-08:00  2016-01-31T00:00:00-08:00
 **next_session_date**                2016-01-30                 2016-01-31
 **next_session_date_compact**        20160130                   20160131
 **next_session_local_time**          2016-01-30 01:00:00        2016-01-31 00:00:00
-**next_session_local_time_compact**  20160130010000             20160131000000
 **next_session_tz_offset**           -0800                      -0800
 **next_session_unixtime**            1454144400                 1454227200
 ==================================== ========================== ==========================
+
+last_session_time is the timestamp of the last schedule. If the schedule is hourly, it's the last hour. If the schedule is daily, it's yesterday. It doesn't matter whether the last schedule actually ran or not. It's simply set to the last timestamp calculated from the current session time.
 
 Defining variables
 ----------------------------------
@@ -104,9 +103,9 @@ You can define variables in 3 ways:
 Using export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. This is useful to load static configurations such as host name of a database.
+In a YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. This is useful to load static configurations such as host name of a database.
 
-With following example, all tasks can use ``foo=1``, and ``+step3`` can use ``foo=1`` and ``bar=2``.
+With following example, task +step3 can use ``foo=1`` and ``bar=2``, and all tasks can use ``foo=1``.
 
 .. code-block:: yaml
 
@@ -128,7 +127,7 @@ With following example, all tasks can use ``foo=1``, and ``+step3`` can use ``fo
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can set variables programmably using language API. For exampe, Python API provides ``digdag.task.export_params``:
+You can set variables programmably using language API. For exampe, Python API provides ``digdag.env.export_params``:
 
 .. code-block:: python
 
@@ -136,7 +135,7 @@ You can set variables programmably using language API. For exampe, Python API pr
 
     class MyWorkflow(object):
       def step2(self):
-        digdag.task.export_params["my_param"] = 2
+        digdag.env.export_params["my_param"] = 2
 
       def step3(self, my_var):
         print("my_var should be 2: %d" % my_var)
@@ -175,7 +174,7 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 Parallel execution
 ----------------------------------
 
-If ``parallel: true`` parameter is set, child tasks run in parallel:
+If ``parallel: true`` parameter is set, child tasks run in parallel (grandchildren are not affected):
 
 .. code-block:: yaml
 
