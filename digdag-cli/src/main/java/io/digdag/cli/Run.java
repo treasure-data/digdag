@@ -216,6 +216,7 @@ public class Run
                         time = sr.get().lastScheduleTime(Instant.now()).getTime();
                     }
                     else {
+                        logger.warn("-t, --session-time at cmdline or schedule: parameter in yaml file is not set. Using current time as session_time.");
                         time = ScheduleTime.alignedNow();
                     }
                     return ScheduleTime.runNow(time);
