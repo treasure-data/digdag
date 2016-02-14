@@ -272,6 +272,7 @@ public class DatabaseTaskQueueStore
                     "and rc.id is null " +
                     "order by priority desc, id asc "
                     // h2 database doesn't support FOR UPDATE + JOIN
+                    // TODO this query needs to include FOR UPDATE on a shared database
                     )
                     .mapTo(long.class)
                     .list();

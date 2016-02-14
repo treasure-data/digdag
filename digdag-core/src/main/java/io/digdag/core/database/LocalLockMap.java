@@ -14,14 +14,12 @@ public class LocalLockMap
         {
             Integer i = queueId;
 
-            if (!set.contains(i)) {
-                set.add(i);
+            if (set.add(i)) {
                 return true;
             }
             else {
                 wait(maxTimeout);
-                if (!set.contains(i)) {
-                    set.add(i);
+                if (set.add(i)) {
                     return true;
                 }
                 return false;
