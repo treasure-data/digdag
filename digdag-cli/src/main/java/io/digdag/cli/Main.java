@@ -42,6 +42,10 @@ public class Main
     public static void main(String[] args)
         throws Exception
     {
+        if (args.length == 1 && args[0].equals("--version")) {
+            System.out.println("0.2.0");
+            return;
+        }
         System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.2.0");
 
         MainOptions mainOpts = new MainOptions();
@@ -67,6 +71,8 @@ public class Main
         jc.addCommand("kill", new Kill());
         jc.addCommand("task", new ShowTask(), "tasks");
         jc.addCommand("schedule", new ShowSchedule(), "schedules");
+
+        jc.addCommand("selfupdate", new SelfUpdate());
 
         try {
             try {
@@ -203,6 +209,7 @@ public class Main
         System.err.println("    r[un] [+name]                    run a workflow");
         System.err.println("    c[heck]                          show workflow definitions");
         System.err.println("    sched[uler]                      run a scheduler server");
+        System.err.println("    selfupdate                       update digdag to the latest version");
         System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    server                           start digdag server");

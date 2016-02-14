@@ -137,6 +137,20 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
   Example: -c digdag.properties
 
 
+selfupdate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag selfupdate [version]
+
+Updates the executable binary file to the latest version or specified version. Examples:
+
+.. code-block:: console
+
+    $ digdag selfupdate
+    $ digdag selfupdate 0.2.0
+
 Server-mode commands
 ----------------------------------
 
