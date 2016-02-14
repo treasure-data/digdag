@@ -39,27 +39,27 @@ Runs workflow.
 
 Options:
 
--f, --file PATH
+:command:`-f, --file PATH`
   Use this file to load tasks (default: digdag.yml).
 
   Example: -f tasks/another.yml
 
--s, --status DIR
+:command:`-s, --status DIR`
   Use this directory to read and write session status. Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
 
   Example: -s digdag.status
 
--t, --session-time TIME
+:command:`-t, --session-time TIME`
   Set session_time to this time. Format of TIME needs to be *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss*.
 
   Example: -t 2016-01-01
 
--p, --param KEY_VALUE
+:command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: -p environment=staging
 
--P, --params-file PATH
+:command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
   Example: -P params.yml
@@ -80,17 +80,17 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
     $ digdag check
     $ digdag check -f workflow/another.yml
 
--f, --file PATH
+:command:`-f, --file PATH`
   Use this file to load tasks (default: digdag.yml).
 
   Example: -f tasks/another.yml
 
--p, --param KEY_VALUE
+:command:`-p, --param KEY=VALUE`
   Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: -p environment=staging
 
--P, --params-file PATH
+:command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
   Example: -P params.yml
@@ -111,27 +111,27 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
     $ digdag scheduler -d status
     $ digdag scheduler -b 0.0.0.0
 
--f, --file PATH
+:command:`-f, --file PATH`
   Use this file to load tasks (default: digdag.yml). This file is reloaded automatically when it's changed.
 
   Example: -f tasks/another.yml
 
--n, --port PORT
+:command:`-n, --port PORT`
   Port number to listen for web interface and api clients (default: 65432).
 
   Example: -p 8080
 
--b, --bind ADDRESS
+:command:`-b, --bind ADDRESS`
   IP address to listen HTTP clients (default: 127.0.0.1).
 
   Example: -b 0.0.0.0
 
--o, --database DIR
+:command:`-o, --database DIR`
   Store status to this database. Default is memory that doesn't save status.
 
   Example: --database digdag
 
--c, --config PATH
+:command:`-c, --config PATH`
   Server configuration property path. This is same with server command. See `Digdag server <digdag_server.html>`_ for details.
 
   Example: -c digdag.properties
@@ -155,27 +155,27 @@ Runs a digdag server. --memory or --database option is required. Examples:
     $ digdag server -o digdag-server
     $ digdag server -o digdag-server -b 0.0.0.0
 
--n, --port PORT
+:command:`-n, --port PORT`
   Port number to listen for web interface and api clients (default: 65432).
 
   Example: -p 8080
 
--b, --bind ADDRESS
+:command:`-b, --bind ADDRESS`
   IP address to listen HTTP clients (default: 127.0.0.1).
 
   Example: -b 0.0.0.0
 
--o, --database DIR
+:command:`-o, --database DIR`
   Store status to this database.
 
   Example: --database digdag
 
--m, --memory
+:command:`-m, --memory`
   Store status in memory. Data will be removed when the server exists.
 
   Example: --memory
 
--c, --config PATH
+:command:`-c, --config PATH`
   Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.
 
   Example: -c digdag.properties
@@ -195,7 +195,7 @@ Generates a API key for authentication. Optionally, creates server / client conf
     $ digdag genapikey
     $ digdag genapikey -o digdag-server
 
--o, --output DIR
+:command:`-o, --output DIR`
   Creates server and client configration files in this directory.
 
   Example: -o digdag-server
@@ -207,17 +207,17 @@ Client-mode commands
 
 Client-mode common options:
 
--e, --endpoint HOST
+:command:`-e, --endpoint HOST`
   HTTP endpoint of the server (default: 127.0.0.1:65432)
 
   Example: digdag-server.example.com:65432
 
--k, --apikey APIKEY
+:command:`-k, --apikey APIKEY`
   Authentication API key.
 
   Example: -k "RqveUY_CG84/nGO8OIMlfwQu7Qzb-TRi9zP0Pif63pcHnQWCCNKXr70"
 
--c, --config PATH
+:command:`-c, --config PATH`
   Configuration file path (default: ~/.digdag/client.properties).
 
   Example: -c digdag-server/client.properties
@@ -236,17 +236,17 @@ Starts a new session. This command requires repository name, workflow name, and 
 
     $ digdag start myrepo +main "2016-01-01 00:00:00 -08:00"
 
--p, --param KEY_VALUE
+:command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
   Example: -p environment=staging
 
--P, --params-file PATH
+:command:`-P, --params-file PATH`
   Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
 
   Example: -P params.yml
 
--R, --retry NAME
+:command:`-R, --retry NAME`
   Set attempt name to retry a session.
 
   -R 1
@@ -281,7 +281,7 @@ Shows list of workflows or details of a workflow. Examples:
     $ digdag workflows -r myrepo
     $ digdag workflows +main
 
--r, --repository NAME
+:command:`-r, --repository NAME`
   Repository name.
 
 
@@ -310,7 +310,7 @@ Shows list of schedules. Examples:
     $ digdag schedules myrepo
     $ digdag schedules myrepo +main
 
--i, --last-id ID
+:command:`-i, --last-id ID`
   Shows more sessions from this id
 
 tasks
@@ -344,12 +344,12 @@ Creates a repository archive to upload it to the server. This command reads list
 STDIN
   Names of the files to add the archive.
 
--f, --file PATH
+:command:`-f, --file PATH`
   Use this file to load tasks (default: digdag.yml)
 
   Example: -f tasks/another.yml
 
--o, --output PATH
+:command:`-o, --output PATH`
   Output path (default: digdag.archive.tar.gz)
 
   Example: -o archive.tar.gz
@@ -369,12 +369,12 @@ Upload a repository archive to the server.
 Common options
 ----------------------------------
 
--g, --log PATH
+:command:`-g, --log PATH`
   Output log messages to a file (default is STDOUT). If this option is set, log files are rotated every 10MB, compresses it using gzip, and keeps at most 5 old files.
 
--l, --log-level LEVEL
+:command:`-l, --log-level LEVEL`
   Change log level (enum: trace, debug, info, warn, or error. default is info).
 
--X KEY=VALUE
+:command:`-X KEY=VALUE`
   Add a performance system configuration. This option is for experimental use.
 

@@ -44,4 +44,6 @@ Table of Contents
    task_types.rst
    mastering_sessions.rst
    command_reference.rst
+   python_api.rst
+   ruby_api.rst
 

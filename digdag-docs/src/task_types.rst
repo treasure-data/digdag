@@ -10,9 +10,6 @@ require>: Runs another workflow
 
 **require>:** task runs another workflow. It's skipped if the workflow is already done successfully.
 
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. code-block:: yaml
 
     run: +main
@@ -21,24 +18,16 @@ Example
     +another:
       sh>: tasks/another.sh
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`require>: +NAME`
+  Name of a workflow.
 
-=============================== =========================================== ==========================
-Name                            Description                                 Example
-=============================== =========================================== ==========================
-require>: +NAME                 Name of a workflow                          Task::MyWorkflow.my_task
-require: FILE                   Name of a file to require                   task/my_workflow
-=============================== =========================================== ==========================
+  Example: Task::MyWorkflow.my_task
 
 py>: Python scripts
 ----------------------------------
 
 **py>:** task runs a Python script using ``python`` command.
 TODO: link to `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -47,14 +36,10 @@ Example
     +step2:
       py>: tasks.MyWorkflow.step2
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`py>: [PACKAGE.CLASS.]METHOD`
+  Name of a method to run.
 
-=============================== =========================================== ==========================
-Name                            Description                                 Example
-=============================== =========================================== ==========================
-py>: [PACKAGE.CLASS.]METHOD     Name of a method to run                     tasks.MyWorkflow.my_task
-=============================== =========================================== ==========================
+  * :command:`py>: tasks.MyWorkflow.my_task`
 
 
 rb>: Ruby scripts
@@ -64,9 +49,6 @@ rb>: Ruby scripts
 
 TODO: add more description here
 TODO: link to `Ruby API documents <python_api.html>`_ for details including best practices how to configure the workflow using ``export: require:``.
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -79,15 +61,15 @@ Example
     +step2:
       rb>: Task::MyWorkflow.step2
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`rb>: [MODULE::CLASS.]METHOD`
+  Name of a method to run.
 
-=============================== =========================================== ==========================
-Name                            Description                                 Example
-=============================== =========================================== ==========================
-rb>: [MODULE::CLASS.]METHOD     Name of a method to run                     Task::MyWorkflow.my_task
-require: FILE                   Name of a file to require                   task/my_workflow
-=============================== =========================================== ==========================
+  * :command:`rb>: Task::MyWorkflow.my_task`
+
+:command:`require: FILE`
+  Name of a file to require.
+
+  * :command:`require: task/my_workflow`
 
 
 sh>: Shell scripts
@@ -97,9 +79,6 @@ sh>: Shell scripts
 
 TODO: add more description here
 
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. code-block:: yaml
 
     +step1:
@@ -107,14 +86,10 @@ Example
     +step2:
       sh>: tasks/step2.sh
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`sh>: COMMAND [ARGS...]`
+  Name of the command to run.
 
-=============================== =========================================== ==========================
-Name                            Description                                 Example
-=============================== =========================================== ==========================
-sh>: COMMAND [ARGS...]          Name of the command to run                  tasks/workflow.sh --task1
-=============================== =========================================== ==========================
+  * :command:`sh>: tasks/workflow.sh --task1`
 
 
 td>: Treasure Data queries
@@ -123,9 +98,6 @@ td>: Treasure Data queries
 **td>:** task runs a Hive or Presto query on Treasure Data.
 
 TODO: add more description here
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -143,19 +115,36 @@ Example
       td>: queries/step2.sql
       insert_into: mytable
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`td>: FILE.sql`
+  Path to a query template file.
 
-=============================== =========================================== ==========================
-Name                            Description                                 Example
-=============================== =========================================== ==========================
-td>: FILE.sql                   Path to a query template file               queries/step1.sql
-create_table: NAME              Name of a table to create from the results  my_table
-insert_into: NAME               Name of a table to append results into      my_table
-database: NAME                  Name of a database                          my_db
-apikey: APIKEY                  API key                                     992314/abcdef0123456789abcdef0123456789
-engine: presto                  Query engine (``presto`` or ``hive``)       hive
-=============================== =========================================== ==========================
+  * :command:`td>: queries/step1.sql`
+
+:command:`create_table: NAME`
+  Name of a table to create from the results. This option deletes the table if it already exists.
+
+  * :command:`create_table: my_table`
+
+:command:`insert_into: NAME`
+  Name of a table to append results into.
+
+  * :command:`insert_into: my_table`
+
+:command:`database: NAME`
+  Name of a database.
+
+  * :command:`database: my_db`
+
+:command:`apikey: APIKEY`
+  API key.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`engine: presto`
+  Query engine (``presto`` or ``hive``).
+
+  * :command:`engine: hive`
+  * :command:`engine: presto`
 
 
 td_ddl>: Treasure Data operations
@@ -164,9 +153,6 @@ td_ddl>: Treasure Data operations
 **type: td_ddl** task runs an operational task on Treasure Data.
 
 TODO: add more description here
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -185,18 +171,26 @@ Example
       type: td_ddl
       empty_table: my_table_${session_date_compact}
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`create_table: NAME`
+  Create a new table if not exists.
 
-=============================== ================================================= ==========================
-Name                            Description                                       Example
-=============================== ================================================= ==========================
-td>: FILE.sql                   Path to a query template file                     queries/step1.sql
-create_table: NAME              Create a new table if not exists                  my_table
-empty_table: NAME               Create a new table (drop it first if it exists)   my_table
-drop_table: NAME                Drop a table if exists                            my_table
-apikey: APIKEY                  API key                                           992314/abcdef0123456789abcdef0123456789
-=============================== ================================================= ==========================
+  * :command:`create_table: my_table`
+
+:command:`empty_table: NAME`
+  Create a new table (drop it first if it exists).
+
+  * :command:`empty_table: my_table`
+
+:command:`drop_table: NAME`
+  Drop a table if exists.
+
+  * :command:`drop_table: my_table`
+
+:command:`apikey: APIKEY`
+  API key.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
 
 mail>: Sending email
 ----------------------------------
@@ -208,9 +202,6 @@ To use Gmail SMTP server, you need to do either of:
   a) Generate a new app password at `App passwords <https://security.google.com/settings/security/apppasswords>`_. This needs to enable 2-Step Verification first.
 
   b) Enable access for less secure apps at `Less secure apps <https://www.google.com/settings/security/lesssecureapps>`_. This works even if 2-Step Verification is not enabled.
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
@@ -233,42 +224,74 @@ Example
         mail>: a task failed
         to: [me@example.com]
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:command:`mail>: SUBJECT`
+  Subject of the email.
 
-=============================== ================================================= ==========================
-Name                            Description                                       Example
-=============================== ================================================= ==========================
-mail>: SUBJECT                  Subject of the email                              Mail From Digdag
-body: TEXT                      Email body                                        Hello, this is from Digdag
-to: [ADDR1, ADDR2, ...]         To addresses                                      analyst@examile.com
-from: ADDR                      From address                                      admin@example.com
-host: NAME                      SMTP host name                                    smtp.gmail.com
-port: NAME                      SMTP port number                                  587
-username: NAME                  SMTP login username if authentication is required me
-password: APIKEY                SMTP login password                               MyPaSsWoRd
-tls: BOOLEAN                    Enables TLS handshake                             true
-ssl: BOOLEAN                    Enables legacy SSL encryption                     false
-debug: BOOLEAN                  Shows debug logs                                  false
-=============================== ================================================= ==========================
+  * :command:`mail>: Mail From Digdag`
+
+:command:`body: TEXT`
+  Email body.
+
+  * :command:`body: Hello, this is from Digdag`
+
+:command:`to: [ADDR1, ADDR2, ...]`
+  To addresses.
+
+  * :command:`to: [analyst@examile.com]`
+
+:command:`from: ADDR`
+  From address.
+
+  * :command:`from: admin@example.com`
+
+:command:`host: NAME`
+  SMTP host name.
+
+  * :command:`host: smtp.gmail.com`
+
+:command:`port: NAME`
+  SMTP port number.
+
+  * :command:`port: 587`
+
+:command:`username: NAME`
+  SMTP login username if authentication is required me.
+
+  * :command:`username: me`
+
+:command:`password: APIKEY`
+  SMTP login password.
+
+  * :command:`password: MyPaSsWoRd`
+
+:command:`tls: BOOLEAN`
+  Enables TLS handshake.
+
+  * :command:`tls: true`
+
+:command:`ssl: BOOLEAN`
+  Enables legacy SSL encryption.
+
+  * :command:`ssl: false`
+
+:command:`debug: BOOLEAN`
+  Shows debug logs (default: false).
+
+  * :command:`debug: false`
 
 
 embulk>: Embulk data transfer
 ----------------------------------
 
-**embulk>:** task runs `Embulk `http://www.embulk.org>`_ to transfer data across storages including local files.
-
-Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**embulk>:** task runs `Embulk <http://www.embulk.org>`_ to transfer data across storages including local files.
 
 .. code-block:: yaml
 
-Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    +load:
+      embulk>: data/load.yml
 
-=============================== ================================================= ==========================
-Name                            Description                                       Example
-=============================== ================================================= ==========================
-embulk>: FILE.yml               Path to a configuration template file             embulk/mysql_to_csv.yml
-=============================== ================================================= ==========================
+:command:`embulk>: FILE.yml`
+  Path to a configuration template file.
+
+  * :command:`embulk>: embulk/mysql_to_csv.yml`
 

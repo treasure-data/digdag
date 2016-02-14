@@ -1,3 +1,4 @@
+/*
 .rst-content table.option-list {
   table-layout: fixed;
   width: 100%;
@@ -15,4 +16,29 @@
   line-height: 25px;
   margin-bottom: 12px;
 }
+*/
 
+.rst-content dl {
+  border: 1px solid #e1e4e5;
+}
+.rst-content dl dt {
+  background-color: #f3f6f6;
+  border-top: 1px solid #e1e4e5;
+  border-bottom: 1px solid #e1e4e5;
+  padding: 8px 14px;
+}
+.rst-content dl dt .command {
+  font-weight: normal;
+  font-size: 95%;
+}
+.rst-content dl dd {
+  border-left: 1px solid #e1e4e5;
+  margin: 0 0 0 28px;
+  padding: 8px 24px 4px 8px;
+}
+.rst-content dl dd .command {
+  font-weight: normal;
+  font-family: monospace,serif;
+  font-size: 90%;
+  color: #3980B9;
+}
