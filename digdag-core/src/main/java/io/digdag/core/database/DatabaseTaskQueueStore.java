@@ -55,6 +55,7 @@ public class DatabaseTaskQueueStore
 
     private final QueueSettingStoreManager qm;
     private final int expireLockInterval;
+    private final LocalLockMap localLockMap = new LocalLockMap();
     private final ScheduledExecutorService expireExecutor;
 
     @Inject
@@ -232,41 +233,56 @@ public class DatabaseTaskQueueStore
 
     private List<Long> tryLockTasks(Handle handle, String tableName, int qId, int limit)
     {
-        // TODO lock this queueId to prevent over committing
-
-        return handle.createQuery(
-            "select ks.id " +
-            "from " + tableName + " ks " +
-            "left join (" +
-                "select rt.id " +
-                "from resource_types rt " +
-                "left join (" +
-                    "select resource_type_id, count(*) as count " +
-                    "from " + tableName + " " +
-                    "where queue_id = " + qId + " " +
-                    "and hold_expire_time is not null " +
-                    "and resource_type_id is not null " +
-                    "group by resource_type_id" +
-                ") rr on rt.id = rr.resource_type_id " +
-                "where rt.max_concurrency <= coalesce(count, 0)" +
-            ") rc on ks.resource_type_id = rc.id " +
-            "where queue_id = (" +
-                "select " + qId + " from queues " +
-                "where id = " + qId + " " +
-                "and max_concurrency > (" +
-                    "select count(*) as count " +
-                    "from " + tableName + " " +
-                    "where queue_id = " + qId + " " +
-                    "and hold_expire_time is not null " +
-                ") " +
-            ") " +
-            "and hold_expire_time is null " +
-            "and rc.id is null " +
-            "order by priority desc, id asc " +
-            "limit " + limit
-            )
-            .mapTo(long.class)
-            .list();
+        boolean locked;
+        try {
+            locked = localLockMap.tryLock(qId, 500);
+        }
+        catch (InterruptedException ex) {
+            return ImmutableList.of();
+        }
+        if (locked) {
+            try {
+                return handle.createQuery(
+                    "select ks.id " +
+                    "from " + tableName + " ks " +
+                    "left join (" +
+                        "select rt.id " +
+                        "from resource_types rt " +
+                        "left join (" +
+                            "select resource_type_id, count(*) as count " +
+                            "from " + tableName + " " +
+                            "where queue_id = " + qId + " " +
+                            "and hold_expire_time is not null " +
+                            "and resource_type_id is not null " +
+                            "group by resource_type_id" +
+                        ") rr on rt.id = rr.resource_type_id " +
+                        "where rt.max_concurrency <= coalesce(count, 0)" +
+                    ") rc on ks.resource_type_id = rc.id " +
+                    "where queue_id = (" +
+                        "select " + qId + " from queues " +
+                        "where id = " + qId + " " +
+                        "and max_concurrency > (" +
+                            "select count(*) as count " +
+                            "from " + tableName + " " +
+                            "where queue_id = " + qId + " " +
+                            "and hold_expire_time is not null " +
+                        ") " +
+                    ") " +
+                    "and hold_expire_time is null " +
+                    "and rc.id is null " +
+                    "order by priority desc, id asc "
+                    // h2 database doesn't support FOR UPDATE + JOIN
+                    )
+                    .mapTo(long.class)
+                    .list();
+            }
+            finally {
+                localLockMap.unlock(qId);
+            }
+        }
+        else {
+            return ImmutableList.of();
+        }
     }
 
     private void expireLocks()
