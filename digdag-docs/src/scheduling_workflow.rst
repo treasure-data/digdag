@@ -74,3 +74,23 @@ You can use `Client-mode commands <command_reference.html#client-mode-commands>`
 
     The scheduler command listens on ``http://127.0.0.1:65432`` by default. It accepts connection only from 127.0.0.1 (localhost). This is for a security reason so that it doesn't open the port to the public network. To change the listen address, please use ``--bind ADDRESS`` option.
 
+Setting an alert if a workflow doesn't finish within expected time
+--------------------------------------------------------------------
+
+.. code-block:: yaml
+
+    main: +main
+
+    +main:
+      schedule:
+        daily>: 07:00:00
+
+      sla:
+        # triggers this task at 02:00
+        time: 02:00
+        +notice:
+          sh>: notice.sh
+
+      +long_running_job:
+        sh>: long_running_job.sh
+

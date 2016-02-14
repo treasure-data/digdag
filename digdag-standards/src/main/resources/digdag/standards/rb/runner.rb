@@ -35,20 +35,20 @@ module Digdag
 
     attr_reader :export_params
 
-    def set_state(key, value)
-      @state_params[key.to_s] = value
+    def set_state(**params)
+      @state_params.merge!(params)
     end
 
-    def export(key, value)
-      @export_params[key] = value
+    def export(**params)
+      @export_params.merge!(params)
     end
 
-    def export_children(key, value)
-      unless @subtask_config.has_key?("export")
-        @subtask_config["export"] = {}
-      end
-      @subtask_config["export"] = value
-    end
+    #def export_children(key, value)
+    #  unless @subtask_config.has_key?("export")
+    #    @subtask_config["export"] = {}
+    #  end
+    #  @subtask_config["export"] = value
+    #end
 
     # add_subtask(params)
     # add_subtask(singleton_method_name, params={})

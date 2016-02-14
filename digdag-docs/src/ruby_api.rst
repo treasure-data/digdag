@@ -1,5 +1,86 @@
 Language API - Ruby
 ==================================
 
-TODO
+Programmable workflow in Ruby
+----------------------------------
+
+digdag.yml:
+
+.. code-block:: yaml
+
+    main: +main
+
+    +main:
+      export:
+        rb:
+          require: 'tasks/my_workflow'
+
+      +step1:
+        py>: MyWorkflow.step1
+
+      +step2:
+        py>: MyWorkflow.step2
+
+tasks/my_workflow.rb:
+
+.. code-block:: ruby
+
+    class MyWorkflow
+      def step1
+        puts "step1"
+      end
+
+      def step2
+        puts "step2"
+      end
+    end
+
+Exporting variables
+----------------------------------
+
+.. code-block:: ruby
+
+    class MyWorkflow
+      def step1
+        Digdag.env.export_params(my_value: 1)
+      end
+
+      def step2
+        puts "step2: %s" % Digdag.env.config['my_value']
+      end
+    end
+
+Method argument mapping
+----------------------------------
+
+.. code-block:: ruby
+
+    class MyWorkflow
+      def step1
+        Digdag.env.export_params(my_value: 1)
+      end
+
+      def step2(my_value: "default")
+        puts "step2: %s" % my_value
+      end
+    end
+
+Generating child tasks
+----------------------------------
+
+.. code-block:: ruby
+
+    class MyWorkflow
+      def step1
+        Digdag.env.add_subtask(MyWorkflow, :step3, arg1: 1)
+      end
+
+      def step2(my_value: "default")
+        puts "step2: %s" % my_value
+      end
+
+      def step3(arg1:)
+        puts "step3: %s" % arg1
+      end
+    end
 

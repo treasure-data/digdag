@@ -32,16 +32,18 @@ class Env(object):
         self.export_params = digdag_env_mod.export_params
         self.subtask_index = 0
 
-    def set_state(self, key, value):
-        self.state_params[key] = value
+    def set_state(self, params={}, **kwds)
+        self.state_params.update(params)
+        self.state_params.update(kwds)
 
-    def export(self, key, value):
-        self.export_params[key] = value
+    def export(self, params={}, **kwds):
+        self.export_params.update(params)
+        self.export_params.update(kwds)
 
-    def export_children(self, key, value):
-        if "export" not in self.subtask_config:
-            self.subtask_config["export"] = {}
-        return self.subtask_config["export"]
+    #def export_children(self, key, value):
+    #    if "export" not in self.subtask_config:
+    #        self.subtask_config["export"] = {}
+    #    return self.subtask_config["export"]
 
     def add_subtask(self, function=None, **params):
         if function is not None and not isinstance(function, dict):
