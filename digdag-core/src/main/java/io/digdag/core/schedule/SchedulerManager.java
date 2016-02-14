@@ -10,8 +10,10 @@ import io.digdag.spi.Scheduler;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 
 public class SchedulerManager
 {
@@ -27,17 +29,17 @@ public class SchedulerManager
         this.types = builder.build();
     }
 
-    public Optional<Scheduler> tryGetScheduler(Config revisionDefaultParams, WorkflowDefinition def)
+    public Optional<Scheduler> tryGetScheduler(Revision rev, WorkflowDefinition def)
     {
         return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
-                    getScheduler(it, ScheduleExecutor.getWorkflowTimeZone(revisionDefaultParams, def))
+                    getScheduler(it, ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def))
                 );
     }
 
-    public Optional<Scheduler> tryGetScheduler(WorkflowDefinition def, ZoneId workflowTimeZone)
+    public Optional<Scheduler> tryGetScheduler(StoredWorkflowDefinitionWithRepository def)
     {
         return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
-                    getScheduler(it, workflowTimeZone)
+                    getScheduler(it, ScheduleExecutor.getTimeZoneOfStoredWorkflow(def))
                 );
     }
 
@@ -46,7 +48,7 @@ public class SchedulerManager
         return getScheduler(ScheduleExecutor.getScheduleConfig(def), workflowTimeZone);
     }
 
-    // get workflowTimeZone using ScheduleExecutor.getWorkflowTimeZone
+    // get workflowTimeZone using ScheduleExecutor.getTimeZoneOfStoredWorkflow
     public Scheduler getScheduler(Config config, ZoneId workflowTimeZone)
     {
         Config c = config.deepCopy();

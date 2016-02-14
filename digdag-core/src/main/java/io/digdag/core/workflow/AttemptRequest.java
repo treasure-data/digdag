@@ -31,8 +31,6 @@ public abstract class AttemptRequest
 
         public abstract int getRepositoryId();
 
-        public abstract Config getRevisionDefaultParams();
-
         public static Stored of(StoredRevision rev, StoredWorkflowDefinition def)
         {
             return ImmutableStored.builder()
@@ -40,7 +38,6 @@ public abstract class AttemptRequest
                 .revisionId(rev.getId())
                 .revisionName(rev.getName())
                 .repositoryId(rev.getRepositoryId())
-                .revisionDefaultParams(rev.getDefaultParams())
                 .build();
         }
 
@@ -51,7 +48,6 @@ public abstract class AttemptRequest
                 .revisionId(def.getRevisionId())
                 .revisionName(def.getRevisionName())
                 .repositoryId(def.getRepository().getId())
-                .revisionDefaultParams(def.getRevisionDefaultParams())
                 .build();
         }
     }

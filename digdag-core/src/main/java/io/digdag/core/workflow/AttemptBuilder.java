@@ -38,13 +38,14 @@ public class AttemptBuilder
             Config overwriteParams,
             ScheduleTime time)
     {
-        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(rev.getDefaultParams(), def);
+        ZoneId timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def);
+        Config sessionParams = buildSessionParameters(rev.getDefaultParams(), overwriteParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, time.getTime(), timeZone))
+            .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
             .instant(time.getTime())
             .build();
@@ -56,13 +57,14 @@ public class AttemptBuilder
             Config overwriteParams,
             ScheduleTime time)
     {
-        ZoneId timeZone = ScheduleExecutor.getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+        ZoneId timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(def);
+        Config sessionParams = buildSessionParameters(def.getRevisionDefaultParams(), overwriteParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
-            .sessionParams(buildSessionParameters(overwriteParams, def, time.getTime(), timeZone))
+            .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
             .instant(time.getTime())
             .build();
@@ -81,19 +83,15 @@ public class AttemptBuilder
         return monitors.build();
     }
 
-    private Config buildSessionParameters(Config overwriteParams, WorkflowDefinition def, Instant sessionTime, ZoneId timeZone)
+    private Config buildSessionParameters(Config revisionDefaultParams, Config overwriteParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone)
     {
-        Config params;
-        Optional<Scheduler> sr = schedulerManager.tryGetScheduler(def, timeZone);
+        Config params = revisionDefaultParams.deepCopy();
+        params.setAll(overwriteParams);
         if (sr.isPresent()) {
-            params = overwriteParams.deepCopy();
             Instant lastSessionTime = sr.get().lastScheduleTime(sessionTime).getTime();
             Instant nextSessionTime = sr.get().nextScheduleTime(sessionTime).getTime();
             params.set("last_session_time", formatSessionTime(lastSessionTime, timeZone));
             params.set("next_session_time", formatSessionTime(nextSessionTime, timeZone));
-        }
-        else {
-            params = overwriteParams;
         }
         return params;
     }

@@ -189,7 +189,7 @@ public class LocalSite
         try {
             StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
 
-            Optional<Scheduler> sr = srm.tryGetScheduler(rev.getDefaultParams(), def);
+            Optional<Scheduler> sr = srm.tryGetScheduler(rev, def);
             ScheduleTime sessionTime = supplier.get(sr, sr.transform(it -> it.getTimeZone()).or(archive.getDefaultTimeZone()));
 
             AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(

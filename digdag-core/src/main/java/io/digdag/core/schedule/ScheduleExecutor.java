@@ -21,6 +21,7 @@ import io.digdag.spi.Scheduler;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.workflow.TaskMatchPattern;
@@ -93,22 +94,29 @@ public class ScheduleExecutor
         }
     }
 
-    // used by RepositoryControl.updateSchedules and Check command
-    public static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
+    // used by RepositoryControl.updateSchedules
+    static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
     {
         return def.getConfig().getOptional("schedule", Config.class);
     }
 
-    // used by SchedulerManager
-    static Config getScheduleConfig(WorkflowDefinition def)
+    // used by SchedulerManager and Check command
+    public static Config getScheduleConfig(WorkflowDefinition def)
     {
         return def.getConfig().getNested("schedule");
     }
 
-    public static ZoneId getWorkflowTimeZone(Config revisionDefaultParams, WorkflowDefinition def)
+    // used by SchedulerManager and AttemptBuilder
+    public static ZoneId getTimeZoneOfStoredWorkflow(Revision rev, WorkflowDefinition def)
     {
-        return revisionDefaultParams.get("timezone", ZoneId.class,
+        return rev.getDefaultParams().get("timezone", ZoneId.class,
                     ZoneId.of("UTC"));
+    }
+
+    // used by SchedulerManager and AttemptBuilder
+    public static ZoneId getTimeZoneOfStoredWorkflow(StoredWorkflowDefinitionWithRepository def)
+    {
+        return def.getRevisionDefaultTimeZone();
     }
 
     public boolean schedule(ScheduleControl lockedSched)
@@ -121,7 +129,7 @@ public class ScheduleExecutor
         try {
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
-            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
             Scheduler sr = srm.getScheduler(def, timeZone);
 
             try {
@@ -252,7 +260,7 @@ public class ScheduleExecutor
         throws ResourceNotFoundException
     {
         StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-        ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+        ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
         return srm.getScheduler(def, timeZone);
     }
 
@@ -267,7 +275,7 @@ public class ScheduleExecutor
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-            ZoneId timeZone = getWorkflowTimeZone(def.getRevisionDefaultParams(), def);
+            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
             Scheduler sr = srm.getScheduler(def, timeZone);
 
             List<Instant> instants = new ArrayList<>();

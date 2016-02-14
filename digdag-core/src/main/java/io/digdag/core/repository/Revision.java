@@ -1,7 +1,6 @@
 package io.digdag.core.repository;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;

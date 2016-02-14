@@ -23,6 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.Dagfile;
+import io.digdag.core.repository.Revision;
+import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -122,7 +124,16 @@ public class Check
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
-        WorkflowDefinitionList defs = dagfile.getWorkflowList();
+        ArchiveMetadata meta = ArchiveMetadata.of(
+                dagfile.getWorkflowList(),
+                dagfile.getDefaultParams(),
+                dagfile.getDefaultTimeZone().or(ZoneId.systemDefault()));
+
+        Revision rev = Revision.builderFromArchive("check", meta)
+            .archiveType("null")
+            .build();
+
+        WorkflowDefinitionList defs = meta.getWorkflowList();
 
         {
             Formatter f = new Formatter("    ");
@@ -163,7 +174,7 @@ public class Check
         {
             ln("  Parameters:");
             Formatter f = new Formatter("    ");
-            f.ln(yamlMapper.toYaml(dagfile.getDefaultParams()));
+            f.ln(yamlMapper.toYaml(rev.getDefaultParams()));
             f.print();
             ln("");
         }
@@ -172,11 +183,9 @@ public class Check
             Formatter f = new Formatter("    ");
             int count = 0;
             for (WorkflowDefinition def : defs.get()) {
-                Optional<Config> schedConfig = ScheduleExecutor.tryGetScheduleConfig(def);
-                if (schedConfig.isPresent()) {
-                    showSchedule(schedulerManager, yamlMapper,
-                            f, dagfile.getDefaultParams(),
-                            def, schedConfig.get());
+                Optional<Scheduler> sr = schedulerManager.tryGetScheduler(rev, def);
+                if (sr.isPresent()) {
+                    showSchedule(yamlMapper, f, rev, sr.get(), def);
                     count++;
                 }
             }
@@ -187,12 +196,11 @@ public class Check
     }
 
     private static void showSchedule(
-            SchedulerManager schedulerManager, YamlMapper yamlMapper,
-            Formatter f, Config revisionDefaultParams,
-            WorkflowDefinition def, Config schedConfig)
+            YamlMapper yamlMapper,
+            Formatter f, Revision rev,
+            Scheduler sr, WorkflowDefinition def)
     {
-        Scheduler sr = schedulerManager.getScheduler(schedConfig,
-                ScheduleExecutor.getWorkflowTimeZone(revisionDefaultParams, def));
+        Config schedConfig = ScheduleExecutor.getScheduleConfig(def);
 
         Instant now = Instant.now();
         ScheduleTime firstTime = sr.getFirstScheduleTime(now);

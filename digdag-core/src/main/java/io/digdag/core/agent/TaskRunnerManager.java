@@ -135,16 +135,15 @@ public class TaskRunnerManager
         long taskId = request.getTaskId();
 
         try {
-            // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task.
+            // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task (only params).
             // here evaluates local config and creates the complete merged config.
             Config config = request.getConfig().deepCopy();
             try {
-                Config evaluatedLocalConfig = evalEngine.eval(archivePath, request.getLocalConfig(), request.getConfig());
-                config.setAll(evaluatedLocalConfig);
                 config.setAll(RuntimeParams.buildRuntimeParams(config.getFactory(), request));
+                config.setAll(evalEngine.eval(archivePath, request.getLocalConfig(), config));
             }
             catch (RuntimeException | TemplateException ex) {
-                throw new RuntimeException("Failed to rebuild task config", ex);
+                throw new RuntimeException("Failed to process task config templates", ex);
             }
             logger.debug("evaluated config: {}", config);
 

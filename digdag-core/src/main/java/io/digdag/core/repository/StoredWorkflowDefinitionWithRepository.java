@@ -1,7 +1,6 @@
 package io.digdag.core.repository;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import java.time.ZoneId;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -14,6 +13,8 @@ public abstract class StoredWorkflowDefinitionWithRepository
         extends StoredWorkflowDefinition
 {
     public abstract StoredRepository getRepository();
+
+    public abstract ZoneId getRevisionDefaultTimeZone();
 
     public abstract Config getRevisionDefaultParams();
 
