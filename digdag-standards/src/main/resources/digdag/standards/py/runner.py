@@ -32,7 +32,7 @@ class Env(object):
         self.export_params = digdag_env_mod.export_params
         self.subtask_index = 0
 
-    def set_state(self, params={}, **kwds)
+    def set_state(self, params={}, **kwds):
         self.state_params.update(params)
         self.state_params.update(kwds)
 

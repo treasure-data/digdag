@@ -135,7 +135,7 @@ public class RbTaskRunnerFactory
                 if (feature.isPresent()) {
                     cmdline.add("-r").add(feature.get());
                 }
-                cmdline.add("--").add("-");  // script is fed from stdin
+                cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
                 cmdline.addAll(args);
 
                 ProcessBuilder pb = new ProcessBuilder(cmdline.build());
