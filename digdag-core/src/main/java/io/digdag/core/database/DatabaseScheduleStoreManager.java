@@ -153,12 +153,12 @@ public class DatabaseScheduleStoreManager
 
         @Override
         public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime,
-                Instant lastSessionInstant)
+                Instant lastSessionTime)
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
                     nextTime.getTime().getEpochSecond(),
-                    lastSessionInstant.getEpochSecond());
+                    lastSessionTime.getEpochSecond());
             return n > 0;
         }
     }
@@ -208,9 +208,9 @@ public class DatabaseScheduleStoreManager
         int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlUpdate("update schedules" +
-                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, last_session_instant = :lastSessionInstant, updated_at = now()" +
+                " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, last_session_time = :lastSessionTime, updated_at = now()" +
                 " where id = :id")
-        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionInstant") long lastSessionInstant);
+        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionTime") long lastSessionTime);
     }
 
     private static class StoredScheduleMapper

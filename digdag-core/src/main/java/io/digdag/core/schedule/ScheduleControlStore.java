@@ -5,7 +5,7 @@ import io.digdag.spi.ScheduleTime;
 
 public interface ScheduleControlStore
 {
-    boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime, Instant lastSessionInstant);
+    boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime, Instant lastSessionTime);
 
     boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime);
 }

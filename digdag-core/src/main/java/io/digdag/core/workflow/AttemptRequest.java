@@ -56,7 +56,7 @@ public abstract class AttemptRequest
 
     public abstract String getWorkflowName();
 
-    public abstract Instant getInstant();
+    public abstract Instant getSessionTime();
 
     public abstract ZoneId getTimeZone();
 

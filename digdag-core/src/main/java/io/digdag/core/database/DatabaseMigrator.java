@@ -279,7 +279,7 @@ public class DatabaseMigrator
                     .addLong("workflow_definition_id", "not null references workflow_definitions (id)")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
-                    .addLong("last_session_instant", "")
+                    .addLong("last_session_time", "")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
@@ -293,10 +293,10 @@ public class DatabaseMigrator
                     .addLongId("id")
                     .addInt("repository_id", "not null references repositories (id)")
                     .addString("workflow_name", "not null")
-                    .addLong("instant", "not null")
+                    .addLong("session_time", "not null")
                     .addLong("last_attempt_id", "")
                     .build());
-            handle.update("create unique index if not exists sessions_on_repository_id_and_workflow_name_and_instant on sessions (repository_id, workflow_name, instant)");
+            handle.update("create unique index if not exists sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
             handle.update("create index if not exists sessions_on_repository_id on sessions (repository_id, id)");
             handle.update("create index if not exists sessions_on_repository_id_and_workflow_name on sessions (repository_id, workflow_name, id)");
 

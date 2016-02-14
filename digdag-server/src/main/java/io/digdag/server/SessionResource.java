@@ -196,7 +196,7 @@ public class SessionResource
                 request.getRetryAttemptName(),
                 def,
                 request.getParams(),
-                ScheduleTime.runNow(request.getInstant()));
+                ScheduleTime.runNow(request.getSessionTime()));
 
         try {
             StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def);

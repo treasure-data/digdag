@@ -13,14 +13,14 @@ public abstract class Session
 
     public abstract String getWorkflowName();
 
-    public abstract Instant getInstant();
+    public abstract Instant getSessionTime();
 
-    public static Session of(int repositoryId, String workflowName, Instant instant)
+    public static Session of(int repositoryId, String workflowName, Instant sessionTime)
     {
         return ImmutableSession.builder()
             .repositoryId(repositoryId)
             .workflowName(workflowName)
-            .instant(instant)
+            .sessionTime(sessionTime)
             .build();
     }
 }

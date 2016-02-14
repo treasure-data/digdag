@@ -19,7 +19,7 @@ public abstract class RestSessionRequest
     @JsonProperty("workflow")
     public abstract String getWorkflowName();
 
-    public abstract Instant getInstant();
+    public abstract Instant getSessionTime();
 
     public abstract Optional<String> getRetryAttemptName();
 

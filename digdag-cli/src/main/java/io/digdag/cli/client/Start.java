@@ -90,7 +90,7 @@ public class Start
         RestSessionRequest request = RestSessionRequest.builder()
             .repositoryName(repoName)
             .workflowName(workflowName)
-            .instant(sessiontime)
+            .sessionTime(sessiontime)
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
             .params(overwriteParams)
             .build();

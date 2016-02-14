@@ -124,7 +124,7 @@ public class WorkflowExecutor
         }
 
         int repoId = ar.getStored().getRepositoryId();
-        Session session = Session.of(repoId, ar.getWorkflowName(), ar.getInstant());
+        Session session = Session.of(repoId, ar.getWorkflowName(), ar.getSessionTime());
 
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
@@ -143,8 +143,8 @@ public class WorkflowExecutor
                     StoredSessionAttempt storedAttempt;
                     storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException:
 
-                    logger.info("Starting a new session repository id={} workflow name={} instant={}",
-                            repoId, ar.getWorkflowName(), ar.getInstant());
+                    logger.info("Starting a new session repository id={} workflow name={} session_time={}",
+                            repoId, ar.getWorkflowName(), ar.getSessionTime());
 
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())
@@ -169,11 +169,11 @@ public class WorkflowExecutor
                 StoredSessionAttemptWithSession conflicted;
                 if (ar.getRetryAttemptName().isPresent()) {
                     conflicted = sm.getSessionStore(siteId)
-                        .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getInstant(), ar.getRetryAttemptName().get());
+                        .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
                 }
                 else {
                     conflicted = sm.getSessionStore(siteId)
-                        .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getInstant());
+                        .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
                 }
                 throw new SessionAttemptConflictException("Session already exists", conflicted);
             }
@@ -658,7 +658,7 @@ public class WorkflowExecutor
                     .lockId("")   // this will be overwritten by TaskQueueServer
                     .priority(0)  // TODO make this configurable
                     .timeZone(attempt.getTimeZone())
-                    .sessionTime(attempt.getSession().getInstant())
+                    .sessionTime(attempt.getSession().getSessionTime())
                     .createdAt(Instant.now())
                     .localConfig(task.getConfig().getLocal())
                     .config(params)

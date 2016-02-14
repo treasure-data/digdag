@@ -134,7 +134,7 @@ public class ScheduleExecutor
 
             try {
                 ScheduleTime nextTime = startSchedule(sched, sr, def);
-                return lockedSched.tryUpdateNextScheduleTimeAndLastSessionInstant(nextTime, sched.getNextScheduleTime());
+                return lockedSched.tryUpdateNextScheduleTimeAndLastSessionTime(nextTime, sched.getNextScheduleTime());
             }
             catch (ResourceConflictException ex) {
                 Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);

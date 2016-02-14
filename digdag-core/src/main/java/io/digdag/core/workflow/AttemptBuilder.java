@@ -47,7 +47,7 @@ public class AttemptBuilder
             .timeZone(timeZone)
             .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
-            .instant(time.getTime())
+            .sessionTime(time.getTime())
             .build();
     }
 
@@ -66,7 +66,7 @@ public class AttemptBuilder
             .timeZone(timeZone)
             .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
-            .instant(time.getTime())
+            .sessionTime(time.getTime())
             .build();
     }
 

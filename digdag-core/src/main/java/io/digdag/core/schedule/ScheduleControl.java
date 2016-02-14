@@ -40,8 +40,8 @@ public class ScheduleControl
         return store.updateNextScheduleTime(schedule.getId(), nextTime);
     }
 
-    public boolean tryUpdateNextScheduleTimeAndLastSessionInstant(ScheduleTime nextTime, Instant lastSessionInstant)
+    public boolean tryUpdateNextScheduleTimeAndLastSessionTime(ScheduleTime nextTime, Instant lastSessionTime)
     {
-        return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionInstant);
+        return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionTime);
     }
 }

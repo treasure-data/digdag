@@ -95,12 +95,12 @@ public final class RestModels
 
     public static RestSession session(StoredSessionAttempt attempt, Session session, String repositoryName)
     {
-        return session(attempt, session.getRepositoryId(), repositoryName, session.getWorkflowName(), session.getInstant());
+        return session(attempt, session.getRepositoryId(), repositoryName, session.getWorkflowName(), session.getSessionTime());
     }
 
     public static RestSession session(StoredSessionAttempt attempt, AttemptRequest ar, String repositoryName)
     {
-        return session(attempt, ar.getStored().getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getInstant());
+        return session(attempt, ar.getStored().getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getSessionTime());
     }
 
     private static RestSession session(StoredSessionAttempt attempt,
