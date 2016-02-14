@@ -32,6 +32,7 @@ Syntax                          Description                                 Exam
 =============================== =========================================== ==========================
 daily>: ``HH:MM:SS``            Run this job every day at HH:MM:SS          daily>: 07:00:00
 hourly>: ``MM:SS``              Run this job every hour at MM:SS            hourly>: 30:00
+monthly>: ``D,HH:MM:SS``        Run this job every month on D at HH:MM:SS   monthly>: 1,09:00:00
 minutes_interval>: ``M``        Run this job every this number of minutes   minutes_interval>: 30
 cron>: ``CRON``                 Use cron format for complex scheduling      cron>: 42 4 1 * *
 =============================== =========================================== ==========================

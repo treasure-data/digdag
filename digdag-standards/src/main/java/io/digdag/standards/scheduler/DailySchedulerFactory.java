@@ -19,28 +19,28 @@ public class DailySchedulerFactory
     public Scheduler newScheduler(Config config, ZoneId timeZone)
     {
         String at = config.getOptional("command", String.class).or(() -> config.get("at", String.class));
-        return new CronScheduler("0 0 * * *", timeZone, parseAt(at));
+        return new CronScheduler("0 0 * * *", timeZone, parseAt("daily>", at));
     }
 
-    private long parseAt(String at)
+    static long parseAt(String kind, String at)
     {
         String[] fragments = at.split(":");
         if (fragments.length != 3) {
-            throw new ConfigException("daily>: scheduler requires hh:mm:ss format: " + at);
+            throw new ConfigException(kind + " scheduler requires hh:mm:ss format: " + at);
         }
-        int hour = parseFragment(fragments[0], at);
-        int min = parseFragment(fragments[1], at);
-        int sec = parseFragment(fragments[2], at);
+        int hour = parseFragment(kind, fragments[0], at);
+        int min = parseFragment(kind, fragments[1], at);
+        int sec = parseFragment(kind, fragments[2], at);
         return hour * 3600 + min * 60 + sec;
     }
 
-    private int parseFragment(String s, String at)
+    static int parseFragment(String kind, String s, String at)
     {
         try {
             return Integer.parseInt(s);
         }
         catch (NumberFormatException ex) {
-            throw new ConfigException("daily>: scheduler requires hh:mm:ss format: " + at);
+            throw new ConfigException(kind + " scheduler requires hh:mm:ss format: " + at);
         }
     }
 }
