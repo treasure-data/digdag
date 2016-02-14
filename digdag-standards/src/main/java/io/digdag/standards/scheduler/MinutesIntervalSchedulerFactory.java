@@ -20,6 +20,6 @@ public class MinutesIntervalSchedulerFactory
     {
         int interval = config.get("command", int.class);
         long delay = config.get("delay", long.class, 0L);
-        return new CronScheduler("0/" + interval + " * * * *", timeZone, delay);
+        return new CronScheduler("*/" + interval + " * * * *", timeZone, delay);
     }
 }
