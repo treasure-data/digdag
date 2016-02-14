@@ -116,7 +116,8 @@ public class ScheduleExecutor
     // used by SchedulerManager and AttemptBuilder
     public static ZoneId getTimeZoneOfStoredWorkflow(StoredWorkflowDefinitionWithRepository def)
     {
-        return def.getRevisionDefaultTimeZone();
+        return def.getRevisionDefaultParams().get("timezone", ZoneId.class,
+                    ZoneId.of("UTC"));
     }
 
     public boolean schedule(ScheduleControl lockedSched)

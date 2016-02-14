@@ -14,8 +14,6 @@ public abstract class StoredWorkflowDefinitionWithRepository
 {
     public abstract StoredRepository getRepository();
 
-    public abstract ZoneId getRevisionDefaultTimeZone();
-
     public abstract Config getRevisionDefaultParams();
 
     public abstract String getRevisionName();
