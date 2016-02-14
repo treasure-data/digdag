@@ -1,0 +1,18 @@
+.rst-content table.option-list {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.rst-content table.option-list col.option {
+  width: 5%;
+}
+
+.rst-content table.option-list td {
+  white-space: normal;
+}
+
+.rst-content table.option-list td p {
+  line-height: 25px;
+  margin-bottom: 12px;
+}
+

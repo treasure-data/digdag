@@ -66,8 +66,8 @@ public class Run
     @Parameter(names = {"-f", "--file"})
     String dagfilePath = null;
 
-    @Parameter(names = {"-s", "--session"})
-    String sessionStatePath = null;
+    @Parameter(names = {"-s", "--status"})
+    String sessionStatusPath = null;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -127,9 +127,9 @@ public class Run
         System.err.println("Usage: digdag run [+task] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -s, --session PATH               use this directory to read and write session status");
-        System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
+        System.err.println("    -s, --status DIR                 use this directory to read and write session status");
+        System.err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
+        System.err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         //System.err.println("    -d, --dry-run                    dry run mode");
@@ -169,8 +169,8 @@ public class Run
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        if (sessionStatePath != null) {
-            this.skipTaskReports = (fullName) -> rsm.readSuccessfulTaskReport(new File(sessionStatePath), fullName);
+        if (sessionStatusPath != null) {
+            this.skipTaskReports = (fullName) -> rsm.readSuccessfulTaskReport(new File(sessionStatusPath), fullName);
         }
 
         Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
@@ -226,8 +226,8 @@ public class Run
         localSite.startLocalAgent();
         localSite.startMonitor();
 
-        // if sessionStatePath is not set, use workflow.yml.resume.yml
-        File resumeResultPath = new File(Optional.fromNullable(sessionStatePath).or("digdag.status"));
+        // if sessionStatusPath is not set, use workflow.yml.resume.yml
+        File resumeResultPath = new File(Optional.fromNullable(sessionStatusPath).or("digdag.status"));
         rsm.startUpdate(resumeResultPath, attempt);
 
         localSite.runUntilAny();
@@ -270,7 +270,7 @@ public class Run
                         resumeResultPath));
             throw systemExit(sb.toString());
         }
-        else if (sessionStatePath == null) {
+        else if (sessionStatusPath == null) {
             rsm.shutdown();
             resumeResultPath.delete();
         }

@@ -26,11 +26,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag new <path>");
+        System.err.println("Usage: digdag new <dir>");
         System.err.println("  Options:");
         Main.showCommonOptions();
         System.err.println("  Example:");
-        System.err.println("    $ digdag init mydag");
+        System.err.println("    $ digdag new mydag");
         return systemExit(error);
     }
 
