@@ -21,7 +21,7 @@ require>: Runs another workflow
 :command:`require>: +NAME`
   Name of a workflow.
 
-  Example: Task::MyWorkflow.my_task
+  Example: +another_task
 
 py>: Python scripts
 ----------------------------------

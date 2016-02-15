@@ -15,10 +15,10 @@ If ``docker`` option is set, tasks run in a docker container.
       +step1:
         py>: tasks.MyWorkflow.step1
 
-Running build commands (experimental)
+Running build commands
 ----------------------------------
 
-Using docker, you can run commands such as ``apt-get``, ``yum install`, ``pip install`` or ``bundle install`` before running tasks.
+Using docker, you can run commands such as ``apt-get``, ``yum install``, ``pip install`` or ``bundle install`` before running tasks.
 
 Built environment is cached as a new image of Docker.
 
