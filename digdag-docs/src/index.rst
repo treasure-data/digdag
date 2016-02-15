@@ -41,6 +41,7 @@ Table of Contents
    getting_started.rst
    workflow_definition.rst
    scheduling_workflow.rst
+   running_tasks_on_docker.rst
    task_types.rst
    mastering_sessions.rst
    command_reference.rst
