@@ -7,8 +7,7 @@ import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -19,12 +18,12 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 
 public class RbTaskRunnerFactory
@@ -104,8 +103,8 @@ public class RbTaskRunnerFactory
         private Config runCode(Config config, Config taskEnv)
                 throws IOException, InterruptedException
         {
-            File inFile = File.createTempFile("digdag-rb-in-", ".tmp");  // TODO use TempFileAllocator
-            File outFile = File.createTempFile("digdag-rb-out-", ".tmp");  // TODO use TempFileAllocator
+            String inFile = archive.createTempFile("digdag-rb-in-", ".tmp");
+            String outFile = archive.createTempFile("digdag-rb-out-", ".tmp");
 
             String script;
             List<String> args;
@@ -113,16 +112,16 @@ public class RbTaskRunnerFactory
             if (config.has("command")) {
                 String command = config.get("command", String.class);
                 script = runnerScript;
-                args = ImmutableList.of(command, inFile.toString(), outFile.toString());
+                args = ImmutableList.of(command, inFile, outFile);
             }
             else {
                 script = config.get("script", String.class);
-                args = ImmutableList.of(inFile.toString(), outFile.toString());
+                args = ImmutableList.of(inFile, outFile);
             }
 
             Optional<String> feature = config.getOptional("require", String.class);
 
-            try (FileOutputStream fo = new FileOutputStream(inFile)) {
+            try (OutputStream fo = archive.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("config", taskEnv));
             }
 
@@ -162,7 +161,7 @@ public class RbTaskRunnerFactory
                 throw new RuntimeException("Ruby command failed: "+message);
             }
 
-            return mapper.readValue(outFile, Config.class);
+            return mapper.readValue(archive.getFile(outFile), Config.class);
         }
     }
 }

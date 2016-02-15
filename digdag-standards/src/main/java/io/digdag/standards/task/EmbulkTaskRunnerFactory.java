@@ -73,18 +73,18 @@ public class EmbulkTaskRunnerFactory
                 .deepCopy()
                 .setAll(request.getConfig());
 
-            File tempFile;
+            String tempFile;
             try {
-                tempFile = File.createTempFile("digdag-embulk-", ".tmp.yml");  // TODO use TempFileAllocator
+                tempFile = archive.createTempFile("digdag-embulk-", ".tmp.yml");
 
                 if (config.has("command")) {
                     String command = config.get("command", String.class);
                     String data = templateEngine.templateFile(archivePath, command, UTF_8, config);
-                    Files.write(tempFile.toPath(), data.getBytes(UTF_8));
+                    Files.write(archive.getPath(tempFile), data.getBytes(UTF_8));
                 }
                 else {
                     Config embulkConfig = config.getNested("config");
-                    try (YAMLGenerator out = yaml.createGenerator(new FileOutputStream(tempFile), JsonEncoding.UTF8)) {
+                    try (YAMLGenerator out = yaml.createGenerator(archive.newOutputStream(tempFile), JsonEncoding.UTF8)) {
                         mapper.writeValue(out, embulkConfig);
                     }
                 }
@@ -93,7 +93,7 @@ public class EmbulkTaskRunnerFactory
                 throw Throwables.propagate(ex);
             }
 
-            ProcessBuilder pb = new ProcessBuilder("embulk", "run", tempFile.toString());
+            ProcessBuilder pb = new ProcessBuilder("embulk", "run", tempFile);
 
             int ecode;
             String message;

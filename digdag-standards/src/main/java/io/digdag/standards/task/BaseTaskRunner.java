@@ -15,6 +15,7 @@ public abstract class BaseTaskRunner
         implements TaskRunner
 {
     protected final Path archivePath;
+    protected final ArchiveFiles archive;
     protected final TaskRequest request;
     protected Config stateParams;
 
@@ -25,6 +26,7 @@ public abstract class BaseTaskRunner
     public BaseTaskRunner(Path archivePath, TaskRequest request)
     {
         this.archivePath = archivePath;
+        this.archive = new ArchiveFiles(archivePath);
         this.request = request;
         this.stateParams = request.getLastStateParams().deepCopy();
         this.subtaskConfig = request.getConfig().getFactory().create();
@@ -52,7 +54,13 @@ public abstract class BaseTaskRunner
     {
         RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, true);
         try {
-            Config carryParams = runTask();
+            Config carryParams;
+            try {
+                carryParams = runTask();
+            }
+            finally {
+                archive.close();
+            }
             return TaskResult.builder()
                 .subtaskConfig(subtaskConfig)
                 .report(

@@ -24,6 +24,7 @@ import io.digdag.standards.task.EmbulkTaskRunnerFactory;
 import io.digdag.standards.task.td.TdTaskRunnerFactory;
 import io.digdag.standards.task.td.TdDdlTaskRunnerFactory;
 import io.digdag.standards.command.SimpleCommandExecutor;
+import io.digdag.standards.command.DockerCommandExecutor;
 
 public class StandardsExtension
         implements Extension
@@ -38,7 +39,9 @@ public class StandardsExtension
     {
         public void configure(Binder binder)
         {
-            binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+            //binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+            binder.bind(CommandExecutor.class).to(DockerCommandExecutor.class).in(Scopes.SINGLETON);
+            binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
 
             Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
             taskExecutorBinder.addBinding().to(PyTaskRunnerFactory.class).in(Scopes.SINGLETON);
