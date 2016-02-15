@@ -13,7 +13,7 @@ Concepts of Digdag
 
 * **Easy to use**
 
-Digdag is a single executable command. Creating new workflow is easy as writing Makefile. It will come with web-based management UI backed by H2 database or PostgreSQL in the small package.
+Digdag is a single executable command. Creating new workflow is as easy as writing Makefile. It will come with web-based management UI backed by H2 database or PostgreSQL in the small package.
 
 * **Workflow definition as code**
 
