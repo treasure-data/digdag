@@ -27,7 +27,7 @@ public class SelfUpdate
     extends Command
 {
     @Parameter(names = {"-e", "--endpoint"})
-    String endpoint = "https://digdag-beta-release.herokuapp.com";
+    String endpoint = "http://dl.digdag.io";
 
     @Override
     public void main()
@@ -120,7 +120,7 @@ public class SelfUpdate
     private static void verify(Path path, String expectedVersion)
         throws IOException, InterruptedException
     {
-        ProcessBuilder pb = new ProcessBuilder(path.toAbsolutePath().toString(), "--help");
+        ProcessBuilder pb = new ProcessBuilder(path.toAbsolutePath().toString(), "--version");
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectErrorStream(true);
 

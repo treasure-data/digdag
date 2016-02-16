@@ -12,7 +12,7 @@ Getting started
 
 .. code-block:: console
 
-    $ curl -u beta -o ~/bin/digdag -L "https://digdag-beta-release.herokuapp.com/digdag-latest"
+    $ curl -u beta -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
     $ chmod +x ~/bin/digdag
 
 If ``digdag --help`` command works, Digdag is installed successfully.
