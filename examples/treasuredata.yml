@@ -1,34 +1,22 @@
 run: +treasuredata
 +treasuredata:
-  export:
-    td:
-      apikey: MY/ACCOUNT_API_KEY
-      database: my_db
+  schedule:
+    daily>: 03:00:00
 
-  +queries:
-    +store_results:
-      td>: select count(*) as cnt from sample_datasets.www_access
-      create_table: count_table
+  sla:
+    time: 05:00:00
+    +mail:
+      mail>: not finished
+      to: [sf@treasure-data.com]
 
-    +append_results:
-      td>: select cnt from count_table
-      insert_into: history
+  error:
+    +cleanup:
+      type: td_ddl
+      delete_table: garbage
+    +notify:
+      mail>: failed!
+      to: [sf@treasure-data.com]
 
-    +show_results:
-      +download_to_file:
-        td>: select * from history
-        download_file: history.csv
-
-      +show:
-        sh>: cat history.csv
-
-    +using_hive:
-      td>: select count(*) from history
-      insert_into: history
-      engine: hive
-      priority: +1
-
-  +cleanup:
-    type: td_ddl
-    delete_table: [count_table]
+  +task:
+    sh>: echo NG
 

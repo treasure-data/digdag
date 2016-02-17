@@ -39,11 +39,13 @@ Table of Contents
    :maxdepth: 2
 
    getting_started.rst
+   tutorials.rst
    workflow_definition.rst
    scheduling_workflow.rst
    running_tasks_on_docker.rst
    task_types.rst
    mastering_sessions.rst
+   reciipes.rst
    command_reference.rst
    python_api.rst
    ruby_api.rst

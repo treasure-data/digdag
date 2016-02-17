@@ -111,7 +111,7 @@ TODO: add more description here
     +step2:
       td>: queries/step2.sql
       create_table: mytable_${session_date_compact}
-    +step2:
+    +step3:
       td>: queries/step2.sql
       insert_into: mytable
 

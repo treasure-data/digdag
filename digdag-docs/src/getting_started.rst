@@ -20,7 +20,7 @@ If ``digdag --help`` command works, Digdag is installed successfully.
 2. Running sample workflow
 ----------------------------------
 
-``embulk new <dir>`` command generates sample workflow for you:
+``digdag new <dir>`` command generates sample workflow for you:
 
 .. code-block:: console
 
