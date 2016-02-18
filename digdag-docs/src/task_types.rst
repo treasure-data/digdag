@@ -130,6 +130,11 @@ TODO: add more description here
 
   * :command:`insert_into: my_table`
 
+:command:`result_url: NAME`
+  Output the query results to the URL:
+
+  * :command:`result_url: tableau://username:password@my.tableauserver.com/?mode=replace`
+
 :command:`database: NAME`
   Name of a database.
 

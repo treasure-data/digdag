@@ -85,7 +85,7 @@ public class TdTaskRunnerFactory
                 throw new ConfigException("Setting both insert_into and create_table is invalid");
             }
 
-            int priority = params.get("priority", int.class, 0);
+            int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             Optional<String> resultUrl = params.getOptional("result_url", String.class);
 
             int jobRetry = params.get("job_retry", int.class, 0);
