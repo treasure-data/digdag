@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.time.ZoneId;
 import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
@@ -26,7 +27,7 @@ import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredRepository;
@@ -43,6 +44,87 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
+/**
+ * State transitions.
+ *
+ * BLOCKED:
+ *   propagateAllBlockedToReady:
+ *     store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled:
+ *       (if GROUPING_ONLY flag is set) : PLANNED
+ *       (if CANCEL_REQUESTED flag is set) : CANCELED
+ *       : READY
+ *
+ * READY:
+ *   enqueueReadyTasks:
+ *     enqueueTask:
+ *       (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *         : CANCELED
+ *       lockedTask.setReadyToRunning:
+ *         : RUNNING
+ *
+ * RUNNING:
+ *
+ *   taskFailed:
+ *     (if retryInterval is set) lockedTask.setRunningToRetryWaiting:
+ *       : RETRY_WAITING with error
+ *     (if error task exists) lockedTask.setRunningToPlannedWithDelayedError:
+ *       : PLANNED with error and DELAYED_ERROR flag
+ *     lockedTask.setRunningToShortCircuitError:
+ *       : ERROR with error
+ *
+ *   taskSucceeded:
+ *     lockedTask.setRunningToPlannedSuccessful:
+ *       : PLANNED
+ *
+ *   retryTask:
+ *     lockedTask.setRunningToRetryWaiting:
+ *       : RETRY_WAITING
+ *
+ * RETRY_WAITING
+ *   retryRetryWaitingTasks:
+ *     sm.trySetRetryWaitingToReady:
+ *       : READY
+ *
+ * GROUP_RETRY_WAITING
+ *   retryRetryWaitingTasks:
+ *     sm.trySetRetryWaitingToReady:
+ *       : READY
+ *
+ * PLANNED:
+ *   setDoneFromDoneChildren:
+ *     (if all children are not progressible):
+ *       (if CANCEL_REQUESTED flag is set) lockedTask.setToCanceled:
+ *         : CANCELED
+ *       (if DELAYED_ERROR flag is set):
+ *         (TODO: recovery)
+ *         lockedTask.setPlannedToError:
+ *           : ERROR
+ *       (if DELAYED_GROUP_ERROR flag is set) lockedTask.setPlannedToGroupError:
+ *         (TODO: recovery)
+ *         : GROUP_ERROR
+ *       (if a child with ERROR or GROUP_ERROR state exists):
+ *         (if retry option is set) lockedTask.setPlannedToGroupRetryWaiting:
+ *           : GROUP_RETRY_WAITING
+ *         (if error task exists) lockedTask.setPlannedToPlannedWithDelayedGroupError
+ *           : PLANNED with DELAYED_GROUP_ERROR flag
+ *         lockedTask.setPlannedToGroupError
+ *           : GROUP_ERROR
+ *       lockedTask.setPlannedToSuccess:
+ *         : SUCCESS
+ *
+ * GROUP_ERROR:
+ *   not progressible
+ *
+ * SUCCESS:
+ *   not progressible
+ *
+ * ERROR:
+ *   not progressible
+ *
+ * CANCELED:
+ *   not progressible
+ *
+ */
 public class WorkflowExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
@@ -353,80 +435,87 @@ public class WorkflowExecutor
             return lockedTask.setToCanceled();
         }
 
-        List<Config> childrenErrors = lockedTask.collectChildrenErrors();
-        if (childrenErrors.isEmpty() && !task.getError().isPresent()) {
-            boolean updated = lockedTask.setPlannedToSuccess();
-
+        if (task.getStateFlags().isDelayedError()) {
+            // DELAYED_ERROR
+            // this error was formerly delayed by taskFailed
+            boolean updated = lockedTask.setPlannedToError();
             if (!updated) {
-                // return value of setPlannedToSuccess must be true because this tack is locked
+                // return value of setPlannedToError must be true because this task is locked
+                // (won't be updated by other machines concurrently) and confirmed that
+                // current state is PLANNED.
+                logger.warn("Unexpected state change failure from PLANNED to ERROR: {}", task);
+            }
+            return updated;
+        }
+        else if (task.getStateFlags().isDelayedGroupError()) {
+            // DELAYED_GROUP_ERROR
+            // this error was formerly delayed by last setDoneFromDoneChildren call
+            boolean updated = lockedTask.setPlannedToGroupError();
+            if (!updated) {
+                // return value of setPlannedToGroupError must be true because this task is locked
+                // (won't be updated by other machines concurrently) and confirmed that
+                // current state is PLANNED.
+                logger.warn("Unexpected state change failure from PLANNED to GROUP_ERROR: {}", task);
+            }
+            return updated;
+        }
+        else if (lockedTask.isAnyErrorChild()) {
+            // group error
+            RetryControl retryControl = RetryControl.prepare(task.getConfig(), task.getStateParams(), false);  // don't retry by default
+
+            boolean willRetry = retryControl.evaluate();
+            Optional<StoredTask> errorTask;
+            if (!willRetry) {
+                errorTask = addErrorTasksIfAny(lockedTask,
+                        true,
+                        () -> buildPropagatedError(lockedTask.get()));
+            }
+            else {
+                errorTask = Optional.absent();
+            }
+            boolean updated;
+            if (willRetry) {
+                int retryInterval = retryControl.getNextRetryInterval();
+                updated = lockedTask.setPlannedToGroupRetryWaiting(
+                        retryControl.getNextRetryStateParams(),
+                        retryControl.getNextRetryInterval());
+            }
+            else if (errorTask.isPresent()) {
+                // don't set GROUP_ERROR but set DELAYED_GROUP_ERROR. Delay until next setDoneFromDoneChildren call
+                updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();  // TODO set flag
+            }
+            else {
+                updated = lockedTask.setPlannedToGroupError();
+            }
+            return updated;
+        }
+        else {
+            boolean updated = lockedTask.setPlannedToSuccess();
+            if (!updated) {
+                // return value of setPlannedToSuccess must be true because this task is locked
                 // (won't be updated by other machines concurrently) and confirmed that
                 // current state is PLANNED.
                 logger.warn("Unexpected state change failure from PLANNED to SUCCESS: {}", task);
             }
             return updated;
         }
-        else if (task.getError().isPresent()) {
-            boolean updated;
-            if (task.getStateParams().has("group_error")) {
-                // this error was formerly delayed by last setDoneFromDoneChildren call
-                // TODO group_error is unnecessary if error (task.getError()) has such information
-                updated = lockedTask.setPlannedToGroupError(task.getStateParams(), task.getError().get());
-            }
-            else {
-                // this error was formerly delayed by taskFailed
-                updated = lockedTask.setPlannedToError(task.getStateParams(), task.getError().get());
-            }
-
-            if (!updated) {
-                // return value of setPlannedToGroupError or setPlannedToError must be true because this tack is locked
-                // (won't be updated by other machines concurrently) and confirmed that
-                // current state is PLANNED.
-                logger.warn("Unexpected state change failure from PLANNED to ERROR or GROUP_ERROR: {}", task);
-            }
-            return updated;
-        }
-        else {
-            // group error
-            Config error = buildPropagatedError(childrenErrors);
-            RetryControl retryControl = RetryControl.prepare(task.getConfig(), task.getStateParams(), false);  // don't retry by default
-
-            boolean willRetry = retryControl.evaluate(error);
-            Optional<StoredTask> errorTask = addErrorTasksIfAny(lockedTask, error,
-                    willRetry ? Optional.of(retryControl.getNextRetryInterval()) : Optional.absent(),
-                    true);
-            boolean updated;
-            if (willRetry) {
-                int retryInterval = retryControl.getNextRetryInterval();
-                updated = lockedTask.setPlannedToGroupRetry(
-                        retryControl.getNextRetryStateParams(),
-                        retryControl.getNextRetryInterval());
-            }
-            else if (errorTask.isPresent()) {
-                // don't set GROUP_ERROR here. Delay until next setDoneFromDoneChildren call
-                Config nextState = task.getStateParams()
-                    .deepCopy()
-                    .set("group_error", true);
-                updated = lockedTask.setPlannedToPlanned(nextState, error);
-            }
-            else {
-                updated = lockedTask.setPlannedToGroupError(task.getStateParams(), error);
-            }
-
-            if (!updated) {
-                // return value of setPlannedToGroupError, setPlannedToPlanned, or setPlannedToGroupError
-                // must be true because this tack is locked
-                // (won't be updated by other machines concurrently) and confirmed that
-                // current state is PLANNED.
-                logger.warn("Unexpected state change failure from PLANNED to PLANNED GROUP_RETRY, or GROUP_ERROR: {}", task);
-            }
-            return updated;
-        }
     }
 
-    private Config buildPropagatedError(List<Config> childrenErrors)
+    private Config buildPropagatedError(StoredTask task)
     {
-        Preconditions.checkState(!childrenErrors.isEmpty(), "errors must not be empty to migrate to children_error state");
-        return childrenErrors.get(0).getFactory().create().set("errors", childrenErrors);
+        List<Long> childrenFromThis;
+        {
+            TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
+            childrenFromThis = tree.getRecursiveChildrenIdList(task.getId());
+        }
+        List<Config> childrenErrors = sm.getErrors(childrenFromThis);
+
+        Config error = cf.create();
+        for (Config childError : childrenErrors) {
+            error.setAll(childError);  // TODO merge?
+        }
+
+        return error;
     }
 
     private boolean propagateSessionArchive()
@@ -502,7 +591,7 @@ public class WorkflowExecutor
                             if (!propagatedToSelf) {
                                 // if this task is not done yet, transite children from blocked to ready
                                 propagatedToChildren = sm.lockTaskIfExists(task.getId(), (store) ->
-                                    // collect parameters and set them to ready tasks at the same time? no, because children's carry_params are not propagated to parents
+                                    // collect parameters and set them to ready tasks at the same time? no, because children's export_params/store_params are not propagated to parents
                                     store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(task.getId()) > 0
                                 ).or(false);
                             }
@@ -678,7 +767,7 @@ public class WorkflowExecutor
 
                 boolean updated = lockedTask.setReadyToRunning();
                 if (!updated) {
-                    // return value of setReadyToRunning must be true because this tack is locked
+                    // return value of setReadyToRunning must be true because this task is locked
                     // (won't be updated by other machines concurrently) and confirmed that
                     // current state is READY.
                     logger.warn("Unexpected state change failure from READY to RUNNING: {}", task);
@@ -688,22 +777,18 @@ public class WorkflowExecutor
             }
             catch (Exception ex) {
                 logger.error("Enqueue error, making this task failed: {}", task, ex);
-                Config stateParams = cf.create().set("schedule_error", ex.toString());
+                // TODO retry here?
                 return taskFailed(lockedTask,
-                        TaskRunnerManager.makeExceptionError(cf, ex), stateParams,
-                        Optional.absent());  // TODO retry here?
+                        TaskRunnerManager.makeExceptionError(cf, ex));
             }
         }).or(false);
     }
 
     public boolean taskFailed(int siteId, long taskId, String lockId, AgentId agentId,
-            final Config error, final Config stateParams,
-            final Optional<Integer> retryInterval)
+            Config error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskFailed(new TaskControl(store, task),
-                    error, stateParams,
-                    retryInterval)
+            taskFailed(new TaskControl(store, task), error)
         ).or(false);
         if (changed) {
             dispatcher.taskFinished(siteId, lockId, agentId);
@@ -712,13 +797,11 @@ public class WorkflowExecutor
     }
 
     public boolean taskSucceeded(int siteId, long taskId, String lockId, AgentId agentId,
-            final Config stateParams, final Config subtaskConfig,
-            final TaskReport report)
+            TaskResult result)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
             taskSucceeded(new TaskControl(store, task),
-                    stateParams, subtaskConfig,
-                    report)
+                    result)
         ).or(false);
         if (changed) {
             dispatcher.taskFinished(siteId, lockId, agentId);
@@ -726,12 +809,14 @@ public class WorkflowExecutor
         return changed;
     }
 
-    public boolean taskPollNext(int siteId, long taskId, String lockId, AgentId agentId,
-            final Config stateParams, final int retryInterval)
+    public boolean retryTask(int siteId, long taskId, String lockId, AgentId agentId,
+            int retryInterval, Config retryStateParams,
+            Optional<Config> error)
     {
         boolean changed = sm.lockTaskIfExists(taskId, (store, task) ->
-            taskPollNext(new TaskControl(store, task),
-                    stateParams, retryInterval)
+            retryTask(new TaskControl(store, task),
+                retryInterval, retryStateParams,
+                error)
         ).or(false);
         if (changed) {
             dispatcher.taskFinished(siteId, lockId, agentId);
@@ -739,54 +824,46 @@ public class WorkflowExecutor
         return changed;
     }
 
-    private boolean taskFailed(TaskControl lockedTask,
-            Config error, Config stateParams,
-            Optional<Integer> retryInterval)
+    private boolean taskFailed(TaskControl lockedTask, Config error)
     {
-        StoredTask task = lockedTask.get();
-        logger.trace("Task failed with error {} with {}: {}",
-                error, retryInterval.transform(it -> "retrying after "+it+" seconds").or("no retry"), task);
+        logger.trace("Task failed with error {} with no retry: {}",
+                error, lockedTask.get());
 
-        if (task.getState() != TaskStateCode.RUNNING) {
+        if (lockedTask.getState() != TaskStateCode.RUNNING) {
             logger.trace("Skipping taskFailed callback to a {} task",
-                    task.getState());
+                    lockedTask.getState());
             return false;
         }
 
         // task failed. add :error tasks
-        Optional<StoredTask> errorTask = addErrorTasksIfAny(lockedTask, error, retryInterval, false);
+        Optional<StoredTask> errorTask = addErrorTasksIfAny(lockedTask, false, () -> error);
         boolean updated;
-        if (retryInterval.isPresent()) {
-            logger.trace("Retrying the failed task");
-            updated = lockedTask.setRunningToRetry(stateParams, error, retryInterval.get());
-        }
-        else if (errorTask.isPresent()) {
+        if (errorTask.isPresent()) {
             logger.trace("Added an error task");
-            // transition to error is delayed until setDoneFromDoneChildren
-            updated = lockedTask.setRunningToPlanned(stateParams, error);
+            // transition from planned to error is delayed until setDoneFromDoneChildren
+            updated = lockedTask.setRunningToPlannedWithDelayedError(error);
         }
         else {
-            updated = lockedTask.setRunningToShortCircuitError(stateParams, error);
+            updated = lockedTask.setRunningToShortCircuitError(error);
         }
 
         noticeStatusPropagate();
 
         if (!updated) {
-            // return value of setRunningToRetry, setRunningToPlanned, or setRunningToShortCircuitError
-            // must be true because this tack is locked
+            // return value of setRunningToRetryWaiting, setRunningToPlannedSuccessful, or setRunningToShortCircuitError
+            // must be true because this task is locked
             // (won't be updated by other machines concurrently) and confirmed that
             // current state is RUNNING.
-            logger.warn("Unexpected state change failure from RUNNING to RETRY, PLANNED or ERROR: {}", task);
+            logger.warn("Unexpected state change failure from RUNNING to RETRY, PLANNED or ERROR: {}", lockedTask.get());
         }
         return updated;
     }
 
     private boolean taskSucceeded(TaskControl lockedTask,
-            Config stateParams, Config subtaskConfig,
-            TaskReport report)
+            TaskResult result)
     {
-        logger.trace("Task succeeded with report {}: {}",
-                report, lockedTask.get());
+        logger.trace("Task succeeded with result {}: {}",
+                result, lockedTask.get());
 
         if (lockedTask.getState() != TaskStateCode.RUNNING) {
             logger.debug("Ignoring taskSucceeded callback to a {} task",
@@ -795,14 +872,14 @@ public class WorkflowExecutor
         }
 
         // task successfully finished. add :sub and :check tasks
-        Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(lockedTask, subtaskConfig);
+        Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
         addCheckTasksIfAny(lockedTask, subtaskRoot);
-        boolean updated = lockedTask.setRunningToPlanned(stateParams, report);
+        boolean updated = lockedTask.setRunningToPlannedSuccessful(result);
 
         noticeStatusPropagate();
 
         if (!updated) {
-            // return value of setRunningToPlanned must be true because this tack is locked
+            // return value of setRunningToPlannedSuccessful must be true because this task is locked
             // (won't be updated by other machines concurrently) and confirmed that
             // current state is RUNNING.
             logger.warn("Unexpected state change failure from RUNNING to PLANNED: {}", lockedTask.get());
@@ -810,21 +887,27 @@ public class WorkflowExecutor
         return updated;
     }
 
-    private boolean taskPollNext(TaskControl lockedTask,
-            Config stateParams, int retryInterval)
+    private boolean retryTask(TaskControl lockedTask,
+            int retryInterval, Config retryStateParams,
+            Optional<Config> error)
     {
         if (lockedTask.getState() != TaskStateCode.RUNNING) {
-            logger.trace("Skipping taskPollNext callback to a {} task",
+            logger.trace("Skipping retryTask callback to a {} task",
                     lockedTask.getState());
             return false;
         }
 
-        boolean updated = lockedTask.setRunningToRetry(stateParams, retryInterval);
+        if (error.isPresent()) {
+            logger.trace("Task failed with error {} with retrying after {} seconds: {}",
+                    error.get(), retryInterval, lockedTask.get());
+        }
+
+        boolean updated = lockedTask.setRunningToRetryWaiting(retryStateParams, retryInterval);
 
         noticeStatusPropagate();
 
         if (!updated) {
-            // return value of setRunningToRetry must be true because this tack is locked
+            // return value of setRunningToRetryWaiting must be true because this task is locked
             // (won't be updated by other machines concurrently) and confirmed that
             // current state is RUNNING.
             logger.warn("Unexpected state change failure from RUNNING to RETRY: {}", lockedTask.get());
@@ -832,27 +915,32 @@ public class WorkflowExecutor
         return updated;
     }
 
-    private Config collectParams(Config params, StoredTask task, StoredSessionAttempt attempt)
+    private void collectParams(Config params, StoredTask task, StoredSessionAttempt attempt)
     {
         List<Long> parentsFromRoot;
-        List<Long> upstreamsFromFar;
+        List<Long> parentsUpstreamChildrenFromFar;
         {
             TaskTree tree = new TaskTree(sm.getTaskRelations(attempt.getId()));
-            parentsFromRoot = Lists.reverse(tree.getParentIdList(task.getId()));
-            upstreamsFromFar = Lists.reverse(tree.getRecursiveParentsUpstreamChildrenIdList(task.getId()));
+            parentsFromRoot = Lists.reverse(tree.getRecursiveParentIdList(task.getId()));
+            parentsUpstreamChildrenFromFar = Lists.reverse(tree.getRecursiveParentsUpstreamChildrenIdList(task.getId()));
         }
 
         // task merge order is:
-        //   export < carry from parents < carry from upstreams < local
-        sm.getExportParams(parentsFromRoot)
-            .stream().forEach(node -> params.setAll(node));
+        //   export < store < local
+        List<Config> exports = sm.getExportParams(parentsFromRoot);
+        List<Config> stores = sm.getStoreParams(parentsUpstreamChildrenFromFar);
+        for (int si=0; si < parentsUpstreamChildrenFromFar.size(); si++) {
+            Config s = stores.get(si);
+            long taskId = parentsUpstreamChildrenFromFar.get(si);
+            int ei = parentsFromRoot.indexOf(taskId);
+            if (ei >= 0) {
+                // this is a parent task of the task
+                Config e = exports.get(ei);
+                params.setAll(e);
+            }
+            params.setAll(s);
+        }
         params.setAll(task.getConfig().getExport());
-        sm.getCarryParams(parentsFromRoot)
-            .stream().forEach(node -> params.setAll(node));
-        sm.getCarryParams(upstreamsFromFar)
-            .stream().forEach(node -> params.setAll(node));
-
-        return params;
     }
 
     private Optional<StoredTask> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)
@@ -871,7 +959,7 @@ public class WorkflowExecutor
         return Optional.of(task);
     }
 
-    private Optional<StoredTask> addErrorTasksIfAny(TaskControl lockedTask, Config error, Optional<Integer> parentRetryInterval, boolean isParentErrorPropagatedFromChildren)
+    private Optional<StoredTask> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Supplier<Config> errorBuilder)
     {
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
@@ -880,7 +968,7 @@ public class WorkflowExecutor
 
         // modify export params
         Config export = subtaskConfig.getNestedOrSetEmpty("export");
-        export.set("error", error);
+        export.set("error", errorBuilder.get());
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":error", subtaskConfig);
         if (tasks.isEmpty()) {

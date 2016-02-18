@@ -51,31 +51,30 @@ public class RequireTaskRunnerFactory
     {
         private final TaskCallbackApi callback;
         private final TaskRequest request;
-        private Config stateParams;
         private ConfigFactory cf;
 
         public RequireTaskRunner(TaskCallbackApi callback, TaskRequest request)
         {
             this.callback = callback;
             this.request = request;
-            this.stateParams = request.getLastStateParams().deepCopy();
             this.cf = request.getConfig().getFactory();
         }
 
         @Override
         public TaskResult run()
         {
-            RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, false);
+            RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
             boolean isDone;
             try {
                 isDone = runTask();
             }
             catch (RuntimeException ex) {
                 Config error = TaskRunnerManager.makeExceptionError(request.getConfig().getFactory(), ex);
-                boolean doRetry = retry.evaluate(error);
-                this.stateParams = retry.getNextRetryStateParams();
+                boolean doRetry = retry.evaluate();
                 if (doRetry) {
-                    throw new TaskExecutionException(ex, error, Optional.of(retry.getNextRetryInterval()));
+                    throw new TaskExecutionException(ex, error,
+                            retry.getNextRetryInterval(),
+                            retry.getNextRetryStateParams());
                 }
                 else {
                     throw ex;
@@ -83,19 +82,11 @@ public class RequireTaskRunnerFactory
             }
 
             if (isDone) {
-                return TaskResult.builder()
-                    .subtaskConfig(cf.create())
-                    .report(
-                        TaskReport.builder()
-                        .inputs(ImmutableList.of())
-                        .outputs(ImmutableList.of())
-                        .carryParams(cf.create())
-                        .build())
-                    .build();
+                return TaskResult.empty(cf);
             }
             else {
                 // TODO use exponential-backoff to calculate retry interval
-                throw new TaskExecutionException(1);
+                throw new TaskExecutionException(1, request.getLastStateParams());
             }
         }
 
@@ -115,12 +106,6 @@ public class RequireTaskRunnerFactory
                     overwriteParams);
 
             return flags.isDone();
-        }
-
-        @Override
-        public Config getStateParams()
-        {
-            return stateParams;
         }
     }
 }

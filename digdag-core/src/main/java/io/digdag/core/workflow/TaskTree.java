@@ -67,22 +67,22 @@ public class TaskTree
             this.upstreams.add(upstream);
         }
 
-        public <T> T walkParents(T value, Walker<T> walker)
+        public <T> T walkParentsRecursively(T value, Walker<T> walker)
         {
             if (!parent.isPresent()) {
                 return value;
             }
             else {
                 value = walker.walk(value, parent.get());
-                return parent.get().walkParents(value, walker);
+                return parent.get().walkParentsRecursively(value, walker);
             }
         }
 
-        public <T> T walkChildren(T value, Walker<T> walker)
+        public <T> T walkChildrenRecursively(T value, Walker<T> walker)
         {
             for (Node child : children) {
                 value = walker.walk(value, child);
-                value = child.walkChildren(value, walker);
+                value = child.walkChildrenRecursively(value, walker);
             }
             return value;
         }
@@ -153,9 +153,11 @@ public class TaskTree
         return Preconditions.checkNotNull(map.get(id));
     }
 
-    public List<Long> getParentIdList(long id)
+    public List<Long> getRecursiveParentIdList(long id)
     {
-        return getNode(id).walkParents(ImmutableList.<Long>builder(), (builder, parent) -> builder.add(parent.getId())).build();
+        return getNode(id).walkParentsRecursively(
+                ImmutableList.<Long>builder(),
+                (builder, parent) -> builder.add(parent.getId())).build();
     }
 
     public List<Long> getRecursiveParentsUpstreamChildrenIdList(long id)
@@ -163,14 +165,24 @@ public class TaskTree
         ImmutableList.Builder<Long> builder = ImmutableList.builder();
         ImmutableList.copyOf(Iterables.concat(
                 ImmutableList.of(id),
-                getParentIdList(id)))
+                getRecursiveParentIdList(id)))
             .stream()
-            .forEach(parentId -> getNode(parentId).walkUpstreamSiblings(
-                    builder,
-                    (sameBuilder1, sib) -> {
-                        sameBuilder1.add(sib.getId());
-                        return sib.walkChildren(sameBuilder1, (sameBuilder2, child) -> sameBuilder2.add(child.getId()));
-                    }));
+            .forEach(parentId -> {
+                builder.add(parentId);
+                getNode(parentId).walkUpstreamSiblings(
+                        builder,
+                        (sameBuilder1, sib) -> {
+                            sameBuilder1.add(sib.getId());
+                            return sib.walkChildrenRecursively(sameBuilder1, (sameBuilder2, child) -> sameBuilder2.add(child.getId()));
+                        });
+            });
         return builder.build();
+    }
+
+    public List<Long> getRecursiveChildrenIdList(long id)
+    {
+        return getNode(id).walkChildrenRecursively(
+                ImmutableList.<Long>builder(),
+                (builder, child) -> builder.add(child.getId())).build();
     }
 }

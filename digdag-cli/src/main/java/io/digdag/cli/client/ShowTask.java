@@ -40,7 +40,8 @@ public class ShowTask
             ln("   config: %s", task.getConfig());
             ln("   parent: %d", task.getParentId().orNull());
             ln("   upstreamds: %s", task.getUpstreams());
-            ln("   carry params: %s", task.getCarryParams());
+            ln("   export params: %s", task.getExportParams());
+            ln("   store params: %s", task.getStoreParams());
             ln("   state params: %s", task.getStateParams());
             ln("");
             count++;

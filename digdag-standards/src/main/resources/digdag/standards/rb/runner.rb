@@ -7,33 +7,37 @@ module DigdagEnv
   in_file = ARGV[1]
 
   in_data = JSON.parse(File.read(in_file))
-  config = in_data['config']
+  params = in_data['params']
 
   # TODO include indifferent access like Embulk::DataSource
-  CONFIG = config
+  PARAMS = params
   SUBTASK_CONFIG = {}
-  STATE_PARAMS = {}
   EXPORT_PARAMS = {}
+  STORE_PARAMS = {}
+  STATE_PARAMS = {}
 end
 
 # should this be a digdag.gem so that users can unit-test a command without running digdag?
 module Digdag
   class Env
     def initialize
-      @config = DigdagEnv::CONFIG
+      @params = DigdagEnv::PARAMS
       @subtask_config = DigdagEnv::SUBTASK_CONFIG
-      @state_params = DigdagEnv::STATE_PARAMS
       @export_params = DigdagEnv::EXPORT_PARAMS
+      @store_params = DigdagEnv::STORE_PARAMS
+      @state_params = DigdagEnv::STATE_PARAMS
       @subtask_index = 0
     end
 
-    attr_reader :config
+    attr_reader :params
 
     attr_reader :subtask_config
 
-    attr_reader :state_params
-
     attr_reader :export_params
+
+    attr_reader :store_params
+
+    attr_reader :state_params
 
     def set_state(**params)
       @state_params.merge!(params)
@@ -43,12 +47,9 @@ module Digdag
       @export_params.merge!(params)
     end
 
-    #def export_children(key, value)
-    #  unless @subtask_config.has_key?("export")
-    #    @subtask_config["export"] = {}
-    #  end
-    #  @subtask_config["export"] = value
-    #end
+    def store(**params)
+      @store_params.merge!(params)
+    end
 
     # add_subtask(params)
     # add_subtask(singleton_method_name, params={})
@@ -160,7 +161,7 @@ def digdag_inspect_command(command)
   end
 end
 
-def digdag_inspect_arguments(receiver, method_name, config)
+def digdag_inspect_arguments(receiver, method_name, params)
   if receiver
     parameters = receiver.method(method_name).parameters
     if method_name == :new && parameters == [[:rest]]
@@ -181,19 +182,19 @@ def digdag_inspect_arguments(receiver, method_name, config)
     case kind
     when :req
       # required argument like a
-      unless config.has_key?(key)
+      unless params.has_key?(key)
         if receiver.is_a?(Class)
           raise ArgumentError, "Method '#{receiver}.#{method_name}' requires parameter '#{key}' but not set"
         else
           raise ArgumentError, "Method '#{receiver.class}##{method_name}' requires parameter '#{key}' but not set"
         end
       end
-      args << config[key]
+      args << params[key]
 
     when :opt
       # optional argument like a=nil
-      if config.has_key?(key)
-        args << config[key]
+      if params.has_key?(key)
+        args << params[key]
       else
         # use the default value.
       end
@@ -205,7 +206,7 @@ def digdag_inspect_arguments(receiver, method_name, config)
 
     when :keyreq
       # required keyword argument like a:
-      unless config.has_key?(key)
+      unless params.has_key?(key)
         if receiver.is_a?(Class)
           raise ArgumentError, "Method '#{receiver}.#{method_name}' requires parameter '#{key}' but not set"
         else
@@ -216,16 +217,16 @@ def digdag_inspect_arguments(receiver, method_name, config)
         keywords = {}
         args << keywords
       end
-      keywords[name] = config[key]
+      keywords[name] = params[key]
 
     when :key
       # optional keyword argument like a: nil
-      if config.has_key?(key)
+      if params.has_key?(key)
         if keywords.nil?
           keywords = {}
           args << keywords
         end
-        keywords[name] = config[key]
+        keywords[name] = params[key]
       else
         # use the default value.
       end
@@ -238,7 +239,7 @@ def digdag_inspect_arguments(receiver, method_name, config)
         keywords = {}
         args << keywords
       end
-      keywords.merge!(digdag_symbolize_keys(config))
+      keywords.merge!(digdag_symbolize_keys(params))
     end
   end
 
@@ -259,25 +260,26 @@ end
 klass, method_name, is_instance_method = digdag_inspect_command(command)
 
 if klass.nil?
-  method_args = digdag_inspect_arguments(nil, method_name, DigdagEnv::CONFIG)
+  method_args = digdag_inspect_arguments(nil, method_name, DigdagEnv::PARAMS)
   result = send(method_name, *method_args)
 
 elsif is_instance_method
-  new_args = digdag_inspect_arguments(klass, :new, DigdagEnv::CONFIG)
+  new_args = digdag_inspect_arguments(klass, :new, DigdagEnv::PARAMS)
   instance = klass.new(*new_args)
 
-  method_args = digdag_inspect_arguments(instance, method_name, DigdagEnv::CONFIG)
+  method_args = digdag_inspect_arguments(instance, method_name, DigdagEnv::PARAMS)
   result = instance.send(method_name, *method_args)
 
 else
-  method_args = digdag_inspect_arguments(klass, method_name, DigdagEnv::CONFIG)
+  method_args = digdag_inspect_arguments(klass, method_name, DigdagEnv::PARAMS)
   result = klass.send(method_name, *method_args)
 end
 
 out = {
   'subtask_config' => DigdagEnv::SUBTASK_CONFIG,
-  'state_params' => DigdagEnv::STATE_PARAMS,
   'export_params' => DigdagEnv::EXPORT_PARAMS,
+  'store_params' => DigdagEnv::STORE_PARAMS,
+  #'state_params' => DigdagEnv::STATE_PARAMS,  # only for retrying
 }
 
 File.open(out_file, "w") {|f| f.write out.to_json }

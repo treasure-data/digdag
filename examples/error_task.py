@@ -4,8 +4,7 @@ import digdag
 def fails():
     raise Exception("This task fails")
 
-def show_error(error_message=None, error_task_name=None):
+def show_error(error=None):
     print("OK, task failed expectedly:")
-    print("  * error_message: " + str(error_message))
-    print("  * error_task_name: " + str(error_task_name))
+    print("  * error: " + str(error))
 

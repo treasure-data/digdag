@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskResult;
 import io.digdag.core.workflow.TaskConfig;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
@@ -28,6 +29,7 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -38,17 +40,20 @@ public class DatabaseSessionStoreManager
     private static final String DEFAULT_ATTEMPT_NAME = "";
 
     private final ObjectMapper mapper;
+    private final ConfigFactory cf;
     private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
+    private final ArchivedTaskMapper atm;
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(IDBI dbi, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
+    public DatabaseSessionStoreManager(IDBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, () -> {
             Handle handle = dbi.open();
             JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
             handle.registerMapper(new StoredTaskMapper(cfm, trm));
+            handle.registerMapper(new ArchivedTaskMapper(cfm, trm));
             handle.registerMapper(new StoredSessionMapper(cfm));
             handle.registerMapper(new StoredSessionAttemptMapper(cfm));
             handle.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
@@ -63,9 +68,11 @@ public class DatabaseSessionStoreManager
             return handle;
         });
         this.mapper = mapper;
+        this.cf = cf;
         this.cfm = cfm;
         JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
         this.stm = new StoredTaskMapper(cfm, trm);
+        this.atm = new ArchivedTaskMapper(cfm, trm);
         this.tasm = new TaskAttemptSummaryMapper();
     }
 
@@ -89,14 +96,19 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    private String groupConcat(String column, String separator)
+    {
+        // TODO postgresql
+        return "group_concat(" + column + " separator '" + separator + "')";
+    }
+
     private String selectTaskDetailsQuery()
     {
-        return "select t.*, td.full_name, td.local_config, td.export_config, ts.state_params, ts.carry_params, ts.error, ts.report, " +
-                "(select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
+        return "select t.*, td.full_name, td.local_config, td.export_config, " +
+                "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
             " from tasks t" +
             " join session_attempts sa on sa.id = t.attempt_id" +
-            " join task_details td on t.id = td.id" +
-            " join task_state_details ts on t.id = ts.id";
+            " join task_details td on t.id = td.id";
     }
 
     @Override
@@ -309,39 +321,60 @@ public class DatabaseSessionStoreManager
         }
         List<IdConfig> list = autoCommit((handle, dao) ->
                 handle.createQuery(
-                    "select id, export_config" +
-                    " from task_details" +
-                    " where id in (" +
+                    "select td.id, td.export_config, ts.export_params" +
+                    " from task_details td" +
+                    " join task_state_details ts on ts.id = td.id" +
+                    " where td.id in (" +
                         idList.stream()
                         .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
                 )
-                .map(new IdConfigMapper(cfm, "export_config"))
+                .map(new IdConfigMapper(cfm, "export_config", "export_params"))
                 .list()
             );
-        return orderIdConfigList(idList, list);
+        return sortConfigListByIdList(idList, list);
     }
 
     @Override
-    public List<Config> getCarryParams(List<Long> idList)
+    public List<Config> getStoreParams(List<Long> idList)
     {
         if (idList.isEmpty()) {
             return ImmutableList.of();
         }
         List<IdConfig> list = autoCommit((handle, dao) ->
                 handle.createQuery(
-                    "select id, carry_params" +
+                    "select id, store_params" +
                     " from task_state_details" +
                     " where id in (" +
                         idList.stream()
                         .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
                 )
-                .map(new IdConfigMapper(cfm, "carry_params"))
+                .map(new IdConfigMapper(cfm, "store_params"))
                 .list()
             );
-        return orderIdConfigList(idList, list);
+        return sortConfigListByIdList(idList, list);
     }
 
-    private List<Config> orderIdConfigList(List<Long> idList, List<IdConfig> list)
+    @Override
+    public List<Config> getErrors(List<Long> idList)
+    {
+        if (idList.isEmpty()) {
+            return ImmutableList.of();
+        }
+        List<IdConfig> list = autoCommit((handle, dao) ->
+                handle.createQuery(
+                    "select id, error" +
+                    " from task_state_details" +
+                    " where id in (" +
+                        idList.stream()
+                        .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+                )
+                .map(new IdConfigMapper(cfm, "error"))
+                .list()
+            );
+        return sortConfigListByIdList(idList, list);
+    }
+
+    private List<Config> sortConfigListByIdList(List<Long> idList, List<IdConfig> list)
     {
         Map<Long, Config> map = new HashMap<>();
         for (IdConfig idConfig : list) {
@@ -350,14 +383,15 @@ public class DatabaseSessionStoreManager
         ImmutableList.Builder<Config> builder = ImmutableList.builder();
         for (long id : idList) {
             Config config = map.get(id);
-            if (config != null) {
-                builder.add(config);
+            if (config == null) {
+                config = cf.create();
             }
+            builder.add(config);
         }
         return builder.build();
     }
 
-    private String dumpTaskArchive(List<StoredTask> tasks)
+    private String dumpTaskArchive(List<ArchivedTask> tasks)
     {
         try {
             return mapper.writeValueAsString(tasks);
@@ -368,10 +402,10 @@ public class DatabaseSessionStoreManager
     }
 
     @SuppressWarnings("unchecked")
-    private List<StoredTask> loadTaskArchive(String data)
+    private List<ArchivedTask> loadTaskArchive(String data)
     {
         try {
-            return (List<StoredTask>) mapper.readValue(data, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, StoredTask.class));
+            return (List<ArchivedTask>) mapper.readValue(data, mapper.getTypeFactory().constructParametrizedType(List.class, List.class, ArchivedTask.class));
         }
         catch (IOException ex) {
             throw new RuntimeException("Failed to load task archive", ex);
@@ -410,13 +444,18 @@ public class DatabaseSessionStoreManager
             String archive;
 
             {
-                List<StoredTask> tasks = handle.createQuery(
-                        selectTaskDetailsQuery() +
+                List<ArchivedTask> tasks = handle.createQuery(
+                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                            "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
+                        " from tasks t" +
+                        " join session_attempts sa on sa.id = t.attempt_id" +
+                        " join task_details td on t.id = td.id" +
+                        " join task_state_details ts on t.id = ts.id" +
                         " where t.attempt_id = :attemptId" +
                         " order by t.id"
                     )
                     .bind("attemptId", attemptId)
-                    .map(stm)
+                    .map(atm)
                     .list();
                 archive = dumpTaskArchive(tasks);
                 count = tasks.size();
@@ -534,6 +573,23 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public boolean isAnyErrorChild(long taskId)
+        {
+            return handle.createQuery(
+                    "select parent_id from tasks" +
+                    " where parent_id = :parentId" +
+                    " and (" +
+                      // a child task is progressing now
+                      "state = " + TaskStateCode.ERROR.get() +
+                      " or state = " + TaskStateCode.GROUP_ERROR.get() +
+                    ") limit 1"
+                )
+                .bind("parentId", taskId)
+                .mapTo(Long.class)
+                .first() != null;
+        }
+
+        @Override
         public List<Config> collectChildrenErrors(long taskId)
         {
             return handle.createQuery(
@@ -553,47 +609,66 @@ public class DatabaseSessionStoreManager
             return n > 0;
         }
 
-        public boolean setStateWithSuccessDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, TaskReport report)
+        public boolean setDoneState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
+        {
+            long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
+            return n > 0;
+        }
+
+        public boolean setDoneStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error)
+        {
+            long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
+            if (n > 0) {
+                dao.setError(taskId, error);
+                return true;
+            }
+            return false;
+        }
+
+        public boolean setPlannedStateSuccessful(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
             if (n > 0) {
-                dao.setStateDetails(taskId, stateParams, report.getCarryParams(), null,
+                dao.setSuccessfulReport(taskId,
+                        result.getSubtaskConfig(),
+                        result.getExportParams(),
+                        result.getStoreParams(),
                         // TODO create a class for stored report
-                        report.getCarryParams().getFactory().create()
-                            .set("in", report.getInputs())
-                            .set("out", report.getOutputs()));
+                        cf.create()
+                            .set("in", result.getReport().getInputs())
+                            .set("out", result.getReport().getOutputs()));
                 return true;
             }
             return false;
         }
 
-        public boolean setStateWithErrorDetails(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval, Config error)
+        public boolean setPlannedStateWithDelayedError(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int newFlags, Optional<Config> updateError)
         {
-            long n;
-            if (retryInterval.isPresent()) {
-                n = dao.setState(taskId, beforeState.get(), afterState.get(), retryInterval.get());
-            }
-            else {
-                n = dao.setState(taskId, beforeState.get(), afterState.get());
-            }
+            int n = handle.createStatement("update tasks " +
+                    " set updated_at = now(), state = :newState, state_flags = " + bitOr("state_flags", Integer.toString(newFlags)) +
+                    " where id = :id" +
+                    " and state = :oldState"
+                )
+                .bind("id", taskId)
+                .bind("oldState", beforeState.get())
+                .bind("newState", afterState.get())
+                .execute();
             if (n > 0) {
-                dao.setStateDetails(taskId, stateParams, null, error, null);
+                if (updateError.isPresent()) {
+                    dao.setError(taskId, updateError.get());
+                }
                 return true;
             }
             return false;
         }
 
-        public boolean setStateWithStateParamsUpdate(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config stateParams, Optional<Integer> retryInterval)
+        public boolean setRetryWaitingState(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int retryInterval, Config stateParams, Optional<Config> updateError)
         {
-            long n;
-            if (retryInterval.isPresent()) {
-                n = dao.setState(taskId, beforeState.get(), afterState.get(), retryInterval.get());
-            }
-            else {
-                n = dao.setState(taskId, beforeState.get(), afterState.get());
-            }
+            long n = dao.setRetryState(taskId, beforeState.get(), afterState.get(), retryInterval, stateParams);
             if (n > 0) {
-                dao.setStateDetails(taskId, stateParams, null, null, null);
+                if (updateError.isPresent()) {
+                    dao.setError(taskId, updateError.get());
+                }
                 return true;
             }
             return false;
@@ -796,18 +871,23 @@ public class DatabaseSessionStoreManager
         //}
 
         @Override
-        public List<StoredTask> getTasksOfAttempt(long attemptId)
+        public List<ArchivedTask> getTasksOfAttempt(long attemptId)
         {
-            List<StoredTask> tasks = autoCommit((handle, dao) ->
+            List<ArchivedTask> tasks = autoCommit((handle, dao) ->
                     handle.createQuery(
-                        selectTaskDetailsQuery() +
+                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                            "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
+                        " from tasks t" +
+                        " join session_attempts sa on sa.id = t.attempt_id" +
+                        " join task_details td on t.id = td.id" +
+                        " join task_state_details ts on t.id = ts.id" +
                         " where sa.site_id = :siteId" +
                         " and t.attempt_id = :attemptId" +
                         " order by t.id"
                         )
                     .bind("siteId", siteId)
                     .bind("attemptId", attemptId)
-                    .map(stm)
+                    .map(atm)
                     .list()
                 );
             if (tasks.isEmpty()) {
@@ -1120,18 +1200,29 @@ public class DatabaseSessionStoreManager
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks " +
-                " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
+                " set updated_at = now(), state = :newState, state_params = NULL" +  // always set state_params = NULL
                 " where id = :id" +
                 " and state = :oldState")
-        long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState, @Bind("retryInterval") int retryInterval);
-
-        @SqlUpdate("update task_state_details " +
-                " set state_params = :stateParams, carry_params = :carryParams, error = :error, report = :report" +
-                " where id = :id")
-        long setStateDetails(@Bind("id") long taskId, @Bind("stateParams") Config stateParams, @Bind("carryParams") Config carryParams, @Bind("error") Config error, @Bind("report") Config report);
+        long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks " +
-                " set updated_at = now(), state = " + TaskStateCode.READY_CODE +
+                " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', state_params = :stateParams, :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
+                " where id = :id" +
+                " and state = :oldState")
+        long setRetryState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState, @Bind("retryInterval") int retryInterval, @Bind("stateParams") Config stateParams);
+
+        @SqlUpdate("update task_state_details " +
+                " set error = :error" +
+                " where id = :id")
+        long setError(@Bind("id") long taskId, @Bind("error") Config error);
+
+        @SqlUpdate("update task_state_details " +
+                " set subtask_config = :subtaskConfig, export_params = :exportParams, store_params = :storeParams, report = :report, error = null" +
+                " where id = :id")
+        long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
+
+        @SqlUpdate("update tasks " +
+                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
                 " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")"+
                 " and retry_at >= now()")
         int trySetRetryWaitingToReady();
@@ -1315,21 +1406,12 @@ public class DatabaseSessionStoreManager
         public StoredTask map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            Config reportConfig = cfm.fromResultSetOrEmpty(r, "report");
-            TaskReport report = TaskReport.builder()
-                .carryParams(cfm.fromResultSetOrEmpty(r, "carry_params"))
-                .inputs(reportConfig.getListOrEmpty("in", Config.class))
-                .outputs(reportConfig.getListOrEmpty("out", Config.class))
-                .build();
-
             return ImmutableStoredTask.builder()
                 .id(r.getLong("id"))
                 .upstreams(getLongIdList(r, "upstream_ids"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
-                .report(report)
-                .error(cfm.fromResultSet(r, "error"))
                 .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
@@ -1340,6 +1422,53 @@ public class DatabaseSessionStoreManager
                 .taskType(TaskType.of(r.getInt("task_type")))
                 .state(TaskStateCode.of(r.getInt("state")))
                 .stateFlags(TaskStateFlags.of(r.getInt("state_flags")))
+                .build();
+        }
+    }
+
+    private static class ArchivedTaskMapper
+            implements ResultSetMapper<ArchivedTask>
+    {
+        private final ConfigMapper cfm;
+        private final JsonMapper<TaskReport> trm;
+
+        public ArchivedTaskMapper(ConfigMapper cfm, JsonMapper<TaskReport> trm)
+        {
+            this.cfm = cfm;
+            this.trm = trm;
+        }
+
+        @Override
+        public ArchivedTask map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            Config reportConfig = cfm.fromResultSetOrEmpty(r, "report");
+            TaskReport report = TaskReport.builder()
+                .inputs(reportConfig.getListOrEmpty("in", Config.class))
+                .outputs(reportConfig.getListOrEmpty("out", Config.class))
+                .build();
+
+            return ImmutableArchivedTask.builder()
+                .id(r.getLong("id"))
+                .upstreams(getLongIdList(r, "upstream_ids"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
+                .retryAt(getOptionalTimestampInstant(r, "retry_at"))
+                .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
+                .attemptId(r.getLong("attempt_id"))
+                .parentId(getOptionalLong(r, "parent_id"))
+                .fullName(r.getString("full_name"))
+                .config(
+                        TaskConfig.assumeValidated(
+                                cfm.fromResultSetOrEmpty(r, "local_config"),
+                                cfm.fromResultSetOrEmpty(r, "export_config")))
+                .taskType(TaskType.of(r.getInt("task_type")))
+                .state(TaskStateCode.of(r.getInt("state")))
+                .stateFlags(TaskStateFlags.of(r.getInt("state_flags")))
+                .subtaskConfig(cfm.fromResultSetOrEmpty(r, "subtask_config"))
+                .exportParams(cfm.fromResultSetOrEmpty(r, "export_params"))
+                .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
+                .report(report)
+                .error(cfm.fromResultSetOrEmpty(r, "error"))
                 .build();
         }
     }
@@ -1433,20 +1562,29 @@ public class DatabaseSessionStoreManager
     {
         private final ConfigMapper cfm;
         private final String configColumn;
+        private final String mergeColumn;
 
         public IdConfigMapper(ConfigMapper cfm, String configColumn)
         {
+            this(cfm, configColumn, null);
+        }
+
+        public IdConfigMapper(ConfigMapper cfm, String configColumn, String mergeColumn)
+        {
             this.cfm = cfm;
             this.configColumn = configColumn;
+            this.mergeColumn = mergeColumn;
         }
 
         @Override
         public IdConfig map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return new IdConfig(
-                    r.getLong("id"),
-                    cfm.fromResultSetOrEmpty(r, configColumn));
+            Config config = cfm.fromResultSetOrEmpty(r, configColumn);
+            if (mergeColumn != null) {
+                config.setAll(cfm.fromResultSetOrEmpty(r, mergeColumn));
+            }
+            return new IdConfig(r.getLong("id"), config);
         }
     }
 

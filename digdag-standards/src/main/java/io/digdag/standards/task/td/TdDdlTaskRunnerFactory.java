@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.standards.task.BaseTaskRunner;
@@ -46,17 +47,17 @@ public class TdDdlTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("td")
+            Config params = request.getConfig().getNestedOrGetEmpty("td")
                 .deepCopy()
                 .setAll(request.getConfig());
 
-            List<String> deleteList = config.getListOrEmpty("drop_table", String.class);
-            List<String> createList = config.getListOrEmpty("create_table", String.class);
-            List<String> emptyList = config.getListOrEmpty("empty_table", String.class);
+            List<String> deleteList = params.getListOrEmpty("drop_table", String.class);
+            List<String> createList = params.getListOrEmpty("create_table", String.class);
+            List<String> emptyList = params.getListOrEmpty("empty_table", String.class);
 
-            try (TDOperation op = TDOperation.fromConfig(config)) {
+            try (TDOperation op = TDOperation.fromConfig(params)) {
                 for (String t : Iterables.concat(deleteList, emptyList)) {
                     logger.info("Deleting TD table {}.{}", op.getDatabase(), t);
                     op.ensureTableDeleted(t);
@@ -66,7 +67,8 @@ public class TdDdlTaskRunnerFactory
                     op.ensureTableDeleted(t);
                 }
             }
-            return request.getConfig().getFactory().create();
+
+            return TaskResult.empty(request.getConfig().getFactory());
         }
     }
 }

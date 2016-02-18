@@ -27,7 +27,9 @@ public abstract class RestTask
 
     public abstract String getState();
 
-    public abstract Config getCarryParams();
+    public abstract Config getExportParams();
+
+    public abstract Config getStoreParams();
 
     public abstract Config getStateParams();
 

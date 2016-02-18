@@ -20,12 +20,13 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.Tasks;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.ConfigFactory;
 
@@ -50,7 +51,7 @@ public class ResumeStateManager
         this.managedDirs = new CopyOnWriteArrayList<>();
     }
 
-    public TaskReport readSuccessfulTaskReport(File dir, String fullName)
+    public TaskResult readSuccessfulTaskReport(File dir, String fullName)
     {
         TaskResumeState resumeState;
         try {
@@ -63,7 +64,7 @@ public class ResumeStateManager
             throw Throwables.propagate(ex);
         }
         if (resumeState.getState() == TaskStateCode.SUCCESS) {
-            return resumeState.getReport();
+            return resumeState.getResult();
         }
         else {
             return null;
@@ -134,15 +135,15 @@ public class ResumeStateManager
 
         public void update()
         {
-            List<StoredTask> tasks = sessionStoreManager
+            List<ArchivedTask> tasks = sessionStoreManager
                 .getSessionStore(attempt.getSiteId())
                 .getTasksOfAttempt(attempt.getId());
-            for (StoredTask task : tasks) {
+            for (ArchivedTask task : tasks) {
                 tryWriteStateFile(task);
             }
         }
 
-        private void tryWriteStateFile(StoredTask task)
+        private void tryWriteStateFile(ArchivedTask task)
         {
             if (!Tasks.isDone(task.getState())) {
                 return;
@@ -162,14 +163,19 @@ public class ResumeStateManager
             doneTaskIdList.add(task.getId());
         }
 
-        private void writeStateFile(StoredTask task)
+        private void writeStateFile(ArchivedTask task)
             throws IOException
         {
             // grouping-only tasks don't have reports
             TaskResumeState state = TaskResumeState.of(
                     task.getFullName(),
                     task.getState(),
-                    task.getReport().or(TaskReport.empty(cf)));
+                    TaskResult.builder()
+                        .subtaskConfig(task.getSubtaskConfig())
+                        .exportParams(task.getExportParams())
+                        .storeParams(task.getStoreParams())
+                        .report(task.getReport().or(TaskReport.empty()))
+                        .build());
 
             mapper.writeFile(new File(dir, task.getFullName() + ".yml"), state);
         }

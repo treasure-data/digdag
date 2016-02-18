@@ -5,7 +5,7 @@ import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskResult;
 import io.digdag.core.session.Session;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
@@ -66,28 +66,27 @@ public class InProcessTaskCallbackApi
 
     @Override
     public void taskSucceeded(long taskId, String lockId, AgentId agentId,
-            Config stateParams, Config subtaskConfig,
-            TaskReport report)
+            TaskResult result)
     {
         exec.taskSucceeded(localSiteId, taskId, lockId, agentId,
-                stateParams, subtaskConfig, report);
+                result);
     }
 
     @Override
     public void taskFailed(long taskId, String lockId, AgentId agentId,
-            Config error, Config stateParams,
-            Optional<Integer> retryInterval)
+            Config error)
     {
         exec.taskFailed(localSiteId, taskId, lockId, agentId,
-                error, stateParams, retryInterval);
+                error);
     }
 
     @Override
-    public void taskPollNext(long taskId, String lockId, AgentId agentId,
-            Config stateParams, int retryInterval)
+    public void retryTask(long taskId, String lockId, AgentId agentId,
+            int retryInterval, Config retryStateParams,
+            Optional<Config> error)
     {
-        exec.taskPollNext(localSiteId, taskId, lockId, agentId,
-                stateParams, retryInterval);
+        exec.retryTask(localSiteId, taskId, lockId, agentId,
+                retryInterval, retryStateParams, error);
     }
 
     @Override

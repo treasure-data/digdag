@@ -14,6 +14,7 @@ import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class ShTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
             String command = request.getConfig().get("command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
@@ -111,7 +112,7 @@ public class ShTaskRunnerFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return request.getConfig().getFactory().create();
+            return TaskResult.empty(request.getConfig().getFactory());
         }
     }
 

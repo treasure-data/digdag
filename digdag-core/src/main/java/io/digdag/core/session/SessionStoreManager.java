@@ -72,5 +72,7 @@ public interface SessionStoreManager
 
     List<Config> getExportParams(List<Long> idList);
 
-    List<Config> getCarryParams(List<Long> idList);
+    List<Config> getStoreParams(List<Long> idList);
+
+    List<Config> getErrors(List<Long> idList);
 }

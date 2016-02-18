@@ -17,6 +17,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import org.slf4j.Logger;
@@ -57,10 +58,10 @@ public class MailTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
             Config config = request.getConfig();
-            Config mail =
+            Config params =
                 config.getNestedOrGetEmpty("mail").deepCopy()
                 .setAll(config);
 
@@ -70,33 +71,33 @@ public class MailTaskRunnerFactory
 
             List<String> toList;
             try {
-                toList = mail.getList("to", String.class);
+                toList = params.getList("to", String.class);
             }
             catch (ConfigException ex) {
-                toList = ImmutableList.of(mail.get("to", String.class));
+                toList = ImmutableList.of(params.get("to", String.class));
             }
 
             Properties props = new Properties();
 
-            props.setProperty("mail.smtp.host", mail.get("host", String.class));
-            props.setProperty("mail.smtp.port", mail.get("port", String.class));
-            props.put("mail.smtp.starttls.enable", Boolean.toString(mail.get("tls", boolean.class, true)));
-            if (mail.get("ssl", boolean.class, false)) {
-                props.put("mail.smtp.socketFactory.port", mail.get("port", String.class));
+            props.setProperty("mail.smtp.host", params.get("host", String.class));
+            props.setProperty("mail.smtp.port", params.get("port", String.class));
+            props.put("mail.smtp.starttls.enable", Boolean.toString(params.get("tls", boolean.class, true)));
+            if (params.get("ssl", boolean.class, false)) {
+                props.put("mail.smtp.socketFactory.port", params.get("port", String.class));
                 props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
                 props.put("mail.smtp.socketFactory.fallback", "false");
             }
 
-            props.setProperty("mail.debug", Boolean.toString(mail.get("debug", boolean.class, false)));
+            props.setProperty("mail.debug", Boolean.toString(params.get("debug", boolean.class, false)));
 
             props.setProperty("mail.smtp.connectiontimeout", "10000");
             props.setProperty("mail.smtp.timeout", "60000");
 
             Session session;
-            final String username = mail.get("username", String.class, null);
+            final String username = params.get("username", String.class, null);
             if (username != null) {
                 props.setProperty("mail.smtp.auth", "true");
-                final String password = mail.get("password", String.class, "");
+                final String password = params.get("password", String.class, "");
                 session = Session.getInstance(props,
                         new Authenticator()
                         {
@@ -131,7 +132,7 @@ public class MailTaskRunnerFactory
                 throw new RuntimeException(ex);
             }
 
-            return request.getConfig().getFactory().create();
+            return TaskResult.empty(request.getConfig().getFactory());
         }
 
         private String getFlatOrNested(String key)

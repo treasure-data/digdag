@@ -347,12 +347,13 @@ public class DatabaseMigrator
                     .addLongId("id")
                     .addLong("attempt_id", "not null references session_attempts (id)")
                     .addLong("parent_id", "references tasks (id)")
-                    .addShort("task_type", "")   // 0=action, 1=grouping  NOT NULL
-                    //.addShort("error_mode", "")  // 1=ignore_parent_flags  NOT NULL
+                    .addShort("task_type", "not null")   // 0=action, 1=grouping
+                    //.addShort("error_mode", "not null")  // 1=ignore_parent_flags
                     .addShort("state", "not null")
                     .addShort("state_flags", "not null")
-                    .addTimestamp("retry_at", "")
                     .addTimestamp("updated_at", "not null")  // last state update is done at this time
+                    .addTimestamp("retry_at", "")
+                    .addMediumText("state_params", "")
                     .build());
             handle.update("create index if not exists tasks_on_attempt_id on tasks (attempt_id, id)");
             handle.update("create index if not exists tasks_on_parent_id on tasks (parent_id)");
@@ -368,10 +369,11 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("task_state_details")
                     .addLongIdNoAutoIncrement("id", "references tasks (id)")
-                    .addMediumText("state_params", "")
-                    .addMediumText("carry_params", "")
-                    .addMediumText("error", "")
+                    .addMediumText("subtask_config", "")
+                    .addMediumText("export_params", "")
+                    .addMediumText("store_params", "")
                     .addMediumText("report", "")
+                    .addMediumText("error", "")
                     .build());
 
             // task_dependencies

@@ -26,7 +26,7 @@ public interface SessionStore
     List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)
         throws ResourceNotFoundException;
 
-    List<StoredTask> getTasksOfAttempt(long attemptId);
+    List<ArchivedTask> getTasksOfAttempt(long attemptId);
 
     interface SessionLockAction <T>
     {

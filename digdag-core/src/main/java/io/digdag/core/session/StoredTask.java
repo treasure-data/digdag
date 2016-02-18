@@ -11,8 +11,6 @@ import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
 import static com.google.common.base.Preconditions.checkState;
 
-@Value.Immutable
-@JsonSerialize(as = ImmutableStoredTask.class)
 @JsonDeserialize(as = ImmutableStoredTask.class)
 public abstract class StoredTask
         extends Task
@@ -31,13 +29,8 @@ public abstract class StoredTask
 
     public abstract Config getStateParams();
 
-    public abstract Optional<TaskReport> getReport();
-
-    public abstract Optional<Config> getError();  // TODO error class
-
     @Value.Check
     protected void check()
     {
-        checkState(!getError().isPresent() || !getError().get().isEmpty(), "error must not be empty if not null");
     }
 }

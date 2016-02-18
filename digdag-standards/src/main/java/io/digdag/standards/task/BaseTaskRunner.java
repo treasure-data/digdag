@@ -17,9 +17,7 @@ public abstract class BaseTaskRunner
     protected final Path archivePath;
     protected final ArchiveFiles archive;
     protected final TaskRequest request;
-    protected Config stateParams;
 
-    protected Config subtaskConfig;
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
@@ -28,15 +26,8 @@ public abstract class BaseTaskRunner
         this.archivePath = archivePath;
         this.archive = new ArchiveFiles(archivePath);
         this.request = request;
-        this.stateParams = request.getLastStateParams().deepCopy();
-        this.subtaskConfig = request.getConfig().getFactory().create();
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();
-    }
-
-    public Config getSubtaskConfig()
-    {
-        return subtaskConfig;
     }
 
     public void addInput(Config input)
@@ -52,31 +43,22 @@ public abstract class BaseTaskRunner
     @Override
     public TaskResult run()
     {
-        RetryControl retry = RetryControl.prepare(request.getConfig(), stateParams, true);
+        RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), true);
         try {
-            Config carryParams;
             try {
-                carryParams = runTask();
+                return runTask();
             }
             finally {
                 archive.close();
             }
-            return TaskResult.builder()
-                .subtaskConfig(subtaskConfig)
-                .report(
-                    TaskReport.builder()
-                    .inputs(ImmutableList.copyOf(inputs))
-                    .outputs(ImmutableList.copyOf(outputs))
-                    .carryParams(carryParams)
-                    .build())
-                .build();
         }
         catch (RuntimeException ex) {
             Config error = TaskRunnerManager.makeExceptionError(request.getConfig().getFactory(), ex);
-            boolean doRetry = retry.evaluate(error);
-            this.stateParams = retry.getNextRetryStateParams();
+            boolean doRetry = retry.evaluate();
             if (doRetry) {
-                throw new TaskExecutionException(ex, error, Optional.of(retry.getNextRetryInterval()));
+                throw new TaskExecutionException(ex, error,
+                        retry.getNextRetryInterval(),
+                        retry.getNextRetryStateParams());
             }
             else {
                 throw ex;
@@ -84,11 +66,5 @@ public abstract class BaseTaskRunner
         }
     }
 
-    public abstract Config runTask();
-
-    @Override
-    public Config getStateParams()
-    {
-        return stateParams;
-    }
+    public abstract TaskResult runTask();
 }

@@ -19,8 +19,8 @@ def export_overwrite(mysql):
     print("export_overwrite: mysql = "+str(mysql))
 
 def set_export():
-    digdag.env.export_params["table"] = "carried information"
+    digdag.env.export({"table": "carried information"})
 
-def show_export(table):
-    print("show_export: table = "+table)
+def show_export(table=None):
+    print("show_export: table = " + str(table))
 

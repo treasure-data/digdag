@@ -26,7 +26,11 @@ public class SessionStateFlags
     private SessionStateFlags(int flags)
     {
         checkArgument(flags >= 0 && flags < Short.MAX_VALUE, "SessionStateFlags must be positive 16-bit signed integer");
-        //checkArgument((flags & ~CANCEL_REQUESTED_CODE) == 0, "Unknown SessionStateFlags is set");
+        int unknown = flags
+            & ~CANCEL_REQUESTED_CODE
+            & ~DONE_CODE
+            & ~SUCCESS_CODE;
+        checkArgument(unknown == 0, "Unknown SessionStateFlags is set");
         this.flags = flags;
     }
 
@@ -81,7 +85,23 @@ public class SessionStateFlags
     @Override
     public String toString()
     {
-        // TODO
-        return "SessionStateFlags{" + flags + "}";
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        if (isCancelRequested()) {
+            if (first) { first = false; }
+            else { sb.append(", "); }
+            sb.append("CANCEL_REQUESTED");
+        }
+        else if (isDone()) {
+            if (first) { first = false; }
+            else { sb.append(", "); }
+            sb.append("DONE");
+        }
+        else if (isSuccess()) {
+            if (first) { first = false; }
+            else { sb.append(", "); }
+            sb.append("SUCCESS");
+        }
+        return "SessionStateFlags{" + sb.toString() + "}";
     }
 }

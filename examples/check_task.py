@@ -17,7 +17,7 @@ class Generator(object):
     def run(self):
         with open("result.csv", "w") as f:
             f.write("ok")
-        digdag.env.export_params["path"] = "result.csv"
+        digdag.env.store({"path": "result.csv"})
 
     def check(self, path):
         print("checking "+path)

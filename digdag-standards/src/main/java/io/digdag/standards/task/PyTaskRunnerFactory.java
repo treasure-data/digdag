@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.client.config.Config;
@@ -74,33 +75,31 @@ public class PyTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
             Config config = request.getConfig().getNestedOrGetEmpty("py")
                 .deepCopy()
                 .setAll(request.getConfig());
 
             // merge state parameters in addition to regular config
-            Config taskEnv = config.setAll(request.getLastStateParams());
+            Config params = config.setAll(request.getLastStateParams());
 
             Config data;
             try {
-                data = runCode(request.getConfig(), taskEnv);
+                data = runCode(params);
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
             }
 
-            subtaskConfig.setAll(data.getNestedOrGetEmpty("subtask_config"));
-            stateParams.setAll(data.getNestedOrGetEmpty("state_params"));
-            inputs.addAll(data.getListOrEmpty("inputs", Config.class));
-            outputs.addAll(data.getListOrEmpty("outputs", Config.class));
-
-            Config exportParams = data.getNestedOrGetEmpty("export_params");
-            return exportParams;
+            return TaskResult.builder()
+                .subtaskConfig(data.getNestedOrGetEmpty("subtask_config"))
+                .exportParams(data.getNestedOrGetEmpty("export_params"))
+                .storeParams(data.getNestedOrGetEmpty("store_params"))
+                .build();
         }
 
-        private Config runCode(Config config, Config taskEnv)
+        private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
             String inFile = archive.createTempFile("digdag-py-in-", ".tmp");
@@ -109,18 +108,18 @@ public class PyTaskRunnerFactory
             String script;
             List<String> args;
 
-            if (config.has("command")) {
-                String command = config.get("command", String.class);
+            if (params.has("command")) {
+                String command = params.get("command", String.class);
                 script = runnerScript;
                 args = ImmutableList.of(command, inFile, outFile);
             }
             else {
-                script = config.get("script", String.class);
+                script = params.get("script", String.class);
                 args = ImmutableList.of(inFile, outFile);
             }
 
             try (OutputStream fo = archive.newOutputStream(inFile)) {
-                mapper.writeValue(fo, ImmutableMap.of("config", taskEnv));
+                mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
             int ecode;

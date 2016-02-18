@@ -1,6 +1,6 @@
 package io.digdag.cli;
 
-import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskResult;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -15,19 +15,19 @@ public abstract class TaskResumeState
 
     public abstract TaskStateCode getState();
 
-    public abstract TaskReport getReport();
+    public abstract TaskResult getResult();
 
     public static ImmutableTaskResumeState.Builder builder()
     {
         return ImmutableTaskResumeState.builder();
     }
 
-    public static TaskResumeState of(String fullName, TaskStateCode state, TaskReport report)
+    public static TaskResumeState of(String fullName, TaskStateCode state, TaskResult result)
     {
         return builder()
             .fullName(fullName)
             .state(state)
-            .report(report)
+            .result(result)
             .build();
     }
 }

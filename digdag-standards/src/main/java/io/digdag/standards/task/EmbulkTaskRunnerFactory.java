@@ -20,6 +20,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import org.slf4j.Logger;
@@ -67,9 +68,9 @@ public class EmbulkTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("embulk")
+            Config params = request.getConfig().getNestedOrGetEmpty("embulk")
                 .deepCopy()
                 .setAll(request.getConfig());
 
@@ -77,13 +78,13 @@ public class EmbulkTaskRunnerFactory
             try {
                 tempFile = archive.createTempFile("digdag-embulk-", ".tmp.yml");
 
-                if (config.has("command")) {
-                    String command = config.get("command", String.class);
-                    String data = templateEngine.templateFile(archivePath, command, UTF_8, config);
+                if (params.has("command")) {
+                    String command = params.get("command", String.class);
+                    String data = templateEngine.templateFile(archivePath, command, UTF_8, params);
                     Files.write(archive.getPath(tempFile), data.getBytes(UTF_8));
                 }
                 else {
-                    Config embulkConfig = config.getNested("config");
+                    Config embulkConfig = params.getNested("config");
                     try (YAMLGenerator out = yaml.createGenerator(archive.newOutputStream(tempFile), JsonEncoding.UTF8)) {
                         mapper.writeValue(out, embulkConfig);
                     }
@@ -116,7 +117,7 @@ public class EmbulkTaskRunnerFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return request.getConfig().getFactory().create();
+            return TaskResult.empty(request.getConfig().getFactory());
         }
     }
 }

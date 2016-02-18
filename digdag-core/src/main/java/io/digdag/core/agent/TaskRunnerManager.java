@@ -108,8 +108,7 @@ public class TaskRunnerManager
             Config error = makeExceptionError(cf, ex);
             callback.taskFailed(
                     request.getTaskId(), request.getLockId(), agentId,
-                    error, nextState,
-                    Optional.absent());  // no retry
+                    error);  // no retry
         }
     }
 
@@ -166,8 +165,7 @@ public class TaskRunnerManager
                     // TODO warning
                     callback.taskSucceeded(
                             taskId, request.getLockId(), agentId,
-                            nextState, cf.create(),
-                            TaskReport.empty(cf));
+                            TaskResult.empty(cf));
                     return;
                 }
                 type = commandKey.get().substring(0, commandKey.get().length() - 1);
@@ -183,32 +181,30 @@ public class TaskRunnerManager
             }
             TaskRunner executor = factory.newTaskExecutor(archivePath, mergedRequest);
 
-            TaskResult result;
-            try {
-                result = executor.run();
-            }
-            finally {
-                nextState = executor.getStateParams();
-            }
+            TaskResult result = executor.run();
 
             callback.taskSucceeded(
                     taskId, request.getLockId(), agentId,
-                    nextState, result.getSubtaskConfig(),
-                    result.getReport());
+                    result);
         }
         catch (TaskExecutionException ex) {
-            if (ex.getError().isPresent()) {
+            if (ex.getRetryInterval().isPresent()) {
+                if (ex.getError().isPresent()) {
+                    logger.debug("Retrying task {}", ex.toString());
+                }
+                else {
+                    logger.error("Task failed, retrying", ex);
+                }
+                callback.retryTask(
+                        taskId, request.getLockId(), agentId,
+                        ex.getRetryInterval().get(), ex.getStateParams().get(),
+                        ex.getError());
+            }
+            else {
                 logger.error("Task failed", ex);
                 callback.taskFailed(
                         taskId, request.getLockId(), agentId,
-                        ex.getError().get(), nextState,
-                        ex.getRetryInterval());
-            }
-            else {
-                logger.debug("Retrying task {}", ex.toString());
-                callback.taskPollNext(
-                        taskId, request.getLockId(), agentId,
-                        nextState, ex.getRetryInterval().get());
+                        ex.getError().get());  // TODO is error set?
             }
         }
     }
@@ -216,7 +212,7 @@ public class TaskRunnerManager
     public static Config makeExceptionError(ConfigFactory cf, Exception ex)
     {
         return cf.create()
-            .set("error", ex.toString())
+            .set("message", ex.toString())
             .set("stacktrace",
                     Arrays.asList(ex.getStackTrace())
                     .stream()

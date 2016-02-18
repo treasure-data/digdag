@@ -15,6 +15,7 @@ import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -120,7 +121,7 @@ public final class RestModels
             .build();
     }
 
-    public static RestTask task(StoredTask task)
+    public static RestTask task(ArchivedTask task)
     {
         return RestTask.builder()
             .id(task.getId())
@@ -130,7 +131,8 @@ public final class RestModels
             .upstreams(task.getUpstreams())
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
-            .carryParams(task.getReport().transform(report -> report.getCarryParams()).or(task.getConfig().getLocal().getFactory().create()))
+            .exportParams(task.getConfig().getExport().deepCopy().setAll(task.getExportParams()))
+            .storeParams(task.getStoreParams())
             .stateParams(task.getStateParams())
             .updatedAt(task.getUpdatedAt())
             .retryAt(task.getRetryAt())

@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunner;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.spi.TemplateEngine;
@@ -58,42 +59,42 @@ public class TdTaskRunnerFactory
         }
 
         @Override
-        public Config runTask()
+        public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("td")
+            Config params = request.getConfig().getNestedOrGetEmpty("td")
                 .deepCopy()
                 .setAll(request.getConfig());
 
             String query;
-            if (config.has("command")) {
-                String command = config.get("command", String.class);
+            if (params.has("command")) {
+                String command = params.get("command", String.class);
                 try {
-                    query = templateEngine.templateFile(archivePath, command, UTF_8, config);
+                    query = templateEngine.templateFile(archivePath, command, UTF_8, params);
                 }
                 catch (IOException | TemplateException ex) {
                     throw new ConfigException("Failed to load query file", ex);
                 }
             }
             else {
-                query = config.get("query", String.class);
+                query = params.get("query", String.class);
             }
 
-            Optional<String> insertInto = config.getOptional("insert_into", String.class);
-            Optional<String> createTable = config.getOptional("create_table", String.class);
+            Optional<String> insertInto = params.getOptional("insert_into", String.class);
+            Optional<String> createTable = params.getOptional("create_table", String.class);
             if (insertInto.isPresent() && createTable.isPresent()) {
                 throw new ConfigException("Setting both insert_into and create_table is invalid");
             }
 
-            int priority = config.get("priority", int.class, 0);
-            Optional<String> resultUrl = config.getOptional("result_url", String.class);
+            int priority = params.get("priority", int.class, 0);
+            Optional<String> resultUrl = params.getOptional("result_url", String.class);
 
-            int jobRetry = config.get("job_retry", int.class, 0);
+            int jobRetry = params.get("job_retry", int.class, 0);
 
-            String engine = config.get("engine", String.class, "presto");
+            String engine = params.get("engine", String.class, "presto");
 
-            Optional<String> downloadFile = config.getOptional("download_file", String.class);
+            Optional<String> downloadFile = params.getOptional("download_file", String.class);
 
-            try (TDOperation op = TDOperation.fromConfig(config)) {
+            try (TDOperation op = TDOperation.fromConfig(params)) {
                 String stmt;
 
                 switch(engine) {
@@ -179,9 +180,16 @@ public class TdTaskRunnerFactory
                     }
                 }
 
-                return request.getConfig().getFactory().create()
+                Config exportParams = request.getConfig().getFactory().create();
+
+                Config storeParams = request.getConfig().getFactory().create()
                     .getNestedOrSetEmpty("td")
                     .set("last_job_id", q.getJobId());
+
+                return TaskResult.builder()
+                    .exportParams(exportParams)
+                    .storeParams(storeParams)
+                    .build();
             }
         }
     }

@@ -34,7 +34,7 @@ public class RetryControl
         return stateParams;
     }
 
-    public boolean evaluate(Config error)  // TODO error class
+    public boolean evaluate()  // TODO error class
     {
         // TODO
         return false;

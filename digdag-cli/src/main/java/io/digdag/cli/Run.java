@@ -33,8 +33,9 @@ import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
-import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.agent.TaskRunnerManager;
 import io.digdag.core.agent.TaskCallbackApi;
@@ -46,8 +47,8 @@ import io.digdag.core.agent.AgentConfig;
 import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRunnerFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
@@ -232,8 +233,8 @@ public class Run
 
         localSite.runUntilAny();
 
-        ArrayList<StoredTask> failedTasks = new ArrayList<>();
-        for (StoredTask task : localSite.getSessionStore().getTasksOfAttempt(attempt.getId())) {
+        ArrayList<ArchivedTask> failedTasks = new ArrayList<>();
+        for (ArchivedTask task : localSite.getSessionStore().getTasksOfAttempt(attempt.getId())) {
             if (task.getState() == TaskStateCode.ERROR) {
                 failedTasks.add(task);
             }
@@ -244,8 +245,9 @@ public class Run
             logger.debug("    retryAt: "+task.getRetryAt());
             logger.debug("    config: "+task.getConfig());
             logger.debug("    taskType: "+task.getTaskType());
+            logger.debug("    exported: "+task.getExportParams());
+            logger.debug("    stored: "+task.getStoreParams());
             logger.debug("    stateParams: "+task.getStateParams());
-            logger.debug("    carryParams: "+task.getReport().transform(report -> report.getCarryParams()).or(cf.create()));
             logger.debug("    in: "+task.getReport().transform(report -> report.getInputs()).or(ImmutableList.of()));
             logger.debug("    out: "+task.getReport().transform(report -> report.getOutputs()).or(ImmutableList.of()));
             logger.debug("    error: "+task.getError());
@@ -263,7 +265,7 @@ public class Run
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("%n"));
             sb.append(String.format("Task state is stored at %s directory.%n", resumeResultPath));
-            for (StoredTask task : failedTasks) {
+            for (ArchivedTask task : failedTasks) {
                 sb.append(String.format("  Task %s failed.%n", task.getFullName()));
             }
             sb.append(String.format("Run the workflow again using `-s %s` option to retry this workflow.",
@@ -276,7 +278,7 @@ public class Run
         }
     }
 
-    private Function<String, TaskReport> skipTaskReports = (fullName) -> null;
+    private Function<String, TaskResult> skipTaskReports = (fullName) -> null;
 
     public static class TaskRunnerManagerWithSkip
             extends TaskRunnerManager
@@ -301,15 +303,14 @@ public class Run
         public void run(TaskRequest request)
         {
             String fullName = request.getTaskName();
-            TaskReport report = cmd.skipTaskReports.apply(fullName);
-            if (report != null) {
+            TaskResult result = cmd.skipTaskReports.apply(fullName);
+            if (result != null) {
                 try (SetThreadName threadName = new SetThreadName(fullName)) {
                     logger.info("Skipped");
                 }
                 callback.taskSucceeded(
                         request.getTaskId(), request.getLockId(), agentId,
-                        cf.create(), cf.create(),
-                        report);
+                        result);
             }
             else {
                 super.run(request);

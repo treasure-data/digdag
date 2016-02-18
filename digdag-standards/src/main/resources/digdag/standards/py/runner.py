@@ -11,14 +11,15 @@ out_file = sys.argv[3]
 
 with open(in_file) as f:
     in_data = json.load(f)
-    config = in_data['config']
+    params = in_data['params']
 
 # fake digdag_env module already imported
 digdag_env_mod = sys.modules['digdag_env'] = imp.new_module('digdag_env')
-digdag_env_mod.config = config
+digdag_env_mod.params = params
 digdag_env_mod.subtask_config = collections.OrderedDict()
-digdag_env_mod.state_params = {}
 digdag_env_mod.export_params = {}
+digdag_env_mod.store_params = {}
+digdag_env_mod.state_params = {}
 import digdag_env
 
 # fake digdag module already imported
@@ -26,10 +27,11 @@ digdag_mod = sys.modules['digdag'] = imp.new_module('digdag')
 
 class Env(object):
     def __init__(self, digdag_env_mod):
-        self.config = digdag_env_mod.config
+        self.params = digdag_env_mod.params
         self.subtask_config = digdag_env_mod.subtask_config
-        self.state_params = digdag_env_mod.state_params
         self.export_params = digdag_env_mod.export_params
+        self.store_params = digdag_env_mod.store_params
+        self.state_params = digdag_env_mod.state_params
         self.subtask_index = 0
 
     def set_state(self, params={}, **kwds):
@@ -40,10 +42,9 @@ class Env(object):
         self.export_params.update(params)
         self.export_params.update(kwds)
 
-    #def export_children(self, key, value):
-    #    if "export" not in self.subtask_config:
-    #        self.subtask_config["export"] = {}
-    #    return self.subtask_config["export"]
+    def store(self, params={}, **kwds):
+        self.store_params.update(params)
+        self.store_params.update(kwds)
 
     def add_subtask(self, function=None, **params):
         if function is not None and not isinstance(function, dict):
@@ -103,7 +104,7 @@ def digdag_inspect_command(command):
     else:
         return (callable_type, None)
 
-def digdag_inspect_arguments(callable_type, exclude_self, config):
+def digdag_inspect_arguments(callable_type, exclude_self, params):
     if callable_type == object.__init__:
         # object.__init__ accepts *varargs and **keywords but it throws exception
         return {}
@@ -112,11 +113,11 @@ def digdag_inspect_arguments(callable_type, exclude_self, config):
     for idx, key in enumerate(spec.args):
         if exclude_self and idx == 0:
             continue
-        if key in config:
-            args[key] = config[key]
+        if key in params:
+            args[key] = params[key]
         else:
             if spec.defaults is None or len(spec.defaults) < idx:
-                # this keyword is required but not in config. raising an error.
+                # this keyword is required but not in params. raising an error.
                 if hasattr(callable_type, '__qualname__'):
                     # Python 3
                     name = callable_type.__qualname__
@@ -128,28 +129,29 @@ def digdag_inspect_arguments(callable_type, exclude_self, config):
                 raise TypeError("Method '%s' requires parameter '%s' but not set" % (name, key))
     if spec.keywords:
         # above code was only for validation
-        return config
+        return params
     else:
         return args
 
 callable_type, method_name = digdag_inspect_command(command)
 
 if method_name:
-    init_args = digdag_inspect_arguments(callable_type.__init__, True, config)
+    init_args = digdag_inspect_arguments(callable_type.__init__, True, params)
     instance = callable_type(**init_args)
 
     method = getattr(instance, method_name)
-    method_args = digdag_inspect_arguments(method, True, config)
+    method_args = digdag_inspect_arguments(method, True, params)
     result = method(**method_args)
 
 else:
-    args = digdag_inspect_arguments(callable_type, False, config)
+    args = digdag_inspect_arguments(callable_type, False, params)
     result = callable_type(**args)
 
 out = {
     'subtask_config': digdag_env.subtask_config,
     'export_params': digdag_env.export_params,
-    'state_params': digdag_env.state_params,
+    'store_params': digdag_env.store_params,
+    #'state_params': digdag_env.state_params,  # only for retrying
 }
 
 with open(out_file, 'w') as f:

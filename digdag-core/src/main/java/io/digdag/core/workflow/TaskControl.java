@@ -10,7 +10,8 @@ import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
-import io.digdag.spi.TaskReport;
+import io.digdag.core.session.TaskStateFlags;
+import io.digdag.spi.TaskResult;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskConfig;
@@ -134,6 +135,11 @@ public class TaskControl
         return store.isAnyProgressibleChild(getId());
     }
 
+    public boolean isAnyErrorChild()
+    {
+        return store.isAnyErrorChild(getId());
+    }
+
     public List<Config> collectChildrenErrors()
     {
         return store.collectChildrenErrors(getId());
@@ -150,63 +156,63 @@ public class TaskControl
 
     public boolean setToCanceled()
     {
-        if (store.setState(getId(), state, TaskStateCode.CANCELED)) {
+        if (store.setDoneState(getId(), state, TaskStateCode.CANCELED)) {
             state = TaskStateCode.CANCELED;
             return true;
         }
         return false;
     }
 
-    // all necessary information is already set by setRunningToPlanned. Here simply set state to SUCCESS
+    // all necessary information is already set by setRunningToSuccessfulPlanned. Here simply set state to SUCCESS
     public boolean setPlannedToSuccess()
     {
-        if (store.setState(getId(), TaskStateCode.PLANNED, TaskStateCode.SUCCESS)) {
+        if (store.setDoneState(getId(), TaskStateCode.PLANNED, TaskStateCode.SUCCESS)) {
             state = TaskStateCode.SUCCESS;
             return true;
         }
         return false;
     }
 
-    public boolean setPlannedToError(Config stateParams, Config error)
+    public boolean setPlannedToError()
     {
-        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setDoneState(getId(), TaskStateCode.PLANNED, TaskStateCode.ERROR)) {
             state = TaskStateCode.ERROR;
             return true;
         }
         return false;
     }
 
-    public boolean setRunningToShortCircuitError(Config stateParams, Config error)
+    public boolean setRunningToShortCircuitError(Config error)
     {
-        if (store.setStateWithErrorDetails(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setDoneStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
         return false;
     }
 
-    public boolean setPlannedToPlanned(Config stateParams, Config error)
+    public boolean setPlannedToPlannedWithDelayedGroupError()
     {
-        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+        if (store.setPlannedStateWithDelayedError(getId(), TaskStateCode.PLANNED, TaskStateCode.PLANNED, TaskStateFlags.DELAYED_GROUP_ERROR, Optional.absent())) {
             state = TaskStateCode.PLANNED;
             return true;
         }
         return false;
     }
 
-    public boolean setPlannedToGroupError(Config stateParams, Config error)
+    public boolean setPlannedToGroupError()
     {
-        if (store.setStateWithErrorDetails(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_ERROR, stateParams, Optional.absent(), error)) {
+        if (store.setDoneState(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_ERROR)) {
             state = TaskStateCode.GROUP_ERROR;
             return true;
         }
         return false;
     }
 
-    // group retry
-    public boolean setPlannedToGroupRetry(Config stateParams, int retryInterval)
+    // to group retry (group retry is always without error)
+    public boolean setPlannedToGroupRetryWaiting(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
+        if (store.setRetryWaitingState(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, retryInterval, stateParams, Optional.absent())) {
             state = TaskStateCode.GROUP_RETRY_WAITING;
         }
         return false;
@@ -218,9 +224,9 @@ public class TaskControl
     //
 
     // to planned with successful report
-    public boolean setRunningToPlanned(Config stateParams, TaskReport report)
+    public boolean setRunningToPlannedSuccessful(TaskResult result)
     {
-        if (store.setStateWithSuccessDetails(getId(), state, TaskStateCode.PLANNED, stateParams, report)) {
+        if (store.setPlannedStateSuccessful(getId(), TaskStateCode.RUNNING, TaskStateCode.PLANNED, result)) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -229,9 +235,9 @@ public class TaskControl
     }
 
     // to planned with error
-    public boolean setRunningToPlanned(Config stateParams, Config error)
+    public boolean setRunningToPlannedWithDelayedError(Config error)
     {
-        if (store.setStateWithErrorDetails(getId(), state, TaskStateCode.PLANNED, stateParams, Optional.absent(), error)) {
+        if (store.setPlannedStateWithDelayedError(getId(), TaskStateCode.RUNNING, TaskStateCode.PLANNED, TaskStateFlags.DELAYED_ERROR, Optional.of(error))) {
             state = TaskStateCode.PLANNED;
             return true;
         }
@@ -239,9 +245,9 @@ public class TaskControl
     }
 
     // to retry with error
-    public boolean setRunningToRetry(Config stateParams, Config error, int retryInterval)
+    public boolean setRunningToRetryWaiting(Config stateParams, int retryInterval, Config error)
     {
-        if (store.setStateWithErrorDetails(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval), error)) {
+        if (store.setRetryWaitingState(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, retryInterval, stateParams, Optional.of(error))) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }
@@ -249,9 +255,9 @@ public class TaskControl
     }
 
     // to retry without error
-    public boolean setRunningToRetry(Config stateParams, int retryInterval)
+    public boolean setRunningToRetryWaiting(Config stateParams, int retryInterval)
     {
-        if (store.setStateWithStateParamsUpdate(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, stateParams, Optional.of(retryInterval))) {
+        if (store.setRetryWaitingState(getId(), TaskStateCode.RUNNING, TaskStateCode.RETRY_WAITING, retryInterval, stateParams, Optional.absent())) {
             state = TaskStateCode.RETRY_WAITING;
             return true;
         }
