@@ -49,4 +49,5 @@ Table of Contents
    command_reference.rst
    python_api.rst
    ruby_api.rst
+   releases.rst
 

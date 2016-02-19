@@ -8,7 +8,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.2.0'
+    version = '0.2.1'
 
     apply plugin: 'java'
 }
@@ -131,14 +131,6 @@ project(':digdag-cli') {
         into dest
     }
 
-    task versionFile << {
-        File f = file("src/main/resources/digdag/cli/version.txt")
-        if (f.text != rootProject.version) {
-            f.write(rootProject.version)
-        }
-    }
-    processResources.dependsOn("versionFile")
-
     //publishing {
     //    publications {
     //        shadowJar(MavenPublication) {
@@ -249,14 +241,14 @@ task releaseCheck << {
     if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
         throw new GradleException("Release note for ${project.version} doesn't exist")
     }
-    if (!file("digdag-docs/src/releases.rst").getText().contains("releases-${project.version}")) {
-        throw new GradleException("digdag-docs/src/releases.rst doesn't include releases-${project.version}")
+    if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
+        throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
     }
     String date = new Date().format("yyyy-MM-dd")
-    if (!file("digdag-docs/src/releases/releases-${project.version}.rst").getText().contains(date)) {
-        throw new GradleException("digdag-docs/src/releases/releases-${project.version}.rst doesn't include today's releases date")
+    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
+        throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
     }
-    // TODO check git-ls-files includes releases-<version>.rst file
-    println "Ready. Run 'releases' task."
+    // TODO check git-ls-files includes release-<version>.rst file
+    println "Ready. Run 'release' task."
 }
 
