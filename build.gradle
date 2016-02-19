@@ -216,3 +216,47 @@ task release() {
     }
 }
 
+task setVersion << {
+    if (!project.hasProperty("to")) {
+        throw new GradleException("Usage: ./gradlew setVersion -Pto=VERSION")
+    }
+
+    File gradle_ver = file('build.gradle')
+    gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}'", "version = '${to}'"))
+
+    List<String> docs = [
+        'README.md',
+        'digdag-cli/src/main/resources/digdag/cli/version.txt',
+        'digdag-cli/src/main/java/io/digdag/cli/Main.java',
+        'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
+        'digdag-docs/src/command_reference.rst',
+    ]
+    docs.each() { path ->
+        File doc = file(path)
+        doc.write(doc.getText().replaceAll("0\\.2\\.(\\d+)", "${to}"))
+    }
+
+    file("digdag-docs/src/releases/release-${to}.rst").append("")
+    "git add digdag-docs/src/releases/release-${to}.rst".execute().waitFor()
+
+    println "add 'release/release-${to}' line to digdag-docs/src/releases.rst"
+}
+
+task releaseCheck << {
+    if (!file("digdag-cli/src/main/resources/digdag/cli/version.txt").getText().contains("${project.version}")) {
+        throw new GradleException("digdag-cli/src/main/resources/digdag/cli/version.txt doesn't include ${project.version}")
+    }
+    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
+        throw new GradleException("Release note for ${project.version} doesn't exist")
+    }
+    if (!file("digdag-docs/src/releases.rst").getText().contains("releases-${project.version}")) {
+        throw new GradleException("digdag-docs/src/releases.rst doesn't include releases-${project.version}")
+    }
+    String date = new Date().format("yyyy-MM-dd")
+    if (!file("digdag-docs/src/releases/releases-${project.version}.rst").getText().contains(date)) {
+        throw new GradleException("digdag-docs/src/releases/releases-${project.version}.rst doesn't include today's releases date")
+    }
+    // TODO check git-ls-files includes releases-<version>.rst file
+    println "Ready. Run 'releases' task."
+}
+
