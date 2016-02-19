@@ -60,8 +60,6 @@ public class TdLoadTaskRunnerFactory
         @Override
         public TaskResult runTask()
         {
-            throw new UnsupportedOperationException("td-client doesn't support bulkload yet");
-            /*
             Config params = request.getConfig().getNestedOrGetEmpty("td")
                 .deepCopy()
                 .setAll(request.getConfig());
@@ -114,7 +112,6 @@ public class TdLoadTaskRunnerFactory
 
                 return TaskResult.empty(request.getConfig().getFactory());
             }
-            */
         }
     }
 }

@@ -152,6 +152,45 @@ TODO: add more description here
   * :command:`engine: presto`
 
 
+td_load>: Treasure Data bulk loading
+----------------------------------
+
+**td_load>:** task loads data from storages, databases, or services.
+
+TODO: add more description here
+
+.. code-block:: yaml
+
+    export:
+      td:
+        apikey: YOUR/API_KEY
+
+    +step1:
+      td_load>: config/connector1.yml
+      database: prod
+      table: raw
+
+:command:`td>: FILE.yml`
+  Path to a YAML template file. This configuration needs to be guessed using td command.
+
+  * :command:`td>: config/from_s3.sql`
+
+:command:`database: NAME`
+  Name of the database load data to.
+
+  * :command:`database: my_database`
+
+:command:`table: NAME`
+  Name of the table load data to.
+
+  * :command:`table: my_table`
+
+:command:`apikey: APIKEY`
+  API key.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+
 td_ddl>: Treasure Data operations
 ----------------------------------
 
