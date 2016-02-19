@@ -59,7 +59,11 @@ public class TaskConfig
     @JsonIgnore
     public Config getNonValidated()
     {
-        return local.deepCopy().set("export", export);
+        Config config = local.deepCopy();
+        if (!export.isEmpty()) {
+            config.set("export", export);
+        }
+        return config;
     }
 
     @JsonIgnore
