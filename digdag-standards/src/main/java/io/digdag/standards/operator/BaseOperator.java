@@ -43,7 +43,7 @@ public abstract class BaseOperator
     @Override
     public TaskResult run()
     {
-        RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), true);
+        RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
         try {
             try {
                 return runTask();

@@ -147,7 +147,6 @@ public class Run
         System.err.println("    -e, --show-params                show task parameters before running a task");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        //System.err.println("    -d, --dry-run                    dry run mode");
         Main.showCommonOptions();
         return systemExit(error);
     }

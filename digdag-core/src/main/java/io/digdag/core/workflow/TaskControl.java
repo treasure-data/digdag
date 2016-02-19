@@ -58,7 +58,7 @@ public class TaskControl
     {
         return addTasks(store, attemptId,
                 rootTaskId, tasks,
-                ImmutableList.of(), false, false);
+                ImmutableList.of(), false, true);
     }
 
     public long addSubtasks(WorkflowTaskList tasks,
