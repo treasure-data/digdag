@@ -64,6 +64,16 @@ Options:
 
   Example: -P params.yml
 
+:command:`-d, --dry-run`
+  Dry-run mode. This mode doesn't run tasks.
+
+  Example: -d
+
+:command:`-e, --show-params`
+  Show calculated parameters given to a task before running the task. Useful to use with dry-run mode.
+
+  Example: -de
+
 
 check
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -14,6 +14,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.stream.Collectors;
 import java.io.File;
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -79,10 +80,17 @@ public class Run
     @Parameter(names = {"-t", "--session-time"})
     String sessionTime = null;
 
+    @Parameter(names = {"-d", "--dry-run"})
+    boolean dryRun = false;
+
+    @Parameter(names = {"-e", "--show-params"})
+    boolean showParams = false;
+
+    @Parameter(names = {"-de"})
+    boolean dryRunAndShowParams = false;
+
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
-
-    // TODO dry run
 
     private boolean runAsImplicit = false;
 
@@ -98,6 +106,10 @@ public class Run
     public void main()
             throws Exception
     {
+        if (dryRunAndShowParams) {
+            dryRun = showParams = true;
+        }
+
         if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
             throw Main.usage(null);
         }
@@ -131,6 +143,8 @@ public class Run
         System.err.println("    -s, --status DIR                 use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
+        System.err.println("    -d, --dry-run                    don't run tasks. show tasks only");
+        System.err.println("    -e, --show-params                show task parameters");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         //System.err.println("    -d, --dry-run                    dry run mode");
@@ -298,6 +312,7 @@ public class Run
     {
         private final ConfigFactory cf;
         private final Run cmd;
+        private final YamlMapper yamlMapper;
 
         @Inject
         public TaskRunnerManagerWithSkip(
@@ -305,11 +320,12 @@ public class Run
                 TaskCallbackApi callback, ArchiveManager archiveManager,
                 ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
-                Run cmd)
+                Run cmd, YamlMapper yamlMapper)
         {
             super(config, agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
+            this.yamlMapper = yamlMapper;
         }
 
         @Override
@@ -327,6 +343,24 @@ public class Run
             }
             else {
                 super.run(request);
+            }
+        }
+
+        @Override
+        protected TaskResult callExecutor(Path archivePath, String type, TaskRequest mergedRequest)
+        {
+            if (cmd.showParams) {
+                StringBuilder sb = new StringBuilder();
+                for (String line : yamlMapper.toYaml(mergedRequest.getConfig()).split("\n")) {
+                    sb.append("  ").append(line).append("\n");
+                }
+                logger.warn("\n{}", sb.toString());
+            }
+            if (cmd.dryRun) {
+                return TaskResult.empty(cf);
+            }
+            else {
+                return super.callExecutor(archivePath, type, mergedRequest);
             }
         }
     }

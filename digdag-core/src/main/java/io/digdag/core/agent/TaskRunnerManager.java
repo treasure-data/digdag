@@ -175,13 +175,7 @@ public class TaskRunnerManager
                 logger.info("{}>: {}", type, command);
             }
 
-            TaskRunnerFactory factory = executorTypes.get(type);
-            if (factory == null) {
-                throw new ConfigException("Unknown task type: " + type);
-            }
-            TaskRunner executor = factory.newTaskExecutor(archivePath, mergedRequest);
-
-            TaskResult result = executor.run();
+            TaskResult result = callExecutor(archivePath, type, mergedRequest);
 
             callback.taskSucceeded(
                     taskId, request.getLockId(), agentId,
@@ -207,6 +201,17 @@ public class TaskRunnerManager
                         ex.getError().get());  // TODO is error set?
             }
         }
+    }
+
+    protected TaskResult callExecutor(Path archivePath, String type, TaskRequest mergedRequest)
+    {
+        TaskRunnerFactory factory = executorTypes.get(type);
+        if (factory == null) {
+            throw new ConfigException("Unknown task type: " + type);
+        }
+        TaskRunner executor = factory.newTaskExecutor(archivePath, mergedRequest);
+
+        return executor.run();
     }
 
     public static Config makeExceptionError(ConfigFactory cf, Exception ex)
