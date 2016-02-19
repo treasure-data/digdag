@@ -52,5 +52,5 @@ Next steps
 
 * `Scheduling workflow <scheduling_workflow.html>`_
 * `Detailed documents about workflow definition <workflow_definition.html>`_
-* `More choices of task types <task_types.html>`_
+* `More choices of operators <operators.html>`_
 

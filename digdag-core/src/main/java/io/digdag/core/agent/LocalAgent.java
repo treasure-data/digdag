@@ -18,12 +18,12 @@ public class LocalAgent
     private final AgentConfig config;
     private final AgentId agentId;
     private final TaskQueueClient queue;
-    private final TaskRunnerManager runner;
+    private final OperatorManager runner;
     private final ExecutorService executor;
     private volatile boolean stop = false;
 
     public LocalAgent(AgentConfig config, AgentId agentId,
-            TaskQueueClient queue, TaskRunnerManager runner)
+            TaskQueueClient queue, OperatorManager runner)
     {
         this.agentId = agentId;
         this.config = config;

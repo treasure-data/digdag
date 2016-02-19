@@ -10,7 +10,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TaskQueueFactory;
 import io.digdag.core.agent.AgentId;
@@ -18,11 +18,11 @@ import io.digdag.core.agent.AgentIdProvider;
 import io.digdag.core.agent.AgentConfig;
 import io.digdag.core.agent.AgentConfigProvider;
 import io.digdag.core.agent.LocalAgentManager;
-import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.OperatorManager;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.InProcessTaskCallbackApi;
-import io.digdag.core.agent.RequireTaskRunnerFactory;
+import io.digdag.core.agent.RequireOperatorFactory;
 import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.agent.CurrentDirectoryArchiveManager;
 import io.digdag.core.queue.TaskQueueManager;
@@ -133,7 +133,7 @@ public class DigdagEmbed
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
                     binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
                     binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskRunnerManager.class).in(Scopes.SINGLETON);
+                    binder.bind(OperatorManager.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
@@ -146,8 +146,8 @@ public class DigdagEmbed
                     Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
                     taskQueueBinder.addBinding().to(DatabaseTaskQueueFactory.class).in(Scopes.SINGLETON);
 
-                    Multibinder<TaskRunnerFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, TaskRunnerFactory.class);
-                    taskExecutorBinder.addBinding().to(RequireTaskRunnerFactory.class).in(Scopes.SINGLETON);
+                    Multibinder<OperatorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
+                    taskExecutorBinder.addBinding().to(RequireOperatorFactory.class).in(Scopes.SINGLETON);
                 },
                 new ExtensionServiceLoaderModule()
         );

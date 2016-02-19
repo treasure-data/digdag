@@ -14,23 +14,23 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskReport;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.session.SessionStateFlags;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 
-public class RequireTaskRunnerFactory
-        implements TaskRunnerFactory
+public class RequireOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(RequireTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(RequireOperatorFactory.class);
 
     private final TaskCallbackApi callback;
 
     @Inject
-    public RequireTaskRunnerFactory(TaskCallbackApi callback)
+    public RequireOperatorFactory(TaskCallbackApi callback)
     {
         this.callback = callback;
     }
@@ -41,19 +41,19 @@ public class RequireTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new RequireTaskRunner(callback, request);
+        return new RequireOperator(callback, request);
     }
 
-    private class RequireTaskRunner
-            implements TaskRunner
+    private class RequireOperator
+            implements Operator
     {
         private final TaskCallbackApi callback;
         private final TaskRequest request;
         private ConfigFactory cf;
 
-        public RequireTaskRunner(TaskCallbackApi callback, TaskRequest request)
+        public RequireOperator(TaskCallbackApi callback, TaskRequest request)
         {
             this.callback = callback;
             this.request = request;
@@ -69,7 +69,7 @@ public class RequireTaskRunnerFactory
                 isDone = runTask();
             }
             catch (RuntimeException ex) {
-                Config error = TaskRunnerManager.makeExceptionError(request.getConfig().getFactory(), ex);
+                Config error = OperatorManager.makeExceptionError(request.getConfig().getFactory(), ex);
                 boolean doRetry = retry.evaluate();
                 if (doRetry) {
                     throw new TaskExecutionException(ex, error,

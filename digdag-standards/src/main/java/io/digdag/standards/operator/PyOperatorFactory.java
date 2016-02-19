@@ -1,4 +1,4 @@
-package io.digdag.standards.task;
+package io.digdag.standards.operator;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,20 +23,20 @@ import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 
-public class RbTaskRunnerFactory
-        implements TaskRunnerFactory
+public class PyOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(RbTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(PyOperatorFactory.class);
 
     private final String runnerScript;
 
     {
         try (InputStreamReader reader = new InputStreamReader(
-                    RbTaskRunnerFactory.class.getResourceAsStream("/digdag/standards/rb/runner.rb"),
+                    PyOperatorFactory.class.getResourceAsStream("/digdag/standards/py/runner.py"),
                     StandardCharsets.UTF_8)) {
             runnerScript = CharStreams.toString(reader);
         }
@@ -49,7 +49,7 @@ public class RbTaskRunnerFactory
     private final ObjectMapper mapper;
 
     @Inject
-    public RbTaskRunnerFactory(CommandExecutor exec, ObjectMapper mapper)
+    public PyOperatorFactory(CommandExecutor exec, ObjectMapper mapper)
     {
         this.exec = exec;
         this.mapper = mapper;
@@ -57,19 +57,19 @@ public class RbTaskRunnerFactory
 
     public String getType()
     {
-        return "rb";
+        return "py";
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new RbTaskRunner(archivePath, request);
+        return new PyOperator(archivePath, request);
     }
 
-    private class RbTaskRunner
-            extends BaseTaskRunner
+    private class PyOperator
+            extends BaseOperator
     {
-        public RbTaskRunner(Path archivePath, TaskRequest request)
+        public PyOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }
@@ -77,7 +77,7 @@ public class RbTaskRunnerFactory
         @Override
         public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("rb")
+            Config config = request.getConfig().getNestedOrGetEmpty("py")
                 .deepCopy()
                 .setAll(request.getConfig());
 
@@ -102,8 +102,8 @@ public class RbTaskRunnerFactory
         private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
-            String inFile = archive.createTempFile("digdag-rb-in-", ".tmp");
-            String outFile = archive.createTempFile("digdag-rb-out-", ".tmp");
+            String inFile = archive.createTempFile("digdag-py-in-", ".tmp");
+            String outFile = archive.createTempFile("digdag-py-out-", ".tmp");
 
             String script;
             List<String> args;
@@ -118,8 +118,6 @@ public class RbTaskRunnerFactory
                 args = ImmutableList.of(inFile, outFile);
             }
 
-            Optional<String> feature = params.getOptional("require", String.class);
-
             try (OutputStream fo = archive.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
@@ -127,16 +125,11 @@ public class RbTaskRunnerFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-                cmdline.add("ruby");
-                cmdline.add("-I").add(archivePath.toString());
-                if (feature.isPresent()) {
-                    cmdline.add("-r").add(feature.get());
-                }
-                cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
-                cmdline.addAll(args);
-
-                ProcessBuilder pb = new ProcessBuilder(cmdline.build());
+                List<String> cmdline = ImmutableList.<String>builder()
+                    .add("python").add("-")  // script is fed from stdin
+                    .addAll(args)
+                    .build();
+                ProcessBuilder pb = new ProcessBuilder(cmdline);
                 pb.redirectErrorStream(true);
                 Process p = exec.start(archivePath, request, pb);
 
@@ -154,10 +147,10 @@ public class RbTaskRunnerFactory
                 message = buffer.toString();
             }
 
-            //logger.info("Ruby message ===\n{}", message);  // TODO include task name
+            //logger.info("Python message ===\n{}", message);  // TODO include task name
             System.out.println(message);
             if (ecode != 0) {
-                throw new RuntimeException("Ruby command failed: "+message);
+                throw new RuntimeException("Python command failed: "+message);
             }
 
             return mapper.readValue(archive.getFile(outFile), Config.class);

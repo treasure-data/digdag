@@ -33,9 +33,9 @@ import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.spi.*;
 
-public class TaskRunnerManager
+public class OperatorManager
 {
-    private static Logger logger = LoggerFactory.getLogger(TaskRunnerManager.class);
+    private static Logger logger = LoggerFactory.getLogger(OperatorManager.class);
 
     protected final AgentConfig config;
     protected final AgentId agentId;
@@ -45,16 +45,16 @@ public class TaskRunnerManager
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
-    private final Map<String, TaskRunnerFactory> executorTypes;
+    private final Map<String, OperatorFactory> executorTypes;
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, String> lockIdMap = new ConcurrentHashMap<>();
 
     @Inject
-    public TaskRunnerManager(AgentConfig config, AgentId agentId,
+    public OperatorManager(AgentConfig config, AgentId agentId,
             TaskCallbackApi callback, ArchiveManager archiveManager,
             ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
-            ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories)
+            ConfigEvalEngine evalEngine, Set<OperatorFactory> factories)
     {
         this.config = config;
         this.agentId = agentId;
@@ -65,8 +65,8 @@ public class TaskRunnerManager
         this.cf = cf;
         this.evalEngine = evalEngine;
 
-        ImmutableMap.Builder<String, TaskRunnerFactory> builder = ImmutableMap.builder();
-        for (TaskRunnerFactory factory : factories) {
+        ImmutableMap.Builder<String, OperatorFactory> builder = ImmutableMap.builder();
+        for (OperatorFactory factory : factories) {
             builder.put(factory.getType(), factory);
         }
         this.executorTypes = builder.build();
@@ -205,11 +205,11 @@ public class TaskRunnerManager
 
     protected TaskResult callExecutor(Path archivePath, String type, TaskRequest mergedRequest)
     {
-        TaskRunnerFactory factory = executorTypes.get(type);
+        OperatorFactory factory = executorTypes.get(type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
-        TaskRunner executor = factory.newTaskExecutor(archivePath, mergedRequest);
+        Operator executor = factory.newTaskExecutor(archivePath, mergedRequest);
 
         return executor.run();
     }

@@ -1,8 +1,8 @@
-package io.digdag.standards.task.td;
+package io.digdag.standards.operator.td;
 
 import java.io.Closeable;
 import io.digdag.client.config.Config;
-import io.digdag.standards.task.BaseTaskRunner;
+import io.digdag.standards.operator.BaseOperator;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;

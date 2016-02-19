@@ -1,4 +1,4 @@
-package io.digdag.standards.task.td;
+package io.digdag.standards.operator.td;
 
 import java.nio.file.Path;
 import java.io.IOException;
@@ -11,11 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
-import io.digdag.standards.task.BaseTaskRunner;
+import io.digdag.standards.operator.BaseOperator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import com.treasuredata.client.TDClient;
@@ -25,15 +25,15 @@ import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class TdLoadTaskRunnerFactory
-        implements TaskRunnerFactory
+public class TdLoadOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(TdLoadTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(TdLoadOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
 
     @Inject
-    public TdLoadTaskRunnerFactory(TemplateEngine templateEngine)
+    public TdLoadOperatorFactory(TemplateEngine templateEngine)
     {
         this.templateEngine = templateEngine;
     }
@@ -44,15 +44,15 @@ public class TdLoadTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new TdLoadTaskRunner(archivePath, request);
+        return new TdLoadOperator(archivePath, request);
     }
 
-    private class TdLoadTaskRunner
-            extends BaseTaskRunner
+    private class TdLoadOperator
+            extends BaseOperator
     {
-        public TdLoadTaskRunner(Path archivePath, TaskRequest request)
+        public TdLoadOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

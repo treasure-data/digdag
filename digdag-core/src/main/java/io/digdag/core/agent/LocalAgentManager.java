@@ -12,7 +12,7 @@ public class LocalAgentManager
     private final AgentConfig config;
     private final AgentId agentId;
     private final TaskQueueManager queueManager;
-    private final TaskRunnerManager taskRunnerManager;
+    private final OperatorManager operatorManager;
     private final ExecutorService executor;
 
     @Inject
@@ -20,12 +20,12 @@ public class LocalAgentManager
             AgentConfig config,
             AgentId agentId,
             TaskQueueManager queueManager,
-            TaskRunnerManager taskRunnerManager)
+            OperatorManager operatorManager)
     {
         this.config = config;
         this.agentId = agentId;
         this.queueManager = queueManager;
-        this.taskRunnerManager = taskRunnerManager;
+        this.operatorManager = operatorManager;
         this.executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -43,7 +43,7 @@ public class LocalAgentManager
                     config,
                     agentId,
                     queueManager.getInProcessTaskQueueClient(siteId),
-                    taskRunnerManager
+                    operatorManager
                 )
             );
     }

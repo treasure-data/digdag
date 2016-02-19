@@ -1,4 +1,4 @@
-package io.digdag.standards.task;
+package io.digdag.standards.operator;
 
 import java.util.List;
 import java.util.Properties;
@@ -18,22 +18,22 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 
-public class MailTaskRunnerFactory
-        implements TaskRunnerFactory
+public class MailOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(MailTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
 
     private final CommandExecutor exec;
 
     @Inject
-    public MailTaskRunnerFactory(CommandExecutor exec)
+    public MailOperatorFactory(CommandExecutor exec)
     {
         this.exec = exec;
     }
@@ -44,15 +44,15 @@ public class MailTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new MailTaskRunner(archivePath, request);
+        return new MailOperator(archivePath, request);
     }
 
-    private class MailTaskRunner
-            extends BaseTaskRunner
+    private class MailOperator
+            extends BaseOperator
     {
-        public MailTaskRunner(Path archivePath, TaskRequest request)
+        public MailOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

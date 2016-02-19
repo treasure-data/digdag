@@ -1,4 +1,4 @@
-package io.digdag.standards.task;
+package io.digdag.standards.operator;
 
 import java.util.List;
 import java.io.InputStream;
@@ -21,17 +21,17 @@ import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class EmbulkTaskRunnerFactory
-        implements TaskRunnerFactory
+public class EmbulkOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(EmbulkTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(EmbulkOperatorFactory.class);
 
     private final CommandExecutor exec;
     private final TemplateEngine templateEngine;
@@ -39,7 +39,7 @@ public class EmbulkTaskRunnerFactory
     private final YAMLFactory yaml;
 
     @Inject
-    public EmbulkTaskRunnerFactory(CommandExecutor exec, TemplateEngine templateEngine, ObjectMapper mapper)
+    public EmbulkOperatorFactory(CommandExecutor exec, TemplateEngine templateEngine, ObjectMapper mapper)
     {
         this.exec = exec;
         this.templateEngine = templateEngine;
@@ -54,15 +54,15 @@ public class EmbulkTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new EmbulkTaskRunner(archivePath, request);
+        return new EmbulkOperator(archivePath, request);
     }
 
-    private class EmbulkTaskRunner
-            extends BaseTaskRunner
+    private class EmbulkOperator
+            extends BaseOperator
     {
-        public EmbulkTaskRunner(Path archivePath, TaskRequest request)
+        public EmbulkOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

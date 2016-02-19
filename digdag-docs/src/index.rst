@@ -43,7 +43,7 @@ Table of Contents
    workflow_definition.rst
    scheduling_workflow.rst
    running_tasks_on_docker.rst
-   task_types.rst
+   operators.rst
    mastering_sessions.rst
    reciipes.rst
    command_reference.rst

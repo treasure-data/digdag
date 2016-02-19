@@ -41,10 +41,10 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 Key names starting with ``+`` sign is a task. Tasks run from the top to bottom in order. A task can be nested as a child of another task. In above example, ``+step2`` runs after ``+step1`` as a child of ``+main`` task.
 
-task types>
+operators>
 ----------------------------------
 
-A task with ``type>: command`` parameter executes an action. You can choose various kinds of operators such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Task types <task_types.html>`_ page for the list of built-in operators.
+A task with ``type>: command`` parameter executes an action. You can choose various kinds of operators such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Operators <operators.html>`_ page for the list of built-in operators.
 
 .. note::
 

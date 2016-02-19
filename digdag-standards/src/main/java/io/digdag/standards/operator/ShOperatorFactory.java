@@ -1,4 +1,4 @@
-package io.digdag.standards.task;
+package io.digdag.standards.operator;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -15,23 +15,23 @@ import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 
-public class ShTaskRunnerFactory
-        implements TaskRunnerFactory
+public class ShOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(ShTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(ShOperatorFactory.class);
 
     private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_]+");
 
     private final CommandExecutor exec;
 
     @Inject
-    public ShTaskRunnerFactory(CommandExecutor exec)
+    public ShOperatorFactory(CommandExecutor exec)
     {
         this.exec = exec;
     }
@@ -42,15 +42,15 @@ public class ShTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new ShTaskRunner(archivePath, request);
+        return new ShOperator(archivePath, request);
     }
 
-    private class ShTaskRunner
-            extends BaseTaskRunner
+    private class ShOperator
+            extends BaseOperator
     {
-        public ShTaskRunner(Path archivePath, TaskRequest request)
+        public ShOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

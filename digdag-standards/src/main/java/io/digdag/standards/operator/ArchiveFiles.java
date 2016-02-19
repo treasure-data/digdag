@@ -1,4 +1,4 @@
-package io.digdag.standards.task;
+package io.digdag.standards.operator;
 
 import java.util.List;
 import java.util.ArrayList;

@@ -23,7 +23,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.agent.RetryControl;
-import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.OperatorManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
@@ -745,10 +745,10 @@ public class WorkflowExecutor
                 params.setAll(attempt.getParams());
                 collectParams(params, task, attempt);
 
-                // create TaskRequest for TaskRunnerManager.
-                // TaskRunnerManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
+                // create TaskRequest for OperatorManager.
+                // OperatorManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
                 // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
-                // so that TaskRunnerManager can build it using the reloaded local config.
+                // so that OperatorManager can build it using the reloaded local config.
                 TaskRequest request = TaskRequest.builder()
                     .siteId(attempt.getSiteId())
                     .repositoryId(attempt.getSession().getRepositoryId())
@@ -796,7 +796,7 @@ public class WorkflowExecutor
                 logger.error("Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
-                        TaskRunnerManager.makeExceptionError(cf, ex));
+                        OperatorManager.makeExceptionError(cf, ex));
             }
         }).or(false);
     }

@@ -24,7 +24,6 @@ import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
-import io.digdag.standards.task.ArchiveFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;

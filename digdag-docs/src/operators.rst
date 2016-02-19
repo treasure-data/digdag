@@ -1,4 +1,4 @@
-Task types
+Operators
 ==================================
 
 .. contents::
@@ -8,7 +8,7 @@ Task types
 require>: Runs another workflow
 ----------------------------------
 
-**require>:** task runs another workflow. It's skipped if the workflow is already done successfully.
+**require>:** operator runs another workflow. It's skipped if the workflow is already done successfully.
 
 .. code-block:: yaml
 
@@ -26,7 +26,7 @@ require>: Runs another workflow
 py>: Python scripts
 ----------------------------------
 
-**py>:** task runs a Python script using ``python`` command.
+**py>:** operator runs a Python script using ``python`` command.
 TODO: link to `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
 
 .. code-block:: yaml
@@ -45,7 +45,7 @@ TODO: link to `Python API documents <ruby_api.html>`_ for details including vari
 rb>: Ruby scripts
 ----------------------------------
 
-**rb>:** task runs a Ruby script using ``ruby`` command.
+**rb>:** operator runs a Ruby script using ``ruby`` command.
 
 TODO: add more description here
 TODO: link to `Ruby API documents <python_api.html>`_ for details including best practices how to configure the workflow using ``export: require:``.
@@ -75,7 +75,7 @@ TODO: link to `Ruby API documents <python_api.html>`_ for details including best
 sh>: Shell scripts
 ----------------------------------
 
-**sh>:** task runs a shell script.
+**sh>:** operator runs a shell script.
 
 TODO: add more description here
 
@@ -95,7 +95,7 @@ TODO: add more description here
 td>: Treasure Data queries
 ----------------------------------
 
-**td>:** task runs a Hive or Presto query on Treasure Data.
+**td>:** operator runs a Hive or Presto query on Treasure Data.
 
 TODO: add more description here
 
@@ -155,7 +155,7 @@ TODO: add more description here
 td_load>: Treasure Data bulk loading
 ----------------------------------
 
-**td_load>:** task loads data from storages, databases, or services.
+**td_load>:** operator loads data from storages, databases, or services.
 
 TODO: add more description here
 
@@ -194,7 +194,7 @@ TODO: add more description here
 td_ddl>: Treasure Data operations
 ----------------------------------
 
-**type: td_ddl** task runs an operational task on Treasure Data.
+**type: td_ddl** operator runs an operational task on Treasure Data.
 
 TODO: add more description here
 
@@ -239,7 +239,7 @@ TODO: add more description here
 mail>: Sending email
 ----------------------------------
 
-**mail>:** task sends an email.
+**mail>:** operator sends an email.
 
 To use Gmail SMTP server, you need to do either of:
 
@@ -327,7 +327,7 @@ To use Gmail SMTP server, you need to do either of:
 embulk>: Embulk data transfer
 ----------------------------------
 
-**embulk>:** task runs `Embulk <http://www.embulk.org>`_ to transfer data across storages including local files.
+**embulk>:** operator runs `Embulk <http://www.embulk.org>`_ to transfer data across storages including local files.
 
 .. code-block:: yaml
 

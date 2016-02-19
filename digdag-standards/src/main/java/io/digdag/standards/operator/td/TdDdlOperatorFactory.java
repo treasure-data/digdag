@@ -1,4 +1,4 @@
-package io.digdag.standards.task.td;
+package io.digdag.standards.operator.td;
 
 import java.util.List;
 import java.nio.file.Path;
@@ -7,9 +7,9 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
-import io.digdag.standards.task.BaseTaskRunner;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.standards.operator.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -18,13 +18,13 @@ import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 
-public class TdDdlTaskRunnerFactory
-        implements TaskRunnerFactory
+public class TdDdlOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(TdDdlTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(TdDdlOperatorFactory.class);
 
     @Inject
-    public TdDdlTaskRunnerFactory()
+    public TdDdlOperatorFactory()
     { }
 
     public String getType()
@@ -33,15 +33,15 @@ public class TdDdlTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new TdDdlTaskRunner(archivePath, request);
+        return new TdDdlOperator(archivePath, request);
     }
 
-    private class TdDdlTaskRunner
-            extends BaseTaskRunner
+    private class TdDdlOperator
+            extends BaseOperator
     {
-        public TdDdlTaskRunner(Path archivePath, TaskRequest request)
+        public TdDdlOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

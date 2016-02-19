@@ -1,4 +1,4 @@
-package io.digdag.standards.task.td;
+package io.digdag.standards.operator.td;
 
 import java.io.InputStream;
 import java.io.IOException;

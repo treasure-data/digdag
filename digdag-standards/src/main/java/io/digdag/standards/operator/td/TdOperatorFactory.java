@@ -1,4 +1,4 @@
-package io.digdag.standards.task.td;
+package io.digdag.standards.operator.td;
 
 import java.util.List;
 import java.nio.file.Path;
@@ -10,11 +10,11 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunner;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
-import io.digdag.standards.task.BaseTaskRunner;
+import io.digdag.standards.operator.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -26,15 +26,15 @@ import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class TdTaskRunnerFactory
-        implements TaskRunnerFactory
+public class TdOperatorFactory
+        implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(TdTaskRunnerFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(TdOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
 
     @Inject
-    public TdTaskRunnerFactory(TemplateEngine templateEngine)
+    public TdOperatorFactory(TemplateEngine templateEngine)
     {
         this.templateEngine = templateEngine;
     }
@@ -45,15 +45,15 @@ public class TdTaskRunnerFactory
     }
 
     @Override
-    public TaskRunner newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
     {
-        return new TdTaskRunner(archivePath, request);
+        return new TdOperator(archivePath, request);
     }
 
-    private class TdTaskRunner
-            extends BaseTaskRunner
+    private class TdOperator
+            extends BaseOperator
     {
-        public TdTaskRunner(Path archivePath, TaskRequest request)
+        public TdOperator(Path archivePath, TaskRequest request)
         {
             super(archivePath, request);
         }

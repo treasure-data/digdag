@@ -38,7 +38,7 @@ import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.TaskStateCode;
-import io.digdag.core.agent.TaskRunnerManager;
+import io.digdag.core.agent.OperatorManager;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
@@ -50,7 +50,7 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRunnerFactory;
+import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -143,8 +143,8 @@ public class Run
         System.err.println("    -s, --status DIR                 use this directory to read and write session status");
         System.err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
-        System.err.println("    -d, --dry-run                    don't run tasks. show tasks only");
-        System.err.println("    -e, --show-params                show task parameters");
+        System.err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
+        System.err.println("    -e, --show-params                show task parameters before running a task");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         //System.err.println("    -d, --dry-run                    dry run mode");
@@ -161,10 +161,10 @@ public class Run
             .addModules(binder -> {
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                 binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
-                binder.bind(Run.class).toInstance(this);  // used by TaskRunnerManagerWithSkip
+                binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
             })
             .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
-                binder.bind(TaskRunnerManager.class).to(TaskRunnerManagerWithSkip.class).in(Scopes.SINGLETON);
+                binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
             })))
             .initialize()
             .getInjector();
@@ -307,19 +307,19 @@ public class Run
 
     private Function<String, TaskResult> skipTaskReports = (fullName) -> null;
 
-    public static class TaskRunnerManagerWithSkip
-            extends TaskRunnerManager
+    public static class OperatorManagerWithSkip
+            extends OperatorManager
     {
         private final ConfigFactory cf;
         private final Run cmd;
         private final YamlMapper yamlMapper;
 
         @Inject
-        public TaskRunnerManagerWithSkip(
+        public OperatorManagerWithSkip(
                 AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, ArchiveManager archiveManager,
                 ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
-                ConfigEvalEngine evalEngine, Set<TaskRunnerFactory> factories,
+                ConfigEvalEngine evalEngine, Set<OperatorFactory> factories,
                 Run cmd, YamlMapper yamlMapper)
         {
             super(config, agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
