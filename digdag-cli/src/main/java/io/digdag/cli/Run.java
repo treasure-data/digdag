@@ -264,10 +264,23 @@ public class Run
         if (!failedTasks.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("%n"));
-            sb.append(String.format("Task state is stored at %s directory.%n", resumeResultPath));
             for (ArchivedTask task : failedTasks) {
-                sb.append(String.format("  Task %s failed.%n", task.getFullName()));
+                sb.append(String.format("  * %s:%n", task.getFullName()));
+                String message = task.getError().get("message", String.class, "");
+                if (message.isEmpty()) {
+                    sb.append("    " + task.getError());
+                }
+                else {
+                    int i = message.indexOf("Exception: ");
+                    if (i > 0) {
+                        message = message.substring(i + "Exception: ".length());
+                    }
+                    sb.append("    " + message);
+                }
+                sb.append(String.format("%n"));
             }
+            sb.append(String.format("%n"));
+            sb.append(String.format("Task state is stored at %s directory.%n", resumeResultPath));
             sb.append(String.format("Run the workflow again using `-s %s` option to retry this workflow.",
                         resumeResultPath));
             throw systemExit(sb.toString());

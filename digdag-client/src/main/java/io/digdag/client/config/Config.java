@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.core.type.TypeReference;
+import static java.util.Locale.ENGLISH;
 
 public class Config
 {
@@ -170,25 +171,25 @@ public class Config
 
     public <E> E convert(Class<E> type)
     {
-        return readObject(type, object);
+        return readObject(type, object, null);
     }
 
     public <E> E get(String key, Class<E> type)
     {
         JsonNode value = object.get(key);
         if (value == null) {
-            throw new ConfigException("Parameter ''"+key+"'' is required but not set");
+            throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
-        return readObject(type, value);
+        return readObject(type, value, key);
     }
 
     public Object get(String key, JavaType type)
     {
         JsonNode value = object.get(key);
         if (value == null) {
-            throw new ConfigException("Parameter ''"+key+"'' is required but not set");
+            throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
-        return readObject(type, value);
+        return readObject(type, value, key);
     }
 
     @SuppressWarnings("unchecked")
@@ -203,7 +204,7 @@ public class Config
         if (value == null) {
             return defaultValue;
         }
-        return readObject(type, value);
+        return readObject(type, value, key);
     }
 
     public Object get(String key, JavaType type, Object defaultValue)
@@ -212,7 +213,7 @@ public class Config
         if (value == null) {
             return defaultValue;
         }
-        return readObject(type, value);
+        return readObject(type, value, key);
     }
 
     @SuppressWarnings("unchecked")
@@ -313,25 +314,94 @@ public class Config
         return new Config(mapper, (ObjectNode) value);
     }
 
-    private <E> E readObject(Class<E> type, JsonNode value)
+    private <E> E readObject(Class<E> type, JsonNode value, String key)
     {
         try {
             return mapper.readValue(value.traverse(), type);
         }
         catch (Exception ex) {
-            Throwables.propagateIfInstanceOf(ex, ConfigException.class);
-            throw new ConfigException(ex);
+            throw propagateConvertException(ex, typeNameOf(type), value, key);
         }
     }
 
-    private Object readObject(JavaType type, JsonNode value)
+    private Object readObject(JavaType type, JsonNode value, String key)
     {
         try {
             return mapper.readValue(value.traverse(), type);
         }
         catch (Exception ex) {
-            Throwables.propagateIfInstanceOf(ex, ConfigException.class);
-            throw new ConfigException(ex);
+            throw propagateConvertException(ex, typeNameOf(type), value, key);
+        }
+    }
+
+    private ConfigException propagateConvertException(Exception ex, String typeName, JsonNode value, String key)
+    {
+        Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+        String message = String.format(ENGLISH, "Expected %s for key '%s' but got %s (%s)",
+                typeName, key, jsonSample(value), typeNameOf(value));
+        return new ConfigException(message, ex);
+    }
+
+    private static String typeNameOf(Class<?> type)
+    {
+        if (type.equals(String.class)) {
+            return "string type";
+        }
+        else if (type.equals(int.class) || type.equals(Integer.class)) {
+            return "integer (int) type";
+        }
+        else if (type.equals(long.class) || type.equals(Long.class)) {
+            return "integer (long) type";
+        }
+        else if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+            return "'true' or 'false'";
+        }
+        return type.toString();
+    }
+
+    private static String typeNameOf(JavaType type)
+    {
+        if (List.class.isAssignableFrom(type.getRawClass())) {
+            return "array type";
+        }
+        else if (Map.class.isAssignableFrom(type.getRawClass())) {
+            return "object type";
+        }
+        return type.toString();
+    }
+
+    private static String typeNameOf(JsonNode value)
+    {
+        switch (value.getNodeType()) {
+        case NULL:
+            return "null";
+        case BOOLEAN:
+            return "boolean";
+        case NUMBER:
+            return "number";
+        case ARRAY:
+            return "array";
+        case OBJECT:
+            return "object";
+        case STRING:
+            return "string";
+        case BINARY:
+            return "binary";
+        case POJO:
+        case MISSING:
+        default:
+            return value.getNodeType().toString();
+        }
+    }
+
+    private String jsonSample(JsonNode value)
+    {
+        String json = value.toString();
+        if (json.length() < 100) {
+            return json;
+        }
+        else {
+            return json.substring(0, 97) + "...";
         }
     }
 
