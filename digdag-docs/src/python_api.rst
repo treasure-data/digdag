@@ -28,17 +28,17 @@ tasks/__init__.py:
       def step2(self):
         print("step2")
 
-Exporting variables
+Defining variables
 ----------------------------------
 
 .. code-block:: python
 
     class MyWorkflow(object):
       def step1(self):
-        digdag.env.export({'my_value': 1})
+        digdag.env.store({'my_value': 1})
 
       def step2(self):
-        print("step2: %s" % digdag.env.config["my_value"])
+        print("step2: %s" % digdag.env.params["my_value"])
 
 Method argument mapping
 ----------------------------------
@@ -47,7 +47,7 @@ Method argument mapping
 
     class MyWorkflow(object):
       def step1(self, session_time):
-        digdag.env.export({'my_value': 1})
+        digdag.env.store({'my_value': 1})
 
       def step2(self, my_value="default"):
         print("step2: %s" % my_value)

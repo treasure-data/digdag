@@ -35,18 +35,18 @@ tasks/my_workflow.rb:
       end
     end
 
-Exporting variables
+Defining variables
 ----------------------------------
 
 .. code-block:: ruby
 
     class MyWorkflow
       def step1
-        Digdag.env.export_params(my_value: 1)
+        Digdag.env.store(my_value: 1)
       end
 
       def step2
-        puts "step2: %s" % Digdag.env.config['my_value']
+        puts "step2: %s" % Digdag.env.params['my_value']
       end
     end
 
@@ -57,7 +57,7 @@ Method argument mapping
 
     class MyWorkflow
       def step1
-        Digdag.env.export_params(my_value: 1)
+        Digdag.env.store(my_value: 1)
       end
 
       def step2(my_value: "default")

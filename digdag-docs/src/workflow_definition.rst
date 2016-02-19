@@ -103,9 +103,9 @@ You can define variables in 3 ways:
 Using export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In a YAML file, ``export:`` directive defines variables and following tasks of it can use the variables. This is useful to load static configurations such as host name of a database.
+In a YAML file, ``export:`` directive defines variables. This is useful to load static configurations such as host name of a database.
 
-With following example, task +step3 can use ``foo=1`` and ``bar=2``, and all tasks can use ``foo=1``.
+If a task has ``export`` directive, the task and its children can use the variables because it defines variables in a scope. With following example, all tasks can use ``foo=1`` but only +step1 (and +analyze) can use ``bar=2``.
 
 .. code-block:: yaml
 
@@ -113,32 +113,38 @@ With following example, task +step3 can use ``foo=1`` and ``bar=2``, and all tas
       foo: 1
 
     +workflow1:
-      +step1:
-        py>: tasks.MyWorkflow.step1
+      +prepare:
+        py>: tasks.MyWorkflow.prepare
 
-      +step2:
-        py>: tasks.MyWorkflow.step2
+      +analyze:
         export:
           bar: 2
 
-      +step3:
-        py>: tasks.MyWorkflow.step3
+        +step1:
+          py>: tasks.MyWorkflow.analyze_step1
+
+      +dump:
+        py>: tasks.MyWorkflow.dump
 
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can set variables programmably using language API. For exampe, Python API provides ``digdag.env.export_params``:
+You can set variables programmably using language API. For exampe, Python API provides ``digdag.env.export`` and ``digdag.env.store``:
 
 .. code-block:: python
 
     import digdag
 
     class MyWorkflow(object):
-      def step2(self):
-        digdag.env.export_params["my_param"] = 2
+      def prepare(self):
+        digdag.env.store({"my_param": 2})
 
-      def step3(self, my_var):
+      def analyze(self, my_var):
         print("my_var should be 2: %d" % my_var)
+
+``digdag.env.store(dict)`` stores variables so that all folling tasks (including tasks which are not children of the task) can use them.
+
+``digdag.env.export(dict)`` is same with "export" directive in YAML file. It defines variables for their children.
 
 See language API documents for details:
 
