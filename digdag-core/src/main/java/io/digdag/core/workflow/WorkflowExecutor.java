@@ -161,7 +161,7 @@ public class WorkflowExecutor
             WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern)
         throws SessionAttemptConflictException, NoMatchException, MultipleTaskMatchException
     {
-        Workflow workflow = compiler.compile(def.getName(), def.getConfig());
+        Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList sourceTasks = workflow.getTasks();
 
         int fromIndex = subtaskMatchPattern.findIndex(sourceTasks);  // this may return 0
@@ -183,7 +183,7 @@ public class WorkflowExecutor
             WorkflowDefinition def)
         throws SessionAttemptConflictException
     {
-        Workflow workflow = compiler.compile(def.getName(), def.getConfig());
+        Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
 
         logger.debug("Checking a session of workflow '{}' ({}) with session parameters: {}",
@@ -199,10 +199,10 @@ public class WorkflowExecutor
         throws SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
-            logger.trace("  Step["+task.getIndex()+"]: "+task.getName());
-            logger.trace("    parent: "+task.getParentIndex().transform(it -> Integer.toString(it)).or("(root)"));
-            logger.trace("    upstreams: "+task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
-            logger.trace("    config: "+task.getConfig());
+            logger.trace("  Step[{}]: {}", task.getIndex(), task.getName());
+            logger.trace("    parent: {}", task.getParentIndex().transform(it -> Integer.toString(it)).or("(root)"));
+            logger.trace("    upstreams: {}", task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
+            logger.trace("    config: {}", task.getConfig());
         }
 
         int repoId = ar.getStored().getRepositoryId();
@@ -221,9 +221,10 @@ public class WorkflowExecutor
             final WorkflowTask root = tasks.get(0);
             stored = sm
                 .getSessionStore(siteId)
+                // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
                 .putAndLockSession(session, (store, storedSession) -> {
                     StoredSessionAttempt storedAttempt;
-                    storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException:
+                    storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException
 
                     logger.info("Starting a new session repository id={} workflow name={} session_time={}",
                             repoId, ar.getWorkflowName(), ar.getSessionTime());
@@ -235,14 +236,17 @@ public class WorkflowExecutor
                         .taskType(root.getTaskType())
                         .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
                         .build();
-                    store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTask) -> {
-                        new TaskControl(taskStore, storedTask).addTasksExceptingRootTask(tasks);
+                    store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
+                        TaskControl.addTasksExceptingRootTask(taskStore, storedAttempt.getId(),
+                                storedTaskId, tasks);
                         return null;
                     });
-                    for (SessionMonitor monitor : ar.getSessionMonitors()) {
-                        logger.debug("Using session monitor: {}", monitor);
+                    if (!ar.getSessionMonitors().isEmpty()) {
+                        for (SessionMonitor monitor : ar.getSessionMonitors()) {
+                            logger.debug("Using session monitor: {}", monitor);
+                        }
+                        store.insertMonitors(storedAttempt.getId(), ar.getSessionMonitors());
                     }
-                    store.insertMonitors(storedAttempt.getId(), ar.getSessionMonitors());
                     return storedAttempt;
                 });
         }
@@ -264,7 +268,16 @@ public class WorkflowExecutor
             }
         }
 
-        noticeStatusPropagate();  // TODO is this necessary?
+        try {
+            // this is an optimization to dispatch tasks to a queue quickly.
+            enqueueTask(dispatcher, stored.getId());
+        }
+        catch (Exception ex) {
+            // fakkback to the normal operation.
+            // exception of the optimization shouldn't be propagated to
+            // the caller. asyncEnqueueTask will get the same error later.
+            noticeStatusPropagate();
+        }
 
         return StoredSessionAttemptWithSession.of(siteId, session, stored);
     }
@@ -318,9 +331,9 @@ public class WorkflowExecutor
             Instant date = sm.getStoreTime();
             propagateAllBlockedToReady();
             retryRetryWaitingTasks();
-            propagateAllPlannedToDone();
             propagateSessionArchive();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
+            propagateAllPlannedToDone();
 
             IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             int waitMsec = INITIAL_INTERVAL;
@@ -331,25 +344,28 @@ public class WorkflowExecutor
                 //    enqueueReadyTasks(queuer);
                 //    propagatorNotice = true;
                 //}
+
                 propagateAllBlockedToReady();
                 retryRetryWaitingTasks();
-                propagateAllPlannedToDone();
                 propagateSessionArchive();
                 enqueueReadyTasks(queuer);
+                boolean someDone = propagateAllPlannedToDone();
 
-                propagatorLock.lock();
-                try {
-                    if (propagatorNotice) {
-                        propagatorNotice = false;
-                        waitMsec = INITIAL_INTERVAL;
+                if (!someDone) {
+                    propagatorLock.lock();
+                    try {
+                        if (propagatorNotice) {
+                            propagatorNotice = false;
+                            waitMsec = INITIAL_INTERVAL;
+                        }
+                        else {
+                            propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
+                            waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                        }
                     }
-                    else {
-                        propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
-                        waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                    finally {
+                        propagatorLock.unlock();
                     }
-                }
-                finally {
-                    propagatorLock.unlock();
                 }
             }
         }
@@ -464,14 +480,14 @@ public class WorkflowExecutor
             RetryControl retryControl = RetryControl.prepare(task.getConfig(), task.getStateParams(), false);  // don't retry by default
 
             boolean willRetry = retryControl.evaluate();
-            Optional<StoredTask> errorTask;
+            Optional<Long> errorTaskId;
             if (!willRetry) {
-                errorTask = addErrorTasksIfAny(lockedTask,
+                errorTaskId = addErrorTasksIfAny(lockedTask,
                         true,
                         () -> buildPropagatedError(lockedTask.get()));
             }
             else {
-                errorTask = Optional.absent();
+                errorTaskId = Optional.absent();
             }
             boolean updated;
             if (willRetry) {
@@ -480,7 +496,7 @@ public class WorkflowExecutor
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
             }
-            else if (errorTask.isPresent()) {
+            else if (errorTaskId.isPresent()) {
                 // don't set GROUP_ERROR but set DELAYED_GROUP_ERROR. Delay until next setDoneFromDoneChildren call
                 updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();  // TODO set flag
             }
@@ -684,7 +700,8 @@ public class WorkflowExecutor
     private void enqueueReadyTasks(TaskQueuer queuer)
     {
         for (long taskId : sm.findAllReadyTaskIds(100)) {  // TODO randomize this resut to achieve concurrency
-            queuer.asyncEnqueueTask(taskId);
+            enqueueTask(dispatcher, taskId);
+            //queuer.asyncEnqueueTask(taskId);  // TODO async queuing is probably unnecessary but not sure
         }
     }
 
@@ -836,9 +853,9 @@ public class WorkflowExecutor
         }
 
         // task failed. add :error tasks
-        Optional<StoredTask> errorTask = addErrorTasksIfAny(lockedTask, false, () -> error);
+        Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, () -> error);
         boolean updated;
-        if (errorTask.isPresent()) {
+        if (errorTaskId.isPresent()) {
             logger.trace("Added an error task");
             // transition from planned to error is delayed until setDoneFromDoneChildren
             updated = lockedTask.setRunningToPlannedWithDelayedError(error);
@@ -872,8 +889,8 @@ public class WorkflowExecutor
         }
 
         // task successfully finished. add :sub and :check tasks
-        Optional<StoredTask> subtaskRoot = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
-        addCheckTasksIfAny(lockedTask, subtaskRoot);
+        Optional<Long> rootSubtaskId = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
+        addCheckTasksIfAny(lockedTask, rootSubtaskId);
         boolean updated = lockedTask.setRunningToPlannedSuccessful(result);
 
         noticeStatusPropagate();
@@ -943,7 +960,7 @@ public class WorkflowExecutor
         params.setAll(task.getConfig().getExport());
     }
 
-    private Optional<StoredTask> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)
+    private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)
     {
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
@@ -955,11 +972,11 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sub tasks: {}"+tasks);
-        StoredTask task = lockedTask.addSubtasks(tasks, ImmutableList.of(), true);
-        return Optional.of(task);
+        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), true);
+        return Optional.of(rootTaskId);
     }
 
-    private Optional<StoredTask> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Supplier<Config> errorBuilder)
+    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Supplier<Config> errorBuilder)
     {
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
@@ -976,11 +993,11 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding error tasks: {}", tasks);
-        StoredTask added = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
-        return Optional.of(added);
+        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
+        return Optional.of(rootTaskId);
     }
 
-    private Optional<StoredTask> addCheckTasksIfAny(TaskControl lockedTask, Optional<StoredTask> upstreamTask)
+    private Optional<Long> addCheckTasksIfAny(TaskControl lockedTask, Optional<Long> upstreamTaskId)
     {
         Config subtaskConfig = lockedTask.get().getConfig().getCheckConfig();
         if (subtaskConfig.isEmpty()) {
@@ -993,11 +1010,12 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding check tasks: {}"+tasks);
-        StoredTask added = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
-        return Optional.of(added);
+        List<Long> upstreamTaskIdList = upstreamTaskId.transform(id -> ImmutableList.of(id)).or(ImmutableList.of());
+        long rootTaskId = lockedTask.addSubtasks(tasks, upstreamTaskIdList, false);
+        return Optional.of(rootTaskId);
     }
 
-    public Optional<StoredTask> addMonitorTask(TaskControl lockedTask, String type, Config taskConfig)
+    public Optional<Long> addMonitorTask(TaskControl lockedTask, String type, Config taskConfig)
     {
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":" + type, taskConfig);
         if (tasks.isEmpty()) {
@@ -1005,7 +1023,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding {} tasks: {}", type, tasks);
-        StoredTask added = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
-        return Optional.of(added);
+        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
+        return Optional.of(rootTaskId);
     }
 }

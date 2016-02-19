@@ -960,14 +960,7 @@ public class DatabaseSessionStoreManager
             long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
-            StoredTask stored;
-            try {
-                stored = DatabaseSessionStoreManager.this.getTaskById(handle, taskId);
-            }
-            catch (ResourceNotFoundException ex) {
-                throw new IllegalStateException("Database state error", ex);
-            }
-            return func.call(new DatabaseTaskControlStore(handle), stored);
+            return func.call(new DatabaseTaskControlStore(handle), taskId);
         }
 
         @Override
@@ -1153,10 +1146,12 @@ public class DatabaseSessionStoreManager
         long insertTask(@Bind("attemptId") long attemptId, @Bind("parentId") Long parentId,
                 @Bind("taskType") int taskType, @Bind("state") short state);
 
+        // TODO this should be optimized out by using TRIGGER that runs when a task is inserted
         @SqlUpdate("insert into task_details (id, full_name, local_config, export_config)" +
                 " values (:id, :fullName, :localConfig, :exportConfig)")
         void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("localConfig") Config localConfig, @Bind("exportConfig") Config exportConfig);
 
+        // TODO this should be optimized out by using TRIGGER that runs when a task is inserted
         @SqlUpdate("insert into task_state_details (id)" +
                 " values (:id)")
         void insertEmptyTaskStateDetails(@Bind("id") long id);

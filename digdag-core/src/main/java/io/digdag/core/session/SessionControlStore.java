@@ -18,7 +18,7 @@ public interface SessionControlStore
 
     interface SessionBuilderAction <T>
     {
-        T call(TaskControlStore store, StoredTask task);
+        T call(TaskControlStore store, long rootTaskId);
     }
 
     <T> T insertRootTask(long attemptId, Task task, SessionBuilderAction<T> func);
