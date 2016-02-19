@@ -87,7 +87,6 @@ public class SlaCalculator
                 result = result.plus(1, ChronoUnit.DAYS);
             }
 
-            System.out.println("will trigger SLA at :" + result);
             return result;
         }
     }

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.time.ZoneId;
 import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
@@ -484,7 +484,7 @@ public class WorkflowExecutor
             if (!willRetry) {
                 errorTaskId = addErrorTasksIfAny(lockedTask,
                         true,
-                        () -> buildPropagatedError(lockedTask.get()));
+                        (export) -> buildPropagatedParams(export, lockedTask.get()));
             }
             else {
                 errorTaskId = Optional.absent();
@@ -517,21 +517,33 @@ public class WorkflowExecutor
         }
     }
 
-    private Config buildPropagatedError(StoredTask task)
+    private Config buildPropagatedParams(Config export, StoredTask task)
     {
         List<Long> childrenFromThis;
         {
             TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
             childrenFromThis = tree.getRecursiveChildrenIdList(task.getId());
         }
-        List<Config> childrenErrors = sm.getErrors(childrenFromThis);
 
         Config error = cf.create();
-        for (Config childError : childrenErrors) {
-            error.setAll(childError);  // TODO merge?
+        {
+            List<Config> childrenErrors = sm.getErrors(childrenFromThis);
+            for (Config childError : childrenErrors) {
+                error.setAll(childError);  // TODO merge?
+            }
         }
 
-        return error;
+        Config storeParams = cf.create();
+        {
+            List<Config> childrenStoreParams = sm.getStoreParams(childrenFromThis);
+            for (Config childStoreParams : childrenStoreParams) {
+                storeParams.setAll(childStoreParams);  // TODO merge?
+            }
+        }
+
+        return export
+            .setAll(storeParams)
+            .set("error", error);
     }
 
     private boolean propagateSessionArchive()
@@ -853,7 +865,7 @@ public class WorkflowExecutor
         }
 
         // task failed. add :error tasks
-        Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, () -> error);
+        Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
         boolean updated;
         if (errorTaskId.isPresent()) {
             logger.trace("Added an error task");
@@ -976,7 +988,7 @@ public class WorkflowExecutor
         return Optional.of(rootTaskId);
     }
 
-    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Supplier<Config> errorBuilder)
+    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
     {
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
@@ -985,7 +997,7 @@ public class WorkflowExecutor
 
         // modify export params
         Config export = subtaskConfig.getNestedOrSetEmpty("export");
-        export.set("error", errorBuilder.get());
+        export = errorBuilder.apply(export);
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":error", subtaskConfig);
         if (tasks.isEmpty()) {
