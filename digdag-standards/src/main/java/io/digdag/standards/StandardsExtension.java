@@ -22,6 +22,7 @@ import io.digdag.standards.task.ShTaskRunnerFactory;
 import io.digdag.standards.task.MailTaskRunnerFactory;
 import io.digdag.standards.task.EmbulkTaskRunnerFactory;
 import io.digdag.standards.task.td.TdTaskRunnerFactory;
+import io.digdag.standards.task.td.TdLoadTaskRunnerFactory;
 import io.digdag.standards.task.td.TdDdlTaskRunnerFactory;
 import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.command.DockerCommandExecutor;
@@ -50,6 +51,7 @@ public class StandardsExtension
             taskExecutorBinder.addBinding().to(MailTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(EmbulkTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdTaskRunnerFactory.class).in(Scopes.SINGLETON);
+            taskExecutorBinder.addBinding().to(TdLoadTaskRunnerFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdDdlTaskRunnerFactory.class).in(Scopes.SINGLETON);
 
             Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);

@@ -4,7 +4,6 @@ import java.io.Closeable;
 import io.digdag.client.config.Config;
 import io.digdag.standards.task.BaseTaskRunner;
 import com.treasuredata.client.TDClient;
-import com.treasuredata.client.TDClientBuilder;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
@@ -16,12 +15,13 @@ public class TDOperation
     {
         String database = config.get("database", String.class);
 
-        TDClientBuilder builder = new TDClientBuilder(false);
-        builder.setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"));
-        builder.setUseSSL(config.get("use_ssl", boolean.class, true));
-        builder.setApiKey(config.get("apikey", String.class));
+        TDClient client = TDClient.newBuilder()
+            .setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"))
+            .setUseSSL(config.get("use_ssl", boolean.class, true))
+            .setApiKey(config.get("apikey", String.class))
+            .build();
 
-        return new TDOperation(builder.build(), database);
+        return new TDOperation(client, database);
     }
 
     private final TDClient client;
