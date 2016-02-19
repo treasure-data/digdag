@@ -186,7 +186,7 @@ public class TdOperatorFactory
                     .getNestedOrSetEmpty("td")
                     .set("last_job_id", q.getJobId());
 
-                return TaskResult.builder()
+                return TaskResult.defaultBuilder(request)
                     .exportParams(exportParams)
                     .storeParams(storeParams)
                     .build();

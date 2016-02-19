@@ -24,17 +24,25 @@ public abstract class TaskResult
 
     public static ImmutableTaskResult.Builder builder()
     {
-        return ImmutableTaskResult.builder()
-            .report(TaskReport.empty());
+        return ImmutableTaskResult.builder();
     }
 
-    public static TaskResult empty(ConfigFactory cf)
+    public static ImmutableTaskResult.Builder defaultBuilder(TaskRequest request)
+    {
+        return defaultBuilder(request.getConfig().getFactory());
+    }
+
+    public static ImmutableTaskResult.Builder defaultBuilder(ConfigFactory cf)
     {
         return builder()
             .subtaskConfig(cf.create())
             .exportParams(cf.create())
             .storeParams(cf.create())
-            .report(TaskReport.empty())
-            .build();
+            .report(TaskReport.empty());
+    }
+
+    public static TaskResult empty(ConfigFactory cf)
+    {
+        return defaultBuilder(cf).build();
     }
 }

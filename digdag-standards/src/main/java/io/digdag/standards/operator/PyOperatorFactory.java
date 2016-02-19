@@ -92,7 +92,7 @@ public class PyOperatorFactory
                 throw Throwables.propagate(ex);
             }
 
-            return TaskResult.builder()
+            return TaskResult.defaultBuilder(request)
                 .subtaskConfig(data.getNestedOrGetEmpty("subtask_config"))
                 .exportParams(data.getNestedOrGetEmpty("export_params"))
                 .storeParams(data.getNestedOrGetEmpty("store_params"))

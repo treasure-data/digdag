@@ -60,6 +60,8 @@ public class SelfUpdate
     public void selfUpdate(String version)
         throws IOException, URISyntaxException, InterruptedException
     {
+        Path dest = Paths.get(Command.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+
         Client client = new ResteasyClientBuilder()
             .build();
 
@@ -111,7 +113,6 @@ public class SelfUpdate
         System.out.println("Verifying...");
         verify(path, version);
 
-        Path dest = Paths.get(Command.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         Files.move(path, dest, REPLACE_EXISTING);
 
         System.out.println("Upgraded to " + version);

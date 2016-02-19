@@ -104,7 +104,7 @@ import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
  *         : GROUP_ERROR
  *       (if a child with ERROR or GROUP_ERROR state exists):
  *         (if retry option is set) lockedTask.setPlannedToGroupRetryWaiting:
- *           : GROUP_RETRY_WAITING
+ *           : GROUP_RETRY_WAITING  // TODO this state needs to re-submit child tasks with BLOCKED state
  *         (if error task exists) lockedTask.setPlannedToPlannedWithDelayedGroupError
  *           : PLANNED with DELAYED_GROUP_ERROR flag
  *         lockedTask.setPlannedToGroupError
