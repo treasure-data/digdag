@@ -199,8 +199,8 @@ public class SessionResource
                 ScheduleTime.runNow(request.getSessionTime()));
 
         try {
-            StoredSessionAttempt stored = executor.submitWorkflow(getSiteId(), ar, def);
-            RestSession res = RestModels.session(stored, ar, repo.getName());
+            StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);
+            RestSession res = RestModels.session(attempt, repo.getName());
             return Response.ok(res).build();
         }
         catch (SessionAttemptConflictException ex) {

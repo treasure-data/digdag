@@ -100,6 +100,7 @@ public class Start
 
         ln("Started a session:");
         ln("  id: %d", session.getId());
+        ln("  uuid: %s", session.getSessionUuid());
         ln("  repository: %s", session.getRepository().getName());
         ln("  workflow: %s", session.getWorkflowName());
         ln("  session time: %s", formatTime(session.getSessionTime()));

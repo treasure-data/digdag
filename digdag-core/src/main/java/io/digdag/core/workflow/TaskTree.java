@@ -148,6 +148,16 @@ public class TaskTree
         this.map = buildTree(rels);
     }
 
+    public long getRootTaskId()
+    {
+        for (Node node : map.values()) {
+            if (!node.getParent().isPresent()) {
+                return node.getId();
+            }
+        }
+        throw new IllegalStateException("Root task doesn't exist in an attempt: "+map.values());
+    }
+
     public Node getNode(long id)
     {
         return Preconditions.checkNotNull(map.get(id));

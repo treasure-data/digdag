@@ -1,5 +1,6 @@
 package io.digdag.spi;
 
+import java.util.UUID;
 import java.time.Instant;
 import java.time.ZoneId;
 import org.immutables.value.Value;
@@ -25,7 +26,7 @@ public abstract class TaskRequest
 
     public abstract long getAttemptId();
 
-    //public abstract long getSessionId();
+    public abstract long getSessionId();
 
     public abstract Optional<String> getRetryAttemptName();
 
@@ -38,6 +39,8 @@ public abstract class TaskRequest
     public abstract int getPriority();
 
     public abstract ZoneId getTimeZone();
+
+    public abstract UUID getSessionUuid();
 
     public abstract Instant getSessionTime();
 

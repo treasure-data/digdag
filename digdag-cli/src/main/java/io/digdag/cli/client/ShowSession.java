@@ -75,6 +75,7 @@ public class ShowSession
                 status = "running";
             }
             ln("  id: %d", session.getId());
+            ln("  uuid: %s", session.getSessionUuid());
             ln("  repository: %s", session.getRepository().getName());
             ln("  workflow: %s", session.getWorkflowName());
             ln("  session time: %s", formatTime(session.getSessionTime()));

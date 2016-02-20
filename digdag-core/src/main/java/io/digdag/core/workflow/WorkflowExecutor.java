@@ -216,7 +216,7 @@ public class WorkflowExecutor
 
         TaskConfig.validateAttempt(attempt);
 
-        StoredSessionAttempt stored;
+        StoredSessionAttemptWithSession stored;
         try {
             final WorkflowTask root = tasks.get(0);
             stored = sm
@@ -247,7 +247,7 @@ public class WorkflowExecutor
                         }
                         store.insertMonitors(storedAttempt.getId(), ar.getSessionMonitors());
                     }
-                    return storedAttempt;
+                    return StoredSessionAttemptWithSession.of(siteId, storedSession, storedAttempt);
                 });
         }
         catch (ResourceConflictException sessionAlreadyExists) {
@@ -279,7 +279,7 @@ public class WorkflowExecutor
             noticeStatusPropagate();
         }
 
-        return StoredSessionAttemptWithSession.of(siteId, session, stored);
+        return stored;
     }
 
     public boolean killSessionById(int siteId, long attemptId)
@@ -484,7 +484,7 @@ public class WorkflowExecutor
             if (!willRetry) {
                 errorTaskId = addErrorTasksIfAny(lockedTask,
                         true,
-                        (export) -> buildPropagatedParams(export, lockedTask.get()));
+                        (export) -> collectErrorParams(export, lockedTask.get()));
             }
             else {
                 errorTaskId = Optional.absent();
@@ -517,7 +517,7 @@ public class WorkflowExecutor
         }
     }
 
-    private Config buildPropagatedParams(Config export, StoredTask task)
+    private Config collectErrorParams(Config export, StoredTask task)
     {
         List<Long> childrenFromThis;
         {
@@ -767,8 +767,8 @@ public class WorkflowExecutor
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
                     .taskId(task.getId())
-                    //.sessionId(attempt.getSession().getId())
                     .attemptId(attempt.getId())
+                    .sessionId(attempt.getSessionId())
                     .retryAttemptName(attempt.getRetryAttemptName())
                     .taskName(task.getFullName())
                     .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
@@ -776,6 +776,7 @@ public class WorkflowExecutor
                     .lockId("")   // this will be overwritten by TaskQueueServer
                     .priority(0)  // TODO make this configurable
                     .timeZone(attempt.getTimeZone())
+                    .sessionUuid(attempt.getSessionUuid())
                     .sessionTime(attempt.getSession().getSessionTime())
                     .createdAt(Instant.now())
                     .localConfig(task.getConfig().getLocal())

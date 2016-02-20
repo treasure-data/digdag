@@ -91,27 +91,12 @@ public final class RestModels
 
     public static RestSession session(StoredSessionAttemptWithSession attempt, String repositoryName)
     {
-        return session(attempt, attempt.getSession(), repositoryName);
-    }
-
-    public static RestSession session(StoredSessionAttempt attempt, Session session, String repositoryName)
-    {
-        return session(attempt, session.getRepositoryId(), repositoryName, session.getWorkflowName(), session.getSessionTime());
-    }
-
-    public static RestSession session(StoredSessionAttempt attempt, AttemptRequest ar, String repositoryName)
-    {
-        return session(attempt, ar.getStored().getRepositoryId(), repositoryName, ar.getWorkflowName(), ar.getSessionTime());
-    }
-
-    private static RestSession session(StoredSessionAttempt attempt,
-            int repositoryId, String repositoryName, String workflowName, Instant sessionTime)
-    {
         return RestSession.builder()
             .id(attempt.getId())
-            .repository(IdName.of(repositoryId, repositoryName))
-            .workflowName(workflowName)
-            .sessionTime(sessionTime.getEpochSecond())
+            .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
+            .workflowName(attempt.getSession().getWorkflowName())
+            .sessionUuid(attempt.getSessionUuid())
+            .sessionTime(attempt.getSession().getSessionTime().getEpochSecond())
             .retryAttemptName(attempt.getRetryAttemptName())
             .done(attempt.getStateFlags().isDone())
             .success(attempt.getStateFlags().isSuccess())

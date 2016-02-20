@@ -1,5 +1,6 @@
 package io.digdag.core.session;
 
+import java.util.UUID;
 import java.time.Instant;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -14,6 +15,8 @@ public abstract class StoredSession
         extends Session
 {
     public abstract long getId();
+
+    public abstract UUID getUuid();
 
     public abstract long getLastAttemptId();
 }

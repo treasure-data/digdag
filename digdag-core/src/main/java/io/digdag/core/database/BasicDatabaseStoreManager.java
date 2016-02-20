@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.time.Instant;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
@@ -309,6 +310,13 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         long v = r.getLong(column);
         return optional(r.wasNull(), v);
+    }
+
+    public static UUID getUuid(ResultSet r, String column)
+            throws SQLException
+    {
+        String v = r.getString(column);
+        return UUID.fromString(v);
     }
 
     public static Instant getTimestampInstant(ResultSet r, String column)

@@ -62,6 +62,8 @@ Here is the list of built-in variables:
 Name                            Description                                 Example
 =============================== =========================================== ==========================
 **timezone**                    Timezone of this workflow                   America/Los_Angeles
+**session_id**                  Unique ID of this session                   32
+**session_uuid**                Unique UUID of this session                 414a8b9e-b365-4394-916a-f0ed9987bd2b
 **session_time**                Time of this session with time zone         2016-01-30T00:00:00-08:00
 **session_date**                Date part of session_time                   2016-01-30
 **session_date_compact**        Date part of session_time (compact)         20160130

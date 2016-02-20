@@ -15,7 +15,6 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestSession;
 import static io.digdag.cli.Main.systemExit;
 
 public class Kill

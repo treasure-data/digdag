@@ -116,6 +116,11 @@ public class DatabaseMigrator
             return add(column, "bigint " + options);
         }
 
+        public CreateTableBuilder addUuid(String column, String options)
+        {
+            return add(column, "uuid " + options);
+        }
+
         public CreateTableBuilder addString(String column, String options)
         {
             if (databaseType.equals("postgresql")) {
@@ -294,6 +299,7 @@ public class DatabaseMigrator
                     .addInt("repository_id", "not null references repositories (id)")
                     .addString("workflow_name", "not null")
                     .addLong("session_time", "not null")
+                    .addUuid("session_uuid", "not null default(RANDOM_UUID())")  // TODO postgresql uses uuid_generate_v4()
                     .addLong("last_attempt_id", "")
                     .build());
             handle.update("create unique index if not exists sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");

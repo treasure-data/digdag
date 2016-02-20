@@ -305,7 +305,7 @@ public class ScheduleExecutor
             for (Instant instant : instants) {
                 if (dryRun) {
                     attempts.add(
-                            StoredSessionAttemptWithSession.of(siteId,
+                            StoredSessionAttemptWithSession.dryRunDummy(siteId,
                                 Session.of(def.getRepository().getId(), def.getName(), instant),
                                 ImmutableStoredSessionAttempt.builder()
                                     .retryAttemptName(Optional.of(attemptName))

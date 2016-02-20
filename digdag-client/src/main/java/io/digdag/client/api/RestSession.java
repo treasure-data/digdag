@@ -1,5 +1,6 @@
 package io.digdag.client.api;
 
+import java.util.UUID;
 import java.time.Instant;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -19,6 +20,8 @@ public abstract class RestSession
     //public abstract Optional<String> getRevision();
 
     public abstract String getWorkflowName();
+
+    public abstract UUID getSessionUuid();
 
     public abstract long getSessionTime();
 
