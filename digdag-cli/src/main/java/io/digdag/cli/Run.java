@@ -56,6 +56,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Main.systemExit;
+import static io.digdag.server.TempFileManager.deleteFilesIfExistsRecursively;
 import static java.util.Locale.ENGLISH;
 
 public class Run
@@ -300,7 +301,7 @@ public class Run
         }
         else if (sessionStatusPath == null) {
             rsm.shutdown();
-            resumeResultPath.delete();
+            deleteFilesIfExistsRecursively(resumeResultPath);
         }
     }
 
