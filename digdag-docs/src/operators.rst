@@ -115,6 +115,9 @@ TODO: add more description here
       td>: queries/step2.sql
       insert_into: mytable
 
+Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 :command:`td>: FILE.sql`
   Path to a query template file.
 
@@ -150,6 +153,15 @@ TODO: add more description here
 
   * :command:`engine: hive`
   * :command:`engine: presto`
+
+
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
 
 
 td_load>: Treasure Data bulk loading
