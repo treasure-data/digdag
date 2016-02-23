@@ -1,6 +1,6 @@
-package io.digdag.spi;
+package io.digdag.spi.log;
 
-public interface LogServer
+public interface LogDirectClient
 {
     void send(long taskId, byte[] data);
 

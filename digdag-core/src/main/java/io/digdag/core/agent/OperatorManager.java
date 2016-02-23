@@ -31,6 +31,9 @@ import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.log.ContextLogging;
+import io.digdag.core.log.LogLevel;
+import io.digdag.core.log.NullContextLogger;
 import io.digdag.spi.*;
 
 public class OperatorManager
@@ -119,10 +122,16 @@ public class OperatorManager
 
         lockIdMap.put(taskId, request.getLockId());
         try {
-            archiveManager.withExtractedArchive(request, (archivePath) -> {
-                runWithArchive(archivePath, request, nextState);
-                return true;
-            });
+            ContextLogging.enter(LogLevel.DEBUG, callback.newContextLogger());
+            try {
+                archiveManager.withExtractedArchive(request, (archivePath) -> {
+                    runWithArchive(archivePath, request, nextState);
+                    return true;
+                });
+            }
+            finally {
+                ContextLogging.leave();
+            }
         }
         finally {
             lockIdMap.remove(taskId);

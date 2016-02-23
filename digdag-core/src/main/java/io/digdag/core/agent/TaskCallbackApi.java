@@ -4,11 +4,14 @@ import java.util.List;
 import java.time.Instant;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
+import io.digdag.core.log.ContextLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.session.SessionStateFlags;
 
 public interface TaskCallbackApi
 {
+    ContextLogger newContextLogger();
+
     void taskHeartbeat(List<String> lockedIds, AgentId agentId, int lockSeconds);
 
     void taskSucceeded(long taskId, String lockId, AgentId agentId,

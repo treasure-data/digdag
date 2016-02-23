@@ -59,6 +59,9 @@
     </encoder>
   </appender>
 
+  <appender name="digdag-context" class="io.digdag.cli.LogbackContextLoggerBridgeAppender">
+  </appender>
+
   <logger name="com.zaxxer.hikari" level="WARN"/>
 
   <root>
@@ -67,5 +70,6 @@
     <appender-ref ref="console-info"/>
     <appender-ref ref="console-debug"/>
     <appender-ref ref="console-trace"/>
+    <appender-ref ref="digdag-context"/>
   </root>
 </configuration>

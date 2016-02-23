@@ -7,7 +7,11 @@
 
   <logger name="com.zaxxer.hikari" level="WARN"/>
 
+  <appender name="digdag-context" class="io.digdag.cli.LogbackContextLoggerBridgeAppender">
+  </appender>
+
   <root>
     <appender-ref ref="console"/>
+    <appender-ref ref="digdag-context"/>
   </root>
 </configuration>

@@ -22,6 +22,8 @@ import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.core.log.ContextLogger;
+import io.digdag.core.log.NullContextLogger;
 import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.ScheduleTime;
 import org.slf4j.Logger;
@@ -56,6 +58,14 @@ public class InProcessTaskCallbackApi
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.queueClient = qm.getInProcessTaskQueueClient(localSiteId);
+    }
+
+    @Override
+    public ContextLogger newContextLogger()
+    {
+        // TODO implement buffered logger that ends logs to LogClient taken from LogServerManager.getInProcessLogClient()
+        // TODO implement LogServerFactory based on database or local file
+        return new NullContextLogger();
     }
 
     @Override
