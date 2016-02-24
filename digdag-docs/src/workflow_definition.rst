@@ -182,7 +182,7 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 Parallel execution
 ----------------------------------
 
-If ``parallel: true`` parameter is set, child tasks run in parallel (grandchildren are not affected):
+If ``_parallel: true`` parameter is set, child tasks run in parallel (grandchildren are not affected):
 
 .. code-block:: yaml
 
@@ -191,7 +191,7 @@ If ``parallel: true`` parameter is set, child tasks run in parallel (grandchildr
     +main:
       +prepare
         # +data1, +data2, and +data3 run in parallel.
-        parallel: true
+        _parallel: true
 
         +data1:
           sh>: tasks/prepare_data1.sh
@@ -204,4 +204,23 @@ If ``parallel: true`` parameter is set, child tasks run in parallel (grandchildr
 
       +analyze
           sh>: tasks/analyze_prepared_data_sets.sh
+
+Sending error notification
+----------------------------------
+
+If an operator configuration is set at ``_error:`` parameter, the operator runs when the workflow fails.
+
+.. code-block:: yaml
+
+    run: +main
+
+    +main:
+      # this task runs when a workflow fails.
+      _error:
+        sh>: tasks/runs_when_workflow_failed.sh
+
+      +analyze
+          sh>: tasks/analyze_prepared_data_sets.sh
+
+To send mails, you can use `mail> operator <operators.html#mail-sending-email>`_.
 
