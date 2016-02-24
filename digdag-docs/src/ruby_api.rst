@@ -16,10 +16,10 @@ digdag.yml:
           require: 'tasks/my_workflow'
 
       +step1:
-        py>: MyWorkflow.step1
+        rb>: MyWorkflow.step1
 
       +step2:
-        py>: MyWorkflow.step2
+        rb>: MyWorkflow.step2
 
 tasks/my_workflow.rb:
 
