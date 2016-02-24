@@ -108,7 +108,7 @@ public class WorkflowCompiler
         public WorkflowTaskList compile(String parentFullName, String name, Config config)
         {
             try {
-                collect(Optional.absent(), config.getFactory().create(), parentFullName, name, config);
+                collect(Optional.absent(), parentFullName, name, config);
                 return WorkflowTaskList.of(
                         tasks
                         .stream()
@@ -124,13 +124,9 @@ public class WorkflowCompiler
         }
 
         public TaskBuilder collect(
-                Optional<TaskBuilder> parent, Config parentDefaultConfig,
-                String parentFullName, String name, Config originalConfig)
+                Optional<TaskBuilder> parent, String parentFullName,
+                String name, Config config)
         {
-            Config thisDefaultConfig = originalConfig.getNestedOrGetEmpty("default");
-            final Config defaultConfig = parentDefaultConfig.deepCopy().setAll(thisDefaultConfig);
-            final Config config = originalConfig.deepCopy().setAll(defaultConfig);
-
             // +key: {...}
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
@@ -149,7 +145,7 @@ public class WorkflowCompiler
             if (config.has("_type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
-                    throw new ConfigException("A task can't have subtasks: " + originalConfig);
+                    throw new ConfigException("A task can't have subtasks: " + config);
                 }
                 return addTask(parent, name, fullName, false, config);
             }
@@ -159,7 +155,7 @@ public class WorkflowCompiler
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()
-                    .map(pair -> collect(Optional.of(tb), defaultConfig, fullName, pair.getKey(), pair.getValue()))
+                    .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue()))
                     .collect(Collectors.toList());
 
                 if (config.get("_parallel", boolean.class, false)) {
