@@ -55,6 +55,8 @@ Method argument mapping
 Generating child tasks
 ----------------------------------
 
+Generating Ruby child tasks:
+
 .. code-block:: python
 
     class MyWorkflow(object):
@@ -66,4 +68,17 @@ Generating child tasks
 
       def step3(self, arg1):
         print("step3: %s" % arg1)
+
+Generating other child tasks:
+
+.. code-block:: python
+
+    class MyWorkflow(object):
+      def step1(self):
+        digdag.env.add_subtask({
+          '_type': 'mail',
+          'body': 'this is email body in string',
+          'subject': 'workflow started',
+          'to': ['me@example.com'],
+        })
 
