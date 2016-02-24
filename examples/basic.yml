@@ -14,7 +14,7 @@ run: +basic
       sh>: "echo nesting is useful for grouping"
 
   +parallel_task_foo:
-    parallel: true
+    _parallel: true
     +bar:
       sh>: "echo if 'parallel: true' is set, child tasks run in parallel"
 

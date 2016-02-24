@@ -142,7 +142,13 @@ public class WorkflowCompiler
 
             String fullName = parentFullName + name;
 
-            if (config.has("_type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
+            if (config.get("_disable", boolean.class, false)) {
+                return addTask(parent, name, fullName, true,
+                        config.getFactory().create()
+                        .set("_disable", true));
+            }
+            else if (config.has("_type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
+                System.out.println("config: "+config);
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + config);
@@ -151,7 +157,7 @@ public class WorkflowCompiler
             }
             else {
                 // group node
-                final TaskBuilder tb = addTask(parent, name, fullName, true, config);
+                TaskBuilder tb = addTask(parent, name, fullName, true, config);
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()
