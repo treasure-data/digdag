@@ -343,6 +343,11 @@ To use Gmail SMTP server, you need to do either of:
 
   * :command:`ssl: false`
 
+:command:`html: BOOLEAN`
+  Uses HTML mail (default: false).
+
+  * :command:`html: true`
+
 :command:`debug: BOOLEAN`
   Shows debug logs (default: false).
 
@@ -351,9 +356,9 @@ To use Gmail SMTP server, you need to do either of:
 :command:`attach_files: ARRAY`
   Attach files. Each element is an object of:
 
-  * :command:`path: FILE`: path to a file to attach.
+  * :command:`path: FILE`: Path to a file to attach.
 
-  * :command:`image: TYPE`: This is same with `content_type: image/TYPE`.
+  * :command:`image: TYPE`: Equivalent to `content_type: image/TYPE`.
 
   * :command:`content_type`: Content-Type of this file. Default is application/octet-stream.
 
