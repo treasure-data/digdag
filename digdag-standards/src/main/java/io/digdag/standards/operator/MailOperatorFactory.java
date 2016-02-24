@@ -15,9 +15,9 @@ import javax.mail.Message.RecipientType;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import org.slf4j.Logger;
@@ -30,12 +30,12 @@ public class MailOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
 
-    private final CommandExecutor exec;
+    private final TemplateEngine templateEngine;
 
     @Inject
-    public MailOperatorFactory(CommandExecutor exec)
+    public MailOperatorFactory(TemplateEngine templateEngine)
     {
-        this.exec = exec;
+        this.templateEngine = templateEngine;
     }
 
     public String getType()
@@ -65,9 +65,8 @@ public class MailOperatorFactory
                 config.getNestedOrGetEmpty("mail").deepCopy()
                 .setAll(config);
 
-            String subject = config.getOptional("_command", String.class)
-                .or(() -> config.get("subject", String.class));
-            String body = config.get("body", String.class, "");
+            String body = templateEngine.templateCommand(archivePath, params, "body");
+            String subject = config.get("subject", String.class);
 
             List<String> toList;
             try {

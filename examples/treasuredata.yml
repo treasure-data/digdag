@@ -6,7 +6,9 @@ run: +treasuredata
   _sla:
     time: 05:00:00
     +mail:
-      mail>: not finished
+      _type: mail
+      body: Not finished: ${session_time}
+      subject: Query not finished
       to: [sf@treasure-data.com]
 
   error:
@@ -14,7 +16,9 @@ run: +treasuredata
       _type: td_ddl
       delete_table: garbage
     +notify:
-      mail>: failed!
+      _type: mail
+      body: Query failed!
+      subject: Query not finished
       to: [sf@treasure-data.com]
 
   +task:

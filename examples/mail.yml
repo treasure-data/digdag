@@ -17,7 +17,7 @@ _export:
     debug: true
 
 +mail_test:
-  mail>: this is a smtp test mail
+  mail>: examples/mail.txt
+  subject: this is a smtp test mail
   to: [to1@example.com, to2@example.com]
-  body: email body
 

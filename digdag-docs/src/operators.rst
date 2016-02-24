@@ -119,7 +119,7 @@ Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :command:`td>: FILE.sql`
-  Path to a query template file.
+  Path to a query template file. This file can contain ``${...}`` syntax to embed variables.
 
   * :command:`td>: queries/step1.sql`
 
@@ -271,22 +271,35 @@ To use Gmail SMTP server, you need to do either of:
         debug: true
 
     +step1:
-      mail>: this workflow started
-      body: Hello
+      mail>: body.txt
+      subject: workflow started
       to: [me@example.com]
+
     +step2:
+      _type: mail
+      body: this is email body in string
+      subject: workflow started
+      to: [me@example.com]
+
+    +step3:
       sh>: this_task_might_fail.sh
       error:
-        mail>: a task failed
+        mail>: body.txt
+        subject: this workflow failed
         to: [me@example.com]
 
-:command:`mail>: SUBJECT`
+:command:`mail>: FILE`
+  Path to a mail body template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`mail>: mail_body.txt`
+
+:command:`subject: SUBJECT`
   Subject of the email.
 
-  * :command:`mail>: Mail From Digdag`
+  * :command:`subject: Mail From Digdag`
 
 :command:`body: TEXT`
-  Email body.
+  Email body if tempalte file path is not set.
 
   * :command:`body: Hello, this is from Digdag`
 
