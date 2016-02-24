@@ -65,19 +65,7 @@ public class TdOperatorFactory
                 .deepCopy()
                 .setAll(request.getConfig());
 
-            String query;
-            if (params.has("command")) {
-                String command = params.get("command", String.class);
-                try {
-                    query = templateEngine.templateFile(archivePath, command, UTF_8, params);
-                }
-                catch (IOException | TemplateException ex) {
-                    throw new ConfigException("Failed to load query file", ex);
-                }
-            }
-            else {
-                query = params.get("query", String.class);
-            }
+            String query = templateEngine.templateCommand(archivePath, params, "query");
 
             Optional<String> insertInto = params.getOptional("insert_into", String.class);
             Optional<String> createTable = params.getOptional("create_table", String.class);

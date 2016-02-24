@@ -997,7 +997,7 @@ public class WorkflowExecutor
         }
 
         // modify export params
-        Config export = subtaskConfig.getNestedOrSetEmpty("export");
+        Config export = subtaskConfig.getNestedOrSetEmpty("_export");
         export = errorBuilder.apply(export);
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":error", subtaskConfig);

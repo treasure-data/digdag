@@ -1,6 +1,6 @@
 run: +mail_test
 
-export:
+_export:
   mail:
     # To use Gmail SMTP server, you need to do either of:
     #   a) Generate a new app password at

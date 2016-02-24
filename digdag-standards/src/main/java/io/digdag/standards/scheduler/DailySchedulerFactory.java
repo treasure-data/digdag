@@ -18,7 +18,7 @@ public class DailySchedulerFactory
     @Override
     public Scheduler newScheduler(Config config, ZoneId timeZone)
     {
-        String at = config.getOptional("command", String.class).or(() -> config.get("at", String.class));
+        String at = config.getOptional("_command", String.class).or(() -> config.get("at", String.class));
         return new CronScheduler("0 0 * * *", timeZone, parseAt("daily>", at));
     }
 

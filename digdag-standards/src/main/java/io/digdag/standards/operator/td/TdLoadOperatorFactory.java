@@ -65,9 +65,9 @@ public class TdLoadOperatorFactory
                 .setAll(request.getConfig());
 
             ObjectNode embulkConfig;
-            if (params.has("command")) {
+            if (params.has("_command")) {
                 String built;
-                String command = params.get("command", String.class);
+                String command = params.get("_command", String.class);
                 try {
                     built = templateEngine.templateFile(archivePath, command, UTF_8, params);
                 }

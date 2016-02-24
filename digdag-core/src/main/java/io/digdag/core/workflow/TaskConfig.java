@@ -16,8 +16,8 @@ public class TaskConfig
     public static TaskConfig validate(Config config)
     {
         Config copy = config.deepCopy();
-        Config export = copy.getNestedOrGetEmpty("export");
-        copy.remove("export");
+        Config export = copy.getNestedOrGetEmpty("_export");
+        copy.remove("_export");
         return new TaskConfig(copy, export);
     }
 
@@ -61,7 +61,7 @@ public class TaskConfig
     {
         Config config = local.deepCopy();
         if (!export.isEmpty()) {
-            config.set("export", export);
+            config.set("_export", export);
         }
         return config;
     }
@@ -69,13 +69,13 @@ public class TaskConfig
     @JsonIgnore
     public Config getCheckConfig()
     {
-        return getMerged().getNestedOrGetEmpty("check").deepCopy();
+        return getMerged().getNestedOrGetEmpty("_check").deepCopy();
     }
 
     @JsonIgnore
     public Config getErrorConfig()
     {
-        return getMerged().getNestedOrGetEmpty("error").deepCopy();
+        return getMerged().getNestedOrGetEmpty("_error").deepCopy();
     }
 
     private TaskConfig validate()

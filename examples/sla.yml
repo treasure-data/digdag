@@ -2,7 +2,7 @@ run: +sla
 timezone: America/Los_Angeles   # this considers daylight saving time
 
 +sla:
-  schedule:
+  _schedule:
     daily>: 02:00:00  # runs at 02:00 midnight
 
   +sleep:

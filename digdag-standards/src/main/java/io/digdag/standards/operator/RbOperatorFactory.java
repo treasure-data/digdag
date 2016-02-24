@@ -108,8 +108,8 @@ public class RbOperatorFactory
             String script;
             List<String> args;
 
-            if (params.has("command")) {
-                String command = params.get("command", String.class);
+            if (params.has("_command")) {
+                String command = params.get("_command", String.class);
                 script = runnerScript;
                 args = ImmutableList.of(command, inFile, outFile);
             }

@@ -93,7 +93,7 @@ public class RequireOperatorFactory
         private boolean runTask()
         {
             Config config = request.getConfig();
-            String workflowName = config.get("command", String.class);
+            String workflowName = config.get("_command", String.class);
             int repositoryId = config.get("repository_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);

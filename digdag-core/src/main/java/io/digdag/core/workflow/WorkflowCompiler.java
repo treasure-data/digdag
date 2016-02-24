@@ -146,7 +146,7 @@ public class WorkflowCompiler
 
             String fullName = parentFullName + name;
 
-            if (config.has("type") || config.has("type=") || config.getKeys().stream().anyMatch(key -> key.endsWith(">") || key.endsWith(">="))) {
+            if (config.has("_type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + originalConfig);
@@ -162,7 +162,7 @@ public class WorkflowCompiler
                     .map(pair -> collect(Optional.of(tb), defaultConfig, fullName, pair.getKey(), pair.getValue()))
                     .collect(Collectors.toList());
 
-                if (config.get("parallel", boolean.class, false)) {
+                if (config.get("_parallel", boolean.class, false)) {
                     // after: is valid only when parallel: is true
                     Map<String, TaskBuilder> names = new HashMap<>();
                     for (TaskBuilder subtask : subtasks) {

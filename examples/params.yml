@@ -15,7 +15,7 @@ run: +params
   +export_params:
     # If you export parameters, subtasks can share it.
     # This is useful to share configuration such as user & password.
-    export:
+    _export:
       mysql: {"user": "exported"}
 
     # This "step1" can use "mysql" parameter
@@ -31,7 +31,7 @@ run: +params
     # If a subtask exports a parameter with the same name, following
     # subtasks will use overwritten values.
     +export_overwrite:
-      export:
+      _export:
         mysql: {"user": "overwrite"}
 
       # This task will see overwritten value.

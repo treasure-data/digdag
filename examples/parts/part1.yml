@@ -1,7 +1,0 @@
-+step1:
-  sh>: "echo including examples/parts/part1.yml"
-+step2:
-  sh>: "echo included from {{ orig_file }}"
-+step3:
-  sh>: "echo logging in with {{ complex_data.user }}:{{ complex_data.password }}"
-+step4: {{ load('show_messages.yml') }}

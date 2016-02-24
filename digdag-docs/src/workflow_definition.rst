@@ -48,7 +48,7 @@ A task with ``type>: command`` parameter executes an action. You can choose vari
 
 .. note::
 
-    Setting ``foo>: bar`` parameter is equivalent to setting ``type: foo`` and ``command: bar`` parameters. That is a syntax sugar of setting 2 parameters in 1 line.
+    Setting ``foo>: bar`` parameter is equivalent to setting ``_type: foo`` and ``_command: bar`` parameters. That is a syntax sugar of setting 2 parameters in 1 line.
 
 
 Using ${variables}

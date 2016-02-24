@@ -78,8 +78,8 @@ public class EmbulkOperatorFactory
             try {
                 tempFile = archive.createTempFile("digdag-embulk-", ".tmp.yml");
 
-                if (params.has("command")) {
-                    String command = params.get("command", String.class);
+                if (params.has("_command")) {
+                    String command = params.get("_command", String.class);
                     String data = templateEngine.templateFile(archivePath, command, UTF_8, params);
                     Files.write(archive.getPath(tempFile), data.getBytes(UTF_8));
                 }

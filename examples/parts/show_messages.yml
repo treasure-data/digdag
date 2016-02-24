@@ -1,4 +1,0 @@
-{% for message in messages %}
-+message_{{ loop.index }}:
-  sh>: "echo {{ message }}"
-{% endfor %}

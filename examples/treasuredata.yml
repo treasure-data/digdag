@@ -1,9 +1,9 @@
 run: +treasuredata
 +treasuredata:
-  schedule:
+  _schedule:
     daily>: 03:00:00
 
-  sla:
+  _sla:
     time: 05:00:00
     +mail:
       mail>: not finished
@@ -11,7 +11,7 @@ run: +treasuredata
 
   error:
     +cleanup:
-      type: td_ddl
+      _type: td_ddl
       delete_table: garbage
     +notify:
       mail>: failed!

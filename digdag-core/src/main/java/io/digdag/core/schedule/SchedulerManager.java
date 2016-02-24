@@ -54,21 +54,21 @@ public class SchedulerManager
         Config c = config.deepCopy();
 
         String type;
-        if (c.has("type")) {
-            type = c.get("type", String.class);
+        if (c.has("_type")) {
+            type = c.get("_type", String.class);
         }
         else {
-            java.util.Optional<String> commandKey = c.getKeys()
+            java.util.Optional<String> operatorKey = c.getKeys()
                 .stream()
                 .filter(key -> key.endsWith(">"))
                 .findFirst();
-            if (!commandKey.isPresent()) {
+            if (!operatorKey.isPresent()) {
                 throw new ConfigException("Schedule config requires 'type>: at' parameter: " + c);
             }
-            type = commandKey.get().substring(0, commandKey.get().length() - 1);
-            Object command = c.get(commandKey.get(), Object.class);
-            c.set("type", type);
-            c.set("command", command);
+            type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
+            Object command = c.get(operatorKey.get(), Object.class);
+            c.set("_type", type);
+            c.set("_command", command);
         }
 
         SchedulerFactory factory = types.get(type);

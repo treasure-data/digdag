@@ -1,6 +1,0 @@
-run: +include_vars
-+include_vars:
-  {% set orig_file = "examples/include.yml" %}
-  {% set complex_data = {user: 'me', password: 'Top Secret'} %}
-  {% set messages = ['Directed', 'Acyclic', 'Graph'] %}
-  +part1: {% load parts/part1.yml %}

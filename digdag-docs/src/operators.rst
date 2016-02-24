@@ -206,7 +206,7 @@ TODO: add more description here
 td_ddl>: Treasure Data operations
 ----------------------------------
 
-**type: td_ddl** operator runs an operational task on Treasure Data.
+**_type: td_ddl** operator runs an operational task on Treasure Data.
 
 TODO: add more description here
 
@@ -218,13 +218,13 @@ TODO: add more description here
         database: www_access
 
     +step1:
-      type: td_ddl
+      _type: td_ddl
       create_table: my_table_${session_date_compact}
     +step2:
-      type: td_ddl
+      _type: td_ddl
       drop_table: my_table_${session_date_compact}
     +step2:
-      type: td_ddl
+      _type: td_ddl
       empty_table: my_table_${session_date_compact}
 
 :command:`create_table: NAME`

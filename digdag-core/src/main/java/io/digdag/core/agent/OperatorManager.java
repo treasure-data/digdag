@@ -161,27 +161,27 @@ public class OperatorManager
                 .build();
 
             String type;
-            if (config.has("type")) {
-                type = config.get("type", String.class);
+            if (config.has("_type")) {
+                type = config.get("_type", String.class);
                 logger.info("type: {}", type);
             }
             else {
-                java.util.Optional<String> commandKey = config.getKeys()
+                java.util.Optional<String> operatorKey = config.getKeys()
                     .stream()
                     .filter(key -> key.endsWith(">"))
                     .findFirst();
-                if (!commandKey.isPresent()) {
+                if (!operatorKey.isPresent()) {
                     // TODO warning
                     callback.taskSucceeded(
                             taskId, request.getLockId(), agentId,
                             TaskResult.empty(cf));
                     return;
                 }
-                type = commandKey.get().substring(0, commandKey.get().length() - 1);
-                Object command = config.get(commandKey.get(), Object.class);
-                config.set("type", type);
-                config.set("command", command);
-                logger.info("{}>: {}", type, command);
+                type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
+                Object file = config.get(operatorKey.get(), Object.class);
+                config.set("_type", type);
+                config.set("_command", file);
+                logger.info("{}>: {}", type, file);
             }
 
             TaskResult result = callExecutor(archivePath, type, mergedRequest);

@@ -20,7 +20,7 @@ public class MonthlySchedulerFactory
     @Override
     public Scheduler newScheduler(Config config, ZoneId timeZone)
     {
-        String desc = config.getOptional("command", String.class).or(() -> config.get("at", String.class));
+        String desc = config.getOptional("_command", String.class).or(() -> config.get("at", String.class));
 
         String[] fragments = desc.split(",", 2);
         if (fragments.length != 2) {

@@ -3,14 +3,14 @@ run: +daily1
 timezone: America/Los_Angeles   # this considers daylight saving time
 
 +daily1:
-  schedule:
+  _schedule:
     daily>: 10:00:00   # daily at 10 AM
 
   +task:
     sh>: echo "This schedule is for ${session_time}"
 
 +hourly1:
-  schedule:
+  _schedule:
     hourly>: 30:00   # hourly at 30 minute
 
   +task:

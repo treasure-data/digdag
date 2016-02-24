@@ -39,7 +39,7 @@ public abstract class Dagfile
 
         Optional<String> defaultTaskName = config.getOptional("run", String.class);
         Optional<ZoneId> defaultTimeZone = config.getOptional("timezone", ZoneId.class);
-        Config defaultParams = config.getNestedOrGetEmpty("export");
+        Config defaultParams = config.getNestedOrGetEmpty("_export");
 
         return builder()
             .defaultTaskName(defaultTaskName)

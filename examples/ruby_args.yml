@@ -1,6 +1,6 @@
 run: +rb_args
 +rb_args:
-  export:
+  _export:
     require: "examples/ruby_args"
   +task1:
     rb>: Test.task1

@@ -65,7 +65,7 @@ public class MailOperatorFactory
                 config.getNestedOrGetEmpty("mail").deepCopy()
                 .setAll(config);
 
-            String subject = config.getOptional("command", String.class)
+            String subject = config.getOptional("_command", String.class)
                 .or(() -> config.get("subject", String.class));
             String body = config.get("body", String.class, "");
 

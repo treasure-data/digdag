@@ -58,7 +58,7 @@ public class ShOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            String command = request.getConfig().get("command", String.class);
+            String command = request.getConfig().get("_command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
 
             final Map<String, String> env = pb.environment();

@@ -18,7 +18,7 @@ public class MinutesIntervalSchedulerFactory
     @Override
     public Scheduler newScheduler(Config config, ZoneId timeZone)
     {
-        int interval = config.get("command", int.class);
+        int interval = config.get("_command", int.class);
         long delay = config.get("delay", long.class, 0L);
         return new CronScheduler("*/" + interval + " * * * *", timeZone, delay);
     }

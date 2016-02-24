@@ -5,7 +5,7 @@ run: +shell_envvar
     param1: "this is param1"
 
   +export_to_child_tasks:
-    export:
+    _export:
       exported_var: "this is exported by +export_to_child_tasks task"
 
     +child_task_1:

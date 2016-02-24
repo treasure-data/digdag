@@ -1,6 +1,6 @@
 run: +error_task
 +error_task:
-  error:
+  _error:
     py>: examples.error_task.show_error
 
   +test:

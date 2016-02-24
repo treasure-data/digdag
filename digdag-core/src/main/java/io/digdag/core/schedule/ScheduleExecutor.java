@@ -97,13 +97,13 @@ public class ScheduleExecutor
     // used by RepositoryControl.updateSchedules
     static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
     {
-        return def.getConfig().getOptional("schedule", Config.class);
+        return def.getConfig().getOptional("_schedule", Config.class);
     }
 
     // used by SchedulerManager and Check command
     public static Config getScheduleConfig(WorkflowDefinition def)
     {
-        return def.getConfig().getNested("schedule");
+        return def.getConfig().getNested("_schedule");
     }
 
     // used by SchedulerManager and AttemptBuilder

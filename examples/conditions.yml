@@ -2,7 +2,7 @@ run: +conditions
 +conditions:
   +algorithms:
     +try:
-      parallel: true
+      _parallel: true
       +zlib:
         py>: examples.conditions.Algorithm.zlib
       +gzip:
