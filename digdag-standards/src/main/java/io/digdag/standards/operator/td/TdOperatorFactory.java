@@ -3,7 +3,7 @@ package io.digdag.standards.operator.td;
 import java.util.List;
 import java.nio.file.Path;
 import java.io.File;
-import java.io.PrintStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.*;
@@ -24,6 +24,7 @@ import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
+import org.msgpack.value.ArrayValue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdOperatorFactory
@@ -81,6 +82,10 @@ public class TdOperatorFactory
             String engine = params.get("engine", String.class, "presto");
 
             Optional<String> downloadFile = params.getOptional("download_file", String.class);
+            if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {
+                // query results become empty if INSERT INTO or CREATE TABLE query runs
+                throw new ConfigException("download_file is invalid if insert_into or create_table is set");
+            }
 
             try (TDOperation op = TDOperation.fromConfig(params)) {
                 String stmt;
@@ -152,15 +157,32 @@ public class TdOperatorFactory
                 }
 
                 if (downloadFile.isPresent()) {
-                    try (PrintStream out = new PrintStream(new File(downloadFile.get()))) {
+                    try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
+                        boolean firstCol = true;
+                        for (String col : q.getResultColumnNames()) {
+                            if (firstCol) { firstCol = false; }
+                            else { out.write(DELIMITER_CHAR); }
+                            addCsvText(out, col);
+                        }
+                        out.write("\n");
+
                         q.getResult(ite -> {
-                            // TODO get schema from q.getJobInfo().getResultSchema()
-                            while (ite.hasNext()) {
-                                Value v = ite.next();
-                                // TODO save as csv
-                                out.println(v.toString());
+                            try {
+                                while (ite.hasNext()) {
+                                    ArrayValue row = ite.next().asArrayValue();
+                                    boolean first = true;
+                                    for (Value v : row) {
+                                        if (first) { first = false; }
+                                        else { out.write(DELIMITER_CHAR); }
+                                        addCsvValue(out, v);
+                                    }
+                                    out.write("\n");
+                                }
+                                return true;
                             }
-                            return true;
+                            catch (IOException ex) {
+                                throw Throwables.propagate(ex);
+                            }
                         });
                     }
                     catch (IOException ex) {
@@ -179,6 +201,84 @@ public class TdOperatorFactory
                     .storeParams(storeParams)
                     .build();
             }
+        }
+    }
+
+    private static void addCsvValue(BufferedWriter out, Value value)
+        throws IOException
+    {
+        if (value.isStringValue()) {
+            addCsvText(out, value.asStringValue().asString());
+        }
+        else if (value.isNilValue()) {
+            // write nothing
+        }
+        else {
+            addCsvText(out, value.toJson());
+        }
+    }
+
+    private static void addCsvText(BufferedWriter out, String value)
+        throws IOException
+    {
+        out.write(escapeAndQuoteCsvValue(value));
+    }
+
+    private static final char DELIMITER_CHAR = ',';
+    private static final char ESCAPE_CHAR = '"';
+    private static final char QUOTE_CHAR = '"';
+
+    private static String escapeAndQuoteCsvValue(String v)
+    {
+        if (v.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(QUOTE_CHAR);
+            sb.append(QUOTE_CHAR);
+            return sb.toString();
+        }
+
+        StringBuilder escapedValue = new StringBuilder();
+        char previousChar = ' ';
+
+        boolean isRequireQuote = false;
+
+        for (int i = 0; i < v.length(); i++) {
+            char c = v.charAt(i);
+
+            if (c == QUOTE_CHAR) {
+                escapedValue.append(ESCAPE_CHAR);
+                escapedValue.append(c);
+                isRequireQuote = true;
+            }
+            else if (c == '\r') {
+                escapedValue.append('\n');
+                isRequireQuote = true;
+            }
+            else if (c == '\n') {
+                if (previousChar != '\r') {
+                    escapedValue.append('\n');
+                    isRequireQuote = true;
+                }
+            }
+            else if (c == DELIMITER_CHAR) {
+                escapedValue.append(c);
+                isRequireQuote = true;
+            }
+            else {
+                escapedValue.append(c);
+            }
+            previousChar = c;
+        }
+
+        if (isRequireQuote) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(QUOTE_CHAR);
+            sb.append(escapedValue);
+            sb.append(QUOTE_CHAR);
+            return sb.toString();
+        }
+        else {
+            return escapedValue.toString();
         }
     }
 }

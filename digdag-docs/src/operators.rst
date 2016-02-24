@@ -133,6 +133,11 @@ Parameters
 
   * :command:`insert_into: my_table`
 
+:command:`download_file: NAME`
+  Saves query result as a local CSV file.
+
+  * :command:`download_file: output.csv`
+
 :command:`result_url: NAME`
   Output the query results to the URL:
 

@@ -15,7 +15,7 @@ public class TDOperation
     {
         String database = config.get("database", String.class);
 
-        TDClient client = TDClient.newBuilder()
+        TDClient client = TDClient.newBuilder(false)
             .setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"))
             .setUseSSL(config.get("use_ssl", boolean.class, true))
             .setApiKey(config.get("apikey", String.class))

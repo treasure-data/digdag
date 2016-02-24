@@ -1,15 +1,20 @@
 package io.digdag.standards.operator.td;
 
+import java.util.List;
+import java.util.Iterator;
+import java.util.zip.GZIPInputStream;
 import java.io.InputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
-import java.util.Iterator;
 import com.google.common.base.Throwables;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.Value;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
@@ -72,6 +77,26 @@ public class TDQuery
         if (lastStatus == null || !lastStatus.getStatus().isFinished()) {
             client.killJob(jobId);
         }
+    }
+
+    public List<String> getResultColumnNames()
+    {
+        return getJobInfo().getResultSchema().transform(js -> {
+            ImmutableList.Builder<String> builder = ImmutableList.builder();
+            try {
+                ArrayNode array = (ArrayNode) new ObjectMapper().readTree(js);
+                Iterator<JsonNode> elements = array.elements();
+                while (elements.hasNext()) {
+                    ArrayNode pair = (ArrayNode) elements.next();
+                    builder.add(pair.get(0).textValue());
+                }
+                return builder.build();
+            }
+            catch (IOException | RuntimeException ex) {
+                throw new RuntimeException("Unexpected hive_result_schema: " + js, ex);
+            }
+        })
+        .or(ImmutableList.of());
     }
 
     public <R> R getResult(Function<Iterator<Value>, R> resultStreamHandler)
