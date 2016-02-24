@@ -348,6 +348,27 @@ To use Gmail SMTP server, you need to do either of:
 
   * :command:`debug: false`
 
+:command:`attach_files: ARRAY`
+  Attach files. Each element is an object of:
+
+  * :command:`path: FILE`: path to a file to attach.
+
+  * :command:`image: TYPE`: This is same with `content_type: image/TYPE`.
+
+  * :command:`content_type`: Content-Type of this file. Default is application/octet-stream.
+
+  * :command:`filename`: Name of this file. Default is base name of the path.
+
+  Example:
+
+  .. code-block:: yaml
+
+      attach_files:
+        - path: data.csv
+        - path: images/image1.png
+          image: png
+        - path: output.dat
+          filename: workflow_result_data.csv
 
 embulk>: Embulk data transfer
 ----------------------------------

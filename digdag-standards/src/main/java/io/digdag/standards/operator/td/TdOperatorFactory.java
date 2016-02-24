@@ -65,7 +65,7 @@ public class TdOperatorFactory
                 .deepCopy()
                 .setAll(request.getConfig());
 
-            String query = templateEngine.templateCommand(archivePath, params, "query");
+            String query = templateEngine.templateCommand(archivePath, params, "query", UTF_8);
 
             Optional<String> insertInto = params.getOptional("insert_into", String.class);
             Optional<String> createTable = params.getOptional("create_table", String.class);

@@ -2,6 +2,8 @@ package io.digdag.standards.operator;
 
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.io.IOException;
 import java.nio.file.Path;
 import javax.mail.Authenticator;
 import javax.mail.MessagingException;
@@ -12,6 +14,8 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.Message.RecipientType;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.internet.MimeBodyPart;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -20,10 +24,12 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MailOperatorFactory
         implements OperatorFactory
@@ -49,6 +55,16 @@ public class MailOperatorFactory
         return new MailOperator(archivePath, request);
     }
 
+    @Value.Immutable
+    public interface AttachConfig
+    {
+        public String getPath();
+
+        public String getContentType();
+
+        public String getFileName();
+    }
+
     private class MailOperator
             extends BaseOperator
     {
@@ -65,7 +81,7 @@ public class MailOperatorFactory
                 config.getNestedOrGetEmpty("mail").deepCopy()
                 .setAll(config);
 
-            String body = templateEngine.templateCommand(archivePath, params, "body");
+            String body = templateEngine.templateCommand(archivePath, params, "body", UTF_8);
             String subject = config.get("subject", String.class);
 
             List<String> toList;
@@ -75,6 +91,27 @@ public class MailOperatorFactory
             catch (ConfigException ex) {
                 toList = ImmutableList.of(params.get("to", String.class));
             }
+
+            boolean isHtml = params.get("html", boolean.class, false);
+
+            List<AttachConfig> attachFiles = params.getListOrEmpty("attach_files", Config.class)
+                .stream()
+                .map((a) -> {
+                    String path = a.get("path", String.class);
+                    return ImmutableAttachConfig.builder()
+                        .path(path)
+                        .fileName(
+                                a.getOptional("filename", String.class)
+                                .or(path.substring(Math.max(path.lastIndexOf('/'), 0)))
+                            )
+                        .contentType(
+                                a.getOptional("content_type", String.class)
+                                .or(a.getOptional("image", String.class).transform(it -> "image/" + it))
+                                .or("application/octet-stream")
+                            )
+                        .build();
+                })
+                .collect(Collectors.toList());
 
             Properties props = new Properties();
 
@@ -123,11 +160,28 @@ public class MailOperatorFactory
                         .toArray(InternetAddress[]::new));
 
                 msg.setSubject(subject);
-                msg.setText(body);
+                if (attachFiles.isEmpty()) {
+                    msg.setText(body, "utf-8", isHtml ? "html" : "plain");
+                }
+                else {
+                    MimeMultipart multipart = new MimeMultipart();
 
+                    MimeBodyPart textPart = new MimeBodyPart();
+                    textPart.setText(body, "utf-8", isHtml ? "html" : "plain");
+                    multipart.addBodyPart(textPart);
+
+                    for (AttachConfig attachFile : attachFiles) {
+                        MimeBodyPart part = new MimeBodyPart();
+                        part.attachFile(archive.getFile(attachFile.getPath()), attachFile.getContentType(), null);
+                        part.setFileName(attachFile.getFileName());
+                        multipart.addBodyPart(part);
+                    }
+
+                    msg.setContent(multipart);
+                }
                 Transport.send(msg);
             }
-            catch (MessagingException ex) {
+            catch (MessagingException | IOException ex) {
                 throw new RuntimeException(ex);
             }
 

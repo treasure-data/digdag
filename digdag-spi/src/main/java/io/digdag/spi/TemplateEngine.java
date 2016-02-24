@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.charset.Charset;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public interface TemplateEngine
 {
@@ -15,7 +14,7 @@ public interface TemplateEngine
     String templateFile(Path basePath, String fileName, Charset fileCharset, Config params)
         throws IOException, TemplateException;
 
-    default String templateCommand(Path basePath, Config params, String aliasKey)
+    default String templateCommand(Path basePath, Config params, String aliasKey, Charset fileCharset)
     {
         if (params.has("_command")) {
             try {
@@ -25,7 +24,7 @@ public interface TemplateEngine
             catch (ConfigException notNested) {
                 String command = params.get("_command", String.class);
                 try {
-                    return templateFile(basePath, command, UTF_8, params);
+                    return templateFile(basePath, command, fileCharset, params);
                 }
                 catch (IOException | TemplateException ex) {
                     throw new ConfigException("Failed to load a template file", ex);
