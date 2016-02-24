@@ -10,7 +10,7 @@ Setting up API key
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
         database: www_access
@@ -31,7 +31,7 @@ Using Presto and Hive
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
         database: www_access
@@ -50,11 +50,11 @@ Using Presto and Hive
 Working with multiple databases
 ----------------------------------
 
-``export`` defines the default parameter. Each tasks can overwrite it:
+``_export`` defines the default parameter. Each tasks can overwrite it:
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
         database: www_access

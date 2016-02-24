@@ -7,25 +7,25 @@ Scheduling workflow
 Satting up a schedule:
 ----------------------------------
 
-To run a workflow periodically, add a ``schedule:`` option to top-level workflow definitions.
+To run a workflow periodically, add a ``_schedule:`` option to top-level workflow definitions.
 
 .. code-block:: yaml
 
     +daily_job:
-      schedule:
+      _schedule:
         daily>: 07:00:00
 
       +step1:
         sh>: tasks/shell_sample.sh
 
     +hourly_job:
-      schedule:
+      _schedule:
         hourly>: 30:00
 
       +step1:
         sh>: tasks/shell_sample.sh
 
-In ``schedule:`` directive, you can choose one of following options:
+In ``_schedule:`` directive, you can choose one of following options:
 
 =============================== =========================================== ==========================
 Syntax                          Description                                 Example
@@ -82,7 +82,7 @@ Setting an alert if a workflow doesn't finish within expected time
     run: +main
 
     +main:
-      schedule:
+      _schedule:
         daily>: 07:00:00
 
       sla:
