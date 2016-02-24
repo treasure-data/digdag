@@ -79,7 +79,7 @@ Setting an alert if a workflow doesn't finish within expected time
 
 .. code-block:: yaml
 
-    main: +main
+    run: +main
 
     +main:
       schedule:
