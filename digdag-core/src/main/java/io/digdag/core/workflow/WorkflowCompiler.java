@@ -125,8 +125,10 @@ public class WorkflowCompiler
 
         public TaskBuilder collect(
                 Optional<TaskBuilder> parent, String parentFullName,
-                String name, Config config)
+                String name, Config originalConfig)
         {
+            Config config = originalConfig.deepCopy();
+
             // +key: {...}
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
@@ -148,7 +150,6 @@ public class WorkflowCompiler
                         .set("_disable", true));
             }
             else if (config.has("_type") || config.getKeys().stream().anyMatch(key -> key.endsWith(">"))) {
-                System.out.println("config: "+config);
                 // task node
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + config);
