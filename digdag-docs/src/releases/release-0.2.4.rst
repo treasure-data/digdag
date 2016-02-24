@@ -22,6 +22,8 @@ General Changes
 
 * ``mail>`` operator supports file attachments.
 
+* ``td>`` operator downloads file in CSV format.
+
 * Fixed parameter embedding using ``${...}`` syntax
 
 
