@@ -84,5 +84,5 @@ Generating other child tasks:
 
 .. note::
 
-    Arguments need to be serializable using JSON. If arguments include non-serializable objects such as method, add_subtask method throws an exception.
+    Arguments need to be serializable using JSON. If arguments include non-serializable objects such as function, add_subtask throws TypeError.
 
