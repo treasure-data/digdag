@@ -2,8 +2,8 @@
 function template(code, variables)
 {
   var matcher = RegExp([
-    (/(?!\$)\${%([\s\S]+?)%}/g).source,
-    (/(?!\$)\${([\s\S]+?)}/g).source
+    (/\$(?!\$){%([\s\S]+?)%}/g).source,
+    (/\$(?!\$){([\s\S]+?)}/g).source
   ].join('|') + '|$', 'g');
 
   var escapes = {
