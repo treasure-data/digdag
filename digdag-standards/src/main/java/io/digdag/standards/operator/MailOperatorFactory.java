@@ -106,7 +106,6 @@ public class MailOperatorFactory
                             )
                         .contentType(
                                 a.getOptional("content_type", String.class)
-                                .or(a.getOptional("image", String.class).transform(it -> "image/" + it))
                                 .or("application/octet-stream")
                             )
                         .build();
