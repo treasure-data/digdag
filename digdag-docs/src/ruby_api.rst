@@ -88,7 +88,6 @@ Generating Ruby child tasks:
 
 Generating other child tasks:
 
-
 .. code-block:: ruby
 
     class MyWorkflow
@@ -101,4 +100,8 @@ Generating other child tasks:
         })
       end
     end
+
+.. note::
+
+    Arguments need to be serializable using JSON. If arguments include non-serializable objects such as method, add_subtask method throws an exception.
 

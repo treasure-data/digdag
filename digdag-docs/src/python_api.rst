@@ -55,7 +55,7 @@ Method argument mapping
 Generating child tasks
 ----------------------------------
 
-Generating Ruby child tasks:
+Generating Python child tasks:
 
 .. code-block:: python
 
@@ -81,4 +81,8 @@ Generating other child tasks:
           'subject': 'workflow started',
           'to': ['me@example.com'],
         })
+
+.. note::
+
+    Arguments need to be serializable using JSON. If arguments include non-serializable objects such as method, add_subtask method throws an exception.
 
