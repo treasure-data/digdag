@@ -8,7 +8,7 @@ digdag.yml:
 
 .. code-block:: yaml
 
-    main: +main
+    run: +main
 
     +main:
       export:
