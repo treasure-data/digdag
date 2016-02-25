@@ -224,7 +224,7 @@ public class OperatorManager
     private void warnUnusedKeys(List<String> unusedKeys, TaskRequest request)
     {
         if (!unusedKeys.isEmpty()) {
-            logger.warn("Some keys are not used at {}: {}", request.getTaskName(), unusedKeys);
+            logger.warn("Some parameters are not used at {}: {}", request.getTaskName(), unusedKeys);
         }
     }
 
