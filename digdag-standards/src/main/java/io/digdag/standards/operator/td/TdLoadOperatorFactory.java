@@ -60,9 +60,8 @@ public class TdLoadOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().getNestedOrGetEmpty("td")
-                .deepCopy()
-                .setAll(request.getConfig());
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("td"));
 
             ObjectNode embulkConfig;
             if (params.has("_command")) {

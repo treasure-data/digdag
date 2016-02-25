@@ -49,9 +49,8 @@ public class TdDdlOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().getNestedOrGetEmpty("td")
-                .deepCopy()
-                .setAll(request.getConfig());
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("td"));
 
             List<String> deleteList = params.getListOrEmpty("drop_table", String.class);
             List<String> createList = params.getListOrEmpty("create_table", String.class);

@@ -36,6 +36,12 @@ public class Config
         this.object = (ObjectNode) object;
     }
 
+    protected Config(Config config)
+    {
+        this.mapper = config.mapper;
+        this.object = config.object.deepCopy();
+    }
+
     // here uses JsonNode instead of ObjectNode for workaround of https://github.com/FasterXML/jackson-databind/issues/941
     @JsonCreator
     public static Config deserializeFromJackson(@JacksonInject ObjectMapper mapper, JsonNode object)
@@ -57,21 +63,39 @@ public class Config
         if (v == null) {
             remove(key);
         } else {
-            object.set(key, writeObject(v));
+            set(key, writeObject(v));
+        }
+        return this;
+    }
+
+    public Config setIfNotSet(String key, Object v)
+    {
+        if (!has(key)) {
+            if (v != null) {
+                set(key, writeObject(v));
+            }
         }
         return this;
     }
 
     public Config setNested(String key, Config v)
     {
-        object.set(key, v.object);
+        set(key, v.object);
         return this;
     }
 
     public Config setAll(Config other)
     {
         for (Map.Entry<String, JsonNode> field : other.getEntries()) {
-            object.set(field.getKey(), field.getValue());
+            set(field.getKey(), field.getValue());
+        }
+        return this;
+    }
+
+    public Config setAllIfNotSet(Config other)
+    {
+        for (Map.Entry<String, JsonNode> field : other.getEntries()) {
+            setIfNotSet(field.getKey(), field.getValue());
         }
         return this;
     }
@@ -94,7 +118,7 @@ public class Config
 
     public Config deepCopy()
     {
-        return new Config(mapper, object.deepCopy());
+        return new Config(this);
     }
 
     //public Config merge(Config other)
@@ -176,7 +200,7 @@ public class Config
 
     public <E> E get(String key, Class<E> type)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
@@ -185,7 +209,7 @@ public class Config
 
     public Object get(String key, JavaType type)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
@@ -200,7 +224,7 @@ public class Config
 
     public <E> E get(String key, Class<E> type, E defaultValue)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
             return defaultValue;
         }
@@ -209,7 +233,7 @@ public class Config
 
     public Object get(String key, JavaType type, Object defaultValue)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
             return defaultValue;
         }
@@ -254,7 +278,7 @@ public class Config
 
     public Config getNested(String key)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
@@ -266,10 +290,10 @@ public class Config
 
     public Config getNestedOrSetEmpty(String key)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
-            value = object.objectNode();
-            object.set(key, value);
+            value = newObjectNode();
+            set(key, value);
         }
         else if (!value.isObject()) {
             throw new ConfigException("Parameter '"+key+"' must be an object");
@@ -279,9 +303,9 @@ public class Config
 
     public Config getNestedOrGetEmpty(String key)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
-            value = object.objectNode();
+            value = newObjectNode();
         }
         else if (!value.isObject()) {
             throw new ConfigException("Parameter '"+key+"' must be an object");
@@ -291,9 +315,9 @@ public class Config
 
     public Config getNestedOrderedOrGetEmpty(String key)
     {
-        JsonNode value = object.get(key);
+        JsonNode value = get(key);
         if (value == null) {
-            value = object.objectNode();
+            value = newObjectNode();
         }
         else if (value.isArray()) {
             Config config = new Config(mapper);
@@ -312,6 +336,21 @@ public class Config
             throw new ConfigException("Parameter '"+key+"' must be an object or array of objects");
         }
         return new Config(mapper, (ObjectNode) value);
+    }
+
+    private ObjectNode newObjectNode()
+    {
+        return object.objectNode();
+    }
+
+    protected JsonNode get(String key)
+    {
+        return object.get(key);
+    }
+
+    protected void set(String key, JsonNode value)
+    {
+        object.set(key, value);
     }
 
     private <E> E readObject(Class<E> type, JsonNode value, String key)

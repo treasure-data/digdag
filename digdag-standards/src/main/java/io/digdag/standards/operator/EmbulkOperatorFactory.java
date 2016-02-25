@@ -70,9 +70,8 @@ public class EmbulkOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().getNestedOrGetEmpty("embulk")
-                .deepCopy()
-                .setAll(request.getConfig());
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("embulk"));
 
             String tempFile;
             try {

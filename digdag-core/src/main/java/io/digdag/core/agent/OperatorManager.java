@@ -2,6 +2,7 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -155,15 +156,13 @@ public class OperatorManager
             }
             logger.debug("evaluated config: {}", config);
 
-            TaskRequest mergedRequest = TaskRequest.builder()
-                .from(request)
-                .config(config)
-                .build();
+            Set<String> shouldBeUsedKeys = new HashSet<>(request.getLocalConfig().getKeys());
 
             String type;
             if (config.has("_type")) {
                 type = config.get("_type", String.class);
                 logger.info("type: {}", type);
+                shouldBeUsedKeys.remove("_type");
             }
             else {
                 java.util.Optional<String> operatorKey = config.getKeys()
@@ -182,9 +181,19 @@ public class OperatorManager
                 config.set("_type", type);
                 config.set("_command", file);
                 logger.info("{}>: {}", type, file);
+                shouldBeUsedKeys.remove(operatorKey.get());
             }
 
+            CheckedConfig checkedConfig = new CheckedConfig(config, shouldBeUsedKeys);
+
+            TaskRequest mergedRequest = TaskRequest.builder()
+                .from(request)
+                .config(checkedConfig)
+                .build();
+
             TaskResult result = callExecutor(archivePath, type, mergedRequest);
+
+            warnUnusedKeys(checkedConfig.getUnusedKeys(), request);
 
             callback.taskSucceeded(
                     taskId, request.getLockId(), agentId,
@@ -209,6 +218,13 @@ public class OperatorManager
                         taskId, request.getLockId(), agentId,
                         ex.getError().get());  // TODO is error set?
             }
+        }
+    }
+
+    private void warnUnusedKeys(List<String> unusedKeys, TaskRequest request)
+    {
+        if (!unusedKeys.isEmpty()) {
+            logger.warn("Some keys are not used at {}: {}", request.getTaskName(), unusedKeys);
         }
     }
 

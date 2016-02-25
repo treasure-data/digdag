@@ -77,12 +77,9 @@ public class RbOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("rb")
-                .deepCopy()
-                .setAll(request.getConfig());
-
-            // merge state parameters in addition to regular config
-            Config params = config.setAll(request.getLastStateParams());
+            Config params = request.getConfig()
+                .setAllIfNotSet(request.getConfig().getNestedOrGetEmpty("rb"))
+                .setAll(request.getLastStateParams());  // merge state parameters in addition to regular config
 
             Config data;
             try {

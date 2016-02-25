@@ -58,14 +58,17 @@ public class ShOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            String command = request.getConfig().get("_command", String.class);
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("sh"));
+
+            String command = params.get("_command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
 
             final Map<String, String> env = pb.environment();
-            request.getConfig().getKeys()
+            params.getKeys()
                 .forEach(key -> {
                     if (isValidEnvKey(key)) {
-                        JsonNode value = request.getConfig().get(key, JsonNode.class);
+                        JsonNode value = params.get(key, JsonNode.class);
                         String string;
                         if (value.isTextual()) {
                             string = value.textValue();
@@ -112,7 +115,7 @@ public class ShOperatorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return TaskResult.empty(request.getConfig().getFactory());
+            return TaskResult.empty(params.getFactory());
         }
     }
 

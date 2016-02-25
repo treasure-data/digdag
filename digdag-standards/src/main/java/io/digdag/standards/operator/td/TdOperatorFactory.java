@@ -62,9 +62,8 @@ public class TdOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().getNestedOrGetEmpty("td")
-                .deepCopy()
-                .setAll(request.getConfig());
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("td"));
 
             String query = templateEngine.templateCommand(archivePath, params, "query", UTF_8);
 

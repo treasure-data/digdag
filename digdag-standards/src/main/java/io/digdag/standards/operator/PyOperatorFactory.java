@@ -77,12 +77,9 @@ public class PyOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config config = request.getConfig().getNestedOrGetEmpty("py")
-                .deepCopy()
-                .setAll(request.getConfig());
-
-            // merge state parameters in addition to regular config
-            Config params = config.setAll(request.getLastStateParams());
+            Config params = request.getConfig()
+                .setAllIfNotSet(request.getConfig().getNestedOrGetEmpty("py"))
+                .setAll(request.getLastStateParams());  // merge state parameters in addition to regular config
 
             Config data;
             try {

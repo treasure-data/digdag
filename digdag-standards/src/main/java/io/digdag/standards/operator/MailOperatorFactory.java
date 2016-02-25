@@ -76,13 +76,11 @@ public class MailOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config config = request.getConfig();
-            Config params =
-                config.getNestedOrGetEmpty("mail").deepCopy()
-                .setAll(config);
+            Config params = request.getConfig().setAllIfNotSet(
+                    request.getConfig().getNestedOrGetEmpty("mail"));
 
             String body = templateEngine.templateCommand(archivePath, params, "body", UTF_8);
-            String subject = config.get("subject", String.class);
+            String subject = params.get("subject", String.class);
 
             List<String> toList;
             try {
