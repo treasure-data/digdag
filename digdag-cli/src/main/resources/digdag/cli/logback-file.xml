@@ -17,7 +17,7 @@
   <logger name="io.netty.util" level="INFO"/>
   <logger name="io.netty.buffer" level="INFO"/>
 
-  <appender name="digdag-context" class="io.digdag.cli.LogbackContextLoggerBridgeAppender">
+  <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
   </appender>
 
   <root>

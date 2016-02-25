@@ -1,15 +1,15 @@
 package io.digdag.core.log;
 
-public class ContextLogging
+public class TaskContextLogging
 {
     private static final InheritableThreadLocal<Context> contexts = new InheritableThreadLocal<Context>();
 
-    public static void enter(String level, ContextLogger logger)
+    public static void enter(String level, TaskLogger logger)
     {
         enter(LogLevel.of(level), logger);
     }
 
-    public static void enter(LogLevel level, ContextLogger logger)
+    public static void enter(LogLevel level, TaskLogger logger)
     {
         if (getContext() != null) {
             // should here push logger to a stack rather than exception?
@@ -35,9 +35,9 @@ public class ContextLogging
     public static class Context
     {
         private final int filterLevel;
-        private final ContextLogger logger;
+        private final TaskLogger logger;
 
-        private Context(LogLevel filterLevel, ContextLogger logger)
+        private Context(LogLevel filterLevel, TaskLogger logger)
         {
             this.filterLevel = filterLevel.toInt();
             this.logger = logger;
@@ -48,7 +48,7 @@ public class ContextLogging
             return filterLevel <= level.toInt();
         }
 
-        public ContextLogger getLogger()
+        public TaskLogger getLogger()
         {
             return logger;
         }

@@ -8,8 +8,14 @@ import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestTask;
+import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.api.RestDirectDownloadHandle;
+import io.digdag.client.api.RestDirectUploadHandle;
 import io.digdag.client.api.IdName;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.LogFileHandle;
+import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.spi.DirectUploadHandle;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
@@ -121,6 +127,30 @@ public final class RestModels
             .stateParams(task.getStateParams())
             .updatedAt(task.getUpdatedAt())
             .retryAt(task.getRetryAt())
+            .build();
+    }
+
+    public static RestLogFileHandle logFileHandle(LogFileHandle handle)
+    {
+        return RestLogFileHandle.builder()
+            .fileName(handle.getFileName())
+            .direct(handle.getDirect().transform(it -> directDownloadHandle(it)))
+            .build();
+    }
+
+    public static RestDirectDownloadHandle directDownloadHandle(DirectDownloadHandle handle)
+    {
+        return RestDirectDownloadHandle.builder()
+            .type(handle.getType())
+            .url(handle.getUrl())
+            .build();
+    }
+
+    public static RestDirectUploadHandle directUploadHandle(DirectUploadHandle handle)
+    {
+        return RestDirectUploadHandle.builder()
+            .type(handle.getType())
+            .url(handle.getUrl())
             .build();
     }
 }

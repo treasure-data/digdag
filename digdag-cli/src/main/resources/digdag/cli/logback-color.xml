@@ -59,7 +59,7 @@
     </encoder>
   </appender>
 
-  <appender name="digdag-context" class="io.digdag.cli.LogbackContextLoggerBridgeAppender">
+  <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
   </appender>
 
   <logger name="com.zaxxer.hikari" level="WARN"/>

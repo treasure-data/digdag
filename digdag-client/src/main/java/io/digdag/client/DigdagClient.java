@@ -178,7 +178,7 @@ public class DigdagClient
         throws IOException
     {
         return doPut(RestRepository.class,
-                "application/x-gzip",
+                "application/gzip",
                 body,  // TODO does this work?
                 target("/api/repositories")
                 .queryParam("repository", repoName)

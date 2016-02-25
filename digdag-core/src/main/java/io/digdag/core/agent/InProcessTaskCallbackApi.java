@@ -22,8 +22,8 @@ import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.queue.TaskQueueManager;
-import io.digdag.core.log.ContextLogger;
-import io.digdag.core.log.NullContextLogger;
+import io.digdag.core.log.LogServerManager;
+import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.ScheduleTime;
 import org.slf4j.Logger;
@@ -38,6 +38,7 @@ public class InProcessTaskCallbackApi
     private final AgentId localAgentId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
+    private final LogServerManager lm;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
     private final TaskQueueClient queueClient;
@@ -48,6 +49,7 @@ public class InProcessTaskCallbackApi
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             TaskQueueManager qm,
+            LogServerManager lm,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
@@ -55,17 +57,16 @@ public class InProcessTaskCallbackApi
         this.localAgentId = localAgentId;
         this.rm = rm;
         this.sm = sm;
+        this.lm = lm;
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.queueClient = qm.getInProcessTaskQueueClient(localSiteId);
     }
 
     @Override
-    public ContextLogger newContextLogger()
+    public TaskLogger newTaskLogger()
     {
-        // TODO implement buffered logger that ends logs to LogClient taken from LogServerManager.getInProcessLogClient()
-        // TODO implement LogServerFactory based on database or local file
-        return new NullContextLogger();
+        return lm.getInProcessTaskLogger(localSiteId);
     }
 
     @Override

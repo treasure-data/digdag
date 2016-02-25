@@ -5,15 +5,15 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.classic.Level;
 import io.digdag.core.log.LogLevel;
-import io.digdag.core.log.ContextLogging;
-import io.digdag.core.log.ContextLogging.Context;
+import io.digdag.core.log.TaskContextLogging;
+import io.digdag.core.log.TaskContextLogging.Context;
 import static ch.qos.logback.classic.Level.ERROR_INT;
 import static ch.qos.logback.classic.Level.WARN_INT;
 import static ch.qos.logback.classic.Level.INFO_INT;
 import static ch.qos.logback.classic.Level.DEBUG_INT;
 import static ch.qos.logback.classic.Level.TRACE_INT;
 
-public class LogbackContextLoggerBridgeAppender
+public class LogbackTaskContextLoggerBridgeAppender
     extends UnsynchronizedAppenderBase<ILoggingEvent>
 {
     private static final String PATTERN = "%d{yyyy-MM-dd HH:mm:ss.SSS Z} [%level] (%thread\\) %class: %m%n";
@@ -40,7 +40,7 @@ public class LogbackContextLoggerBridgeAppender
     @Override
     protected void append(ILoggingEvent event)
     {
-        Context ctx = ContextLogging.getContext();
+        Context ctx = TaskContextLogging.getContext();
         if (ctx == null) {
             return;
         }

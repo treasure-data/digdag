@@ -160,7 +160,7 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}/archive")
-    @Produces("application/x-gzip")
+    @Produces("application/gzip")
     public byte[] getArchive(@PathParam("id") int repoId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
@@ -177,7 +177,7 @@ public class RepositoryResource
     }
 
     @PUT
-    @Consumes("application/x-gzip")
+    @Consumes("application/gzip")
     @Path("/api/repositories")
     public RestRepository putRepository(@QueryParam("repository") String name, @QueryParam("revision") String revision,
             InputStream body)

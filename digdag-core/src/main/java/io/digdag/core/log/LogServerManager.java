@@ -1,10 +1,10 @@
 package io.digdag.core.log;
 
 import com.google.inject.Inject;
-import io.digdag.spi.LogClient;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
-import java.util.function.Consumer;
+import io.digdag.spi.LogFilePrefix;
 
 public class LogServerManager
 {
@@ -21,27 +21,24 @@ public class LogServerManager
         return factory.getLogServer();
     }
 
-    public LogClient getInProcessLogClient(int siteId)
+    public TaskLogger getInProcessTaskLogger(int siteId)
     {
-        final LogServer server = getLogServer();
-        return new LogClient()
-        {
-            public void send(long taskId, byte[] data)
-            {
-                server.send(taskId, data);
-            }
+        // TODO implement buffered logger that ends logs to TaskLogger taken from LogServerManager.getInProcessTaskLogger()
+        // TODO implement LogServerFactory based on database or local file
+        return new NullTaskLogger();
+    }
 
-            public void get(long taskId, Consumer<byte[]> consumer)
-            {
-                int index = 0;
-                while (true) {
-                    byte[] data = server.get(taskId, index);
-                    if (data == null) {
-                        return;
-                    }
-                    consumer.accept(data);
-                }
-            }
-        };
+    public static LogFilePrefix logFilePrefixFromSessionAttempt(
+            StoredSessionAttemptWithSession attempt)
+    {
+        return LogFilePrefix.builder()
+            .siteId(attempt.getSiteId())
+            //.repositoryName()  // TODO
+            .workflowName(attempt.getSession().getWorkflowName())
+            .sessionTime(attempt.getSession().getSessionTime())
+            .timeZone(attempt.getTimeZone())
+            .retryAttemptName(attempt.getRetryAttemptName())
+            .createdAt(attempt.getCreatedAt())
+            .build();
     }
 }
