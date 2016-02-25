@@ -257,7 +257,7 @@ public class Run
             logger.debug("    upstreams: "+task.getUpstreams().stream().map(it -> Long.toString(it)).collect(Collectors.joining(",")));
             logger.debug("    state: "+task.getState());
             logger.debug("    retryAt: "+task.getRetryAt());
-            logger.debug("    config: "+task.getConfig());
+            logger.debug("    config: "+task.getConfig().getMerged());
             logger.debug("    taskType: "+task.getTaskType());
             logger.debug("    exported: "+task.getExportParams());
             logger.debug("    stored: "+task.getStoreParams());
