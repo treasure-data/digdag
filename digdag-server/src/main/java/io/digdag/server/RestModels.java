@@ -134,6 +134,9 @@ public final class RestModels
     {
         return RestLogFileHandle.builder()
             .fileName(handle.getFileName())
+            .taskName(handle.getTaskName())
+            .fileTime(handle.getFileTime())
+            .agentId(handle.getAgentId())
             .direct(handle.getDirect().transform(it -> directDownloadHandle(it)))
             .build();
     }

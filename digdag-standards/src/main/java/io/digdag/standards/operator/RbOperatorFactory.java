@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -46,12 +47,15 @@ public class RbOperatorFactory
     }
 
     private final CommandExecutor exec;
+    private final CommandLogger clog;
     private final ObjectMapper mapper;
 
     @Inject
-    public RbOperatorFactory(CommandExecutor exec, ObjectMapper mapper)
+    public RbOperatorFactory(CommandExecutor exec, CommandLogger clog,
+            ObjectMapper mapper)
     {
         this.exec = exec;
+        this.clog = clog;
         this.mapper = mapper;
     }
 
@@ -121,40 +125,31 @@ public class RbOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            int ecode;
-            String message;
-            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-                cmdline.add("ruby");
-                cmdline.add("-I").add(archivePath.toString());
-                if (feature.isPresent()) {
-                    cmdline.add("-r").add(feature.get());
-                }
-                cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
-                cmdline.addAll(args);
+            ImmutableList.Builder<String> cmdline = ImmutableList.builder();
+            cmdline.add("ruby");
+            cmdline.add("-I").add(archivePath.toString());
+            if (feature.isPresent()) {
+                cmdline.add("-r").add(feature.get());
+            }
+            cmdline.add("--").add("-");  // script is fed from stdin  TODO: this doesn't work with jruby
+            cmdline.addAll(args);
 
-                ProcessBuilder pb = new ProcessBuilder(cmdline.build());
-                pb.redirectErrorStream(true);
-                Process p = exec.start(archivePath, request, pb);
+            ProcessBuilder pb = new ProcessBuilder(cmdline.build());
+            pb.redirectErrorStream(true);
+            Process p = exec.start(archivePath, request, pb);
 
-                // feed script to stdin
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
-                    writer.write(script);
-                }
-
-                // read stdout to buffer
-                try (InputStream stdout = p.getInputStream()) {
-                    ByteStreams.copy(stdout, buffer);
-                }
-
-                ecode = p.waitFor();
-                message = buffer.toString();
+            // feed script to stdin
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+                writer.write(script);
             }
 
-            //logger.info("Ruby message ===\n{}", message);  // TODO include task name
-            System.out.println(message);
+            // read stdout to stdout
+            clog.copyStdout(p, System.out);
+
+            int ecode = p.waitFor();
+
             if (ecode != 0) {
-                throw new RuntimeException("Ruby command failed: "+message);
+                throw new RuntimeException("Ruby command failed with code " + ecode);
             }
 
             return mapper.readValue(archive.getFile(outFile), Config.class);

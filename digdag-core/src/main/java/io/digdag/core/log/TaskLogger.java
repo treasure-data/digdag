@@ -7,6 +7,8 @@ public interface TaskLogger
 {
     void log(LogLevel level, long timestamp, String message);
 
+    void log(byte[] data, int off, int len);
+
     @Override
     void close();
 }

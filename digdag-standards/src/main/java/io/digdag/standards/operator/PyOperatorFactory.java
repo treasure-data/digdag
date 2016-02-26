@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -46,12 +47,15 @@ public class PyOperatorFactory
     }
 
     private final CommandExecutor exec;
+    private final CommandLogger clog;
     private final ObjectMapper mapper;
 
     @Inject
-    public PyOperatorFactory(CommandExecutor exec, ObjectMapper mapper)
+    public PyOperatorFactory(CommandExecutor exec, CommandLogger clog,
+            ObjectMapper mapper)
     {
         this.exec = exec;
+        this.clog = clog;
         this.mapper = mapper;
     }
 
@@ -119,35 +123,26 @@ public class PyOperatorFactory
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
-            int ecode;
-            String message;
-            try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                List<String> cmdline = ImmutableList.<String>builder()
-                    .add("python").add("-")  // script is fed from stdin
-                    .addAll(args)
-                    .build();
-                ProcessBuilder pb = new ProcessBuilder(cmdline);
-                pb.redirectErrorStream(true);
-                Process p = exec.start(archivePath, request, pb);
+            List<String> cmdline = ImmutableList.<String>builder()
+                .add("python").add("-")  // script is fed from stdin
+                .addAll(args)
+                .build();
+            ProcessBuilder pb = new ProcessBuilder(cmdline);
+            pb.redirectErrorStream(true);
+            Process p = exec.start(archivePath, request, pb);
 
-                // feed script to stdin
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
-                    writer.write(script);
-                }
-
-                // read stdout to buffer
-                try (InputStream stdout = p.getInputStream()) {
-                    ByteStreams.copy(stdout, buffer);
-                }
-
-                ecode = p.waitFor();
-                message = buffer.toString();
+            // feed script to stdin
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+                writer.write(script);
             }
 
-            //logger.info("Python message ===\n{}", message);  // TODO include task name
-            System.out.println(message);
+            // copy stdout to System.out and logger
+            clog.copyStdout(p, System.out);
+
+            int ecode = p.waitFor();
+
             if (ecode != 0) {
-                throw new RuntimeException("Python command failed: "+message);
+                throw new RuntimeException("Python command failed with code " + ecode);
             }
 
             return mapper.readValue(archive.getFile(outFile), Config.class);

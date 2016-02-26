@@ -68,7 +68,7 @@ public class LogResource
     @PUT
     @Consumes("application/gzip")
     @Path("/api/logs/{attempt_id}/files")
-    public RestLogFileHandle putFile(
+    public RestLogFilePutResult putFile(
             @PathParam("attempt_id") long attemptId,
             @QueryParam("task_name") String taskName,
             @QueryParam("file_time") long unixFileTime,
@@ -82,7 +82,7 @@ public class LogResource
 
         byte[] data = ByteStreams.toByteArray(body);
         String fileName = logServer.putFile(prefix, taskName, Instant.ofEpochSecond(unixFileTime), nodeId, data);
-        return RestModels.logFileHandle(LogFileHandle.ofNonDirect(fileName));
+        return RestLogFilePutResult.of(fileName);
     }
 
     @GET

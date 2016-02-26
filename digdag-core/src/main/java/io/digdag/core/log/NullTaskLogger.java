@@ -8,6 +8,10 @@ public class NullTaskLogger
     { }
 
     @Override
+    public void log(byte[] data, int off, int len)
+    { }
+
+    @Override
     public void close()
     { }
 }
