@@ -25,9 +25,12 @@ import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskQueueClient;
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.LogFilePrefix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
 
 public class InProcessTaskCallbackApi
         implements TaskCallbackApi
@@ -64,9 +67,21 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public TaskLogger newTaskLogger()
+    public TaskLogger newTaskLogger(TaskRequest request)
     {
-        return lm.getInProcessTaskLogger(localSiteId);
+        long attemptId = request.getAttemptId();
+        String taskName = request.getTaskName();
+        LogFilePrefix prefix;
+        try {
+            StoredSessionAttemptWithSession attempt =
+                sm.getSessionStore(localSiteId)
+                .getSessionAttemptById(attemptId);
+            prefix = logFilePrefixFromSessionAttempt(attempt);
+        }
+        catch (ResourceNotFoundException ex) {
+            throw new RuntimeException(ex);
+        }
+        return lm.newInProcessTaskLogger(prefix, taskName);
     }
 
     @Override

@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
@@ -135,7 +136,12 @@ public class LogResource
         throws ResourceNotFoundException
     {
         LogFilePrefix prefix = getPrefix(attemptId);
-        return logServer.getFile(prefix, fileName);
+        try {
+            return logServer.getFile(prefix, fileName);
+        }
+        catch (FileNotFoundException ex) {
+            throw new ResourceNotFoundException(ex);
+        }
     }
 
     private LogFilePrefix getPrefix(long attemptId)

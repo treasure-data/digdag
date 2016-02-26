@@ -28,6 +28,7 @@ import io.digdag.core.agent.CurrentDirectoryArchiveManager;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.core.log.NullLogServerFactory;
+import io.digdag.core.log.LocalFileLogServerFactory;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.database.ConfigMapper;
 import io.digdag.core.database.DatabaseMigrator;
@@ -140,13 +141,16 @@ public class DigdagEmbed
                     binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);
                     binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
                     binder.bind(LogServerManager.class).in(Scopes.SINGLETON);
-                    binder.bind(LogServerFactory.class).to(NullLogServerFactory.class).in(Scopes.SINGLETON);
                     binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
                     binder.bind(SlaCalculator.class).in(Scopes.SINGLETON);
                     binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigElement.class).toInstance(systemConfig);
                     binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
+
+                    Multibinder<LogServerFactory> logServerBinder = Multibinder.newSetBinder(binder, LogServerFactory.class);
+                    logServerBinder.addBinding().to(NullLogServerFactory.class).in(Scopes.SINGLETON);
+                    logServerBinder.addBinding().to(LocalFileLogServerFactory.class).in(Scopes.SINGLETON);
 
                     Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
                     taskQueueBinder.addBinding().to(DatabaseTaskQueueFactory.class).in(Scopes.SINGLETON);

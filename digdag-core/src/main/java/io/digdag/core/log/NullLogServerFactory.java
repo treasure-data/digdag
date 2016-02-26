@@ -1,8 +1,10 @@
 package io.digdag.core.log;
 
 import java.util.List;
+import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.ZoneId;
+import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import io.digdag.spi.LogServer;
@@ -10,11 +12,23 @@ import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.DirectUploadHandle;
+import io.digdag.client.config.Config;
 
 public class NullLogServerFactory
     implements LogServerFactory
 {
-    public LogServer getLogServer()
+    @Inject
+    public NullLogServerFactory()
+    { }
+
+    @Override
+    public String getType()
+    {
+        return "null";
+    }
+
+    @Override
+    public LogServer getLogServer(Config systemConfig)
     {
         return new NullLogServer();
     }
@@ -42,8 +56,9 @@ public class NullLogServerFactory
 
         @Override
         public byte[] getFile(LogFilePrefix prefix, String fileName)
+            throws FileNotFoundException
         {
-            return new byte[0];
+            throw new FileNotFoundException();
         }
     }
 }

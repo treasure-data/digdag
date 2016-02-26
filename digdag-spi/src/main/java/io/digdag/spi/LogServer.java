@@ -1,6 +1,7 @@
 package io.digdag.spi;
 
 import java.util.List;
+import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
@@ -13,5 +14,6 @@ public interface LogServer
 
     List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName);
 
-    byte[] getFile(LogFilePrefix prefix, String fileName);
+    byte[] getFile(LogFilePrefix prefix, String fileName)
+        throws FileNotFoundException;
 }

@@ -6,11 +6,12 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
+import io.digdag.spi.TaskRequest;
 import io.digdag.core.session.SessionStateFlags;
 
 public interface TaskCallbackApi
 {
-    TaskLogger newTaskLogger();
+    TaskLogger newTaskLogger(TaskRequest request);
 
     void taskHeartbeat(List<String> lockedIds, AgentId agentId, int lockSeconds);
 

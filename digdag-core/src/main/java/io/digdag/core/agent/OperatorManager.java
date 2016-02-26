@@ -123,7 +123,7 @@ public class OperatorManager
 
         lockIdMap.put(taskId, request.getLockId());
         try {
-            TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger());
+            TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger(request));
             try {
                 archiveManager.withExtractedArchive(request, (archivePath) -> {
                     runWithArchive(archivePath, request, nextState);
