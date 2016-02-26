@@ -8,7 +8,6 @@ import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.log.NullLogServerFactory.NullLogServer;
 import io.digdag.core.log.LocalFileLogServerFactory.LocalFileLogServer;
@@ -18,10 +17,8 @@ public class LogServerManager
     private final LogServer logServer;
 
     @Inject
-    public LogServerManager(Set<LogServerFactory> factories,
-            ConfigElement ce, ConfigFactory cf)
+    public LogServerManager(Set<LogServerFactory> factories, Config systemConfig)
     {
-        Config systemConfig = ce.toConfig(cf);
         String logServerType = systemConfig.get("log-server.type", String.class, "null");
         LogServerFactory factory = findLogServer(factories, logServerType);
         this.logServer = factory.getLogServer(systemConfig);

@@ -24,6 +24,8 @@ public class DatabaseModule
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(PooledDataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(IDBI.class).toProvider(IdbiProvider.class);
+        binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
+        binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(RepositoryStoreManager.class).to(DatabaseRepositoryStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(QueueSettingStoreManager.class).to(DatabaseQueueSettingStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(SessionStoreManager.class).to(DatabaseSessionStoreManager.class).in(Scopes.SINGLETON);

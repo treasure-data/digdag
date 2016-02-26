@@ -6,55 +6,30 @@ import java.util.Arrays;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Guice;
+import com.google.inject.Provider;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.TaskQueueFactory;
-import io.digdag.spi.LogServerFactory;
-import io.digdag.spi.CommandLogger;
-import io.digdag.core.agent.AgentId;
-import io.digdag.core.agent.AgentIdProvider;
-import io.digdag.core.agent.AgentConfig;
-import io.digdag.core.agent.AgentConfigProvider;
-import io.digdag.core.agent.LocalAgentManager;
-import io.digdag.core.agent.OperatorManager;
-import io.digdag.core.agent.ConfigEvalEngine;
-import io.digdag.core.agent.TaskCallbackApi;
-import io.digdag.core.agent.TaskContextCommandLogger;
-import io.digdag.core.agent.InProcessTaskCallbackApi;
-import io.digdag.core.agent.RequireOperatorFactory;
-import io.digdag.core.agent.ArchiveManager;
-import io.digdag.core.agent.CurrentDirectoryArchiveManager;
-import io.digdag.core.queue.TaskQueueManager;
-import io.digdag.core.log.LogServerManager;
+import io.digdag.core.queue.QueueModule;
 import io.digdag.core.log.NullLogServerFactory;
 import io.digdag.core.log.LocalFileLogServerFactory;
 import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.core.database.ConfigMapper;
-import io.digdag.core.database.DatabaseMigrator;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
-import io.digdag.core.database.DatabaseConfig;
-import io.digdag.core.database.DatabaseTaskQueueFactory;
-import io.digdag.core.schedule.ScheduleHandler;
-import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.core.schedule.SlaCalculator;
-import io.digdag.core.session.SessionMonitorExecutor;
-import io.digdag.core.workflow.TaskQueueDispatcher;
-import io.digdag.core.workflow.WorkflowCompiler;
-import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.workflow.AttemptBuilder;
+import io.digdag.core.workflow.WorkflowModule;
+import io.digdag.core.schedule.ScheduleModule;
+import io.digdag.core.config.ConfigModule;
+import io.digdag.core.agent.AgentModule;
+import io.digdag.core.log.LogModule;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-//import com.fasterxml.jackson.datatype.joda.JodaModule;
+import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.JacksonTimeModule;
-import io.digdag.core.config.YamlConfigLoader;
 
 public class DigdagEmbed
 {
@@ -122,47 +97,37 @@ public class DigdagEmbed
                     .registerModule(new JacksonTimeModule()),
                     //.registerModule(new JodaModule()),
                 new DatabaseModule(),
+                new AgentModule(),
+                new LogModule(),
+                new ScheduleModule(),
+                new ConfigModule(),
+                new WorkflowModule(),
+                new QueueModule(),
                 (binder) -> {
-                    binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
-                    binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
-                    binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
-                    binder.bind(AttemptBuilder.class).in(Scopes.SINGLETON);
-                    binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
-                    binder.bind(ScheduleHandler.class).in(Scopes.SINGLETON);
-                    binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
-                    binder.bind(AgentId.class).toProvider(AgentIdProvider.class).in(Scopes.SINGLETON);
-                    binder.bind(AgentConfig.class).toProvider(AgentConfigProvider.class).in(Scopes.SINGLETON);
-                    binder.bind(SchedulerManager.class).in(Scopes.SINGLETON);
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
-                    binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
-                    binder.bind(OperatorManager.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);
-                    binder.bind(TaskQueueManager.class).in(Scopes.SINGLETON);
-                    binder.bind(LogServerManager.class).in(Scopes.SINGLETON);
-                    binder.bind(ScheduleExecutor.class).in(Scopes.SINGLETON);
-                    binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
-                    binder.bind(SlaCalculator.class).in(Scopes.SINGLETON);
-                    binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
                     binder.bind(ConfigElement.class).toInstance(systemConfig);
-                    binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
-                    binder.bind(CommandLogger.class).to(TaskContextCommandLogger.class).in(Scopes.SINGLETON);
-
-                    Multibinder<LogServerFactory> logServerBinder = Multibinder.newSetBinder(binder, LogServerFactory.class);
-                    logServerBinder.addBinding().to(NullLogServerFactory.class).in(Scopes.SINGLETON);
-                    logServerBinder.addBinding().to(LocalFileLogServerFactory.class).in(Scopes.SINGLETON);
-
-                    Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
-                    taskQueueBinder.addBinding().to(DatabaseTaskQueueFactory.class).in(Scopes.SINGLETON);
-
-                    Multibinder<OperatorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
-                    taskExecutorBinder.addBinding().to(RequireOperatorFactory.class).in(Scopes.SINGLETON);
+                    binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                 },
                 new ExtensionServiceLoaderModule()
         );
+    }
+
+    public static class SystemConfigProvider
+            implements Provider<Config>
+    {
+        private Config systemConfig;
+
+        @Inject
+        public SystemConfigProvider(ConfigElement ce, ConfigFactory cf)
+        {
+            this.systemConfig = ce.toConfig(cf);
+        }
+
+        @Override
+        public Config get()
+        {
+            return systemConfig;
+        }
     }
 
     private final LifeCycleInjector injector;

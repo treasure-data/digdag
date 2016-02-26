@@ -10,7 +10,6 @@ import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskQueueFactory;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -21,7 +20,7 @@ public class TaskQueueManager
     private final TaskQueue taskQueue;
 
     @Inject
-    public TaskQueueManager(QueueSettingStoreManager qm, ConfigElement ce, ConfigFactory cf, Set<TaskQueueFactory> factories)
+    public TaskQueueManager(QueueSettingStoreManager qm, Config systemConfig, Set<TaskQueueFactory> factories)
     {
         this.qm = qm;
 
@@ -31,7 +30,6 @@ public class TaskQueueManager
         }
         Map<String, TaskQueueFactory> queueTypes = builder.build();
 
-        Config systemConfig = ce.toConfig(cf);
         this.taskQueue = queueTypes.get("database").getTaskQueue(systemConfig);    // TODO make this configurable?
     }
 

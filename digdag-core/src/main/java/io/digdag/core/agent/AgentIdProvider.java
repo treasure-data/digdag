@@ -4,7 +4,6 @@ import java.lang.management.ManagementFactory;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 
 public class AgentIdProvider
@@ -13,9 +12,8 @@ public class AgentIdProvider
     private final AgentId id;
 
     @Inject
-    public AgentIdProvider(ConfigElement ce, ConfigFactory cf)
+    public AgentIdProvider(Config systemConfig)
     {
-        Config systemConfig = ce.toConfig(cf);
         String id = systemConfig.get("agent.id", String.class, null);
         if (id == null) {
             // get <pid>@<hostname>
