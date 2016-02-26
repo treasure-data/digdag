@@ -28,7 +28,8 @@ public class ServerModule
                     RepositoryResource.class,
                     ScheduleResource.class,
                     SessionResource.class,
-                    WorkflowResource.class
+                    WorkflowResource.class,
+                    LogResource.class
                 )
             .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .withProvider(JwtAuthInterceptor.class)
