@@ -188,13 +188,14 @@ public class DigdagClient
     // TODO getArchive with streaming
     public InputStream getRepositoryArchive(int repoId, String revision)
     {
-        Response res = target("/api/repositories/{id]}/archive")
+        Response res = target("/api/repositories/{id}/archive")
             .resolveTemplate("id", repoId)
             .queryParam("revision", revision)
             .request()
             .headers(headers)
             .get();
-        return res.readEntity(InputStream.class);  // TODO does this work?
+        // TODO check status code
+        return res.readEntity(InputStream.class);
     }
 
     public List<RestSchedule> getSchedules()
@@ -251,6 +252,32 @@ public class DigdagClient
                 .resolveTemplate("id", sessionId));
     }
 
+    public List<RestLogFileHandle> getLogFileHandlesOfSession(long sessionId)
+    {
+        return doGet(new GenericType<List<RestLogFileHandle>>() { },
+                target("/api/logs/{id}/files")
+                .resolveTemplate("id", sessionId));
+    }
+
+    public List<RestLogFileHandle> getLogFileHandlesOfTask(long sessionId, String taskName)
+    {
+        return doGet(new GenericType<List<RestLogFileHandle>>() { },
+                target("/api/logs/{id}/files")
+                .resolveTemplate("id", sessionId)
+                .queryParam("task_name", taskName));
+    }
+
+    public InputStream getLogFile(long sessionId, String fileName)
+    {
+        Response res = target("/api/logs/{id}/files/{fileName}")
+            .resolveTemplate("id", sessionId)
+            .resolveTemplate("fileName", fileName)
+            .request()
+            .headers(headers)
+            .get();
+        // TODO check status code
+        return res.readEntity(InputStream.class);
+    }
 
     public RestSession startSession(RestSessionRequest request)
     {

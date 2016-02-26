@@ -112,12 +112,15 @@ public class LocalFileLogServerFactory
         @Override
         public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName)
         {
-            ImmutableList.Builder<LogFileHandle> builder = ImmutableList.builder();
             Path dir = getPrefixPath(prefix);
+            if (!Files.exists(dir)) {
+                return ImmutableList.of();
+            }
+            ImmutableList.Builder<LogFileHandle> builder = ImmutableList.builder();
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir)) {
                 for (Path path : dirStream) {
                     String name = path.getFileName().toString();
-                    if (name.endsWith(LOG_GZ_FILE_SUFFIX)) {
+                    if (name.endsWith(LOG_GZ_FILE_SUFFIX) && (!taskName.isPresent() || name.startsWith(taskName.get()))) {
                         builder.add(LogFileHandle.ofNonDirect(name));
                     }
                 }
@@ -191,7 +194,7 @@ public class LocalFileLogServerFactory
                 Path prefixDir = getPrefixPath(prefix);
                 Files.createDirectories(prefixDir);
                 Path filePath = prefixDir.resolve(buildFileName(taskName, Instant.now(), agentId.toString()));
-                this.writer = new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(filePath, CREATE, APPEND)), UTF_8);
+                this.writer = new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(filePath, CREATE, APPEND), 16*1024), UTF_8);
             }
 
             public void log(LogLevel level, long timestamp, String message)

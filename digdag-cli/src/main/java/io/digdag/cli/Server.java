@@ -42,11 +42,14 @@ public class Server
     @Parameter(names = {"-b", "--bind"})
     String bind = null;
 
+    @Parameter(names = {"-m", "--memory"})
+    boolean memoryDatabase = false;
+
     @Parameter(names = {"-o", "--database"})
     String database = null;
 
-    @Parameter(names = {"-m", "--memory"})
-    boolean memoryDatabase = false;
+    @Parameter(names = {"-O", "--task-log"})
+    String taskLogPath = null;
 
     @Parameter(names = {"-c", "--config"})
     String configPath = null;
@@ -76,8 +79,9 @@ public class Server
         System.err.println("  Options:");
         System.err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
-        System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -m, --memory                     uses memory database");
+        System.err.println("    -o, --database DIR               store status to this database");
+        System.err.println("    -O, --task-log DIR               store task logs to this database");
         System.err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);
@@ -108,6 +112,10 @@ public class Server
         }
         if (bind != null) {
             props.setProperty("server.bind", bind);
+        }
+        if (taskLogPath != null) {
+            props.setProperty("log-server.type", "local");
+            props.setProperty("log-server.path", taskLogPath);
         }
         if (autoloadLocalDagFile != null) {
             props.setProperty("server.autoLoadLocalDagfile", autoloadLocalDagFile);

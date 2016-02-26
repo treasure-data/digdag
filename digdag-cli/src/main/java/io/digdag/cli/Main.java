@@ -23,6 +23,7 @@ import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
+import io.digdag.cli.client.ShowLog;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Backfill;
@@ -68,6 +69,7 @@ public class Main
         jc.addCommand("session", new ShowSession(), "sessions");
         jc.addCommand("reschedule", new Reschedule());
         jc.addCommand("backfill", new Backfill());
+        jc.addCommand("log", new ShowLog(), "logs");
         jc.addCommand("kill", new Kill());
         jc.addCommand("task", new ShowTask(), "tasks");
         jc.addCommand("schedule", new ShowSchedule(), "schedules");

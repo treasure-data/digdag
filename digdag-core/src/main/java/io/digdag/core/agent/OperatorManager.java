@@ -34,7 +34,6 @@ import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.LogLevel;
-import io.digdag.core.log.NullTaskLogger;
 import io.digdag.spi.*;
 
 public class OperatorManager

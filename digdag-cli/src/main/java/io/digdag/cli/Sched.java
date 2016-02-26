@@ -50,6 +50,7 @@ public class Sched
         System.err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         System.err.println("    -o, --database DIR               store status to this database");
+        System.err.println("    -O, --task-log DIR               store task logs to this database");
         System.err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);

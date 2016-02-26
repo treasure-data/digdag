@@ -141,6 +141,11 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
 
   Example: --database digdag
 
+:command:`-O, --task-log DIR`
+  Store task logs to this directory. If this option is not set, ``digdag log`` command doesn't work.
+
+  Example: --task-log digdag.log
+
 :command:`-c, --config PATH`
   Server configuration property path. This is same with server command. See `Digdag server <digdag_server.html>`_ for details.
 
@@ -198,6 +203,11 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Store status in memory. Data will be removed when the server exists.
 
   Example: --memory
+
+:command:`-O, --task-log DIR`
+  Store task logs to this directory. If this option is not set, ``digdag log`` command doesn't work.
+
+  Example: --task-log digdag.log
 
 :command:`-c, --config PATH`
   Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.
@@ -274,6 +284,22 @@ Starts a new session. This command requires repository name, workflow name, and 
   Set attempt name to retry a session.
 
   -R 1
+
+
+log
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag log <session-id> [+task name prefix]
+
+Shows logs of tasks. This command works only if server (or scheduler) runs with ``-O, --task-log`` option.
+
+.. code-block:: console
+
+    $ digdag log 32
+    $ digdag log 32 +main
+    $ digdag log 32 +main+task1
 
 
 kill
