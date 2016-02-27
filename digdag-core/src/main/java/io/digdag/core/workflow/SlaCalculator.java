@@ -1,4 +1,4 @@
-package io.digdag.core.schedule;
+package io.digdag.core.workflow;
 
 import java.util.List;
 import java.util.Date;

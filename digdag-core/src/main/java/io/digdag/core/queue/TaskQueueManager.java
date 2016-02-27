@@ -34,7 +34,7 @@ public class TaskQueueManager
     }
 
     // used by executors through TaskQueueDispatcher
-    public TaskQueueServer getTaskQueueServer(int siteId)
+    public TaskQueueServer getTaskQueueServer()
     {
         return taskQueue.getServer();
     }
@@ -50,8 +50,8 @@ public class TaskQueueManager
     }
 
     // used by LocalAgentManager, InProcessTaskCallbackApi digdag-server (TaskResource, which is not implemented yet)
-    public TaskQueueClient getInProcessTaskQueueClient(int siteId)
+    public TaskQueueClient getInProcessTaskQueueClient()
     {
-        return getTaskQueueServer(siteId);
+        return getTaskQueueServer();
     }
 }

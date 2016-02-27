@@ -19,6 +19,8 @@ public abstract class DatabaseConfig
 
     public abstract int getExpireLockInterval();
 
+    public abstract boolean getAutoMigrate();
+
     public static ImmutableDatabaseConfig.Builder builder()
     {
         return ImmutableDatabaseConfig.builder();
@@ -41,6 +43,9 @@ public abstract class DatabaseConfig
         default:
             throw new ConfigException("Unknown database.type: " + type);
         }
+
+        builder.autoMigrate(
+                config.get("database.migrate", boolean.class, true));
 
         builder.expireLockInterval(
                 config.get("database.queue.expireLockInterval", int.class, 10));

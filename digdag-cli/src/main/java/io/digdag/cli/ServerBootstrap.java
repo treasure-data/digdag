@@ -88,10 +88,6 @@ public class ServerBootstrap
             }
         }
 
-        // start server
-        site.startLocalAgent();
-        site.startMonitor();
-
         Thread thread = new Thread(() -> {
             try {
                 site.run();

@@ -170,7 +170,6 @@ public class Run
             .getInjector();
 
         LocalSite localSite = injector.getInstance(LocalSite.class);
-        localSite.initialize();
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
@@ -237,9 +236,6 @@ public class Run
                     return ScheduleTime.runNow(time);
                 });
         logger.debug("Submitting {}", attempt);
-
-        localSite.startLocalAgent();
-        localSite.startMonitor();
 
         // if sessionStatusPath is not set, use workflow.yml.resume.yml
         File resumeResultPath = new File(Optional.fromNullable(sessionStatusPath).or("digdag.status"));

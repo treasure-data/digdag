@@ -70,6 +70,9 @@ public class Start
         throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
+            .withWorkflowExecutor(false)
+            .withScheduleExecutor(false)
+            .withLocalAgent(false)
             .addModules(binder -> {
                 binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
             })

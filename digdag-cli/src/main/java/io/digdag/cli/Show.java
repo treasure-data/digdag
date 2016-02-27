@@ -47,6 +47,9 @@ public class Show
             throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
+            .withWorkflowExecutor(false)
+            .withScheduleExecutor(false)
+            .withLocalAgent(false)
             .initialize()
             .getInjector();
 

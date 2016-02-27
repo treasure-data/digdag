@@ -63,7 +63,7 @@ public class InProcessTaskCallbackApi
         this.lm = lm;
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
-        this.queueClient = qm.getInProcessTaskQueueClient(localSiteId);
+        this.queueClient = qm.getInProcessTaskQueueClient();
     }
 
     @Override

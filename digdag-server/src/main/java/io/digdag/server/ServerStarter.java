@@ -32,8 +32,5 @@ public class ServerStarter
     public void start()
     {
         databaseMigrator.migrate();
-        localAgentManager.startLocalAgent(0, "local");  // TODO make this configurable
-        scheduleExecutor.start();
-        sessionMonitorExecutor.start();
     }
 }

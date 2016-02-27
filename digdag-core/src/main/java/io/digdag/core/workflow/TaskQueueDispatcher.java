@@ -32,7 +32,7 @@ public class TaskQueueDispatcher
         logger.trace("  config: {}", request.getConfig());
         logger.trace("  stateParams: {}", request.getLastStateParams());
 
-        TaskQueueServer queue = manager.getTaskQueueServer(request.getSiteId());
+        TaskQueueServer queue = manager.getTaskQueueServer();
         try {
             queue.enqueue(request);
         }
@@ -46,7 +46,7 @@ public class TaskQueueDispatcher
 
     public void taskFinished(int siteId, String lockId, AgentId agentId)
     {
-        TaskQueueServer queue = manager.getTaskQueueServer(siteId);
+        TaskQueueServer queue = manager.getTaskQueueServer();
         queue.delete(siteId, lockId, agentId.toString());
     }
 }

@@ -36,13 +36,13 @@ public class LocalAgentManager
 
     // TODO stop LocalAgent at @PreDestroy
 
-    public void startLocalAgent(int siteId, String queueName)
+    public void start()
     {
         executor.submit(
                 new LocalAgent(
                     config,
                     agentId,
-                    queueManager.getInProcessTaskQueueClient(siteId),
+                    queueManager.getInProcessTaskQueueClient(),
                     operatorManager
                 )
             );

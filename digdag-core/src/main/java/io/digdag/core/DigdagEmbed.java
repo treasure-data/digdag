@@ -19,9 +19,12 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.workflow.WorkflowModule;
+import io.digdag.core.workflow.WorkflowExecutorModule;
 import io.digdag.core.schedule.ScheduleModule;
+import io.digdag.core.schedule.ScheduleExecutorModule;
 import io.digdag.core.config.ConfigModule;
 import io.digdag.core.agent.AgentModule;
+import io.digdag.core.agent.LocalAgentModule;
 import io.digdag.core.log.LogModule;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
@@ -37,6 +40,9 @@ public class DigdagEmbed
     {
         private final List<Function<? super List<Module>, ? extends Iterable<? extends Module>>> moduleOverrides = new ArrayList<>();
         private ConfigElement systemConfig = ConfigElement.empty();
+        private boolean withWorkflowExecutor = true;
+        private boolean withScheduleExecutor = true;
+        private boolean withLocalAgent = true;
 
         public Bootstrap addModules(Module... additionalModules)
         {
@@ -61,6 +67,24 @@ public class DigdagEmbed
             return this;
         }
 
+        public Bootstrap withWorkflowExecutor(boolean v)
+        {
+            this.withWorkflowExecutor = v;
+            return this;
+        }
+
+        public Bootstrap withScheduleExecutor(boolean v)
+        {
+            this.withScheduleExecutor = v;
+            return this;
+        }
+
+        public Bootstrap withLocalAgent(boolean v)
+        {
+            this.withLocalAgent = v;
+            return this;
+        }
+
         public DigdagEmbed initialize()
         {
             return build(true);
@@ -75,41 +99,56 @@ public class DigdagEmbed
         {
             final org.embulk.guice.Bootstrap bootstrap = new org.embulk.guice.Bootstrap()
                 .requireExplicitBindings(true)
-                .addModules(DigdagEmbed.standardModules(systemConfig));
+                .addModules(standardModules(systemConfig));
             moduleOverrides.stream().forEach(override -> bootstrap.overrideModules(override));
 
             LifeCycleInjector injector;
             if (destroyOnShutdownHook) {
                 injector = bootstrap.initialize();
-            } else {
+            }
+            else {
                 injector = bootstrap.initializeCloseable();
             }
 
             return new DigdagEmbed(injector);
         }
-    }
 
-    private static List<Module> standardModules(ConfigElement systemConfig)
-    {
-        return Arrays.asList(
-                new ObjectMapperModule()
-                    .registerModule(new GuavaModule())
-                    .registerModule(new JacksonTimeModule()),
-                    //.registerModule(new JodaModule()),
-                new DatabaseModule(),
-                new AgentModule(),
-                new LogModule(),
-                new ScheduleModule(),
-                new ConfigModule(),
-                new WorkflowModule(),
-                new QueueModule(),
-                (binder) -> {
+        private List<Module> standardModules(ConfigElement systemConfig)
+        {
+            ImmutableList.Builder<Module> builder = ImmutableList.builder();
+            builder.addAll(Arrays.asList(
+                    new ObjectMapperModule()
+                        .registerModule(new GuavaModule())
+                        .registerModule(new JacksonTimeModule()),
+                    new DatabaseModule(),
+                    new AgentModule(),
+                    new LogModule(),
+                    new ScheduleModule(),
+                    new ConfigModule(),
+                    new WorkflowModule(),
+                    new QueueModule(),
+                    (binder) -> {
+                        binder.bind(ConfigElement.class).toInstance(systemConfig);
+                        binder.bind(Config.class).toProvider(SystemConfigProvider.class);
+                    },
+                    new ExtensionServiceLoaderModule()
+                ));
+            if (withWorkflowExecutor) {
+                builder.add(new WorkflowExecutorModule());
+            }
+            if (withScheduleExecutor) {
+                builder.add(new ScheduleExecutorModule());
+            }
+            if (withLocalAgent) {
+                builder.add(new LocalAgentModule());
+            }
+            if (withWorkflowExecutor) {
+                builder.add((binder) -> {
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
-                    binder.bind(ConfigElement.class).toInstance(systemConfig);
-                    binder.bind(Config.class).toProvider(SystemConfigProvider.class);
-                },
-                new ExtensionServiceLoaderModule()
-        );
+                });
+            }
+            return builder.build();
+        }
     }
 
     public static class SystemConfigProvider

@@ -14,7 +14,6 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
-import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;

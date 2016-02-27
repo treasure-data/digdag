@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.exceptions.StatementException;
 
 public class DatabaseMigrator
 {
@@ -37,31 +38,50 @@ public class DatabaseMigrator
         }
     }
 
-    public String getDatabaseVersion()
+    public String getSchemaVersion()
     {
         try (Handle handle = dbi.open()) {
-            if (checkTableExists(handle, "schema_migrations")) {
-                String version = handle.createQuery("select version from schema_migrations order by name desc limit 1")
-                    .mapTo(String.class)
-                    .first();
-                if (version != null) {
-                    return version;
-                }
-            }
-            return "19700101000000";
+            return handle.createQuery("select name from schema_migrations order by name desc limit 1")
+                .mapTo(String.class)
+                .first();
         }
     }
 
-    private static boolean checkTableExists(Handle handle, String name)
+    public void migrate()
     {
-        try {
-            Connection con = handle.getConnection();
-            DatabaseMetaData meta = con.getMetaData();
-            ResultSet res = meta.getTables(null, null, "schema_migrations", new String[] {"TABLE"});
-            return res.next();
+        String dbVersion = migrateSchemaVersions();
+        for (Migration m : migrations) {
+            if (dbVersion.compareTo(m.getVersion()) < 0) {
+                try (Handle handle = dbi.open()) {
+                    m.migrate(handle);
+                    handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
+                }
+            }
         }
-        catch (SQLException ex) {
-            throw new RuntimeException("Unable to get table list", ex);
+    }
+
+    private String migrateSchemaVersions()
+    {
+        String version;
+        try {
+            version = getSchemaVersion();
+        }
+        catch (StatementException ex) {
+            // schema_migrations table not found
+            try (Handle handle = dbi.open()) {
+                handle.update(
+                        new CreateTableBuilder("schema_migrations")
+                        .addString("name", "not null")
+                        .addTimestamp("created_at", "not null")
+                        .build());
+            }
+            version = getSchemaVersion();
+        }
+        if (version == null) {
+            return "19700101000000";
+        }
+        else {
+            return version;
         }
     }
 
@@ -190,24 +210,6 @@ public class DatabaseMigrator
 
         public void migrate(Handle handle);
     }
-
-    private final Migration MigrateCreateSchemaVersions = new Migration() {
-        @Override
-        public String getVersion()
-        {
-            return "20151204215653";
-        }
-
-        @Override
-        public void migrate(Handle handle)
-        {
-            handle.update(
-                    new CreateTableBuilder("schema_migrations")
-                    .addString("name", "not null")
-                    .addTimestamp("created_at", "not null")
-                    .build());
-        }
-    };
 
     private final Migration MigrateCreateTables = new Migration() {
         @Override
@@ -539,20 +541,6 @@ public class DatabaseMigrator
     };
 
     private final Migration[] migrations = {
-        MigrateCreateSchemaVersions,
         MigrateCreateTables,
     };
-
-    public void migrate()
-    {
-        String dbVersion = getDatabaseVersion();
-        for (Migration m : migrations) {
-            if (dbVersion.compareTo(m.getVersion()) < 0) {
-                try (Handle handle = dbi.open()) {
-                    m.migrate(handle);
-                    handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
-                }
-            }
-        }
-    }
 }

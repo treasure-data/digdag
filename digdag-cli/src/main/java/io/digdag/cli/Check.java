@@ -87,6 +87,9 @@ public class Check
     public void check() throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
+            .withWorkflowExecutor(false)
+            .withScheduleExecutor(false)
+            .withLocalAgent(false)
             .addModules(binder -> {
                 binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
             })

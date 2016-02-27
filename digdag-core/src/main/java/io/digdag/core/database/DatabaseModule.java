@@ -23,7 +23,7 @@ public class DatabaseModule
     {
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(PooledDataSourceProvider.class).in(Scopes.SINGLETON);
-        binder.bind(IDBI.class).toProvider(IdbiProvider.class);
+        binder.bind(IDBI.class).toProvider(IdbiProvider.class).in(Scopes.SINGLETON);
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(RepositoryStoreManager.class).to(DatabaseRepositoryStoreManager.class).in(Scopes.SINGLETON);
@@ -39,9 +39,13 @@ public class DatabaseModule
         private final IDBI dbi;
 
         @Inject
-        public IdbiProvider(DataSource ds)
+        public IdbiProvider(DataSource ds, DatabaseConfig config)
         {
             this.dbi = new DBI(ds);
+
+            if (config.getAutoMigrate()) {
+                new DatabaseMigrator(dbi, config).migrate();
+            }
         }
 
         public IDBI get()

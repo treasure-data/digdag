@@ -13,7 +13,6 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.schedule.SlaCalculator;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;

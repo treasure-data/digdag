@@ -11,9 +11,6 @@ public class WorkflowModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
-        binder.bind(AttemptBuilder.class).in(Scopes.SINGLETON);
-        binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(WorkflowCompiler.class).in(Scopes.SINGLETON);
     }
 }

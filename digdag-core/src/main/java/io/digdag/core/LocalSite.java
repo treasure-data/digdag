@@ -10,10 +10,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.core.agent.LocalAgentManager;
-import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.core.repository.*;
-import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
@@ -28,71 +25,33 @@ public class LocalSite
 {
     private static Logger logger = LoggerFactory.getLogger(LocalSite.class);
 
-    private final ConfigFactory cf;
     private final WorkflowCompiler compiler;
     private final RepositoryStore repoStore;
-    private final SessionStoreManager sessionStoreManager;
     private final SessionStore sessionStore;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
-    private final LocalAgentManager localAgentManager;
-    private final DatabaseMigrator databaseMigrator;
     private final SchedulerManager srm;
-    private final ScheduleExecutor scheduleExecutor;
-    private final SessionMonitorExecutor sessionMonitorExecutor;
-    private boolean schedulerStarted;
 
     @Inject
     public LocalSite(
-            ConfigFactory cf,
             WorkflowCompiler compiler,
             RepositoryStoreManager repoStoreManager,
             SessionStoreManager sessionStoreManager,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec,
-            LocalAgentManager localAgentManager,
-            DatabaseMigrator databaseMigrator,
-            SchedulerManager srm,
-            ScheduleExecutor scheduleExecutor,
-            SessionMonitorExecutor sessionMonitorExecutor)
+            SchedulerManager srm)
     {
-        this.cf = cf;
         this.compiler = compiler;
         this.repoStore = repoStoreManager.getRepositoryStore(0);
-        this.sessionStoreManager = sessionStoreManager;
         this.sessionStore = sessionStoreManager.getSessionStore(0);
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
-        this.localAgentManager = localAgentManager;
-        this.databaseMigrator = databaseMigrator;
         this.srm = srm;
-        this.scheduleExecutor = scheduleExecutor;
-        this.sessionMonitorExecutor = sessionMonitorExecutor;
     }
 
     public SessionStore getSessionStore()
     {
         return sessionStore;
-    }
-
-    public void initialize()
-    {
-        databaseMigrator.migrate();
-    }
-
-    public void startLocalAgent()
-    {
-        localAgentManager.startLocalAgent(0, "local");
-    }
-
-    public void startScheduler()
-    {
-        scheduleExecutor.start();
-    }
-
-    public void startMonitor()
-    {
-        sessionMonitorExecutor.start();
     }
 
     private class StoreWorkflowResult
