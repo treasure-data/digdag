@@ -24,7 +24,6 @@ import com.treasuredata.client.model.TDResultFormat;
 public class TDQuery
 {
     private final TDClient client;
-    private final TDJobRequest request;
     private final String jobId;
     private TDJobSummary lastStatus;
 
@@ -32,9 +31,13 @@ public class TDQuery
 
     public TDQuery(TDClient client, TDJobRequest request)
     {
+        this(client, client.submit(request));
+    }
+
+    public TDQuery(TDClient client, String jobId)
+    {
         this.client = client;
-        this.request = request;
-        this.jobId = client.submit(request);
+        this.jobId = jobId;
     }
 
     public String getJobId()

@@ -253,6 +253,82 @@ TODO: add more description here
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
 
+td_table_export>: Treasure Data table export to S3
+----------------------------------
+
+**td_table_export>:** operator loads data from storages, databases, or services.
+
+TODO: add more description here
+
+.. code-block:: yaml
+
+    export:
+      td:
+        apikey: YOUR/API_KEY
+
+    +step1:
+      _type: td_table_export
+      database: mydb
+      table: mytable
+      file_format: jsonl.gz
+      from: 2016-01-01 00:00:00 +0800
+      to:   2016-02-01 00:00:00 +0800
+      s3_bucket: my_backup_backet
+      s3_path_prefix: mydb/mytable
+      s3_access_key_id: ABCDEFGHJKLMNOPQRSTU
+      s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3
+
+:command:`database: NAME`
+  Name of the database.
+
+  * :command:`database: my_database`
+
+:command:`table: NAME`
+  Name of the table to export.
+
+  * :command:`table: my_table`
+
+:command:`file_format: TYPE`
+  Output file format. Available formats are ``tsv.gz``, ``jsonl.gz``, ``json.gz``, ``json-line.gz``.
+
+  * :command:`file_format: jsonl.gz`
+
+:command:`from: yyyy-MM-dd HH:mm:ss[ Z]`
+  Export records from this time (inclusive). Actual time range is :command:`[from, to)`.
+
+  * :command:`from: 2016-01-01 00:00:00 +0800`
+
+:command:`to: yyyy-MM-dd HH:mm:ss[ Z]`
+  Export records to this time (exclusive). Actual time range is :command:`[from, to)`.
+
+  * :command:`to: 2016-02-01 00:00:00 +0800`
+
+:command:`s3_bucket: NAME`
+  S3 bucket name to export records to.
+
+  * :command:`s3_bucket: my_backup_backet`
+
+:command:`s3_path_prefix: NAME`
+  S3 file name prefix.
+
+  * :command:`s3_path_prefix: mytable/mydb`
+
+:command:`s3_access_key_id: KEY`
+  S3 access key id.
+
+  * :command:`s3_access_key_id: ABCDEFGHJKLMNOPQRSTU`
+
+:command:`s3_secret_access_key: KEY`
+  S3 secret access key.
+
+  * :command:`s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
+
+:command:`apikey: APIKEY`
+  API key.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+
 mail>: Sending email
 ----------------------------------
 

@@ -24,6 +24,7 @@ import io.digdag.standards.operator.EmbulkOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
+import io.digdag.standards.operator.td.TdTableExportOperatorFactory;
 import io.digdag.standards.command.SimpleCommandExecutor;
 import io.digdag.standards.command.DockerCommandExecutor;
 
@@ -53,6 +54,7 @@ public class StandardsExtension
             taskExecutorBinder.addBinding().to(TdOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdLoadOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdDdlOperatorFactory.class).in(Scopes.SINGLETON);
+            taskExecutorBinder.addBinding().to(TdTableExportOperatorFactory.class).in(Scopes.SINGLETON);
 
             Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
             schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);

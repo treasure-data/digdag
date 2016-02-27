@@ -1,46 +1,40 @@
 package io.digdag.standards.operator.td;
 
+import java.util.Date;
 import java.nio.file.Path;
-import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
+import java.time.format.DateTimeFormatter;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.BaseOperator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import com.treasuredata.client.TDClient;
-import com.treasuredata.client.model.TDJob;
-import com.treasuredata.client.model.TDJobRequest;
-import com.treasuredata.client.model.TDJobRequestBuilder;
+import com.treasuredata.client.model.TDExportJobRequest;
+import com.treasuredata.client.model.TDExportFileFormatType;
 import org.msgpack.value.Value;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 
 public class TdTableExportOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdTableExportOperatorFactory.class);
 
-    private final TemplateEngine templateEngine;
-
     @Inject
-    public TdTableExportOperatorFactory(TemplateEngine templateEngine)
-    {
-        this.templateEngine = templateEngine;
-    }
+    public TdTableExportOperatorFactory()
+    { }
 
     public String getType()
     {
-        return "td_load";
+        return "td_table_export";
     }
 
     @Override
@@ -63,41 +57,30 @@ public class TdTableExportOperatorFactory
             Config params = request.getConfig().setAllIfNotSet(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            ObjectNode embulkConfig;
-            if (params.has("_command")) {
-                String built;
-                String command = params.get("_command", String.class);
-                try {
-                    built = templateEngine.templateFile(archivePath, command, UTF_8, params);
-                }
-                catch (IOException | TemplateException ex) {
-                    throw new ConfigException("Failed to load bulk load file", ex);
-                }
-
-                JsonNode node;
-                try {
-                    node = new ObjectMapper().readTree(built);
-                }
-                catch (IOException ex) {
-                    throw new ConfigException("Failed to parse JSON", ex);
-                }
-                if (!node.isObject()) {
-                    throw new ConfigException("TableExported config must be an object: " + node);
-                }
-                embulkConfig = (ObjectNode) node;
+            String fileFormatString = params.get("file_format", String.class);
+            TDExportFileFormatType fileFormat;
+            try {
+                fileFormat = TDExportFileFormatType.fromName(fileFormatString);
             }
-            else {
-                embulkConfig = params.getNested("config").getInternalObjectNode();
+            catch (RuntimeException ex) {
+                throw new ConfigException("invalid file_format option", ex);
             }
 
-            String table = params.get("table", String.class);
+            TDExportJobRequest req = new TDExportJobRequest(
+                    params.get("database", String.class),
+                    params.get("table", String.class),
+                    Date.from(parseTime(params, "from")),
+                    Date.from(parseTime(params, "to")),
+                    fileFormat,
+                    params.get("s3_access_key_id", String.class),
+                    params.get("s3_secret_access_key", String.class),
+                    params.get("s3_bucket", String.class),
+                    params.get("s3_path_prefix", String.class),
+                    params.getOptional("pool_name", String.class));
 
             try (TDOperation op = TDOperation.fromConfig(params)) {
-                TDJobRequest req = TDJobRequest
-                    .newBulkLoad(op.getDatabase(), table, embulkConfig);
-
-                TDQuery q = new TDQuery(op.getClient(), req);
-                logger.info("Started bulk load job id={}", q.getJobId());
+                TDQuery q = new TDQuery(op.getClient(), op.getClient().submitExportJob(req));
+                logger.info("Started table export job id={}", q.getJobId());
 
                 try {
                     q.ensureSucceeded();
@@ -111,6 +94,25 @@ public class TdTableExportOperatorFactory
 
                 return TaskResult.empty(request.getConfig().getFactory());
             }
+        }
+    }
+
+    private static final DateTimeFormatter TIME_PARSER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[ Z]", ENGLISH);
+
+    private static Instant parseTime(Config params, String key)
+    {
+        try {
+            return Instant.ofEpochSecond(
+                    params.get(key, long.class)
+                    );
+        }
+        catch (ConfigException ex) {
+            return Instant.from(
+                    TIME_PARSER
+                    .withZone(params.get("timezone", ZoneId.class))
+                    .parse(params.get(key, String.class))
+                    );
         }
     }
 }
