@@ -112,7 +112,11 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 JsonNode value = pair.getValue();
                 JsonNode evaluated;
-                if (value.isObject()) {
+                if (pair.getKey().equals("_do")) {
+                    // don't evaluate _do parameters
+                    evaluated = value;
+                }
+                else if (value.isObject()) {
                     evaluated = evalObjectRecursive((ObjectNode) value);
                 }
                 else if (value.isArray()) {
