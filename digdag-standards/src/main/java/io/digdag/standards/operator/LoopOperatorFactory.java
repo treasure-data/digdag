@@ -51,27 +51,31 @@ public class LoopOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
-                    request.getConfig().getNestedOrGetEmpty("loop"));
+            Config params = request.getConfig();
 
             Config doConfig = request.getLocalConfig().getNested("_do");
 
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
 
-            Config subtasks = doConfig.getFactory().create();
+            boolean parallel = params.get("_parallel", boolean.class, false);
+
+            Config generated = doConfig.getFactory().create();
             for (int i = 0; i < count; i++) {
                 Config subtask = params.getFactory().create();
                 subtask.setAll(doConfig);
                 subtask.getNestedOrSetEmpty("_export").set("i", i);
-                subtasks.set(
+                generated.set(
                         String.format(ENGLISH, "+loop-%d", i),
                         subtask);
             }
 
-            System.out.println("generated: " + subtasks);
+            if (parallel) {
+                generated.set("_parallel", parallel);
+            }
+
             return TaskResult.defaultBuilder(request)
-                .subtaskConfig(subtasks)
+                .subtaskConfig(generated)
                 .build();
         }
     }
