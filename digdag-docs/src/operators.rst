@@ -92,6 +92,36 @@ TODO: add more description here
   * :command:`sh>: tasks/workflow.sh --task1`
 
 
+loop>: Repeat tasks
+----------------------------------
+
+**loop>:** operator runs subtasks multiple times.
+
+(This operator is EXPERIMENTAL. Parameters may change in a future release).
+
+.. code-block:: yaml
+
+    +repeat:
+      loop>: 7
+      _do:
+        +step1:
+          sh>: echo ${new Date((session_unixtime + i * 60 * 60 * 24) * 1000).toLocaleDateString()} is $i days later than $session_date
+        +step2:
+          sh>: echo ${
+                new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleDateString()
+                + " "
+                + new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleTimeString()
+            } is $i hours later than $session_local_time
+
+:command:`loop>: COUNT`
+  Number of times to run the tasks.
+
+  * :command:`loop>: 7`
+
+:command:`_do: TASKS`
+  Tasks to run.
+
+
 td>: Treasure Data queries
 ----------------------------------
 
