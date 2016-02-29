@@ -33,26 +33,60 @@ Runs workflow.
 .. code-block:: console
 
     $ digdag run
-    $ digdag run +another -o digdag.status
-    $ digdag run -f workflow/another.yml -t "2016-01-01 00:00:00"
+    $ digdag run +another
+    $ digdag run -f workflow/another.yml --start +step2
+    $ digdag run -f workflow/another.yml --start +step2 --end +step4
+    $ digdag run -f workflow/another.yml -S +step1 --hour
     $ digdag run -p environment=staging -p user=frsyuki
 
 Options:
 
-:command:`-f, --file PATH`
+:command:`-f, --file PATH.yml`
   Use this file to load tasks (default: digdag.yml).
 
   Example: -f tasks/another.yml
 
-:command:`-o, --status DIR`
-  Use this directory to read and write session status. Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
+:command:`-o, --save DIR`
+  Use this directory to read and write session status (default: digdag.status).
+
+  Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
 
   Example: -o digdag.status
+
+:command:`-a, --all`
+  Run all tasks even if the tasks successfully finished before. In other words, ignore files at ``-o, --save`` directory.
+
+  Example: --all
+
+:command:`-s, --start +NAME`
+  If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if those state files are stored at ``-o, --save`` directory.
+
+  Example: --start +step2
+
+:command:`-S, --start-stop +NAME`
+  If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if those state files are stored at ``-o, --save`` directory.
+
+  Example: --start-stop +step2
+
+:command:`-e, --end +NAME`
+  Stops workflow right before this task. This task and following tasks will be skipped.
+
+  Example: --end +step4
+
+:command:`--hour`
+  Digdag uses the latest schedule time as session_time if _schedule option is set at the workflow. Otherwise, Digdag uses today's 00:00:00 as session_time. If this --hour option is set, Digdag uses this hour's 00:00 as session_time.
+
+  Example: --hour
 
 :command:`-t, --session-time TIME`
   Set session_time to this time. Format of TIME needs to be *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss*.
 
   Example: -t 2016-01-01
+
+:command:`--no-save`
+  Disables session state files completely.
+
+  Example: --no-save
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
