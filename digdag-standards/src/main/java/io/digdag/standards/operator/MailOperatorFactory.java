@@ -182,7 +182,7 @@ public class MailOperatorFactory
                 throw new RuntimeException(ex);
             }
 
-            return TaskResult.empty(request.getConfig().getFactory());
+            return TaskResult.empty(request);
         }
 
         private String getFlatOrNested(String key)

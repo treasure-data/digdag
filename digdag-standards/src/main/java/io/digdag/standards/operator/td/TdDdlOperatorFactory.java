@@ -67,7 +67,7 @@ public class TdDdlOperatorFactory
                 }
             }
 
-            return TaskResult.empty(request.getConfig().getFactory());
+            return TaskResult.empty(request);
         }
     }
 }

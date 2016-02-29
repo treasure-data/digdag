@@ -41,6 +41,11 @@ public abstract class TaskResult
             .report(TaskReport.empty());
     }
 
+    public static TaskResult empty(TaskRequest request)
+    {
+        return empty(request.getConfig().getFactory());
+    }
+
     public static TaskResult empty(ConfigFactory cf)
     {
         return defaultBuilder(cf).build();

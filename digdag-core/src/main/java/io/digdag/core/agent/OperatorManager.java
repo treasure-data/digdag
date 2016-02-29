@@ -104,14 +104,16 @@ public class OperatorManager
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
-            runWithHeartbeat(request, nextState);
-        }
-        catch (RuntimeException | IOException ex) {
-            logger.error("Task failed", ex);
-            Config error = makeExceptionError(cf, ex);
-            callback.taskFailed(
-                    request.getTaskId(), request.getLockId(), agentId,
-                    error);  // no retry
+            try {
+                runWithHeartbeat(request, nextState);
+            }
+            catch (RuntimeException | IOException ex) {
+                logger.error("Task failed", ex);
+                Config error = makeExceptionError(cf, ex);
+                callback.taskFailed(
+                        request.getTaskId(), request.getLockId(), agentId,
+                        error);  // no retry
+            }
         }
     }
 

@@ -92,7 +92,7 @@ public class TdTableExportOperatorFactory
                     q.ensureFinishedOrKill();
                 }
 
-                return TaskResult.empty(request.getConfig().getFactory());
+                return TaskResult.empty(request);
             }
         }
     }

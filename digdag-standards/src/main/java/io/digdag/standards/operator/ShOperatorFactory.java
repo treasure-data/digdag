@@ -115,7 +115,7 @@ public class ShOperatorFactory
                 throw new RuntimeException("Command failed with code " + ecode);
             }
 
-            return TaskResult.empty(params.getFactory());
+            return TaskResult.empty(request);
         }
     }
 

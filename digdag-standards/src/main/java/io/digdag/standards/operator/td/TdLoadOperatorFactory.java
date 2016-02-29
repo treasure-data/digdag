@@ -109,7 +109,7 @@ public class TdLoadOperatorFactory
                     q.ensureFinishedOrKill();
                 }
 
-                return TaskResult.empty(request.getConfig().getFactory());
+                return TaskResult.empty(request);
             }
         }
     }

@@ -116,7 +116,7 @@ public class EmbulkOperatorFactory
                 throw new RuntimeException("Command failed: "+message);
             }
 
-            return TaskResult.empty(request.getConfig().getFactory());
+            return TaskResult.empty(request);
         }
     }
 }
