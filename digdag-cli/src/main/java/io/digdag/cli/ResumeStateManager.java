@@ -9,9 +9,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +51,11 @@ public class ResumeStateManager
         this.managedDirs = new CopyOnWriteArrayList<>();
     }
 
-    public TaskResult readSuccessfulTaskReport(File dir, String fullName)
+    public TaskResult readSuccessfulTaskReport(Path dir, String fullName)
     {
         TaskResumeState resumeState;
         try {
-            resumeState = mapper.readFile(new File(dir, fullName + ".yml"), TaskResumeState.class);
+            resumeState = mapper.readFile(dir.resolve(fullName + ".yml").toFile(), TaskResumeState.class);
         }
         catch (FileNotFoundException ex) {
             return null;
@@ -81,7 +81,7 @@ public class ResumeStateManager
         }
     }
 
-    public void startUpdate(File dir, StoredSessionAttemptWithSession attempt)
+    public void startUpdate(Path dir, StoredSessionAttemptWithSession attempt)
     {
         managedDirs.add(new ResumeStateDir(dir, attempt));
         startScheduleIfNotStarted();
@@ -118,11 +118,11 @@ public class ResumeStateManager
 
     private class ResumeStateDir
     {
-        private final File dir;
+        private final Path dir;
         private final StoredSessionAttemptWithSession attempt;
         private final Set<Long> doneTaskIdList = new HashSet<>();
 
-        public ResumeStateDir(File dir, StoredSessionAttemptWithSession attempt)
+        public ResumeStateDir(Path dir, StoredSessionAttemptWithSession attempt)
         {
             this.dir = dir;
             this.attempt = attempt;
@@ -177,7 +177,7 @@ public class ResumeStateManager
                         .report(task.getReport().or(TaskReport.empty()))
                         .build());
 
-            mapper.writeFile(new File(dir, task.getFullName() + ".yml"), state);
+            mapper.writeFile(dir.resolve(task.getFullName() + ".yml").toFile(), state);
         }
     }
 }

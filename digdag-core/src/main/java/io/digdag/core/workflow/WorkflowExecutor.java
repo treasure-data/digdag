@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Function;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -35,13 +36,12 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
-import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import static java.util.Locale.ENGLISH;
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
 /**
@@ -157,27 +157,6 @@ public class WorkflowExecutor
         this.archiveMapper = archiveMapper;
     }
 
-    public StoredSessionAttemptWithSession submitSubworkflow(int siteId, AttemptRequest ar,
-            WorkflowDefinition def, SubtaskMatchPattern subtaskMatchPattern)
-        throws SessionAttemptConflictException, NoMatchException, MultipleTaskMatchException
-    {
-        Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
-        WorkflowTaskList sourceTasks = workflow.getTasks();
-
-        int fromIndex = subtaskMatchPattern.findIndex(sourceTasks);  // this may return 0
-        WorkflowTaskList tasks = (fromIndex > 0) ?
-            SubtaskExtract.extract(sourceTasks, fromIndex) :
-            sourceTasks;
-
-        logger.debug("Checking a session of workflow '{}' ({}) from task {} with session parameters: {}",
-                def.getName(),
-                def.getConfig().getNestedOrGetEmpty("meta"),
-                fromIndex,
-                ar.getSessionParams());
-
-        return submitTasks(siteId, ar, tasks);
-    }
-
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
             WorkflowDefinition def)
@@ -193,6 +172,9 @@ public class WorkflowExecutor
 
         return submitTasks(siteId, ar, tasks);
     }
+
+    private static final DateTimeFormatter SESSION_TIME_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
@@ -227,7 +209,7 @@ public class WorkflowExecutor
                     storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException
 
                     logger.info("Starting a new session repository id={} workflow name={} session_time={}",
-                            repoId, ar.getWorkflowName(), ar.getSessionTime());
+                            repoId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
 
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())

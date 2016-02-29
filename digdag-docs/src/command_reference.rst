@@ -33,7 +33,7 @@ Runs workflow.
 .. code-block:: console
 
     $ digdag run
-    $ digdag run +another -s digdag.status
+    $ digdag run +another -o digdag.status
     $ digdag run -f workflow/another.yml -t "2016-01-01 00:00:00"
     $ digdag run -p environment=staging -p user=frsyuki
 
@@ -44,10 +44,10 @@ Options:
 
   Example: -f tasks/another.yml
 
-:command:`-s, --status DIR`
+:command:`-o, --status DIR`
   Use this directory to read and write session status. Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
 
-  Example: -s digdag.status
+  Example: -o digdag.status
 
 :command:`-t, --session-time TIME`
   Set session_time to this time. Format of TIME needs to be *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss*.
@@ -69,10 +69,10 @@ Options:
 
   Example: -d
 
-:command:`-e, --show-params`
+:command:`-E, --show-params`
   Show calculated parameters given to a task before running the task. Useful to use with dry-run mode.
 
-  Example: -de
+  Example: -dE
 
 
 check

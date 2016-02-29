@@ -1,10 +1,7 @@
 package io.digdag.core;
 
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -14,12 +11,6 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
-import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
-import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
-import io.digdag.spi.Scheduler;
-import io.digdag.spi.ScheduleTime;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 
 public class LocalSite
 {
@@ -54,15 +45,15 @@ public class LocalSite
         return sessionStore;
     }
 
-    private class StoreWorkflowResult
+    public static class StoreWorkflowResult
     {
         private final StoredRevision revision;
-        private final List<StoredWorkflowDefinition> workflows;
+        private final List<StoredWorkflowDefinition> workflowDefinitions;
 
-        public StoreWorkflowResult(StoredRevision revision, List<StoredWorkflowDefinition> workflows)
+        public StoreWorkflowResult(StoredRevision revision, List<StoredWorkflowDefinition> workflowDefinitions)
         {
             this.revision = revision;
-            this.workflows = workflows;
+            this.workflowDefinitions = workflowDefinitions;
         }
 
         public StoredRevision getRevision()
@@ -70,9 +61,9 @@ public class LocalSite
             return revision;
         }
 
-        public List<StoredWorkflowDefinition> getWorkflows()
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions()
         {
-            return workflows;
+            return workflowDefinitions;
         }
     }
 
@@ -104,13 +95,15 @@ public class LocalSite
                 });
     }
 
-    private StoreWorkflowResult storeLocalWorkflows(
-            String revisionName, ArchiveMetadata archive,
+    public StoreWorkflowResult storeLocalWorkflows(
+            String repositoryName,
+            String revisionName,
+            ArchiveMetadata archive,
             Optional<Instant> currentTimeToSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
-                "default",
+                repositoryName,
                 Revision.builderFromArchive(revisionName, archive)
                     .archiveType("null")
                     .build(),
@@ -118,60 +111,14 @@ public class LocalSite
                 currentTimeToSchedule);
     }
 
-    public StoredRevision storeWorkflows(
+    public StoredRevision storeLocalWorkflows(
             String revisionName,
             ArchiveMetadata archive,
             Instant currentTime)
         throws ResourceConflictException, ResourceNotFoundException
     {
-        return storeLocalWorkflows(revisionName, archive, Optional.of(currentTime))
+        return storeLocalWorkflows("default", revisionName, archive, Optional.of(currentTime))
             .getRevision();
-    }
-
-    public interface SessionTimeSupplier
-    {
-        ScheduleTime get(Optional<Scheduler> sr, ZoneId timeZone);
-    }
-
-    public StoredSessionAttemptWithSession storeAndStartLocalWorkflows(
-            ArchiveMetadata archive,
-            TaskMatchPattern taskMatchPattern,
-            Config overwriteParams,
-            SessionTimeSupplier supplier)
-        throws ResourceConflictException, ResourceNotFoundException, SessionAttemptConflictException
-    {
-        StoreWorkflowResult revWfs = storeLocalWorkflows("revision", archive, Optional.absent());
-
-        StoredRevision rev = revWfs.getRevision();
-        List<StoredWorkflowDefinition> sources = revWfs.getWorkflows();
-
-        try {
-            StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(sources);
-
-            Optional<Scheduler> sr = srm.tryGetScheduler(rev, def);
-            ScheduleTime sessionTime = supplier.get(sr, sr.transform(it -> it.getTimeZone()).or(archive.getDefaultTimeZone()));
-
-            AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                    Optional.absent(),
-                    rev,
-                    def,
-                    overwriteParams,
-                    sessionTime);
-
-            if (taskMatchPattern.getSubtaskMatchPattern().isPresent()) {
-                return exec.submitSubworkflow(0, ar, def, taskMatchPattern.getSubtaskMatchPattern().get());
-            }
-            else {
-                return exec.submitWorkflow(0, ar, def);
-            }
-        }
-        catch (NoMatchException ex) {
-            //logger.error("No task matched with '{}'", fromTaskName.orNull());
-            throw new IllegalArgumentException(ex);  // TODO exception class
-        }
-        catch (MultipleTaskMatchException ex) {
-            throw new IllegalArgumentException(ex);  // TODO exception class
-        }
     }
 
     public void run()

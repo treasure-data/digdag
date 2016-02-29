@@ -184,7 +184,7 @@ public class SessionResource
     @Consumes("application/json")
     @Path("/api/sessions")
     public Response startSession(RestSessionRequest request)
-        throws ResourceNotFoundException, ResourceConflictException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException
+        throws ResourceNotFoundException, ResourceConflictException
     {
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
 

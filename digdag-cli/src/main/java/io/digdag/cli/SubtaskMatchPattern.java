@@ -1,13 +1,14 @@
-package io.digdag.core.workflow;
+package io.digdag.cli;
 
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import io.digdag.core.workflow.TaskMatchPattern.SyntaxException;
-import io.digdag.core.workflow.TaskMatchPattern.MultipleTaskMatchException;
-import io.digdag.core.workflow.TaskMatchPattern.NoMatchException;
+import io.digdag.core.workflow.WorkflowTask;
+import io.digdag.cli.TaskMatchPattern.SyntaxException;
+import io.digdag.cli.TaskMatchPattern.MultipleTaskMatchException;
+import io.digdag.cli.TaskMatchPattern.NoMatchException;
 
 public class SubtaskMatchPattern
 {

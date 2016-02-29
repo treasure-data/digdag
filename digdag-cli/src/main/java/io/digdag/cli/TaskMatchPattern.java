@@ -1,4 +1,4 @@
-package io.digdag.core.workflow;
+package io.digdag.cli;
 
 import java.util.List;
 import java.util.Map;

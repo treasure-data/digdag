@@ -113,7 +113,7 @@ public class RevisionAutoReloader
             throws IOException, ResourceConflictException, ResourceNotFoundException
         {
             lastDagfile = readDagfile();
-            localSite.storeWorkflows(
+            localSite.storeLocalWorkflows(
                     makeRevisionName(),
                     ArchiveMetadata.of(
                         lastDagfile.getWorkflowList(),
@@ -128,7 +128,7 @@ public class RevisionAutoReloader
                 Dagfile dagfile = readDagfile();  // TODO optimize this code
                 if (!dagfile.equals(lastDagfile)) {
                     logger.info("Reloading {}", dagfilePath);
-                    StoredRevision rev = localSite.storeWorkflows(
+                    StoredRevision rev = localSite.storeLocalWorkflows(
                             makeRevisionName(),
                             ArchiveMetadata.of(
                                 dagfile.getWorkflowList(),

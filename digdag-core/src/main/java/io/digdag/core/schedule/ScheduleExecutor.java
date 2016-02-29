@@ -24,8 +24,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
-import io.digdag.core.workflow.TaskMatchPattern;
-import io.digdag.core.workflow.SubtaskMatchPattern;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStateFlags;

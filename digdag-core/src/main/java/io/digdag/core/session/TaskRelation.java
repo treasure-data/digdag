@@ -1,9 +1,8 @@
 package io.digdag.core.session;
 
 import java.util.List;
-
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -20,4 +19,23 @@ public abstract class TaskRelation
     public abstract Optional<Long> getParentId();
 
     public abstract List<Long> getUpstreams();
+
+    public static TaskRelation ofRoot(long id)
+    {
+        return of(id, Optional.absent(), ImmutableList.of());
+    }
+
+    public static TaskRelation of(long id, long parentId, List<Long> upstreams)
+    {
+        return of(id, Optional.of(parentId), upstreams);
+    }
+
+    public static TaskRelation of(long id, Optional<Long> parentId, List<Long> upstreams)
+    {
+        return ImmutableTaskRelation.builder()
+            .id(id)
+            .parentId(parentId)
+            .upstreams(upstreams)
+            .build();
+    }
 }
