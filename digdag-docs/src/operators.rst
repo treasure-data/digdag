@@ -52,7 +52,7 @@ TODO: link to `Ruby API documents <python_api.html>`_ for details including best
 
 .. code-block:: yaml
 
-    export:
+    _export:
       ruby:
         require: tasks/my_workflow
 
@@ -138,7 +138,7 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
         database: www_access
@@ -215,7 +215,7 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
 
@@ -263,7 +263,7 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
         database: www_access
@@ -308,7 +308,7 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    export:
+    _export:
       td:
         apikey: YOUR/API_KEY
 
@@ -397,7 +397,7 @@ To use Gmail SMTP server, you need to do either of:
 
 .. code-block:: yaml
 
-    export:
+    _export:
       mail:
         host: smtp.gmail.com
         port: 587
