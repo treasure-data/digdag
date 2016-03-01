@@ -147,15 +147,7 @@ public class Check
                 Set<String> required = new HashSet<>();
                 for (WorkflowTask task : wf.getTasks()) {
                     Config config = task.getConfig();
-                    String command = config.get("require>", String.class, null);
-                    String type = config.get("_type", String.class, null);
-                    String require = null;
-                    if (command != null) {
-                        require = command;
-                    }
-                    else if (type != null) {
-                        require = config.get("command", String.class);
-                    }
+                    String require = config.getOptional("require>", String.class).orNull();
                     if (require != null && required.add(require)) {
                         f.ln("  -> %s", require);
                     }
