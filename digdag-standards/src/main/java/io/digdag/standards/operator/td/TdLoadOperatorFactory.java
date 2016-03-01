@@ -74,17 +74,13 @@ public class TdLoadOperatorFactory
                     throw new ConfigException("Failed to load bulk load file", ex);
                 }
 
-                JsonNode node;
                 try {
-                    node = new ObjectMapper().readTree(built);
+                    embulkConfig = new YamlLoader().loadString(built);
                 }
-                catch (IOException ex) {
-                    throw new ConfigException("Failed to parse JSON", ex);
+                catch (RuntimeException | IOException ex) {
+                    Throwables.propagateIfInstanceOf(ex, ConfigException.class);
+                    throw new ConfigException("Failed to parse yaml file", ex);
                 }
-                if (!node.isObject()) {
-                    throw new ConfigException("Loaded config must be an object: " + node);
-                }
-                embulkConfig = (ObjectNode) node;
             }
             else {
                 embulkConfig = params.getNested("config").getInternalObjectNode();

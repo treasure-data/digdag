@@ -220,11 +220,11 @@ TODO: add more description here
         apikey: YOUR/API_KEY
 
     +step1:
-      td_load>: config/connector1.yml
+      td_load>: config/guessed.yml
       database: prod
       table: raw
 
-:command:`td>: FILE.yml`
+:command:`td_load>: FILE.yml`
   Path to a YAML template file. This configuration needs to be guessed using td command.
 
   * :command:`td>: config/from_s3.sql`

@@ -10,4 +10,5 @@ dependencies {
     // td
     compile 'com.treasuredata.client:td-client:0.7.7'
     compile 'org.msgpack:msgpack-core:0.8.2'
+    compile 'org.yaml:snakeyaml:1.14'
 }
