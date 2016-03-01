@@ -198,7 +198,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.2.8
+    $ digdag selfupdate 0.3.0
 
 Server-mode commands
 ----------------------------------
