@@ -190,8 +190,8 @@ public class TdOperatorFactory
                 }
 
                 Config storeParams = request.getConfig().getFactory().create()
-                    .getNestedOrSetEmpty("td")
-                    .set("last_job_id", q.getJobId());
+                    .set("td", request.getConfig().getFactory().create()
+                            .set("last_job_id", q.getJobId()));
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)
