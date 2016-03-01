@@ -65,7 +65,8 @@ public class Init
             gen.mkdir("tasks");
             gen.cp("tasks/shell_sample.sh", "tasks/shell_sample.sh");
             gen.setExecutable("tasks/shell_sample.sh");
-            gen.cp("tasks/ruby_sample.rb", "tasks/ruby_sample.rb");
+            gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
+            gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
             gen.cp("digdag.yml", Run.DEFAULT_DAGFILE);
             if (path.equals(".")) {

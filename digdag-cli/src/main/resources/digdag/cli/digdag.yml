@@ -1,14 +1,22 @@
 run: +main
 
+_export:
+  hello: "Hello, world!"
+
 +main:
   +step1:
     sh>: tasks/shell_sample.sh
 
   +step2:
-    # defined at tasks/__init__.py
-    py>: tasks.MyWorkflow.step2
+    _parallel: true
+
+    +worker1:
+      sh>: tasks/repeat_hello.sh
+
+    +worker2:
+      sh>: tasks/repeat_hello.sh
 
   +step3:
-    rb>: MyWorkflow.step3
-    require: tasks/ruby_sample.rb
+    # defined at tasks/__init__.py
+    py>: tasks.MyWorkflow.step3
 
