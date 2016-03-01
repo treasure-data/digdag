@@ -61,7 +61,7 @@ public class ShOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("sh"));
 
             String command = params.get("_command", String.class);

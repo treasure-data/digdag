@@ -82,8 +82,8 @@ public class PyOperatorFactory
         public TaskResult runTask()
         {
             Config params = request.getConfig()
-                .setAllIfNotSet(request.getConfig().getNestedOrGetEmpty("py"))
-                .setAll(request.getLastStateParams());  // merge state parameters in addition to regular config
+                .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"))
+                .merge(request.getLastStateParams());  // merge state parameters in addition to regular config
 
             Config data;
             try {

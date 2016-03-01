@@ -60,7 +60,7 @@ public class TdLoadOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
             ObjectNode embulkConfig;

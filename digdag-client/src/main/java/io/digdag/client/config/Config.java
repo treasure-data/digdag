@@ -127,6 +127,12 @@ public class Config
         return this;
     }
 
+    public Config mergeDefault(Config other)
+    {
+        mergeDefaultJsonObject(object, other.deepCopy().object);
+        return this;
+    }
+
     private static void mergeJsonObject(ObjectNode src, ObjectNode other)
     {
         Iterator<Map.Entry<String, JsonNode>> ite = other.fields();
@@ -136,10 +142,23 @@ public class Config
             JsonNode v = pair.getValue();
             if (v.isObject() && s != null && s.isObject()) {
                 mergeJsonObject((ObjectNode) s, (ObjectNode) v);
-            //} else if (v.isArray() && s != null && s.isArray()) {
-            //    mergeJsonArray((ArrayNode) s, (ArrayNode) v);
             } else {
                 src.replace(pair.getKey(), v);
+            }
+        }
+    }
+
+    private static void mergeDefaultJsonObject(ObjectNode src, ObjectNode other)
+    {
+        Iterator<Map.Entry<String, JsonNode>> ite = other.fields();
+        while (ite.hasNext()) {
+            Map.Entry<String, JsonNode> pair = ite.next();
+            JsonNode s = src.get(pair.getKey());
+            JsonNode v = pair.getValue();
+            if (v.isObject() && s != null && s.isObject()) {
+                mergeDefaultJsonObject((ObjectNode) s, (ObjectNode) v);
+            } else if (s == null) {
+                src.set(pair.getKey(), v);
             }
         }
     }

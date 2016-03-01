@@ -76,7 +76,7 @@ public class MailOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));
 
             String body = templateEngine.templateCommand(archivePath, params, "body", UTF_8);

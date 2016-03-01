@@ -82,8 +82,8 @@ public class RbOperatorFactory
         public TaskResult runTask()
         {
             Config params = request.getConfig()
-                .setAllIfNotSet(request.getConfig().getNestedOrGetEmpty("rb"))
-                .setAll(request.getLastStateParams());  // merge state parameters in addition to regular config
+                .mergeDefault(request.getConfig().getNestedOrGetEmpty("rb"))
+                .merge(request.getLastStateParams());  // merge state parameters in addition to regular config
 
             Config data;
             try {

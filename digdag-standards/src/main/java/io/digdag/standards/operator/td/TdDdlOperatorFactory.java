@@ -49,7 +49,7 @@ public class TdDdlOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
             List<String> deleteList = params.getListOrEmpty("drop_table", String.class);

@@ -62,7 +62,7 @@ public class TdOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
             String query = templateEngine.templateCommand(archivePath, params, "query", UTF_8);

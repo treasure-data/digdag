@@ -54,7 +54,7 @@ public class TdTableExportOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().setAllIfNotSet(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
             String fileFormatString = params.get("file_format", String.class);
