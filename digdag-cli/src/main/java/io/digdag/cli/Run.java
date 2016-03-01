@@ -93,7 +93,7 @@ public class Run
     @Parameter(names = {"-s", "--start"})
     String runStart = null;
 
-    @Parameter(names = {"-S", "--start-stop"})
+    @Parameter(names = {"-g", "--goal"})
     String runStartStop = null;
 
     @Parameter(names = {"-e", "--end"})
@@ -112,7 +112,7 @@ public class Run
     String paramsFile = null;
 
     @Parameter(names = {"-t", "--session-time"})
-    String sessionTime = null;
+    String sessionTimeString = null;
 
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
@@ -123,11 +123,11 @@ public class Run
     @Parameter(names = {"--hour"})
     boolean hourSessionTime = false;
 
+    @Parameter(names = {"--timezone"})
+    String timeZoneName = null;
+
     @Parameter(names = {"-dE"})
     boolean dryRunAndShowParams = false;
-
-    //@Parameter(names = {"-G", "--graph"})
-    //String visualizePath = null;
 
     private boolean runAsImplicit = false;
 
@@ -158,7 +158,7 @@ public class Run
         }
 
         if (runStart != null && runStartStop != null) {
-            throw usage("-s, --start and -S, --start-stop don't work together");
+            throw usage("-s, --start and -g, --goal don't work together");
         }
 
         if (runStartStop != null && runEnd != null) {
@@ -170,7 +170,7 @@ public class Run
         }
 
         if (runAll && runStartStop != null) {
-            throw usage("-a, --all and -S, --start-stop don't work together");
+            throw usage("-a, --all and -g, --goal don't work together");
         }
 
         String taskNamePattern;
@@ -197,7 +197,7 @@ public class Run
         System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
         System.err.println("    -a, --all                        ignores status files saved at digdag.status and runs all tasks");
         System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at digdag.status");
-        System.err.println("    -S, --start-stop  +NAME          runs this task and its children tasks even if their status files are stored at digdag.status");
+        System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at digdag.status");
         System.err.println("    -e, --end +NAME                  skips this task and its following tasks");
         System.err.println("    -o, --save DIR                   uses this directory to read and write status files (default: digdag.status)");
         System.err.println("        --no-save                    doesn't save status files at digdag.status");
@@ -207,7 +207,7 @@ public class Run
         System.err.println("    -E, --show-params                show task parameters before running a task");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         System.err.println("        --hour                       use this hour's 00:00 as session_time (default: use this hour's 00:00 as session_time)");
-        //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
+        System.err.println("        --time-zone NAME             use system timezone (default: system default time zone)");
         Main.showCommonOptions();
         return systemExit(error);
     }
@@ -264,7 +264,8 @@ public class Run
         ArchiveMetadata archive = ArchiveMetadata.of(
                 dagfile.getWorkflowList(),
                 dagfile.getDefaultParams(),
-                dagfile.getDefaultTimeZone().or(ZoneId.systemDefault())  // TODO should this systemDefault be configurable by cmdline argument?
+                dagfile.getDefaultTimeZone().or(
+                    Optional.fromNullable(timeZoneName).transform(it -> ZoneId.of(it)).or(ZoneId.systemDefault()))
                 );
         StoreWorkflowResult stored = localSite.storeLocalWorkflows(
                 "default",
@@ -321,18 +322,17 @@ public class Run
             }
             sb.append(String.format("%n"));
             if (resumeStatePath != null) {
-                sb.append(String.format(ENGLISH, "Task state is stored at %s directory.", resumeStatePath));
+                sb.append(String.format(ENGLISH, "Task state is saved at %s directory.%n", resumeStatePath));
+                sb.append(String.format(ENGLISH, "Run command with --session-time '%s' argument to retry failed tasks.",
+                            SESSION_TIME_ARG_PARSER.withZone(attempt.getTimeZone()).format(attempt.getSession().getSessionTime())));
             }
-            // TODO this is not complete
-            //sb.append(String.format("Run the workflow again using `-s %s` option to retry this workflow.",
-            //            resumeStatePath));
             throw systemExit(sb.toString());
         }
         else {
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("Success.%n"));
-            sb.append(String.format(ENGLISH, "Task state is stored at %s directory.%n", resumeStatePath));
-            sb.append(String.format(ENGLISH, "Use --all, --start +NAME, or --start-stop +NAME argument to rerun skipped tasks.", resumeStatePath));
+            sb.append(String.format(ENGLISH, "Task state is saved at %s directory.%n", resumeStatePath));
+            sb.append(String.format(ENGLISH, "Use --all, --start +NAME, or --goal +NAME argument to rerun skipped tasks.", resumeStatePath));
             System.err.println(sb.toString());
         }
     }
@@ -378,11 +378,11 @@ public class Run
             logger.info("Using state files at {}.", resumeStatePath);
         }
 
-        // process --all, --start, --start-stop, and --end options
+        // process --all, --start, --goal, and --end options
         List<Long> resumeStateFileEnabledTaskIndexList = USE_ALL;
         List<Long> runTaskIndexList = USE_ALL;
         if (runStartStop != null) {
-            // --start-stop
+            // --goal
             long taskIndex = SubtaskMatchPattern.compile(runStartStop).findIndex(tasks);
             TaskTree taskTree = makeIndexTaskTree(tasks);
             // tasks before this: resume
@@ -490,15 +490,15 @@ public class Run
     private ScheduleTime getSessionTime(Optional<Scheduler> sr, ZoneId timeZone)
     {
         Instant time;
-        if (sessionTime != null) {
+        if (sessionTimeString != null) {
             TemporalAccessor parsed;
             try {
                 parsed = SESSION_TIME_ARG_PARSER
                     .withZone(timeZone)
-                    .parse(sessionTime);
+                    .parse(sessionTimeString);
             }
             catch (DateTimeParseException ex) {
-                throw new ConfigException("-t, --session-time must be \"yyyy-MM-dd\" or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionTime);
+                throw new ConfigException("-t, --session-time must be \"yyyy-MM-dd\" or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionTimeString);
             }
             try {
                 time = Instant.from(parsed);

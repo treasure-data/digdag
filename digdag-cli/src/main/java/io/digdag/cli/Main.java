@@ -240,7 +240,7 @@ public class Main
 
     public static void showCommonOptions()
     {
-        System.err.println("    -g, --log PATH                   output log messages to a file (default: -)");
+        System.err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         System.err.println("    -X KEY=VALUE                     add a performance system config");
         System.err.println("");

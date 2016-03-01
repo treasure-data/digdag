@@ -12,7 +12,7 @@ public abstract class Command
     @Parameter()
     protected List<String> args = new ArrayList<>();
 
-    @Parameter(names = {"-g", "--log"})
+    @Parameter(names = {"-L", "--log"})
     protected String logPath = "-";
 
     @Parameter(names = {"-l", "--log-level"})

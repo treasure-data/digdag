@@ -331,12 +331,12 @@ TODO: add more description here
   * :command:`file_format: jsonl.gz`
 
 :command:`from: yyyy-MM-dd HH:mm:ss[ Z]`
-  Export records from this time (inclusive). Actual time range is :command:`[from, to)`.
+  Export records from this time (inclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
 
   * :command:`from: 2016-01-01 00:00:00 +0800`
 
 :command:`to: yyyy-MM-dd HH:mm:ss[ Z]`
-  Export records to this time (exclusive). Actual time range is :command:`[from, to)`.
+  Export records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
 
   * :command:`to: 2016-02-01 00:00:00 +0800`
 

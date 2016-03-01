@@ -59,14 +59,14 @@ Options:
   Example: --all
 
 :command:`-s, --start +NAME`
-  If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if those state files are stored at ``-o, --save`` directory.
+  If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at ``-o, --save`` directory.
 
   Example: --start +step2
 
-:command:`-S, --start-stop +NAME`
-  If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if those state files are stored at ``-o, --save`` directory.
+:command:`-g, --goal +NAME`
+  If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at ``-o, --save`` directory.
 
-  Example: --start-stop +step2
+  Example: --goal +step2
 
 :command:`-e, --end +NAME`
   Stops workflow right before this task. This task and following tasks will be skipped.
@@ -453,7 +453,7 @@ Upload a repository archive to the server.
 Common options
 ----------------------------------
 
-:command:`-g, --log PATH`
+:command:`-L, --log PATH`
   Output log messages to a file (default is STDOUT). If this option is set, log files are rotated every 10MB, compresses it using gzip, and keeps at most 5 old files.
 
 :command:`-l, --log-level LEVEL`
