@@ -520,8 +520,7 @@ public class Run
         else {
             logger.warn("--session-time argument, --hour argument, or _schedule in yaml file is not set. Using today's 00:00:00 as ${session_time}.");
             time = ZonedDateTime.ofInstant(Instant.now(), timeZone)
-                .withDayOfMonth(1)
-                .truncatedTo(ChronoUnit.HOURS)
+                .truncatedTo(ChronoUnit.DAYS)
                 .toInstant();
         }
         return ScheduleTime.runNow(time);
