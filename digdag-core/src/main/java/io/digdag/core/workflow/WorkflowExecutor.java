@@ -511,7 +511,7 @@ public class WorkflowExecutor
         {
             List<Config> childrenErrors = sm.getErrors(childrenFromThis);
             for (Config childError : childrenErrors) {
-                error.setAll(childError);  // TODO merge?
+                error.merge(childError);
             }
         }
 
@@ -519,12 +519,12 @@ public class WorkflowExecutor
         {
             List<Config> childrenStoreParams = sm.getStoreParams(childrenFromThis);
             for (Config childStoreParams : childrenStoreParams) {
-                storeParams.setAll(childStoreParams);  // TODO merge?
+                storeParams.merge(childStoreParams);
             }
         }
 
         return export
-            .setAll(storeParams)
+            .merge(storeParams)
             .set("error", error);
     }
 
@@ -734,9 +734,9 @@ public class WorkflowExecutor
                 //   revision default < attempt < task < runtime
                 Config params = attempt.getParams().getFactory().create();
                 if (rev.isPresent()) {
-                    params.setAll(rev.get().getDefaultParams());
+                    params.merge(rev.get().getDefaultParams());
                 }
-                params.setAll(attempt.getParams());
+                params.merge(attempt.getParams());
                 collectParams(params, task, attempt);
 
                 // create TaskRequest for OperatorManager.
@@ -948,11 +948,11 @@ public class WorkflowExecutor
             if (ei >= 0) {
                 // this is a parent task of the task
                 Config e = exports.get(ei);
-                params.setAll(e);
+                params.merge(e);
             }
-            params.setAll(s);
+            params.merge(s);
         }
-        params.setAll(task.getConfig().getExport());
+        params.merge(task.getConfig().getExport());
     }
 
     private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)

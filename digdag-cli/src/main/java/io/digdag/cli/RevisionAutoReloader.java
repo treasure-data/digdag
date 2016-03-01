@@ -25,6 +25,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.LocalSite;
 
 public class RevisionAutoReloader
@@ -32,14 +33,16 @@ public class RevisionAutoReloader
     private static Logger logger = LoggerFactory.getLogger(RevisionAutoReloader.class);
 
     private final LocalSite localSite;
+    private final ConfigFactory cf;
     private final ConfigLoaderManager loader;
     private ScheduledExecutorService executor = null;
     private List<ReloadTarget> targets;
 
     @Inject
-    public RevisionAutoReloader(LocalSite localSite, ConfigLoaderManager loader)
+    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ConfigLoaderManager loader)
     {
         this.localSite = localSite;
+        this.cf = cf;
         this.loader = loader;
         this.targets = new CopyOnWriteArrayList<>();
     }
@@ -54,11 +57,10 @@ public class RevisionAutoReloader
     }
 
     public void loadFile(File file,
-            ZoneId defaultTimeZone,
-            Config additionalDefaultParams)
+            ZoneId defaultTimeZone)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(file, defaultTimeZone, additionalDefaultParams);
+        ReloadTarget target = new ReloadTarget(file, defaultTimeZone);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -97,15 +99,13 @@ public class RevisionAutoReloader
     {
         private final File dagfilePath;
         private final ZoneId defaultTimeZone;
-        private final Config additionalDefaultParams;
         private int lastRevId;
         private Dagfile lastDagfile;
 
-        public ReloadTarget(File dagfilePath, ZoneId defaultTimeZone, Config additionalDefaultParams)
+        public ReloadTarget(File dagfilePath, ZoneId defaultTimeZone)
         {
             this.dagfilePath = dagfilePath;
             this.defaultTimeZone = defaultTimeZone;
-            this.additionalDefaultParams = additionalDefaultParams;
             this.lastDagfile = null;
         }
 
@@ -117,7 +117,7 @@ public class RevisionAutoReloader
                     makeRevisionName(),
                     ArchiveMetadata.of(
                         lastDagfile.getWorkflowList(),
-                        lastDagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
+                        lastDagfile.getDefaultParams(),
                         lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
                     Instant.now());
         }
@@ -132,7 +132,7 @@ public class RevisionAutoReloader
                             makeRevisionName(),
                             ArchiveMetadata.of(
                                 dagfile.getWorkflowList(),
-                                dagfile.getDefaultParams().deepCopy().setAll(additionalDefaultParams),
+                                dagfile.getDefaultParams(),
                                 lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
                             Instant.now());
                     lastDagfile = dagfile;
@@ -147,7 +147,7 @@ public class RevisionAutoReloader
         private Dagfile readDagfile()
             throws IOException
         {
-            return loader.loadParameterizedFile(dagfilePath, additionalDefaultParams).convert(Dagfile.class);
+            return loader.loadParameterizedFile(dagfilePath, cf.create()).convert(Dagfile.class);
         }
 
         private String makeRevisionName()

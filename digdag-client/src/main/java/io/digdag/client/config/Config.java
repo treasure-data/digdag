@@ -121,28 +121,28 @@ public class Config
         return new Config(this);
     }
 
-    //public Config merge(Config other)
-    //{
-    //    mergeJsonObject(object, other.deepCopy().object);
-    //    return this;
-    //}
+    public Config merge(Config other)
+    {
+        mergeJsonObject(object, other.deepCopy().object);
+        return this;
+    }
 
-    //private static void mergeJsonObject(ObjectNode src, ObjectNode other)
-    //{
-    //    Iterator<Map.Entry<String, JsonNode>> ite = other.fields();
-    //    while (ite.hasNext()) {
-    //        Map.Entry<String, JsonNode> pair = ite.next();
-    //        JsonNode s = src.get(pair.getKey());
-    //        JsonNode v = pair.getValue();
-    //        if (v.isObject() && s != null && s.isObject()) {
-    //            mergeJsonObject((ObjectNode) s, (ObjectNode) v);
-    //        } else if (v.isArray() && s != null && s.isArray()) {
-    //            mergeJsonArray((ArrayNode) s, (ArrayNode) v);
-    //        } else {
-    //            src.replace(pair.getKey(), v);
-    //        }
-    //    }
-    //}
+    private static void mergeJsonObject(ObjectNode src, ObjectNode other)
+    {
+        Iterator<Map.Entry<String, JsonNode>> ite = other.fields();
+        while (ite.hasNext()) {
+            Map.Entry<String, JsonNode> pair = ite.next();
+            JsonNode s = src.get(pair.getKey());
+            JsonNode v = pair.getValue();
+            if (v.isObject() && s != null && s.isObject()) {
+                mergeJsonObject((ObjectNode) s, (ObjectNode) v);
+            //} else if (v.isArray() && s != null && s.isArray()) {
+            //    mergeJsonArray((ArrayNode) s, (ArrayNode) v);
+            } else {
+                src.replace(pair.getKey(), v);
+            }
+        }
+    }
 
     //private static void mergeJsonArray(ArrayNode src, ArrayNode other)
     //{

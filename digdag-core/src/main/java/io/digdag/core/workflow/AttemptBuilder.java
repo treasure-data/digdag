@@ -85,7 +85,7 @@ public class AttemptBuilder
     private Config buildSessionParameters(Config revisionDefaultParams, Config overwriteParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone)
     {
         Config params = revisionDefaultParams.deepCopy();
-        params.setAll(overwriteParams);
+        params.merge(overwriteParams);
         if (sr.isPresent()) {
             Instant lastSessionTime = sr.get().lastScheduleTime(sessionTime).getTime();
             Instant nextSessionTime = sr.get().nextScheduleTime(sessionTime).getTime();

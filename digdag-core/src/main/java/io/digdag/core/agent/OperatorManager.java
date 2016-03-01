@@ -147,8 +147,8 @@ public class OperatorManager
             // here evaluates local config and creates the complete merged config.
             Config config = request.getConfig().deepCopy();
             try {
-                config.setAll(RuntimeParams.buildRuntimeParams(config.getFactory(), request));
-                config.setAll(evalEngine.eval(archivePath, request.getLocalConfig(), config));
+                config.merge(RuntimeParams.buildRuntimeParams(config.getFactory(), request));
+                config.merge(evalEngine.eval(archivePath, request.getLocalConfig(), config));
             }
             catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to process task config templates", ex);

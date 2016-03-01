@@ -122,7 +122,7 @@ public final class RestModels
             .upstreams(task.getUpstreams())
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
-            .exportParams(task.getConfig().getExport().deepCopy().setAll(task.getExportParams()))
+            .exportParams(task.getConfig().getExport().deepCopy().merge(task.getExportParams()))
             .storeParams(task.getStoreParams())
             .stateParams(task.getStateParams())
             .updatedAt(task.getUpdatedAt())

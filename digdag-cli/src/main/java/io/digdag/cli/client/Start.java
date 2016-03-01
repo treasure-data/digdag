@@ -84,7 +84,7 @@ public class Start
 
         Config overwriteParams = cf.create();
         if (paramsFile != null) {
-            overwriteParams.setAll(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
+            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
         for (Map.Entry<String, String> pair : params.entrySet()) {
             overwriteParams.set(pair.getKey(), pair.getValue());

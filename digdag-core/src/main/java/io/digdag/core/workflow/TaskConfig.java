@@ -53,7 +53,7 @@ public class TaskConfig
     @JsonIgnore
     public Config getMerged()
     {
-        return export.deepCopy().setAll(local);
+        return export.deepCopy().merge(local);
     }
 
     @JsonIgnore

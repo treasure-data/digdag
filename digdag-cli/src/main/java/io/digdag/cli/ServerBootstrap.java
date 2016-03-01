@@ -81,7 +81,7 @@ public class ServerBootstrap
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
             try {
-                autoReloader.loadFile(new File(autoLoadLocalDagfile.get()), ZoneId.systemDefault(), cf.create());
+                autoReloader.loadFile(new File(autoLoadLocalDagfile.get()), ZoneId.systemDefault());
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

@@ -1573,7 +1573,7 @@ public class DatabaseSessionStoreManager
         {
             Config config = cfm.fromResultSetOrEmpty(r, configColumn);
             if (mergeColumn != null) {
-                config.setAll(cfm.fromResultSetOrEmpty(r, mergeColumn));
+                config.merge(cfm.fromResultSetOrEmpty(r, mergeColumn));
             }
             return new IdConfig(r.getLong("id"), config);
         }
