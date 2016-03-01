@@ -215,8 +215,9 @@ public class Run
     private final DateTimeFormatter SESSION_TIME_ARG_PARSER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
 
+    // don't include \ / : * ? " < > | which are not usable on windows
     private static DateTimeFormatter SESSION_STATE_TIME_DIRNAME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
+        DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
 
     private static final List<Long> USE_ALL = null;
 

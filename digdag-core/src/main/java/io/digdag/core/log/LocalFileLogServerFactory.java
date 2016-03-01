@@ -69,8 +69,9 @@ public class LocalFileLogServerFactory
         DateTimeFormatter.ofPattern("yyyy-MM-dd", ENGLISH)
         .withZone(ZoneId.of("UTC"));
 
+    // don't include \ / : * ? " < > | which are not usable on windows
     private static DateTimeFormatter SESSION_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
+        DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
 
     class LocalFileLogServer
         implements LogServer
@@ -167,16 +168,16 @@ public class LocalFileLogServerFactory
 
         private Path getPrefixPath(LogFilePrefix prefix)
         {
+            String dateDir = CREATE_TIME_FORMATTER.format(prefix.getCreatedAt());
             String sessionPrefix =
                 String.format(ENGLISH,
-                    "%s/%d:%s%s@%s",
-                    CREATE_TIME_FORMATTER.format(prefix.getCreatedAt()),
+                    "%d.%s%s@%s",
                     prefix.getSiteId(),
                     prefix.getRepositoryName(),
                     prefix.getWorkflowName(),
                     SESSION_TIME_FORMATTER.withZone(prefix.getTimeZone()).format(prefix.getSessionTime()));
             String attemptPrefix = sessionPrefix + prefix.getRetryAttemptName().transform(it -> "_" + it).or("");
-            return logPath.resolve(attemptPrefix);
+            return logPath.resolve(dateDir).resolve(attemptPrefix);
         }
 
         private String buildFileName(String taskName, Instant fileTime, String nodeId)
