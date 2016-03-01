@@ -123,6 +123,7 @@ public class Run
     @Parameter(names = {"--hour"})
     boolean hourSessionTime = false;
 
+    // set system time zone. this doesn't overwrite dagfile.defaultTimeZone
     @Parameter(names = {"--timezone"})
     String timeZoneName = null;
 
@@ -207,7 +208,6 @@ public class Run
         System.err.println("    -E, --show-params                show task parameters before running a task");
         System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
         System.err.println("        --hour                       use this hour's 00:00 as session_time (default: use this hour's 00:00 as session_time)");
-        System.err.println("        --time-zone NAME             use system timezone (default: system default time zone)");
         Main.showCommonOptions();
         return systemExit(error);
     }
