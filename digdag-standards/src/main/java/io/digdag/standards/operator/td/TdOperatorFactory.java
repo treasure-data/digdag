@@ -189,14 +189,11 @@ public class TdOperatorFactory
                     }
                 }
 
-                Config exportParams = request.getConfig().getFactory().create();
-
                 Config storeParams = request.getConfig().getFactory().create()
                     .getNestedOrSetEmpty("td")
                     .set("last_job_id", q.getJobId());
 
                 return TaskResult.defaultBuilder(request)
-                    .exportParams(exportParams)
                     .storeParams(storeParams)
                     .build();
             }

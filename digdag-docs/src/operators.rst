@@ -245,6 +245,15 @@ TODO: add more description here
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
 
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
+
+
 td_ddl>: Treasure Data operations
 ----------------------------------
 
@@ -364,6 +373,15 @@ TODO: add more description here
   API key.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
 
 
 mail>: Sending email

@@ -92,7 +92,13 @@ public class TdTableExportOperatorFactory
                     q.ensureFinishedOrKill();
                 }
 
-                return TaskResult.empty(request);
+                Config storeParams = request.getConfig().getFactory().create()
+                    .getNestedOrSetEmpty("td")
+                    .set("last_job_id", q.getJobId());
+
+                return TaskResult.defaultBuilder(request)
+                    .storeParams(storeParams)
+                    .build();
             }
         }
     }
