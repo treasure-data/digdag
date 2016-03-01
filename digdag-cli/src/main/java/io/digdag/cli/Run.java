@@ -332,7 +332,7 @@ public class Run
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("Success.%n"));
             sb.append(String.format(ENGLISH, "Task state is stored at %s directory.%n", resumeStatePath));
-            sb.append(String.format(ENGLISH, "Use --all, --start +NAME, or --start-stop +NAME argument to rerun this workflow.", resumeStatePath));
+            sb.append(String.format(ENGLISH, "Use --all, --start +NAME, or --start-stop +NAME argument to rerun skipped tasks.", resumeStatePath));
             System.err.println(sb.toString());
         }
     }
@@ -412,7 +412,7 @@ public class Run
         }
         if (runAll) {
             // all tasks: force run
-            runTaskIndexList = ImmutableList.of();
+            resumeStateFileEnabledTaskIndexList = ImmutableList.of();
         }
         if (runEnd != null) {
             long endIndex = SubtaskMatchPattern.compile(runEnd).findIndex(tasks);
@@ -518,10 +518,10 @@ public class Run
                 .toInstant();
         }
         else {
-            logger.warn("-t, --session-time argument, --hour argument, or _schedule in yaml file is not set. Using today's 00:00:00 as ${session_time}.");
+            logger.warn("--session-time argument, --hour argument, or _schedule in yaml file is not set. Using today's 00:00:00 as ${session_time}.");
             time = ZonedDateTime.ofInstant(Instant.now(), timeZone)
-                .truncatedTo(ChronoUnit.HOURS)
                 .withDayOfMonth(1)
+                .truncatedTo(ChronoUnit.HOURS)
                 .toInstant();
         }
         return ScheduleTime.runNow(time);
