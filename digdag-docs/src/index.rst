@@ -44,7 +44,6 @@ Table of Contents
    scheduling_workflow.rst
    running_tasks_on_docker.rst
    operators.rst
-   mastering_sessions.rst
    reciipes.rst
    command_reference.rst
    python_api.rst
