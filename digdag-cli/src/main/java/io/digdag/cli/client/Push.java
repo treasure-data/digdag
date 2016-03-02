@@ -62,6 +62,7 @@ public class Push
         throws Exception
     {
         String path = "digdag.archive.tar.gz";
+        new File(path).deleteOnExit();
         Archive.archive(dagfilePath, params, paramsFile, path);
 
         DigdagClient client = buildClient();
