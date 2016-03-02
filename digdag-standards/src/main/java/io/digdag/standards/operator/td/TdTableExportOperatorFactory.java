@@ -17,7 +17,6 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.standards.operator.BaseOperator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDExportJobRequest;
 import com.treasuredata.client.model.TDExportFileFormatType;
 import org.msgpack.value.Value;
@@ -78,23 +77,23 @@ public class TdTableExportOperatorFactory
                     params.get("s3_path_prefix", String.class),
                     params.getOptional("pool_name", String.class));
 
-            try (TDOperation op = TDOperation.fromConfig(params)) {
-                TDQuery q = new TDQuery(op.getClient(), op.getClient().submitExportJob(req));
-                logger.info("Started table export job id={}", q.getJobId());
+            try (TDOperator op = TDOperator.fromConfig(params)) {
+                TDJobOperator j = op.submitExportJob(req);
+                logger.info("Started table export job id={}", j.getJobId());
 
                 try {
-                    q.ensureSucceeded();
+                    j.ensureSucceeded();
                 }
                 catch (InterruptedException ex) {
                     Throwables.propagate(ex);
                 }
                 finally {
-                    q.ensureFinishedOrKill();
+                    j.ensureFinishedOrKill();
                 }
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", q.getJobId()));
+                            .set("last_job_id", j.getJobId()));
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)

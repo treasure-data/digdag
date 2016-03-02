@@ -18,7 +18,6 @@ import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.BaseOperator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
@@ -88,26 +87,26 @@ public class TdLoadOperatorFactory
 
             String table = params.get("table", String.class);
 
-            try (TDOperation op = TDOperation.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params)) {
                 TDJobRequest req = TDJobRequest
                     .newBulkLoad(op.getDatabase(), table, embulkConfig);
 
-                TDQuery q = new TDQuery(op.getClient(), req);
-                logger.info("Started bulk load job id={}", q.getJobId());
+                TDJobOperator j = op.submitNewJob(req);
+                logger.info("Started bulk load job id={}", j.getJobId());
 
                 try {
-                    q.ensureSucceeded();
+                    j.ensureSucceeded();
                 }
                 catch (InterruptedException ex) {
                     Throwables.propagate(ex);
                 }
                 finally {
-                    q.ensureFinishedOrKill();
+                    j.ensureFinishedOrKill();
                 }
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", q.getJobId()));
+                            .set("last_job_id", j.getJobId()));
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)

@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 
@@ -56,14 +55,14 @@ public class TdDdlOperatorFactory
             List<String> createList = params.getListOrEmpty("create_table", String.class);
             List<String> emptyList = params.getListOrEmpty("empty_table", String.class);
 
-            try (TDOperation op = TDOperation.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params)) {
                 for (String t : Iterables.concat(deleteList, emptyList)) {
                     logger.info("Deleting TD table {}.{}", op.getDatabase(), t);
                     op.ensureTableDeleted(t);
                 }
                 for (String t : Iterables.concat(createList, emptyList)) {
                     logger.info("Creating TD table {}.{}", op.getDatabase(), t);
-                    op.ensureTableDeleted(t);
+                    op.ensureTableCreated(t);
                 }
             }
 

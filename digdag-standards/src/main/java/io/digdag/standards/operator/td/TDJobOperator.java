@@ -9,6 +9,7 @@ import com.google.common.base.Throwables;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.Value;
@@ -17,24 +18,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
-import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
-public class TDQuery
+public class TDJobOperator
 {
     private final TDClient client;
     private final String jobId;
     private TDJobSummary lastStatus;
 
-    private final static int maxInterval = 30000;
+    private static final int maxInterval = 30000;
 
-    public TDQuery(TDClient client, TDJobRequest request)
-    {
-        this(client, client.submit(request));
-    }
-
-    public TDQuery(TDClient client, String jobId)
+    TDJobOperator(TDClient client, String jobId)
     {
         this.client = client;
         this.jobId = jobId;
@@ -51,19 +47,36 @@ public class TDQuery
         long start = System.currentTimeMillis();
         int interval = 1000;
         if (lastStatus == null) {
-            lastStatus = client.jobStatus(jobId);
+            updateLastStatus();
         }
         while (!lastStatus.getStatus().isFinished()) {
             Thread.sleep(interval);
             interval = Math.min(interval * 2, maxInterval);
-            lastStatus = client.jobStatus(jobId);
+            updateLastStatus();
         }
         return lastStatus;
     }
 
+    private void updateLastStatus()
+    {
+        try {
+            this.lastStatus = defaultRetryExecutor
+                .run(() -> client.jobStatus(jobId));
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
     public TDJob getJobInfo()
     {
-        return client.jobInfo(jobId);
+        try {
+            return defaultRetryExecutor
+                .run(() -> client.jobInfo(jobId));
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
     }
 
     public void ensureSucceeded()
@@ -78,7 +91,12 @@ public class TDQuery
     public synchronized void ensureFinishedOrKill()
     {
         if (lastStatus == null || !lastStatus.getStatus().isFinished()) {
-            client.killJob(jobId);
+            try {
+                defaultRetryExecutor.run(() -> client.killJob(jobId));
+            }
+            catch (RetryGiveupException ex) {
+                throw Throwables.propagate(ex.getCause());
+            }
         }
     }
 
@@ -104,33 +122,40 @@ public class TDQuery
 
     public <R> R getResult(Function<Iterator<Value>, R> resultStreamHandler)
     {
-        return client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
-            try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32*1024))) {
-                return resultStreamHandler.apply(new Iterator<Value>() {
-                    public boolean hasNext()
-                    {
-                        try {
-                            return unpacker.hasNext();
-                        }
-                        catch (IOException ex) {
-                            throw Throwables.propagate(ex);
-                        }
-                    }
+        try {
+            return defaultRetryExecutor.run(() ->
+                    client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
+                        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32*1024))) {
+                            return resultStreamHandler.apply(new Iterator<Value>() {
+                                public boolean hasNext()
+                                {
+                                    try {
+                                        return unpacker.hasNext();
+                                    }
+                                    catch (IOException ex) {
+                                        throw Throwables.propagate(ex);
+                                    }
+                                }
 
-                    public Value next()
-                    {
-                        try {
-                            return unpacker.unpackValue();
+                                public Value next()
+                                {
+                                    try {
+                                        return unpacker.unpackValue();
+                                    }
+                                    catch (IOException ex) {
+                                        throw Throwables.propagate(ex);
+                                    }
+                                }
+                            });
                         }
                         catch (IOException ex) {
                             throw Throwables.propagate(ex);
                         }
-                    }
-                });
-            }
-            catch (IOException ex) {
-                throw Throwables.propagate(ex);
-            }
-        });
+                    })
+            );
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
     }
 }

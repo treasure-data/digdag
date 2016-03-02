@@ -1,6 +1,7 @@
 
 dependencies {
     compile project(':digdag-core')
+    compile project(':digdag-plugin-utils')
     compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
 
     // mail

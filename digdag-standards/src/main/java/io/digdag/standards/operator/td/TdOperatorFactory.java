@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
@@ -86,18 +85,18 @@ public class TdOperatorFactory
                 throw new ConfigException("download_file is invalid if insert_into or create_table is set");
             }
 
-            try (TDOperation op = TDOperation.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params)) {
                 String stmt;
 
                 switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(insertInto.get());
-                        stmt = "INSERT INTO " + op.escapeIdentPresto(insertInto.get()) + "\n" + query;
+                        stmt = "INSERT INTO " + op.escapePrestoIdent(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableDeleted(createTable.get());
-                        stmt = "CREATE TABLE " + op.escapeIdentPresto(createTable.get()) + " AS\n" + query;
+                        stmt = "CREATE TABLE " + op.escapePrestoIdent(createTable.get()) + " AS\n" + query;
                     }
                     else {
                         stmt = query;
@@ -107,11 +106,11 @@ public class TdOperatorFactory
                 case "hive":
                     if (insertInto.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        stmt = "INSERT INTO TABLE " + op.escapeIdentHive(insertInto.get()) + "\n" + query;
+                        stmt = "INSERT INTO TABLE " + op.escapeHiveIdent(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        stmt = "INSERT INTO OVERWRITE " + op.escapeIdentHive(createTable.get()) + " AS\n" + query;
+                        stmt = "INSERT INTO OVERWRITE " + op.escapeHiveIdent(createTable.get()) + " AS\n" + query;
                     }
                     else {
                         stmt = query;
@@ -131,17 +130,17 @@ public class TdOperatorFactory
                     .setPriority(priority)
                     .createTDJobRequest();
 
-                TDQuery q = new TDQuery(op.getClient(), req);
-                logger.info("Started {} job id={}:\n{}", q.getJobId(), engine, stmt);
+                TDJobOperator j = op.submitNewJob(req);
+                logger.info("Started {} job id={}:\n{}", j.getJobId(), engine, stmt);
 
                 try {
-                    q.ensureSucceeded();
+                    j.ensureSucceeded();
                 }
                 catch (RuntimeException ex) {
                     try {
-                        TDJob job = q.getJobInfo();
+                        TDJob job = j.getJobInfo();
                         String message = job.getCmdOut() + "\n" + job.getStdErr();
-                        logger.warn("Job {}:\n===\n{}\n===", q.getJobId(), message);
+                        logger.warn("Job {}:\n===\n{}\n===", j.getJobId(), message);
                     }
                     catch (Throwable fail) {
                         ex.addSuppressed(fail);
@@ -152,20 +151,20 @@ public class TdOperatorFactory
                     Throwables.propagate(ex);
                 }
                 finally {
-                    q.ensureFinishedOrKill();
+                    j.ensureFinishedOrKill();
                 }
 
                 if (downloadFile.isPresent()) {
-                    try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
-                        boolean firstCol = true;
-                        for (String col : q.getResultColumnNames()) {
-                            if (firstCol) { firstCol = false; }
-                            else { out.write(DELIMITER_CHAR); }
-                            addCsvText(out, col);
-                        }
-                        out.write("\n");
+                    j.getResult(ite -> {
+                        try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
+                            boolean firstCol = true;
+                            for (String col : j.getResultColumnNames()) {
+                                if (firstCol) { firstCol = false; }
+                                else { out.write(DELIMITER_CHAR); }
+                                addCsvText(out, col);
+                            }
+                            out.write("\n");
 
-                        q.getResult(ite -> {
                             try {
                                 while (ite.hasNext()) {
                                     ArrayValue row = ite.next().asArrayValue();
@@ -182,16 +181,16 @@ public class TdOperatorFactory
                             catch (IOException ex) {
                                 throw Throwables.propagate(ex);
                             }
-                        });
-                    }
-                    catch (IOException ex) {
-                        throw Throwables.propagate(ex);
-                    }
+                        }
+                        catch (IOException ex) {
+                            throw Throwables.propagate(ex);
+                        }
+                    });
                 }
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", q.getJobId()));
+                            .set("last_job_id", j.getJobId()));
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)
