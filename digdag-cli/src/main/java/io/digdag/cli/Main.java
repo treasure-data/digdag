@@ -19,6 +19,8 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.MissingCommandException;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.PropertyUtils;
+import io.digdag.cli.client.Archive;
+import io.digdag.cli.client.Push;
 import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
@@ -63,6 +65,7 @@ public class Main
 
         jc.addCommand("archive", new Archive());
         jc.addCommand("upload", new Upload());
+        jc.addCommand("push", new Push());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
@@ -224,8 +227,9 @@ public class Main
         System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
         System.err.println("    tasks <session-id>               show tasks of a session");
-        System.err.println("    archive <workflow.yml...>        create a project archive");
-        System.err.println("    upload <workflow.yml...>         upload a project archive to a server");
+        System.err.println("    push <repo-name>                 create and upload a new revision");
+        //System.err.println("    archive                          create a project archive");
+        //System.err.println("    upload <archive.tar.gz>          upload a project archive to a server");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();

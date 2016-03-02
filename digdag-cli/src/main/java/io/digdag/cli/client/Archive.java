@@ -1,4 +1,4 @@
-package io.digdag.cli;
+package io.digdag.cli.client;
 
 import java.util.List;
 import java.util.Date;
@@ -35,6 +35,11 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.cli.Command;
+import io.digdag.cli.Run;
+import io.digdag.cli.Main;
+import io.digdag.cli.YamlMapper;
+import io.digdag.cli.SystemExitException;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -72,7 +77,6 @@ public class Archive
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
-        //System.err.println("    -C           DIR                  change directory before reading files");
         Main.showCommonOptions();
         System.err.println("  Stdin:");
         System.err.println("    Names of the files to add the archive.");
@@ -82,6 +86,18 @@ public class Archive
         System.err.println("    $ find . | digdag archive -o digdag.archive.tar.gz");
         System.err.println("");
         return systemExit(error);
+    }
+
+    // used by Push.push
+    static void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
+        throws IOException
+    {
+        Archive cmd = new Archive();
+        cmd.dagfilePath = dagfilePath;
+        cmd.params = params;
+        cmd.paramsFile = paramsFile;
+        cmd.output = output;
+        cmd.archive();
     }
 
     private void archive()
