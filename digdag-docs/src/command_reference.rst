@@ -411,43 +411,32 @@ Shows tasks of a session. Examples:
     $ digdag tasks 32
 
 
-archive
+push
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
-    $ digdag archive [-f workflow.yml...] [options...]
+    $ digdag push [-f workflow.yml...] <repository> [options...]
 
-Creates a repository archive to upload it to the server. This command reads list of file paths to add this archive from STDIN. Examples:
+Creates a repository archive and upload it to the server. This command reads list of files to add this archive from STDIN. Examples:
 
 .. code-block:: console
 
-    $ git ls-files | digdag archive
-    $ find . | digdag archive -o digdag.archive.tar.gz
+    $ git ls-files | digdag push myrepo -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
+    $ find . | digdag push default -r "$(git show --pretty=format:'%T' | head -n 1)"
 
 STDIN
   Names of the files to add the archive.
 
-:command:`-f, --file PATH`
+:command:`-f, --file PATH.yml`
   Use this file to load tasks (default: digdag.yml)
 
   Example: -f tasks/another.yml
 
-:command:`-o, --output PATH`
-  Output path (default: digdag.archive.tar.gz)
+:command:`-r, --revision REVISION`
+  Name of the revision (required)
 
-  Example: -o archive.tar.gz
-
-
-upload
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: console
-
-    Usage: digdag upload <path.tar.gz> <repository> <revision>
-      Options:
-
-Upload a repository archive to the server.
+  Example: -r 2016-03-02T13:41:39-0800
 
 
 Common options
