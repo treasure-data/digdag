@@ -98,20 +98,20 @@ Defining variables
 
 You can define variables in 3 ways:
 
-* Using ``export`` parameter in YAML
+* Using ``_export`` parameter in YAML
 * Setting variable programmably using API
 * Starting a session with variables
 
-Using export: parameter
+Using _export: parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In a YAML file, ``export:`` directive defines variables. This is useful to load static configurations such as host name of a database.
+In a YAML file, ``_export:`` directive defines variables. This is useful to load static configurations such as host name of a database.
 
-If a task has ``export`` directive, the task and its children can use the variables because it defines variables in a scope. With following example, all tasks can use ``foo=1`` but only +step1 (and +analyze) can use ``bar=2``.
+If a task has ``_export`` directive, the task and its children can use the variables because it defines variables in a scope. With following example, all tasks can use ``foo=1`` but only +step1 (and +analyze) can use ``bar=2``.
 
 .. code-block:: yaml
 
-    export:
+    _export:
       foo: 1
 
     +workflow1:
@@ -119,7 +119,7 @@ If a task has ``export`` directive, the task and its children can use the variab
         py>: tasks.MyWorkflow.prepare
 
       +analyze:
-        export:
+        _export:
           bar: 2
 
         +step1:
@@ -146,7 +146,7 @@ You can set variables programmably using language API. For exampe, Python API pr
 
 ``digdag.env.store(dict)`` stores variables so that all folling tasks (including tasks which are not children of the task) can use them.
 
-``digdag.env.export(dict)`` is same with "export" directive in YAML file. It defines variables for their children.
+``digdag.env.export(dict)`` is same with "_export" directive in YAML file. It defines variables for their children.
 
 See language API documents for details:
 
@@ -173,7 +173,7 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
     run: +main
     !include : 'main.yml'
     !include : 'another.yml'
-    export:
+    _export:
       mysql:
         !include : 'config/mysql.yml'
       hive:
