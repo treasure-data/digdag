@@ -66,6 +66,7 @@ public class Main
         jc.addCommand("push", new Push());
         jc.addCommand("archive", new Archive());
         jc.addCommand("upload", new Upload());
+        jc.addCommand("push", new Push());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
