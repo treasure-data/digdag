@@ -270,28 +270,28 @@ TODO: add more description here
 
     +step1:
       _type: td_ddl
-      create_table: my_table_${session_date_compact}
+      create_tables: my_table_${session_date_compact}
     +step2:
       _type: td_ddl
-      drop_table: my_table_${session_date_compact}
+      drop_tables: my_table_${session_date_compact}
     +step2:
       _type: td_ddl
-      empty_table: my_table_${session_date_compact}
+      empty_tables: my_table_${session_date_compact}
 
-:command:`create_table: NAME`
-  Create a new table if not exists.
+:command:`create_tables: [ARRAY OF NAMES]`
+  Create new tables if not exists.
 
-  * :command:`create_table: my_table`
+  * :command:`create_tables: [my_table1, my_table2]`
 
-:command:`empty_table: NAME`
-  Create a new table (drop it first if it exists).
+:command:`empty_tables: [ARRAY OF NAME]`
+  Create new tables (drop it first if it exists).
 
-  * :command:`empty_table: my_table`
+  * :command:`empty_tables: [my_table1, my_table2]`
 
-:command:`drop_table: NAME`
-  Drop a table if exists.
+:command:`drop_tables: [ARRAY OF NAMES]`
+  Drop tables if exists.
 
-  * :command:`drop_table: my_table`
+  * :command:`drop_tables: [my_table1, my_table2]`
 
 :command:`apikey: APIKEY`
   API key.

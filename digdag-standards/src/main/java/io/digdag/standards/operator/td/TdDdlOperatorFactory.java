@@ -51,9 +51,9 @@ public class TdDdlOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            List<String> deleteList = params.getListOrEmpty("drop_table", String.class);
-            List<String> createList = params.getListOrEmpty("create_table", String.class);
-            List<String> emptyList = params.getListOrEmpty("empty_table", String.class);
+            List<String> deleteList = params.getListOrEmpty("drop_tables", String.class);
+            List<String> createList = params.getListOrEmpty("create_tables", String.class);
+            List<String> emptyList = params.getListOrEmpty("empty_tables", String.class);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 for (String t : Iterables.concat(deleteList, emptyList)) {
