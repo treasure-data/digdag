@@ -193,6 +193,9 @@ Parameters
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
 
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
 :command:`engine: presto`
   Query engine (``presto`` or ``hive``).
 
@@ -250,6 +253,9 @@ TODO: add more description here
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
 
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
 
 Output parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -306,6 +312,9 @@ TODO: add more description here
 
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
 
 
 td_table_export>: Treasure Data table export to S3
@@ -385,6 +394,9 @@ TODO: add more description here
 
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
 
 
 Output parameters
