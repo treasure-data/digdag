@@ -190,6 +190,9 @@ Parameters
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
 :command:`engine: presto`
   Query engine (``presto`` or ``hive``).
 
@@ -244,6 +247,9 @@ TODO: add more description here
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
 
 Output parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,6 +303,9 @@ TODO: add more description here
   API key.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
 
 
 td_table_export>: Treasure Data table export to S3
@@ -373,6 +382,9 @@ TODO: add more description here
   API key.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
 
 
 Output parameters
@@ -464,7 +476,7 @@ To use Gmail SMTP server, you need to do either of:
 
   * :command:`username: me`
 
-:command:`password: APIKEY`
+:command:`password: PASSWORD`
   SMTP login password.
 
   * :command:`password: MyPaSsWoRd`
