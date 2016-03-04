@@ -80,7 +80,6 @@ public class TdRunOperatorFactory
                     .storeParams(storeParams)
                     .build();
             }
-            return null;
         }
     }
 }
