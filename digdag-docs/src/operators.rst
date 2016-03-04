@@ -217,6 +217,10 @@ Output parameters
 
   * :command:`52036074`
 
+:command:`td.last_results`
+  The first 1 row of the query results as a map. This is available only when ``store_last_results: true`` is set.
+
+  * :command:`{"path":"/index.html","count":1}`
 
 td_run>: Treasure Data saved queries
 ----------------------------------
@@ -251,6 +255,12 @@ Parameters
 
   * :command:`download_file: output.csv`
 
+:command:`store_last_results: BOOLEAN`
+  Stores the first 1 row of the query results to ``${td.last_results}`` variable (default: false).
+  td.last_results is a map of column name and a value. To access to a single value, you can use ``${td.last_results.my_count}`` syntax.
+
+  * :command:`store_last_results: true`
+
 :command:`apikey: APIKEY`
   API key.
 
@@ -270,6 +280,11 @@ Output parameters
   The job id this task executed.
 
   * :command:`52036074`
+
+:command:`td.last_results`
+  The first 1 row of the query results as a map. This is available only when ``store_last_results: true`` is set.
+
+  * :command:`{"path":"/index.html","count":1}`
 
 
 td_load>: Treasure Data bulk loading
