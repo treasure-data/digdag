@@ -9,7 +9,7 @@ dependencies {
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.2'
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.jdbi:jdbi:2.63.1'
-    compile 'com.zaxxer:HikariCP:2.4.4'
+    compile 'com.zaxxer:HikariCP:2.4.3'
     compile 'com.h2database:h2:1.4.190'
     compile 'org.yaml:snakeyaml:1.14'
 }
