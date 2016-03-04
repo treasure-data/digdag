@@ -175,14 +175,16 @@ public class TdOperatorFactory
         if (downloadFile.isPresent()) {
             j.getResult(ite -> {
                 try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
+                    // write csv file header
                     boolean firstCol = true;
                     for (String col : j.getResultColumnNames()) {
                         if (firstCol) { firstCol = false; }
                         else { out.write(DELIMITER_CHAR); }
                         addCsvText(out, col);
                     }
-                    out.write("\n");
+                    out.write("\r\n");
 
+                    // write values
                     try {
                         while (ite.hasNext()) {
                             ArrayValue row = ite.next().asArrayValue();
@@ -192,7 +194,7 @@ public class TdOperatorFactory
                                 else { out.write(DELIMITER_CHAR); }
                                 addCsvValue(out, v);
                             }
-                            out.write("\n");
+                            out.write("\r\n");
                         }
                         return true;
                     }
