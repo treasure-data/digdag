@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import java.util.Date;
 import java.io.Closeable;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
@@ -100,13 +101,19 @@ public class TDOperator
 
     public TDJobOperator submitNewJob(TDJobRequest request)
     {
-        // TODO retry
+        // TODO retry with an unique id and ignore conflict
         return newJobOperator(client.submit(request));
+    }
+
+    public TDJobOperator startSavedQuery(String name, Date scheduledTime)
+    {
+        // TODO retry with an unique id and ignore conflict
+        return newJobOperator(client.startSavedQuery(name, scheduledTime));
     }
 
     public TDJobOperator submitExportJob(TDExportJobRequest request)
     {
-        // TODO retry
+        // TODO retry with an unique id and ignore conflict
         return newJobOperator(client.submitExportJob(request));
     }
 

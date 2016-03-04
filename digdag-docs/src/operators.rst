@@ -212,6 +212,60 @@ Output parameters
   * :command:`52036074`
 
 
+td_run>: Treasure Data saved queries
+----------------------------------
+
+**td_run>:** operator runs a query saved on Treasure Data.
+
+TODO: add more description here
+
+.. code-block:: yaml
+
+    _export:
+      td:
+        apikey: YOUR/API_KEY
+        database: www_access
+
+    +step1:
+      td_run>: myquery1
+    +step2:
+      td_run>: myquery2
+      session_time: 2016-01-01T01:01:01+0000
+
+Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td_run>: NAME`
+  Name of a saved query.
+
+  * :command:`td_run>: my_query`
+
+:command:`download_file: NAME`
+  Saves query result as a local CSV file.
+
+  * :command:`download_file: output.csv`
+
+:command:`apikey: APIKEY`
+  API key.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
+
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
+
+
 td_load>: Treasure Data bulk loading
 ----------------------------------
 

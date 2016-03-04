@@ -53,12 +53,12 @@ public class JacksonTimeModule
     public static class InstantDeserializer
             extends FromStringDeserializer<Instant>
     {
-        private final DateTimeFormatter formatter;
+        private final DateTimeFormatter parser;
 
         public InstantDeserializer()
         {
             super(Instant.class);
-            this.formatter = DateTimeFormatter.ISO_DATE_TIME;
+            this.parser = DateTimeFormatter.ISO_DATE_TIME;
         }
 
         @Override
@@ -66,7 +66,7 @@ public class JacksonTimeModule
                 throws JsonMappingException
         {
             try {
-                return Instant.from(formatter.parse(value));
+                return Instant.from(parser.parse(value));
             }
             catch (DateTimeParseException ex) {
                 throw new JsonMappingException(String.format("Unknown time zone name '%s'", value), ex);

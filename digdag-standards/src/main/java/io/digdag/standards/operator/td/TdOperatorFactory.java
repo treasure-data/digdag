@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.standards.operator.ArchiveFiles;
 import com.treasuredata.client.model.TDJob;
+import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
@@ -133,70 +135,78 @@ public class TdOperatorFactory
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started {} job id={}:\n{}", j.getJobId(), engine, stmt);
 
-                try {
-                    j.ensureSucceeded();
-                }
-                catch (RuntimeException ex) {
-                    try {
-                        TDJob job = j.getJobInfo();
-                        String message = job.getCmdOut() + "\n" + job.getStdErr();
-                        logger.warn("Job {}:\n===\n{}\n===", j.getJobId(), message);
-                    }
-                    catch (Throwable fail) {
-                        ex.addSuppressed(fail);
-                    }
-                    throw ex;
-                }
-                catch (InterruptedException ex) {
-                    Throwables.propagate(ex);
-                }
-                finally {
-                    j.ensureFinishedOrKill();
-                }
-
-                if (downloadFile.isPresent()) {
-                    j.getResult(ite -> {
-                        try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
-                            boolean firstCol = true;
-                            for (String col : j.getResultColumnNames()) {
-                                if (firstCol) { firstCol = false; }
-                                else { out.write(DELIMITER_CHAR); }
-                                addCsvText(out, col);
-                            }
-                            out.write("\n");
-
-                            try {
-                                while (ite.hasNext()) {
-                                    ArrayValue row = ite.next().asArrayValue();
-                                    boolean first = true;
-                                    for (Value v : row) {
-                                        if (first) { first = false; }
-                                        else { out.write(DELIMITER_CHAR); }
-                                        addCsvValue(out, v);
-                                    }
-                                    out.write("\n");
-                                }
-                                return true;
-                            }
-                            catch (IOException ex) {
-                                throw Throwables.propagate(ex);
-                            }
-                        }
-                        catch (IOException ex) {
-                            throw Throwables.propagate(ex);
-                        }
-                    });
-                }
+                TDJobSummary summary = joinJob(j, archive, downloadFile);
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", j.getJobId()));
+                            .set("last_job_id", summary.getJobId()));
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)
                     .build();
             }
         }
+    }
+
+    static TDJobSummary joinJob(TDJobOperator j, ArchiveFiles archive, Optional<String> downloadFile)
+    {
+        TDJobSummary summary;
+        try {
+            summary = j.ensureSucceeded();
+        }
+        catch (RuntimeException ex) {
+            try {
+                TDJob job = j.getJobInfo();
+                String message = job.getCmdOut() + "\n" + job.getStdErr();
+                logger.warn("Job {}:\n===\n{}\n===", j.getJobId(), message);
+            }
+            catch (Throwable fail) {
+                ex.addSuppressed(fail);
+            }
+            throw ex;
+        }
+        catch (InterruptedException ex) {
+            throw Throwables.propagate(ex);
+        }
+        finally {
+            j.ensureFinishedOrKill();
+        }
+
+        if (downloadFile.isPresent()) {
+            j.getResult(ite -> {
+                try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
+                    boolean firstCol = true;
+                    for (String col : j.getResultColumnNames()) {
+                        if (firstCol) { firstCol = false; }
+                        else { out.write(DELIMITER_CHAR); }
+                        addCsvText(out, col);
+                    }
+                    out.write("\n");
+
+                    try {
+                        while (ite.hasNext()) {
+                            ArrayValue row = ite.next().asArrayValue();
+                            boolean first = true;
+                            for (Value v : row) {
+                                if (first) { first = false; }
+                                else { out.write(DELIMITER_CHAR); }
+                                addCsvValue(out, v);
+                            }
+                            out.write("\n");
+                        }
+                        return true;
+                    }
+                    catch (IOException ex) {
+                        throw Throwables.propagate(ex);
+                    }
+                }
+                catch (IOException ex) {
+                    throw Throwables.propagate(ex);
+                }
+            });
+        }
+
+        return summary;
     }
 
     private static void addCsvValue(BufferedWriter out, Value value)

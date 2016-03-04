@@ -79,13 +79,14 @@ public class TDJobOperator
         }
     }
 
-    public void ensureSucceeded()
+    public TDJobSummary ensureSucceeded()
         throws InterruptedException
     {
         TDJobSummary status = join();
         if (status.getStatus() != TDJob.Status.SUCCESS) {
             throw new RuntimeException("TD job " + jobId + " failed with status " + status.getStatus());
         }
+        return status;
     }
 
     public synchronized void ensureFinishedOrKill()
