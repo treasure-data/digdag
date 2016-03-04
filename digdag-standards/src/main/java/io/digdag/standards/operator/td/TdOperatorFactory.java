@@ -1,6 +1,9 @@
 package io.digdag.standards.operator.td;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.nio.file.Path;
 import java.io.File;
 import java.io.BufferedWriter;
@@ -8,6 +11,7 @@ import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -18,6 +22,7 @@ import io.digdag.standards.operator.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
 import io.digdag.standards.operator.ArchiveFiles;
 import com.treasuredata.client.model.TDJob;
@@ -26,6 +31,9 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
 import org.msgpack.value.ArrayValue;
+import org.msgpack.value.MapValue;
+import org.msgpack.value.RawValue;
+import org.msgpack.value.ValueFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdOperatorFactory
@@ -87,6 +95,8 @@ public class TdOperatorFactory
                 throw new ConfigException("download_file is invalid if insert_into or create_table is set");
             }
 
+            boolean storeLastResults = params.get("store_last_results", boolean.class, false);
+
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 String stmt;
 
@@ -137,9 +147,7 @@ public class TdOperatorFactory
 
                 TDJobSummary summary = joinJob(j, archive, downloadFile);
 
-                Config storeParams = request.getConfig().getFactory().create()
-                    .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", summary.getJobId()));
+                Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)
@@ -177,10 +185,10 @@ public class TdOperatorFactory
                 try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
                     // write csv file header
                     boolean firstCol = true;
-                    for (String col : j.getResultColumnNames()) {
+                    for (String columnName : j.getResultColumnNames()) {
                         if (firstCol) { firstCol = false; }
                         else { out.write(DELIMITER_CHAR); }
-                        addCsvText(out, col);
+                        addCsvText(out, columnName);
                     }
                     out.write("\r\n");
 
@@ -209,6 +217,50 @@ public class TdOperatorFactory
         }
 
         return summary;
+    }
+
+    static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, TDJobSummary summary, boolean storeLastResults)
+    {
+        Config td = cf.create();
+
+        td.set("last_job_id", summary.getJobId());
+
+        if (storeLastResults) {
+            List<ArrayValue> results = downloadFirstResults(j, 1);
+            ArrayValue row = results.get(0);
+            Map<RawValue, Value> map = new LinkedHashMap<>();
+            List<String> columnNames = j.getResultColumnNames();
+            for (int i=0; i < Math.min(results.size(), columnNames.size()); i++) {
+                map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
+            }
+            MapValue lastResults = ValueFactory.newMap(map);
+            try {
+                td.set("last_results", new ObjectMapper().readTree(lastResults.toJson()));
+            }
+            catch (IOException ex) {
+                throw Throwables.propagate(ex);
+            }
+        }
+
+        return cf.create().set("td", td);
+    }
+
+    private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max)
+    {
+        List<ArrayValue> results = new ArrayList<ArrayValue>(max);
+        j.getResult(ite -> {
+            for (int i=0; i < max; i++) {
+                if (ite.hasNext()) {
+                    ArrayValue row = ite.next().asArrayValue();
+                    results.add(row);
+                }
+                else {
+                    break;
+                }
+            }
+            return true;
+        });
+        return results;
     }
 
     private static void addCsvValue(BufferedWriter out, Value value)

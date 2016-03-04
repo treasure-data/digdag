@@ -27,6 +27,7 @@ import org.msgpack.value.Value;
 import org.msgpack.value.ArrayValue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
+import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 
 public class TdRunOperatorFactory
         implements OperatorFactory
@@ -65,6 +66,7 @@ public class TdRunOperatorFactory
             String name = params.get("_command", String.class);
             Instant sessionTime = params.get("session_time", Instant.class);
             Optional<String> downloadFile = params.getOptional("download_file", String.class);
+            boolean storeLastResults = params.get("store_last_results", boolean.class, false);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 TDJobOperator j = op.startSavedQuery(name, Date.from(sessionTime));
@@ -72,9 +74,8 @@ public class TdRunOperatorFactory
 
                 TDJobSummary summary = joinJob(j, archive, downloadFile);
 
-                Config storeParams = request.getConfig().getFactory().create()
-                    .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", summary.getJobId()));
+                Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
+
 
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)

@@ -175,6 +175,12 @@ Parameters
 
   * :command:`download_file: output.csv`
 
+:command:`store_last_results: BOOLEAN`
+  Stores the first 1 row of the query results to ``${td.last_results}`` variable (default: false).
+  td.last_results is a map of column name and a value. To access to a single value, you can use ``${td.last_results.my_count}`` syntax.
+
+  * :command:`store_last_results: true`
+
 :command:`result_url: NAME`
   Output the query results to the URL:
 
