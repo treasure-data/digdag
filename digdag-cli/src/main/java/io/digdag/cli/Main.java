@@ -228,7 +228,7 @@ public class Main
         System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
         System.err.println("    tasks <session-id>               show tasks of a session");
-        System.err.println("    upload <repo-name>               create a project archive");
+        System.err.println("    push <repo-name>                 create and upload a new revision");
         //System.err.println("    archive <workflow.yml...>        create a project archive");
         //System.err.println("    upload <workflow.yml...>         upload a project archive to a server");
         System.err.println("");
