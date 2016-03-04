@@ -28,7 +28,7 @@ function template(code, variables)
     index = offset + match.length;
 
     if (statement) {
-      source += "'+\n((__t=(" + statement + "))==null?'':__t)+\n'";
+      source += "';\n" + evaluate + "\n__p+='";
     } else if (expression) {
       source += "'+\n((__t=(" + expression + "))==null?'':(typeof __t==\"string\"?__t:JSON.stringify(__t)))+\n'";
     }
