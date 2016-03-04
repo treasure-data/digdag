@@ -105,16 +105,16 @@ public class TDOperator
         return newJobOperator(client.submit(request));
     }
 
-    public TDJobOperator startSavedQuery(String name, Date scheduledTime)
-    {
-        // TODO retry with an unique id and ignore conflict
-        return newJobOperator(client.startSavedQuery(name, scheduledTime));
-    }
-
     public TDJobOperator submitExportJob(TDExportJobRequest request)
     {
         // TODO retry with an unique id and ignore conflict
         return newJobOperator(client.submitExportJob(request));
+    }
+
+    public TDJobOperator startSavedQuery(String name, Date scheduledTime)
+    {
+        // TODO retry with an unique id and ignore conflict
+        return newJobOperator(client.startSavedQuery(name, scheduledTime));
     }
 
     public TDJobOperator newJobOperator(String jobId)
