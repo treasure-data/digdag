@@ -7,3 +7,5 @@
 *.pyc
 /dist/*.tar.gz
 MANIFEST
+# for IntelliJ
+.idea

@@ -6,9 +6,11 @@ import java.util.Date;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.base.Optional;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -17,7 +19,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.MissingCommandException;
-import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Push;
@@ -42,6 +43,35 @@ public class Main
         boolean help;
     }
 
+    public static boolean isValidJavaVersion() {
+        return isValidJavaVersion(System.getProperty("java.version"));
+    }
+
+    public static boolean isValidJavaVersion(String javaVersion)
+    {
+        Matcher m = Pattern.compile("(\\d+)\\.(\\d+).(\\d+)(_(\\d+))?").matcher(javaVersion);
+        if(javaVersion == null || !m.matches()) {
+            // Ignore unknown java version string
+            return true;
+        }
+
+        try {
+            int major = Integer.parseInt(m.group(1));
+            int minor = Integer.parseInt(m.group(2));
+            int rev = Integer.parseInt(m.group(3));
+            int update = m.group(5) == null ? 0 : Integer.parseInt(m.group(5));
+            if(major == 1) {
+                if(minor < 8 || (rev == 0 && update < 73)) {
+                    return false;
+                }
+            }
+        }
+        catch (NumberFormatException e) {
+            // Unexpected error
+        }
+        return true;
+    }
+
     public static void main(String[] args)
         throws Exception
     {
@@ -50,6 +80,11 @@ public class Main
             return;
         }
         System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.3.4");
+
+        if(!isValidJavaVersion()) {
+            System.err.println("Java 1.8.0_u73 or higher is necessary for running Digdag. Install the latest Java version.");
+            return;
+        }
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
