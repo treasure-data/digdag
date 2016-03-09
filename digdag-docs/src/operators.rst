@@ -357,13 +357,13 @@ TODO: add more description here
 
     +step1:
       _type: td_ddl
-      create_tables: [my_table_${session_date_compact}]
+      create_tables: ["my_table_${session_date_compact}"]
     +step2:
       _type: td_ddl
-      drop_tables: [my_table_${session_date_compact}]
+      drop_tables: ["my_table_${session_date_compact}"]
     +step2:
       _type: td_ddl
-      empty_tables: [my_table_${session_date_compact}]
+      empty_tables: ["my_table_${session_date_compact}"]
 
 :command:`create_tables: [ARRAY OF NAMES]`
   Create new tables if not exists.
