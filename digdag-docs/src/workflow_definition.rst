@@ -33,7 +33,7 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
         sh>: tasks/shell_sample.sh
 
 
-``run:`` parameter is used to declare the default workflow to run. ``$ digdag run`` command finds runs this workflow from ``./digdag.yml`` file. You can run another workflow using ``$ digdag run +another_workflow`` command.
+``run:`` parameter is used to declare the default workflow to run. You can run another workflow using ``$ digdag run +another_workflow`` command.
 
 
 "+" is a task
@@ -44,7 +44,7 @@ Key names starting with ``+`` sign is a task. Tasks run from the top to bottom i
 operators>
 ----------------------------------
 
-A task with ``type>: command`` parameter executes an action. You can choose various kinds of operators such as running `shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Operators <operators.html>`_ page for the list of built-in operators.
+A task with ``type>: command`` or ``_type: NAME`` parameter executes an action. You can choose various kinds of operators such as `running shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Operators <operators.html>`_ page for the list of built-in operators.
 
 .. note::
 

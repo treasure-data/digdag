@@ -36,7 +36,7 @@ Runs workflow.
     $ digdag run +another
     $ digdag run -f workflow/another.yml --start +step2
     $ digdag run -f workflow/another.yml --start +step2 --end +step4
-    $ digdag run -f workflow/another.yml -S +step1 --hour
+    $ digdag run -f workflow/another.yml -g +step1 --hour
     $ digdag run -p environment=staging -p user=frsyuki
 
 Options:
