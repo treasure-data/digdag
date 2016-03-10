@@ -35,6 +35,8 @@ import org.msgpack.value.MapValue;
 import org.msgpack.value.RawValue;
 import org.msgpack.value.ValueFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
+import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 
 public class TdOperatorFactory
         implements OperatorFactory
@@ -76,8 +78,8 @@ public class TdOperatorFactory
 
             String query = templateEngine.templateCommand(archivePath, params, "query", UTF_8);
 
-            Optional<String> insertInto = params.getOptional("insert_into", String.class);
-            Optional<String> createTable = params.getOptional("create_table", String.class);
+            Optional<TableParam> insertInto = params.getOptional("insert_into", TableParam.class);
+            Optional<TableParam> createTable = params.getOptional("create_table", TableParam.class);
             if (insertInto.isPresent() && createTable.isPresent()) {
                 throw new ConfigException("Setting both insert_into and create_table is invalid");
             }
@@ -103,12 +105,12 @@ public class TdOperatorFactory
                 switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
-                        op.ensureTableCreated(insertInto.get());
-                        stmt = "INSERT INTO " + op.escapePrestoIdent(insertInto.get()) + "\n" + query;
+                        ensureTableCreated(op, insertInto.get());
+                        stmt = "INSERT INTO " + escapePrestoTableName(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
-                        op.ensureTableDeleted(createTable.get());
-                        stmt = "CREATE TABLE " + op.escapePrestoIdent(createTable.get()) + " AS\n" + query;
+                        ensureTableDeleted(op, createTable.get());  // TODO this is not atomic.
+                        stmt = "CREATE TABLE " + escapePrestoTableName(createTable.get()) + " AS\n" + query;
                     }
                     else {
                         stmt = query;
@@ -117,12 +119,12 @@ public class TdOperatorFactory
 
                 case "hive":
                     if (insertInto.isPresent()) {
-                        op.ensureTableCreated(createTable.get());
-                        stmt = "INSERT INTO TABLE " + op.escapeHiveIdent(insertInto.get()) + "\n" + query;
+                        ensureTableCreated(op, insertInto.get());
+                        stmt = "INSERT INTO TABLE " + escapeHiveTableName(insertInto.get()) + "\n" + query;
                     }
                     else if (createTable.isPresent()) {
-                        op.ensureTableCreated(createTable.get());
-                        stmt = "INSERT OVERWRITE TABLE " + op.escapeHiveIdent(createTable.get()) + "\n" + query;
+                        ensureTableCreated(op, createTable.get());
+                        stmt = "INSERT OVERWRITE TABLE " + escapeHiveTableName(createTable.get()) + "\n" + query;
                     }
                     else {
                         stmt = query;
@@ -153,6 +155,36 @@ public class TdOperatorFactory
                     .storeParams(storeParams)
                     .build();
             }
+        }
+    }
+
+    private void ensureTableDeleted(TDOperator op, TableParam table)
+    {
+        op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableDeleted(table.getTable());
+    }
+
+    private void ensureTableCreated(TDOperator op, TableParam table)
+    {
+        op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableCreated(table.getTable());
+    }
+
+    private String escapeHiveTableName(TableParam table)
+    {
+        if (table.getDatabase().isPresent()) {
+            return escapeHiveIdent(table.getDatabase().get()) + '.' + escapeHiveIdent(table.getTable());
+        }
+        else {
+            return escapeHiveIdent(table.getTable());
+        }
+    }
+
+    private String escapePrestoTableName(TableParam table)
+    {
+        if (table.getDatabase().isPresent()) {
+            return escapePrestoIdent(table.getDatabase().get()) + '.' + escapePrestoIdent(table.getTable());
+        }
+        else {
+            return escapePrestoIdent(table.getTable());
         }
     }
 

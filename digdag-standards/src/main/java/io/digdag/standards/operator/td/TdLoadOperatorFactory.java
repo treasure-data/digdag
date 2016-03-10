@@ -85,11 +85,11 @@ public class TdLoadOperatorFactory
                 embulkConfig = params.getNested("config").getInternalObjectNode();
             }
 
-            String table = params.get("table", String.class);
+            TableParam table = params.get("table", TableParam.class);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 TDJobRequest req = TDJobRequest
-                    .newBulkLoad(op.getDatabase(), table, embulkConfig);
+                    .newBulkLoad(table.getDatabase().or(op.getDatabase()), table.getTable(), embulkConfig);
 
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started bulk load job id={}", j.getJobId());

@@ -65,9 +65,12 @@ public class TdTableExportOperatorFactory
                 throw new ConfigException("invalid file_format option", ex);
             }
 
+            String database = params.get("database", String.class);
+            TableParam table = params.get("table", TableParam.class);
+
             TDExportJobRequest req = new TDExportJobRequest(
-                    params.get("database", String.class),
-                    params.get("table", String.class),
+                    table.getDatabase().or(database),
+                    table.getTable(),
                     Date.from(parseTime(params, "from")),
                     Date.from(parseTime(params, "to")),
                     fileFormat,

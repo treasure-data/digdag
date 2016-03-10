@@ -51,18 +51,18 @@ public class TdDdlOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            List<String> deleteList = params.getListOrEmpty("drop_tables", String.class);
-            List<String> createList = params.getListOrEmpty("create_tables", String.class);
-            List<String> emptyList = params.getListOrEmpty("empty_tables", String.class);
+            List<TableParam> deleteList = params.getListOrEmpty("drop_tables", TableParam.class);
+            List<TableParam> createList = params.getListOrEmpty("create_tables", TableParam.class);
+            List<TableParam> emptyList = params.getListOrEmpty("empty_tables", TableParam.class);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
-                for (String t : Iterables.concat(deleteList, emptyList)) {
+                for (TableParam t : Iterables.concat(deleteList, emptyList)) {
                     logger.info("Deleting TD table {}.{}", op.getDatabase(), t);
-                    op.ensureTableDeleted(t);
+                    op.withDatabase(t.getDatabase().or(op.getDatabase())).ensureTableDeleted(t.getTable());
                 }
-                for (String t : Iterables.concat(createList, emptyList)) {
+                for (TableParam t : Iterables.concat(createList, emptyList)) {
                     logger.info("Creating TD table {}.{}", op.getDatabase(), t);
-                    op.ensureTableCreated(t);
+                    op.withDatabase(t.getDatabase().or(op.getDatabase())).ensureTableCreated(t.getTable());
                 }
             }
 
