@@ -122,7 +122,7 @@ public class TdOperatorFactory
                     }
                     else if (createTable.isPresent()) {
                         op.ensureTableCreated(createTable.get());
-                        stmt = "INSERT INTO OVERWRITE " + op.escapeHiveIdent(createTable.get()) + " AS\n" + query;
+                        stmt = "INSERT OVERWRITE TABLE " + op.escapeHiveIdent(createTable.get()) + "\n" + query;
                     }
                     else {
                         stmt = query;
