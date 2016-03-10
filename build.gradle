@@ -8,7 +8,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.3.4'
+    version = '0.3.5'
 
     apply plugin: 'java'
 }
