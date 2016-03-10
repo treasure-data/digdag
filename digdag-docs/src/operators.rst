@@ -363,17 +363,17 @@ TODO: add more description here
       drop_tables: ["my_table_${session_date_compact}"]
     +step2:
       _type: td_ddl
-      empty_tables: ["my_table_${session_date_compact}"]
+      replace_tables: ["my_table_${session_date_compact}"]
 
 :command:`create_tables: [ARRAY OF NAMES]`
   Create new tables if not exists.
 
   * :command:`create_tables: [my_table1, my_table2]`
 
-:command:`empty_tables: [ARRAY OF NAME]`
+:command:`replace_tables: [ARRAY OF NAME]`
   Create new tables (drop it first if it exists).
 
-  * :command:`empty_tables: [my_table1, my_table2]`
+  * :command:`replace_tables: [my_table1, my_table2]`
 
 :command:`drop_tables: [ARRAY OF NAMES]`
   Drop tables if exists.

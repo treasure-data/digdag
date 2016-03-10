@@ -53,14 +53,14 @@ public class TdDdlOperatorFactory
 
             List<String> deleteList = params.getListOrEmpty("drop_tables", String.class);
             List<String> createList = params.getListOrEmpty("create_tables", String.class);
-            List<String> emptyList = params.getListOrEmpty("empty_tables", String.class);
+            List<String> replaceList = params.getListOrEmpty("replace_tables", String.class);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
-                for (String t : Iterables.concat(deleteList, emptyList)) {
+                for (String t : Iterables.concat(deleteList, replaceList)) {
                     logger.info("Deleting TD table {}.{}", op.getDatabase(), t);
                     op.ensureTableDeleted(t);
                 }
-                for (String t : Iterables.concat(createList, emptyList)) {
+                for (String t : Iterables.concat(createList, replaceList)) {
                     logger.info("Creating TD table {}.{}", op.getDatabase(), t);
                     op.ensureTableCreated(t);
                 }
