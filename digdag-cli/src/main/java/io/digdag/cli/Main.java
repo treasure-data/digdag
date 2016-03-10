@@ -44,20 +44,26 @@ public class Main
         boolean help;
     }
 
-    private static void checkValidJavaRuntime()
+    static void validateJavaRuntime(Properties systemProps)
         throws SystemExitException
     {
-        String javaVmName = System.getProperty("java.vm.name");
-        if (!javaVmName.startsWith("OpenJDK") && !javaVmName.startsWith("Java HotSpot")) {
+        String javaVmName = systemProps.getProperty("java.vm.name", "");
+        if (javaVmName.startsWith("OpenJDK") || javaVmName.startsWith("Java HotSpot")) {
             // OpenJDK: OpenJDK 64-Bit Server VM
             // Oracle JDK: Java HotSpot(TM) 64-Bit Server VM
             // Android Dalvik: Dalvik
             // Kaffe: Kaffe
-            System.err.println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Use OpenJDK.");
-            return;
+            String javaVersion = systemProps.getProperty("java.version", "");
+            validateOpenJdkVersion(javaVersion);
         }
+        else {
+            System.err.println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Please OpenJDK instead.");
+        }
+    }
 
-        String javaVersion = System.getProperty("java.version");
+    private static void validateOpenJdkVersion(String javaVersion)
+        throws SystemExitException
+    {
         Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:_(\\d+))?").matcher(javaVersion);
         if (m.find()) {
             // OpenJDK: 1.8.0_72
@@ -66,30 +72,30 @@ public class Main
             int revision = Integer.parseInt(m.group(3));
             int update = m.group(4) == null ? 0 : Integer.parseInt(m.group(4));
             if (major < 1) {
-                throw javaVersionCheckError(javaVersion);
+                throw openJdkVersionCheckError(javaVersion);
             }
             else if (major == 1) {
                 if (minor < 8) {
-                    throw javaVersionCheckError(javaVersion);
+                    throw openJdkVersionCheckError(javaVersion);
                 }
                 else if (minor == 8) {
                     if (revision < 0) {
-                        throw javaVersionCheckError(javaVersion);
+                        throw openJdkVersionCheckError(javaVersion);
                     }
                     else if (revision == 0) {
                         if (update < 72) {
-                            throw javaVersionCheckError(javaVersion);
+                            throw openJdkVersionCheckError(javaVersion);
                         }
                     }
                 }
             }
         }
         else {
-            System.err.println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Please use OpenJDK instead.");
+            System.err.println("Unsupported java version syntax (" + javaVersion + "). Digdag may not work. Please use OpenJDK instead.");
         }
     }
 
-    private static SystemExitException javaVersionCheckError(String javaVersion)
+    private static SystemExitException openJdkVersionCheckError(String javaVersion)
     {
         return systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u72 (1.8.0_72).");
     }
@@ -133,7 +139,7 @@ public class Main
         jc.addCommand("selfupdate", new SelfUpdate());
 
         try {
-            checkValidJavaRuntime();
+            validateJavaRuntime(System.getProperties());
 
             try {
                 jc.parse(args);
