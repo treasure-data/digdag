@@ -143,12 +143,14 @@ public class OperatorManager
         long taskId = request.getTaskId();
 
         try {
-            // TaskRequest.config sent by WorkflowExecutor doesn't include local config of this task (only params).
-            // here evaluates local config and creates the complete merged config.
-            Config config = request.getConfig().deepCopy();
+            // evaluate config and creates the complete merged config.
+            Config config;
             try {
-                config.merge(RuntimeParams.buildRuntimeParams(config.getFactory(), request));
-                config.merge(evalEngine.eval(archivePath, request.getLocalConfig(), config));
+                Config all = RuntimeParams.buildRuntimeParams(request.getConfig().getFactory(), request).deepCopy();
+                all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
+                Config evalParams = all.deepCopy();
+                all.merge(request.getLocalConfig());
+                config = evalEngine.eval(archivePath, all, evalParams);
             }
             catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to process task config templates", ex);

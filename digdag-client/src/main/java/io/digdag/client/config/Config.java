@@ -143,7 +143,7 @@ public class Config
             if (v.isObject() && s != null && s.isObject()) {
                 mergeJsonObject((ObjectNode) s, (ObjectNode) v);
             } else {
-                src.replace(pair.getKey(), v);
+                src.set(pair.getKey(), v);  // keeps order if key exists
             }
         }
     }
