@@ -66,7 +66,7 @@ public class Main
     {
         Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:_(\\d+))?").matcher(javaVersion);
         if (m.find()) {
-            // OpenJDK: 1.8.0_72
+            // OpenJDK: 1.8.0_73
             int major = Integer.parseInt(m.group(1));
             int minor = Integer.parseInt(m.group(2));
             int revision = Integer.parseInt(m.group(3));
@@ -83,7 +83,7 @@ public class Main
                         throw openJdkVersionCheckError(javaVersion);
                     }
                     else if (revision == 0) {
-                        if (update < 72) {
+                        if (update < 71) {
                             throw openJdkVersionCheckError(javaVersion);
                         }
                     }
@@ -97,7 +97,7 @@ public class Main
 
     private static SystemExitException openJdkVersionCheckError(String javaVersion)
     {
-        return systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u72 (1.8.0_72).");
+        return systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u71 (1.8.0_71).");
     }
 
     public static void main(String[] args)
