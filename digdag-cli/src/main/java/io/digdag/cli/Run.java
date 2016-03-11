@@ -5,6 +5,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.EnumSet;
+import java.util.Comparator;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.LocalDate;
@@ -14,16 +19,19 @@ import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
-import java.util.stream.Collectors;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import com.google.common.base.Optional;
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -111,17 +119,14 @@ public class Run
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-t", "--session-time"})
-    String sessionTimeString = null;
+    @Parameter(names = {"-t", "--session-time", "--session"})  // --session-time is kept only for backward compatibility. should be removed at the next major release
+    String sessionString = "last";
 
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
     @Parameter(names = {"-E", "--show-params"})
     boolean showParams = false;
-
-    @Parameter(names = {"--hour"})
-    boolean hourSessionTime = false;
 
     // set system time zone. this doesn't overwrite dagfile.defaultTimeZone
     @Parameter(names = {"--timezone"})
@@ -182,7 +187,7 @@ public class Run
         case 1:
             taskNamePattern = args.get(0);
             if (!taskNamePattern.startsWith("+")) {
-                throw usage("Task name must begin with '+': " + taskNamePattern);
+                throw usage("Task name '" + taskNamePattern + "' does not exist in file " + dagfilePath + ".");
             }
             break;
         default:
@@ -206,17 +211,20 @@ public class Run
         System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         System.err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
         System.err.println("    -E, --show-params                show task parameters before running a task");
-        System.err.println("    -t, --session-time \"yyyy-MM-dd[ HH:mm:ss]\"  set session_time to this time");
-        System.err.println("        --hour                       use this hour's 00:00 as session_time (default: use this hour's 00:00 as session_time)");
+        System.err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
+        System.err.println("                                     (default: last, reuses the latest session time stored at digdag.status)");
         Main.showCommonOptions();
         return systemExit(error);
     }
 
-    private final DateTimeFormatter SESSION_TIME_ARG_PARSER =
+    private static final DateTimeFormatter SESSION_TIME_ARG_PARSER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
 
+    private static final DateTimeFormatter SESSION_DISPLAY_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
+
     // don't include \ / : * ? " < > | which are not usable on windows
-    private static DateTimeFormatter SESSION_STATE_TIME_DIRNAME_FORMATTER =
+    private static final DateTimeFormatter SESSION_STATE_TIME_DIRNAME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
 
     private static final List<Long> USE_ALL = null;
@@ -322,26 +330,30 @@ public class Run
                 sb.append(String.format("%n"));
             }
             sb.append(String.format("%n"));
-            if (resumeStatePath != null) {
+            if (!noSave) {
                 sb.append(String.format(ENGLISH, "Task state is saved at %s directory.%n", resumeStatePath));
-                sb.append(String.format(ENGLISH, "Run command with --session-time '%s' argument to retry failed tasks.",
+                sb.append(String.format(ENGLISH, "Run command with --session '%s' argument to retry failed tasks.",
                             SESSION_TIME_ARG_PARSER.withZone(attempt.getTimeZone()).format(attempt.getSession().getSessionTime())));
             }
             throw systemExit(sb.toString());
         }
         else {
             StringBuilder sb = new StringBuilder();
-            sb.append(String.format("Success.%n"));
-            sb.append(String.format(ENGLISH, "Task state is saved at %s directory.%n", resumeStatePath));
-            sb.append(String.format(ENGLISH, "Use --all, --start +NAME, or --goal +NAME argument to rerun skipped tasks.", resumeStatePath));
-            System.err.println(sb.toString());
+            if (noSave) {
+                System.err.println(String.format(ENGLISH, "Success."));
+            }
+            else {
+                System.err.println(String.format(ENGLISH, "Success. Task state is saved at %s directory.", resumeStatePath));
+            }
+            System.err.println(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time."));
+            System.err.println(String.format(ENGLISH, "  * Use --all, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
         }
     }
 
     private StoredSessionAttemptWithSession submitWorkflow(Injector injector,
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
             ArchiveMetadata archive, Config overwriteParams, TaskMatchPattern taskMatchPattern)
-        throws TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, SessionAttemptConflictException
+        throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, SessionAttemptConflictException
     {
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final WorkflowExecutor executor = injector.getInstance(WorkflowExecutor.class);
@@ -369,14 +381,15 @@ public class Run
         // calculate session_time
         Optional<Scheduler> sr = srm.tryGetScheduler(rev, def);
         ZoneId timeZone = sr.transform(it -> it.getTimeZone()).or(archive.getDefaultTimeZone());
-        ScheduleTime sessionTime = getSessionTime(sr, timeZone);
+        Instant sessionTime = parseSessionTime(sessionString, Paths.get(sessionStatusDir), def.getName(), sr, timeZone);
 
         // calculate ./digdag.status/<session_time> path.
         // if sessionStatusDir is not set, use digdag.status.
+        this.resumeStatePath = Paths.get(sessionStatusDir).resolve(
+                SESSION_STATE_TIME_DIRNAME_FORMATTER.withZone(timeZone).format(sessionTime)
+                );
         if (!noSave) {
-            this.resumeStatePath = Paths.get(sessionStatusDir)
-                .resolve(SESSION_STATE_TIME_DIRNAME_FORMATTER.withZone(timeZone).format(sessionTime.getTime()));
-            logger.info("Using state files at {}.", resumeStatePath);
+            logger.info("Using session {}.", resumeStatePath);
         }
 
         // process --all, --start, --goal, and --end options
@@ -464,7 +477,7 @@ public class Run
                 rev,
                 def,
                 overwriteParams,
-                sessionTime);
+                ScheduleTime.runNow(sessionTime));
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);
         logger.debug("Submitting {}", attempt);
@@ -476,7 +489,7 @@ public class Run
         return attempt;
     }
 
-    private TaskTree makeIndexTaskTree(WorkflowTaskList tasks)
+    private static TaskTree makeIndexTaskTree(WorkflowTaskList tasks)
     {
         List<TaskRelation> relations = tasks.stream()
             .map(t -> TaskRelation.of(
@@ -488,43 +501,106 @@ public class Run
         return new TaskTree(relations);
     }
 
-    private ScheduleTime getSessionTime(Optional<Scheduler> sr, ZoneId timeZone)
+    private static Instant parseSessionTime(String sessionString,
+            Path sessionStatusDir, String workflowName,
+            Optional<Scheduler> sr, ZoneId timeZone)
+        throws SystemExitException
     {
-        Instant time;
-        if (sessionTimeString != null) {
+        switch (sessionString) {
+        case "hourly":
+            return ZonedDateTime.ofInstant(Instant.now(), timeZone)
+                .truncatedTo(ChronoUnit.HOURS)
+                .toInstant();
+
+        case "daily":
+            return ZonedDateTime.ofInstant(Instant.now(), timeZone)
+                .truncatedTo(ChronoUnit.DAYS)
+                .toInstant();
+
+        case "last":
+            {
+                Optional<Instant> last = getLastSessionTime(sessionStatusDir, workflowName);
+                if (last.isPresent()) {
+                    logger.warn("Reusing the last session time {}.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(last.get()));
+                    return last.get();
+                }
+                else if (sr.isPresent()) {
+                    Instant t = sr.get().lastScheduleTime(Instant.now()).getTime();
+                    logger.warn("Using a new session time {} based on _schedule.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(t));
+                    return t;
+                }
+                else {
+                    Instant t = ZonedDateTime.ofInstant(Instant.now(), timeZone)
+                        .truncatedTo(ChronoUnit.DAYS)
+                        .toInstant();
+                    logger.warn("Using a new session time {}.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(t));
+                    return t;
+                }
+            }
+
+        case "schedule":
+            if (sr.isPresent()) {
+                return sr.get().lastScheduleTime(Instant.now()).getTime();
+            }
+            throw systemExit("--session schedule is set but _schedule is not set to this workflow.");
+
+        default:
             TemporalAccessor parsed;
             try {
                 parsed = SESSION_TIME_ARG_PARSER
                     .withZone(timeZone)
-                    .parse(sessionTimeString);
+                    .parse(sessionString);
             }
             catch (DateTimeParseException ex) {
-                throw new ConfigException("-t, --session-time must be \"yyyy-MM-dd\" or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionTimeString);
+                throw new ConfigException("--session must be hourly, daily, last, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionString);
             }
             try {
-                time = Instant.from(parsed);
+                return Instant.from(parsed);
             }
             catch (DateTimeException ex) {
-                time = LocalDate.from(parsed)
+                return LocalDate.from(parsed)
                     .atStartOfDay(timeZone)
                     .toInstant();
             }
         }
-        else if (sr.isPresent()) {
-            time = sr.get().lastScheduleTime(Instant.now()).getTime();
+    }
+
+    private static Optional<Instant> getLastSessionTime(Path sessionStatusDir, String workflowName)
+    {
+        try {
+            List<Instant> times = new ArrayList<>();
+            for (Path path : Files.newDirectoryStream(sessionStatusDir, path -> Files.isDirectory(path) && taskExists(path, workflowName))) {
+                try {
+                    times.add(Instant.from(SESSION_STATE_TIME_DIRNAME_FORMATTER.parse(path.getFileName().toString())));
+                }
+                catch (DateTimeException ex) {
+                }
+            }
+            if (times.isEmpty()) {
+                return Optional.absent();
+            }
+            else {
+                return Optional.of(times.stream().sorted(Comparator.<Instant>naturalOrder().reversed()).findFirst().get());
+            }
         }
-        else if (hourSessionTime) {
-            time = ZonedDateTime.ofInstant(Instant.now(), timeZone)
-                .truncatedTo(ChronoUnit.HOURS)
-                .toInstant();
+        catch (NoSuchFileException ex) {
+            return Optional.absent();
         }
-        else {
-            logger.warn("--session-time argument, --hour argument, or _schedule in yaml file is not set. Using today's 00:00:00 as ${session_time}.");
-            time = ZonedDateTime.ofInstant(Instant.now(), timeZone)
-                .truncatedTo(ChronoUnit.DAYS)
-                .toInstant();
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
         }
-        return ScheduleTime.runNow(time);
+    }
+
+    private static boolean taskExists(Path dir, String workflowName)
+        throws IOException
+    {
+        Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\:].*\\.yml|\\.yml)");
+        for (Path file : Files.newDirectoryStream(dir, file -> Files.isRegularFile(file))) {
+            if (namePattern.matcher(file.getFileName().toString()).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Function<String, TaskResult> skipTaskReports = (fullName) -> null;

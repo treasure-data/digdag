@@ -38,6 +38,7 @@ Runs workflow.
     $ digdag run -f workflow/another.yml --start +step2 --end +step4
     $ digdag run -f workflow/another.yml -g +step1 --hour
     $ digdag run -p environment=staging -p user=frsyuki
+    $ digdag run --session hourly
 
 Options:
 
@@ -73,15 +74,18 @@ Options:
 
   Example: --end +step4
 
-:command:`--hour`
-  Digdag uses the latest schedule time as session_time if _schedule option is set at the workflow. Otherwise, Digdag uses today's 00:00:00 as session_time. If this --hour option is set, Digdag uses this hour's 00:00 as session_time.
+:command:`--session EXPR`
+  Set session_time to this time. Argument is either of:
 
-  Example: --hour
+    * daily: uses today's 00:00:00 as the session time (update session time every day).
+    * hourly: uses current hour's 00:00 as the session time (update session time every hour).
+    * schedule: calculates time based on ``_schedule`` configuration of the workflow. Error if ``_schedule`` is not set.
+    * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``_schedule``, or uses today's 00:00:00.
+    * timestmap in *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss* format: uses the specified time as the session time.
 
-:command:`-t, --session-time TIME`
-  Set session_time to this time. Format of TIME needs to be *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss*.
+  Default is "last".
 
-  Example: -t 2016-01-01
+  Example: --session 2016-01-01
 
 :command:`--no-save`
   Disables session state files completely.
