@@ -214,7 +214,7 @@ task setVersion << {
     }
 
     File gradle_ver = file('build.gradle')
-    gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}'", "version = '${to}'"))
+    gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
     List<String> docs = [
         'README.md',
@@ -225,7 +225,7 @@ task setVersion << {
     ]
     docs.each() { path ->
         File doc = file(path)
-        doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)", "${to}"))
+        doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
     }
 
     file("digdag-docs/src/releases/release-${to}.rst").append("")
