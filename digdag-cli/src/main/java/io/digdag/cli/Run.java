@@ -594,7 +594,7 @@ public class Run
     private static boolean taskExists(Path dir, String workflowName)
         throws IOException
     {
-        Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\:].*\\.yml|\\.yml)");
+        Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\^].*\\.yml|\\.yml)");
         for (Path file : Files.newDirectoryStream(dir, file -> Files.isRegularFile(file))) {
             if (namePattern.matcher(file.getFileName().toString()).matches()) {
                 return true;

@@ -847,7 +847,7 @@ public class WorkflowExecutor
             return false;
         }
 
-        // task failed. add :error tasks
+        // task failed. add ^error tasks
         Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
         boolean updated;
         if (errorTaskId.isPresent()) {
@@ -961,7 +961,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":sub", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^sub", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -982,7 +982,7 @@ public class WorkflowExecutor
         Config export = subtaskConfig.getNestedOrSetEmpty("_export");
         export = errorBuilder.apply(export);
 
-        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":error", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^error", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -999,7 +999,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":check", subtaskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^check", subtaskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
@@ -1012,7 +1012,7 @@ public class WorkflowExecutor
 
     public Optional<Long> addMonitorTask(TaskControl lockedTask, String type, Config taskConfig)
     {
-        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), ":" + type, taskConfig);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type, taskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();
         }
