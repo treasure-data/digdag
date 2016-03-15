@@ -30,7 +30,8 @@ public abstract class WorkflowDefinition
     @Value.Check
     protected void check()
     {
-        // TODO check name
-        //   must start with +
+        ModelValidator.builder()
+            .checkTaskName("name", getName())
+            .validate("workflow", this);
     }
 }

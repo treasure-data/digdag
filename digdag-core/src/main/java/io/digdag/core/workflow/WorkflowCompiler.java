@@ -11,6 +11,7 @@ import com.google.common.collect.*;
 import io.digdag.core.session.TaskType;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.repository.ModelValidator;
 import static com.google.common.collect.Maps.immutableEntry;
 
 public class WorkflowCompiler
@@ -108,12 +109,15 @@ public class WorkflowCompiler
         public WorkflowTaskList compile(String parentFullName, String name, Config config)
         {
             try {
-                collect(Optional.absent(), parentFullName, name, config);
-                return WorkflowTaskList.of(
+                ModelValidator validator = ModelValidator.builder();
+                collect(Optional.absent(), parentFullName, name, config, validator);
+                WorkflowTaskList list = WorkflowTaskList.of(
                         tasks
                         .stream()
                         .map(tb -> tb.build())
                         .collect(Collectors.toList()));
+                validator.validate("workflow", list);
+                return list;
             }
             catch (ConfigException ex) {
                 throw ex;
@@ -125,9 +129,12 @@ public class WorkflowCompiler
 
         public TaskBuilder collect(
                 Optional<TaskBuilder> parent, String parentFullName,
-                String name, Config originalConfig)
+                String name, Config originalConfig,
+                ModelValidator validator)
         {
             Config config = originalConfig.deepCopy();
+
+            validator.checkTaskName("task name", name);
 
             // +key: {...}
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
@@ -162,7 +169,7 @@ public class WorkflowCompiler
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()
-                    .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue()))
+                    .map(pair -> collect(Optional.of(tb), fullName, pair.getKey(), pair.getValue(), validator))
                     .collect(Collectors.toList());
 
                 if (config.get("_parallel", boolean.class, false)) {

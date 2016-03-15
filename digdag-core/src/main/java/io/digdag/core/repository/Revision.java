@@ -34,6 +34,8 @@ public abstract class Revision
     @Value.Check
     protected void check()
     {
-        // TODO check name
+        ModelValidator.builder()
+            .checkMaxLength("name", getName(), 255)
+            .validate("revision", this);
     }
 }

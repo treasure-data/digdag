@@ -54,9 +54,10 @@ public class TaskMatchPattern
     }
 
     // some symbols are allowed to be in a task name:
-    //   _ - .
+    // allowed: - = $ [ ] { } @ , .
+    // See also ModelValidator.RAW_TASK_NAME_CHARS
     final static Pattern DELIMITER_PATTERN = Pattern.compile(
-            "(?![\\_\\-\\/\\.])(?=[\\W])",
+            "(?![\\-\\=\\$\\[\\]\\{\\}\\@\\,\\.\\_])(?=[\\W])",
             Pattern.UNICODE_CHARACTER_CLASS);
 
     public static TaskMatchPattern compile(String pattern)

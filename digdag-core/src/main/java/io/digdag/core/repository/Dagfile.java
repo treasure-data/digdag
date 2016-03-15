@@ -75,7 +75,10 @@ public abstract class Dagfile
         return builder.build();
     }
 
-    // check
-    // TODO validate default task name begins with +
-    // TODO validate key names of defaultParams
+    @Value.Check
+    protected void check()
+    {
+        // check
+        // TODO validate key names of defaultParams
+    }
 }
