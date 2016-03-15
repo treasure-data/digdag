@@ -134,8 +134,6 @@ public class WorkflowCompiler
         {
             Config config = originalConfig.deepCopy();
 
-            validator.checkTaskName("task name", name);
-
             // +key: {...}
             List<Entry<String, Config>> subtaskConfigs = config.getKeys()
                 .stream()
@@ -166,6 +164,13 @@ public class WorkflowCompiler
             else {
                 // group node
                 TaskBuilder tb = addTask(parent, name, fullName, true, config);
+
+                // validation
+                subtaskConfigs
+                    .stream()
+                    .forEach(pair -> {
+                        validator.checkRawTaskName("task name", pair.getKey());
+                    });
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()

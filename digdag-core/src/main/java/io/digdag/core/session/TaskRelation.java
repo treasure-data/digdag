@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
-import static com.google.common.base.Preconditions.checkState;
-
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskRelation.class)
 @JsonDeserialize(as = ImmutableTaskRelation.class)

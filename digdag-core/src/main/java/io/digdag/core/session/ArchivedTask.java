@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
-import static com.google.common.base.Preconditions.checkState;
+import io.digdag.core.repository.ModelValidator;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableArchivedTask.class)
@@ -30,6 +30,8 @@ public abstract class ArchivedTask
     @Value.Check
     protected void check()
     {
-        //checkState(!getError().isPresent() || !getError().get().isEmpty(), "error must not be empty if not null");
+        //ModelValidator.builder()
+        //    .check("error", !getError().isPresent() || !getError().get().isEmpty(), "must not be empty if not null")
+        //    .validate("archived task", this);
     }
 }

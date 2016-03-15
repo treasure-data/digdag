@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
-import static com.google.common.base.Preconditions.checkState;
+import io.digdag.core.repository.ModelValidator;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableWorkflowTask.class)
@@ -34,7 +34,9 @@ public abstract class WorkflowTask
     @Value.Check
     protected void check()
     {
-        checkState(!getName().isEmpty(), "name of a task must not be empty");
-        checkState(getIndex() >= 0, "index of a task must not be negative");
+        ModelValidator.builder()
+            .checkRawTaskName("name", getName())
+            .check("task index", getIndex(), getIndex() >= 0, "must not be negative")
+            .validate("workflow task", this);
     }
 }

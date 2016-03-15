@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
-import static com.google.common.base.Preconditions.checkState;
 
 @JsonDeserialize(as = ImmutableStoredTask.class)
 public abstract class StoredTask
@@ -28,9 +27,4 @@ public abstract class StoredTask
     public abstract Optional<Instant> getRetryAt();
 
     public abstract Config getStateParams();
-
-    @Value.Check
-    protected void check()
-    {
-    }
 }

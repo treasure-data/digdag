@@ -55,10 +55,18 @@ public class ModelValidator
         return this;
     }
 
+    // retry attempt name, revision name
+    public ModelValidator checkIdentifierName(String fieldName, String value)
+    {
+        checkMaxLength(fieldName, value, 255);
+        return this;
+    }
+
     public ModelValidator checkTaskName(String fieldName, String value)
     {
-        checkRawTaskName(fieldName, value);
+        check(fieldName, value, value.startsWith("+"), "must start with '+'");
         check(fieldName, value, !value.contains("^"), "can't contain ^ character");
+        checkRawTaskName(fieldName, value);
         return this;
     }
 
@@ -66,7 +74,7 @@ public class ModelValidator
     {
         checkNotEmpty(fieldName, value);
         check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "can't start with a digit (0-9)");
-        check(fieldName, value, value.startsWith("+"), "must start with '+'");
+        check(fieldName, value, value.startsWith("+") || value.startsWith("^"), "must start with '+' or '^'");
         Matcher m = RAW_TASK_NAME_CHARS.matcher(value.substring(1));
         if (m.find()) {
             check(fieldName, value, false, "can't contain " + m.group() + " character");

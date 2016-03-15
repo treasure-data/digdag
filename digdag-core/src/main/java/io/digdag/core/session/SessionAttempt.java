@@ -3,7 +3,9 @@ package io.digdag.core.session;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 import io.digdag.client.config.Config;
+import io.digdag.core.repository.ModelValidator;
 
 @JsonDeserialize(as = ImmutableSessionAttempt.class)
 public abstract class SessionAttempt
@@ -35,5 +37,15 @@ public abstract class SessionAttempt
             .timeZone(timeZone)
             .params(params)
             .build();
+    }
+
+    @Value.Check
+    protected void check()
+    {
+        ModelValidator validator = ModelValidator.builder();
+        if (getRetryAttemptName().isPresent()) {
+            validator.checkIdentifierName("retry attempt name", getRetryAttemptName().get());
+        }
+        validator.validate("session attempt", this);
     }
 }

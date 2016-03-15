@@ -12,6 +12,7 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.repository.ModelValidator;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableAttemptRequest.class)
@@ -69,6 +70,10 @@ public abstract class AttemptRequest
     @Value.Check
     protected void check()
     {
-        // TODO if getRetryAttemptName().isPresent, get() should not be empty
+        ModelValidator validator = ModelValidator.builder();
+        if (getRetryAttemptName().isPresent()) {
+            validator.checkIdentifierName("retry attempt name", getRetryAttemptName().get());
+        }
+        validator.validate("attempt request", this);
     }
 }

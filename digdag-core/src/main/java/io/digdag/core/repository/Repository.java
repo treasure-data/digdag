@@ -5,7 +5,6 @@ import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import java.util.regex.Pattern;
-import io.digdag.core.repository.ModelValidator;
 
 @JsonDeserialize(as = ImmutableRepository.class)
 public abstract class Repository

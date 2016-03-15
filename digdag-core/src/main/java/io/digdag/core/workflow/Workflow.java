@@ -6,7 +6,7 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
-import static com.google.common.base.Preconditions.checkState;
+import io.digdag.core.repository.ModelValidator;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableWorkflow.class)
@@ -36,7 +36,9 @@ public abstract class Workflow
     @Value.Check
     protected void check()
     {
-        checkState(!getName().isEmpty(), "Name of a workflow must not be empty");
-        checkState(!getTasks().isEmpty(), "A workflow must have at least one task");
+        ModelValidator.builder()
+            .checkTaskName("name", getName())
+            .check("tasks", getTasks(), !getTasks().isEmpty(), "must not be empty")
+            .validate("workflow", this);
     }
 }

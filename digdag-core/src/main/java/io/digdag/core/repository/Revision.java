@@ -35,7 +35,7 @@ public abstract class Revision
     protected void check()
     {
         ModelValidator.builder()
-            .checkMaxLength("name", getName(), 255)
+            .checkIdentifierName("name", getName())
             .validate("revision", this);
     }
 }

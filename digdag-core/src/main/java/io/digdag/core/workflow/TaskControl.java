@@ -17,7 +17,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.TaskConfig;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
-import static com.google.common.base.Preconditions.checkState;
 
 public class TaskControl
 {
