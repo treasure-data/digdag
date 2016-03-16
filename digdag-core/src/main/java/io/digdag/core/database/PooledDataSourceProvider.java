@@ -39,6 +39,11 @@ public class PooledDataSourceProvider
             hikari.setDriverClassName(DatabaseMigrator.getDriverClassName(config.getType()));
             hikari.setDataSourceProperties(DatabaseConfig.buildJdbcProperties(config));
 
+            hikari.setConnectionTimeout(config.getConnectionTimeout() * 1000);
+            hikari.setIdleTimeout(config.getIdleTimeout() * 1000);
+            hikari.setValidationTimeout(config.getValidationTimeout() * 1000);
+            hikari.setMaximumPoolSize(config.getMaximumPoolSize());
+
             logger.debug("Using database URL {}", hikari.getJdbcUrl());
 
             ds = new HikariDataSource(hikari);

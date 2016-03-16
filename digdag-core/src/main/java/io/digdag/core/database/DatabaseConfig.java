@@ -28,6 +28,18 @@ public interface DatabaseConfig
 
     boolean getAutoMigrate();
 
+    ////
+    // HikariCP config params
+    //
+
+    int getConnectionTimeout();  // seconds
+
+    int getIdleTimeout();  // seconds
+
+    int getMaximumPoolSize();
+
+    int getValidationTimeout();  // seconds
+
     static ImmutableDatabaseConfig.Builder builder()
     {
         return ImmutableDatabaseConfig.builder();
@@ -59,11 +71,23 @@ public interface DatabaseConfig
                     .host(config.get("database.host", String.class))
                     .port(config.getOptional("database.port", Integer.class))
                     .database(config.get("database.database", String.class))
+                    .loginTimeout(config.get("database.loginTimeout", int.class, 30))
+                    .socketTimeout(config.get("database.socketTimeout", int.class, 1800))
+                    .ssl(config.get("database.ssl", boolean.class, false))
                     .build()));
             break;
         default:
             throw new ConfigException("Unknown database.type: " + type);
         }
+
+        builder.connectionTimeout(
+                config.get("database.connectionTimeout", int.class, 30));  // HikariCP default: 30
+        builder.idleTimeout(
+                config.get("database.idleTimeout", int.class, 600));  // HikariCP default: 600
+        builder.validationTimeout(
+                config.get("database.validationTimeout", int.class, 5));  // HikariCP default: 5
+        builder.maximumPoolSize(
+                config.get("database.maximumPoolSize", int.class, 10));  // HikariCP default: 10
 
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
@@ -128,9 +152,7 @@ public interface DatabaseConfig
     static Properties buildJdbcProperties(DatabaseConfig config)
     {
         Properties props = new Properties();
-        for (Map.Entry<String, String> pair : config.getOptions().entrySet()) {
-            props.setProperty(pair.getKey(), pair.getValue());
-        }
+        Optional<RemoteDatabaseConfig> rc = config.getRemoteDatabaseConfig();
 
         // add default params
         switch (config.getType()) {
@@ -138,16 +160,25 @@ public interface DatabaseConfig
             // nothing
             break;
         case "postgresql":
-            props.setProperty("loginTimeout",   "300"); // seconds
-            props.setProperty("socketTimeout", "1800"); // seconds
+            props.setProperty("loginTimeout", Integer.toString(rc.get().getLoginTimeout())); // seconds
+            props.setProperty("socketTimeout", Integer.toString(rc.get().getSocketTimeout())); // seconds
             props.setProperty("tcpKeepAlive", "true");
             break;
         }
 
         if (config.getRemoteDatabaseConfig().isPresent()) {
-            props.setProperty("user", config.getRemoteDatabaseConfig().get().getUser());
-            props.setProperty("password", config.getRemoteDatabaseConfig().get().getPassword());
+            props.setProperty("user", rc.get().getUser());
+            props.setProperty("password", rc.get().getPassword());
+            if (rc.get().getSsl()) {
+                props.setProperty("ssl", "true");
+                props.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");  // disable server certificate validation
+            }
         }
+
+        for (Map.Entry<String, String> pair : config.getOptions().entrySet()) {
+            props.setProperty(pair.getKey(), pair.getValue());
+        }
+
         return props;
     }
 }

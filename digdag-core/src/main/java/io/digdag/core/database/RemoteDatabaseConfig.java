@@ -21,6 +21,12 @@ public interface RemoteDatabaseConfig
 
     Optional<Integer> getPort();
 
+    int getLoginTimeout();
+
+    int getSocketTimeout();
+
+    boolean getSsl();
+
     String getDatabase();
 
     static ImmutableRemoteDatabaseConfig.Builder builder()
