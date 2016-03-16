@@ -1,5 +1,6 @@
 package io.digdag.core.workflow;
 
+import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 
 public class SessionAttemptConflictException
@@ -7,9 +8,9 @@ public class SessionAttemptConflictException
 {
     private StoredSessionAttemptWithSession conflictedSession;
 
-    public SessionAttemptConflictException(String message, StoredSessionAttemptWithSession conflictedSession)
+    public SessionAttemptConflictException(String message, ResourceConflictException cause, StoredSessionAttemptWithSession conflictedSession)
     {
-        super(message);
+        super(message, cause);
         this.conflictedSession = conflictedSession;
     }
 

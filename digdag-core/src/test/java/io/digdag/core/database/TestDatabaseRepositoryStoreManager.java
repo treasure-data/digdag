@@ -38,7 +38,7 @@ public class TestDatabaseRepositoryStoreManager
                 repo,
                 (lock) -> {
                     assertConflict(false, () -> {
-                        StoredRevision storedRev = lock.putRevision(rev);
+                        StoredRevision storedRev = lock.insertRevision(rev);
                         assertEquals(rev, Revision.revisionBuilder().from(storedRev).build());
 
                         StoredWorkflowDefinition storedWf = lock.insertWorkflow(storedRev.getId(), wf);
@@ -60,8 +60,8 @@ public class TestDatabaseRepositoryStoreManager
                 repo,
                 (lock) -> {
                     // revision overwrites
-                    StoredRevision storedRev = lock.putRevision(rev);
-                    StoredRevision storedRev2 = lock.putRevision(rev);
+                    StoredRevision storedRev = lock.insertRevision(rev);
+                    StoredRevision storedRev2 = lock.insertRevision(rev);
                     assertEquals(storedRev, storedRev2);
 
                     // workflow conflicts
@@ -95,7 +95,7 @@ public class TestDatabaseRepositoryStoreManager
                 repo,
                 (lock) -> {
                     assertConflict(false, () -> {
-                        revRef.set(lock.putRevision(rev));
+                        revRef.set(lock.insertRevision(rev));
                         wfRef.set(lock.insertWorkflow(revRef.get().getId(), wf));
                     });
                     return lock.get();

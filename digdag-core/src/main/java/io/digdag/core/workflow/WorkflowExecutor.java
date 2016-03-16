@@ -243,7 +243,7 @@ public class WorkflowExecutor
                     conflicted = sm.getSessionStore(siteId)
                         .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
                 }
-                throw new SessionAttemptConflictException("Session already exists", conflicted);
+                throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
             }
             catch (ResourceNotFoundException shouldNotHappen) {
                 throw new IllegalStateException("Database state error", shouldNotHappen);

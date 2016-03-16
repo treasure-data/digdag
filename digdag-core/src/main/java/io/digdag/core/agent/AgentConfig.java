@@ -8,23 +8,23 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableAgentConfig.class)
 @JsonDeserialize(as = ImmutableAgentConfig.class)
-public abstract class AgentConfig
+public interface AgentConfig
 {
-    private static final int DEFAULT_HEARTBEAT_INTERVAL = 60;
-    private static final int DEFAULT_LOCK_RETENTION_TIME = 300;
+    static final int DEFAULT_HEARTBEAT_INTERVAL = 60;
+    static final int DEFAULT_LOCK_RETENTION_TIME = 300;
 
-    public abstract int getHeartbeatInterval();
+    int getHeartbeatInterval();
 
-    public abstract int getLockRetentionTime();
+    int getLockRetentionTime();
 
-    private static ImmutableAgentConfig.Builder defaultBuilder()
+    static ImmutableAgentConfig.Builder defaultBuilder()
     {
         return ImmutableAgentConfig.builder()
             .heartbeatInterval(DEFAULT_HEARTBEAT_INTERVAL)
             .lockRetentionTime(DEFAULT_LOCK_RETENTION_TIME);
     }
 
-    public static AgentConfig convertFrom(Config config)
+    static AgentConfig convertFrom(Config config)
     {
         return defaultBuilder()
             .heartbeatInterval(config.get("agent.heartbeatInterval", int.class, DEFAULT_HEARTBEAT_INTERVAL))

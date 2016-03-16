@@ -6,7 +6,7 @@ import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import com.google.inject.Provider;
 import javax.sql.DataSource;
-
+import javax.annotation.PostConstruct;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
@@ -37,14 +37,23 @@ public class DatabaseModule
             implements Provider<IDBI>
     {
         private final IDBI dbi;
+        private DatabaseMigrator migrator;
 
         @Inject
         public IdbiProvider(DataSource ds, DatabaseConfig config)
         {
             this.dbi = new DBI(ds);
-
             if (config.getAutoMigrate()) {
-                new DatabaseMigrator(dbi, config).migrate();
+                this.migrator = new DatabaseMigrator(dbi, config);
+            }
+        }
+
+        @PostConstruct
+        public void migrate()
+        {
+            if (migrator != null) {
+                migrator.migrate();
+                migrator = null;
             }
         }
 

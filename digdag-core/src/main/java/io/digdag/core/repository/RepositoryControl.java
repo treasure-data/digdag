@@ -32,9 +32,10 @@ public class RepositoryControl
         return repository;
     }
 
-    public StoredRevision putRevision(Revision revision)
+    public StoredRevision insertRevision(Revision revision)
+        throws ResourceConflictException
     {
-        return store.putRevision(repository.getId(), revision);
+        return store.insertRevision(repository.getId(), revision);
     }
 
     public void insertRevisionArchiveData(int revId, byte[] data)

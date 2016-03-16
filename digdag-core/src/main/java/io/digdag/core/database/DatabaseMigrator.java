@@ -33,6 +33,8 @@ public class DatabaseMigrator
         switch (type) {
         case "h2":
             return "org.h2.Driver";
+        case "postgresql":
+            return "org.postgresql.Driver";
         default:
             throw new RuntimeException("Unsupported database type: "+type);
         }
@@ -53,11 +55,19 @@ public class DatabaseMigrator
         for (Migration m : migrations) {
             if (dbVersion.compareTo(m.getVersion()) < 0) {
                 try (Handle handle = dbi.open()) {
-                    m.migrate(handle);
-                    handle.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
+                    handle.inTransaction((h, session) -> {
+                        m.migrate(h);
+                        h.insert("insert into schema_migrations (name, created_at) values (?, now())", m.getVersion());
+                        return true;
+                    });
                 }
             }
         }
+    }
+
+    private boolean isPostgres()
+    {
+        return databaseType.equals("postgresql");
     }
 
     private String migrateSchemaVersions()
@@ -69,11 +79,14 @@ public class DatabaseMigrator
         catch (StatementException ex) {
             // schema_migrations table not found
             try (Handle handle = dbi.open()) {
-                handle.update(
-                        new CreateTableBuilder("schema_migrations")
-                        .addString("name", "not null")
-                        .addTimestamp("created_at", "not null")
-                        .build());
+                handle.inTransaction((h, session) -> {
+                    h.update(
+                            new CreateTableBuilder("schema_migrations")
+                            .addString("name", "not null")
+                            .addTimestamp("created_at", "not null")
+                            .build());
+                    return true;
+                });
             }
             version = getSchemaVersion();
         }
@@ -103,17 +116,32 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addIntId(String column)
         {
-            return add(column, "int primary key AUTO_INCREMENT");
+            if (isPostgres()) {
+                return add(column, "serial primary key");
+            }
+            else {
+                return add(column, "int primary key AUTO_INCREMENT");
+            }
         }
 
         public CreateTableBuilder addIntIdNoAutoIncrement(String column, String options)
         {
-            return add(column, "int primary key AUTO_INCREMENT " + options);
+            if (isPostgres()) {
+                return add(column, "serial primary key " + options);
+            }
+            else {
+                return add(column, "int primary key AUTO_INCREMENT " + options);
+            }
         }
 
         public CreateTableBuilder addLongId(String column)
         {
-            return add(column, "bigint primary key AUTO_INCREMENT");
+            if (isPostgres()) {
+                return add(column, "bigserial primary key");
+            }
+            else {
+                return add(column, "bigint primary key AUTO_INCREMENT");
+            }
         }
 
         public CreateTableBuilder addLongIdNoAutoIncrement(String column, String options)
@@ -143,7 +171,7 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addString(String column, String options)
         {
-            if (databaseType.equals("postgresql")) {
+            if (isPostgres()) {
                 return add(column, "text " + options);
             }
             else {
@@ -163,7 +191,7 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addBinary(String column, String options)
         {
-            if (databaseType.equals("postgresql")) {
+            if (isPostgres()) {
                 return add(column, "bytea " + options);
             }
             else {
@@ -173,12 +201,17 @@ public class DatabaseMigrator
 
         public CreateTableBuilder addLongBinary(String column, String options)
         {
-            return add(column, "blob " + options);
+            if (isPostgres()) {
+                return add(column, "bytea " + options);
+            }
+            else {
+                return add(column, "blob " + options);
+            }
         }
 
         public CreateTableBuilder addTimestamp(String column, String options)
         {
-            if (databaseType.equals("postgresql")) {
+            if (isPostgres()) {
                 return add(column, "timestamp with time zone " + options);
             }
             else {
@@ -189,7 +222,7 @@ public class DatabaseMigrator
         public String build()
         {
             StringBuilder sb = new StringBuilder();
-            sb.append("CREATE TABLE IF NOT EXISTS " + name + " (\n");
+            sb.append("CREATE TABLE " + name + " (\n");
             for (int i=0; i < columns.size(); i++) {
                 sb.append("  ");
                 sb.append(columns.get(i));
@@ -221,7 +254,9 @@ public class DatabaseMigrator
         @Override
         public void migrate(Handle handle)
         {
-            // TODO references
+            if (isPostgres()) {
+                handle.update("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+            }
 
             // repositories
             handle.update(
@@ -232,8 +267,8 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     //.addTimestamp("deleted_at", "not null")  // this points UNIXTIME 0 (1970-01-01 00:00:00 UTC) if this repository is not deleted
                     .build());
-            handle.update("create unique index if not exists repositories_on_site_id_and_name on repositories (site_id, name)");
-            //handle.update("create unique index if not exists repositories_on_site_id_and_name on repositories (site_id, name, deleted_at)");
+            handle.update("create unique index repositories_on_site_id_and_name on repositories (site_id, name)");
+            //handle.update("create unique index repositories_on_site_id_and_name on repositories (site_id, name, deleted_at)");
 
             // revisions
             handle.update(
@@ -248,8 +283,8 @@ public class DatabaseMigrator
                     .addBinary("archive_md5", "")
                     .addTimestamp("created_at", "not null")
                     .build());
-            handle.update("create unique index if not exists revisions_on_repository_id_and_name on revisions (repository_id, name)");
-            handle.update("create index if not exists revisions_on_repository_id_and_id on revisions (repository_id, id)");
+            handle.update("create unique index revisions_on_repository_id_and_name on revisions (repository_id, name)");
+            handle.update("create index revisions_on_repository_id_and_id on revisions (repository_id, id)");
 
             // revision_archives
             handle.update(
@@ -266,7 +301,7 @@ public class DatabaseMigrator
                     .addMediumText("config", "not null")
                     .addLong("config_digest", "not null")
                     .build());
-            handle.update("create index if not exists workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
+            handle.update("create index workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
 
             // workflow_definitions
             handle.update(
@@ -276,7 +311,7 @@ public class DatabaseMigrator
                     .addInt("revision_id", "not null references revisions (id)")
                     .addString("name", "not null")
                     .build());
-            handle.update("create unique index if not exists workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
+            handle.update("create unique index workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
 
             // schedules
             handle.update(
@@ -290,9 +325,9 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create index if not exists schedules_on_repository_id on schedules (repository_id)");
-            handle.update("create unique index if not exists schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
-            handle.update("create index if not exists schedules_on_next_run_time on schedules (next_run_time)");
+            handle.update("create index schedules_on_repository_id on schedules (repository_id)");
+            handle.update("create unique index schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
+            handle.update("create index schedules_on_next_run_time on schedules (next_run_time)");
 
             // sessions
             handle.update(
@@ -301,12 +336,12 @@ public class DatabaseMigrator
                     .addInt("repository_id", "not null references repositories (id)")
                     .addString("workflow_name", "not null")
                     .addLong("session_time", "not null")
-                    .addUuid("session_uuid", "not null default(RANDOM_UUID())")  // TODO postgresql uses uuid_generate_v4()
+                    .addUuid("session_uuid", isPostgres() ? "not null default(uuid_generate_v4())" : "not null default(RANDOM_UUID())")
                     .addLong("last_attempt_id", "")
                     .build());
-            handle.update("create unique index if not exists sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
-            handle.update("create index if not exists sessions_on_repository_id on sessions (repository_id, id)");
-            handle.update("create index if not exists sessions_on_repository_id_and_workflow_name on sessions (repository_id, workflow_name, id)");
+            handle.update("create unique index sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
+            handle.update("create index sessions_on_repository_id on sessions (repository_id, id)");
+            handle.update("create index sessions_on_repository_id_and_workflow_name on sessions (repository_id, workflow_name, id)");
 
             // session_attempts
             handle.update(
@@ -322,10 +357,10 @@ public class DatabaseMigrator
                     .addMediumText("params", "")
                     .addTimestamp("created_at", "not null")
                     .build());
-            handle.update("create unique index if not exists session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
-            handle.update("create index if not exists session_attempts_on_site_id on session_attempts (site_id, id)");
-            handle.update("create index if not exists session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id)");
-            handle.update("create index if not exists session_attempts_on_repository_id on session_attempts (repository_id, id)");
+            handle.update("create unique index session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
+            handle.update("create index session_attempts_on_site_id on session_attempts (site_id, id)");
+            handle.update("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id)");
+            handle.update("create index session_attempts_on_repository_id on session_attempts (repository_id, id)");
 
             // task_archives
             handle.update(
@@ -346,8 +381,8 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create index if not exists session_monitors_on_attempt_id on session_monitors (attempt_id)");
-            handle.update("create index if not exists session_monitors_on_next_run_time on session_monitors (next_run_time)");
+            handle.update("create index session_monitors_on_attempt_id on session_monitors (attempt_id)");
+            handle.update("create index session_monitors_on_next_run_time on session_monitors (next_run_time)");
 
             // tasks
             handle.update(
@@ -363,8 +398,8 @@ public class DatabaseMigrator
                     .addTimestamp("retry_at", "")
                     .addMediumText("state_params", "")
                     .build());
-            handle.update("create index if not exists tasks_on_attempt_id on tasks (attempt_id, id)");
-            handle.update("create index if not exists tasks_on_parent_id on tasks (parent_id)");
+            handle.update("create index tasks_on_attempt_id on tasks (attempt_id, id)");
+            handle.update("create index tasks_on_parent_id on tasks (parent_id)");
 
             handle.update(
                     new CreateTableBuilder("task_details")
@@ -391,7 +426,7 @@ public class DatabaseMigrator
                     .addLong("upstream_id", "not null")
                     .addLong("downstream_id", "not null")
                     .build());
-            handle.update("create index if not exists task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
+            handle.update("create index task_dependencies_on_downstream_id on task_dependencies (downstream_id)");
 
             // queue_settings
             handle.update(
@@ -403,8 +438,8 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create unique index if not exists queue_settings_on_site_id_and_name on queue_settings (site_id, name)");
-            handle.update("create index if not exists queue_settings_on_site_id on queue_settings (site_id, id)");
+            handle.update("create unique index queue_settings_on_site_id_and_name on queue_settings (site_id, name)");
+            handle.update("create index queue_settings_on_site_id on queue_settings (site_id, id)");
 
             // queues
             handle.update(
@@ -421,7 +456,7 @@ public class DatabaseMigrator
                     .addInt("max_concurrency", "not null")
                     .addString("name", "not null")
                     .build());
-            handle.update("create unique index if not exists resource_types_on_queue_id_and_name on resource_types (queue_id, name)");
+            handle.update("create unique index resource_types_on_queue_id_and_name on resource_types (queue_id, name)");
 
             // queued_tasks
             handle.update(
@@ -435,7 +470,7 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addLongBinary("data", "not null")
                     .build());
-            handle.update("create unique index if not exists queued_tasks_on_queue_id_task_id on queued_tasks (queue_id, task_id)");
+            handle.update("create unique index queued_tasks_on_queue_id_task_id on queued_tasks (queue_id, task_id)");
 
             // queued_shared_task_locks
             handle.update(
@@ -461,81 +496,19 @@ public class DatabaseMigrator
                     .addString("hold_agent_id", "")
                     .build());
 
-            switch (databaseType) {
-            case "postgresql":
-                handle.update("create index if not exists queued_shared_task_locks_grouping on queued_shared_tasks (queue_id, resource_type_id) where hold_expire_time is not null");
-                handle.update("create index if not exists queued_shared_task_locks_ordering on queued_shared_tasks (queue_id, priority desc, id) where hold_expire_time is null");
-                handle.update("create index if not exists queued_shared_task_locks_expiration on queued_shared_tasks (hold_expire_time) where hold_expire_time is not null");
-                handle.update("create index if not exists queued_task_locks_grouping on queued_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
-                handle.update("create index if not exists queued_task_locks_ordering on queued_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
-                handle.update("create index if not exists queued_task_locks_expiration on queued_task_locks (hold_expire_time) where hold_expire_time is not null");
-                // explain analyze verbose
-                // with rrs as (
-                //   select resource_type_id, count(*) as count
-                //   from queued_task_locks
-                //   where queue_id = 1
-                //   and hold_expire_time is not null
-                //   and resource_type_id is not null
-                //   group by resource_type_id
-                // ),
-                // resource_exceeds as (
-                //   select rt.id
-                //   from resource_types rt
-                //   left join rrs on rt.id = rrs.resource_type_id
-                //   where rt.max_concurrency <= coalesce(count, 0)
-                // )
-                // select ks.id
-                // from queued_task_locks ks
-                // where queue_id = (
-                //   select 1 as id
-                //   from queues
-                //   where id = 1
-                //   and max_concurrency > (
-                //     select sum(count) as count
-                //     from rrs
-                //   )
-                // )
-                // and not exists (
-                //   select * from resource_exceeds
-                //   where resource_exceeds.id = ks.resource_type_id
-                // )
-                // and hold_expire_time is null
-                // order by priority desc, id asc
-                // limit 1
-            default:
+            if (isPostgres()) {
+                handle.update("create index queued_shared_task_locks_grouping on queued_shared_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
+                handle.update("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
+                handle.update("create index queued_shared_task_locks_expiration on queued_shared_task_locks (hold_expire_time) where hold_expire_time is not null");
+                handle.update("create index queued_task_locks_grouping on queued_task_locks (queue_id, resource_type_id) where hold_expire_time is not null");
+                handle.update("create index queued_task_locks_ordering on queued_task_locks (queue_id, priority desc, id) where hold_expire_time is null");
+                handle.update("create index queued_task_locks_expiration on queued_task_locks (hold_expire_time) where hold_expire_time is not null");
+            }
+            else {
                 handle.update("create index queued_shared_task_locks_grouping on queued_shared_task_locks (hold_expire_time, queue_id, resource_type_id)");
                 handle.update("create index queued_shared_task_locks_ordering on queued_shared_task_locks (queue_id, hold_expire_time, priority desc, id)");
                 handle.update("create index queued_task_locks_grouping on queued_task_locks (hold_expire_time, queue_id, resource_type_id)");
                 handle.update("create index queued_task_locks_ordering on queued_task_locks (queue_id, hold_expire_time, priority desc, id)");
-                // select ks.id
-                // from task_locks ks
-                // left join (
-                //     select rt.id
-                //     from resource_types rt
-                //     left join (
-                //         select resource_type_id, count(*) as count
-                //         from task_locks
-                //         where queue_id = 1
-                //         and hold_expire_time is not null
-                //         and resource_type_id is not null
-                //         group by resource_type_id
-                //     ) rr on rt.id = rr.resource_type_id
-                //     where rt.max_concurrency <= coalesce(count, 0)
-                // ) rc on ks.resource_type_id = rc.id
-                // where queue_id = (
-                //     select 1 from queues
-                //     where id = 1
-                //     and max_concurrency > (
-                //         select count(*) as count
-                //         from task_locks
-                //         where queue_id = 1
-                //         and hold_expire_time is not null
-                //     )
-                // )
-                // and hold_expire_time is null
-                // and rc.id is null
-                // order by priority desc, id asc
-                // limit 1
             }
         }
     };

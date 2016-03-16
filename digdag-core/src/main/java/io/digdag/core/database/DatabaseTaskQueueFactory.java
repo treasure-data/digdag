@@ -93,7 +93,7 @@ public class DatabaseTaskQueueFactory
                 }
             }
             List<TaskRequest> result = builder.build();
-            if (maxSleepMillis >= 0 && result.isEmpty()) {
+            if (result.isEmpty() && maxSleepMillis >= 0) {
                 sleepUntilEnqueue(sharedTaskSleepHelper, maxSleepMillis);
             }
             return result;

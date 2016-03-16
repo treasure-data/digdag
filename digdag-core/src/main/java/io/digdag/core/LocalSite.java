@@ -83,7 +83,7 @@ public class LocalSite
                 Repository.of(repositoryName),
                 (store, storedRepo) -> {
                     RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
-                    StoredRevision rev = lockedRepo.putRevision(revision);
+                    StoredRevision rev = lockedRepo.insertRevision(revision);
                     List<StoredWorkflowDefinition> storedDefs;
                     if (currentTimeToSchedule.isPresent()) {
                         storedDefs = lockedRepo.insertWorkflowDefinitions(rev, defs.get(), srm, currentTimeToSchedule.get());

@@ -11,5 +11,6 @@ dependencies {
     compile 'org.jdbi:jdbi:2.63.1'
     compile 'com.zaxxer:HikariCP:2.4.3'
     compile 'com.h2database:h2:1.4.190'
+    compile 'org.postgresql:postgresql:9.4.1208'
     compile 'org.yaml:snakeyaml:1.14'
 }

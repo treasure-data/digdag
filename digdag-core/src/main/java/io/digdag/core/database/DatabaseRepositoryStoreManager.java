@@ -26,6 +26,7 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
+import static java.util.Locale.ENGLISH;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class DatabaseRepositoryStoreManager
@@ -265,37 +266,19 @@ public class DatabaseRepositoryStoreManager
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredRevision putRevision(int repoId, Revision revision)
+        public StoredRevision insertRevision(int repoId, Revision revision)
+            throws ResourceConflictException
         {
+            int revId = catchConflict(() ->
+                dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
+                "revision=%s in repository id=%d", revision.getName(), repoId);
             try {
-                int revId = catchConflict(() ->
-                    dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
-                    "revision=%s in repository id=%d", revision.getName(), repoId);
-                try {
-                    return requiredResource(
-                            dao.getRevisionById(siteId, revId),
-                            "revision id=%d", revId);
-                }
-                catch (ResourceNotFoundException ex) {
-                    throw new IllegalStateException("Database state error", ex);
-                }
+                return requiredResource(
+                        dao.getRevisionById(siteId, revId),
+                        "revision id=%d", revId);
             }
-            catch (ResourceConflictException ex) {
-                // TODO delete archive data first?
-                StoredRevision rev;
-                try {
-                    rev = requiredResource(
-                            dao.getRevisionByName(siteId, repoId, revision.getName()),
-                            "revision name=%s in repository id=%d", revision.getName(), repoId);
-                }
-                catch (ResourceNotFoundException ex2) {
-                    throw new IllegalStateException("Database state error", ex2);
-                }
-                if (revision.equals(Revision.copyOf(rev))) {
-                    return rev;
-                }
-                // TODO once implement deleteRevision, delete the current revision and overwrite it
-                throw new UnsupportedOperationException("Revision already exists. Overwriting an existing revision is not supported.", ex);
+            catch (ResourceNotFoundException ex) {
+                throw new IllegalStateException("Database state error", ex);
             }
         }
 

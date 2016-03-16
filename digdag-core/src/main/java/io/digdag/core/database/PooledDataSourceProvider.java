@@ -1,6 +1,5 @@
 package io.digdag.core.database;
 
-import java.util.Properties;
 import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
 import com.google.common.base.*;
@@ -35,13 +34,13 @@ public class PooledDataSourceProvider
             //this.errorRetryWaitLimit = conf.getErrorRetryWaitLimit();
             //this.autoExplainDuration = conf.getAutoExplainDuration();
 
-            String url = DatabaseConfig.buildJdbcUrl(config);
+            HikariConfig hikari = new HikariConfig();
+            hikari.setJdbcUrl(DatabaseConfig.buildJdbcUrl(config));
+            hikari.setDriverClassName(DatabaseMigrator.getDriverClassName(config.getType()));
+            hikari.setDataSourceProperties(DatabaseConfig.buildJdbcProperties(config));
 
-            logger.debug("Using database URL {}", url);
-            Properties props = new Properties();
-            props.setProperty("driverClassName", DatabaseMigrator.getDriverClassName(config.getType()));
-            props.setProperty("jdbcUrl", url);
-            HikariConfig hikari = new HikariConfig(props);
+            logger.debug("Using database URL {}", hikari.getJdbcUrl());
+
             ds = new HikariDataSource(hikari);
 
             //ds.setAutoCommitOnClose(false);

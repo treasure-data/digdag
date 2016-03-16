@@ -78,15 +78,8 @@ public abstract class BasicDatabaseStoreManager <D>
 
     public boolean isConflictException(SQLException ex)
     {
-        switch (databaseType) {
-        case "h2":
-            if ("23505".equals(ex.getSQLState())) {
-                return true;
-            }
-            return false;
-        default:
-            return false;
-        }
+        // h2 and postgresql
+        return "23505".equals(ex.getSQLState());
     }
 
     public interface AutoCommitAction <T, D> {

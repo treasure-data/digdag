@@ -200,7 +200,7 @@ public class RepositoryResource
                 Repository.of(name),
                 (store, storedRepo) -> {
                     RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
-                    StoredRevision rev = lockedRepo.putRevision(
+                    StoredRevision rev = lockedRepo.insertRevision(
                             Revision.builderFromArchive(revision, meta)
                                 .archiveType("db")
                                 .archivePath(Optional.absent())

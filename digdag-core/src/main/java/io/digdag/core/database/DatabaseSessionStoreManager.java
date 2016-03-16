@@ -82,7 +82,8 @@ public class DatabaseSessionStoreManager
         case "h2":
             return "BITAND(" + op1 + ", " + op2 + ")";
         default:
-            return op1 + " % " + op2;
+            // postgresql
+            return op1 + " & " + op2;
         }
     }
 
@@ -92,20 +93,26 @@ public class DatabaseSessionStoreManager
         case "h2":
             return "BITOR(" + op1 + ", " + op2 + ")";
         default:
+            // postgresql
             return op1 + " | " + op2;
         }
     }
 
-    private String groupConcat(String column, String separator)
+    private String commaGroupConcat(String column)
     {
-        // TODO postgresql
-        return "group_concat(" + column + " separator '" + separator + "')";
+        switch (databaseType) {
+        case "h2":
+            return "group_concat(" + column + " separator ',')";
+        default:
+            // postgresql
+            return "array_to_string(array_agg(" + column + "), ',')";
+        }
     }
 
     private String selectTaskDetailsQuery()
     {
         return "select t.*, td.full_name, td.local_config, td.export_config, " +
-                "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
+                "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
             " from tasks t" +
             " join session_attempts sa on sa.id = t.attempt_id" +
             " join task_details td on t.id = td.id";
@@ -303,7 +310,7 @@ public class DatabaseSessionStoreManager
         return autoCommit((handle, dao) ->
                 handle.createQuery(
                     "select id, parent_id," +
-                    " (select group_concat(upstream_id separator ',') from task_dependencies where downstream_id = t.id) as upstream_ids" +  // TODO postgresql
+                    " (select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                     " from tasks t " +
                     " where attempt_id = :attemptId"
                     )
@@ -446,7 +453,7 @@ public class DatabaseSessionStoreManager
             {
                 List<ArchivedTask> tasks = handle.createQuery(
                         "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
-                            "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
+                            "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
                         " join task_details td on t.id = td.id" +
@@ -664,7 +671,12 @@ public class DatabaseSessionStoreManager
 
         public boolean setRetryWaitingState(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int retryInterval, Config stateParams, Optional<Config> updateError)
         {
-            long n = dao.setRetryState(taskId, beforeState.get(), afterState.get(), retryInterval, stateParams);
+            int n = handle.createStatement("update tasks " +
+                    " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', state_params = :stateParams, :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
+                    " where id = :id" +
+                    " and state = :oldState"
+                )
+                .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {
                     dao.setError(taskId, updateError.get());
@@ -868,7 +880,7 @@ public class DatabaseSessionStoreManager
             List<ArchivedTask> tasks = autoCommit((handle, dao) ->
                     handle.createQuery(
                         "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
-                            "(select " + groupConcat("upstream_id", ",") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
+                            "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
                         " join task_details td on t.id = td.id" +
@@ -1193,12 +1205,6 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " and state = :oldState")
         long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
-
-        @SqlUpdate("update tasks " +
-                " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', state_params = :stateParams, :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
-                " where id = :id" +
-                " and state = :oldState")
-        long setRetryState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState, @Bind("retryInterval") int retryInterval, @Bind("stateParams") Config stateParams);
 
         @SqlUpdate("update task_state_details " +
                 " set error = :error" +

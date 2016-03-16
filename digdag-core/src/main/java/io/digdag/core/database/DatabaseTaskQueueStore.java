@@ -28,6 +28,7 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
@@ -58,6 +59,8 @@ public class DatabaseTaskQueueStore
     private final LocalLockMap localLockMap = new LocalLockMap();
     private final ScheduledExecutorService expireExecutor;
 
+    private final boolean skipLockedAvailable;
+
     @Inject
     public DatabaseTaskQueueStore(IDBI dbi, DatabaseConfig config, QueueSettingStoreManager qm)
     {
@@ -70,9 +73,27 @@ public class DatabaseTaskQueueStore
         this.expireExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
                 .setDaemon(true)
-                .setNameFormat("lock=expire-%d")
+                .setNameFormat("lock-expire-%d")
                 .build()
                 );
+        this.skipLockedAvailable = checkSkipLockedAvailable(dbi);
+    }
+
+    private boolean checkSkipLockedAvailable(IDBI dbi)
+    {
+        if (!isSharedDatabase()) {
+            return false;
+        }
+        try (Handle h = dbi.open()) {
+            try {
+                // added since postgresql 9.5
+                h.createQuery("select 1 for update skip locked").list();
+                return true;
+            }
+            catch (UnableToExecuteStatementException ex) {
+                return false;
+            }
+        }
     }
 
     @PostConstruct
@@ -87,6 +108,21 @@ public class DatabaseTaskQueueStore
     {
         expireExecutor.shutdown();
         // TODO wait for shutdown completion?
+    }
+
+    private boolean isSharedDatabase()
+    {
+        switch (databaseType) {
+        case "h2":
+            return false;
+        default:
+            return true;
+        }
+    }
+
+    private String statementUnixTimestampSql()
+    {
+        return "extract(epoch from now())";
     }
 
     // TODO support Optional<String> resourceType
@@ -139,14 +175,14 @@ public class DatabaseTaskQueueStore
     public List<LockResult> lockSharedTasks(int limit, String agentId, int lockSeconds)
     {
         // optimized implementation of
-        //   select distinct queue_id as id from locks wherE hold_expire_time is null
+        //   select distinct queue_id as id from locks where hold_expire_time is null
         return transaction((handle, dao, ts) -> {
             List<Integer> queueIds = handle.createQuery(
                 "with recursive t (queue_id) as (" +
                     "(" +
                         "select queue_id from queued_shared_task_locks " +
                         "where hold_expire_time is null " +
-                        "order by queue_id limit 1 " +
+                        "order by queue_id limit 1" +
                     ") " +
                     "union all " +
                     "select (" +
@@ -198,37 +234,67 @@ public class DatabaseTaskQueueStore
 
     private void setHold(Handle handle, String tableName, List<LockResult> locks, String agentId, int lockSeconds)
     {
-        // TODO use this syntax for PostgreSQL
-        // (statement_timestamp() + (interval '1' second) * hold_timeout)
-        handle.createStatement(
-                "update " + tableName +
-                " set hold_expire_time = :expireTime, hold_agent_id = :agentId" +
-                " where id in (" +
-                    locks.stream()
-                    .map(it -> Long.toString(it.getLockId())).collect(Collectors.joining(", ")) +
-                ")"
-            )
-            .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
-            .bind("agentId", agentId)
-            .execute();
+        if (locks.isEmpty()) {
+            return;
+        }
+        if (isSharedDatabase()) {
+            handle.createStatement(
+                    "update " + tableName +
+                    " set hold_expire_time = " + statementUnixTimestampSql() + " + :lockSeconds, hold_agent_id = :agentId" +
+                    " where id in (" +
+                        locks.stream()
+                        .map(it -> Long.toString(it.getLockId())).collect(Collectors.joining(", ")) +
+                    ")"
+                )
+                .bind("lockSeconds", lockSeconds)
+                .bind("agentId", agentId)
+                .execute();
+        }
+        else {
+            handle.createStatement(
+                    "update " + tableName +
+                    " set hold_expire_time = :expireTime, hold_agent_id = :agentId" +
+                    " where id in (" +
+                        locks.stream()
+                        .map(it -> Long.toString(it.getLockId())).collect(Collectors.joining(", ")) +
+                    ")"
+                )
+                .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
+                .bind("agentId", agentId)
+                .execute();
+        }
     }
 
     public boolean heartbeat(LockResult lock, String agentId, int lockSeconds)
     {
         String tableName = lock.getSharedTask() ? "queued_shared_task_locks" : "queued_task_locks";
 
-        return autoCommit((handle, dao) ->
-            handle.createStatement(
-                    "update " + tableName +
-                    " set hold_expire_time = :expireTime" +
-                    " where id = :id" +
-                    " and hold_agent_id = :agentId"
-                )
-                .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
-                .bind("id", lock.getLockId())
-                .bind("agentId", agentId)
-                .execute()
-            ) > 0;
+        return autoCommit((handle, dao) -> {
+            if (isSharedDatabase()) {
+                return handle.createStatement(
+                        "update " + tableName +
+                        " set hold_expire_time = " + statementUnixTimestampSql() + " + :lockSeconds" +
+                        " where id = :id" +
+                        " and hold_agent_id = :agentId"
+                    )
+                    .bind("lockSeconds", lockSeconds)
+                    .bind("id", lock.getLockId())
+                    .bind("agentId", agentId)
+                    .execute();
+            }
+            else {
+                return handle.createStatement(
+                        "update " + tableName +
+                        " set hold_expire_time = :expireTime" +
+                        " where id = :id" +
+                        " and hold_agent_id = :agentId"
+                    )
+                    .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
+                    .bind("id", lock.getLockId())
+                    .bind("agentId", agentId)
+                    .execute();
+            }
+        }) > 0;
     }
 
     private List<Long> tryLockTasks(Handle handle, String tableName, int qId, int limit)
@@ -242,40 +308,77 @@ public class DatabaseTaskQueueStore
         }
         if (locked) {
             try {
-                return handle.createQuery(
-                    "select ks.id " +
-                    "from " + tableName + " ks " +
-                    "left join (" +
-                        "select rt.id " +
-                        "from resource_types rt " +
-                        "left join (" +
-                            "select resource_type_id, count(*) as count " +
-                            "from " + tableName + " " +
+                // TODO if isSharedDatabase (postgresql) and skipLockedAvailable is false, use pg_try_advisory_lock
+                //      to lock qId so that only one thread can start a task in a qId concurrently and number of
+                //      running tasks doesn't overcommit
+                if (isSharedDatabase()) {
+                    return handle.createQuery(
+                            "with rr as (" +
+                                "select resource_type_id, count(*) as count " +
+                                "from " + tableName + " " +
+                                "where queue_id = " + qId + " " +
+                                "and hold_expire_time is not null " +
+                                "and resource_type_id is not null " +
+                                "group by resource_type_id" +
+                            ") " +
+                            "select ks.id " +
+                            "from " + tableName + " ks " +
+                            "where exists ( " +
+                                "select * from queues " +
+                                "where id = " + qId + " " +
+                                "and max_concurrency > (select coalesce(sum(count), 0) from rr)" +
+                                (skipLockedAvailable ? " for update skip locked" : "") +
+                            ") " +
+                            "and queue_id = " + qId + " " +
+                            "and not exists ( " +
+                                "select * from resource_types rt " +
+                                "join rr on rt.id = rr.resource_type_id " +
+                                "where rt.id = ks.resource_type_id " +
+                                "and rt.max_concurrency <= count" +
+                            ") " +
+                            "and hold_expire_time is null " +
+                            "order by priority desc, id asc " +
+                            "for update"
+                        )
+                        .mapTo(long.class)
+                        .list();
+                }
+                else {
+                    return handle.createQuery(
+                            "select ks.id " +
+                            "from " + tableName + " ks " +
                             "where queue_id = " + qId + " " +
-                            "and hold_expire_time is not null " +
-                            "and resource_type_id is not null " +
-                            "group by resource_type_id" +
-                        ") rr on rt.id = rr.resource_type_id " +
-                        "where rt.max_concurrency <= coalesce(count, 0)" +
-                    ") rc on ks.resource_type_id = rc.id " +
-                    "where queue_id = (" +
-                        "select " + qId + " from queues " +
-                        "where id = " + qId + " " +
-                        "and max_concurrency > (" +
-                            "select count(*) as count " +
-                            "from " + tableName + " " +
-                            "where queue_id = " + qId + " " +
-                            "and hold_expire_time is not null " +
-                        ") " +
-                    ") " +
-                    "and hold_expire_time is null " +
-                    "and rc.id is null " +
-                    "order by priority desc, id asc "
-                    // h2 database doesn't support FOR UPDATE + JOIN
-                    // TODO this query needs to include FOR UPDATE on a shared database
-                    )
-                    .mapTo(long.class)
-                    .list();
+                            "and exists (" +
+                                "select * from queues " +
+                                "where id = " + qId + " " +
+                                "and max_concurrency > (" +
+                                    "select count(*) as count " +
+                                    "from " + tableName + " " +
+                                    "where queue_id = " + qId + " " +
+                                    "and hold_expire_time is not null" +
+                                ")" +
+                            ") " +
+                            "and not exists (" +
+                                "select rt.id " +
+                                "from resource_types rt " +
+                                "join (" +
+                                    "select resource_type_id, count(*) as count " +
+                                    "from " + tableName + " " +
+                                    "where queue_id = " + qId + " " +
+                                    "and hold_expire_time is not null " +
+                                    "and resource_type_id is not null " +
+                                    "group by resource_type_id" +
+                                ") rr on rt.id = rr.resource_type_id " +
+                                "where rt.id = ks.resource_type_id " +
+                                "and rt.max_concurrency <= count" +
+                            ") " +
+                            "and hold_expire_time is null " +
+                            "order by priority desc, id asc"
+                            // h2 database doesn't need FOR UPDATE
+                        )
+                        .mapTo(long.class)
+                        .list();
+                }
             }
             finally {
                 localLockMap.unlock(qId);
@@ -295,17 +398,27 @@ public class DatabaseTaskQueueStore
     private void expireLocks(String tableName)
     {
         try {
-            // TODO use this syntax for PostgreSQL
-            // (statement_timestamp() + (interval '1' second) * hold_timeout)
-            int c = autoCommit((handle, dao) ->
-                handle.createStatement(
-                        "update " + tableName +
-                        " set hold_expire_time = NULL, hold_agent_id = NULL, retry_count = retry_count + 1" +
-                        " where hold_expire_time is not null" +
-                        " and hold_expire_time < :expireTime"
-                    )
-                    .bind("expireTime", Instant.now().getEpochSecond())
-                    .execute());
+            int c = autoCommit((handle, dao) -> {
+                if (isSharedDatabase()) {
+                    return handle.createStatement(
+                            "update " + tableName +
+                            " set hold_expire_time = NULL, hold_agent_id = NULL, retry_count = retry_count + 1" +
+                            " where hold_expire_time is not null" +
+                            " and hold_expire_time < " + statementUnixTimestampSql()
+                        )
+                        .execute();
+                }
+                else {
+                    return handle.createStatement(
+                            "update " + tableName +
+                            " set hold_expire_time = NULL, hold_agent_id = NULL, retry_count = retry_count + 1" +
+                            " where hold_expire_time is not null" +
+                            " and hold_expire_time < :expireTime"
+                        )
+                        .bind("expireTime", Instant.now().getEpochSecond())
+                        .execute();
+                }
+            });
             if (c > 0) {
                 logger.warn("{} task locks are expired. Tasks will be retried.", c);
             }

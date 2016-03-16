@@ -278,7 +278,7 @@ public class Run
                 );
         StoreWorkflowResult stored = localSite.storeLocalWorkflows(
                 "default",
-                "revision",
+                Instant.now().toString(),  // TODO name
                 archive,
                 Optional.absent());  // Optional.absent to disable workflow scheduling
 
