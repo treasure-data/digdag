@@ -317,7 +317,7 @@ public class WorkflowExecutor
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
             propagateAllPlannedToDone();
 
-            IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
+            //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             int waitMsec = INITIAL_INTERVAL;
             while (cond.getAsBoolean()) {
                 //boolean inced = prop.run();
@@ -473,7 +473,6 @@ public class WorkflowExecutor
             }
             boolean updated;
             if (willRetry) {
-                int retryInterval = retryControl.getNextRetryInterval();
                 updated = lockedTask.setPlannedToGroupRetryWaiting(
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
@@ -979,8 +978,9 @@ public class WorkflowExecutor
         }
 
         // modify export params
-        Config export = subtaskConfig.getNestedOrSetEmpty("_export");
+        Config export = subtaskConfig.getNestedOrGetEmpty("_export");
         export = errorBuilder.apply(export);
+        subtaskConfig.setNested("_export", export);
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^error", subtaskConfig);
         if (tasks.isEmpty()) {

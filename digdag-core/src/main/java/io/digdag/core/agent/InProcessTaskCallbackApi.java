@@ -124,7 +124,6 @@ public class InProcessTaskCallbackApi
             Config overwriteParams)
     {
         RepositoryStore repoStore = rm.getRepositoryStore(localSiteId);
-        SessionStore sessionStore = sm.getSessionStore(localSiteId);
 
         StoredWorkflowDefinitionWithRepository def;
         try {

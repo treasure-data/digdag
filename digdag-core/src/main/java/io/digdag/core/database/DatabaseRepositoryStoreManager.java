@@ -314,7 +314,7 @@ public class DatabaseRepositoryStoreManager
 
             int configId;
             WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
-            if (found != null && found.getConfig().equals(def.getConfig())) {
+            if (found != null && found.getConfig().equals(cfm.toText(def.getConfig()))) {
                 configId = found.getId();
             }
             else {

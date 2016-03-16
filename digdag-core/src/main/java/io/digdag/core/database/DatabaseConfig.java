@@ -161,11 +161,15 @@ public interface DatabaseConfig
         case "h2":
             // nothing
             break;
+
         case "postgresql":
             props.setProperty("loginTimeout", Integer.toString(rc.get().getLoginTimeout())); // seconds
             props.setProperty("socketTimeout", Integer.toString(rc.get().getSocketTimeout())); // seconds
             props.setProperty("tcpKeepAlive", "true");
             break;
+
+        default:
+            throw new ConfigException("Unsupported database type: "+config.getType());
         }
 
         if (config.getRemoteDatabaseConfig().isPresent()) {

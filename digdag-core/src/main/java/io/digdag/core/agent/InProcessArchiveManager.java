@@ -83,13 +83,17 @@ public class InProcessArchiveManager
     private void extractArchive(Path destDir, ArchiveInputStream archive)
         throws IOException
     {
+        String prefix = destDir.normalize().toString();
         ArchiveEntry entry;
         while (true) {
             entry = archive.getNextEntry();
             if (entry == null) {
                 break;
             }
-            Path file = destDir.resolve(entry.getName());
+            Path file = destDir.resolve(entry.getName()).normalize();
+            if (!file.toString().startsWith(prefix)) {
+                throw new RuntimeException("Archive includes an invalid entry: " + entry.getName());
+            }
             if (entry.isDirectory()) {
                 Files.createDirectories(file);
             }

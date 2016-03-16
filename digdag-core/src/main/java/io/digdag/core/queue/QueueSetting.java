@@ -15,7 +15,7 @@ public abstract class QueueSetting
 
     public static ImmutableQueueSetting.Builder queueSettingBuilder()
     {
-        return ImmutableQueueSetting.queueSettingBuilder();
+        return ImmutableQueueSetting.builder();
     }
 
     public static QueueSetting of(String name, Config config)

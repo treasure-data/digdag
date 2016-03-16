@@ -72,7 +72,7 @@ public class SessionMonitorExecutor
 
     public Optional<Instant> runMonitor(StoredSessionMonitor storedMonitor)
     {
-        boolean added = sm.lockAttemptIfExists(storedMonitor.getAttemptId(), (sessionAttemptControlStore, summary) -> {
+        sm.lockAttemptIfExists(storedMonitor.getAttemptId(), (sessionAttemptControlStore, summary) -> {
             if (!summary.getStateFlags().isDone()) {
                 try {
                     return sessionAttemptControlStore.lockRootTask(summary.getId(), (store, storedTask) -> {
