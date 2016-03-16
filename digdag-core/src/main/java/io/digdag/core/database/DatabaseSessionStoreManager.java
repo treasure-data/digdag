@@ -19,7 +19,7 @@ import io.digdag.core.workflow.TaskControl;
 import io.digdag.spi.TaskReport;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.workflow.TaskConfig;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
@@ -47,30 +47,28 @@ public class DatabaseSessionStoreManager
     private final TaskAttemptSummaryMapper tasm;
 
     @Inject
-    public DatabaseSessionStoreManager(IDBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
+    public DatabaseSessionStoreManager(DBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, () -> {
-            Handle handle = dbi.open();
-            JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
-            handle.registerMapper(new StoredTaskMapper(cfm, trm));
-            handle.registerMapper(new ArchivedTaskMapper(cfm, trm));
-            handle.registerMapper(new StoredSessionMapper(cfm));
-            handle.registerMapper(new StoredSessionAttemptMapper(cfm));
-            handle.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
-            handle.registerMapper(new TaskStateSummaryMapper());
-            handle.registerMapper(new TaskAttemptSummaryMapper());
-            handle.registerMapper(new SessionAttemptSummaryMapper());
-            handle.registerMapper(new StoredSessionMonitorMapper(cfm));
-            handle.registerMapper(new TaskRelationMapper());
-            handle.registerMapper(new InstantMapper());
-            handle.registerArgumentFactory(cfm.getArgumentFactory());
-            handle.registerArgumentFactory(trm.getArgumentFactory());
-            return handle;
-        });
+        super(config.getType(), Dao.class, dbi);
+
+        JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
+        dbi.registerMapper(new StoredTaskMapper(cfm, trm));
+        dbi.registerMapper(new ArchivedTaskMapper(cfm, trm));
+        dbi.registerMapper(new StoredSessionMapper(cfm));
+        dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
+        dbi.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
+        dbi.registerMapper(new TaskStateSummaryMapper());
+        dbi.registerMapper(new TaskAttemptSummaryMapper());
+        dbi.registerMapper(new SessionAttemptSummaryMapper());
+        dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
+        dbi.registerMapper(new TaskRelationMapper());
+        dbi.registerMapper(new InstantMapper());
+        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+        dbi.registerArgumentFactory(trm.getArgumentFactory());
+
         this.mapper = mapper;
         this.cf = cf;
         this.cfm = cfm;
-        JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
         this.stm = new StoredTaskMapper(cfm, trm);
         this.atm = new ArchivedTaskMapper(cfm, trm);
         this.tasm = new TaskAttemptSummaryMapper();

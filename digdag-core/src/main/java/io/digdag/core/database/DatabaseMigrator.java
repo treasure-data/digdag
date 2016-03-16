@@ -7,22 +7,22 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.StatementException;
 
 public class DatabaseMigrator
 {
-    private final IDBI dbi;
+    private final DBI dbi;
     private final String databaseType;
 
     @Inject
-    public DatabaseMigrator(IDBI dbi, DatabaseConfig config)
+    public DatabaseMigrator(DBI dbi, DatabaseConfig config)
     {
         this(dbi, config.getType());
     }
 
-    public DatabaseMigrator(IDBI dbi, String databaseType)
+    public DatabaseMigrator(DBI dbi, String databaseType)
     {
         this.dbi = dbi;
         this.databaseType = databaseType;

@@ -1,48 +1,56 @@
 package io.digdag.core.database;
 
+import java.util.*;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
+import com.google.common.collect.*;
 import io.digdag.core.repository.*;
+import io.digdag.core.schedule.*;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
 public class TestDatabaseRepositoryStoreManager
 {
-    private DbiProvider dbip;
+    private DatabaseFactory factory;
     private RepositoryStoreManager manager;
+    private SchedulerManager sm;
     private RepositoryStore store;
 
     @Before
     public void setup()
     {
-        dbip = setupDatabase();
-        manager = new DatabaseRepositoryStoreManager(dbip.get(), createConfigMapper());
+        factory = setupDatabase();
+        manager = factory.getRepositoryStoreManager();
+        sm = new SchedulerManager(ImmutableSet.of());
         store = manager.getRepositoryStore(0);
     }
 
     @After
     public void destroy()
     {
-        dbip.close();
+        factory.close();
     }
 
     @Test
     public void testPutRepositoryRevisionWorkflow()
+        throws Exception
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowDefinition wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("+wf1");
 
         StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
-                (lock) -> {
+                (store, stored) -> {
+                    RepositoryControl lock = new RepositoryControl(store, stored);
                     assertConflict(false, () -> {
                         StoredRevision storedRev = lock.insertRevision(rev);
-                        assertEquals(rev, Revision.revisionBuilder().from(storedRev).build());
+                        assertEquals(rev, Revision.copyOf(storedRev));
 
-                        StoredWorkflowDefinition storedWf = lock.insertWorkflow(storedRev.getId(), wf);
-                        assertEquals(wf, WorkflowDefinition.workflowSourceBuilder().from(storedWf).build());
+                        List<StoredWorkflowDefinition> storedWfs = lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(wf), sm, Instant.now());
+                        assertEquals(wf, WorkflowDefinition.workflowSourceBuilder().from(storedWfs.get(0)).build());
                     });
                     return lock.get();
                 });
@@ -51,25 +59,25 @@ public class TestDatabaseRepositoryStoreManager
 
     @Test
     public void testConflicts()
+        throws Exception
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowDefinition wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("+wf1");
 
         StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
-                (lock) -> {
-                    // revision overwrites
+                (store, stored) -> {
+                    RepositoryControl lock = new RepositoryControl(store, stored);
+
                     StoredRevision storedRev = lock.insertRevision(rev);
-                    StoredRevision storedRev2 = lock.insertRevision(rev);
-                    assertEquals(storedRev, storedRev2);
 
                     // workflow conflicts
                     assertConflict(false, () -> {
-                        lock.insertWorkflow(storedRev.getId(), wf);
+                        lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(wf), sm, Instant.now());
                     });
                     assertConflict(true, () -> {
-                        lock.insertWorkflow(storedRev.getId(), wf);
+                        lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(wf), sm, Instant.now());
                     });
                     return lock.get();
                 });
@@ -77,26 +85,36 @@ public class TestDatabaseRepositoryStoreManager
         // repository overwrites
         StoredRepository storedRepo2 = store.putAndLockRepository(
                 repo,
-                (lock) -> lock.get());
+                (store, stored) -> {
+                    RepositoryControl lock = new RepositoryControl(store, stored);
+
+                    // revision conflicts
+                    assertConflict(true, () -> {
+                        lock.insertRevision(rev);
+                    });
+
+                    return lock.get();
+                });
         assertEquals(storedRepo, storedRepo2);
     }
 
     @Test
     public void testNotFounds()
-        throws ResourceNotFoundException
+        throws Exception
     {
         Repository repo = Repository.of("repo1");
         Revision rev = createRevision("rev1");
-        WorkflowDefinition wf = createWorkflow("wf1");
+        WorkflowDefinition wf = createWorkflow("+wf1");
 
         AtomicReference<StoredRevision> revRef = new AtomicReference<>();
         AtomicReference<StoredWorkflowDefinition> wfRef = new AtomicReference<>();
         StoredRepository storedRepo = store.putAndLockRepository(
                 repo,
-                (lock) -> {
+                (store, stored) -> {
+                    RepositoryControl lock = new RepositoryControl(store, stored);
                     assertConflict(false, () -> {
                         revRef.set(lock.insertRevision(rev));
-                        wfRef.set(lock.insertWorkflow(revRef.get().getId(), wf));
+                        wfRef.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(wf), sm, Instant.now()).get(0));
                     });
                     return lock.get();
                 });
@@ -137,9 +155,9 @@ public class TestDatabaseRepositoryStoreManager
 
     private static Revision createRevision(String name)
     {
-        return Revision.revisionBuilder()
+        return ImmutableRevision.builder()
             .name(name)
-            .globalParams(createConfig())
+            .defaultParams(createConfig())
             .archiveType("none")
             .build();
     }

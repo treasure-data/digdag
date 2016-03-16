@@ -11,7 +11,7 @@ import io.digdag.core.queue.QueueSettingStore;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.queue.StoredQueueSetting;
 import io.digdag.core.queue.ImmutableStoredQueueSetting;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
@@ -31,14 +31,12 @@ public class DatabaseQueueSettingStoreManager
         implements QueueSettingStoreManager
 {
     @Inject
-    public DatabaseQueueSettingStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseQueueSettingStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, () -> {
-            Handle handle = dbi.open();
-            handle.registerMapper(new StoredQueueSettingMapper(cfm));
-            handle.registerArgumentFactory(cfm.getArgumentFactory());
-            return handle;
-        });
+        super(config.getType(), Dao.class, dbi);
+
+        dbi.registerMapper(new StoredQueueSettingMapper(cfm));
+        dbi.registerArgumentFactory(cfm.getArgumentFactory());
     }
 
     @Override

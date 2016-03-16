@@ -15,8 +15,8 @@ public class MainTest
     {
         assertJdkVersionValidationNotPass("1.7.0");
         assertJdkVersionValidationNotPass("1.8.0_40");
-        assertJdkVersionValidationNotPass("1.8.0_71");
-        assertJdkVersionValidationPass("1.8.0_72");
+        assertJdkVersionValidationNotPass("1.8.0_70");
+        assertJdkVersionValidationPass("1.8.0_71");
         assertJdkVersionValidationPass("1.9.0");
         assertJdkVersionValidationPass("1.9.0_1");
     }

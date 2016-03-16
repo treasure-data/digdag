@@ -3,6 +3,7 @@ package io.digdag.core.database;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Locale;
+import java.util.UUID;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -126,7 +127,8 @@ public interface DatabaseConfig
             }
             else {
                 return String.format(Locale.ENGLISH,
-                        "jdbc:h2:mem:digdag;DB_CLOSE_ON_EXIT=FALSE");
+                        "jdbc:h2:mem:digdag-%s;DB_CLOSE_ON_EXIT=FALSE",
+                        UUID.randomUUID());
             }
 
         case "postgresql":

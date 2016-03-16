@@ -21,7 +21,7 @@ import io.digdag.core.schedule.ScheduleControlStore;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.schedule.ImmutableStoredSchedule;
 import io.digdag.spi.ScheduleTime;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
@@ -37,14 +37,12 @@ public class DatabaseScheduleStoreManager
         implements ScheduleStoreManager
 {
     @Inject
-    public DatabaseScheduleStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseScheduleStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, () -> {
-            Handle handle = dbi.open();
-            handle.registerMapper(new StoredScheduleMapper(cfm));
-            handle.registerArgumentFactory(cfm.getArgumentFactory());
-            return handle;
-        });
+        super(config.getType(), Dao.class, dbi);
+
+        dbi.registerMapper(new StoredScheduleMapper(cfm));
+        dbi.registerArgumentFactory(cfm.getArgumentFactory());
     }
 
     @Override

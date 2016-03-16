@@ -338,7 +338,6 @@ public class Run
             throw systemExit(sb.toString());
         }
         else {
-            StringBuilder sb = new StringBuilder();
             if (noSave) {
                 System.err.println(String.format(ENGLISH, "Success."));
             }

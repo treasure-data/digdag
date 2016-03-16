@@ -29,11 +29,6 @@ public class PooledDataSourceProvider
     public synchronized DataSource get()
     {
         if (ds == null) {
-            //this.errorRetryLimit = conf.getErrorRetryLimit();
-            //this.errorRetryInitialWait = conf.getErrorRetryInitialWait();
-            //this.errorRetryWaitLimit = conf.getErrorRetryWaitLimit();
-            //this.autoExplainDuration = conf.getAutoExplainDuration();
-
             HikariConfig hikari = new HikariConfig();
             hikari.setJdbcUrl(DatabaseConfig.buildJdbcUrl(config));
             hikari.setDriverClassName(DatabaseMigrator.getDriverClassName(config.getType()));
@@ -47,8 +42,6 @@ public class PooledDataSourceProvider
             logger.debug("Using database URL {}", hikari.getJdbcUrl());
 
             ds = new HikariDataSource(hikari);
-
-            //ds.setAutoCommitOnClose(false);
         }
 
         return ds;

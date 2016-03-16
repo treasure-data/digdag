@@ -19,7 +19,7 @@ import io.digdag.core.queue.QueueSettingStore;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.queue.StoredQueueSetting;
 import io.digdag.core.queue.ImmutableStoredQueueSetting;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
@@ -62,12 +62,9 @@ public class DatabaseTaskQueueStore
     private final boolean skipLockedAvailable;
 
     @Inject
-    public DatabaseTaskQueueStore(IDBI dbi, DatabaseConfig config, QueueSettingStoreManager qm)
+    public DatabaseTaskQueueStore(DBI dbi, DatabaseConfig config, QueueSettingStoreManager qm)
     {
-        super(config.getType(), Dao.class, () -> {
-            Handle handle = dbi.open();
-            return handle;
-        });
+        super(config.getType(), Dao.class, dbi);
         this.qm = qm;
         this.expireLockInterval = config.getExpireLockInterval();
         this.expireExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -79,7 +76,7 @@ public class DatabaseTaskQueueStore
         this.skipLockedAvailable = checkSkipLockedAvailable(dbi);
     }
 
-    private boolean checkSkipLockedAvailable(IDBI dbi)
+    private boolean checkSkipLockedAvailable(DBI dbi)
     {
         if (!isSharedDatabase()) {
             return false;

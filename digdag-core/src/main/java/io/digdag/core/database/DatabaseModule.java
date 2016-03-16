@@ -12,7 +12,6 @@ import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
 import org.h2.jdbcx.JdbcConnectionPool;
 
 public class DatabaseModule
@@ -23,7 +22,8 @@ public class DatabaseModule
     {
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(PooledDataSourceProvider.class).in(Scopes.SINGLETON);
-        binder.bind(IDBI.class).toProvider(IdbiProvider.class).in(Scopes.SINGLETON);
+        binder.bind(AutoMigrator.class);
+        binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(RepositoryStoreManager.class).to(DatabaseRepositoryStoreManager.class).in(Scopes.SINGLETON);
@@ -33,18 +33,15 @@ public class DatabaseModule
         binder.bind(DatabaseTaskQueueStore.class).in(Scopes.SINGLETON);
     }
 
-    public static class IdbiProvider
-            implements Provider<IDBI>
+    public static class AutoMigrator
     {
-        private final IDBI dbi;
         private DatabaseMigrator migrator;
 
         @Inject
-        public IdbiProvider(DataSource ds, DatabaseConfig config)
+        public AutoMigrator(DataSource ds, DatabaseConfig config)
         {
-            this.dbi = new DBI(ds);
             if (config.getAutoMigrate()) {
-                this.migrator = new DatabaseMigrator(dbi, config);
+                this.migrator = new DatabaseMigrator(new DBI(ds), config);
             }
         }
 
@@ -56,10 +53,23 @@ public class DatabaseModule
                 migrator = null;
             }
         }
+    }
 
-        public IDBI get()
+    public static class DbiProvider
+            implements Provider<DBI>
+    {
+        private final DataSource ds;
+
+        @Inject
+        // here depends on AutoMigrator so that @PostConstruct runs before StoreManager
+        public DbiProvider(DataSource ds, AutoMigrator migrator)
         {
-            return dbi;
+            this.ds = ds;
+        }
+
+        public DBI get()
+        {
+            return new DBI(ds);
         }
     }
 }

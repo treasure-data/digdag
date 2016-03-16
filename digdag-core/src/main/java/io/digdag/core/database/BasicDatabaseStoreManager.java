@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
-import com.google.common.base.*;
+import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -20,22 +20,17 @@ import io.digdag.core.repository.ResourceConflictException;
 
 public abstract class BasicDatabaseStoreManager <D>
 {
-    public static interface HandleFactory
-    {
-        Handle open();
-    }
-
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final String databaseType;
     private final Class<D> daoIface;
-    private final HandleFactory handleFactory;
+    private final IDBI dbi;
 
-    protected BasicDatabaseStoreManager(String databaseType, Class<D> daoIface, HandleFactory handleFactory)
+    protected BasicDatabaseStoreManager(String databaseType, Class<D> daoIface, IDBI dbi)
     {
         this.databaseType = databaseType;
         this.daoIface = daoIface;
-        this.handleFactory = handleFactory;
+        this.dbi = dbi;
     }
 
     public <T> T requiredResource(T resource, String messageFormat, Object... messageParameters)
@@ -160,7 +155,7 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         TransactionState ts = new TransactionState();
         while (true) {
-            try (Handle handle = handleFactory.open()) {
+            try (Handle handle = dbi.open()) {
                 T retval = handle.inTransaction((h, session) -> action.call(h, h.attach(daoIface), ts));
                 if (ts.retryNext) {
                     ts.retryNext = false;
@@ -178,7 +173,7 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         TransactionState ts = new TransactionState();
         while (true) {
-            try (Handle handle = handleFactory.open()) {
+            try (Handle handle = dbi.open()) {
                 T retval = handle.inTransaction((h, session) -> {
                     try {
                         return action.call(h, h.attach(daoIface), ts);
@@ -209,7 +204,7 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         TransactionState ts = new TransactionState();
         while (true) {
-            try (Handle handle = handleFactory.open()) {
+            try (Handle handle = dbi.open()) {
                 T retval = handle.inTransaction((h, session) -> {
                     try {
                         return action.call(h, h.attach(daoIface), ts);
@@ -245,7 +240,7 @@ public abstract class BasicDatabaseStoreManager <D>
 
     public <T> T autoCommit(AutoCommitAction<T, D> action)
     {
-        try (Handle handle = handleFactory.open()) {
+        try (Handle handle = dbi.open()) {
             return action.call(handle, handle.attach(daoIface));
         }
     }
@@ -253,7 +248,7 @@ public abstract class BasicDatabaseStoreManager <D>
     @SuppressWarnings("unchecked")
     public <T, E extends Exception> T autoCommit(AutoCommitActionWithException<T, D, E> action, Class<E> exClass) throws E
     {
-        try (Handle handle = handleFactory.open()) {
+        try (Handle handle = dbi.open()) {
             return action.call(handle, handle.attach(daoIface));
         }
         catch (InnerException ex) {
@@ -264,7 +259,7 @@ public abstract class BasicDatabaseStoreManager <D>
     @SuppressWarnings("unchecked")
     public <T, E1 extends Exception, E2 extends Exception> T autoCommit(AutoCommitActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
     {
-        try (Handle handle = handleFactory.open()) {
+        try (Handle handle = dbi.open()) {
             T retval = handle.inTransaction((h, session) -> {
                 try {
                     return action.call(h, h.attach(daoIface));

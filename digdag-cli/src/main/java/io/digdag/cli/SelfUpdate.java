@@ -40,6 +40,8 @@ public class SelfUpdate
         case 1:
             selfUpdate(args.get(0));
             break;
+        default:
+            throw usage(null);
         }
     }
 

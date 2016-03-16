@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.client.api.IdName;
-import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
@@ -36,19 +36,18 @@ public class DatabaseRepositoryStoreManager
     private final ConfigMapper cfm;
 
     @Inject
-    public DatabaseRepositoryStoreManager(IDBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseRepositoryStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, () -> {
-            Handle handle = dbi.open();
-            handle.registerMapper(new StoredRepositoryMapper(cfm));
-            handle.registerMapper(new StoredRevisionMapper(cfm));
-            handle.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
-            handle.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
-            handle.registerMapper(new WorkflowConfigMapper());
-            handle.registerMapper(new IdNameMapper());
-            handle.registerArgumentFactory(cfm.getArgumentFactory());
-            return handle;
-        });
+        super(config.getType(), Dao.class, dbi);
+
+        dbi.registerMapper(new StoredRepositoryMapper(cfm));
+        dbi.registerMapper(new StoredRevisionMapper(cfm));
+        dbi.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
+        dbi.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
+        dbi.registerMapper(new WorkflowConfigMapper());
+        dbi.registerMapper(new IdNameMapper());
+        dbi.registerArgumentFactory(cfm.getArgumentFactory());
+
         this.cfm = cfm;
     }
 
@@ -518,7 +517,7 @@ public class DatabaseRepositoryStoreManager
                 " and site_id = :siteId")
         StoredWorkflowDefinition getWorkflowDefinitionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select wd.* from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +

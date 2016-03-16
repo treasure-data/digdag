@@ -1,25 +1,34 @@
 package io.digdag.core.database;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
 
 public class DatabaseTestingUtils
 {
     private DatabaseTestingUtils() { }
 
-    public static DbiProvider setupDatabase()
+    public static DatabaseFactory setupDatabase()
     {
         DatabaseConfig config = DatabaseConfig.builder()
             .type("h2")
-            .url("jdbc:h2:mem:test" + System.nanoTime())
+            .path(Optional.absent())
+            .remoteDatabaseConfig(Optional.absent())
+            .options(ImmutableMap.of())
+            .expireLockInterval(10)
+            .autoMigrate(true)
+            .connectionTimeout(30)
+            .idleTimeout(600)
+            .validationTimeout(5)
+            .maximumPoolSize(10)
             .build();
         PooledDataSourceProvider dsp = new PooledDataSourceProvider(config);
-        IDBI dbi = new DBI(dsp.get());
-        new DatabaseMigrator(dbi, "h2").migrate();
-        return new DbiProvider(dbi, dsp);
+        DBI dbi = new DBI(dsp.get());
+        new DatabaseMigrator(dbi, config).migrate();
+        return new DatabaseFactory(dbi, dsp, config);
     }
 
     public static ObjectMapper createObjectMapper()
