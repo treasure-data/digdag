@@ -13,4 +13,5 @@ dependencies {
     compile 'com.h2database:h2:1.4.190'
     compile 'org.postgresql:postgresql:9.4.1208'
     compile 'org.yaml:snakeyaml:1.14'
+    compile 'com.google.code.findbugs:annotations:3.0.1'
 }

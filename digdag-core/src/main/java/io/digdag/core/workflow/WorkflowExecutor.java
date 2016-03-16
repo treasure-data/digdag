@@ -341,8 +341,14 @@ public class WorkflowExecutor
                             waitMsec = INITIAL_INTERVAL;
                         }
                         else {
-                            propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
-                            waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                            boolean noticed = propagatorCondition.await(waitMsec, TimeUnit.MILLISECONDS);
+                            if (noticed && propagatorNotice) {
+                                propagatorNotice = false;
+                                waitMsec = INITIAL_INTERVAL;
+                            }
+                            else {
+                                waitMsec = Math.min(waitMsec * 2, MAX_INTERVAL);
+                            }
                         }
                     }
                     finally {

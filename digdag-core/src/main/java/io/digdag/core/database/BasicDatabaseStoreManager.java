@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public abstract class BasicDatabaseStoreManager <D>
 {
@@ -151,6 +152,7 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
+    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
     public <T> T transaction(TransactionAction<T, D> action)
     {
         TransactionState ts = new TransactionState();

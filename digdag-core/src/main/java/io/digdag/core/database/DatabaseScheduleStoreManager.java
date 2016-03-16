@@ -128,7 +128,7 @@ public class DatabaseScheduleStoreManager
         }
     }
 
-    private class DatabaseScheduleControlStore
+    private static class DatabaseScheduleControlStore
             implements ScheduleControlStore
     {
         private final Handle handle;

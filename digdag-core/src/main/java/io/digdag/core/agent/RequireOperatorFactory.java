@@ -46,7 +46,7 @@ public class RequireOperatorFactory
         return new RequireOperator(callback, request);
     }
 
-    private class RequireOperator
+    private static class RequireOperator
             implements Operator
     {
         private final TaskCallbackApi callback;

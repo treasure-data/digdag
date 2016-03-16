@@ -1,8 +1,15 @@
 <FindBugsFilter>
-  <!-- this is intentional -->
+  <!-- generated class -->
   <Match>
-    <Class name="io.digdag.core.database.DatabaseTaskQueueFactory$DatabaseTaskQueue" />
-    <Method name="noticeEnqueue" />
-    <Bug pattern="NN_NAKED_NOTIFY" />
+    <Class name="~.*Immutable[^\.]+" />
+    <Method name="~with.*" />
+    <Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ" />
+  </Match>
+
+  <!-- generated class -->
+  <Match>
+    <Class name="~.*Immutable[^\.]+" />
+    <Method name="equals" />
+    <Bug pattern="NP_METHOD_PARAMETER_TIGHTENS_ANNOTATION" />
   </Match>
 </FindBugsFilter>

@@ -15,8 +15,9 @@ import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskStateException;
 import io.digdag.spi.TaskRequest;
-import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 import io.digdag.core.database.DatabaseTaskQueueStore.LockResult;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
 public class DatabaseTaskQueueFactory
     implements TaskQueueFactory
@@ -111,6 +112,7 @@ public class DatabaseTaskQueueFactory
             }
         }
 
+        @SuppressFBWarnings("NN_NAKED_NOTIFY")
         private void noticeEnqueue(Object helper)
         {
             synchronized (helper) {
