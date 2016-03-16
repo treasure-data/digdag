@@ -202,7 +202,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.3.6
+    $ digdag selfupdate 0.4.0
 
 Server-mode commands
 ----------------------------------
@@ -252,6 +252,25 @@ Runs a digdag server. --memory or --database option is required. Examples:
 
   Example: -c digdag.properties
 
+
+In the config file, following parameters are available
+
+* server.bind (ip address)
+* server.port (integer)
+* server.apikey (string)
+* database.type (enum, "h2" or "postgresql")
+* database.user (string)
+* database.password (string)
+* database.host (string)
+* database.port (integer)
+* database.database (string)
+* database.loginTimeout (seconds in integer, default: 30)
+* database.socketTimeout (seconds in integer, default: 1800)
+* database.ssl (boolean, default: false)
+* database.connectionTimeout (seconds in integer, default: 30)
+* database.idleTimeout (seconds in integer, default: 600)
+* database.validationTimeout (seconds in integer, default: 5)
+* database.maximumPoolSize (integer, default: 10)
 
 genapikey
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
