@@ -20,7 +20,7 @@ public class YamlParameterizedConstructor
         this.yamlConstructors.put(null, new CustomTagConstructor());
     }
 
-    private class CustomTagConstructor
+    private static class CustomTagConstructor
             extends AbstractConstruct
     {
         public Object construct(Node node)
