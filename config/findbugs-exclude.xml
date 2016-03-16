@@ -1,0 +1,8 @@
+<FindBugsFilter>
+  <!-- this is intentional -->
+  <Match>
+    <Class name="io.digdag.core.database.DatabaseTaskQueueFactory$DatabaseTaskQueue" />
+    <Method name="noticeEnqueue" />
+    <Bug pattern="NN_NAKED_NOTIFY" />
+  </Match>
+</FindBugsFilter>
