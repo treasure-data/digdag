@@ -20,9 +20,11 @@ public class ModelValidator
     // YAML special char: ! ' " #
     // task mark: +
     // subtask mark: ^
+    // variable embed: $  (this is OK to include but confusing)
     // unnecessary: % & ( ) ; `
-    // allowed: - = $ [ ] { } @ , .
-    private static final Pattern RAW_TASK_NAME_CHARS = Pattern.compile("[^a-zA-Z_0-9\\-\\=\\$\\[\\]\\{\\}\\@\\`\\,\\.\\^]");
+    // allowed: - = [ ] { } @ , .
+    // (See also TaskMatchPattern.DELIMITER_PATTERN)
+    private static final Pattern RAW_TASK_NAME_CHARS = Pattern.compile("[^a-zA-Z_0-9\\-\\=\\[\\]\\{\\}\\@\\`\\,\\.\\^]");
 
     private final List<ModelValidationException.Failure> failures = new ArrayList<>();
 
