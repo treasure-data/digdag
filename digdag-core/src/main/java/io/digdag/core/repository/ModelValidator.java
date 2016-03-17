@@ -21,10 +21,10 @@ public class ModelValidator
     // task mark: +
     // subtask mark: ^
     // variable embed: $  (this is OK to include but confusing)
-    // unnecessary: % & ( ) ; `
-    // allowed: - = [ ] { } @ , .
+    // unnecessary: ( ) ; `
+    // allowed: - = [ ] { } % & @ , .
     // (See also TaskMatchPattern.DELIMITER_PATTERN)
-    private static final Pattern RAW_TASK_NAME_CHARS = Pattern.compile("[^a-zA-Z_0-9\\-\\=\\[\\]\\{\\}\\@\\`\\,\\.\\^]");
+    private static final Pattern RAW_TASK_NAME_CHARS = Pattern.compile("[^a-zA-Z_0-9\\-\\=\\[\\]\\{\\}\\%\\&\\@\\`\\,\\.\\^]");
 
     private final List<ModelValidationException.Failure> failures = new ArrayList<>();
 
