@@ -8,6 +8,7 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSession;
@@ -16,10 +17,10 @@ import static io.digdag.cli.Main.systemExit;
 public class Backfill
     extends ClientCommand
 {
-    @Parameter(names = {"-f", "--from"}, required = true)
+    @Parameter(names = {"-f", "--from"})
     String fromTime;
 
-    @Parameter(names = {"-R", "--attempt-name"}, required = true)
+    @Parameter(names = {"-R", "--attempt-name"})
     String attemptName;
 
     // TODO -n for count
@@ -54,6 +55,10 @@ public class Backfill
     public void backfill(long schedId)
         throws Exception
     {
+        if (fromTime == null || attemptName == null) {
+            throw new ParameterException("-f, --from option and -R, --attempt-name option are required");
+        }
+
         Date from = Date.from(parseTime(fromTime));
 
         DigdagClient client = buildClient();
