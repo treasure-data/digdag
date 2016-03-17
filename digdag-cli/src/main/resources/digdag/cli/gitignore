@@ -1,3 +1,4 @@
 /.digdag-wrapper
 digdag.status
+digdag.tmp
 *.pyc
