@@ -402,6 +402,51 @@ schedules
 Shows list of schedules.
 
 
+backfill
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag backfill <schedule-id>
+
+Starts sessions of a schedule for past session times.
+
+:command:`-f, --from 'yyyy-MM-dd HH:mm:ss Z'`
+  Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.
+
+  Example: --from '2016-01-01 00:00:00 -0800'
+
+:command:`-R, --attempt-name NAME`
+  Session attempt name (required).
+
+  Example: --attempt-name backfill1
+
+:command:`-d, --dry-run`
+  Tries to backfill and validates the results but does nothing.
+
+
+reschedule
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag reschedule <schedule-id>
+
+Skips schedule forward to a future time. To run past schedules, use backfill instead.
+
+:command:`-s, --skip N`
+  Skips specified number of schedules from now. This number "N" doesn't mean number of sessions to be skipped. "N" is the number of sessions to be skipped
+
+:command:`-t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'`
+  Skips schedules until the specified time (exclusive).
+
+:command:`-a, --run-at 'yyyy-MM-dd HH:mm:ss Z'`
+  Set next run time to this time.
+
+:command:`-d, --dry-run`
+  Tries to reschedule and validates the results but does nothing.
+
+
 sessions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
