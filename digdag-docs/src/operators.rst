@@ -132,9 +132,7 @@ This operator exports ``${i}`` variable for the subtasks. Its value begins from 
 for_each>: Repeat tasks
 ----------------------------------
 
-**for_each>:** operator runs subtasks multiple times.
-
-This operator exports ``${i}`` variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.
+**for_each>:** operator runs subtasks multiple times using sets of variables.
 
 (This operator is EXPERIMENTAL. Parameters may change in a future release)
 
