@@ -129,6 +129,47 @@ This operator exports ``${i}`` variable for the subtasks. Its value begins from 
   Tasks to run.
 
 
+for_each>: Repeat tasks
+----------------------------------
+
+**for_each>:** operator runs subtasks multiple times.
+
+This operator exports ``${i}`` variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.
+
+(This operator is EXPERIMENTAL. Parameters may change in a future release)
+
+.. code-block:: yaml
+
+    +repeat:
+      for_each>:
+        fruit: [apple, orange]
+        verb: [eat, throw]
+      _do:
+        sh>: echo ${verb} ${fruit}
+        # this will generate 4 tasks:
+        #  +for-fruit=apple&verb=eat:
+        #    sh>: echo eat apple
+        #  +for-fruit=apple&verb=throw:
+        #    sh>: echo throw apple
+        #  +for-fruit=orange&verb=eat:
+        #    sh>: echo eat orange
+        #  +for-fruit=orange&verb=throw:
+        #    sh>: echo throw orange
+
+:command:`for_each>: VARIABLES`
+  Variables used for the loop in ``key: [value, value, ...]`` syntax.
+
+  * :command:`for_each>: {i: [1, 2, 3]}`
+
+:command:`_parallel: BOOLEAN`
+  Runs the repeating tasks in parallel.
+
+  * :command:`_parallel: true`
+
+:command:`_do: TASKS`
+  Tasks to run.
+
+
 td>: Treasure Data queries
 ----------------------------------
 

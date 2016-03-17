@@ -40,7 +40,7 @@ public class LoopOperatorFactory
         return new LoopOperator(archivePath, request);
     }
 
-    private class LoopOperator
+    private static class LoopOperator
             extends BaseOperator
     {
         public LoopOperator(Path archivePath, TaskRequest request)
@@ -53,7 +53,7 @@ public class LoopOperatorFactory
         {
             Config params = request.getConfig();
 
-            Config doConfig = request.getLocalConfig().getNested("_do");
+            Config doConfig = request.getConfig().getNested("_do");
 
             int count = params.get("count", int.class,
                     params.get("_command", int.class));

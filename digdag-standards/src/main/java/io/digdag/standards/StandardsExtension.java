@@ -21,6 +21,7 @@ import io.digdag.standards.operator.RbOperatorFactory;
 import io.digdag.standards.operator.ShOperatorFactory;
 import io.digdag.standards.operator.MailOperatorFactory;
 import io.digdag.standards.operator.LoopOperatorFactory;
+import io.digdag.standards.operator.ForEachOperatorFactory;
 import io.digdag.standards.operator.EmbulkOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
 import io.digdag.standards.operator.td.TdRunOperatorFactory;
@@ -53,6 +54,7 @@ public class StandardsExtension
             taskExecutorBinder.addBinding().to(ShOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(MailOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
+            taskExecutorBinder.addBinding().to(ForEachOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(EmbulkOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdOperatorFactory.class).in(Scopes.SINGLETON);
             taskExecutorBinder.addBinding().to(TdRunOperatorFactory.class).in(Scopes.SINGLETON);
