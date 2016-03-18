@@ -99,6 +99,7 @@ public class RequireOperatorFactory
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overwriteParams = config.getNestedOrGetEmpty("params");
             SessionStateFlags flags = callback.startSession(
+                    request.getSiteId(),
                     repositoryId,
                     workflowName,
                     instant,

@@ -49,7 +49,7 @@ public class OperatorManager
     private final Map<String, OperatorFactory> executorTypes;
 
     private final ScheduledExecutorService heartbeatScheduler;
-    private final ConcurrentHashMap<Long, String> lockIdMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
 
     @Inject
     public OperatorManager(AgentConfig config, AgentId agentId,
@@ -108,7 +108,7 @@ public class OperatorManager
             catch (RuntimeException | IOException ex) {
                 logger.error("Task failed", ex);
                 Config error = makeExceptionError(cf, ex);
-                callback.taskFailed(
+                callback.taskFailed(request.getSiteId(),
                         request.getTaskId(), request.getLockId(), agentId,
                         error);  // no retry
             }
@@ -120,7 +120,7 @@ public class OperatorManager
     {
         long taskId = request.getTaskId();
 
-        lockIdMap.put(taskId, request.getLockId());
+        runningTaskMap.put(taskId, request);
         try {
             TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger(request));
             try {
@@ -134,7 +134,7 @@ public class OperatorManager
             }
         }
         finally {
-            lockIdMap.remove(taskId);
+            runningTaskMap.remove(taskId);
         }
     }
 
@@ -172,7 +172,7 @@ public class OperatorManager
                     .findFirst();
                 if (!operatorKey.isPresent()) {
                     // TODO warning
-                    callback.taskSucceeded(
+                    callback.taskSucceeded(request.getSiteId(),
                             taskId, request.getLockId(), agentId,
                             TaskResult.empty(cf));
                     return;
@@ -196,7 +196,7 @@ public class OperatorManager
 
             warnUnusedKeys(checkedConfig.getUnusedKeys(), request);
 
-            callback.taskSucceeded(
+            callback.taskSucceeded(request.getSiteId(),
                     taskId, request.getLockId(), agentId,
                     result);
         }
@@ -208,14 +208,14 @@ public class OperatorManager
                 else {
                     logger.error("Task failed, retrying", ex);
                 }
-                callback.retryTask(
+                callback.retryTask(request.getSiteId(),
                         taskId, request.getLockId(), agentId,
                         ex.getRetryInterval().get(), ex.getStateParams().get(),
                         ex.getError());
             }
             else {
                 logger.error("Task failed", ex);
-                callback.taskFailed(
+                callback.taskFailed(request.getSiteId(),
                         taskId, request.getLockId(), agentId,
                         ex.getError().get());  // TODO is error set?
             }
@@ -254,9 +254,18 @@ public class OperatorManager
     private void heartbeat()
     {
         try {
-            List<String> lockedIds = ImmutableList.copyOf(lockIdMap.values());
-            if (!lockedIds.isEmpty()) {
-                callback.taskHeartbeat(lockedIds, agentId, config.getLockRetentionTime());
+            List<TaskRequest> runningTasks = ImmutableList.copyOf(runningTaskMap.values());
+            if (!runningTasks.isEmpty()) {
+                Map<Integer, List<String>> sites = runningTasks.stream()
+                    .collect(Collectors.groupingBy(
+                                TaskRequest::getSiteId,
+                                Collectors.mapping(TaskRequest::getLockId, Collectors.toList())
+                                ));
+                for (Map.Entry<Integer, List<String>> pair : sites.entrySet()) {
+                    int siteId = pair.getKey();
+                    List<String> lockIds = pair.getValue();
+                    callback.taskHeartbeat(siteId, lockIds, agentId, config.getLockRetentionTime());
+                }
             }
         }
         catch (Throwable t) {

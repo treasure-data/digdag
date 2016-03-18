@@ -13,19 +13,24 @@ public interface TaskCallbackApi
 {
     TaskLogger newTaskLogger(TaskRequest request);
 
-    void taskHeartbeat(List<String> lockedIds, AgentId agentId, int lockSeconds);
+    void taskHeartbeat(int siteId,
+            List<String> lockedIds, AgentId agentId, int lockSeconds);
 
-    void taskSucceeded(long taskId, String lockId, AgentId agentId,
+    void taskSucceeded(int siteId,
+            long taskId, String lockId, AgentId agentId,
             TaskResult result);
 
-    void taskFailed(long taskId, String lockId, AgentId agentId,
+    void taskFailed(int siteId,
+            long taskId, String lockId, AgentId agentId,
             Config error);
 
-    void retryTask(long taskId, String lockId, AgentId agentId,
+    void retryTask(int siteId,
+            long taskId, String lockId, AgentId agentId,
             int retryInterval, Config retryStateParams,
             Optional<Config> error);
 
     SessionStateFlags startSession(
+            int siteId,
             int repositoryId,
             String workflowName,
             Instant instant,

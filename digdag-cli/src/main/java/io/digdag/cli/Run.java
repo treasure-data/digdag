@@ -632,7 +632,7 @@ public class Run
                 try (SetThreadName threadName = new SetThreadName(fullName)) {
                     logger.warn("Skipped");
                 }
-                callback.taskSucceeded(
+                callback.taskSucceeded(request.getSiteId(),
                         request.getTaskId(), request.getLockId(), agentId,
                         result);
             }

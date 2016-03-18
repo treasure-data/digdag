@@ -37,7 +37,6 @@ public class InProcessTaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final int localSiteId;
     private final AgentId localAgentId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
@@ -56,7 +55,6 @@ public class InProcessTaskCallbackApi
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
-        this.localSiteId = 0;
         this.localAgentId = localAgentId;
         this.rm = rm;
         this.sm = sm;
@@ -74,7 +72,7 @@ public class InProcessTaskCallbackApi
         LogFilePrefix prefix;
         try {
             StoredSessionAttemptWithSession attempt =
-                sm.getSessionStore(localSiteId)
+                sm.getSessionStore(request.getSiteId())
                 .getSessionAttemptById(attemptId);
             prefix = logFilePrefixFromSessionAttempt(attempt);
         }
@@ -85,45 +83,50 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public void taskHeartbeat(List<String> lockedIds, AgentId agentId, int lockSeconds)
+    public void taskHeartbeat(int siteId,
+            List<String> lockedIds, AgentId agentId, int lockSeconds)
     {
-        queueClient.taskHeartbeat(localSiteId, lockedIds, agentId.toString(), lockSeconds);
+        queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds);
     }
 
     @Override
-    public void taskSucceeded(long taskId, String lockId, AgentId agentId,
+    public void taskSucceeded(int siteId,
+            long taskId, String lockId, AgentId agentId,
             TaskResult result)
     {
-        exec.taskSucceeded(localSiteId, taskId, lockId, agentId,
+        exec.taskSucceeded(siteId, taskId, lockId, agentId,
                 result);
     }
 
     @Override
-    public void taskFailed(long taskId, String lockId, AgentId agentId,
+    public void taskFailed(int siteId,
+            long taskId, String lockId, AgentId agentId,
             Config error)
     {
-        exec.taskFailed(localSiteId, taskId, lockId, agentId,
+        exec.taskFailed(siteId, taskId, lockId, agentId,
                 error);
     }
 
     @Override
-    public void retryTask(long taskId, String lockId, AgentId agentId,
+    public void retryTask(int siteId,
+            long taskId, String lockId, AgentId agentId,
             int retryInterval, Config retryStateParams,
             Optional<Config> error)
     {
-        exec.retryTask(localSiteId, taskId, lockId, agentId,
+        exec.retryTask(siteId, taskId, lockId, agentId,
                 retryInterval, retryStateParams, error);
     }
 
     @Override
     public SessionStateFlags startSession(
+            int siteId,
             int repositoryId,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
     {
-        RepositoryStore repoStore = rm.getRepositoryStore(localSiteId);
+        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
 
         StoredWorkflowDefinitionWithRepository def;
         try {
@@ -143,7 +146,7 @@ public class InProcessTaskCallbackApi
 
         // TODO FIXME SessionMonitor monitors is not set
         try {
-            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(localSiteId, ar, def);
+            StoredSessionAttemptWithSession attempt = exec.submitWorkflow(siteId, ar, def);
             return attempt.getStateFlags();
         }
         catch (SessionAttemptConflictException ex) {
