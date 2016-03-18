@@ -417,7 +417,7 @@ Starts sessions of a schedule for past session times.
   Example: --from '2016-01-01 00:00:00 -0800'
 
 :command:`-R, --attempt-name NAME`
-  Session attempt name (required).
+  Session attempt name (required). This name is used not to run backfill sessions twice accidentally.
 
   Example: --attempt-name backfill1
 
