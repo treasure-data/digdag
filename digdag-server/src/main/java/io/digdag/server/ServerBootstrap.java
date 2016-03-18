@@ -96,9 +96,9 @@ public class ServerBootstrap
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
-            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+            .overrideModulesWith((binder) -> {
                 binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
-            })));
+            });
     }
 
     public static void startServer(Properties props, Class<? extends ServerBootstrap> bootstrapClass)

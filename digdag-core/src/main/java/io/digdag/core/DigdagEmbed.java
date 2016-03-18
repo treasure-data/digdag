@@ -11,6 +11,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.core.queue.QueueModule;
 import io.digdag.core.log.NullLogServerFactory;
@@ -60,6 +61,16 @@ public class DigdagEmbed
         {
             moduleOverrides.add(function);
             return this;
+        }
+
+        public Bootstrap overrideModulesWith(Module... overridingModules)
+        {
+            return overrideModulesWith(Arrays.asList(overridingModules));
+        }
+
+        public Bootstrap overrideModulesWith(Iterable<? extends Module> overridingModules)
+        {
+            return overrideModules(modules -> ImmutableList.of(Modules.override(modules).with(overridingModules)));
         }
 
         public Bootstrap setSystemConfig(ConfigElement systemConfig)

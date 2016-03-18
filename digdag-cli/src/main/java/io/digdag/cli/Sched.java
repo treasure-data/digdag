@@ -10,11 +10,9 @@ import javax.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.google.inject.util.Modules;
 import com.beust.jcommander.Parameter;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.client.config.Config;
@@ -114,10 +112,10 @@ public class Sched
                 .addModules((binder) -> {
                     binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 })
-                .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+                .overrideModulesWith((binder) -> {
                     // overwrite server that uses InProcessArchiveManager
                     binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
-                })));
+                });
         }
     }
 }

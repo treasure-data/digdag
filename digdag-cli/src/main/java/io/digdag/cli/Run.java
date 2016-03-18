@@ -40,7 +40,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import com.google.inject.util.Modules;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.LocalSite.StoreWorkflowResult;
@@ -236,9 +235,9 @@ public class Run
                 binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                 binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
             })
-            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+            .overrideModulesWith((binder) -> {
                 binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
-            })))
+            })
             .initialize()
             .getInjector();
 
