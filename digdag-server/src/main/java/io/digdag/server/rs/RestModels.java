@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.server.rs;
 
 import java.time.Instant;
 import com.google.common.base.Optional;

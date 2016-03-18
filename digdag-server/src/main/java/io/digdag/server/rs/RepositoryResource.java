@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.server.rs;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,7 @@ import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
-import io.digdag.server.TempFileManager.TempDir;
+import io.digdag.server.rs.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;

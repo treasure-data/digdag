@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.server.rs;
 
 import java.io.IOException;
 

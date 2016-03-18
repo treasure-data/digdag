@@ -1,4 +1,4 @@
-package io.digdag.server;
+package io.digdag.server.rs;
 
 import javax.ws.rs.core.Context;
 import javax.servlet.http.HttpServletRequest;

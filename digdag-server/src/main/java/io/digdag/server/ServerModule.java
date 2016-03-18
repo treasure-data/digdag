@@ -15,6 +15,11 @@ import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.ConfigException;
+import io.digdag.server.rs.RepositoryResource;
+import io.digdag.server.rs.ScheduleResource;
+import io.digdag.server.rs.SessionResource;
+import io.digdag.server.rs.LogResource;
+import io.digdag.server.rs.TempFileManager;
 
 public class ServerModule
         extends GuiceRsModule
@@ -28,7 +33,6 @@ public class ServerModule
                     RepositoryResource.class,
                     ScheduleResource.class,
                     SessionResource.class,
-                    WorkflowResource.class,
                     LogResource.class
                 )
             .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
@@ -39,7 +43,6 @@ public class ServerModule
             .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .withProvider(CorsFilter.class);
-        binder().bind(ServerStarter.class).asEagerSingleton();
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
     }
 
