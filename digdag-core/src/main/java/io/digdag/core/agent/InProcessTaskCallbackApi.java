@@ -37,7 +37,6 @@ public class InProcessTaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final AgentId localAgentId;
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
     private final LogServerManager lm;
@@ -47,7 +46,6 @@ public class InProcessTaskCallbackApi
 
     @Inject
     public InProcessTaskCallbackApi(
-            AgentId localAgentId,
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             TaskQueueManager qm,
@@ -55,7 +53,6 @@ public class InProcessTaskCallbackApi
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
-        this.localAgentId = localAgentId;
         this.rm = rm;
         this.sm = sm;
         this.lm = lm;
