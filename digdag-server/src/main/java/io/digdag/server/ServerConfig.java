@@ -57,7 +57,7 @@ public abstract class ServerConfig
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
             .allowPublicAccess(users.isEmpty())
             .apiKeyAuthUsers(users)
-            .systemConfig(ConfigElement.copyOf(config))
+            .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .build();
     }
 

@@ -104,10 +104,14 @@ public class ServerBootstrap
     public static void startServer(Properties props, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException
     {
-        // convert params to ConfigElement used for DatabaseConfig and other configs
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig config = ServerConfig.convertFrom(ce);
+        startServer(config, bootstrapClass);
+    }
 
+    public static void startServer(ServerConfig config, Class<? extends ServerBootstrap> bootstrapClass)
+        throws ServletException
+    {
         DeploymentInfo servletBuilder = Servlets.deployment()
             .setClassLoader(bootstrapClass.getClassLoader())
             .setContextPath("/digdag/server")
@@ -117,7 +121,7 @@ public class ServerBootstrap
                         GuiceRsServletContainerInitializer.class,
                         ImmutableSet.of(bootstrapClass)))
             .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
-            .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, ce.toString())
+            .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, config.getSystemConfig().toString())
             ;
 
         DeploymentManager manager = Servlets.defaultContainer()
