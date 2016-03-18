@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.core.Extension;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskQueueFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.MonthlySchedulerFactory;
@@ -34,6 +33,7 @@ import io.digdag.standards.command.DockerCommandExecutor;
 public class StandardsExtension
         implements Extension
 {
+    @Override
     public List<Module> getModules()
     {
         return ImmutableList.of(new StandardsModule());
@@ -42,6 +42,7 @@ public class StandardsExtension
     private static class StandardsModule
         implements Module
     {
+        @Override
         public void configure(Binder binder)
         {
             //binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);

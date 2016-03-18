@@ -43,6 +43,7 @@ public class DigdagEmbed
         private boolean withWorkflowExecutor = true;
         private boolean withScheduleExecutor = true;
         private boolean withLocalAgent = true;
+        private boolean withExtensionLoader = true;
 
         public Bootstrap addModules(Module... additionalModules)
         {
@@ -82,6 +83,12 @@ public class DigdagEmbed
         public Bootstrap withLocalAgent(boolean v)
         {
             this.withLocalAgent = v;
+            return this;
+        }
+
+        public Bootstrap withExtensionLoader(boolean v)
+        {
+            this.withExtensionLoader = v;
             return this;
         }
 
@@ -130,8 +137,7 @@ public class DigdagEmbed
                     (binder) -> {
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
-                    },
-                    new ExtensionServiceLoaderModule()
+                    }
                 ));
             if (withWorkflowExecutor) {
                 builder.add(new WorkflowExecutorModule());
@@ -146,6 +152,9 @@ public class DigdagEmbed
                 builder.add((binder) -> {
                     binder.bind(LocalSite.class).in(Scopes.SINGLETON);
                 });
+            }
+            if (withExtensionLoader) {
+                builder.add(new ExtensionServiceLoaderModule());
             }
             return builder.build();
         }

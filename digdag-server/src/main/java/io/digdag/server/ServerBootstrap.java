@@ -121,7 +121,7 @@ public class ServerBootstrap
                         GuiceRsServletContainerInitializer.class,
                         ImmutableSet.of(bootstrapClass)))
             .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
-            .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, config.getSystemConfig().toString())
+            .addInitParameter(CONFIG_INIT_PARAMETER_KEY, config.getSystemConfig().toString())
             ;
 
         DeploymentManager manager = Servlets.defaultContainer()
