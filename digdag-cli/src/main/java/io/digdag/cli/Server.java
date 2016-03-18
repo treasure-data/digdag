@@ -1,33 +1,13 @@
 package io.digdag.cli;
 
 import java.util.Properties;
-import java.util.List;
-import java.util.Map;
-import java.io.File;
 import java.io.IOException;
-import java.io.FileInputStream;
 import java.nio.file.FileSystems;
 import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableMap;
-import io.undertow.Undertow;
-import io.undertow.Handlers;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.ServletContainerInitializerInfo;
-import io.digdag.guice.rs.GuiceRsServerControl;
-import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
-import io.digdag.guice.rs.GuiceRsServerControlModule;
-import io.digdag.client.config.ConfigElement;
-import io.digdag.core.config.PropertyUtils;
 import io.digdag.server.ServerBootstrap;
-import io.digdag.server.ServerConfig;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 import static io.digdag.server.ServerConfig.DEFAULT_BIND;
@@ -91,7 +71,7 @@ public class Server
     private void server()
             throws ServletException, IOException
     {
-        startServer(buildProperties(), ServerBootstrap.class);
+        ServerBootstrap.startServer(buildProperties(), ServerBootstrap.class);
     }
 
     protected Properties buildProperties()
@@ -120,58 +100,5 @@ public class Server
         }
 
         return props;
-    }
-
-    protected void startServer(Properties props, Class<? extends ServerBootstrap> bootstrapClass)
-            throws ServletException, IOException
-    {
-        // convert params to ConfigElement used for DatabaseConfig and other configs
-        ConfigElement ce = PropertyUtils.toConfigElement(props);
-        ServerConfig config = ServerConfig.convertFrom(ce);
-
-        DeploymentInfo servletBuilder = Servlets.deployment()
-            .setClassLoader(Main.class.getClassLoader())
-            .setContextPath("/digdag/server")
-            .setDeploymentName("digdag-server.war")
-            .addServletContainerInitalizer(
-                    new ServletContainerInitializerInfo(
-                        GuiceRsServletContainerInitializer.class,
-                        ImmutableSet.of(bootstrapClass)))
-            .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
-            .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, ce.toString())
-            ;
-
-        DeploymentManager manager = Servlets.defaultContainer()
-            .addDeployment(servletBuilder);
-        manager.deploy();
-
-        PathHandler path = Handlers.path(Handlers.redirect("/"))
-            .addPrefixPath("/", manager.start());
-
-        logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
-        Undertow server = Undertow.builder()
-            .addHttpListener(config.getPort(), config.getBind())
-            .setHandler(path)
-            .build();
-        server.start();
-    }
-
-    private static class ServerControl
-            implements GuiceRsServerControl
-    {
-        static Undertow server;
-        static DeploymentManager manager;
-
-        @Override
-        public void stop()
-        {
-            server.stop();
-        }
-
-        @Override
-        public void destroy()
-        {
-            manager.undeploy();
-        }
     }
 }

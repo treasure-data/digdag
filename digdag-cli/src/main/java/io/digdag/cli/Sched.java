@@ -2,8 +2,6 @@ package io.digdag.cli;
 
 import java.util.Properties;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.time.ZoneId;
 import java.io.File;
 import java.io.IOException;
@@ -13,20 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
 import io.digdag.guice.rs.GuiceRsServerControl;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
-import io.digdag.server.ServerModule;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.agent.ArchiveManager;
 import io.digdag.core.agent.CurrentDirectoryArchiveManager;
@@ -81,7 +75,7 @@ public class Sched
         Properties props = buildProperties();
         props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
 
-        startServer(props, SchedulerServerBootStrap.class);
+        ServerBootstrap.startServer(props, SchedulerServerBootStrap.class);
     }
 
     public static class SchedulerServerBootStrap
@@ -117,6 +111,9 @@ public class Sched
         protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig)
         {
             return super.bootstrap(bootstrap, serverConfig)
+                .addModules((binder) -> {
+                    binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
+                })
                 .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
                     // overwrite server that uses InProcessArchiveManager
                     binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
