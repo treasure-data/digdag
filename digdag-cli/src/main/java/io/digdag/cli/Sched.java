@@ -1,28 +1,43 @@
 package io.digdag.cli;
 
+import java.util.Properties;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.time.ZoneId;
 import java.io.File;
 import java.io.IOException;
 import javax.servlet.ServletException;
+import javax.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.server.ServerBootstrap;
+import io.digdag.server.ServerConfig;
+import io.digdag.server.ServerModule;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.agent.ArchiveManager;
+import io.digdag.core.agent.CurrentDirectoryArchiveManager;
 import static io.digdag.cli.Main.systemExit;
 
 public class Sched
     extends Server
 {
     private static final Logger logger = LoggerFactory.getLogger(Sched.class);
+
+    private static final String SYSTEM_CONFIG_DAGFILE_KEY = "server.autoLoadLocalDagfile";
 
     @Parameter(names = {"-f", "--file"})
     String dagfilePath = Run.DEFAULT_DAGFILE;
@@ -63,6 +78,49 @@ public class Sched
             memoryDatabase = true;
         }
 
-        startServer(dagfilePath);
+        Properties props = buildProperties();
+        props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
+
+        startServer(props, SchedulerServerBootStrap.class);
+    }
+
+    public static class SchedulerServerBootStrap
+            extends ServerBootstrap
+    {
+        @Inject
+        public SchedulerServerBootStrap(GuiceRsServerControl control)
+        {
+            super(control);
+        }
+
+        @Override
+        public Injector initialize(ServletContext context)
+        {
+            Injector injector = super.initialize(context);
+
+            Config systemConfig = injector.getInstance(Config.class);
+            String autoLoadLocalDagfile = systemConfig.get(SYSTEM_CONFIG_DAGFILE_KEY, String.class);
+
+            ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+            RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
+            try {
+                autoReloader.loadFile(new File(autoLoadLocalDagfile), ZoneId.systemDefault());
+            }
+            catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+
+            return injector;
+        }
+
+        @Override
+        protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig)
+        {
+            return super.bootstrap(bootstrap, serverConfig)
+                .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+                    // overwrite server that uses InProcessArchiveManager
+                    binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
+                })));
+        }
     }
 }

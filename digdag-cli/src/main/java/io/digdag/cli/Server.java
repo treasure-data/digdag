@@ -26,6 +26,7 @@ import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.guice.rs.GuiceRsServerControlModule;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.core.config.PropertyUtils;
+import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
@@ -90,16 +91,16 @@ public class Server
     private void server()
             throws ServletException, IOException
     {
-        startServer(null);
+        startServer(buildProperties(), ServerBootstrap.class);
     }
 
-    protected void startServer(String autoloadLocalDagFile)
-            throws ServletException, IOException
+    protected Properties buildProperties()
+        throws IOException
     {
         // parameters for ServerBootstrap
         Properties props = Main.loadProperties(configPath);
 
-        // 3. overwrite by command-line parameters
+        // overwrite by command-line parameters
         if (database != null) {
             props.setProperty("database.type", "h2");
             props.setProperty("database.path", FileSystems.getDefault().getPath(database).toAbsolutePath().toString());
@@ -117,10 +118,13 @@ public class Server
             props.setProperty("log-server.type", "local");
             props.setProperty("log-server.path", taskLogPath);
         }
-        if (autoloadLocalDagFile != null) {
-            props.setProperty("server.autoLoadLocalDagfile", autoloadLocalDagFile);
-        }
 
+        return props;
+    }
+
+    protected void startServer(Properties props, Class<? extends ServerBootstrap> bootstrapClass)
+            throws ServletException, IOException
+    {
         // convert params to ConfigElement used for DatabaseConfig and other configs
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig config = ServerConfig.convertFrom(ce);
@@ -132,7 +136,7 @@ public class Server
             .addServletContainerInitalizer(
                     new ServletContainerInitializerInfo(
                         GuiceRsServletContainerInitializer.class,
-                        ImmutableSet.of(ServerBootstrap.class)))
+                        ImmutableSet.of(bootstrapClass)))
             .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
             .addInitParameter(ServerBootstrap.CONFIG_INIT_PARAMETER_KEY, ce.toString())
             ;

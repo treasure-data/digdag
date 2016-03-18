@@ -25,11 +25,11 @@ public abstract class ServerConfig
 
     public abstract String getBind();
 
-    public abstract Optional<String> getAutoLoadLocalDagfile();
-
     public abstract boolean getAllowPublicAccess();
 
     public abstract List<UserConfig> getApiKeyAuthUsers();
+
+    public abstract ConfigElement getSystemConfig();
 
     private static ImmutableServerConfig.Builder defaultBuilder()
     {
@@ -55,9 +55,9 @@ public abstract class ServerConfig
         return defaultBuilder()
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
-            .autoLoadLocalDagfile(config.getOptional("server.autoLoadLocalDagfile", String.class))
             .allowPublicAccess(users.isEmpty())
             .apiKeyAuthUsers(users)
+            .systemConfig(ConfigElement.copyOf(config))
             .build();
     }
 

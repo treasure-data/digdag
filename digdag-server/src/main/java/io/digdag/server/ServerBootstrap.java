@@ -1,9 +1,8 @@
-package io.digdag.cli;
+package io.digdag.server;
 
 import java.util.List;
 import java.util.Map;
 import java.io.File;
-import java.time.ZoneId;
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
 import org.slf4j.Logger;
@@ -54,39 +53,13 @@ public class ServerBootstrap
         }
 
         ServerConfig serverConfig = ServerConfig.convertFrom(systemConfig);
-        Optional<String> autoLoadLocalDagfile = serverConfig.getAutoLoadLocalDagfile();
 
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .setSystemConfig(systemConfig)
-            .addModules(new ServerModule())
-            .addModules((binder) -> {
-                binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
-                binder.bind(ServerConfig.class).toInstance(serverConfig);
-            })
-            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
-                if (autoLoadLocalDagfile.isPresent()) {
-                    // default is CurrentDirectoryArchiveManager
-                }
-                else {
-                    binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
-                }
-            })))
+        Injector injector = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig)
             .initialize()
             .getInjector();
 
         // TODO create global site
         LocalSite site = injector.getInstance(LocalSite.class);
-
-        if (autoLoadLocalDagfile.isPresent()) {
-            ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-            RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
-            try {
-                autoReloader.loadFile(new File(autoLoadLocalDagfile.get()), ZoneId.systemDefault());
-            }
-            catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        }
 
         Thread thread = new Thread(() -> {
             try {
@@ -101,5 +74,18 @@ public class ServerBootstrap
         thread.start();
 
         return injector;
+    }
+
+    protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig)
+    {
+        return bootstrap
+            .setSystemConfig(serverConfig.getSystemConfig())
+            .addModules(new ServerModule())
+            .addModules((binder) -> {
+                binder.bind(ServerConfig.class).toInstance(serverConfig);
+            })
+            .overrideModules((list) -> ImmutableList.of(Modules.override(list).with((binder) -> {
+                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+            })));
     }
 }
