@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import java.util.List;
 import com.beust.jcommander.Parameter;
+import javax.ws.rs.NotFoundException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
@@ -45,20 +46,25 @@ public class ShowWorkflow
     {
         DigdagClient client = buildClient();
 
-        for (RestRepository repo : client.getRepositories()) {
-            // TODO catch and ignore not-found exceptions
+        if (repoName != null) {
+            RestRepository repo = client.getRepository(repoName);
             ln("  %s", repo.getName());
-            if (repoName == null || repoName.equals(repo.getName())) {
-                for (RestWorkflowDefinition def : client.getWorkflowDefinitions(repo.getId())) {
-                    ln("    %s", def.getName());
-                }
-                if (repoName != null) {
-                    return;
-                }
+            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(repo.getId())) {
+                ln("    %s", def.getName());
             }
         }
-        if (repoName != null) {
-            throw systemExit("Repository " + repoName + " does not exist.");
+        else {
+            for (RestRepository repo : client.getRepositories()) {
+                try {
+                    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(repo.getId());
+                    ln("  %s", repo.getName());
+                    for (RestWorkflowDefinition def : defs) {
+                        ln("    %s", def.getName());
+                    }
+                }
+                catch (NotFoundException ex) {
+                }
+            }
         }
         ln("");
         System.err.println("Use `digdag workflows +NAME` to show details.");
@@ -69,22 +75,24 @@ public class ShowWorkflow
     {
         DigdagClient client = buildClient();
 
-        for (RestRepository repo : client.getRepositories()) {
-            // TODO catch and ignore not-found exceptions
-            if (repoName == null || repoName.equals(repo.getName())) {
-                for (RestWorkflowDefinition def : client.getWorkflowDefinitions(repo.getId())) {
-                    if (defName.equals(def.getName())) {
-                        String yaml = yamlMapper().toYaml(def.getConfig());
-                        ln("---");
-                        ln("%s", yaml);
-                        return;
-                    }
+        if (repoName != null) {
+            RestRepository repo = client.getRepository(repoName);
+            RestWorkflowDefinition def = client.getWorkflowDefinition(repo.getId(), defName);
+            String yaml = yamlMapper().toYaml(def.getConfig());
+            ln("%s", yaml);
+        }
+        else {
+            for (RestRepository repo : client.getRepositories()) {
+                try {
+                    RestWorkflowDefinition def = client.getWorkflowDefinition(repo.getId(), defName);
+                    String yaml = yamlMapper().toYaml(def.getConfig());
+                    ln("%s", yaml);
+                    return;
                 }
-                if (repoName != null) {
-                    break;
+                catch (NotFoundException ex) {
                 }
             }
+            throw systemExit("Workflow definition '" + defName + "' does not exist.");
         }
-        throw systemExit("Workflow definition '" + defName + "' does not exist.");
     }
 }

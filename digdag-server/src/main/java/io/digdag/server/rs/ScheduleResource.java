@@ -38,9 +38,9 @@ public class ScheduleResource
     extends AuthenticatedResource
 {
     // [*] GET  /api/schedules                                   # list schedules of the latest revision of all repositories
-    // [*] GET  /api/schedules/<id>                              # show a particular schedule (which belongs to a workflow)
-    // [*] POST /api/schedules/<id>/skip                         # skips schedules forward to a future time
-    // [*] POST /api/schedules/<id>/backfill                     # run or re-run past schedules
+    // [*] GET  /api/schedules/{id}                              # show a particular schedule (which belongs to a workflow)
+    // [*] POST /api/schedules/{id}/skip                         # skips schedules forward to a future time
+    // [*] POST /api/schedules/{id}/backfill                     # run or re-run past schedules
 
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;

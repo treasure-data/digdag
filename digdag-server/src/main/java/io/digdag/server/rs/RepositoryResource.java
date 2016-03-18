@@ -43,10 +43,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class RepositoryResource
     extends AuthenticatedResource
 {
+    // [*] GET  /api/repository?name=<name>                      # get the latest revisions of a repository by name
+    // [*] GET  /api/repository?name=<name>?revision=name        # get a former revision of a repository
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
     // [ ] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
     // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
+    // [*] GET  /api/repositories/{id}/workflow?name=name        # get a workflow of the latest revision of a repository
+    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # get a workflow of ea past revision of a repository
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
     // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
@@ -78,6 +82,23 @@ public class RepositoryResource
         this.rm = rm;
         this.sm = sm;
         this.temp = temp;
+    }
+
+    @GET
+    @Path("/api/repository")
+    public RestRepository getRepository(@QueryParam("name") String name, @QueryParam("revision") String revName)
+        throws ResourceNotFoundException
+    {
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        StoredRepository repo = rs.getRepositoryByName(name);
+        StoredRevision rev;
+        if (revName == null) {
+            rev = rs.getLatestRevision(repo.getId());
+        }
+        else {
+            rev = rs.getRevisionByName(repo.getId(), revName);
+        }
+        return RestModels.repository(repo, rev);
     }
 
     @GET
@@ -117,6 +138,30 @@ public class RepositoryResource
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
         return RestModels.repository(repo, rev);
+    }
+
+    @GET
+    @Path("/api/repositories/{id}/workflow")
+    public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
+        throws ResourceNotFoundException
+    {
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        StoredRepository repo = rs.getRepositoryById(repoId);
+
+        StoredRevision rev;
+        if (revName == null) {
+            rev = rs.getLatestRevision(repo.getId());
+        }
+        else {
+            rev = rs.getRevisionByName(repo.getId(), revName);
+        }
+        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
+
+        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
+
+        return RestModels.workflowDefinition(
+                repo, rev, def,
+                Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime())));
     }
 
     @GET

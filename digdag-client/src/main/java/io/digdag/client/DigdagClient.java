@@ -138,6 +138,21 @@ public class DigdagClient
             );
     }
 
+    public RestRepository getRepository(String name)
+    {
+        return doGet(RestRepository.class,
+                target("/api/repository")
+                .queryParam("name", name));
+    }
+
+    public RestRepository getRepository(String name, String revision)
+    {
+        return doGet(RestRepository.class,
+                target("/api/repository")
+                .queryParam("name", name)
+                .queryParam("revision", revision));
+    }
+
     public List<RestRepository> getRepositories()
     {
         return doGet(new GenericType<List<RestRepository>>() { },
@@ -171,6 +186,23 @@ public class DigdagClient
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/repositories/{id}/workflows")
                 .resolveTemplate("id", repoId)
+                .queryParam("revision", revision));
+    }
+
+    public RestWorkflowDefinition getWorkflowDefinition(int repoId, String name)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/repositories/{id}/workflow")
+                .resolveTemplate("id", repoId)
+                .queryParam("name", name));
+    }
+
+    public RestWorkflowDefinition getWorkflowDefinition(int repoId, String name, String revision)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/repositories/{id}/workflow")
+                .resolveTemplate("id", repoId)
+                .queryParam("name", name)
                 .queryParam("revision", revision));
     }
 

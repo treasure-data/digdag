@@ -50,8 +50,8 @@ public class LogResource
 {
     // [*] PUT  /api/logs/{attempt_id}/files?task_name=<name>&file_time=<unixtime sec>&node_id=<node_id>
     // [*] GET  /api/logs/{attempt_id}/files[?task_name=<name>]
-    // [*] GET  /api/logs/<attempt_id>/files/<file_name>
-    // [*] GET  /api/logs/<attempt_id>/upload_handle?task_name=<name>&file_time=<unixtime sec>&node_id=<nodeId>
+    // [*] GET  /api/logs/{attempt_id}/files/{file_name}
+    // [*] GET  /api/logs/{attempt_id}/upload_handle?task_name=<name>&file_time=<unixtime sec>&node_id=<nodeId>
 
     private final SessionStoreManager sm;
     private final LogServer logServer;
