@@ -10,7 +10,7 @@
   <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
   </appender>
 
-  <root>
+  <root level="${digdag.log.level}">
     <appender-ref ref="console"/>
     <appender-ref ref="digdag-context"/>
   </root>

@@ -226,6 +226,10 @@ public class Main
         configurator.setContext(context);
         context.reset();
 
+        // logback uses system property to embed variables in XML file
+        Level lv = Level.toLevel(level.toUpperCase(), Level.DEBUG);
+        System.setProperty("digdag.log.level", lv.toString());
+
         String name;
         if (logPath.equals("-")) {
             if (System.console() != null) {
@@ -234,19 +238,13 @@ public class Main
                 name = "/digdag/cli/logback-console.xml";
             }
         } else {
-            // logback uses system property to embed variables in XML file
-            System.setProperty("digdag.logPath", logPath);
+            System.setProperty("digdag.log.path", logPath);
             name = "/digdag/cli/logback-file.xml";
         }
         try {
             configurator.doConfigure(Main.class.getResource(name));
         } catch (JoranException ex) {
             throw new RuntimeException(ex);
-        }
-
-        Logger logger = LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-        if (logger instanceof ch.qos.logback.classic.Logger) {
-            ((ch.qos.logback.classic.Logger) logger).setLevel(Level.toLevel(level.toUpperCase(), Level.DEBUG));
         }
     }
 

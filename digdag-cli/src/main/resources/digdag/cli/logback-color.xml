@@ -64,7 +64,7 @@
 
   <logger name="com.zaxxer.hikari" level="WARN"/>
 
-  <root>
+  <root level="${digdag.log.level}">
     <appender-ref ref="console-error"/>
     <appender-ref ref="console-warn"/>
     <appender-ref ref="console-info"/>

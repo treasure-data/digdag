@@ -1,8 +1,8 @@
 <configuration>
   <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${digdag.logPath}</file>
+    <file>${digdag.log.path}</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>${digdag.logPath}.%i.gz</fileNamePattern>
+      <fileNamePattern>${digdag.log.path}.%i.gz</fileNamePattern>
       <minIndex>1</minIndex>
       <maxIndex>5</maxIndex>
     </rollingPolicy>
@@ -20,7 +20,7 @@
   <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
   </appender>
 
-  <root>
+  <root level="${digdag.log.level}">
     <appender-ref ref="file"/>
     <appender-ref ref="digdag-context"/>
   </root>
