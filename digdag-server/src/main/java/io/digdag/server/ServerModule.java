@@ -12,6 +12,7 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import io.digdag.guice.rs.GuiceRsModule;
+import io.digdag.guice.rs.GuiceRsModule.ApplicationBindingBuilder;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.ConfigException;
@@ -27,23 +28,40 @@ public class ServerModule
     @Override
     public void configure()
     {
-        bindApplication()
+        ApplicationBindingBuilder builder = bindApplication()
             .matches("/api/*")
-            .withResource(
-                    RepositoryResource.class,
-                    ScheduleResource.class,
-                    SessionResource.class,
-                    LogResource.class
-                )
-            .withProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
-            .withProvider(JwtAuthInterceptor.class)
-            .withProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
-            .withProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
-            .withProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
-            .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
-            .withProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
-            .withProvider(CorsFilter.class);
+            .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
+            ;
+        bindResources(builder);
+        bindAuthInterceptor(builder);
+        bindExceptionhandlers(builder);
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
+    }
+
+    protected void bindResources(ApplicationBindingBuilder builder)
+    {
+        builder.addResources(
+                RepositoryResource.class,
+                ScheduleResource.class,
+                SessionResource.class,
+                LogResource.class
+            );
+    }
+
+    protected void bindAuthInterceptor(ApplicationBindingBuilder builder)
+    {
+        builder.addProvider(JwtAuthInterceptor.class);
+    }
+
+    protected void bindExceptionhandlers(ApplicationBindingBuilder builder)
+    {
+        builder
+            .addProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
+            ;
     }
 
     public static class JsonProviderProvider
@@ -64,7 +82,7 @@ public class ServerModule
         }
     }
 
-    // TODO disable by option
+    // TODO to debug web ui
     @Provider
     public static class CorsFilter implements ContainerResponseFilter
     {
@@ -80,5 +98,4 @@ public class ServerModule
             response.getHeaders().add("Access-Control-Max-Age", "1209600");
         }
     }
-
 }
