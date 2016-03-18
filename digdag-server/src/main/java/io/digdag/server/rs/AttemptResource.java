@@ -36,18 +36,18 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Path("/")
 @Produces("application/json")
-public class SessionResource
+public class AttemptResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/sessions                                    # list sessions from recent to old
-    // [*] GET  /api/sessions?include_retried=1                  # list sessions from recent to old
-    // [*] GET  /api/sessions?repository=<name>                  # list sessions that belong to a particular repository
-    // [*] GET  /api/sessions?repository=<name>&workflow=<name>  # list sessions that belong to a particular workflow
-    // [*] GET  /api/sessions/{id}                               # show a session
-    // [*] GET  /api/sessions/{id}/tasks                         # list tasks of a session
-    // [*] GET  /api/sessions/{id}/retries                       # list retried sessions of this session
-    // [*] PUT  /api/sessions                                    # starts a new session (cancel, retry, etc.)
-    // [*] POST /api/sessions/{id}/kill                          # kill a session
+    // [*] GET  /api/attempts                                    # list attempts from recent to old
+    // [*] GET  /api/attempts?include_retried=1                  # list attempts from recent to old
+    // [*] GET  /api/attempts?repository=<name>                  # list attempts that belong to a particular repository
+    // [*] GET  /api/attempts?repository=<name>&workflow=<name>  # list attempts that belong to a particular workflow
+    // [*] GET  /api/attempts/{id}                               # show a session
+    // [*] GET  /api/attempts/{id}/tasks                         # list tasks of a session
+    // [*] GET  /api/attempts/{id}/retries                       # list retried attempts of this session
+    // [*] PUT  /api/attempts                                    # starts a new session (cancel, retry, etc.)
+    // [*] POST /api/attempts/{id}/kill                          # kill a session
 
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
@@ -56,7 +56,7 @@ public class SessionResource
     private final ConfigFactory cf;
 
     @Inject
-    public SessionResource(
+    public AttemptResource(
             RepositoryStoreManager rm,
             SessionStoreManager sm,
             AttemptBuilder attemptBuilder,
@@ -71,8 +71,8 @@ public class SessionResource
     }
 
     @GET
-    @Path("/api/sessions")
-    public List<RestSession> getSessions(
+    @Path("/api/attempts")
+    public List<RestSessionAttempt> getAttempts(
             @QueryParam("repository") String repoName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
@@ -123,7 +123,7 @@ public class SessionResource
         return attempts.stream()
             .map(attempt -> {
                 try {
-                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -134,8 +134,8 @@ public class SessionResource
     }
 
     @GET
-    @Path("/api/sessions/{id}")
-    public RestSession getSession(@PathParam("id") long id)
+    @Path("/api/attempts/{id}")
+    public RestSessionAttempt getAttempt(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
@@ -143,12 +143,12 @@ public class SessionResource
 
         RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 
-        return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+        return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
     }
 
     @GET
-    @Path("/api/sessions/{id}/retries")
-    public List<RestSession> getSessionRetries(@PathParam("id") long id)
+    @Path("/api/attempts/{id}/retries")
+    public List<RestSessionAttempt> getAttemptRetries(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
         List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
@@ -159,7 +159,7 @@ public class SessionResource
         return attempts.stream()
             .map(attempt -> {
                 try {
-                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -170,7 +170,7 @@ public class SessionResource
     }
 
     @GET
-    @Path("/api/sessions/{id}/tasks")
+    @Path("/api/attempts/{id}/tasks")
     public List<RestTask> getTasks(@PathParam("id") long id)
     {
         return sm.getSessionStore(getSiteId())
@@ -182,8 +182,8 @@ public class SessionResource
 
     @PUT
     @Consumes("application/json")
-    @Path("/api/sessions")
-    public Response startSession(RestSessionRequest request)
+    @Path("/api/attempts")
+    public Response startAttempt(RestSessionAttemptRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
@@ -200,25 +200,25 @@ public class SessionResource
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);
-            RestSession res = RestModels.session(attempt, repo.getName());
+            RestSessionAttempt res = RestModels.attempt(attempt, repo.getName());
             return Response.ok(res).build();
         }
         catch (SessionAttemptConflictException ex) {
             StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
-            RestSession res = RestModels.session(conflicted, repo.getName());
+            RestSessionAttempt res = RestModels.attempt(conflicted, repo.getName());
             return Response.status(Response.Status.CONFLICT).entity(res).build();
         }
     }
 
     @POST
     @Consumes("application/json")
-    @Path("/api/sessions/{id}/kill")
-    public void killSession(@PathParam("id") long id)
+    @Path("/api/attempts/{id}/kill")
+    public void killAttempt(@PathParam("id") long id)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        boolean updated = executor.killSessionById(getSiteId(), id);
+        boolean updated = executor.killAttemptById(getSiteId(), id);
         if (!updated) {
-            throw new ResourceConflictException("Session already killed or finished");
+            throw new ResourceConflictException("Session attempt already killed or finished");
         }
     }
 }

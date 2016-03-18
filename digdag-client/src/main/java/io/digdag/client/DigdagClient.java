@@ -211,66 +211,66 @@ public class DigdagClient
                 .resolveTemplate("id", id));
     }
 
-    public List<RestSession> getSessions(boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(boolean includeRetried, Optional<Long> lastId)
     {
-        return doGet(new GenericType<List<RestSession>>() { },
-                target("/api/sessions")
+        return doGet(new GenericType<List<RestSessionAttempt>>() { },
+                target("/api/attempts")
                 .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSession> getSessions(String repoName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String repoName, boolean includeRetried, Optional<Long> lastId)
     {
-        return doGet(new GenericType<List<RestSession>>() { },
-                target("/api/sessions")
+        return doGet(new GenericType<List<RestSessionAttempt>>() { },
+                target("/api/attempts")
                 .queryParam("repository", repoName)
                 .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSession> getSessions(String repoName, String workflowName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String repoName, String workflowName, boolean includeRetried, Optional<Long> lastId)
     {
-        return doGet(new GenericType<List<RestSession>>() { },
-                target("/api/sessions")
+        return doGet(new GenericType<List<RestSessionAttempt>>() { },
+                target("/api/attempts")
                 .queryParam("repository", repoName)
                 .queryParam("workflow", workflowName)
                 .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public RestSession getSession(long sessionId)
+    public RestSessionAttempt getSessionAttempt(long attemptId)
     {
-        return doGet(RestSession.class,
-                target("/api/sessions/{id}")
-                .resolveTemplate("id", sessionId));
+        return doGet(RestSessionAttempt.class,
+                target("/api/attempts/{id}")
+                .resolveTemplate("id", attemptId));
     }
 
-    public List<RestTask> getTasks(long sessionId)
+    public List<RestTask> getTasks(long attemptId)
     {
         return doGet(new GenericType<List<RestTask>>() { },
-                target("/api/sessions/{id}/tasks")
-                .resolveTemplate("id", sessionId));
+                target("/api/attempts/{id}/tasks")
+                .resolveTemplate("id", attemptId));
     }
 
-    public List<RestLogFileHandle> getLogFileHandlesOfSession(long sessionId)
+    public List<RestLogFileHandle> getLogFileHandlesOfAttempt(long attemptId)
     {
         return doGet(new GenericType<List<RestLogFileHandle>>() { },
                 target("/api/logs/{id}/files")
-                .resolveTemplate("id", sessionId));
+                .resolveTemplate("id", attemptId));
     }
 
-    public List<RestLogFileHandle> getLogFileHandlesOfTask(long sessionId, String taskName)
+    public List<RestLogFileHandle> getLogFileHandlesOfTask(long attemptId, String taskName)
     {
         return doGet(new GenericType<List<RestLogFileHandle>>() { },
                 target("/api/logs/{id}/files")
-                .resolveTemplate("id", sessionId)
+                .resolveTemplate("id", attemptId)
                 .queryParam("task_name", taskName));
     }
 
-    public InputStream getLogFile(long sessionId, String fileName)
+    public InputStream getLogFile(long attemptId, String fileName)
     {
         Response res = target("/api/logs/{id}/files/{fileName}")
-            .resolveTemplate("id", sessionId)
+            .resolveTemplate("id", attemptId)
             .resolveTemplate("fileName", fileName)
             .request()
             .headers(headers)
@@ -279,20 +279,20 @@ public class DigdagClient
         return res.readEntity(InputStream.class);
     }
 
-    public RestSession startSession(RestSessionRequest request)
+    public RestSessionAttempt startSession(RestSessionAttemptRequest request)
     {
-        return doPut(RestSession.class,
+        return doPut(RestSessionAttempt.class,
                 "application/json",
                 request,
-                target("/api/sessions"));
+                target("/api/attempts"));
     }
 
-    public void killSession(long sessionId)
+    public void killSessionAttempt(long attemptId)
     {
         doPost(void.class,
                 new HashMap<String, String>(),
-                target("/api/sessions/{id}/kill")
-                .resolveTemplate("id", sessionId));
+                target("/api/attempts/{id}/kill")
+                .resolveTemplate("id", attemptId));
     }
 
     //public List<RestWorkflowDefinition> getWorkflowDefinitions()
@@ -333,9 +333,9 @@ public class DigdagClient
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSession> backfillSchedule(long scheduleId, Date fromTime, String attemptName, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(long scheduleId, Date fromTime, String attemptName, boolean dryRun)
     {
-        return doPost(new GenericType<List<RestSession>>() { },
+        return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()
                     .fromTime(fromTime.getTime() / 1000)
                     .dryRun(dryRun)

@@ -21,19 +21,19 @@ public class ShowTask
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag tasks <session-id>");
+        System.err.println("Usage: digdag tasks <attempt-id>");
         System.err.println("  Options:");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showTasks(long sessionId)
+    public void showTasks(long attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();
 
         int count = 0;
-        for (RestTask task : client.getTasks(sessionId)) {
+        for (RestTask task : client.getTasks(attemptId)) {
             ln("   id: %d", task.getId());
             ln("   name: %s", task.getFullName());
             ln("   state: %s", task.getState());
@@ -48,7 +48,7 @@ public class ShowTask
         }
 
         if (count == 0) {
-            client.getSession(sessionId);  // throws exception if session doesn't exist
+            client.getSessionAttempt(attemptId);  // throws exception if attempt doesn't exist
         }
         ln("%d entries.", count);
     }

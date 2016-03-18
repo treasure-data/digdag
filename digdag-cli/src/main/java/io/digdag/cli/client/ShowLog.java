@@ -42,28 +42,28 @@ public class ShowLog
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag log <session-id> [+task name prefix]");
+        System.err.println("Usage: digdag log <attempt-id> [+task name prefix]");
         System.err.println("  Options:");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showLogs(long sessionId, Optional<String> taskName)
+    public void showLogs(long attemptId, Optional<String> taskName)
         throws Exception
     {
         DigdagClient client = buildClient();
 
         List<RestLogFileHandle> handles;
         if (taskName.isPresent()) {
-            handles = client.getLogFileHandlesOfTask(sessionId, taskName.get());
+            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get());
         }
         else {
-            handles = client.getLogFileHandlesOfSession(sessionId);
+            handles = client.getLogFileHandlesOfAttempt(attemptId);
         }
 
         for (Map.Entry<String, List<RestLogFileHandle>> pair : sortHandles(handles).entrySet()) {
             for (RestLogFileHandle handle : pair.getValue()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(sessionId, handle.getFileName())), UTF_8))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(attemptId, handle.getFileName())), UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         System.out.println(line);

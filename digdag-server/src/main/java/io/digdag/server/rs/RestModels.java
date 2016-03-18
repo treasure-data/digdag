@@ -5,7 +5,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.api.RestRepository;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestLogFileHandle;
@@ -95,9 +95,9 @@ public final class RestModels
             .build();
     }
 
-    public static RestSession session(StoredSessionAttemptWithSession attempt, String repositoryName)
+    public static RestSessionAttempt attempt(StoredSessionAttemptWithSession attempt, String repositoryName)
     {
-        return RestSession.builder()
+        return RestSessionAttempt.builder()
             .id(attempt.getId())
             .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
             .workflowName(attempt.getSession().getWorkflowName())

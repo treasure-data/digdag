@@ -18,8 +18,8 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestSession;
-import io.digdag.client.api.RestSessionRequest;
+import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestSessionAttemptRequest;
 import static io.digdag.cli.Main.systemExit;
 
 public class Start
@@ -90,7 +90,7 @@ public class Start
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
-        RestSessionRequest request = RestSessionRequest.builder()
+        RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
             .repositoryName(repoName)
             .workflowName(workflowName)
             .sessionTime(sessiontime)
@@ -99,19 +99,19 @@ public class Start
             .build();
 
         DigdagClient client = buildClient();
-        RestSession session = client.startSession(request);
+        RestSessionAttempt attempt = client.startSession(request);
 
-        ln("Started a session:");
-        ln("  id: %d", session.getId());
-        ln("  uuid: %s", session.getSessionUuid());
-        ln("  repository: %s", session.getRepository().getName());
-        ln("  workflow: %s", session.getWorkflowName());
-        ln("  session time: %s", formatTime(session.getSessionTime()));
-        ln("  retry attempt name: %s", session.getRetryAttemptName().or(""));
-        ln("  params: %s", session.getParams());
-        ln("  created at: %s", formatTime(session.getId()));
+        ln("Started a session attempt:");
+        ln("  id: %d", attempt.getId());
+        ln("  uuid: %s", attempt.getSessionUuid());
+        ln("  repository: %s", attempt.getRepository().getName());
+        ln("  workflow: %s", attempt.getWorkflowName());
+        ln("  session time: %s", formatTime(attempt.getSessionTime()));
+        ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
+        ln("  params: %s", attempt.getParams());
+        ln("  created at: %s", formatTime(attempt.getId()));
         ln("");
 
-        System.err.println("Use `digdag sessions` to show session status.");
+        System.err.println("Use `digdag sessions` to show status.");
     }
 }

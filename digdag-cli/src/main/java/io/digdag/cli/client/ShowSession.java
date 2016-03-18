@@ -6,7 +6,7 @@ import com.google.common.collect.Lists;
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionAttempt;
 import static io.digdag.cli.Main.systemExit;
 
 public class ShowSession
@@ -41,7 +41,7 @@ public class ShowSession
     {
         System.err.println("Usage: digdag sessions [repo-name] [+name]");
         System.err.println("  Options:");
-        System.err.println("    -i, --last-id ID                 shows more sessions from this id");
+        System.err.println("    -i, --last-id ID                 shows more session attempts from this id");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
@@ -50,20 +50,20 @@ public class ShowSession
         throws Exception
     {
         DigdagClient client = buildClient();
-        List<RestSession> sessions;
+        List<RestSessionAttempt> attempts;
 
         if (repoName == null) {
-            sessions = client.getSessions(withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(withRetry, Optional.fromNullable(lastId));
         }
         else if (workflowName == null) {
-            sessions = client.getSessions(repoName, withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(repoName, withRetry, Optional.fromNullable(lastId));
         }
         else {
-            sessions = client.getSessions(repoName, workflowName, withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(repoName, workflowName, withRetry, Optional.fromNullable(lastId));
         }
 
-        ln("Sessions:");
-        for (RestSession session : Lists.reverse(sessions)) {
+        ln("Session attempts:");
+        for (RestSessionAttempt session : Lists.reverse(attempts)) {
             String status;
             if (session.getSuccess()) {
                 status = "success";
@@ -87,11 +87,11 @@ public class ShowSession
             ln("");
         }
 
-        if (sessions.isEmpty()) {
+        if (attempts.isEmpty()) {
             System.err.println("Use `digdag start` to start a session.");
         }
         else if (withRetry == false) {
-            System.err.println("Use --with-retry option to show retried sessions.");
+            System.err.println("Use --with-retry option to show retried attempts.");
         }
     }
 }

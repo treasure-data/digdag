@@ -31,17 +31,17 @@ public class Kill
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag kill <session-id>");
+        System.err.println("Usage: digdag kill <attempt-id>");
         System.err.println("  Options:");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    private void kill(long sessionId)
+    private void kill(long attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();
-        client.killSession(sessionId);
-        ln("Kill requirested session " + sessionId);
+        client.killSessionAttempt(attemptId);
+        ln("Kill requirested session attempt " + attemptId);
     }
 }

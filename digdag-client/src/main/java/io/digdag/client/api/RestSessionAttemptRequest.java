@@ -9,9 +9,9 @@ import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRestSessionRequest.class)
-@JsonDeserialize(as = ImmutableRestSessionRequest.class)
-public abstract class RestSessionRequest
+@JsonSerialize(as = ImmutableRestSessionAttemptRequest.class)
+@JsonDeserialize(as = ImmutableRestSessionAttemptRequest.class)
+public abstract class RestSessionAttemptRequest
 {
     @JsonProperty("repository")
     public abstract String getRepositoryName();
@@ -35,8 +35,8 @@ public abstract class RestSessionRequest
     //@JsonProperty("from")
     //public abstract Optional<String> getFromTaskName();
 
-    public static ImmutableRestSessionRequest.Builder builder()
+    public static ImmutableRestSessionAttemptRequest.Builder builder()
     {
-        return ImmutableRestSessionRequest.builder();
+        return ImmutableRestSessionAttemptRequest.builder();
     }
 }

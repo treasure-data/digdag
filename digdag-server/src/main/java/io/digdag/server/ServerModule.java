@@ -18,7 +18,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.ConfigException;
 import io.digdag.server.rs.RepositoryResource;
 import io.digdag.server.rs.ScheduleResource;
-import io.digdag.server.rs.SessionResource;
+import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.TempFileManager;
 
@@ -43,7 +43,7 @@ public class ServerModule
         builder.addResources(
                 RepositoryResource.class,
                 ScheduleResource.class,
-                SessionResource.class,
+                AttemptResource.class,
                 LogResource.class
             );
     }

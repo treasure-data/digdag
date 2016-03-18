@@ -116,7 +116,7 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public List<RestSession> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
+    public List<RestSessionAttempt> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, Instant.ofEpochSecond(request.getFromTime()), request.getAttemptName(), request.getDryRun());
@@ -126,7 +126,7 @@ public class ScheduleResource
         return attempts.stream()
             .map(attempt -> {
                 try {
-                    return RestModels.session(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
                     // must not happen

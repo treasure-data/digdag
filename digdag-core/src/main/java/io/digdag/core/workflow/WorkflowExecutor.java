@@ -264,7 +264,7 @@ public class WorkflowExecutor
         return stored;
     }
 
-    public boolean killSessionById(int siteId, long attemptId)
+    public boolean killAttemptById(int siteId, long attemptId)
         throws ResourceNotFoundException
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId).getSessionAttemptById(attemptId);
