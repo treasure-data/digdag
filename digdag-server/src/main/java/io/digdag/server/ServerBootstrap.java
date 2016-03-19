@@ -92,13 +92,13 @@ public class ServerBootstrap
     {
         return bootstrap
             .setSystemConfig(serverConfig.getSystemConfig())
-            .addModules(new ServerModule())
+            .overrideModulesWith((binder) -> {
+                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+            })
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
-            .overrideModulesWith((binder) -> {
-                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
-            });
+            .addModules(new ServerModule());
     }
 
     public static void startServer(Properties props, Class<? extends ServerBootstrap> bootstrapClass)
