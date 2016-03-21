@@ -1,4 +1,4 @@
-package io.digdag.spi.log;
+package io.digdag.core.log;
 
 public interface LogDirectClient
 {
