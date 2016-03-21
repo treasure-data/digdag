@@ -303,7 +303,7 @@ public class DatabaseRepositoryStoreManager
          * Create a revision.
          *
          * This method doesn't check site id because RepositoryControl
-         * interface is avaiable only if site is is valid.
+         * interface is available only if site is is valid.
          */
         @Override
         public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def)
@@ -564,7 +564,7 @@ public class DatabaseRepositoryStoreManager
                 " (revision_id, name, config_id)" +
                 " values (:revId, :name, :configId)")
         @GetGeneratedKeys
-        int insertWorkflowDefinition(@Bind("revId") int revId, @Bind("name") String name, @Bind("configId") int configId);
+        long insertWorkflowDefinition(@Bind("revId") int revId, @Bind("name") String name, @Bind("configId") int configId);
 
         @SqlQuery("select wd.name, schedules.id from schedules" +
                 " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
