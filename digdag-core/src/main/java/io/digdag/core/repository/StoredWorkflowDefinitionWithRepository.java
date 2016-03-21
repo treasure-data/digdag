@@ -17,4 +17,15 @@ public abstract class StoredWorkflowDefinitionWithRepository
     public abstract Config getRevisionDefaultParams();
 
     public abstract String getRevisionName();
+
+    public static StoredWorkflowDefinitionWithRepository of(
+            StoredWorkflowDefinition def, StoredRepository repo, Revision rev)
+    {
+        return ImmutableStoredWorkflowDefinitionWithRepository.builder()
+            .from(def)
+            .repository(repo)
+            .revisionDefaultParams(rev.getDefaultParams().deepCopy())
+            .revisionName(rev.getName())
+            .build();
+    }
 }

@@ -171,6 +171,12 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
+        public List<StoredRevision> getLatestRevisions(int pageSize, Optional<Integer> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getLatestRevisions(siteId, pageSize, lastId.or(0)));
+        }
+
+        @Override
         public StoredRevision getRevisionById(int revId)
                 throws ResourceNotFoundException
         {
@@ -210,19 +216,15 @@ public class DatabaseRepositoryStoreManager
         public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
             throws ResourceNotFoundException
         {
-            return autoCommit((handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, name));
+            return requiredResource(
+                    (handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, name),
+                    "workflow name=%s in the latest revision of repository id=%d", name, repoId);
         }
 
         @Override
-        public List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId)
+        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getLatestWorkflowDefinitions(siteId, pageSize, lastId.or(0)));
-        }
-
-        @Override
-        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
-        {
-            return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0L)));
         }
 
         @Override
@@ -279,12 +281,6 @@ public class DatabaseRepositoryStoreManager
             catch (ResourceNotFoundException ex) {
                 throw new IllegalStateException("Database state error", ex);
             }
-        }
-
-        @Override
-        public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId)
-        {
-            return dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0));
         }
 
         @Override
@@ -434,8 +430,8 @@ public class DatabaseRepositoryStoreManager
 
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories on repositories.id = rev.repository_id" +
-                " where rev.site_id = :siteId" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where site_id = :siteId" +
                 " and rev.repository_id = :repoId" +
                 " and rev.id > :lastId" +
                 " order by rev.id asc" +
@@ -443,13 +439,25 @@ public class DatabaseRepositoryStoreManager
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories on repositories.id = rev.repository_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where site_id = :siteId" +
+                " and rev.id = (" +
+                    "select max(id) from revisions" +
+                    " where repository_id = repo.id" +
+                ")" +
+                " and rev.id > :lastId" +
+                " order by rev.id asc" +
+                " limit :limit")
+        List<StoredRevision> getLatestRevisions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and rev.id = :id")
         StoredRevision getRevisionById(@Bind("siteId") int siteId, @Bind("id") int id);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories on repositories.id = rev.repository_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and rev.repository_id = :repoId" +
                 " and rev.name = :name" +
@@ -457,10 +465,10 @@ public class DatabaseRepositoryStoreManager
         StoredRevision getRevisionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories on repositories.id = rev.repository_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and rev.repository_id = :repoId" +
-                " order by rev.id asc" +
+                " order by rev.id desc" +
                 " limit 1")
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
 
@@ -483,21 +491,6 @@ public class DatabaseRepositoryStoreManager
                 " and repo.site_id = :siteId" +
                 " limit 1")
         StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
-
-        @SqlQuery("select wd.*, wc.config," +
-                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
-                " rev.name as rev_name, rev.default_params as rev_default_params" +
-                " from workflow_definitions wd" +
-                " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " join workflow_configs wc on wc.id = wd.config_id" +
-                " where wd.revision_id = (" +
-                    "select max(id) from revisions" +
-                    " where repository_id = :repoId" +
-                ")" +
-                " and repo.site_id = :siteId" +
-                " order by wd.id desc")
-        List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select wd.*, wc.config," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
@@ -553,7 +546,7 @@ public class DatabaseRepositoryStoreManager
                 " and repo.site_id = :siteId" +
                 " order by wd.id asc" +
                 " limit :limit")
-        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlUpdate("insert into revision_archives" +
                 " (id, archive_data)" +
@@ -679,7 +672,7 @@ public class DatabaseRepositoryStoreManager
                             .siteId(r.getInt("site_id"))
                             .createdAt(getTimestampInstant(r, "repo_created_at"))
                             .build())
-                .revisionName("rev_name")
+                .revisionName(r.getString("rev_name"))
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))
                 .build();
         }

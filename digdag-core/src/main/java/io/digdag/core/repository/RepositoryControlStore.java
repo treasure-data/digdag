@@ -9,8 +9,6 @@ public interface RepositoryControlStore
     StoredRevision insertRevision(int repoId, Revision revision)
         throws ResourceConflictException;
 
-    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
-
     void insertRevisionArchiveData(int revId, byte[] data)
             throws ResourceConflictException;
 

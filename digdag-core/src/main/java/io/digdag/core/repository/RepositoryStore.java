@@ -25,6 +25,8 @@ public interface RepositoryStore
 
     List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
 
+    List<StoredRevision> getLatestRevisions(int pageSize, Optional<Integer> lastId);
+
     StoredRevision getRevisionById(int revId)
         throws ResourceNotFoundException;
 
@@ -38,15 +40,13 @@ public interface RepositoryStore
             throws ResourceNotFoundException;
 
 
-    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Integer> lastId);
+    List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId);
 
     StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
     StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
-
-    List<StoredWorkflowDefinitionWithRepository> getLatestWorkflowDefinitions(int pageSize, Optional<Integer> lastId);
 
     StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
         throws ResourceNotFoundException;
