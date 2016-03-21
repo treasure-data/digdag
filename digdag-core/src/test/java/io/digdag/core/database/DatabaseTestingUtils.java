@@ -1,15 +1,19 @@
 package io.digdag.core.database;
 
 import java.util.Arrays;
+import java.util.Collection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.repository.*;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 public class DatabaseTestingUtils
 {
@@ -88,5 +92,66 @@ public class DatabaseTestingUtils
     public static Config createConfig()
     {
         return createConfigFactory().create();
+    }
+
+    public static Revision createRevision(String name)
+    {
+        return ImmutableRevision.builder()
+            .name(name)
+            .defaultParams(createConfig())
+            .archiveType("none")
+            .build();
+    }
+
+    public static WorkflowDefinition createWorkflow(String name)
+    {
+        return WorkflowDefinition.of(
+                name,
+                createConfig().set("uniq", System.nanoTime()));
+    }
+
+    public interface MayConflict
+    {
+        void run() throws ResourceConflictException;
+    }
+
+    public interface MayNotFound
+    {
+        void run() throws ResourceNotFoundException;
+    }
+
+    public static void assertNotFound(MayNotFound r)
+    {
+        try {
+            r.run();
+            fail();
+        }
+        catch (ResourceNotFoundException ex) {
+        }
+    }
+
+    public static void assertConflict(MayConflict r)
+    {
+        try {
+            r.run();
+            fail();
+        }
+        catch (ResourceConflictException ex) {
+        }
+    }
+
+    public static void assertNotConflict(MayConflict r)
+    {
+        try {
+            r.run();
+        }
+        catch (ResourceConflictException ex) {
+            fail();
+        }
+    }
+
+    public static void assertEmpty(Collection<?> r)
+    {
+        assertTrue(r.isEmpty());
     }
 }

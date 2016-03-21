@@ -335,14 +335,7 @@ public class DatabaseRepositoryStoreManager
         public void updateSchedules(int repoId, List<Schedule> schedules)
             throws ResourceConflictException
         {
-            if (schedules.isEmpty()) {
-                return;
-            }
-
             Map<String, Long> oldNames = idNameListToHashMap(dao.getScheduleNames(repoId));
-            if (oldNames == null) {
-                oldNames = ImmutableMap.of();
-            }
 
             for (Schedule schedule : schedules) {
                 if (oldNames.containsKey(schedule.getWorkflowName())) {
@@ -383,7 +376,8 @@ public class DatabaseRepositoryStoreManager
                 handle.createStatement(
                         "delete from schedules" +
                         " where id in (" +
-                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")");
+                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")")
+                    .execute();
             }
         }
     }
@@ -705,9 +699,6 @@ public class DatabaseRepositoryStoreManager
 
     private HashMap<String, Long> idNameListToHashMap(List<IdName> list)
     {
-        if (list == null) {
-            return null;
-        }
         HashMap<String, Long> map = new HashMap<>();
         for (IdName idName : list) {
             map.put(idName.getName(), idName.getId());

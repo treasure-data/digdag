@@ -29,6 +29,11 @@ public class DatabaseFactory
         return new DatabaseRepositoryStoreManager(dbi, createConfigMapper(), config);
     }
 
+    public DatabaseScheduleStoreManager getScheduleStoreManager()
+    {
+        return new DatabaseScheduleStoreManager(dbi, createConfigMapper(), config);
+    }
+
     public void close()
     {
         try {
