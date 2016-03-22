@@ -26,18 +26,12 @@ public abstract class AttemptRequest
     {
         public abstract long getWorkflowDefinitionId();
 
-        public abstract int getRevisionId();
-
-        public abstract String getRevisionName();
-
         public abstract int getRepositoryId();
 
         public static Stored of(StoredRevision rev, StoredWorkflowDefinition def)
         {
             return ImmutableStored.builder()
                 .workflowDefinitionId(def.getId())
-                .revisionId(rev.getId())
-                .revisionName(rev.getName())
                 .repositoryId(rev.getRepositoryId())
                 .build();
         }
@@ -46,8 +40,6 @@ public abstract class AttemptRequest
         {
             return ImmutableStored.builder()
                 .workflowDefinitionId(def.getId())
-                .revisionId(def.getRevisionId())
-                .revisionName(def.getRevisionName())
                 .repositoryId(def.getRepository().getId())
                 .build();
         }

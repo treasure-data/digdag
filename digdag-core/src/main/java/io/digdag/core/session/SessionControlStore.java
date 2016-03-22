@@ -9,7 +9,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 public interface SessionControlStore
 {
     StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
-        throws ResourceConflictException;
+        throws ResourceConflictException, ResourceNotFoundException;
 
     StoredSessionAttempt getLastAttempt(long sessionId)
         throws ResourceNotFoundException;

@@ -4,7 +4,7 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 
 public class SessionAttemptConflictException
-    extends Exception
+    extends ResourceConflictException
 {
     private StoredSessionAttemptWithSession conflictedSession;
 

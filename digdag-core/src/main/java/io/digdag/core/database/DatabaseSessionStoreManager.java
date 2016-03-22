@@ -741,9 +741,9 @@ public class DatabaseSessionStoreManager
 
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
-            throws ResourceConflictException
+            throws ResourceConflictException, ResourceNotFoundException
         {
-            return transaction((handle, dao, ts) -> {
+            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao, ts) -> {
                 long sesId;
 
                 switch (databaseType) {
@@ -755,9 +755,11 @@ public class DatabaseSessionStoreManager
                     if (!ts.isRetried()) {
                         // first try
                         try {
-                            sesId = catchConflict(() ->
-                                    dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
-                                    "session instant=%s in repository_id=%d and workflow_name=%s", session.getSessionTime(), session.getRepositoryId(), session.getWorkflowName());
+                            sesId = catchForeignKeyNotFound(()->
+                                    catchConflict(() ->
+                                        dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
+                                        "session instant=%s in repository_id=%d and workflow_name=%s", session.getSessionTime(), session.getRepositoryId(), session.getWorkflowName()),
+                                    "repository id=%d", session.getRepositoryId());
                         }
                         catch (ResourceConflictException ex) {
                             ts.retry(ex);
@@ -779,7 +781,7 @@ public class DatabaseSessionStoreManager
                 }
 
                 return func.call(new DatabaseSessionControlStore(handle, siteId), storedSession);
-            }, ResourceConflictException.class);
+            }, ResourceConflictException.class, ResourceNotFoundException.class);
         }
 
         @Override
@@ -918,13 +920,15 @@ public class DatabaseSessionStoreManager
 
         @Override
         public StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
-            throws ResourceConflictException
+            throws ResourceConflictException, ResourceNotFoundException
         {
-            long attemptId = catchConflict(() ->
-                dao.insertAttempt(siteId, repoId, sessionId,
-                        attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
-                        SessionStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()),
-                "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId);
+            long attemptId = catchForeignKeyNotFound(() ->
+                    catchConflict(() ->
+                        dao.insertAttempt(siteId, repoId, sessionId,
+                                attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
+                                SessionStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()),
+                        "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId),
+                    "workflow definition id=%d", attempt.getWorkflowDefinitionId().orNull());
             dao.updateLastAttemptId(sessionId, attemptId);
             try {
                 return requiredResource(
@@ -1057,7 +1061,7 @@ public class DatabaseSessionStoreManager
                 " and sa.site_id = :siteId")
         StoredSessionAttemptWithSession getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
-        @SqlQuery("select sa.* s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where s.repository_id = :repositoryId" +
@@ -1092,7 +1096,7 @@ public class DatabaseSessionStoreManager
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
-                " join sessions s on s.last_attempt_id = sa.id" +
+                " join sessions s on s.id = sa.session_id" +
                 " where sa.id = :attemptId limit 1")
         StoredSessionAttemptWithSession getAttemptWithSessionByIdInternal(@Bind("attemptId") long attemptId);
 

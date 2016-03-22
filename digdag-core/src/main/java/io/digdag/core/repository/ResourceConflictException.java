@@ -16,5 +16,9 @@ public class ResourceConflictException extends Exception
     {
         super(cause);
     }
-}
 
+    public ResourceConflictException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
+}

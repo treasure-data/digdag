@@ -19,7 +19,9 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.core.agent.RetryControl;
 import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 
 public class RequireOperatorFactory
@@ -98,15 +100,20 @@ public class RequireOperatorFactory
             Instant instant = config.get("session_time", Instant.class);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overwriteParams = config.getNestedOrGetEmpty("params");
-            SessionStateFlags flags = callback.startSession(
-                    request.getSiteId(),
-                    repositoryId,
-                    workflowName,
-                    instant,
-                    retryAttemptName,
-                    overwriteParams);
+            try {
+                SessionStateFlags flags = callback.startSession(
+                        request.getSiteId(),
+                        repositoryId,
+                        workflowName,
+                        instant,
+                        retryAttemptName,
+                        overwriteParams);
 
-            return flags.isDone();
+                return flags.isDone();
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new ConfigException(ex);
+            }
         }
     }
 }

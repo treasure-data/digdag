@@ -122,17 +122,12 @@ public class InProcessTaskCallbackApi
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
+        throws ResourceNotFoundException
     {
         RepositoryStore repoStore = rm.getRepositoryStore(siteId);
 
-        StoredWorkflowDefinitionWithRepository def;
-        try {
-            StoredRepository repo = repoStore.getRepositoryById(repositoryId);
-            def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
-        }
-        catch (ResourceNotFoundException ex) {
-            throw new RuntimeException(ex);
-        }
+        StoredRepository repo = repoStore.getRepositoryById(repositoryId);
+        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(

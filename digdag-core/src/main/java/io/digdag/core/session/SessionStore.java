@@ -31,9 +31,9 @@ public interface SessionStore
     interface SessionLockAction <T>
     {
         T call(SessionControlStore store, StoredSession storedSession)
-            throws ResourceConflictException;
+            throws ResourceConflictException, ResourceNotFoundException;
     }
 
     <T> T putAndLockSession(Session session, SessionLockAction<T> func)
-        throws ResourceConflictException;
+        throws ResourceConflictException, ResourceNotFoundException;
 }

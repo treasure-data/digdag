@@ -160,7 +160,7 @@ public class WorkflowExecutor
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
             WorkflowDefinition def)
-        throws SessionAttemptConflictException
+        throws ResourceNotFoundException, SessionAttemptConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
@@ -178,7 +178,7 @@ public class WorkflowExecutor
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
-        throws SessionAttemptConflictException
+        throws ResourceNotFoundException, SessionAttemptConflictException
     {
         for (WorkflowTask task : tasks) {
             logger.trace("  Step[{}]: {}", task.getIndex(), task.getName());
@@ -233,21 +233,16 @@ public class WorkflowExecutor
                 });
         }
         catch (ResourceConflictException sessionAlreadyExists) {
-            try {
-                StoredSessionAttemptWithSession conflicted;
-                if (ar.getRetryAttemptName().isPresent()) {
-                    conflicted = sm.getSessionStore(siteId)
-                        .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
-                }
-                else {
-                    conflicted = sm.getSessionStore(siteId)
-                        .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
-                }
-                throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
+            StoredSessionAttemptWithSession conflicted;
+            if (ar.getRetryAttemptName().isPresent()) {
+                conflicted = sm.getSessionStore(siteId)
+                    .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
             }
-            catch (ResourceNotFoundException shouldNotHappen) {
-                throw new IllegalStateException("Database state error", shouldNotHappen);
+            else {
+                conflicted = sm.getSessionStore(siteId)
+                    .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
             }
+            throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
 
         try {

@@ -5,6 +5,7 @@ import java.util.Collection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -71,6 +72,7 @@ public class DatabaseTestingUtils
             for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
                 handle.createStatement("TRUNCATE TABLE " + name).execute();
             }
+            handle.createStatement("SET REFERENTIAL_INTEGRITY TRUE").execute();
         }
     }
 
@@ -118,6 +120,23 @@ public class DatabaseTestingUtils
     public interface MayNotFound
     {
         void run() throws ResourceNotFoundException;
+    }
+
+    public interface Propagator
+    {
+        void run() throws Exception;
+    }
+
+    public static <X extends Throwable> void propagateOnly(Class<X> declaredType, Propagator r)
+        throws X
+    {
+        try {
+            r.run();
+        }
+        catch (Exception ex) {
+            Throwables.propagateIfInstanceOf((Throwable) ex, declaredType);
+            throw Throwables.propagate(ex);
+        }
     }
 
     public static void assertNotFound(MayNotFound r)

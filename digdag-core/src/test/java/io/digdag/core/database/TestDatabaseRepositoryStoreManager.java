@@ -9,6 +9,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
@@ -236,5 +237,29 @@ public class TestDatabaseRepositoryStoreManager
 
         assertEquals(wfDetails3, store.getLatestWorkflowDefinitionByName(repo2.getId(), wf3.getName()));
         assertNotFound(() -> store.getLatestWorkflowDefinitionByName(repo2.getId(), wf2.getName()));
+
+        // getRevisionArchiveData returns NotFound if insertRevisionArchiveData is not called
+        assertNotFound(() -> store.getRevisionArchiveData(rev1.getId()));
+    }
+
+    @Test
+    public void testRevisionArchiveData()
+        throws Exception
+    {
+        byte[] data = "archive data".getBytes(UTF_8);
+
+        StoredRevision rev = store.putAndLockRepository(
+                Repository.of("repo1"),
+                (store, stored) -> {
+                    RepositoryControl lock = new RepositoryControl(store, stored);
+
+                    StoredRevision storedRev = lock.insertRevision(createRevision("rev1"));
+                    lock.insertRevisionArchiveData(storedRev.getId(), data);
+
+                    return storedRev;
+                });
+
+        assertArrayEquals(data, store.getRevisionArchiveData(rev.getId()));
+        assertNotFound(() -> store.getRevisionArchiveData(rev.getId() + 10));
     }
 }

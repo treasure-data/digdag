@@ -49,6 +49,7 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -350,7 +351,7 @@ public class Run
     private StoredSessionAttemptWithSession submitWorkflow(Injector injector,
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
             ArchiveMetadata archive, Config overwriteParams, TaskMatchPattern taskMatchPattern)
-        throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, SessionAttemptConflictException
+        throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, SessionAttemptConflictException
     {
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final WorkflowExecutor executor = injector.getInstance(WorkflowExecutor.class);

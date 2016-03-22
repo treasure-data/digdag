@@ -84,4 +84,26 @@ public class TaskConfig
         getErrorConfig();
         return this;
     }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        if (!(other instanceof TaskConfig)) {
+            return false;
+        }
+        TaskConfig o = (TaskConfig) other;
+        return getNonValidated().equals(o.getNonValidated());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return getNonValidated().hashCode();
+    }
+
+    @Override
+    public String toString()
+    {
+        return getNonValidated().toString();
+    }
 }

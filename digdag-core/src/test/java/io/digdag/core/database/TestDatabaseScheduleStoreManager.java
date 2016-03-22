@@ -17,7 +17,6 @@ public class TestDatabaseScheduleStoreManager
 {
     private DatabaseFactory factory;
     private RepositoryStoreManager manager;
-    private SchedulerManager sm;
     private RepositoryStore store;
 
     private ScheduleStoreManager schedManager;
@@ -28,7 +27,6 @@ public class TestDatabaseScheduleStoreManager
     {
         factory = setupDatabase();
         manager = factory.getRepositoryStoreManager();
-        sm = new SchedulerManager(ImmutableSet.of());
         store = manager.getRepositoryStore(0);
         schedManager = factory.getScheduleStoreManager();
         schedStore = schedManager.getScheduleStore(0);
@@ -38,12 +36,6 @@ public class TestDatabaseScheduleStoreManager
     public void destroy()
     {
         factory.close();
-    }
-
-    @Test
-    public void testConflicts()
-        throws Exception
-    {
     }
 
     @Test

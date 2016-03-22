@@ -22,7 +22,7 @@ public abstract class StoredSessionAttemptWithSession
 
     public static StoredSessionAttemptWithSession of(int siteId, StoredSession session, StoredSessionAttempt attempt)
     {
-        return of(siteId, session.getUuid(), session, attempt);
+        return of(siteId, session.getUuid(), ImmutableSession.builder().from(session).build(), attempt);
     }
 
     public static StoredSessionAttemptWithSession of(int siteId, UUID sessionUuid, Session session, StoredSessionAttempt attempt)

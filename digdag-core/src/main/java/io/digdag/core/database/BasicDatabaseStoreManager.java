@@ -72,10 +72,39 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
+    public <T> T catchForeignKeyNotFound(NewResourceAction<T> function,
+            String messageFormat, Object... messageParameters)
+            throws ResourceNotFoundException, ResourceConflictException
+    {
+        try {
+            return function.call();
+        }
+        catch (UnableToExecuteStatementException ex) {
+            if (ex.getCause() instanceof SQLException) {
+                SQLException sqlEx = (SQLException) ex.getCause();
+                if (isForeignKeyException(sqlEx)) {
+                    throw new ResourceNotFoundException("Resource not found: " + String.format(messageFormat, messageParameters));
+                }
+            }
+            throw ex;
+        }
+    }
+
     public boolean isConflictException(SQLException ex)
     {
         // h2 and postgresql
         return "23505".equals(ex.getSQLState());
+    }
+
+    public boolean isForeignKeyException(SQLException ex)
+    {
+        switch (databaseType) {
+        case "h2":
+            return "23506".equals(ex.getSQLState());
+        default:
+            // TODO postgresql is not checked
+            return "23503".equals(ex.getSQLState());
+        }
     }
 
     public interface AutoCommitAction <T, D> {
