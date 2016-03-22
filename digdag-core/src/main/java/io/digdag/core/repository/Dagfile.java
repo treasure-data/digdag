@@ -24,6 +24,14 @@ public abstract class Dagfile
 
     public abstract Config getDefaultParams();  // the other keys
 
+    public ArchiveMetadata toArchiveMetadata(ZoneId defaultTimeZone)
+    {
+        return ArchiveMetadata.of(
+                getWorkflowList(),
+                getDefaultParams(),
+                getDefaultTimeZone().or(defaultTimeZone));
+    }
+
     @JsonCreator
     public static Dagfile fromConfig(Config config)
     {

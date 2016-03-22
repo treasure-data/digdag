@@ -127,10 +127,7 @@ public class Check
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
-        ArchiveMetadata meta = ArchiveMetadata.of(
-                dagfile.getWorkflowList(),
-                dagfile.getDefaultParams(),
-                dagfile.getDefaultTimeZone().or(ZoneId.systemDefault()));
+        ArchiveMetadata meta = dagfile.toArchiveMetadata(ZoneId.systemDefault());
 
         Revision rev = Revision.builderFromArchive("check", meta)
             .archiveType("null")

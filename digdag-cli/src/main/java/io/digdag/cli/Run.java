@@ -269,12 +269,7 @@ public class Run
         TaskMatchPattern taskMatchPattern = TaskMatchPattern.compile(taskNamePattern);
 
         // store workflow definition archive
-        ArchiveMetadata archive = ArchiveMetadata.of(
-                dagfile.getWorkflowList(),
-                dagfile.getDefaultParams(),
-                dagfile.getDefaultTimeZone().or(
-                    Optional.fromNullable(timeZoneName).transform(it -> ZoneId.of(it)).or(ZoneId.systemDefault()))
-                );
+        ArchiveMetadata archive = dagfile.toArchiveMetadata(Optional.fromNullable(timeZoneName).transform(it -> ZoneId.of(it)).or(ZoneId.systemDefault()));
         StoreWorkflowResult stored = localSite.storeLocalWorkflows(
                 "default",
                 Instant.now().toString(),  // TODO name

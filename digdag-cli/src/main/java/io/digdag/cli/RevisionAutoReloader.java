@@ -115,10 +115,7 @@ public class RevisionAutoReloader
             lastDagfile = readDagfile();
             localSite.storeLocalWorkflows(
                     makeRevisionName(),
-                    ArchiveMetadata.of(
-                        lastDagfile.getWorkflowList(),
-                        lastDagfile.getDefaultParams(),
-                        lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
+                    lastDagfile.toArchiveMetadata(defaultTimeZone),
                     Instant.now());
         }
 

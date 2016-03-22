@@ -153,10 +153,7 @@ public class Archive
             throw new ConfigException("timezone: parameter is required but not set at " + dagfilePath + ". Example is 'timezone: " + ZoneId.systemDefault() + "'.");
         }
 
-        ArchiveMetadata meta = ArchiveMetadata.of(
-                dagfile.getWorkflowList(),
-                dagfile.getDefaultParams(),
-                dagfile.getDefaultTimeZone().get());  // TODO validate before upload
+        ArchiveMetadata meta = dagfile.toArchiveMetadata(dagfile.getDefaultTimeZone().get());
 
         List<String> stdinLines;
         if (System.console() != null) {
