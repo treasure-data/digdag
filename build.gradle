@@ -61,16 +61,18 @@ subprojects {
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
 
+    findbugs {
+        effort = 'max'
+        reportLevel = 'high'
+        ignoreFailures = true
+        excludeFilter = file("${rootProject.projectDir}/config/findbugs-exclude.xml")
+    }
+
     tasks.withType(FindBugs) {
         reports {
             xml.enabled = false
             html.enabled = true
         }
-    }
-
-    findbugs {
-        ignoreFailures = true
-        excludeFilter = file("${rootProject.projectDir}/config/findbugs-exclude.xml")
     }
 
     jacocoTestReport {
