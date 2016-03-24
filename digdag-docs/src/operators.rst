@@ -107,13 +107,13 @@ This operator exports ``${i}`` variable for the subtasks. Its value begins from 
       loop>: 7
       _do:
         +step1:
-          sh>: echo ${new Date((session_unixtime + i * 60 * 60 * 24) * 1000).toLocaleDateString()} is $i days later than $session_date
+          sh>: echo ${new Date((session_unixtime + i * 60 * 60 * 24) * 1000).toLocaleDateString()} is ${i} days later than $session_date
         +step2:
           sh>: echo ${
                 new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleDateString()
                 + " "
                 + new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleTimeString()
-            } is $i hours later than $session_local_time
+            } is ${i} hours later than ${session_local_time}
 
 :command:`loop>: COUNT`
   Number of times to run the tasks.
