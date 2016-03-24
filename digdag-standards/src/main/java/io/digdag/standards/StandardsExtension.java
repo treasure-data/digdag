@@ -49,19 +49,19 @@ public class StandardsExtension
             binder.bind(CommandExecutor.class).to(DockerCommandExecutor.class).in(Scopes.SINGLETON);
             binder.bind(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
 
-            Multibinder<OperatorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
-            taskExecutorBinder.addBinding().to(PyOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(RbOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(ShOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(MailOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(ForEachOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(EmbulkOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(TdOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(TdRunOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(TdLoadOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(TdDdlOperatorFactory.class).in(Scopes.SINGLETON);
-            taskExecutorBinder.addBinding().to(TdTableExportOperatorFactory.class).in(Scopes.SINGLETON);
+            Multibinder<OperatorFactory> operatorFactoryBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
+            operatorFactoryBinder.addBinding().to(PyOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(RbOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(ShOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(MailOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(ForEachOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(EmbulkOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(TdOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(TdRunOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(TdLoadOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(TdDdlOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(TdTableExportOperatorFactory.class).in(Scopes.SINGLETON);
 
             Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
             schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);
