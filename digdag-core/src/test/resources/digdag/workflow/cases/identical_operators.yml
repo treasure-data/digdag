@@ -1,0 +1,5 @@
+run: +foo
+
++foo:
+  sh>: echo this should
+  sh>: echo fail

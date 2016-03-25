@@ -14,6 +14,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
+import io.digdag.client.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -56,8 +57,15 @@ public class YamlConfigLoader
     {
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
-        Yaml yaml = new Yaml(new SafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
+        Yaml yaml = new Yaml(new StrictSafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
+        Object raw;
+        try {
+            raw = yaml.load(content);
+        }
+        catch (ConfigException e) {
+            throw new ConfigException("Invalid workflow definition: " + e.getMessage());
+        }
+        ObjectNode object = normalizeValidateObjectNode(raw);
         return ConfigElement.of(object);
     }
 
