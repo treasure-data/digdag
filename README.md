@@ -50,7 +50,7 @@ First, you can use `digdag init` command to create a new project. Example:
 $ digdag init my-workflow
 ```
 
-This command creates my-workflow directory and puts a sample workflow definition file.
+This command creates my-workflow directory with a sample workflow definition file.
 
 ### Running a workflow
 
@@ -67,7 +67,7 @@ All keys starting with `+` are tasks. Tasks in a workflow run from the top to th
 
 ### Adding another workflow
 
-You can define multiple workflows in a `digdag.yml` file. For exaple,
+You can define multiple workflows in a `digdag.yml` file. For example,
 
 ```yaml
 run: +main
