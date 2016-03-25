@@ -2,6 +2,9 @@ package io.digdag.core.database;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Properties;
+import java.io.IOException;
+import java.io.StringReader;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
@@ -20,26 +23,66 @@ public class DatabaseTestingUtils
 {
     private DatabaseTestingUtils() { }
 
+    public static DatabaseConfig getEnvironmentDatabaseConfig()
+    {
+        String pg = System.getenv("DIGDAG_TEST_POSTGRESQL");
+        if (pg != null && !pg.isEmpty()) {
+            Properties props = new Properties();
+            try (StringReader reader = new StringReader(pg)) {
+                props.load(reader);
+            }
+            catch (IOException ex) {
+                throw Throwables.propagate(ex);
+            }
+
+            return DatabaseConfig.builder()
+                .type("postgresql")
+                .path(Optional.absent())
+                .remoteDatabaseConfig(
+                        RemoteDatabaseConfig.builder()
+                        .user(props.getProperty("user"))
+                        .password(props.getProperty("password", ""))
+                        .host(props.getProperty("host"))
+                        .port(Integer.parseInt(props.getProperty("port")))
+                        .database(props.getProperty("database"))
+                        .loginTimeout(10)
+                        .socketTimeout(60)
+                        .ssl(false)
+                        .build())
+                .options(ImmutableMap.of())
+                .expireLockInterval(10)
+                .autoMigrate(true)
+                .connectionTimeout(30)
+                .idleTimeout(600)
+                .validationTimeout(5)
+                .maximumPoolSize(10)
+                .build();
+        }
+        else {
+            return DatabaseConfig.builder()
+                .type("h2")
+                .path(Optional.absent())
+                .remoteDatabaseConfig(Optional.absent())
+                .options(ImmutableMap.of())
+                .expireLockInterval(10)
+                .autoMigrate(true)
+                .connectionTimeout(30)
+                .idleTimeout(600)
+                .validationTimeout(5)
+                .maximumPoolSize(10)
+                .build();
+        }
+    }
+
     public static DatabaseFactory setupDatabase()
     {
-        DatabaseConfig config = DatabaseConfig.builder()
-            .type("h2")
-            .path(Optional.absent())
-            .remoteDatabaseConfig(Optional.absent())
-            .options(ImmutableMap.of())
-            .expireLockInterval(10)
-            .autoMigrate(true)
-            .connectionTimeout(30)
-            .idleTimeout(600)
-            .validationTimeout(5)
-            .maximumPoolSize(10)
-            .build();
+        DatabaseConfig config = getEnvironmentDatabaseConfig();
         PooledDataSourceProvider dsp = new PooledDataSourceProvider(config);
 
         DBI dbi = new DBI(dsp.get());
         new DatabaseMigrator(dbi, config).migrate();
 
-        cleanDatabase(dbi);
+        cleanDatabase(config.getType(), dbi);
 
         return new DatabaseFactory(dbi, dsp, config);
     }
@@ -64,16 +107,25 @@ public class DatabaseTestingUtils
         "queued_task_locks",
     };
 
-    public static void cleanDatabase(IDBI dbi)
+    public static void cleanDatabase(String databaseType, IDBI dbi)
     {
         try (Handle handle = dbi.open()) {
-            // h2 database can't truncate tables with references if REFERENTIAL_INTEGRITY is true (default)
-            handle.createStatement("SET REFERENTIAL_INTEGRITY FALSE").execute();
-            for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
-                handle.createStatement("TRUNCATE TABLE " + name).execute();
-                //handle.createStatement("TRUNCATE " + name + " CASCADE").execute();
+            switch (databaseType) {
+            case "h2":
+                // h2 database can't truncate tables with references if REFERENTIAL_INTEGRITY is true (default)
+                handle.createStatement("SET REFERENTIAL_INTEGRITY FALSE").execute();
+                for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
+                    handle.createStatement("TRUNCATE TABLE " + name).execute();
+                }
+                handle.createStatement("SET REFERENTIAL_INTEGRITY TRUE").execute();
+                break;
+            default:
+                // postgresql needs "CASCADE" option to TRUNCATE
+                for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
+                    handle.createStatement("TRUNCATE " + name + " CASCADE").execute();
+                }
+                break;
             }
-            handle.createStatement("SET REFERENTIAL_INTEGRITY TRUE").execute();
         }
     }
 

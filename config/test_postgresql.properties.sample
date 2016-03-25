@@ -1,0 +1,5 @@
+host = localhost
+port = 5432
+user = pg
+password =
+database = digdag_test

@@ -179,3 +179,22 @@ $ curl -v -4 "http://localhost:9090/api/repositories"
 $ curl -v -4 "http://localhost:9090/api/sessions"
 ```
 
+# Development
+
+## Running test
+
+```
+$ ./gradlew check
+```
+
+Test coverage report is generated at `didgag-*/build/reports/jacoco/test/html/index.html`.
+Findbugs report is generated at `digdag-*/build/reports/findbugs/main.html`.
+
+## Testing with PostgreSQL
+
+Test uses in-memory H2 database by default. To use PostgreSQL, set following environment variables:
+
+```
+$ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
+```
+
