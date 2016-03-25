@@ -4,6 +4,7 @@ machine:
     version: oraclejdk8
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
+    GRADLE_OPTS: -Dorg.gradle.daemon=true
 
 dependencies:
   override:
@@ -20,7 +21,7 @@ test:
         user = ubuntu
         password =
         database = circle_test
-      " ./gradlew check --info --rerun-tasks
+      " ./gradlew cleanTest check --info
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
