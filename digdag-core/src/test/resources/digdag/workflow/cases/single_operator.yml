@@ -1,0 +1,4 @@
+run: +foo
+
++foo:
+  sh>: echo hello world
