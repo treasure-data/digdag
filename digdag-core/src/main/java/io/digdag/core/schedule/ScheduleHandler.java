@@ -48,10 +48,10 @@ public class ScheduleHandler
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                retryAttemptName,
                 def,
                 cf.create(),  // TODO add schedules.params and copy it here
-                time);
+                time,
+                retryAttemptName);
 
         return exec.submitWorkflow(def.getRepository().getSiteId(),
                 ar, def);

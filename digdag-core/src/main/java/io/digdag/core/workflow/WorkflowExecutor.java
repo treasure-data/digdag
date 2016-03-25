@@ -289,19 +289,39 @@ public class WorkflowExecutor
     public void run()
             throws InterruptedException
     {
-        runUntil(() -> true);
+        runWhile(() -> true);
     }
 
-    public void runUntilAny()
+    public StoredSessionAttemptWithSession runUntilDone(long attemptId)
+            throws ResourceNotFoundException, InterruptedException
+    {
+        try {
+            runWhile(() -> {
+                try {
+                    return !sm.getAttemptStateFlags(attemptId).isDone();
+                }
+                catch (ResourceNotFoundException ex) {
+                    throw Throwables.propagate(ex);
+                }
+            });
+        }
+        catch (RuntimeException ex) {
+            Throwables.propagateIfInstanceOf(ex.getCause(), ResourceNotFoundException.class);
+            throw ex;
+        }
+        return sm.getAttemptWithSessionById(attemptId);
+    }
+
+    public void runUntilAllDone()
             throws InterruptedException
     {
-        runUntil(() -> sm.isAnyNotDoneSessions());
+        runWhile(() -> sm.isAnyNotDoneAttempts());
     }
 
     private static final int INITIAL_INTERVAL = 100;
     private static final int MAX_INTERVAL = 5000;
 
-    private void runUntil(BooleanSupplier cond)
+    private void runWhile(BooleanSupplier cond)
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {

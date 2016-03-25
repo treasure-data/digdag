@@ -193,10 +193,10 @@ public class AttemptResource
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                request.getRetryAttemptName(),
                 def,
                 request.getParams(),
-                ScheduleTime.runNow(request.getSessionTime()));
+                ScheduleTime.runNow(request.getSessionTime()),
+                request.getRetryAttemptName());
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);

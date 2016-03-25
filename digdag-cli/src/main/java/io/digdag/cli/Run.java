@@ -270,11 +270,10 @@ public class Run
 
         // store workflow definition archive
         ArchiveMetadata archive = dagfile.toArchiveMetadata(Optional.fromNullable(timeZoneName).transform(it -> ZoneId.of(it)).or(ZoneId.systemDefault()));
-        StoreWorkflowResult stored = localSite.storeLocalWorkflows(
+        StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
-                Instant.now().toString(),  // TODO name
-                archive,
-                Optional.absent());  // Optional.absent to disable workflow scheduling
+                Instant.now().toString(),  // TODO revision name
+                archive);
 
         // submit workflow
         StoredSessionAttemptWithSession attempt = submitWorkflow(injector,
@@ -282,7 +281,7 @@ public class Run
                 archive, overwriteParams, taskMatchPattern);
 
         // wait until it's done
-        localSite.runUntilAny();
+        localSite.runUntilDone(attempt.getId());
 
         // show results
         ArrayList<ArchivedTask> failedTasks = new ArrayList<>();
@@ -466,11 +465,11 @@ public class Run
         };
 
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                Optional.absent(),
                 rev,
                 def,
                 overwriteParams,
-                ScheduleTime.runNow(sessionTime));
+                ScheduleTime.runNow(sessionTime),
+                Optional.absent());
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);
         logger.debug("Submitting {}", attempt);

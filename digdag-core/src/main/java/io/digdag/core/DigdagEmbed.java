@@ -201,6 +201,11 @@ public class DigdagEmbed
         return injector;
     }
 
+    public LocalSite getLocalSite()
+    {
+        return getInjector().getInstance(LocalSite.class);
+    }
+
     public void destroy() throws Exception
     {
         injector.destroy();

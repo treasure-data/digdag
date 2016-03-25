@@ -167,13 +167,13 @@ public class DatabaseRepositoryStoreManager
         @Override
         public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(Integer.MAX_VALUE)));
         }
 
         @Override
         public List<StoredRevision> getLatestRevisions(int pageSize, Optional<Integer> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getLatestRevisions(siteId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getLatestRevisions(siteId, pageSize, lastId.or(Integer.MAX_VALUE)));
         }
 
         @Override
@@ -427,8 +427,8 @@ public class DatabaseRepositoryStoreManager
                 " join repositories repo on repo.id = rev.repository_id" +
                 " where site_id = :siteId" +
                 " and rev.repository_id = :repoId" +
-                " and rev.id > :lastId" +
-                " order by rev.id asc" +
+                " and rev.id < :lastId" +
+                " order by rev.id desc" +
                 " limit :limit")
         List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
@@ -439,8 +439,8 @@ public class DatabaseRepositoryStoreManager
                     "select max(id) from revisions" +
                     " where repository_id = repo.id" +
                 ")" +
-                " and rev.id > :lastId" +
-                " order by rev.id asc" +
+                " and rev.id < :lastId" +
+                " order by rev.id desc" +
                 " limit :limit")
         List<StoredRevision> getLatestRevisions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 

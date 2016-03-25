@@ -35,15 +35,12 @@ public class YamlConfigLoader
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final ObjectMapper treeObjectMapper = new ObjectMapper();
-    private final ConfigFactory cf;
 
     // TODO set charset and timezone
 
     @Inject
-    public YamlConfigLoader(ConfigFactory cf)
-    {
-        this.cf = cf;
-    }
+    public YamlConfigLoader()
+    { }
 
     public ConfigElement loadFile(File file)
         throws IOException

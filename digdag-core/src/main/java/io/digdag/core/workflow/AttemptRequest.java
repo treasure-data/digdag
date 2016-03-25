@@ -45,6 +45,7 @@ public abstract class AttemptRequest
         }
     }
 
+    // TODO to support one-time non-stored workflows, this should be Optional<Stored>. See also Session.getRepositoryId.
     public abstract Stored getStored();
 
     public abstract String getWorkflowName();

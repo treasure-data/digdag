@@ -176,9 +176,9 @@ public class TestDatabaseRepositoryStoreManager
         assertEquals(ImmutableList.of(repo2), store.getRepositories(100, Optional.of(repo1.getId())));
         assertEmpty(anotherSite.getRepositories(100, Optional.absent()));
 
-        assertEquals(ImmutableList.of(rev2, rev3), store.getRevisions(repo2.getId(), 100, Optional.absent()));
-        assertEquals(ImmutableList.of(rev2), store.getRevisions(repo2.getId(), 1, Optional.absent()));
-        assertEquals(ImmutableList.of(rev3), store.getRevisions(repo2.getId(), 100, Optional.of(rev2.getId())));
+        assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(repo2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
+        assertEquals(ImmutableList.of(rev3), store.getRevisions(repo2.getId(), 1, Optional.absent()));
+        assertEquals(ImmutableList.of(rev2), store.getRevisions(repo2.getId(), 100, Optional.of(rev3.getId())));
         assertEmpty(anotherSite.getRevisions(repo2.getId(), 100, Optional.absent()));
 
         assertEquals(ImmutableList.of(wf3, wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
@@ -189,8 +189,8 @@ public class TestDatabaseRepositoryStoreManager
         ////
         // public complex listings
         //
-        assertEquals(ImmutableList.of(rev1, rev3), store.getLatestRevisions(100, Optional.absent()));
-        assertEquals(ImmutableList.of(rev3), store.getLatestRevisions(100, Optional.of(rev1.getId())));
+        assertEquals(ImmutableList.of(rev3, rev1), store.getLatestRevisions(100, Optional.absent()));  // revision is returned in reverse order
+        assertEquals(ImmutableList.of(rev1), store.getLatestRevisions(100, Optional.of(rev3.getId())));
         assertEmpty(anotherSite.getLatestRevisions(100, Optional.absent()));
 
         ////

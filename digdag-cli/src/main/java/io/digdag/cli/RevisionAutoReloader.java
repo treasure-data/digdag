@@ -114,6 +114,7 @@ public class RevisionAutoReloader
         {
             lastDagfile = readDagfile();
             localSite.storeLocalWorkflows(
+                    "default",
                     makeRevisionName(),
                     lastDagfile.toArchiveMetadata(defaultTimeZone),
                     Instant.now());
@@ -126,12 +127,14 @@ public class RevisionAutoReloader
                 if (!dagfile.equals(lastDagfile)) {
                     logger.info("Reloading {}", dagfilePath);
                     StoredRevision rev = localSite.storeLocalWorkflows(
+                            "default",
                             makeRevisionName(),
                             ArchiveMetadata.of(
                                 dagfile.getWorkflowList(),
                                 dagfile.getDefaultParams(),
                                 lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
-                            Instant.now());
+                            Instant.now())
+                        .getRevision();
                     lastDagfile = dagfile;
                     logger.info("Added new revision {}", rev.getName());
                 }

@@ -284,7 +284,7 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index revisions_on_repository_id_and_name on revisions (repository_id, name)");
-            handle.update("create index revisions_on_repository_id_and_id on revisions (repository_id, id)");
+            handle.update("create index revisions_on_repository_id_and_id on revisions (repository_id, id desc)");
 
             // revision_archives
             handle.update(
@@ -341,7 +341,6 @@ public class DatabaseMigrator
                     .build());
             handle.update("create unique index sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
             handle.update("create index sessions_on_repository_id on sessions (repository_id, id)");
-            handle.update("create index sessions_on_repository_id_and_workflow_name on sessions (repository_id, workflow_name, id)");
 
             // session_attempts
             handle.update(
@@ -358,9 +357,9 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
-            handle.update("create index session_attempts_on_site_id on session_attempts (site_id, id)");
-            handle.update("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id)");
-            handle.update("create index session_attempts_on_repository_id on session_attempts (repository_id, id)");
+            handle.update("create index session_attempts_on_site_id on session_attempts (site_id, id desc)");
+            handle.update("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id desc)");
+            handle.update("create index session_attempts_on_repository_id on session_attempts (repository_id, id desc)");
 
             // task_archives
             handle.update(

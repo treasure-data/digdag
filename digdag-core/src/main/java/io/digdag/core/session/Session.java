@@ -9,6 +9,7 @@ import io.digdag.core.repository.WorkflowDefinition;
 @JsonDeserialize(as = ImmutableSession.class)
 public abstract class Session
 {
+    // TODO to support one-time non-stored workflows, this should be Optional<Integer>. See also AttemptRequest.getStored.
     public abstract int getRepositoryId();
 
     public abstract String getWorkflowName();

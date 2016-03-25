@@ -84,11 +84,11 @@ public class TestDatabaseSessionStoreManager
         Instant sessionTime1 = Instant.ofEpochSecond(Instant.now().getEpochSecond() / 3600 * 3600);
 
         AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
-                Optional.absent(),
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime1));
+                ScheduleTime.runNow(sessionTime1),
+                Optional.absent());
 
         exec.submitWorkflow(0, ar1, wf1);
 
@@ -202,29 +202,29 @@ public class TestDatabaseSessionStoreManager
 
         // session
         AttemptRequest ar1 = attemptBuilder.buildFromStoredWorkflow(
-                Optional.absent(),
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime1));
+                ScheduleTime.runNow(sessionTime1),
+                Optional.absent());
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
 
         // session + different session time
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
-                Optional.absent(),
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime2));
+                ScheduleTime.runNow(sessionTime2),
+                Optional.absent());
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
 
         // session + different retry attempt name
         AttemptRequest ar3 = attemptBuilder.buildFromStoredWorkflow(
-                Optional.of("attempt3"),
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime2));
+                ScheduleTime.runNow(sessionTime2),
+                Optional.of("attempt3"));
         StoredSessionAttemptWithSession attempt3 = exec.submitWorkflow(0, ar3, def1);
 
         SessionStore anotherSite = manager.getSessionStore(1);

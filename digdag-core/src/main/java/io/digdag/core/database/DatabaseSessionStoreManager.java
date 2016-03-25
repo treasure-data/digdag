@@ -138,12 +138,30 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public boolean isAnyNotDoneSessions()
+    public SessionStateFlags getAttemptStateFlags(long attemptId)
+        throws ResourceNotFoundException
+    {
+        int stateFlags = requiredResource(
+                (handle, dao) ->
+                    handle.createQuery(
+                        "select state_flags from session_attempts sa" +
+                        " join sessions s on s.id = sa.session_id" +
+                        " where sa.id = :id"
+                        )
+                    .bind("id", attemptId)
+                    .mapTo(Integer.class)
+                    .first(),
+                "session attempt id=%d", attemptId);
+        return SessionStateFlags.of(stateFlags);
+    }
+
+    @Override
+    public boolean isAnyNotDoneAttempts()
     {
         return autoCommit((handle, dao) ->
                 handle.createQuery(
-                    "select count(*) from sessions s" +
-                    " join session_attempts sa on sa.id = s.last_attempt_id" +
+                    "select count(*) from session_attempts sa" +
+                    " join sessions s on s.id = sa.session_id" +
                     " where " + bitAnd("state_flags", Integer.toString(SessionStateFlags.DONE_CODE)) + " = 0"
                     )
                 .mapTo(long.class)

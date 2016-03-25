@@ -17,7 +17,7 @@ public class LocalSite
     private static Logger logger = LoggerFactory.getLogger(LocalSite.class);
 
     private final WorkflowCompiler compiler;
-    private final RepositoryStore repoStore;
+    private final RepositoryStore repositoryStore;
     private final SessionStore sessionStore;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
@@ -33,11 +33,21 @@ public class LocalSite
             SchedulerManager srm)
     {
         this.compiler = compiler;
-        this.repoStore = repoStoreManager.getRepositoryStore(0);
+        this.repositoryStore = repoStoreManager.getRepositoryStore(0);
         this.sessionStore = sessionStoreManager.getSessionStore(0);
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.srm = srm;
+    }
+
+    public AttemptBuilder getAttemptBuilder()
+    {
+        return attemptBuilder;
+    }
+
+    public RepositoryStore getRepositoryStore()
+    {
+        return repositoryStore;
     }
 
     public SessionStore getSessionStore()
@@ -79,7 +89,7 @@ public class LocalSite
             .stream()
             .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
 
-        return repoStore.putAndLockRepository(
+        return repositoryStore.putAndLockRepository(
                 Repository.of(repositoryName),
                 (store, storedRepo) -> {
                     RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
@@ -95,30 +105,43 @@ public class LocalSite
                 });
     }
 
-    public StoreWorkflowResult storeLocalWorkflows(
+    public StoreWorkflowResult storeLocalWorkflowsWithoutSchedule(
             String repositoryName,
             String revisionName,
-            ArchiveMetadata archive,
-            Optional<Instant> currentTimeToSchedule)
+            ArchiveMetadata archive)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
                 repositoryName,
                 Revision.builderFromArchive(revisionName, archive)
-                    .archiveType("null")
+                    .archiveType("none")
                     .build(),
                 archive.getWorkflowList(),
-                currentTimeToSchedule);
+                Optional.absent());
     }
 
-    public StoredRevision storeLocalWorkflows(
+    public StoreWorkflowResult storeLocalWorkflows(
+            String repositoryName,
             String revisionName,
             ArchiveMetadata archive,
-            Instant currentTime)
+            Instant currentTimeForSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
-        return storeLocalWorkflows("default", revisionName, archive, Optional.of(currentTime))
-            .getRevision();
+        return storeLocalWorkflowsImpl(
+                repositoryName,
+                Revision.builderFromArchive(revisionName, archive)
+                    .archiveType("none")
+                    .build(),
+                archive.getWorkflowList(),
+                Optional.of(currentTimeForSchedule));
+    }
+
+    public StoredSessionAttemptWithSession submitWorkflow(
+            AttemptRequest ar,
+            WorkflowDefinition def)
+        throws ResourceNotFoundException, SessionAttemptConflictException
+    {
+        return exec.submitWorkflow(0, ar, def);
     }
 
     public void run()
@@ -127,9 +150,21 @@ public class LocalSite
         exec.run();
     }
 
-    public void runUntilAny()
+    public StoredSessionAttemptWithSession runUntilDone(long attemptId)
+        throws ResourceNotFoundException, InterruptedException
+    {
+        return exec.runUntilDone(attemptId);
+    }
+
+    public void runUntilAllDone()
         throws InterruptedException
     {
-        exec.runUntilAny();
+        exec.runUntilAllDone();
+    }
+
+    public boolean killAttempt(long attemptId)
+        throws ResourceNotFoundException
+    {
+        return exec.killAttemptById(0, attemptId);
     }
 }

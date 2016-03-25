@@ -17,8 +17,12 @@ public interface SessionStoreManager
     StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
         throws ResourceNotFoundException;
 
+    // for WorkflowExecutor.runUntilDone
+    SessionStateFlags getAttemptStateFlags(long attemptId)
+        throws ResourceNotFoundException;
+
     // for WorkflowExecutor.runUntilAny
-    boolean isAnyNotDoneSessions();
+    boolean isAnyNotDoneAttempts();
 
     // for WorkflowExecutor.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);

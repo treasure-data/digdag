@@ -131,10 +131,10 @@ public class InProcessTaskCallbackApi
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
-                retryAttemptName,
                 def,
                 overwriteParams,
-                ScheduleTime.runNow(instant));
+                ScheduleTime.runNow(instant),
+                retryAttemptName);
 
         // TODO FIXME SessionMonitor monitors is not set
         try {
