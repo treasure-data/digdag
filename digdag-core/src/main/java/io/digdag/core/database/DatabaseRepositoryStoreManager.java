@@ -187,6 +187,12 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
+        public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(Integer.MAX_VALUE)));
+        }
+
+        @Override
         public byte[] getRevisionArchiveData(int revId)
                 throws ResourceNotFoundException
         {
@@ -426,6 +432,15 @@ public class DatabaseRepositoryStoreManager
                 " order by rev.id desc" +
                 " limit 1")
         StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
+
+        @SqlQuery("select rev.* from revisions rev" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " where site_id = :siteId" +
+                " and rev.repository_id = :repoId" +
+                " and rev.id < :lastId" +
+                " order by rev.id desc" +
+                " limit :limit")
+        List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select archive_data from revision_archives" +
                 " where id = :revId")

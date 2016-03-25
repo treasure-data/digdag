@@ -47,7 +47,7 @@ public class RepositoryResource
     // [*] GET  /api/repository?name=<name>?revision=name        # get a former revision of a repository
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
-    // [ ] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
+    // [*] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
     // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
     // [*] GET  /api/repositories/{id}/workflow?name=name        # get a workflow of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # get a workflow of ea past revision of a repository
@@ -141,6 +141,19 @@ public class RepositoryResource
     }
 
     @GET
+    @Path("/api/repositories/{id}/revisions")
+    public List<RestRevision> getRevisions(@PathParam("id") int repoId, @QueryParam("last_id") Integer lastId)
+        throws ResourceNotFoundException
+    {
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        StoredRepository repo = rs.getRepositoryById(repoId);
+        List<StoredRevision> revs = rs.getRevisions(repo.getId(), 100, Optional.fromNullable(lastId));
+        return revs.stream()
+            .map(rev -> RestModels.revision(repo, rev))
+            .collect(Collectors.toList());
+    }
+
+    @GET
     @Path("/api/repositories/{id}/workflow")
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
@@ -169,7 +182,7 @@ public class RepositoryResource
     public List<RestWorkflowDefinition> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
-        // TODO paging
+        // TODO paging?
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
 
@@ -180,7 +193,7 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), 100, Optional.absent());
+        List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
         Map<Long, Schedule> scheds = getWorkflowScheduleMap();
 

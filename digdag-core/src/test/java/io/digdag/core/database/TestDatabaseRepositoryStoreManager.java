@@ -176,6 +176,11 @@ public class TestDatabaseRepositoryStoreManager
         assertEquals(ImmutableList.of(repo2), store.getRepositories(100, Optional.of(repo1.getId())));
         assertEmpty(anotherSite.getRepositories(100, Optional.absent()));
 
+        assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(repo2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
+        assertEquals(ImmutableList.of(rev3), store.getRevisions(repo2.getId(), 1, Optional.absent()));
+        assertEquals(ImmutableList.of(rev2), store.getRevisions(repo2.getId(), 100, Optional.of(rev3.getId())));
+        assertEmpty(anotherSite.getRevisions(repo2.getId(), 100, Optional.absent()));
+
         assertEquals(ImmutableList.of(wf3, wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(wf3), store.getWorkflowDefinitions(rev3.getId(), 1, Optional.absent()));
         assertEquals(ImmutableList.of(wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.of(wf3.getId())));

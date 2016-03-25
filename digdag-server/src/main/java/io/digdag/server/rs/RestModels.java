@@ -3,6 +3,7 @@ package io.digdag.server.rs;
 import java.time.Instant;
 import com.google.common.base.Optional;
 import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
@@ -42,6 +43,16 @@ public final class RestModels
             .revision(rev.getName())
             .createdAt(repo.getCreatedAt())
             .updatedAt(rev.getCreatedAt())
+            .archiveType(rev.getArchiveType())
+            .archiveMd5(rev.getArchiveMd5())
+            .build();
+    }
+
+    public static RestRevision revision(StoredRepository repo, StoredRevision rev)
+    {
+        return RestRevision.builder()
+            .revision(rev.getName())
+            .createdAt(rev.getCreatedAt())
             .archiveType(rev.getArchiveType())
             .archiveMd5(rev.getArchiveMd5())
             .build();

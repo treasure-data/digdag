@@ -174,6 +174,14 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
+    public List<RestRevision> getRevisions(int repoId, Optional<Integer> lastId)
+    {
+        return doGet(new GenericType<List<RestRevision>>() { },
+                target("/api/repository/{id}/revisions")
+                .resolveTemplate("id", repoId)
+                .queryParam("last_id", lastId.orNull()));
+    }
+
     public List<RestWorkflowDefinition> getWorkflowDefinitions(int repoId)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },

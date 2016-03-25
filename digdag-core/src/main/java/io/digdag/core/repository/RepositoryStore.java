@@ -32,6 +32,8 @@ public interface RepositoryStore
     StoredRevision getLatestRevision(int repoId)
         throws ResourceNotFoundException;
 
+    List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
+
     byte[] getRevisionArchiveData(int revId)
             throws ResourceNotFoundException;
 
