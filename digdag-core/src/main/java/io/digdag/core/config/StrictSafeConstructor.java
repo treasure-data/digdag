@@ -15,10 +15,10 @@ import java.util.stream.Collectors;
 /**
  * A {@link SafeConstructor} that disallows duplicate keys.
  */
-public class StrictSafeConstructor
+class StrictSafeConstructor
         extends SafeConstructor
 {
-    public StrictSafeConstructor()
+    StrictSafeConstructor()
     {
         this.yamlConstructors.put(Tag.MAP, new StrictConstructYamlMap());
     }
