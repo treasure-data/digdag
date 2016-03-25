@@ -252,7 +252,7 @@ public class WorkflowExecutor
         catch (Exception ex) {
             // fakkback to the normal operation.
             // exception of the optimization shouldn't be propagated to
-            // the caller. asyncEnqueueTask will get the same error later.
+            // the caller. enqueueReadyTasks will get the same error later.
             noticeStatusPropagate();
         }
 
@@ -689,26 +689,26 @@ public class WorkflowExecutor
             //executor.shutdownNow();
         }
 
-        public synchronized Future<Void> asyncEnqueueTask(final long taskId)
-        {
-            if (waiting.containsKey(taskId)) {
-                return waiting.get(taskId);
-            }
-            Future<Void> future = executor.submit(() -> {
-                try {
-                    enqueueTask(dispatcher, taskId);
-                }
-                catch (Throwable t) {
-                    logger.error("Uncaught exception during enquing a task request. This enqueue attempt will be retried", t);
-                }
-                finally {
-                    waiting.remove(taskId);
-                }
-                return null;
-            });
-            waiting.put(taskId, future);
-            return future;
-        }
+        //public synchronized Future<Void> asyncEnqueueTask(final long taskId)
+        //{
+        //    if (waiting.containsKey(taskId)) {
+        //        return waiting.get(taskId);
+        //    }
+        //    Future<Void> future = executor.submit(() -> {
+        //        try {
+        //            enqueueTask(dispatcher, taskId);
+        //        }
+        //        catch (Throwable t) {
+        //            logger.error("Uncaught exception during enquing a task request. This enqueue attempt will be retried", t);
+        //        }
+        //        finally {
+        //            waiting.remove(taskId);
+        //        }
+        //        return null;
+        //    });
+        //    waiting.put(taskId, future);
+        //    return future;
+        //}
     }
 
     private void enqueueReadyTasks(TaskQueuer queuer)

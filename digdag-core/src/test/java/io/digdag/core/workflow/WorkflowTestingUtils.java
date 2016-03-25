@@ -1,5 +1,6 @@
 package io.digdag.core.workflow;
 
+import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.OperatorFactory;
@@ -18,7 +19,7 @@ public class WorkflowTestingUtils
                 // no scheduler
 
                 Multibinder<OperatorFactory> operatorFactoryBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
-                // no operators
+                operatorFactoryBinder.addBinding().to(NoopOperatorFactory.class).in(Scopes.SINGLETON);
             })
             .initializeCloseable();
     }

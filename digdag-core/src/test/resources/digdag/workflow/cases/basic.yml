@@ -1,2 +1,14 @@
 +basic:
-  +step1: { }
+  +step1:
+    _type: noop
+
+  +step2:
+    _export:
+      oval: o
+      pval: p
+
+    +step3:
+      _type: n${oval}${oval}${pval}
+      _check:
+        +step4:
+          _type: noop
