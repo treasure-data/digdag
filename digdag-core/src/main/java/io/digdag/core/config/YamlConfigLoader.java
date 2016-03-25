@@ -23,6 +23,7 @@ import io.digdag.client.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.representer.Representer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,7 +63,7 @@ public class YamlConfigLoader
         try {
             raw = yaml.load(content);
         }
-        catch (ConfigException e) {
+        catch (YAMLException e) {
             throw new ConfigException("Invalid workflow definition: " + e.getMessage());
         }
         ObjectNode object = normalizeValidateObjectNode(raw);

@@ -60,20 +60,4 @@ public class WorkflowCompilerTest
         exception.expect(ConfigException.class);
         compiler.compile("+foo", config);
     }
-
-    @Test
-    public void verifyIdenticalOperatorsFail()
-    {
-        // TODO (dano): this is not testing WorkflowCompiler
-        exception.expect(ConfigException.class);
-        loadYamlResource("/digdag/workflow/cases/identical_operators.yml");
-    }
-
-    @Test
-    public void verifyIdenticalKeysFail()
-    {
-        // TODO (dano): this is not testing WorkflowCompiler
-        exception.expect(ConfigException.class);
-        loadYamlResource("/digdag/workflow/cases/identical_keys.yml");
-    }
 }

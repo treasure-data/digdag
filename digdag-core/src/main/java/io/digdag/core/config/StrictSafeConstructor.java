@@ -3,6 +3,8 @@ package io.digdag.core.config;
 import io.digdag.client.config.ConfigException;
 import org.yaml.snakeyaml.constructor.BaseConstructor;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.MarkedYAMLException;
+import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
@@ -52,7 +54,7 @@ class StrictSafeConstructor
                     .map(n -> ((ScalarNode)n).getValue())
                     .collect(Collectors.toList());
             if (keys.stream().distinct().count() != keys.stream().count()) {
-                throw new ConfigException("duplicate keys in workflow definition");
+                throw new DuplicateKeyYAMLException();
             }
         }
     }

@@ -1,6 +1,0 @@
-run: +foo
-
-+foo:
-  foo: identical
-  foo: keys
-  sh>: echo must fail
