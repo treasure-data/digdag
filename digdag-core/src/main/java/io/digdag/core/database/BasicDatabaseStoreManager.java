@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
+import org.skife.jdbi.v2.exceptions.TransactionFailedException;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -187,7 +189,7 @@ public abstract class BasicDatabaseStoreManager <D>
         TransactionState ts = new TransactionState();
         while (true) {
             try (Handle handle = dbi.open()) {
-                T retval = handle.inTransaction((h, session) -> action.call(h, h.attach(daoIface), ts));
+                T retval = handle.inTransaction((h, status) -> action.call(h, h.attach(daoIface), ts));
                 if (ts.retryNext) {
                     ts.retryNext = false;
                     ts.retryCount += 1;
@@ -205,27 +207,33 @@ public abstract class BasicDatabaseStoreManager <D>
         TransactionState ts = new TransactionState();
         while (true) {
             try (Handle handle = dbi.open()) {
-                T retval = handle.inTransaction((h, session) -> {
-                    try {
-                        return action.call(h, h.attach(daoIface), ts);
-                    }
-                    catch (Exception ex) {
-                        if (exClass.isAssignableFrom(ex.getClass())) {
-                            throw new InnerException(ex);
-                        }
-                        throw ex;
-                    }
-                });
-                if (ts.retryNext) {
-                    ts.retryNext = false;
-                    ts.retryCount += 1;
+                T retval;
+                // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
+                handle.begin();
+                try {
+                    retval = action.call(handle, handle.attach(daoIface), ts);
                 }
-                else {
+                catch (Exception ex) {
+                    try {
+                        handle.rollback();
+                    }
+                    catch (Exception rollback) {
+                        ex.addSuppressed(rollback);
+                    }
+                    Throwables.propagateIfInstanceOf(ex, exClass);
+                    Throwables.propagateIfPossible(ex);
+                    throw new TransactionFailedException(
+                            "Transaction failed do to exception being thrown " +
+                            "from within the callback. See cause " +
+                            "for the original exception.", ex);
+                }
+                if (!ts.retryNext) {
+                    validateTransactionAndCommit(handle);
                     return retval;
                 }
-            }
-            catch (InnerException ex) {
-                throw (E) ex.getCause();
+                handle.rollback();
+                ts.retryNext = false;
+                ts.retryCount += 1;
             }
         }
     }
@@ -236,36 +244,62 @@ public abstract class BasicDatabaseStoreManager <D>
         TransactionState ts = new TransactionState();
         while (true) {
             try (Handle handle = dbi.open()) {
-                T retval = handle.inTransaction((h, session) -> {
-                    try {
-                        return action.call(h, h.attach(daoIface), ts);
-                    }
-                    catch (Exception ex) {
-                        if (exClass1.isAssignableFrom(ex.getClass())) {
-                            throw new InnerException(ex, 1);
-                        }
-                        if (exClass2.isAssignableFrom(ex.getClass())) {
-                            throw new InnerException(ex, 2);
-                        }
-                        throw ex;
-                    }
-                });
-                if (ts.retryNext) {
-                    ts.retryNext = false;
-                    ts.retryCount += 1;
+                T retval;
+                // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
+                handle.begin();
+                try {
+                    retval = action.call(handle, handle.attach(daoIface), ts);
                 }
-                else {
+                catch (Exception ex) {
+                    try {
+                        handle.rollback();
+                    }
+                    catch (Exception rollback) {
+                        ex.addSuppressed(rollback);
+                    }
+                    Throwables.propagateIfInstanceOf(ex, exClass1);
+                    Throwables.propagateIfInstanceOf(ex, exClass2);
+                    Throwables.propagateIfPossible(ex);
+                    throw new TransactionFailedException(
+                            "Transaction failed do to exception being thrown " +
+                            "from within the callback. See cause " +
+                            "for the original exception.", ex);
+                }
+                if (!ts.retryNext) {
+                    validateTransactionAndCommit(handle);
                     return retval;
                 }
+                ts.retryNext = false;
+                ts.retryCount += 1;
             }
-            catch (InnerException ex) {
-                if (ex.getIndex() == 1) {
-                    throw (E1) ex.getCause();
-                }
-                else {
-                    throw (E2) ex.getCause();
-                }
-            }
+        }
+    }
+
+    private void validateTransactionAndCommit(Handle handle)
+        throws TransactionFailedException
+    {
+        // Validate connection before COMMIT. This is necessary because PostgreSQL actually runs
+        // ROLLBACK silently when COMMIT is issued if a statement failed during the transaction.
+        // It means that BasicDatabaseStoreManager.transaction method doesn't throw exceptions
+        // but the actual transaction is rolled back. Here checks state of the transaction by
+        // calling org.postgresql.jdbc.PgConnection.isValid method.
+        //
+        // Here assumes that HikariDB doesn't overwrite isValid.
+        boolean isValid;
+        try {
+            isValid = handle.getConnection().isValid(30);
+        }
+        catch (SQLException ex) {
+            throw new UnableToExecuteStatementException("Can't validate a transaction before commit", ex);
+        }
+        if (!isValid) {
+            throw new TransactionFailedException(
+                    "Trying to commit a transaction that is already aborted. "  +
+                    "Because current transaction is aborted, commands including " +
+                    "commit are ignored until end of transaction block.");
+        }
+        else {
+            handle.commit();
         }
     }
 
@@ -291,7 +325,7 @@ public abstract class BasicDatabaseStoreManager <D>
     public <T, E1 extends Exception, E2 extends Exception> T autoCommit(AutoCommitActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
     {
         try (Handle handle = dbi.open()) {
-            T retval = handle.inTransaction((h, session) -> {
+            T retval = handle.inTransaction((h, status) -> {
                 try {
                     return action.call(h, h.attach(daoIface));
                 }

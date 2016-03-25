@@ -39,6 +39,10 @@ public class PooledDataSourceProvider
             hikari.setValidationTimeout(config.getValidationTimeout() * 1000);
             hikari.setMaximumPoolSize(config.getMaximumPoolSize());
 
+            // Here should not set connectionTestQuery (that overwrites isValid) because
+            // BasicDatabaseStoreManager.validateTransactionAndCommit assumes that
+            // Connection.isValid returns false when an error happened during a transaction.
+
             logger.debug("Using database URL {}", hikari.getJdbcUrl());
 
             ds = new HikariDataSource(hikari);

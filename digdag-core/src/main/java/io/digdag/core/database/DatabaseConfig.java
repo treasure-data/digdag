@@ -113,6 +113,9 @@ public interface DatabaseConfig
         switch (config.getType()) {
         case "h2":
             // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
+            if (config.getRemoteDatabaseConfig().isPresent()) {
+                throw new IllegalArgumentException("Database type is postgresql but remoteDatabaseConfig is not set unexpectedly");
+            }
             if (config.getPath().isPresent()) {
                 Path dir = FileSystems.getDefault().getPath(config.getPath().get());
                 try {
@@ -133,6 +136,9 @@ public interface DatabaseConfig
 
         case "postgresql":
             {
+                if (!config.getRemoteDatabaseConfig().isPresent()) {
+                    throw new IllegalArgumentException("Database type is postgresql but remoteDatabaseConfig is not set unexpectedly");
+                }
                 RemoteDatabaseConfig remote = config.getRemoteDatabaseConfig().get();
                 if (remote.getPort().isPresent()) {
                     return String.format(Locale.ENGLISH,

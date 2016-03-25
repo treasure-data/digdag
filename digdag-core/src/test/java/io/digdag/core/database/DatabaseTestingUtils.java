@@ -71,6 +71,7 @@ public class DatabaseTestingUtils
             handle.createStatement("SET REFERENTIAL_INTEGRITY FALSE").execute();
             for (String name : Lists.reverse(Arrays.asList(ALL_TABLES))) {
                 handle.createStatement("TRUNCATE TABLE " + name).execute();
+                //handle.createStatement("TRUNCATE " + name + " CASCADE").execute();
             }
             handle.createStatement("SET REFERENTIAL_INTEGRITY TRUE").execute();
         }

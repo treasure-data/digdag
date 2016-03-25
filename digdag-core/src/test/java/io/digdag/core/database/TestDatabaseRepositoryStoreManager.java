@@ -45,35 +45,46 @@ public class TestDatabaseRepositoryStoreManager
 
         StoredRepository storedRepo = store.putAndLockRepository(
                 srcRepo1,
-                (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                (store, stored) -> stored);
 
-                    StoredRevision storedRev = lock.insertRevision(srcRev1);
-
-                    // workflow conflicts
-                    assertNotConflict(() -> {
-                        lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now());
-                    });
-                    assertConflict(() -> {
-                        lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now());
-                    });
-                    return lock.get();
-                });
-
-        // repository overwrites
+        // putAndLockRepository doesn't conflict
         StoredRepository storedRepo2 = store.putAndLockRepository(
+                srcRepo1,
+                (store, stored) -> stored);
+
+        assertEquals(storedRepo, storedRepo2);
+
+        StoredRevision storedRev = store.putAndLockRepository(
                 srcRepo1,
                 (store, stored) -> {
                     RepositoryControl lock = new RepositoryControl(store, stored);
-
-                    // revision conflicts
-                    assertConflict(() -> {
-                        lock.insertRevision(srcRev1);
-                    });
-
-                    return lock.get();
+                    return lock.insertRevision(srcRev1);
                 });
-        assertEquals(storedRepo, storedRepo2);
+
+        assertConflict(() -> {
+            store.putAndLockRepository(
+                    srcRepo1,
+                    (store, stored) -> {
+                        RepositoryControl lock = new RepositoryControl(store, stored);
+
+                        // workflow conflicts if name conflicts
+                        assertNotConflict(() -> {
+                            lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now());
+                        });
+                        return lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now());
+                    });
+        });
+
+        assertConflict(() -> {
+            store.putAndLockRepository(
+                    srcRepo1,
+                    (store, stored) -> {
+                        RepositoryControl lock = new RepositoryControl(store, stored);
+
+                        // revision conflicts if name conflicts
+                        return lock.insertRevision(srcRev1);
+                    });
+        });
     }
 
     @Test
