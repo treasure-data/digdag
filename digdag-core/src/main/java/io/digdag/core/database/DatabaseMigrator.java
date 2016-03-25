@@ -255,7 +255,13 @@ public class DatabaseMigrator
         public void migrate(Handle handle)
         {
             if (isPostgres()) {
-                handle.update("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+                // check existance of extension first because CREATE EXTENSION is allowed only for superuser
+                String has = handle.createQuery("select name from pg_catalog.pg_available_extensions where name = 'uuid-ossp'")
+                    .mapTo(String.class)
+                    .first();
+                if (!"uuid-ossp".equals(has)) {
+                    handle.update("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+                }
             }
 
             // repositories
