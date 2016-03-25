@@ -8,7 +8,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.4.2'
+    version = '0.4.2-SNAPSHOT'
 
     apply plugin: 'java'
 }
@@ -35,7 +35,12 @@ subprojects {
         repositories {
             maven {
                 name 's3Release'
-                url 's3://digdag-beta-release/maven'
+                if (project.version.endsWith('-SNAPSHOT')) {
+                    url 's3://digdag-beta-release/maven-snapshot'
+                }
+                else {
+                    url 's3://digdag-beta-release/maven'
+                }
                 credentials(AwsCredentials) {
                     // write at your S3 keys to ~/.gradle/gradle.properties file:
                     // digdag_beta_release_s3_access_key=ABCDEFGHIJKLMN
@@ -178,7 +183,7 @@ artifacts {
 
 uploadReleases {
     repositories {
-        repositories {
+        if (!project.version.endsWith('-SNAPSHOT')) {
             ivy {
                 name 's3PackageRelease'
                 artifactPattern 's3://digdag-beta-release/releases/[artifact]-[revision].[ext]'
@@ -195,7 +200,7 @@ uploadReleases {
 
 uploadRootFiles {
     repositories {
-        repositories {
+        if (!project.version.endsWith('-SNAPSHOT')) {
             ivy {
                 name 's3RootFiles'
                 artifactPattern 's3://digdag-beta-release/releases/[artifact].[ext]'
