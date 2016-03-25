@@ -1,0 +1,11 @@
+machine:
+  timezone: UTC
+  java:
+    version: oraclejdk8
+
+test:
+  pre:
+    - ./gradlew check
+    - ./gradlew clean test
+  override:
+    - ./gradlew clean cli
