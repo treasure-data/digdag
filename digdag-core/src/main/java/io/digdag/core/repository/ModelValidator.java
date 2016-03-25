@@ -96,7 +96,7 @@ public class ModelValidator
     public void validate(String modelType, Object modelObject)
     {
         if (!failures.isEmpty()) {
-            throw new ModelValidationException("Validationg "+ modelType + " failed", modelObject, failures);
+            throw new ModelValidationException("Validating "+ modelType + " failed", modelObject, failures);
         }
     }
 }
