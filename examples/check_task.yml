@@ -2,12 +2,12 @@ run: +check_task
 +check_task:
   +generate_methods:
     py>: examples.check_task.generate
-    check:
+    _check:
       py>: examples.check_task.check_generated
 
   +generate_class_and_params:
     py>: examples.check_task.Generator.run
-    check:
+    _check:
       py>: examples.check_task.Generator.check
 
 
