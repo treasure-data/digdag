@@ -3,9 +3,14 @@ machine:
   java:
     version: oraclejdk8
 
+dependencies:
+  override:
+    - ./gradlew -v
+    - ./gradlew testClasses  # download and cache dependencies in circleci
+
 test:
   override:
-    - ./gradlew clean test
+    - ./gradlew clean test --info
     - |
       DIGDAG_TEST_POSTGRESQL="
         host = localhost
@@ -13,7 +18,7 @@ test:
         user = pg
         password =
         database = circle_test
-      " ./gradlew check
+      " ./gradlew check --info --rerun-tasks
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
