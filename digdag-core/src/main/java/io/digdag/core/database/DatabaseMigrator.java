@@ -256,10 +256,10 @@ public class DatabaseMigrator
         {
             if (isPostgres()) {
                 // check existance of extension first because CREATE EXTENSION is allowed only for superuser
-                String has = handle.createQuery("select name from pg_catalog.pg_available_extensions where name = 'uuid-ossp'")
+                String ver = handle.createQuery("select installed_version from pg_catalog.pg_available_extensions where name = 'uuid-ossp'")
                     .mapTo(String.class)
                     .first();
-                if (!"uuid-ossp".equals(has)) {
+                if (ver == null) {
                     handle.update("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
                 }
             }
