@@ -159,23 +159,6 @@ public class DatabaseRepositoryStoreManager
             }, ResourceConflictException.class);
         }
 
-        //public List<StoredRevision> getAllRevisions(int repoId)
-        //{
-        //    return dao.getRevisions(siteId, repoId, Integer.MAX_VALUE, 0);
-        //}
-
-        @Override
-        public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
-        {
-            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(Integer.MAX_VALUE)));
-        }
-
-        @Override
-        public List<StoredRevision> getLatestRevisions(int pageSize, Optional<Integer> lastId)
-        {
-            return autoCommit((handle, dao) -> dao.getLatestRevisions(siteId, pageSize, lastId.or(Integer.MAX_VALUE)));
-        }
-
         @Override
         public StoredRevision getRevisionById(int revId)
                 throws ResourceNotFoundException
@@ -421,28 +404,6 @@ public class DatabaseRepositoryStoreManager
                 " values (:siteId, :name, now())")
         @GetGeneratedKeys
         int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name);
-
-
-        @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and rev.repository_id = :repoId" +
-                " and rev.id < :lastId" +
-                " order by rev.id desc" +
-                " limit :limit")
-        List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
-
-        @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
-                " where site_id = :siteId" +
-                " and rev.id = (" +
-                    "select max(id) from revisions" +
-                    " where repository_id = repo.id" +
-                ")" +
-                " and rev.id < :lastId" +
-                " order by rev.id desc" +
-                " limit :limit")
-        List<StoredRevision> getLatestRevisions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select rev.* from revisions rev" +
                 " join repositories repo on repo.id = rev.repository_id" +

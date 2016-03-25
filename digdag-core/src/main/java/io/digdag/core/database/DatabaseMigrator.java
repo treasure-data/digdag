@@ -284,7 +284,6 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .build());
             handle.update("create unique index revisions_on_repository_id_and_name on revisions (repository_id, name)");
-            handle.update("create index revisions_on_repository_id_and_id on revisions (repository_id, id desc)");
 
             // revision_archives
             handle.update(

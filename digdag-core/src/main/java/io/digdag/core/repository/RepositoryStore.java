@@ -23,10 +23,6 @@ public interface RepositoryStore
         throws ResourceConflictException;
 
 
-    List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
-
-    List<StoredRevision> getLatestRevisions(int pageSize, Optional<Integer> lastId);
-
     StoredRevision getRevisionById(int revId)
         throws ResourceNotFoundException;
 
