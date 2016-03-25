@@ -2,6 +2,8 @@ machine:
   timezone: UTC
   java:
     version: oraclejdk8
+  environment:
+    TERM: dumb  # don't let gradle use fancy ansi seq code
 
 dependencies:
   override:
@@ -15,7 +17,7 @@ test:
       DIGDAG_TEST_POSTGRESQL="
         host = localhost
         port = 5432
-        user = pg
+        user = ubuntu
         password =
         database = circle_test
       " ./gradlew check --info --rerun-tasks
