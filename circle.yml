@@ -4,8 +4,20 @@ machine:
     version: oraclejdk8
 
 test:
-  pre:
-    - ./gradlew check
-    - ./gradlew clean test
   override:
-    - ./gradlew clean cli
+    - ./gradlew clean test
+    - |
+      DIGDAG_TEST_POSTGRESQL="
+        host = localhost
+        port = 5432
+        user = pg
+        password =
+        database = circle_test
+      " ./gradlew check
+  post:
+    - mkdir -p $CIRCLE_ARTIFACTS/reports
+    - |
+      for dir in digdag-*/build/reports; do
+        cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
+      done
+
