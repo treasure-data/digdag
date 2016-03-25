@@ -290,7 +290,8 @@ public abstract class BasicDatabaseStoreManager <D>
             isValid = handle.getConnection().isValid(30);
         }
         catch (SQLException ex) {
-            throw new UnableToExecuteStatementException("Can't validate a transaction before commit", ex);
+            throw new TransactionFailedException(
+                    "Can't validate a transaction before commit", ex);
         }
         if (!isValid) {
             throw new TransactionFailedException(
