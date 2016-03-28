@@ -13,7 +13,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class TestDatabaseRepositoryStoreManager
+public class DatabaseRepositoryStoreManagerTest
 {
     private DatabaseFactory factory;
     private RepositoryStoreManager manager;
@@ -21,7 +21,7 @@ public class TestDatabaseRepositoryStoreManager
     private RepositoryStore store;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         factory = setupDatabase();
         manager = factory.getRepositoryStoreManager();

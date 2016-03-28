@@ -13,7 +13,7 @@ import io.digdag.spi.ScheduleTime;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class TestDatabaseScheduleStoreManager
+public class DatabaseScheduleStoreManagerTest
 {
     private DatabaseFactory factory;
     private RepositoryStoreManager manager;
@@ -23,7 +23,7 @@ public class TestDatabaseScheduleStoreManager
     private ScheduleStore schedStore;
 
     @Before
-    public void setup()
+    public void setUp()
     {
         factory = setupDatabase();
         manager = factory.getRepositoryStoreManager();

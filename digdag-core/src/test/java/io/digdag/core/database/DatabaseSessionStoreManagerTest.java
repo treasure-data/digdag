@@ -18,7 +18,7 @@ import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class TestDatabaseSessionStoreManager
+public class DatabaseSessionStoreManagerTest
 {
     private DatabaseFactory factory;
     private RepositoryStoreManager repoManager;
@@ -37,7 +37,7 @@ public class TestDatabaseSessionStoreManager
     private StoredWorkflowDefinition wf2;
 
     @Before
-    public void setup()
+    public void setUp()
         throws Exception
     {
         factory = setupDatabase();

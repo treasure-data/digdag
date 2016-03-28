@@ -25,12 +25,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.workflow.WorkflowTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class TestWorkflowExecutorCases
+public class WorkflowExecutorCasesTest
 {
     private DigdagEmbed embed;
 
     @Before
-    public void setup()
+    public void setUp()
         throws Exception
     {
         embed = setupEmbed();
