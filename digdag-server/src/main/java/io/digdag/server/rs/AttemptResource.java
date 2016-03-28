@@ -105,7 +105,7 @@ public class AttemptResource
             StoredRepository repo = rs.getRepositoryByName(repoName);
             if (wfName != null) {
                 // of workflow
-                StoredWorkflowDefinition wf = rs.getWorkflowDefinitionByName(repo.getId(), wfName);
+                StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
                 attempts = ss.getSessionsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
             }
             else {
