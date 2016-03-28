@@ -102,6 +102,7 @@ public class OperatorManager
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
+            TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger(request));
             try {
                 runWithHeartbeat(request, nextState);
             }
@@ -111,6 +112,9 @@ public class OperatorManager
                 callback.taskFailed(request.getSiteId(),
                         request.getTaskId(), request.getLockId(), agentId,
                         error);  // no retry
+            }
+            finally {
+                TaskContextLogging.leave();
             }
         }
     }
@@ -122,16 +126,10 @@ public class OperatorManager
 
         runningTaskMap.put(taskId, request);
         try {
-            TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger(request));
-            try {
-                archiveManager.withExtractedArchive(request, (archivePath) -> {
-                    runWithArchive(archivePath, request, nextState);
-                    return true;
-                });
-            }
-            finally {
-                TaskContextLogging.leave();
-            }
+            archiveManager.withExtractedArchive(request, (archivePath) -> {
+                runWithArchive(archivePath, request, nextState);
+                return true;
+            });
         }
         finally {
             runningTaskMap.remove(taskId);
