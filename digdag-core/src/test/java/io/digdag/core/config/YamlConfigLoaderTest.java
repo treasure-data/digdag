@@ -3,7 +3,7 @@ package io.digdag.core.config;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import com.google.common.io.Resources;
-import io.digdag.client.config.ConfigException;
+import org.yaml.snakeyaml.error.YAMLException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,14 +21,14 @@ public class YamlConfigLoaderTest
         loader = new YamlConfigLoader();
     }
 
-    @Test(expected = ConfigException.class)
+    @Test(expected = YAMLException.class)
     public void verifyDuplicateKeysDisallowed()
             throws Exception
     {
         loader.loadString("{\"a\":1, \"a\":2}");
     }
 
-    @Test(expected = ConfigException.class)
+    @Test(expected = YAMLException.class)
     public void verifyDuplicateKeysDisallowedWithParameterizedLoad()
             throws Exception
     {

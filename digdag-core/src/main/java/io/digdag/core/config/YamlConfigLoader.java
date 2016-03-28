@@ -23,7 +23,6 @@ import io.digdag.client.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.representer.Representer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,14 +58,7 @@ public class YamlConfigLoader
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
         Yaml yaml = new Yaml(new StrictSafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        Object raw;
-        try {
-            raw = yaml.load(content);
-        }
-        catch (YAMLException e) {
-            throw new ConfigException("Invalid workflow definition: " + e.getMessage());
-        }
-        ObjectNode object = normalizeValidateObjectNode(raw);
+        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
         return ConfigElement.of(object);
     }
 
@@ -85,13 +77,7 @@ public class YamlConfigLoader
         }
 
         Yaml yaml = new Yaml(new YamlParameterizedConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object;
-        try {
-            object = normalizeValidateObjectNode(yaml.load(content));
-        }
-        catch (YAMLException e) {
-            throw new ConfigException("Invalid workflow definition: " + e.getMessage());
-        }
+        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
 
         Path includeDir = path.toAbsolutePath().getParent();
         if (includeDir == null) {
