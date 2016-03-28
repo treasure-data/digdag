@@ -81,7 +81,7 @@ public class YamlConfigLoader
 
         Path includeDir = path.toAbsolutePath().getParent();
         if (includeDir == null) {
-            throw new IllegalArgumentException("Loading file named '/' is invalid");
+            throw new FileNotFoundException("Loading file named '/' is invalid");
         }
 
         return new ParameterizeContext(includeDir, params).evalObjectRecursive(object);
@@ -169,7 +169,7 @@ public class YamlConfigLoader
         {
             Path path = includeDir.resolve(name).toAbsolutePath().normalize();
             if (!path.toString().startsWith(includeDir.toString())) {
-                throw new FileNotFoundException("file name must not include ..: " + name);
+                throw new FileNotFoundException("File name must not include ..: " + name);
             }
 
             return loadParameterizedInclude(path, params);
