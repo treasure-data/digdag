@@ -124,7 +124,6 @@ public class Main
         jc.addCommand("push", new Push());
         jc.addCommand("archive", new Archive());
         jc.addCommand("upload", new Upload());
-        jc.addCommand("push", new Push());
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
@@ -280,13 +279,16 @@ public class Main
         System.err.println("    genapikey -o <dir>               generates an API key for authentication");
         System.err.println("");
         System.err.println("  Client-mode commands:");
+        System.err.println("    push <repo-name>                 create and upload a new revision");
         System.err.println("    start <repo-name> <+name>        start a new session attempt of a workflow");
         System.err.println("    kill <attempt-id>                kill a running session attempt");
+        System.err.println("    backfill                         start sessions of a schedule for past times");
+        System.err.println("    reschedule                       skip sessions of a schedule to a future time");
+        System.err.println("    log <attempt-id>                 show logs of a session attempt");
         System.err.println("    workflows [+name]                show registered workflow definitions");
         System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions [repo-name] [+name]     show past and current session attempts");
         System.err.println("    tasks <attempt-id>               show tasks of a session attempt");
-        System.err.println("    push <repo-name>                 create and upload a new revision");
         //System.err.println("    archive <workflow.yml...>        create a project archive");
         //System.err.println("    upload <workflow.yml...>         upload a project archive to a server");
         System.err.println("");
