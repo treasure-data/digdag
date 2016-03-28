@@ -15,6 +15,7 @@ import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Handle;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.*;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
@@ -106,6 +107,13 @@ public class DatabaseTestingUtils
         "queued_shared_task_locks",
         "queued_task_locks",
     };
+
+    public static void cleanDatabase(DigdagEmbed embed)
+    {
+        cleanDatabase(
+                embed.getInjector().getInstance(DatabaseConfig.class).getType(),
+                embed.getInjector().getInstance(DBI.class));
+    }
 
     public static void cleanDatabase(String databaseType, IDBI dbi)
     {

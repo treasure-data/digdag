@@ -5,6 +5,9 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.database.DatabaseConfig;
+import static io.digdag.core.database.DatabaseTestingUtils.cleanDatabase;
+import static io.digdag.core.database.DatabaseTestingUtils.getEnvironmentDatabaseConfig;
 
 public class WorkflowTestingUtils
 {
@@ -12,7 +15,7 @@ public class WorkflowTestingUtils
 
     public static DigdagEmbed setupEmbed()
     {
-        return new DigdagEmbed.Bootstrap()
+        DigdagEmbed embed = new DigdagEmbed.Bootstrap()
             .withExtensionLoader(false)
             .addModules((binder) -> {
                 Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
@@ -21,6 +24,11 @@ public class WorkflowTestingUtils
                 Multibinder<OperatorFactory> operatorFactoryBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
                 operatorFactoryBinder.addBinding().to(NoopOperatorFactory.class).in(Scopes.SINGLETON);
             })
+            .overrideModulesWith((binder) -> {
+                binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
+            })
             .initializeCloseable();
+        cleanDatabase(embed);
+        return embed;
     }
 }
