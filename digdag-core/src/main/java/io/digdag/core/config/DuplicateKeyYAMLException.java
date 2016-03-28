@@ -1,11 +1,12 @@
 package io.digdag.core.config;
 
+import java.util.Collection;
 import org.yaml.snakeyaml.error.YAMLException;
 
 class DuplicateKeyYAMLException extends YAMLException
 {
-    public DuplicateKeyYAMLException()
+    public DuplicateKeyYAMLException(Collection<String> keys)
     {
-        super("duplicate key");
+        super("duplicate keys: " + keys);
     }
 }

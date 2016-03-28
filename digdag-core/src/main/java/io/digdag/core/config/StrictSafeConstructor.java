@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -48,13 +49,17 @@ class StrictSafeConstructor
 
         private void validateKeys(MappingNode node)
         {
-            List<String> keys = node.getValue().stream()
+            Map<String, Long> keyCounts = node.getValue().stream()
                     .map(NodeTuple::getKeyNode)
                     .filter(n -> n instanceof ScalarNode)
-                    .map(n -> ((ScalarNode)n).getValue())
+                    .map(ScalarNode.class::cast)
+                    .collect(Collectors.groupingBy(ScalarNode::getValue, Collectors.counting()));
+            List<String> duplicatedKeys = keyCounts.entrySet().stream()
+                    .filter(it -> it.getValue() > 1)
+                    .map(Map.Entry<String, Long>::getKey)
                     .collect(Collectors.toList());
-            if (keys.stream().distinct().count() != keys.stream().count()) {
-                throw new DuplicateKeyYAMLException();
+            if (!duplicatedKeys.isEmpty()) {
+                throw new DuplicateKeyYAMLException(duplicatedKeys);
             }
         }
     }
