@@ -14,6 +14,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
+import io.digdag.client.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -22,6 +23,7 @@ import io.digdag.client.config.ConfigFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.representer.Representer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,8 +58,15 @@ public class YamlConfigLoader
     {
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
-        Yaml yaml = new Yaml(new SafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
+        Yaml yaml = new Yaml(new StrictSafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
+        Object raw;
+        try {
+            raw = yaml.load(content);
+        }
+        catch (YAMLException e) {
+            throw new ConfigException("Invalid workflow definition: " + e.getMessage());
+        }
+        ObjectNode object = normalizeValidateObjectNode(raw);
         return ConfigElement.of(object);
     }
 

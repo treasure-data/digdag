@@ -159,6 +159,9 @@ public class WorkflowCompiler
                 if (!subtaskConfigs.isEmpty()) {
                     throw new ConfigException("A task can't have subtasks: " + config);
                 }
+                if (config.getKeys().stream().filter(key -> key.endsWith(">")).count() > 1) {
+                    throw new ConfigException("A task can't have more than one operator: " + config);
+                }
                 return addTask(parent, name, fullName, false, config);
             }
             else {
