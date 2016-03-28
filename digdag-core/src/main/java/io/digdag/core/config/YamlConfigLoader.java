@@ -73,10 +73,10 @@ public class YamlConfigLoader
     public ConfigElement loadParameterizedFile(File file, Config params)
         throws IOException
     {
-        return ConfigElement.of(loadParameterized(file.toPath(), params));
+        return ConfigElement.of(loadParameterizedInclude(file.toPath(), params));
     }
 
-    public ObjectNode loadParameterized(Path path, Config params)
+    ObjectNode loadParameterizedInclude(Path path, Config params)
         throws IOException
     {
         String content;
@@ -85,7 +85,13 @@ public class YamlConfigLoader
         }
 
         Yaml yaml = new Yaml(new YamlParameterizedConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
+        ObjectNode object;
+        try {
+            object = normalizeValidateObjectNode(yaml.load(content));
+        }
+        catch (YAMLException e) {
+            throw new ConfigException("Invalid workflow definition: " + e.getMessage());
+        }
 
         Path includeDir = path.toAbsolutePath().getParent();
         if (includeDir == null) {
@@ -180,7 +186,7 @@ public class YamlConfigLoader
                 throw new FileNotFoundException("file name must not include ..: " + name);
             }
 
-            return loadParameterized(path, params);
+            return loadParameterizedInclude(path, params);
         }
 
         private void mergeObject(ObjectNode dest, ObjectNode src)

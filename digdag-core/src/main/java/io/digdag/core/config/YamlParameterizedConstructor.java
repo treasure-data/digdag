@@ -13,10 +13,11 @@ import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
 
 public class YamlParameterizedConstructor
-    extends SafeConstructor
+    extends StrictSafeConstructor
 {
     public YamlParameterizedConstructor()
     {
+        super();  // extends StrictSafeConstructor
         this.yamlConstructors.put(null, new CustomTagConstructor());
     }
 
