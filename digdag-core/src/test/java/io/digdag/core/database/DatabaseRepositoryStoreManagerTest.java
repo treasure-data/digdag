@@ -221,8 +221,8 @@ public class DatabaseRepositoryStoreManagerTest
         assertNotFound(() -> store.getRevisionByName(repo1.getId(), rev2.getName()));
         assertNotFound(() -> anotherSite.getRevisionByName(repo1.getId(), rev1.getName()));
 
-        assertEquals(wf1, store.getWorkflowDefinitionById(wf1.getId()));
-        assertEquals(wf2, store.getWorkflowDefinitionById(wf2.getId()));
+        assertEquals(wfDetails1, store.getWorkflowDefinitionById(wf1.getId()));
+        assertEquals(wfDetails2, store.getWorkflowDefinitionById(wf2.getId()));
         assertNotFound(() -> store.getWorkflowDefinitionById(wf1.getId() + 10));
         assertNotFound(() -> anotherSite.getWorkflowDefinitionById(wf1.getId()));
 

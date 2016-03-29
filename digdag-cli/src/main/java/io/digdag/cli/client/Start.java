@@ -4,6 +4,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAccessor;
+import java.time.ZonedDateTime;
+import java.time.DateTimeException;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -20,6 +30,13 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestSessionAttemptPrepareRequest;
+import io.digdag.client.api.RestSessionAttemptPrepareResult;
+import io.digdag.client.api.ImmutableRestSessionAttemptPrepareRequest;
+import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.SessionTimeTruncate;
+import io.digdag.client.config.ConfigException;
+import static java.util.Locale.ENGLISH;
 import static io.digdag.cli.Main.systemExit;
 
 public class Start
@@ -34,39 +51,45 @@ public class Start
     @Parameter(names = {"-R", "--retry"})
     String retryAttemptName = null;
 
-    @Parameter(names = {"--now"})
-    boolean now = false;
+    @Parameter(names = {"--session"})
+    String sessionString = null;
+
+    @Parameter(names = {"--revision"})
+    String revision = null;
 
     @Override
     public void mainWithClientException()
         throws Exception
     {
-        if (now) {
-            if (args.size() != 2) {
-                throw usage(null);
-            }
-            start(args.get(0), args.get(1), ScheduleTime.alignedNow());
+        if (args.size() != 2) {
+            throw usage(null);
         }
-        else {
-            if (args.size() != 3) {
-                throw usage(null);
-            }
-            start(args.get(0), args.get(1), parseTime(args.get(2)));
+        if (sessionString == null) {
+            throw usage("--session option is required");
         }
+        start(args.get(0), args.get(1));
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <repo-name> <+name> [--now or \"yyyy-MM-dd HH:mm:ss Z\"]");
+        System.err.println("Usage: digdag start <repo-name> <+name>");
         System.err.println("  Options:");
+        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss] Z\">  set session_time to this time (required)");
+        System.err.println("        --revision <name>            use a past revision");
+        System.err.println("    -R, --retry NAME                 set attempt name to retry a session");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        System.err.println("    -R, --retry NAME                 set attempt name to retry a session");
         ClientCommand.showCommonOptions();
+        System.err.println("");
+        System.err.println("  Examples:");
+        System.err.println("    $ digdag start my_repo +workflow1 --session \"2016-01-01 -07:00\"");
+        System.err.println("    $ digdag start my_repo +workflow1 --session hourly      # use current hour's 00:00");
+        System.err.println("    $ digdag start my_repo +workflow1 --session daily       # use current day's 00:00:00");
+        System.err.println("");
         return systemExit(error);
     }
 
-    public void start(String repoName, String workflowName, Instant sessiontime)
+    public void start(String repoName, String workflowName)
         throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
@@ -90,16 +113,20 @@ public class Start
             overwriteParams.set(pair.getKey(), pair.getValue());
         }
 
+        RestSessionAttemptPrepareRequest prepareRequest = buildPrepareRequest(repoName, workflowName);
+
+        DigdagClient client = buildClient();
+
+        RestSessionAttemptPrepareResult prepareResult = client.prepareSessionAttempt(prepareRequest);
+
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
-            .repositoryName(repoName)
-            .workflowName(workflowName)
-            .sessionTime(sessiontime)
+            .workflowId(prepareResult.getWorkflowId())
+            .sessionTime(prepareResult.getSessionTime())
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
             .params(overwriteParams)
             .build();
 
-        DigdagClient client = buildClient();
-        RestSessionAttempt attempt = client.startSession(request);
+        RestSessionAttempt attempt = client.startSessionAttempt(request);
 
         ln("Started a session attempt:");
         ln("  id: %d", attempt.getId());
@@ -113,5 +140,58 @@ public class Start
         ln("");
 
         System.err.println("Use `digdag sessions` to show status.");
+    }
+
+    private static final DateTimeFormatter SESSION_TIME_ARG_PARSER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
+
+    private RestSessionAttemptPrepareRequest buildPrepareRequest(String repoName, String workflowName)
+        throws SystemExitException
+    {
+        ImmutableRestSessionAttemptPrepareRequest.Builder builder =
+            RestSessionAttemptPrepareRequest.builder()
+            .repositoryName(repoName)
+            .revision(Optional.fromNullable(revision))
+            .workflowName(workflowName);
+
+        switch (sessionString) {
+        case "hourly":
+            return builder
+                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
+                .sessionTimeTruncate(Optional.of(SessionTimeTruncate.HOUR))
+                .build();
+
+        case "daily":
+            return builder
+                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
+                .sessionTimeTruncate(Optional.of(SessionTimeTruncate.DAY))
+                .build();
+
+        case "now":
+            return builder
+                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
+                .sessionTimeTruncate(Optional.absent())
+                .build();
+
+        default:
+            TemporalAccessor parsed;
+            try {
+                parsed = SESSION_TIME_ARG_PARSER.parse(sessionString);
+            }
+            catch (DateTimeParseException ex) {
+                throw new ConfigException("--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionString);
+            }
+            LocalDateTime local;
+            try {
+                local = LocalDateTime.from(parsed);
+            }
+            catch (DateTimeException ex) {
+                local = LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0));
+            }
+            return builder
+                .sessionTime(LocalTimeOrInstant.of(local))
+                .sessionTimeTruncate(Optional.absent())
+                .build();
+        }
     }
 }

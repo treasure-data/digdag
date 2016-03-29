@@ -40,10 +40,10 @@ public interface RepositoryStore
 
     List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId);
 
-    StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
+    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
 
-    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
+    StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
     StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)

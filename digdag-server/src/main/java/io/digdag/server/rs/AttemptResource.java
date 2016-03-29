@@ -2,7 +2,14 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.util.function.Supplier;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.Consumes;
@@ -14,6 +21,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.inject.Inject;
 import com.google.common.collect.*;
 import com.google.common.base.Optional;
@@ -24,10 +32,13 @@ import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.*;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
+import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -46,11 +57,13 @@ public class AttemptResource
     // [*] GET  /api/attempts/{id}                               # show a session
     // [*] GET  /api/attempts/{id}/tasks                         # list tasks of a session
     // [*] GET  /api/attempts/{id}/retries                       # list retried attempts of this session
-    // [*] PUT  /api/attempts                                    # starts a new session (cancel, retry, etc.)
+    // [*] GET  /api/prepare                                     # prepares parameters for a new session attempt
+    // [*] PUT  /api/attempts                                    # starts a new session
     // [*] POST /api/attempts/{id}/kill                          # kill a session
 
     private final RepositoryStoreManager rm;
     private final SessionStoreManager sm;
+    private final SchedulerManager srm;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor executor;
     private final ConfigFactory cf;
@@ -59,12 +72,14 @@ public class AttemptResource
     public AttemptResource(
             RepositoryStoreManager rm,
             SessionStoreManager sm,
+            SchedulerManager srm,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor executor,
             ConfigFactory cf)
     {
         this.rm = rm;
         this.sm = sm;
+        this.srm = srm;
         this.attemptBuilder = attemptBuilder;
         this.executor = executor;
         this.cf = cf;
@@ -76,27 +91,9 @@ public class AttemptResource
             @QueryParam("repository") String repoName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
-            @QueryParam("status") String status,
             @QueryParam("last_id") Long lastId)
         throws ResourceNotFoundException
     {
-        /* TODO
-        Optional<SessionStateFlags> searchFlags = Optional.absent();
-        if (status != null) {
-            switch (status) {
-            case "error":
-            case "success":
-                searchFlags = Optional.of(SessionStateFlags.empty().withDone());
-                break;
-            case "running":
-                searchFlags = Optional.of(SessionStateFlags.empty().withDone());
-                break;
-            default:
-                throw new ConfigException("Unknown stauts= option");
-            }
-        }
-        */
-
         List<StoredSessionAttemptWithSession> attempts;
 
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
@@ -180,6 +177,98 @@ public class AttemptResource
             .collect(Collectors.toList());
     }
 
+    @GET
+    @Consumes("application/json")
+    @Path("/api/prepare")
+    public RestSessionAttemptPrepareResult prepareAttempt(
+            @QueryParam("repository") String repoName,
+            @QueryParam("revision") String revName,
+            @QueryParam("workflow") String wfName,
+            @QueryParam("session_time") LocalTimeOrInstant localTime,
+            @QueryParam("session_time_truncate") SessionTimeTruncate sessionTimeTruncate)
+        throws ResourceNotFoundException
+    {
+        Preconditions.checkArgument(repoName != null, "repository= is required");
+        // revName is nullable
+        Preconditions.checkArgument(wfName != null, "workflow= is required");
+        Preconditions.checkArgument(localTime != null, "session_time_ is required");
+        // sessionTimeTruncate is nullable
+
+        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+
+        String resolvedRevision;
+        long resolvedWorkflowId;
+
+        ZoneId timeZone;
+        Supplier<Optional<Scheduler>> schedulerSupplier;
+
+        StoredRepository repo = rs.getRepositoryByName(repoName);
+        if (revName != null) {
+            StoredRevision rev = rs.getRevisionByName(repo.getId(), revName);
+            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
+            resolvedRevision = rev.getName();
+            resolvedWorkflowId = def.getId();
+            timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def);
+            schedulerSupplier = () -> srm.tryGetScheduler(rev, def);
+        }
+        else {
+            StoredWorkflowDefinitionWithRepository details = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
+            resolvedRevision = details.getRevisionName();
+            resolvedWorkflowId = details.getId();
+            timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(details);
+            schedulerSupplier = () -> srm.tryGetScheduler(details);
+        }
+
+        Instant resolvedSessionTime;
+
+        if (sessionTimeTruncate != null) {
+            resolvedSessionTime = truncateSessionTime(localTime.toInstant(timeZone),
+                    timeZone, schedulerSupplier, sessionTimeTruncate);
+        }
+        else {
+            resolvedSessionTime = localTime.toInstant(timeZone);
+        }
+
+        return RestSessionAttemptPrepareResult.builder()
+            .workflowId(resolvedWorkflowId)
+            .revision(resolvedRevision)
+            .sessionTime(resolvedSessionTime)
+            .build();
+    }
+
+    private Instant truncateSessionTime(
+            Instant sessionTime,
+            ZoneId timeZone,
+            Supplier<Optional<Scheduler>> schedulerSupplier,
+            SessionTimeTruncate mode)
+    {
+        switch (mode) {
+        case HOUR:
+            return ZonedDateTime.ofInstant(sessionTime, timeZone)
+                .truncatedTo(ChronoUnit.HOURS)
+                .toInstant();
+        case DAY:
+            return ZonedDateTime.ofInstant(sessionTime, timeZone)
+                .truncatedTo(ChronoUnit.DAYS)
+                .toInstant();
+        default:
+            {
+                Optional<Scheduler> scheduler = schedulerSupplier.get();
+                if (!scheduler.isPresent()) {
+                    throw new IllegalArgumentException("session_time_truncate=" + mode + " is set but _schedule is not set to this workflow");
+                }
+                switch (mode) {
+                case SCHEDULE:
+                    return scheduler.get().getFirstScheduleTime(sessionTime).getTime();
+                case NEXT_SCHEDULE:
+                    return scheduler.get().nextScheduleTime(sessionTime).getTime();
+                default:
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+    }
+
     @PUT
     @Consumes("application/json")
     @Path("/api/attempts")
@@ -188,8 +277,7 @@ public class AttemptResource
     {
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
 
-        StoredRepository repo = rs.getRepositoryByName(request.getRepositoryName());
-        StoredWorkflowDefinitionWithRepository def = rs.getLatestWorkflowDefinitionByName(repo.getId(), request.getWorkflowName());
+        StoredWorkflowDefinitionWithRepository def = rs.getWorkflowDefinitionById(request.getWorkflowId());
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -200,12 +288,12 @@ public class AttemptResource
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);
-            RestSessionAttempt res = RestModels.attempt(attempt, repo.getName());
+            RestSessionAttempt res = RestModels.attempt(attempt, def.getRepository().getName());
             return Response.ok(res).build();
         }
         catch (SessionAttemptConflictException ex) {
             StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
-            RestSessionAttempt res = RestModels.attempt(conflicted, repo.getName());
+            RestSessionAttempt res = RestModels.attempt(conflicted, def.getRepository().getName());
             return Response.status(Response.Status.CONFLICT).entity(res).build();
         }
     }

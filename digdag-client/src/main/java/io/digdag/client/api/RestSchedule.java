@@ -1,6 +1,7 @@
 package io.digdag.client.api;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -20,10 +21,8 @@ public abstract class RestSchedule
 
     // TODO add timezone here so that Check and ShowSchedule can show "next session time" in this timezone
 
-    // unix timestamp in seconds
     public abstract long getNextRunTime();
 
-    // unix timestamp in seconds
     public abstract long getNextScheduleTime();
 
     public static ImmutableRestSchedule.Builder builder()

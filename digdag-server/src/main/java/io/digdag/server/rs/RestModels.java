@@ -1,6 +1,7 @@
 package io.digdag.server.rs;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import io.digdag.client.api.RestRepository;
 import io.digdag.client.api.RestRevision;
@@ -113,7 +114,7 @@ public final class RestModels
             .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
             .workflowName(attempt.getSession().getWorkflowName())
             .sessionUuid(attempt.getSessionUuid())
-            .sessionTime(attempt.getSession().getSessionTime().getEpochSecond())
+            .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
             .retryAttemptName(attempt.getRetryAttemptName())
             .done(attempt.getStateFlags().isDone())
             .success(attempt.getStateFlags().isSuccess())

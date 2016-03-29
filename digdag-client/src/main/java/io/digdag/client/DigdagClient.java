@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Date;
 import java.util.HashMap;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.security.Key;
 import java.io.File;
 import java.io.InputStream;
@@ -319,7 +320,18 @@ public class DigdagClient
         return res.readEntity(InputStream.class);
     }
 
-    public RestSessionAttempt startSession(RestSessionAttemptRequest request)
+    public RestSessionAttemptPrepareResult prepareSessionAttempt(RestSessionAttemptPrepareRequest request)
+    {
+        return doGet(RestSessionAttemptPrepareResult.class,
+                target("/api/prepare")
+                .queryParam("repository", request.getRepositoryName())
+                .queryParam("revision", request.getRevision().orNull())
+                .queryParam("workflow", request.getWorkflowName())
+                .queryParam("session_time", request.getSessionTime().toString())
+                .queryParam("session_time_truncate", request.getSessionTimeTruncate().transform(it -> it.toString()).orNull()));
+    }
+
+    public RestSessionAttempt startSessionAttempt(RestSessionAttemptRequest request)
     {
         return doPut(RestSessionAttempt.class,
                 "application/json",

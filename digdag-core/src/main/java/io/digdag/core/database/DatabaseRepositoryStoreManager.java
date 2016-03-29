@@ -62,7 +62,7 @@ public class DatabaseRepositoryStoreManager
             throws ResourceNotFoundException
     {
         return requiredResource(
-                (handle, dao) -> dao.getWorkflowDetailsById(wfId),
+                (handle, dao) -> dao.getWorkflowDetailsByIdInternal(wfId),
                 "workflow id=%s", wfId);
     }
 
@@ -217,11 +217,11 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
+        public StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getWorkflowDefinitionById(siteId, wfId),
+                    (handle, dao) -> dao.getWorkflowDetailsById(siteId, wfId),
                     "workflow id=%d", wfId);
         }
 
@@ -462,6 +462,9 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
 
+        // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
+        // excepting site_id check
+
         @SqlQuery("select wd.*, wc.config," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
@@ -469,8 +472,19 @@ public class DatabaseRepositoryStoreManager
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
-                " where wd.id = :wfId")
-        StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(@Bind("wfId") long wfId);
+                " where wd.id = :id")
+        StoredWorkflowDefinitionWithRepository getWorkflowDetailsByIdInternal(@Bind("id") long id);
+
+        @SqlQuery("select wd.*, wc.config," +
+                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from workflow_definitions wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join repositories repo on repo.id = rev.repository_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.id = :id" +
+                " and site_id = :siteId")
+        StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(@Bind("siteId") int siteId, @Bind("id") long id);
 
         @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +

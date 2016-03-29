@@ -110,7 +110,7 @@ public enum TaskStateCode
     }
 
     @JsonCreator
-    public static TaskStateCode parse(String name)
+    public static TaskStateCode fromString(String name)
     {
         switch(name) {
         case "blocked":

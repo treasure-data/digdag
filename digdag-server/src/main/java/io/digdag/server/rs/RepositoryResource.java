@@ -24,6 +24,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.workflow.*;
@@ -89,6 +90,8 @@ public class RepositoryResource
     public RestRepository getRepository(@QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "name= is required");
+
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryByName(name);
         StoredRevision rev;
@@ -158,6 +161,8 @@ public class RepositoryResource
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "name= is required");
+
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
 
@@ -241,6 +246,9 @@ public class RepositoryResource
             InputStream body)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "repository= is required");
+        Preconditions.checkArgument(revision != null, "revision= is required");
+
         byte[] data = ByteStreams.toByteArray(body);
 
         ArchiveMetadata meta;

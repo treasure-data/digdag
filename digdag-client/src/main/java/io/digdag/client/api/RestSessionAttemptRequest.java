@@ -13,23 +13,12 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.class)
 public abstract class RestSessionAttemptRequest
 {
-    @JsonProperty("repository")
-    public abstract String getRepositoryName();
-
-    @JsonProperty("workflow")
-    public abstract String getWorkflowName();
+    public abstract long getWorkflowId();
 
     public abstract Instant getSessionTime();
 
     public abstract Optional<String> getRetryAttemptName();
 
-    //@JsonProperty("revision")
-    //public abstract Optional<String> getRevision();
-
-    //@JsonProperty("workflowId")
-    //public abstract Optional<Integer> getWorkflowId();
-
-    @JsonProperty("params")
     public abstract Config getParams();
 
     //@JsonProperty("from")

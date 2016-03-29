@@ -4,6 +4,7 @@ import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeParseException;
@@ -86,7 +87,7 @@ public abstract class ClientCommand
         }
 
         Optional<RestApiKey> key = Optional.absent();
-        if (apiKey != null) {
+        if (apiKey != null && !apiKey.isEmpty()) {
             key = Optional.of(RestApiKey.of(apiKey));
         }
 
@@ -139,8 +140,7 @@ public abstract class ClientCommand
     }
 
     private static final DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
-        .withZone(ZoneId.systemDefault());
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
     public static String formatTime(long unix)
     {
@@ -149,7 +149,12 @@ public abstract class ClientCommand
 
     public static String formatTime(Instant instant)
     {
-        return formatter.format(instant);
+        return formatter.withZone(ZoneId.systemDefault()).format(instant);
+    }
+
+    public static String formatTime(OffsetDateTime time)
+    {
+        return formatter.format(time);
     }
 
     public static String formatTimeDiff(Instant now, long from)
