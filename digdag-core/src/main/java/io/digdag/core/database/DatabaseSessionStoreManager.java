@@ -698,7 +698,7 @@ public class DatabaseSessionStoreManager
                 .bind("id", taskId)
                 .bind("oldState", beforeState.get())
                 .bind("newState", afterState.get())
-                .bind("stateParams", stateParams.isEmpty() ? null : cfm.toText(stateParams))
+                .bind("stateParams", cfm.toBinding(stateParams))
                 .bind("retryInterval", retryInterval)
                 .execute();
             if (n > 0) {

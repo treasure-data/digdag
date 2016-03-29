@@ -84,6 +84,22 @@ public class ConfigMapper
         }
     }
 
+    public String toBinding(Config config)
+    {
+        if (config == null) {
+            return null;
+        }
+        else {
+            String text = toText(config);
+            if ("{}".equals(text)) {
+                return null;
+            }
+            else {
+                return text;
+            }
+        }
+    }
+
     private static final MessageDigest md5;
 
     static {
@@ -136,18 +152,12 @@ public class ConfigMapper
         public void apply(int position, PreparedStatement statement, StatementContext ctx)
                 throws SQLException
         {
-            if (config == null) {
+            String text = toBinding(config);
+            if (text == null) {
                 statement.setNull(position, Types.CLOB);
             }
             else {
-                String text = toText(config);
-                if ("{}".equals(text)) {
-                    text = null;
-                    statement.setNull(position, Types.CLOB);
-                }
-                else {
-                    statement.setString(position, text);
-                }
+                statement.setString(position, text);
             }
         }
 
