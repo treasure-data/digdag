@@ -62,27 +62,24 @@ public final class RestModels
     }
 
     public static RestWorkflowDefinition workflowDefinition(StoredRepository repo, Revision rev,
-            WorkflowDefinition def, Optional<ScheduleTime> nextTime)
+            WorkflowDefinition def)
     {
-        return workflowDefinition(repo, rev.getName(), def, nextTime);
+        return workflowDefinition(repo, rev.getName(), def);
     }
 
-    public static RestWorkflowDefinition workflowDefinition(StoredWorkflowDefinitionWithRepository wfDetails,
-            Optional<ScheduleTime> nextTime)
+    public static RestWorkflowDefinition workflowDefinition(StoredWorkflowDefinitionWithRepository wfDetails)
     {
-        return workflowDefinition(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails, nextTime);
+        return workflowDefinition(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails);
     }
 
     private static RestWorkflowDefinition workflowDefinition(StoredRepository repo, String revName,
-            WorkflowDefinition def, Optional<ScheduleTime> nextTime)
+            WorkflowDefinition def)
     {
         return RestWorkflowDefinition.builder()
             .name(def.getName())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)
             .config(def.getConfig())
-            .nextScheduleTime(nextTime.transform(t -> t.getTime().getEpochSecond()))
-            .nextRunTime(nextTime.transform(t -> t.getRunTime().getEpochSecond()))
             .build();
     }
 
@@ -92,8 +89,8 @@ public final class RestModels
             .id(sched.getId())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .workflowName(sched.getWorkflowName())
-            .nextRunTime(sched.getNextRunTime().getEpochSecond())
-            .nextScheduleTime(sched.getNextScheduleTime().getEpochSecond())
+            .nextRunTime(sched.getNextRunTime())
+            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), sched.getTimeZone()))
             .build();
     }
 
@@ -102,8 +99,8 @@ public final class RestModels
         return RestScheduleSummary.builder()
             .id(sched.getId())
             .workflowName(sched.getWorkflowName())
-            .nextRunTime(sched.getNextRunTime().getEpochSecond())
-            .nextScheduleTime(sched.getNextScheduleTime().getEpochSecond())
+            .nextRunTime(sched.getNextRunTime())
+            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), sched.getTimeZone()))
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
             .build();

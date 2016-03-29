@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import java.util.List;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -232,6 +233,7 @@ public class DatabaseScheduleStoreManager
                 .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
                 .nextScheduleTime(Instant.ofEpochSecond(r.getLong("next_schedule_time")))
                 .workflowName(r.getString("name"))
+                .timeZone(ZoneId.of(r.getString("timezone")))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();

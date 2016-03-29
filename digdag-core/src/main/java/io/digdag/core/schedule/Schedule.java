@@ -21,13 +21,14 @@ public abstract class Schedule
 
     public abstract ZoneId getTimeZone();
 
-    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime)
+    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime, ZoneId timeZone)
     {
         return ImmutableSchedule.builder()
             .workflowName(workflowName)
             .workflowDefinitionId(workflowDefinitionId)
             .nextRunTime(nextRunTime)
             .nextScheduleTime(nextScheduleTime)
+            .timeZone(timeZone)
             .build();
     }
 }

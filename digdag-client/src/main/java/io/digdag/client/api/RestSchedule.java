@@ -21,9 +21,9 @@ public abstract class RestSchedule
 
     // TODO add timezone here so that Check and ShowSchedule can show "next session time" in this timezone
 
-    public abstract long getNextRunTime();
+    public abstract Instant getNextRunTime();
 
-    public abstract long getNextScheduleTime();
+    public abstract OffsetDateTime getNextScheduleTime();
 
     public static ImmutableRestSchedule.Builder builder()
     {

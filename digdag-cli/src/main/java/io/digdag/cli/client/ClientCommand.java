@@ -157,9 +157,9 @@ public abstract class ClientCommand
         return formatter.format(time);
     }
 
-    public static String formatTimeDiff(Instant now, long from)
+    public static String formatTimeDiff(Instant now, Instant from)
     {
-        long seconds = now.until(Instant.ofEpochSecond(from), ChronoUnit.SECONDS);
+        long seconds = now.until(from, ChronoUnit.SECONDS);
         long hours = seconds / 3600;
         seconds %= 3600;
         long minutes = seconds / 60;

@@ -175,11 +175,7 @@ public class RepositoryResource
         }
         StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
 
-        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
-
-        return RestModels.workflowDefinition(
-                repo, rev, def,
-                Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime())));
+        return RestModels.workflowDefinition(repo, rev, def);
     }
 
     @GET
@@ -200,25 +196,9 @@ public class RepositoryResource
         }
         List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
-        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
-
         return defs.stream()
-            .map(def -> RestModels.workflowDefinition(
-                        repo, rev, def,
-                        Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime()))
-                        ))
+            .map(def -> RestModels.workflowDefinition(repo, rev, def))
             .collect(Collectors.toList());
-    }
-
-    private Map<Long, Schedule> getWorkflowScheduleMap()
-    {
-        List<StoredSchedule> schedules = sm.getScheduleStore(getSiteId())
-            .getSchedules(Integer.MAX_VALUE, Optional.absent());
-        ImmutableMap.Builder<Long, Schedule> builder = ImmutableMap.builder();
-        for (Schedule schedule : schedules) {
-            builder.put(schedule.getWorkflowDefinitionId(), schedule);
-        }
-        return builder.build();
     }
 
     @GET

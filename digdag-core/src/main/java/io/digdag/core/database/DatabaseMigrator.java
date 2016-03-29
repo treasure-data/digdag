@@ -328,6 +328,7 @@ public class DatabaseMigrator
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
                     .addLong("last_session_time", "")
+                    .addString("timezone", "not null")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());

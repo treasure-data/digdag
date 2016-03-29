@@ -2,6 +2,7 @@ package io.digdag.core.database;
 
 import java.util.*;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicReference;
 import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
@@ -21,6 +22,8 @@ public class DatabaseScheduleStoreManagerTest
 
     private ScheduleStoreManager schedManager;
     private ScheduleStore schedStore;
+
+    private static final ZoneId UTC = ZoneId.of("UTC");
 
     @Before
     public void setUp()
@@ -73,12 +76,14 @@ public class DatabaseScheduleStoreManagerTest
                                     srcWf1Rev1.getName(),
                                     wfRefA.get().getId(),
                                     runTime1,
-                                    schedTime1),
+                                    schedTime1,
+                                    UTC),
                                 Schedule.of(
                                     srcWf2.getName(),
                                     wfRefB.get().getId(),
                                     runTime1,
-                                    schedTime1)
+                                    schedTime1,
+                                    UTC)
                                 ));
                     return lock.get();
                 });
@@ -102,12 +107,14 @@ public class DatabaseScheduleStoreManagerTest
                                     srcWf1Rev2.getName(),
                                     wfRefA.get().getId(),
                                     runTime1,
-                                    schedTime2),
+                                    schedTime2,
+                                    UTC),
                                 Schedule.of(
                                     srcWf3.getName(),
                                     wfRefB.get().getId(),
                                     runTime2,
-                                    schedTime2)));
+                                    schedTime2,
+                                    UTC)));
                     return lock.get();
                 });
         StoredRevision rev2 = revRef.get();

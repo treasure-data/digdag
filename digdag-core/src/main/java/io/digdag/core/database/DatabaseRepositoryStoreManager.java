@@ -349,13 +349,14 @@ public class DatabaseRepositoryStoreManager
                     catchConflict(() ->
                             handle.createStatement(
                                 "insert into schedules" +
-                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
-                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
+                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, timezone, created_at, updated_at)" +
+                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, :timezone, now(), now())"
                             )
                             .bind("repoId", repoId)
                             .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
                             .bind("nextRunTime", schedule.getNextRunTime().getEpochSecond())
                             .bind("nextScheduleTime", schedule.getNextScheduleTime().getEpochSecond())
+                            .bind("timezone", schedule.getTimeZone().getId())
                             .execute(),
                             "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
                 }

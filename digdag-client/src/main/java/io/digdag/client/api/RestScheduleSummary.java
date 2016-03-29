@@ -16,9 +16,9 @@ public abstract class RestScheduleSummary
 
     public abstract String getWorkflowName();
 
-    public abstract long getNextRunTime();
+    public abstract Instant getNextRunTime();
 
-    public abstract long getNextScheduleTime();
+    public abstract OffsetDateTime getNextScheduleTime();
 
     public abstract Instant getCreatedAt();
 

@@ -128,8 +128,7 @@ public class ScheduleExecutor
         try {
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
-            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-            Scheduler sr = srm.getScheduler(def, timeZone);
+            Scheduler sr = srm.getScheduler(def, sched.getTimeZone());
 
             try {
                 ScheduleTime nextTime = startSchedule(sched, sr, def);
@@ -259,8 +258,7 @@ public class ScheduleExecutor
         throws ResourceNotFoundException
     {
         StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-        ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-        return srm.getScheduler(def, timeZone);
+        return srm.getScheduler(def, sched.getTimeZone());
     }
 
     public List<StoredSessionAttemptWithSession> backfill(int siteId, long schedId, Instant fromTime, String attemptName, boolean dryRun)
@@ -274,8 +272,7 @@ public class ScheduleExecutor
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-            Scheduler sr = srm.getScheduler(def, timeZone);
+            Scheduler sr = srm.getScheduler(def, sched.getTimeZone());
 
             List<Instant> instants = new ArrayList<>();
             Instant time = sr.getFirstScheduleTime(fromTime).getTime();
@@ -320,7 +317,7 @@ public class ScheduleExecutor
                 else {
                     try {
                         StoredSessionAttemptWithSession attempt = handler.start(def,
-                                timeZone, ScheduleTime.of(instant, sched.getNextScheduleTime()),
+                                sched.getTimeZone(), ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName));
                         attempts.add(attempt);
                     }
