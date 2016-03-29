@@ -687,11 +687,19 @@ public class DatabaseSessionStoreManager
 
         public boolean setRetryWaitingState(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int retryInterval, Config stateParams, Optional<Config> updateError)
         {
-            int n = handle.createStatement("update tasks " +
-                    " set updated_at = now(), state = :newState, retry_at = TIMESTAMPADD('SECOND', state_params = :stateParams, :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
+            int n = handle.createStatement("update tasks" +
+                    " set updated_at = now()," +
+                        " state = :newState," +
+                        " state_params = :stateParams," +
+                        " retry_at = TIMESTAMPADD('SECOND', :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
                     " where id = :id" +
                     " and state = :oldState"
                 )
+                .bind("id", taskId)
+                .bind("oldState", beforeState.get())
+                .bind("newState", afterState.get())
+                .bind("stateParams", stateParams.isEmpty() ? null : cfm.toText(stateParams))
+                .bind("retryInterval", retryInterval)
                 .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {
