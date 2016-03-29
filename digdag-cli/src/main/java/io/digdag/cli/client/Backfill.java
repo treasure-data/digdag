@@ -73,7 +73,7 @@ public class Backfill
             ln("  session time: %s", formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
             ln("  params: %s", attempt.getParams());
-            ln("  created at: %s", formatTime(attempt.getId()));
+            ln("  created at: %s", formatTime(attempt.getCreatedAt()));
             ln("");
         }
 

@@ -63,26 +63,26 @@ public class ShowSession
         }
 
         ln("Session attempts:");
-        for (RestSessionAttempt session : Lists.reverse(attempts)) {
+        for (RestSessionAttempt attempt : Lists.reverse(attempts)) {
             String status;
-            if (session.getSuccess()) {
+            if (attempt.getSuccess()) {
                 status = "success";
             }
-            else if (session.getDone()) {
+            else if (attempt.getDone()) {
                 status = "error";
             }
             else {
                 status = "running";
             }
-            ln("  id: %d", session.getId());
-            ln("  uuid: %s", session.getSessionUuid());
-            ln("  repository: %s", session.getRepository().getName());
-            ln("  workflow: %s", session.getWorkflowName());
-            ln("  session time: %s", formatTime(session.getSessionTime()));
-            ln("  retry attempt name: %s", session.getRetryAttemptName().or(""));
-            ln("  params: %s", session.getParams());
-            ln("  created at: %s", formatTime(session.getId()));
-            ln("  kill requested: %s", session.getCancelRequested());
+            ln("  id: %d", attempt.getId());
+            ln("  uuid: %s", attempt.getSessionUuid());
+            ln("  repository: %s", attempt.getRepository().getName());
+            ln("  workflow: %s", attempt.getWorkflowName());
+            ln("  session time: %s", formatTime(attempt.getSessionTime()));
+            ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
+            ln("  params: %s", attempt.getParams());
+            ln("  created at: %s", formatTime(attempt.getCreatedAt()));
+            ln("  kill requested: %s", attempt.getCancelRequested());
             ln("  status: %s", status);
             ln("");
         }
