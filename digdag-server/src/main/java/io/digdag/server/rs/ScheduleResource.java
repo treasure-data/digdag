@@ -99,15 +99,15 @@ public class ScheduleResource
         StoredSchedule updated;
         if (request.getNextTime().isPresent()) {
             updated = exec.skipScheduleToTime(getSiteId(), id,
-                    Instant.ofEpochSecond(request.getNextTime().get()),
-                    request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
+                    request.getNextTime().get(),
+                    request.getNextRunTime().transform(t -> t),
                     request.getDryRun());
         }
         else {
             updated = exec.skipScheduleByCount(getSiteId(), id,
-                    Instant.ofEpochSecond(request.getFromTime().get()),
+                    request.getFromTime().get(),
                     request.getCount().get(),
-                    request.getNextRunTime().transform(t -> Instant.ofEpochSecond(t)),
+                    request.getNextRunTime().transform(t -> t),
                     request.getDryRun());
         }
         return RestModels.scheduleSummary(updated);
@@ -119,7 +119,7 @@ public class ScheduleResource
     public List<RestSessionAttempt> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, Instant.ofEpochSecond(request.getFromTime()), request.getAttemptName(), request.getDryRun());
+        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getDryRun());
 
         RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
 

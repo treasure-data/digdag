@@ -13,8 +13,7 @@ import static com.google.common.base.Preconditions.checkState;
 @JsonDeserialize(as = ImmutableRestScheduleBackfillRequest.class)
 public abstract class RestScheduleBackfillRequest
 {
-    // unix timestamp in seconds
-    public abstract long getFromTime();
+    public abstract Instant getFromTime();
 
     public abstract boolean getDryRun();
 

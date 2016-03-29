@@ -364,8 +364,8 @@ public class DigdagClient
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .nextTime(date.getTime() / 1000)
-                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .nextTime(date.toInstant())
+                    .nextRunTime(runTime.transform(d -> d.toInstant()))
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
@@ -376,9 +376,9 @@ public class DigdagClient
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .fromTime(fromTime.getTime() / 1000)
+                    .fromTime(fromTime.toInstant())
                     .count(count)
-                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .nextRunTime(runTime.transform(d -> d.toInstant()))
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
@@ -389,7 +389,7 @@ public class DigdagClient
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()
-                    .fromTime(fromTime.getTime() / 1000)
+                    .fromTime(fromTime.toInstant())
                     .dryRun(dryRun)
                     .attemptName(attemptName)
                     .build(),

@@ -15,14 +15,11 @@ public abstract class RestScheduleSkipRequest
 {
     public abstract Optional<Integer> getCount();
 
-    // unix timestamp in seconds
-    public abstract Optional<Long> getFromTime();
+    public abstract Optional<Instant> getFromTime();
 
-    // unix timestamp in seconds
-    public abstract Optional<Long> getNextTime();
+    public abstract Optional<Instant> getNextTime();
 
-    // unix timestamp in seconds
-    public abstract Optional<Long> getNextRunTime();
+    public abstract Optional<Instant> getNextRunTime();
 
     public abstract boolean getDryRun();
 
