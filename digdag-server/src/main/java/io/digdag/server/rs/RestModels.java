@@ -2,12 +2,14 @@ package io.digdag.server.rs;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import com.google.common.base.Optional;
 import io.digdag.client.api.RestRepository;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestSessionAttemptPrepareResult;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestLogFileHandle;
@@ -104,6 +106,15 @@ public final class RestModels
             .nextScheduleTime(sched.getNextScheduleTime().getEpochSecond())
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
+            .build();
+    }
+
+    public static RestSessionAttemptPrepareResult attemptPrepare(long workflowId, String revision, Instant sessionTime, ZoneId timeZone)
+    {
+        return RestSessionAttemptPrepareResult.builder()
+            .workflowId(workflowId)
+            .revision(revision)
+            .sessionTime(OffsetDateTime.ofInstant(sessionTime, timeZone))
             .build();
     }
 

@@ -121,7 +121,7 @@ public class Start
 
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
             .workflowId(prepareResult.getWorkflowId())
-            .sessionTime(prepareResult.getSessionTime())
+            .sessionTime(prepareResult.getSessionTime().toInstant())
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
             .params(overwriteParams)
             .build();

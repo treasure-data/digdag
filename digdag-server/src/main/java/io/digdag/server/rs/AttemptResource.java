@@ -229,11 +229,11 @@ public class AttemptResource
             resolvedSessionTime = localTime.toInstant(timeZone);
         }
 
-        return RestSessionAttemptPrepareResult.builder()
-            .workflowId(resolvedWorkflowId)
-            .revision(resolvedRevision)
-            .sessionTime(resolvedSessionTime)
-            .build();
+        return RestModels.attemptPrepare(
+                resolvedWorkflowId,
+                resolvedRevision,
+                resolvedSessionTime,
+                timeZone);
     }
 
     private Instant truncateSessionTime(

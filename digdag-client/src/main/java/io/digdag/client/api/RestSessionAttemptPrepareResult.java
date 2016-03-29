@@ -1,6 +1,6 @@
 package io.digdag.client.api;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,7 +17,7 @@ public abstract class RestSessionAttemptPrepareResult
 
     public abstract String getRevision();
 
-    public abstract Instant getSessionTime();
+    public abstract OffsetDateTime getSessionTime();
 
     public static ImmutableRestSessionAttemptPrepareResult.Builder builder()
     {
