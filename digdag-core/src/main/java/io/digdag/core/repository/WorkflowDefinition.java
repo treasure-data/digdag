@@ -14,14 +14,9 @@ public abstract class WorkflowDefinition
 
     public abstract Config getConfig();
 
-    public static ImmutableWorkflowDefinition.Builder workflowSourceBuilder()
-    {
-        return ImmutableWorkflowDefinition.builder();
-    }
-
     public static WorkflowDefinition of(String name, Config config)
     {
-        return workflowSourceBuilder()
+        return ImmutableWorkflowDefinition.builder()
             .name(name)
             .config(config)
             .build();

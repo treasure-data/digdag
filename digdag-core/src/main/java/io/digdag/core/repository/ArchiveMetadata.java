@@ -23,14 +23,9 @@ public abstract class ArchiveMetadata
     @JsonProperty("params")
     public abstract Config getDefaultParams();
 
-    public static ImmutableArchiveMetadata.Builder builder()
-    {
-        return ImmutableArchiveMetadata.builder();
-    }
-
     public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams, ZoneId defaultTimeZone)
     {
-        return builder()
+        return ImmutableArchiveMetadata.builder()
             .workflowList(workflows)
             .defaultTimeZone(defaultTimeZone)
             .defaultParams(defaultParams)

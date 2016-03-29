@@ -15,7 +15,7 @@ public abstract class ScheduleTime
 
     public abstract Instant getTime();
 
-    public static ImmutableScheduleTime.Builder builder()
+    private static ImmutableScheduleTime.Builder builder()
     {
         return ImmutableScheduleTime.builder();
     }

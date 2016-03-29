@@ -11,14 +11,9 @@ public abstract class Repository
 {
     public abstract String getName();
 
-    public static ImmutableRepository.Builder repositoryBuilder()
-    {
-        return ImmutableRepository.builder();
-    }
-
     public static Repository of(String name)
     {
-        return repositoryBuilder()
+        return ImmutableRepository.builder()
             .name(name)
             .build();
     }

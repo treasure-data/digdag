@@ -13,14 +13,9 @@ public abstract class IdName
 
     public abstract String getName();
 
-    public static ImmutableIdName.Builder builder()
-    {
-        return ImmutableIdName.builder();
-    }
-
     public static IdName of(long id, String name)
     {
-        return builder()
+        return ImmutableIdName.builder()
             .id(id)
             .name(name)
             .build();
