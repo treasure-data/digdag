@@ -692,6 +692,10 @@ public class DatabaseSessionStoreManager
                     " where id = :id" +
                     " and state = :oldState"
                 )
+                .bind("oldState", beforeState.get())
+                .bind("newState", afterState.get())
+                .bind("stateParams", stateParams.isEmpty() ? null : cfm.toText(stateParams))
+                .bind("retryInterval", retryInterval)
                 .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {
