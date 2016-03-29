@@ -51,9 +51,8 @@ public class DatabaseSessionStoreManager
     {
         super(config.getType(), Dao.class, dbi);
 
-        JsonMapper<TaskReport> trm = new JsonMapper<>(mapper, TaskReport.class);
-        dbi.registerMapper(new StoredTaskMapper(cfm, trm));
-        dbi.registerMapper(new ArchivedTaskMapper(cfm, trm));
+        dbi.registerMapper(new StoredTaskMapper(cfm));
+        dbi.registerMapper(new ArchivedTaskMapper(cfm));
         dbi.registerMapper(new StoredSessionMapper(cfm));
         dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
         dbi.registerMapper(new StoredSessionAttemptWithSessionMapper(cfm));
@@ -64,13 +63,12 @@ public class DatabaseSessionStoreManager
         dbi.registerMapper(new TaskRelationMapper());
         dbi.registerMapper(new InstantMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
-        dbi.registerArgumentFactory(trm.getArgumentFactory());
 
         this.mapper = mapper;
         this.cf = cf;
         this.cfm = cfm;
-        this.stm = new StoredTaskMapper(cfm, trm);
-        this.atm = new ArchivedTaskMapper(cfm, trm);
+        this.stm = new StoredTaskMapper(cfm);
+        this.atm = new ArchivedTaskMapper(cfm);
         this.tasm = new TaskAttemptSummaryMapper();
     }
 
@@ -1419,12 +1417,10 @@ public class DatabaseSessionStoreManager
             implements ResultSetMapper<StoredTask>
     {
         private final ConfigMapper cfm;
-        private final JsonMapper<TaskReport> trm;
 
-        public StoredTaskMapper(ConfigMapper cfm, JsonMapper<TaskReport> trm)
+        public StoredTaskMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
-            this.trm = trm;
         }
 
         @Override
@@ -1455,12 +1451,10 @@ public class DatabaseSessionStoreManager
             implements ResultSetMapper<ArchivedTask>
     {
         private final ConfigMapper cfm;
-        private final JsonMapper<TaskReport> trm;
 
-        public ArchivedTaskMapper(ConfigMapper cfm, JsonMapper<TaskReport> trm)
+        public ArchivedTaskMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
-            this.trm = trm;
         }
 
         @Override
