@@ -654,10 +654,7 @@ public class DatabaseSessionStoreManager
                         result.getSubtaskConfig(),
                         result.getExportParams(),
                         result.getStoreParams(),
-                        // TODO create a class for stored report
-                        cf.create()
-                            .set("in", result.getReport().getInputs())
-                            .set("out", result.getReport().getOutputs()));
+                        cf.create());  // TODO create a class for stored report
                 return true;
             }
             return false;
