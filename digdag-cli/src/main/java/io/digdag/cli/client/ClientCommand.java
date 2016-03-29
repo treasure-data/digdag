@@ -142,11 +142,6 @@ public abstract class ClientCommand
     private static final DateTimeFormatter formatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
-    public static String formatTime(long unix)
-    {
-        return formatTime(Instant.ofEpochSecond(unix));
-    }
-
     public static String formatTime(Instant instant)
     {
         return formatter.withZone(ZoneId.systemDefault()).format(instant);
