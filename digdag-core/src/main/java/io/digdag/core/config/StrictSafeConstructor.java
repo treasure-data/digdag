@@ -14,6 +14,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static java.util.Locale.ENGLISH;
 
 /**
  * A {@link SafeConstructor} that disallows duplicate keys.
@@ -53,6 +54,7 @@ class StrictSafeConstructor
                     .map(NodeTuple::getKeyNode)
                     .filter(n -> n instanceof ScalarNode)
                     .map(ScalarNode.class::cast)
+                    .filter(n -> !"!include".equals(n.getTag().getValue()))  // exclude !include tag
                     .collect(Collectors.groupingBy(ScalarNode::getValue, Collectors.counting()));
             List<String> duplicatedKeys = keyCounts.entrySet().stream()
                     .filter(it -> it.getValue() > 1)

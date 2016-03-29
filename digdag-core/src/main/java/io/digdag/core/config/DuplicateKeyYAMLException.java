@@ -7,6 +7,6 @@ class DuplicateKeyYAMLException extends YAMLException
 {
     public DuplicateKeyYAMLException(Collection<String> keys)
     {
-        super("duplicate keys: " + keys);
+        super("Duplicated keys: " + keys);
     }
 }

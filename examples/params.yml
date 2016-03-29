@@ -12,7 +12,7 @@ run: +params
     data: "local data"
     number: "local number"
 
-  +export_params:
+  +export_params_1:
     # If you export parameters, subtasks can share it.
     # This is useful to share configuration such as user & password.
     _export:
@@ -47,7 +47,7 @@ run: +params
   # To carry parameters to dependent tasks, you can set parameters
   # to "digdag.task.export_params". Those export_params are global
   # parameters that affect all following tasks.
-  +export_params:
+  +export_params_2:
     +set_export:
       py>: examples.params.set_export
 
