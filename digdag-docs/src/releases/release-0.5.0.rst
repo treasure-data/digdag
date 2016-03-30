@@ -24,7 +24,7 @@ Client-mode changes
 Server-mode changes
 ------------------
 
-* ``PUT /api/attempts`` endpoint requires workflow_id instead of a combination of repository name, revision name, and workflow name. This makes the request idempotent and deterministic.
+* ``PUT /api/attempts`` endpoint requires workflow id instead of a combination of repository name, revision name, and workflow name. This makes the request idempotent and deterministic.
 
 * Added ``GET /api/workflows/{id}/truncated_session_time`` to calculate a session time using the workflow's time zone. This API is useful to prepare a new session attempt.
 
@@ -32,11 +32,9 @@ Server-mode changes
 
 * Added ``GET /api/workflows/{id}`` endpoint.
 
-* ``/api/repository`` endpoint no longer accepts ``?revision=<name>`` parameter. This endpoint returns always a repository with the last revision name.
+* ``/api/repository`` and ``/api/repositories/{id}`` endpoints no longer accept ``?revision=<name>`` parameter. These endpoints return always repositories with the last revision name.
 
-* ``/api/repositories/{id}`` endoint no longer accepts ``?revision=<name>`` parameter. This endpoint returns always a repository with the last revision name.
-
-* ``/api/schedules``, ``/api/schedules/{id}``, and ``/api/schedules/{id}/skip`` endpoints workflow id in addition to workflow name.
+* ``/api/schedules``, ``/api/schedules/{id}``, and ``/api/schedules/{id}/skip`` endpoints return workflow id in addition to workflow name.
 
 * ``/api/attempts``, ``/api/attempts/{id}``, ``/api/attempts/{id}/retries``, ``/api/schedules/{id}/backfill``, ``/api/repositories/{id}/workflow`` and ``/api/repositories/{id}/workflows`` endpoints return a session attempt with optional workflow id in addition to workflow name.
 
