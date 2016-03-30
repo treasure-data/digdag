@@ -106,10 +106,10 @@ public class Main
         throws Exception
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            System.out.println("0.4.3");
+            System.out.println("0.5.0");
             return;
         }
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.4.3");
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.5.0");
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
