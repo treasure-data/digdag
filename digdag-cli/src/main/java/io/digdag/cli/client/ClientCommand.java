@@ -145,11 +145,6 @@ public abstract class ClientCommand
         }
     }
 
-    protected ModelPrinter modelPrinter()
-    {
-        return new ModelPrinter();
-    }
-
     protected static void ln(String format, Object... args)
     {
         System.out.println(String.format(format, args));
@@ -231,6 +226,6 @@ public abstract class ClientCommand
 
     protected static YamlMapper yamlMapper()
     {
-        return new YamlMapper(ModelPrinter.objectMapper());
+        return new YamlMapper(DigdagClient.objectMapper());
     }
 }
