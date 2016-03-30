@@ -57,7 +57,6 @@ public class AttemptResource
     // [*] GET  /api/attempts/{id}                               # show a session
     // [*] GET  /api/attempts/{id}/tasks                         # list tasks of a session
     // [*] GET  /api/attempts/{id}/retries                       # list retried attempts of this session
-    // [*] GET  /api/prepare                                     # prepares parameters for a new session attempt
     // [*] PUT  /api/attempts                                    # starts a new session
     // [*] POST /api/attempts/{id}/kill                          # kill a session
 
@@ -176,98 +175,6 @@ public class AttemptResource
             .stream()
             .map(task -> RestModels.task(task))
             .collect(Collectors.toList());
-    }
-
-    @GET
-    @Consumes("application/json")
-    @Path("/api/prepare")
-    public RestSessionAttemptPrepareResult prepareAttempt(
-            @QueryParam("repository") String repoName,
-            @QueryParam("revision") String revName,
-            @QueryParam("workflow") String wfName,
-            @QueryParam("session_time") LocalTimeOrInstant localTime,
-            @QueryParam("session_time_truncate") SessionTimeTruncate sessionTimeTruncate)
-        throws ResourceNotFoundException
-    {
-        Preconditions.checkArgument(repoName != null, "repository= is required");
-        // revName is nullable
-        Preconditions.checkArgument(wfName != null, "workflow= is required");
-        Preconditions.checkArgument(localTime != null, "session_time_ is required");
-        // sessionTimeTruncate is nullable
-
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-
-        String resolvedRevision;
-        long resolvedWorkflowId;
-
-        ZoneId timeZone;
-        Supplier<Optional<Scheduler>> schedulerSupplier;
-
-        StoredRepository repo = rs.getRepositoryByName(repoName);
-        if (revName != null) {
-            StoredRevision rev = rs.getRevisionByName(repo.getId(), revName);
-            StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
-            resolvedRevision = rev.getName();
-            resolvedWorkflowId = def.getId();
-            timeZone = def.getTimeZone();
-            schedulerSupplier = () -> srm.tryGetScheduler(rev, def);
-        }
-        else {
-            StoredWorkflowDefinitionWithRepository details = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
-            resolvedRevision = details.getRevisionName();
-            resolvedWorkflowId = details.getId();
-            timeZone = details.getTimeZone();
-            schedulerSupplier = () -> srm.tryGetScheduler(details);
-        }
-
-        Instant resolvedSessionTime;
-
-        if (sessionTimeTruncate != null) {
-            resolvedSessionTime = truncateSessionTime(localTime.toInstant(timeZone),
-                    timeZone, schedulerSupplier, sessionTimeTruncate);
-        }
-        else {
-            resolvedSessionTime = localTime.toInstant(timeZone);
-        }
-
-        return RestModels.attemptPrepare(
-                resolvedWorkflowId,
-                resolvedRevision,
-                resolvedSessionTime,
-                timeZone);
-    }
-
-    private Instant truncateSessionTime(
-            Instant sessionTime,
-            ZoneId timeZone,
-            Supplier<Optional<Scheduler>> schedulerSupplier,
-            SessionTimeTruncate mode)
-    {
-        switch (mode) {
-        case HOUR:
-            return ZonedDateTime.ofInstant(sessionTime, timeZone)
-                .truncatedTo(ChronoUnit.HOURS)
-                .toInstant();
-        case DAY:
-            return ZonedDateTime.ofInstant(sessionTime, timeZone)
-                .truncatedTo(ChronoUnit.DAYS)
-                .toInstant();
-        default:
-            {
-                Optional<Scheduler> scheduler = schedulerSupplier.get();
-                if (!scheduler.isPresent()) {
-                    throw new IllegalArgumentException("session_time_truncate=" + mode + " is set but _schedule is not set to this workflow");
-                }
-                switch (mode) {
-                case SCHEDULE:
-                    return scheduler.get().getFirstScheduleTime(sessionTime).getTime();
-                case NEXT_SCHEDULE:
-                    return scheduler.get().nextScheduleTime(sessionTime).getTime();
-                default:
-                    throw new IllegalArgumentException();
-                }
-            }
-        }
     }
 
     @PUT
