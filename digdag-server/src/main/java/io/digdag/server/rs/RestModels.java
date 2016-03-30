@@ -28,7 +28,7 @@ import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.workflow.AttemptRequest;
@@ -62,7 +62,7 @@ public final class RestModels
     }
 
     public static RestWorkflowDefinition workflowDefinition(StoredRepository repo, Revision rev,
-            WorkflowDefinition def)
+            StoredWorkflowDefinition def)
     {
         return workflowDefinition(repo, rev.getName(), def);
     }
@@ -72,10 +72,12 @@ public final class RestModels
         return workflowDefinition(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails);
     }
 
-    private static RestWorkflowDefinition workflowDefinition(StoredRepository repo, String revName,
-            WorkflowDefinition def)
+    private static RestWorkflowDefinition workflowDefinition(
+            StoredRepository repo, String revName,
+            StoredWorkflowDefinition def)
     {
         return RestWorkflowDefinition.builder()
+            .id(def.getId())
             .name(def.getName())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)

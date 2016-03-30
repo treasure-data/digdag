@@ -13,6 +13,8 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestWorkflowDefinition.class)
 public abstract class RestWorkflowDefinition
 {
+    public abstract long getId();
+
     public abstract String getName();
 
     public abstract IdName getRepository();
