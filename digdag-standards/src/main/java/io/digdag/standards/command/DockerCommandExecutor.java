@@ -61,9 +61,11 @@ public class DockerCommandExecutor
 
         String buildImageName = null;
         if (dockerConfig.has("build")) {
-            buildImageName = String.format(ENGLISH, "rev-%d-%s",
+            buildImageName = String.format(ENGLISH, "digdag-%d-%s:rev-%s",
                     request.getRepositoryId(),
-                    request.getRevision().or(UUID.randomUUID().toString()));
+                    request.getTaskName().replace("+", ""),
+                    request.getRevision().transform(s -> s.replace(":", ""))
+                            .or(UUID.randomUUID().toString()));
 
             buildImage(archivePath, dockerConfig, image, buildImageName);
         }
