@@ -28,6 +28,7 @@ import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.ConfigException;
 import static java.util.Locale.ENGLISH;
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 
 public class Start
@@ -96,13 +97,7 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         RestSessionAttemptPrepareRequest prepareRequest = buildPrepareRequest(repoName, workflowName);
 

@@ -44,6 +44,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.Arguments.loadParams;
 
 public class Archive
     extends Command
@@ -133,13 +134,7 @@ public class Archive
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
 
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         Path absoluteCurrentPath = FileSystems.getDefault().getPath("").toAbsolutePath().normalize();
 

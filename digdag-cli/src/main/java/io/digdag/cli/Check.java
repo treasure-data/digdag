@@ -40,6 +40,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.client.ClientCommand.formatTime;
 import static io.digdag.cli.client.ClientCommand.formatTimeDiff;
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.cli.Run.DEFAULT_DAGFILE;
 
@@ -98,13 +99,7 @@ public class Check
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         showSystemDefaults();
 
