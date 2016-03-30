@@ -20,7 +20,7 @@ public abstract class RestSessionAttempt
 
     //public abstract Optional<String> getRevision();
 
-    public abstract String getWorkflowName();
+    public abstract NameOptionalId getWorkflow();
 
     public abstract UUID getSessionUuid();
 

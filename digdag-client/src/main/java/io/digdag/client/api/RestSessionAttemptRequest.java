@@ -21,9 +21,6 @@ public abstract class RestSessionAttemptRequest
 
     public abstract Config getParams();
 
-    //@JsonProperty("from")
-    //public abstract Optional<String> getFromTaskName();
-
     public static ImmutableRestSessionAttemptRequest.Builder builder()
     {
         return ImmutableRestSessionAttemptRequest.builder();

@@ -70,7 +70,7 @@ public class Backfill
             ln("  id: %d", attempt.getId());
             ln("  uuid: %s", attempt.getSessionUuid());
             ln("  repository: %s", attempt.getRepository().getName());
-            ln("  workflow: %s", attempt.getWorkflowName());
+            ln("  workflow: %s", attempt.getWorkflow().getName());
             ln("  session time: %s", formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
             ln("  params: %s", attempt.getParams());

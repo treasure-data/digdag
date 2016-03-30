@@ -16,6 +16,8 @@ import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.client.api.RestDirectUploadHandle;
 import io.digdag.client.api.IdName;
+import io.digdag.client.api.NameOptionalId;
+import io.digdag.client.api.NameLongId;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.DirectDownloadHandle;
@@ -103,7 +105,7 @@ public final class RestModels
         return RestSchedule.builder()
             .id(sched.getId())
             .repository(IdName.of(repo.getId(), repo.getName()))
-            .workflowName(sched.getWorkflowName())
+            .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .build();
@@ -113,7 +115,7 @@ public final class RestModels
     {
         return RestScheduleSummary.builder()
             .id(sched.getId())
-            .workflowName(sched.getWorkflowName())
+            .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
@@ -126,7 +128,7 @@ public final class RestModels
         return RestSessionAttempt.builder()
             .id(attempt.getId())
             .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
-            .workflowName(attempt.getSession().getWorkflowName())
+            .workflow(NameOptionalId.of(attempt.getSession().getWorkflowName(), attempt.getWorkflowDefinitionId()))
             .sessionUuid(attempt.getSessionUuid())
             .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
             .retryAttemptName(attempt.getRetryAttemptName())

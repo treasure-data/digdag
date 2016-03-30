@@ -17,7 +17,7 @@ public abstract class RestSchedule
 
     public abstract IdName getRepository();
 
-    public abstract String getWorkflowName();
+    public abstract NameLongId getWorkflow();
 
     public abstract Instant getNextRunTime();
 

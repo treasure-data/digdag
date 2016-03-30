@@ -86,7 +86,7 @@ public class Reschedule
         }
 
         ln("  id: %d", updated.getId());
-        ln("  workflow: %s", updated.getWorkflowName());
+        ln("  workflow: %s", updated.getWorkflow().getName());
         ln("  next session time: %s", formatTime(updated.getNextScheduleTime()));
         ln("  next runs at: %s (%s later)", formatTime(updated.getNextRunTime()), formatTimeDiff(now, updated.getNextRunTime()));
         ln("");

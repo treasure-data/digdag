@@ -14,7 +14,7 @@ public abstract class RestScheduleSummary
 {
     public abstract int getId();
 
-    public abstract String getWorkflowName();
+    public abstract NameLongId getWorkflow();
 
     public abstract Instant getNextRunTime();
 
