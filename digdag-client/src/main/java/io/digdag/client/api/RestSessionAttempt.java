@@ -2,6 +2,7 @@ package io.digdag.client.api;
 
 import java.util.UUID;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -19,11 +20,11 @@ public abstract class RestSessionAttempt
 
     //public abstract Optional<String> getRevision();
 
-    public abstract String getWorkflowName();
+    public abstract NameOptionalId getWorkflow();
 
     public abstract UUID getSessionUuid();
 
-    public abstract long getSessionTime();
+    public abstract OffsetDateTime getSessionTime();
 
     public abstract Optional<String> getRetryAttemptName();
 

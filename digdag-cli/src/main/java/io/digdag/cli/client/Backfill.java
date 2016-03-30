@@ -20,7 +20,7 @@ public class Backfill
     @Parameter(names = {"-f", "--from"})
     String fromTime;
 
-    @Parameter(names = {"-R", "--attempt-name"})
+    @Parameter(names = {"--attempt-name"})
     String attemptName;
 
     // TODO -n for count
@@ -36,7 +36,7 @@ public class Backfill
         if (args.size() != 1) {
             throw usage(null);
         }
-        long schedId = parseLongOrUsage(args.get(0));
+        int schedId = parseIntOrUsage(args.get(0));
 
         backfill(schedId);
     }
@@ -46,20 +46,21 @@ public class Backfill
         System.err.println("Usage: digdag backfill <schedule-id>");
         System.err.println("  Options:");
         System.err.println("    -f, --from 'yyyy-MM-dd HH:mm:ss Z'  timestamp to start backfill from (required)");
-        System.err.println("    -R, --attempt-name NAME          attempt name (required)");
+        System.err.println("    -R, --attempt-name NAME          retry attempt name (required)");
         System.err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void backfill(long schedId)
+    public void backfill(int schedId)
         throws Exception
     {
         if (fromTime == null || attemptName == null) {
             throw new ParameterException("-f, --from option and -R, --attempt-name option are required");
         }
 
-        Date from = Date.from(parseTime(fromTime));
+        Instant from = parseTime(fromTime,
+            "-f, --from option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp");
 
         DigdagClient client = buildClient();
         List<RestSessionAttempt> attempts = client.backfillSchedule(schedId, from, attemptName, dryRun);
@@ -69,11 +70,11 @@ public class Backfill
             ln("  id: %d", attempt.getId());
             ln("  uuid: %s", attempt.getSessionUuid());
             ln("  repository: %s", attempt.getRepository().getName());
-            ln("  workflow: %s", attempt.getWorkflowName());
+            ln("  workflow: %s", attempt.getWorkflow().getName());
             ln("  session time: %s", formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
             ln("  params: %s", attempt.getParams());
-            ln("  created at: %s", formatTime(attempt.getId()));
+            ln("  created at: %s", formatTime(attempt.getCreatedAt()));
             ln("");
         }
 

@@ -1,5 +1,7 @@
 package io.digdag.client.api;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -11,6 +13,8 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestWorkflowDefinition.class)
 public abstract class RestWorkflowDefinition
 {
+    public abstract long getId();
+
     public abstract String getName();
 
     public abstract IdName getRepository();
@@ -18,12 +22,6 @@ public abstract class RestWorkflowDefinition
     public abstract String getRevision();
 
     public abstract Config getConfig();
-
-    // unix timestamp in seconds
-    public abstract Optional<Long> getNextScheduleTime();
-
-    // unix timestamp in seconds
-    public abstract Optional<Long> getNextRunTime();
 
     public static ImmutableRestWorkflowDefinition.Builder builder()
     {

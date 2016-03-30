@@ -11,7 +11,6 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.spi.Scheduler;
@@ -37,7 +36,7 @@ public class AttemptBuilder
             ScheduleTime time,
             Optional<String> retryAttemptName)
     {
-        ZoneId timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def);
+        ZoneId timeZone = def.getTimeZone();
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
@@ -56,7 +55,7 @@ public class AttemptBuilder
             ScheduleTime time,
             Optional<String> retryAttemptName)
     {
-        ZoneId timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(def);
+        ZoneId timeZone = def.getTimeZone();
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))

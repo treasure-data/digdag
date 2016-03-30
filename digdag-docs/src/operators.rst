@@ -231,7 +231,7 @@ Parameters
   * :command:`database: my_db`
 
 :command:`apikey: APIKEY`
-  API key.
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -301,7 +301,7 @@ Parameters
   * :command:`store_last_results: true`
 
 :command:`apikey: APIKEY`
-  API key.
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -360,7 +360,7 @@ TODO: add more description here
   * :command:`table: my_table`
 
 :command:`apikey: APIKEY`
-  API key.
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -420,7 +420,7 @@ TODO: add more description here
   * :command:`drop_tables: [my_table1, my_table2]`
 
 :command:`apikey: APIKEY`
-  API key.
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -502,7 +502,7 @@ TODO: add more description here
   * :command:`s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
 
 :command:`apikey: APIKEY`
-  API key.
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -20,6 +21,13 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowSessionTime;
+import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.SessionTimeTruncate;
+import io.digdag.client.config.ConfigException;
+import static java.util.Locale.ENGLISH;
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 
 public class Start
@@ -31,42 +39,48 @@ public class Start
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-R", "--retry"})
+    @Parameter(names = {"--retry"})
     String retryAttemptName = null;
 
-    @Parameter(names = {"--now"})
-    boolean now = false;
+    @Parameter(names = {"--session"})
+    String sessionString = null;
+
+    @Parameter(names = {"--revision"})
+    String revision = null;
 
     @Override
     public void mainWithClientException()
         throws Exception
     {
-        if (now) {
-            if (args.size() != 2) {
-                throw usage(null);
-            }
-            start(args.get(0), args.get(1), ScheduleTime.alignedNow());
+        if (args.size() != 2) {
+            throw usage(null);
         }
-        else {
-            if (args.size() != 3) {
-                throw usage(null);
-            }
-            start(args.get(0), args.get(1), parseTime(args.get(2)));
+        if (sessionString == null) {
+            throw usage("--session option is required");
         }
+        start(args.get(0), args.get(1));
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <repo-name> <+name> [--now or \"yyyy-MM-dd HH:mm:ss Z\"]");
+        System.err.println("Usage: digdag start <repo-name> <+name>");
         System.err.println("  Options:");
+        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
+        System.err.println("        --revision <name>            use a past revision");
+        System.err.println("        --retry NAME                 set retry attempt name to a new session");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        System.err.println("    -R, --retry NAME                 set attempt name to retry a session");
         ClientCommand.showCommonOptions();
+        System.err.println("");
+        System.err.println("  Examples:");
+        System.err.println("    $ digdag start my_repo +workflow1 --session \"2016-01-01 -07:00\"");
+        System.err.println("    $ digdag start my_repo +workflow1 --session hourly      # use current hour's 00:00");
+        System.err.println("    $ digdag start my_repo +workflow1 --session daily       # use current day's 00:00:00");
+        System.err.println("");
         return systemExit(error);
     }
 
-    public void start(String repoName, String workflowName, Instant sessiontime)
+    public void start(String repoName, String workflowName)
         throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
@@ -82,36 +96,69 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
+
+        LocalTimeOrInstant time;
+        SessionTimeTruncate mode;
+
+        switch (sessionString) {
+        case "hourly":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = SessionTimeTruncate.HOUR;
+            break;
+
+        case "daily":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = SessionTimeTruncate.DAY;
+            break;
+
+        case "now":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = null;
+            break;
+
+        default:
+            time = LocalTimeOrInstant.of(
+                    parseLocalTime(sessionString,
+                        "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
+            mode = null;
         }
 
+        DigdagClient client = buildClient();
+
+        RestWorkflowDefinition def;
+        if (revision == null) {
+            def = client.getWorkflowDefinition(repoName, workflowName);
+        }
+        else {
+            def = client.getWorkflowDefinition(repoName, workflowName, revision);
+        }
+
+        RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(def.getId(), time);
+
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
-            .repositoryName(repoName)
-            .workflowName(workflowName)
-            .sessionTime(sessiontime)
+            .workflowId(def.getId())
+            .sessionTime(truncatedTime.getSessionTime().toInstant())
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
             .params(overwriteParams)
             .build();
 
-        DigdagClient client = buildClient();
-        RestSessionAttempt attempt = client.startSession(request);
+        RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 
         ln("Started a session attempt:");
-        ln("  id: %d", attempt.getId());
-        ln("  uuid: %s", attempt.getSessionUuid());
-        ln("  repository: %s", attempt.getRepository().getName());
-        ln("  workflow: %s", attempt.getWorkflowName());
-        ln("  session time: %s", formatTime(attempt.getSessionTime()));
-        ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
-        ln("  params: %s", attempt.getParams());
-        ln("  created at: %s", formatTime(attempt.getId()));
+        ln("  id: %d", newAttempt.getId());
+        ln("  uuid: %s", newAttempt.getSessionUuid());
+        ln("  repository: %s", newAttempt.getRepository().getName());
+        ln("  workflow: %s", newAttempt.getWorkflow().getName());
+        ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
+        ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
+        ln("  params: %s", newAttempt.getParams());
+        ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        System.err.println("Use `digdag sessions` to show status.");
+        System.err.println("* Use `digdag sessions` to list session attempts.");
+        System.err.println(String.format(ENGLISH,
+                    "* Use `digdag task %d` and `digdag log %d` to show status.",
+                    newAttempt.getId(), newAttempt.getId()));
     }
 }

@@ -37,7 +37,7 @@ public class Reschedule
         if (args.size() != 1) {
             throw usage(null);
         }
-        long schedId = parseLongOrUsage(args.get(0));
+        int schedId = parseIntOrUsage(args.get(0));
 
         if (toTime != null && skipCount > 0) {
             throw systemExit("-s and -t can't be set together");
@@ -60,28 +60,33 @@ public class Reschedule
         return systemExit(error);
     }
 
-    public void reschedule(long schedId)
+    public void reschedule(int schedId)
         throws Exception
     {
         Instant now = Instant.now();
+
+        Optional<Instant> runAt = runAtTime == null ? Optional.absent() : Optional.of(
+                parseTime(runAtTime, "-a, --run-at option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp")
+                );
 
         DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
             updated = client.skipSchedulesToTime(schedId,
-                    parseDate(toTime),
-                    Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
+                    parseTime(toTime,
+                        "-t, --skip-to option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp"),
+                    runAt,
                     dryRun);
         }
         else {
             updated = client.skipSchedulesByCount(schedId,
-                    Date.from(now), skipCount,
-                    Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
+                    now, skipCount,
+                    runAt,
                     dryRun);
         }
 
         ln("  id: %d", updated.getId());
-        ln("  workflow: %s", updated.getWorkflowName());
+        ln("  workflow: %s", updated.getWorkflow().getName());
         ln("  next session time: %s", formatTime(updated.getNextScheduleTime()));
         ln("  next runs at: %s (%s later)", formatTime(updated.getNextRunTime()), formatTimeDiff(now, updated.getNextRunTime()));
         ln("");
@@ -92,10 +97,5 @@ public class Reschedule
         else {
             System.err.println("Use `digdag schedules` to show schedules.");
         }
-    }
-
-    private Date parseDate(String s)
-    {
-        return Date.from(parseTime(s));
     }
 }

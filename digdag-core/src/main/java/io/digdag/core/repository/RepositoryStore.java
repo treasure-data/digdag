@@ -1,11 +1,15 @@
 package io.digdag.core.repository;
 
 import java.util.List;
+import java.util.Map;
+import java.time.ZoneId;
 import com.google.common.base.Optional;
 
 public interface RepositoryStore
 {
     List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId);
+
+    RepositoryMap getRepositoriesByIdList(List<Integer> repoIdList);
 
     StoredRepository getRepositoryById(int repoId)
         throws ResourceNotFoundException;
@@ -40,12 +44,14 @@ public interface RepositoryStore
 
     List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId);
 
-    StoredWorkflowDefinition getWorkflowDefinitionById(long wfId)
+    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
 
-    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
+    StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
     StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
         throws ResourceNotFoundException;
+
+    TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList);
 }

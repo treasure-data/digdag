@@ -24,6 +24,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.workflow.*;
@@ -43,16 +44,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class RepositoryResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/repository?name=<name>                      # get the latest revisions of a repository by name
-    // [*] GET  /api/repository?name=<name>?revision=name        # get a former revision of a repository
-    // [*] GET  /api/repositories                                # list the latest revisions of repositories
-    // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
+    // [*] GET  /api/repository?name=<name>                      # lookup a repository by name
+    // [*] GET  /api/repositories                                # list repositories
+    // [*] GET  /api/repositories/{id}                           # show a repository
     // [*] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
-    // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
-    // [*] GET  /api/repositories/{id}/workflow?name=name        # get a workflow of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # get a workflow of ea past revision of a repository
+    // [*] GET  /api/repositories/{id}/workflow?name=name        # lookup a workflow of a repository by name
+    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a repository by name
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
+    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a past revision of a repository
     // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
     // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
@@ -86,18 +85,14 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repository")
-    public RestRepository getRepository(@QueryParam("name") String name, @QueryParam("revision") String revName)
+    public RestRepository getRepository(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "name= is required");
+
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryByName(name);
-        StoredRevision rev;
-        if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
-        }
-        else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
-        }
+        StoredRevision rev = rs.getLatestRevision(repo.getId());
         return RestModels.repository(repo, rev);
     }
 
@@ -125,18 +120,12 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}")
-    public RestRepository getRepository(@PathParam("id") int repoId, @QueryParam("revision") String revName)
+    public RestRepository getRepository(@PathParam("id") int repoId)
         throws ResourceNotFoundException
     {
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
-        StoredRevision rev;
-        if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
-        }
-        else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
-        }
+        StoredRevision rev = rs.getLatestRevision(repo.getId());
         return RestModels.repository(repo, rev);
     }
 
@@ -158,6 +147,8 @@ public class RepositoryResource
     public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "name= is required");
+
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
 
@@ -170,11 +161,7 @@ public class RepositoryResource
         }
         StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
 
-        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
-
-        return RestModels.workflowDefinition(
-                repo, rev, def,
-                Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime())));
+        return RestModels.workflowDefinition(repo, rev, def);
     }
 
     @GET
@@ -195,25 +182,9 @@ public class RepositoryResource
         }
         List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
-        Map<Long, Schedule> scheds = getWorkflowScheduleMap();
-
         return defs.stream()
-            .map(def -> RestModels.workflowDefinition(
-                        repo, rev, def,
-                        Optional.fromNullable(scheds.get(def.getId())).transform(sched -> ScheduleTime.of(sched.getNextScheduleTime(), sched.getNextRunTime()))
-                        ))
+            .map(def -> RestModels.workflowDefinition(repo, rev, def))
             .collect(Collectors.toList());
-    }
-
-    private Map<Long, Schedule> getWorkflowScheduleMap()
-    {
-        List<StoredSchedule> schedules = sm.getScheduleStore(getSiteId())
-            .getSchedules(Integer.MAX_VALUE, Optional.absent());
-        ImmutableMap.Builder<Long, Schedule> builder = ImmutableMap.builder();
-        for (Schedule schedule : schedules) {
-            builder.put(schedule.getWorkflowDefinitionId(), schedule);
-        }
-        return builder.build();
     }
 
     @GET
@@ -241,6 +212,9 @@ public class RepositoryResource
             InputStream body)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
+        Preconditions.checkArgument(name != null, "repository= is required");
+        Preconditions.checkArgument(revision != null, "revision= is required");
+
         byte[] data = ByteStreams.toByteArray(body);
 
         ArchiveMetadata meta;

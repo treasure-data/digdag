@@ -3,6 +3,7 @@ package io.digdag.client.api;
 import java.util.Locale;
 import java.time.ZoneId;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.DateTimeException;
@@ -26,6 +27,8 @@ public class JacksonTimeModule
         super();
         addSerializer(Instant.class, new InstantSerializer());
         addDeserializer(Instant.class, new InstantDeserializer());
+        addSerializer(OffsetDateTime.class, new OffsetDateTimeSerializer());
+        addDeserializer(OffsetDateTime.class, new OffsetDateTimeDeserializer());
         addSerializer(ZoneId.class, new ZoneIdSerializer());
         addDeserializer(ZoneId.class, new ZoneIdDeserializer());
     }
@@ -53,12 +56,9 @@ public class JacksonTimeModule
     public static class InstantDeserializer
             extends FromStringDeserializer<Instant>
     {
-        private final DateTimeFormatter parser;
-
         public InstantDeserializer()
         {
             super(Instant.class);
-            this.parser = DateTimeFormatter.ISO_DATE_TIME;
         }
 
         @Override
@@ -66,10 +66,51 @@ public class JacksonTimeModule
                 throws JsonMappingException
         {
             try {
-                return Instant.from(parser.parse(value));
+                return Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value));
             }
             catch (DateTimeParseException ex) {
-                throw new JsonMappingException(String.format("Unknown time zone name '%s'", value), ex);
+                throw new JsonMappingException("Invalid ISO time format: %s" + value, ex);
+            }
+        }
+    }
+
+    public static class OffsetDateTimeSerializer
+            extends JsonSerializer<OffsetDateTime>
+    {
+        private final DateTimeFormatter formatter;
+
+        public OffsetDateTimeSerializer()
+        {
+            this.formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", Locale.ENGLISH);
+        }
+
+        @Override
+        public void serialize(OffsetDateTime value, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException
+        {
+            jgen.writeString(formatter.format(value));
+        }
+    }
+
+    public static class OffsetDateTimeDeserializer
+            extends FromStringDeserializer<OffsetDateTime>
+    {
+
+        public OffsetDateTimeDeserializer()
+        {
+            super(OffsetDateTime.class);
+        }
+
+        @Override
+        protected OffsetDateTime _deserialize(String value, DeserializationContext context)
+                throws JsonMappingException
+        {
+            try {
+                return OffsetDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(value));
+            }
+            catch (DateTimeParseException ex) {
+                throw new JsonMappingException("Invalid ISO time format: %s" + value, ex);
             }
         }
     }
@@ -101,7 +142,7 @@ public class JacksonTimeModule
                 return ZoneId.of(value);
             }
             catch (DateTimeException ex) {
-                throw new JsonMappingException(String.format("Unknown time zone name '%s'", value), ex);
+                throw new JsonMappingException("Unknown time zone name: " + value, ex);
             }
         }
     }

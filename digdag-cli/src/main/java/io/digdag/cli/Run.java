@@ -81,6 +81,7 @@ import io.digdag.spi.Scheduler;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Locale.ENGLISH;
 
@@ -247,13 +248,7 @@ public class Run
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         // read parameters
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         // read workflow definitions
         Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);

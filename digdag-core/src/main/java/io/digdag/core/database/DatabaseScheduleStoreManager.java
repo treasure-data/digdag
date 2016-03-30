@@ -1,7 +1,9 @@
 package io.digdag.core.database;
 
 import java.util.List;
+import java.util.Map;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -113,13 +115,13 @@ public class DatabaseScheduleStoreManager
         //}
 
         @Override
-        public List<StoredSchedule> getSchedules(int pageSize, Optional<Long> lastId)
+        public List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getSchedules(siteId, pageSize, lastId.or(0L)));
+            return autoCommit((handle, dao) -> dao.getSchedules(siteId, pageSize, lastId.or(0)));
         }
 
         @Override
-        public StoredSchedule getScheduleById(long schedId)
+        public StoredSchedule getScheduleById(int schedId)
             throws ResourceNotFoundException
         {
             return requiredResource(
@@ -170,14 +172,15 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
-                " where s.repository_id in (" +
-                    "select id from repositories repo" +
-                    " where repo.site_id = :siteId" +
+                " where exists (" +
+                    "select * from repositories repo" +
+                    " where repo.id = s.repository_id" +
+                    " and repo.site_id = :siteId" +
                 ")" +
                 " and s.id > :lastId" +
                 " order by s.id asc" +
                 " limit :limit")
-        List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredSchedule> getSchedules(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +

@@ -5,19 +5,19 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableIdName.class)
-@JsonDeserialize(as = ImmutableIdName.class)
-public abstract class IdName
+@JsonSerialize(as = ImmutableNameLongId.class)
+@JsonDeserialize(as = ImmutableNameLongId.class)
+public abstract class NameLongId
 {
-    public abstract int getId();
-
     public abstract String getName();
 
-    public static IdName of(int id, String name)
+    public abstract long getId();
+
+    public static NameLongId of(String name, long id)
     {
-        return ImmutableIdName.builder()
-            .id(id)
+        return ImmutableNameLongId.builder()
             .name(name)
+            .id(id)
             .build();
     }
 }

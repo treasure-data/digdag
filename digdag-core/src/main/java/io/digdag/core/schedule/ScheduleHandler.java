@@ -44,7 +44,7 @@ public class ScheduleHandler
     }
 
     public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithRepository def,
-            ZoneId timeZone, ScheduleTime time, Optional<String> retryAttemptName)
+            ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(

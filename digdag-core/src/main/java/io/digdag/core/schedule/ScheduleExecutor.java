@@ -92,32 +92,6 @@ public class ScheduleExecutor
         }
     }
 
-    // used by RepositoryControl.updateSchedules
-    static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
-    {
-        return def.getConfig().getOptional("_schedule", Config.class);
-    }
-
-    // used by SchedulerManager and Check command
-    public static Config getScheduleConfig(WorkflowDefinition def)
-    {
-        return def.getConfig().getNested("_schedule");
-    }
-
-    // used by SchedulerManager and AttemptBuilder
-    public static ZoneId getTimeZoneOfStoredWorkflow(Revision rev, WorkflowDefinition def)
-    {
-        return rev.getDefaultParams().get("timezone", ZoneId.class,
-                    ZoneId.of("UTC"));
-    }
-
-    // used by SchedulerManager and AttemptBuilder
-    public static ZoneId getTimeZoneOfStoredWorkflow(StoredWorkflowDefinitionWithRepository def)
-    {
-        return def.getRevisionDefaultParams().get("timezone", ZoneId.class,
-                    ZoneId.of("UTC"));
-    }
-
     public boolean schedule(ScheduleControl lockedSched)
     {
         StoredSchedule sched = lockedSched.get();
@@ -128,8 +102,7 @@ public class ScheduleExecutor
         try {
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
-            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-            Scheduler sr = srm.getScheduler(def, timeZone);
+            Scheduler sr = srm.getScheduler(def);
 
             try {
                 ScheduleTime nextTime = startSchedule(sched, sr, def);
@@ -165,11 +138,10 @@ public class ScheduleExecutor
     {
         Instant scheduleTime = sched.getNextScheduleTime();
         Instant runTime = sched.getNextRunTime();
-        ZoneId timeZone = sr.getTimeZone();
 
         try {
             handler.start(def,
-                    timeZone, ScheduleTime.of(scheduleTime, runTime),
+                    ScheduleTime.of(scheduleTime, runTime),
                     Optional.absent());
         }
         catch (SessionAttemptConflictException ex) {
@@ -178,7 +150,7 @@ public class ScheduleExecutor
         return sr.nextScheduleTime(scheduleTime);
     }
 
-    public StoredSchedule skipScheduleToTime(int siteId, long schedId, Instant nextTime, Optional<Instant> runTime, boolean dryRun)
+    public StoredSchedule skipScheduleToTime(int siteId, int schedId, Instant nextTime, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
@@ -215,7 +187,7 @@ public class ScheduleExecutor
         });
     }
 
-    public StoredSchedule skipScheduleByCount(int siteId, long schedId, Instant currentTime, int count, Optional<Instant> runTime, boolean dryRun)
+    public StoredSchedule skipScheduleByCount(int siteId, int schedId, Instant currentTime, int count, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
@@ -259,11 +231,10 @@ public class ScheduleExecutor
         throws ResourceNotFoundException
     {
         StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-        ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-        return srm.getScheduler(def, timeZone);
+        return srm.getScheduler(def);
     }
 
-    public List<StoredSessionAttemptWithSession> backfill(int siteId, long schedId, Instant fromTime, String attemptName, boolean dryRun)
+    public List<StoredSessionAttemptWithSession> backfill(int siteId, int schedId, Instant fromTime, String attemptName, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
@@ -274,8 +245,7 @@ public class ScheduleExecutor
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-            ZoneId timeZone = getTimeZoneOfStoredWorkflow(def);
-            Scheduler sr = srm.getScheduler(def, timeZone);
+            Scheduler sr = srm.getScheduler(def);
 
             List<Instant> instants = new ArrayList<>();
             Instant time = sr.getFirstScheduleTime(fromTime).getTime();
@@ -320,7 +290,7 @@ public class ScheduleExecutor
                 else {
                     try {
                         StoredSessionAttemptWithSession attempt = handler.start(def,
-                                timeZone, ScheduleTime.of(instant, sched.getNextScheduleTime()),
+                                ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName));
                         attempts.add(attempt);
                     }

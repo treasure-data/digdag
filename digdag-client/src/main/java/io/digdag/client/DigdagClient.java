@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Date;
 import java.util.HashMap;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.security.Key;
 import java.io.File;
 import java.io.InputStream;
@@ -16,18 +17,15 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.common.base.Optional;
-import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.databind.InjectableValues;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.crypto.MacProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import com.fasterxml.jackson.databind.InjectableValues;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
@@ -69,6 +67,14 @@ public class DigdagClient
         }
     }
 
+    public static ObjectMapper objectMapper()
+    {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new GuavaModule());
+        mapper.registerModule(new JacksonTimeModule());
+        return mapper;
+    }
+
     public static Builder builder()
     {
         return new Builder();
@@ -89,10 +95,7 @@ public class DigdagClient
             headers.putSingle("Authorization", buildAuthorizationHeader(builder.apiKey.get()));
         }
 
-        Injector injector = buildInjector();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new GuavaModule());
-        mapper.registerModule(new JacksonTimeModule());
+        ObjectMapper mapper = objectMapper();
 
         // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
         InjectableValues.Std injects = new InjectableValues.Std();
@@ -126,18 +129,6 @@ public class DigdagClient
         return cf.create();
     }
 
-    private static Injector buildInjector()
-    {
-        return Guice.createInjector(
-            (binder) -> {
-                binder.bind(ConfigFactory.class);
-            },
-            new ObjectMapperModule()
-                .registerModule(new GuavaModule())
-                .registerModule(new JacksonTimeModule())
-            );
-    }
-
     public RestRepository getRepository(String name)
     {
         return doGet(RestRepository.class,
@@ -166,13 +157,6 @@ public class DigdagClient
                 .resolveTemplate("id", repoId));
     }
 
-    public RestRepository getRepository(int repoId, String revision)
-    {
-        return doGet(RestRepository.class,
-                target("/api/repository/{id}")
-                .resolveTemplate("id", repoId)
-                .queryParam("revision", revision));
-    }
 
     public List<RestRevision> getRevisions(int repoId, Optional<Integer> lastId)
     {
@@ -214,12 +198,53 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
+    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflow")
+                .queryParam("name", name)
+                .queryParam("repository", repoName));
+    }
+
+    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name, String revision)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflow")
+                .queryParam("name", name)
+                .queryParam("repository", repoName)
+                .queryParam("revision", revision));
+    }
+
+    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflows/{id}")
+                .resolveTemplate("id", workflowId));
+    }
+
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time)
+    {
+        return doGet(RestWorkflowSessionTime.class,
+                target("/api/workflows/{id}/truncated_session_time")
+                .resolveTemplate("id", workflowId)
+                .queryParam("session_time", time.toString()));
+    }
+
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time, SessionTimeTruncate mode)
+    {
+        return doGet(RestWorkflowSessionTime.class,
+                target("/api/workflows/{id}/truncated_session_time")
+                .resolveTemplate("id", workflowId)
+                .queryParam("session_time", time.toString())
+                .queryParam("mode", mode.toString()));
+    }
+
     public RestRepository putRepositoryRevision(String repoName, String revision, File body)
         throws IOException
     {
         return doPut(RestRepository.class,
                 "application/gzip",
-                body,  // TODO does this work?
+                body,
                 target("/api/repositories")
                 .queryParam("repository", repoName)
                 .queryParam("revision", revision));
@@ -319,7 +344,7 @@ public class DigdagClient
         return res.readEntity(InputStream.class);
     }
 
-    public RestSessionAttempt startSession(RestSessionAttemptRequest request)
+    public RestSessionAttempt startSessionAttempt(RestSessionAttemptRequest request)
     {
         return doPut(RestSessionAttempt.class,
                 "application/json",
@@ -335,49 +360,48 @@ public class DigdagClient
                 .resolveTemplate("id", attemptId));
     }
 
-    //public List<RestWorkflowDefinition> getWorkflowDefinitions()
-    //{
-    //    return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
-    //            target("/api/workflows"));
-    //}
-
-    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
-    {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/workflows/{id}")
-                .resolveTemplate("id", workflowId));
-    }
-
-    public RestScheduleSummary skipSchedulesToTime(long scheduleId, Date date, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(int scheduleId, Instant untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .nextTime(date.getTime() / 1000)
-                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .nextTime(LocalTimeOrInstant.of(untilTime))
+                    .nextRunTime(runTime)
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary skipSchedulesByCount(long scheduleId, Date fromTime, int count, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(int scheduleId, LocalDateTime untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .fromTime(fromTime.getTime() / 1000)
+                    .nextTime(LocalTimeOrInstant.of(untilTime))
+                    .nextRunTime(runTime)
+                    .dryRun(dryRun)
+                    .build(),
+                target("/api/schedules/{id}/skip")
+                .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary skipSchedulesByCount(int scheduleId, Instant fromTime, int count, Optional<Instant> runTime, boolean dryRun)
+    {
+        return doPost(RestScheduleSummary.class,
+                RestScheduleSkipRequest.builder()
+                    .fromTime(fromTime)
                     .count(count)
-                    .nextRunTime(runTime.transform(d -> d.getTime() / 1000))
+                    .nextRunTime(runTime)
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSessionAttempt> backfillSchedule(long scheduleId, Date fromTime, String attemptName, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Instant fromTime, String attemptName, boolean dryRun)
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()
-                    .fromTime(fromTime.getTime() / 1000)
+                    .fromTime(fromTime)
                     .dryRun(dryRun)
                     .attemptName(attemptName)
                     .build(),

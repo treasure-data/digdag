@@ -1,6 +1,7 @@
 package io.digdag.client.api;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -12,19 +13,15 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestSchedule.class)
 public abstract class RestSchedule
 {
-    public abstract long getId();
+    public abstract int getId();
 
     public abstract IdName getRepository();
 
-    public abstract String getWorkflowName();
+    public abstract NameLongId getWorkflow();
 
-    // TODO add timezone here so that Check and ShowSchedule can show "next session time" in this timezone
+    public abstract Instant getNextRunTime();
 
-    // unix timestamp in seconds
-    public abstract long getNextRunTime();
-
-    // unix timestamp in seconds
-    public abstract long getNextScheduleTime();
+    public abstract OffsetDateTime getNextScheduleTime();
 
     public static ImmutableRestSchedule.Builder builder()
     {

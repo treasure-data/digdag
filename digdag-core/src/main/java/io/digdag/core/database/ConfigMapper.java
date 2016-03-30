@@ -5,10 +5,6 @@ import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.sql.ResultSet;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -84,25 +80,19 @@ public class ConfigMapper
         }
     }
 
-    private static final MessageDigest md5;
-
-    static {
-        try {
-            md5 = MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public long toConfigDigest(String configText)
+    public String toBinding(Config config)
     {
-        try {
-            byte[] digest = ((MessageDigest) md5.clone()).digest(configText.getBytes(StandardCharsets.UTF_8));
-            return ByteBuffer.wrap(digest).getLong(0);
+        if (config == null) {
+            return null;
         }
-        catch (CloneNotSupportedException ex) {
-            throw new RuntimeException(ex);
+        else {
+            String text = toText(config);
+            if ("{}".equals(text)) {
+                return null;
+            }
+            else {
+                return text;
+            }
         }
     }
 
@@ -136,18 +126,12 @@ public class ConfigMapper
         public void apply(int position, PreparedStatement statement, StatementContext ctx)
                 throws SQLException
         {
-            if (config == null) {
+            String text = toBinding(config);
+            if (text == null) {
                 statement.setNull(position, Types.CLOB);
             }
             else {
-                String text = toText(config);
-                if ("{}".equals(text)) {
-                    text = null;
-                    statement.setNull(position, Types.CLOB);
-                }
-                else {
-                    statement.setString(position, text);
-                }
+                statement.setString(position, text);
             }
         }
 

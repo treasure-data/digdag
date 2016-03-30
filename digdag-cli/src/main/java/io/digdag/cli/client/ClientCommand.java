@@ -4,8 +4,14 @@ import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.DateTimeException;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAccessor;
 import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import javax.ws.rs.ClientErrorException;
@@ -86,7 +92,7 @@ public abstract class ClientCommand
         }
 
         Optional<RestApiKey> key = Optional.absent();
-        if (apiKey != null) {
+        if (apiKey != null && !apiKey.isEmpty()) {
             key = Optional.of(RestApiKey.of(apiKey));
         }
 
@@ -128,9 +134,15 @@ public abstract class ClientCommand
         }
     }
 
-    protected ModelPrinter modelPrinter()
+    public int parseIntOrUsage(String arg)
+        throws SystemExitException
     {
-        return new ModelPrinter();
+        try {
+            return Integer.parseInt(args.get(0));
+        }
+        catch (NumberFormatException ex) {
+            throw usage(ex.getMessage());
+        }
     }
 
     protected static void ln(String format, Object... args)
@@ -139,22 +151,21 @@ public abstract class ClientCommand
     }
 
     private static final DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
-        .withZone(ZoneId.systemDefault());
-
-    public static String formatTime(long unix)
-    {
-        return formatTime(Instant.ofEpochSecond(unix));
-    }
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
     public static String formatTime(Instant instant)
     {
-        return formatter.format(instant);
+        return formatter.withZone(ZoneId.systemDefault()).format(instant);
     }
 
-    public static String formatTimeDiff(Instant now, long from)
+    public static String formatTime(OffsetDateTime time)
     {
-        long seconds = now.until(Instant.ofEpochSecond(from), ChronoUnit.SECONDS);
+        return formatter.format(time);
+    }
+
+    public static String formatTimeDiff(Instant now, Instant from)
+    {
+        long seconds = now.until(from, ChronoUnit.SECONDS);
         long hours = seconds / 3600;
         seconds %= 3600;
         long minutes = seconds / 60;
@@ -170,25 +181,51 @@ public abstract class ClientCommand
         }
     }
 
-    private final DateTimeFormatter parser =
+    private final DateTimeFormatter INSTANT_PARSER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
         .withZone(ZoneId.systemDefault());
 
-    protected Instant parseTime(String s)
-        throws DateTimeParseException
+    private static final DateTimeFormatter LOCAL_TIME_PARSER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
+
+    protected Instant parseTime(String s, String errorMessage)
+        throws SystemExitException
     {
         try {
             Instant i = Instant.ofEpochSecond(Long.parseLong(s));
-            System.err.println("Using unix timestamp " + i);
             return i;
         }
-        catch (NumberFormatException ex) {
-            return Instant.from(parser.parse(s));
+        catch (NumberFormatException notUnixTime) {
+            try {
+                return Instant.from(INSTANT_PARSER.parse(s));
+            }
+            catch (DateTimeException ex) {
+                throw systemExit(errorMessage + ": " + s);
+            }
+        }
+    }
+
+    protected LocalDateTime parseLocalTime(String s, String errorMessage)
+        throws SystemExitException
+    {
+        TemporalAccessor parsed;
+        try {
+            parsed = LOCAL_TIME_PARSER.parse(s);
+        }
+        catch (DateTimeParseException ex) {
+            throw systemExit(errorMessage + ": " + s);
+        }
+        LocalDateTime local;
+        try {
+            return LocalDateTime.from(parsed);
+        }
+        catch (DateTimeException ex) {
+            return LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0));
         }
     }
 
     protected static YamlMapper yamlMapper()
     {
-        return new YamlMapper(ModelPrinter.objectMapper());
+        return new YamlMapper(DigdagClient.objectMapper());
     }
 }

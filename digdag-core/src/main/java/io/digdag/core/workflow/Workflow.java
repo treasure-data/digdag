@@ -26,7 +26,7 @@ public abstract class Workflow
 
     public static Workflow of(String name, Config meta, WorkflowTaskList tasks)
     {
-        return builder()
+        return ImmutableWorkflow.builder()
             .name(name)
             .meta(meta)
             .tasks(tasks)

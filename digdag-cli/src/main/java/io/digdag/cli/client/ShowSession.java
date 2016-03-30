@@ -15,8 +15,11 @@ public class ShowSession
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    @Parameter(names = {"-w", "--with-retry"})
-    boolean withRetry = false;
+    // ShowAttempt overrides this method
+    protected boolean includeRetries()
+    {
+        return false;
+    }
 
     @Override
     public void mainWithClientException()
@@ -39,7 +42,8 @@ public class ShowSession
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag sessions [repo-name] [+name]");
+        String commandName = includeRetries() ? "attempts" : "sessions";
+        System.err.println("Usage: digdag " + commandName + " [repo-name] [+name]");
         System.err.println("  Options:");
         System.err.println("    -i, --last-id ID                 shows more session attempts from this id");
         ClientCommand.showCommonOptions();
@@ -53,36 +57,41 @@ public class ShowSession
         List<RestSessionAttempt> attempts;
 
         if (repoName == null) {
-            attempts = client.getSessionAttempts(withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(includeRetries(), Optional.fromNullable(lastId));
         }
         else if (workflowName == null) {
-            attempts = client.getSessionAttempts(repoName, withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(repoName, includeRetries(), Optional.fromNullable(lastId));
         }
         else {
-            attempts = client.getSessionAttempts(repoName, workflowName, withRetry, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(repoName, workflowName, includeRetries(), Optional.fromNullable(lastId));
         }
 
-        ln("Session attempts:");
-        for (RestSessionAttempt session : Lists.reverse(attempts)) {
+        if (includeRetries()) {
+            ln("Sessions:");
+        }
+        else {
+            ln("Session attempts:");
+        }
+        for (RestSessionAttempt attempt : Lists.reverse(attempts)) {
             String status;
-            if (session.getSuccess()) {
+            if (attempt.getSuccess()) {
                 status = "success";
             }
-            else if (session.getDone()) {
+            else if (attempt.getDone()) {
                 status = "error";
             }
             else {
                 status = "running";
             }
-            ln("  id: %d", session.getId());
-            ln("  uuid: %s", session.getSessionUuid());
-            ln("  repository: %s", session.getRepository().getName());
-            ln("  workflow: %s", session.getWorkflowName());
-            ln("  session time: %s", formatTime(session.getSessionTime()));
-            ln("  retry attempt name: %s", session.getRetryAttemptName().or(""));
-            ln("  params: %s", session.getParams());
-            ln("  created at: %s", formatTime(session.getId()));
-            ln("  kill requested: %s", session.getCancelRequested());
+            ln("  attempt id: %d", attempt.getId());
+            ln("  uuid: %s", attempt.getSessionUuid());
+            ln("  repository: %s", attempt.getRepository().getName());
+            ln("  workflow: %s", attempt.getWorkflow().getName());
+            ln("  session time: %s", formatTime(attempt.getSessionTime()));
+            ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
+            ln("  params: %s", attempt.getParams());
+            ln("  created at: %s", formatTime(attempt.getCreatedAt()));
+            ln("  kill requested: %s", attempt.getCancelRequested());
             ln("  status: %s", status);
             ln("");
         }
@@ -90,8 +99,8 @@ public class ShowSession
         if (attempts.isEmpty()) {
             System.err.println("Use `digdag start` to start a session.");
         }
-        else if (withRetry == false) {
-            System.err.println("Use --with-retry option to show retried attempts.");
+        else if (includeRetries() == false) {
+            System.err.println("Use `digdag attempts` to show retried attempts.");
         }
     }
 }

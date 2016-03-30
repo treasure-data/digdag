@@ -221,8 +221,8 @@ public class DatabaseRepositoryStoreManagerTest
         assertNotFound(() -> store.getRevisionByName(repo1.getId(), rev2.getName()));
         assertNotFound(() -> anotherSite.getRevisionByName(repo1.getId(), rev1.getName()));
 
-        assertEquals(wf1, store.getWorkflowDefinitionById(wf1.getId()));
-        assertEquals(wf2, store.getWorkflowDefinitionById(wf2.getId()));
+        assertEquals(wfDetails1, store.getWorkflowDefinitionById(wf1.getId()));
+        assertEquals(wfDetails2, store.getWorkflowDefinitionById(wf2.getId()));
         assertNotFound(() -> store.getWorkflowDefinitionById(wf1.getId() + 10));
         assertNotFound(() -> anotherSite.getWorkflowDefinitionById(wf1.getId()));
 
@@ -244,6 +244,16 @@ public class DatabaseRepositoryStoreManagerTest
 
         // getRevisionArchiveData returns NotFound if insertRevisionArchiveData is not called
         assertNotFound(() -> store.getRevisionArchiveData(rev1.getId()));
+
+        RepositoryMap repos = store.getRepositoriesByIdList(ImmutableList.of(repo1.getId(), repo2.getId()));
+        assertEquals(repo1, repos.get(repo1.getId()));
+        assertEquals(repo2, repos.get(repo2.getId()));
+        assertNotFound(() -> repos.get(repo2.getId() + 10));
+
+        TimeZoneMap defTimeZones = store.getWorkflowTimeZonesByIdList(ImmutableList.of(wf3.getId(), wf4.getId()));
+        assertEquals(wf3.getTimeZone(), defTimeZones.get(wf3.getId()));
+        assertEquals(wf4.getTimeZone(), defTimeZones.get(wf4.getId()));
+        assertNotFound(() -> defTimeZones.get(wf2.getId()));
     }
 
     @Test

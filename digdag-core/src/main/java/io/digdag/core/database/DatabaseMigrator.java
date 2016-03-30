@@ -304,8 +304,9 @@ public class DatabaseMigrator
                     new CreateTableBuilder("workflow_configs")
                     .addIntId("id")
                     .addInt("repository_id", "not null references repositories (id)")
-                    .addMediumText("config", "not null")
                     .addLong("config_digest", "not null")
+                    .addString("timezone", "not null")
+                    .addMediumText("config", "not null")
                     .build());
             handle.update("create index workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
 

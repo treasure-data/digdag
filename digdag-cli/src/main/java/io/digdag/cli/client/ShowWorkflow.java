@@ -13,19 +13,24 @@ import static io.digdag.cli.Main.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
-    @Parameter(names = {"-r", "--repo"})
-    String repoName = null;
-
     @Override
     public void mainWithClientException()
         throws Exception
     {
         switch (args.size()) {
         case 0:
-            showWorkflows();
+            showWorkflows(null);
             break;
         case 1:
-            showWorkflowDetails(args.get(0));
+            if (args.get(0).startsWith("+")) {
+                showWorkflowDetails(null, args.get(0));
+            }
+            else {
+                showWorkflows(args.get(0));
+            }
+            break;
+        case 2:
+            showWorkflowDetails(args.get(0), args.get(1));
             break;
         default:
             throw usage(null);
@@ -34,14 +39,14 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag workflows [+name]");
+        System.err.println("Usage: digdag workflows [repo-name] [+name]");
         System.err.println("  Options:");
         System.err.println("    -r, --repository NAME            repository name");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showWorkflows()
+    public void showWorkflows(String repoName)
         throws Exception
     {
         DigdagClient client = buildClient();
@@ -70,7 +75,7 @@ public class ShowWorkflow
         System.err.println("Use `digdag workflows +NAME` to show details.");
     }
 
-    public void showWorkflowDetails(String defName)
+    public void showWorkflowDetails(String repoName, String defName)
         throws Exception
     {
         DigdagClient client = buildClient();

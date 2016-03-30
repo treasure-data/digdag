@@ -31,7 +31,6 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
-import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.Scheduler;
@@ -41,6 +40,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.client.ClientCommand.formatTime;
 import static io.digdag.cli.client.ClientCommand.formatTimeDiff;
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.cli.Run.DEFAULT_DAGFILE;
 
@@ -99,13 +99,7 @@ public class Check
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = cf.create();
-        if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
-        }
-        for (Map.Entry<String, String> pair : params.entrySet()) {
-            overwriteParams.set(pair.getKey(), pair.getValue());
-        }
+        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         showSystemDefaults();
 
@@ -184,7 +178,7 @@ public class Check
             Formatter f, Revision rev,
             Scheduler sr, WorkflowDefinition def)
     {
-        Config schedConfig = ScheduleExecutor.getScheduleConfig(def);
+        Config schedConfig = SchedulerManager.getScheduleConfig(def);
 
         Instant now = Instant.now();
         ScheduleTime firstTime = sr.getFirstScheduleTime(now);
@@ -193,7 +187,7 @@ public class Check
         f.indent = "      ";
         f.ln(yamlMapper.toYaml(schedConfig));
         f.ln("first session time: %s", formatTime(firstTime.getTime()));
-        f.ln("first runs at: %s (%s later)", formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime().getEpochSecond()));
+        f.ln("first runs at: %s (%s later)", formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime()));
         f.indent = "    ";
     }
 

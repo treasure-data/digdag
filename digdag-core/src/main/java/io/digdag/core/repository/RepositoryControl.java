@@ -2,7 +2,6 @@ package io.digdag.core.repository;
 
 import java.util.List;
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -62,7 +61,7 @@ public class RepositoryControl
             return defs.stream()
                 .map(def -> {
                     try {
-                        return store.insertWorkflowDefinition(repository.getId(), revision.getId(), def);
+                        return store.insertWorkflowDefinition(repository.getId(), revision.getId(), def, WorkflowDefinition.getTimeZoneOfWorkflow(revision, def));
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);

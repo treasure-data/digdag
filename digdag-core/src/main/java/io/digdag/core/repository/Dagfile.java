@@ -49,17 +49,12 @@ public abstract class Dagfile
         Optional<ZoneId> defaultTimeZone = config.getOptional("timezone", ZoneId.class);
         Config defaultParams = config.getNestedOrGetEmpty("_export");
 
-        return builder()
+        return ImmutableDagfile.builder()
             .defaultTaskName(defaultTaskName)
             .defaultTimeZone(defaultTimeZone)
             .workflowList(workflowList.convert(WorkflowDefinitionList.class))
             .defaultParams(defaultParams)
             .build();
-    }
-
-    public static ImmutableDagfile.Builder builder()
-    {
-        return ImmutableDagfile.builder();
     }
 
     @JsonValue

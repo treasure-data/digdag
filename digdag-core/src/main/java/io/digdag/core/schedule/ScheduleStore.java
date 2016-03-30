@@ -6,8 +6,8 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface ScheduleStore
 {
-    List<StoredSchedule> getSchedules(int pageSize, Optional<Long> lastId);
+    List<StoredSchedule> getSchedules(int pageSize, Optional<Integer> lastId);
 
-    StoredSchedule getScheduleById(long schedId)
+    StoredSchedule getScheduleById(int schedId)
         throws ResourceNotFoundException;
 }

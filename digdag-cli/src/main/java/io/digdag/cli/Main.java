@@ -24,11 +24,13 @@ import io.digdag.core.config.PropertyUtils;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.ShowSession;
+import io.digdag.cli.client.ShowAttempt;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.ShowLog;
 import io.digdag.cli.client.Start;
+import io.digdag.cli.client.Retry;
 import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Kill;
@@ -104,10 +106,10 @@ public class Main
         throws Exception
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            System.out.println("0.4.3");
+            System.out.println("0.5.0");
             return;
         }
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.4.3");
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.5.0");
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
@@ -127,7 +129,9 @@ public class Main
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
+        jc.addCommand("retry", new Retry());
         jc.addCommand("session", new ShowSession(), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(), "attempts");
         jc.addCommand("reschedule", new Reschedule());
         jc.addCommand("backfill", new Backfill());
         jc.addCommand("log", new ShowLog(), "logs");
@@ -281,13 +285,15 @@ public class Main
         System.err.println("  Client-mode commands:");
         System.err.println("    push <repo-name>                 create and upload a new revision");
         System.err.println("    start <repo-name> <+name>        start a new session attempt of a workflow");
+        System.err.println("    retry <attempt-id>               retry a session");
         System.err.println("    kill <attempt-id>                kill a running session attempt");
         System.err.println("    backfill                         start sessions of a schedule for past times");
         System.err.println("    reschedule                       skip sessions of a schedule to a future time");
         System.err.println("    log <attempt-id>                 show logs of a session attempt");
-        System.err.println("    workflows [+name]                show registered workflow definitions");
+        System.err.println("    workflows [repo-name] [+name]    show registered workflow definitions");
         System.err.println("    schedules                        show registered schedules");
-        System.err.println("    sessions [repo-name] [+name]     show past and current session attempts");
+        System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
+        System.err.println("    attempts [repo-name] [+name]     show past and current session attempts");
         System.err.println("    tasks <attempt-id>               show tasks of a session attempt");
         //System.err.println("    archive <workflow.yml...>        create a project archive");
         //System.err.println("    upload <workflow.yml...>         upload a project archive to a server");

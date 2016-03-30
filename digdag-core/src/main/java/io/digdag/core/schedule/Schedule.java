@@ -18,14 +18,9 @@ public abstract class Schedule
 
     public abstract Instant getNextScheduleTime();
 
-    public static ImmutableSchedule.Builder scheduleBuilder()
-    {
-        return ImmutableSchedule.builder();
-    }
-
     public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime)
     {
-        return scheduleBuilder()
+        return ImmutableSchedule.builder()
             .workflowName(workflowName)
             .workflowDefinitionId(workflowDefinitionId)
             .nextRunTime(nextRunTime)
