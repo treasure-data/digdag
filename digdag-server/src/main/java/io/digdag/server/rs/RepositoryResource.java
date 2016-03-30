@@ -44,14 +44,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class RepositoryResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/repository?name=<name>                      # get the latest revisions of a repository by name
-    // [*] GET  /api/repositories                                # list the latest revisions of repositories
-    // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
+    // [*] GET  /api/repository?name=<name>                      # lookup a repository by name
+    // [*] GET  /api/repositories                                # list repositories
+    // [*] GET  /api/repositories/{id}                           # show a repository
     // [*] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
-    // [*] GET  /api/repositories/{id}/workflow?name=name        # get a workflow of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # get a workflow of ea past revision of a repository
+    // [*] GET  /api/repositories/{id}/workflow?name=name        # lookup a workflow of a repository by name
+    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a repository by name
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a former revision of a repository
+    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a past revision of a repository
     // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
     // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
