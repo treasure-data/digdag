@@ -24,6 +24,7 @@ import io.digdag.core.config.PropertyUtils;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.ShowSession;
+import io.digdag.cli.client.ShowAttempt;
 import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
@@ -128,6 +129,7 @@ public class Main
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
         jc.addCommand("session", new ShowSession(), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(), "attempts");
         jc.addCommand("reschedule", new Reschedule());
         jc.addCommand("backfill", new Backfill());
         jc.addCommand("log", new ShowLog(), "logs");
@@ -287,7 +289,8 @@ public class Main
         System.err.println("    log <attempt-id>                 show logs of a session attempt");
         System.err.println("    workflows [+name]                show registered workflow definitions");
         System.err.println("    schedules                        show registered schedules");
-        System.err.println("    sessions [repo-name] [+name]     show past and current session attempts");
+        System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
+        System.err.println("    attempts [repo-name] [+name]     show past and current session attempts");
         System.err.println("    tasks <attempt-id>               show tasks of a session attempt");
         //System.err.println("    archive <workflow.yml...>        create a project archive");
         //System.err.println("    upload <workflow.yml...>         upload a project archive to a server");
