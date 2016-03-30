@@ -23,13 +23,13 @@ import io.digdag.spi.DirectUploadHandle;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.workflow.AttemptRequest;
 
@@ -38,16 +38,16 @@ public final class RestModels
     private RestModels()
     { }
 
-    public static RestRepository repository(StoredRepository repo, StoredRevision rev)
+    public static RestRepository repository(StoredRepository repo, StoredRevision lastRevision)
     {
         return RestRepository.builder()
             .id(repo.getId())
             .name(repo.getName())
-            .revision(rev.getName())
+            .revision(lastRevision.getName())
             .createdAt(repo.getCreatedAt())
-            .updatedAt(rev.getCreatedAt())
-            .archiveType(rev.getArchiveType())
-            .archiveMd5(rev.getArchiveMd5())
+            .updatedAt(lastRevision.getCreatedAt())
+            .archiveType(lastRevision.getArchiveType())
+            .archiveMd5(lastRevision.getArchiveMd5())
             .build();
     }
 

@@ -45,11 +45,9 @@ public class RepositoryResource
     extends AuthenticatedResource
 {
     // [*] GET  /api/repository?name=<name>                      # get the latest revisions of a repository by name
-    // [*] GET  /api/repository?name=<name>?revision=name        # get a former revision of a repository
     // [*] GET  /api/repositories                                # list the latest revisions of repositories
     // [*] GET  /api/repositories/{id}                           # show the latest revision of a repository
     // [*] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
-    // [*] GET  /api/repositories/{id}?revision=name             # show a former revision of a repository
     // [*] GET  /api/repositories/{id}/workflow?name=name        # get a workflow of the latest revision of a repository
     // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # get a workflow of ea past revision of a repository
     // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
@@ -87,20 +85,14 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repository")
-    public RestRepository getRepository(@QueryParam("name") String name, @QueryParam("revision") String revName)
+    public RestRepository getRepository(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "name= is required");
 
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryByName(name);
-        StoredRevision rev;
-        if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
-        }
-        else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
-        }
+        StoredRevision rev = rs.getLatestRevision(repo.getId());
         return RestModels.repository(repo, rev);
     }
 
@@ -128,18 +120,12 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}")
-    public RestRepository getRepository(@PathParam("id") int repoId, @QueryParam("revision") String revName)
+    public RestRepository getRepository(@PathParam("id") int repoId)
         throws ResourceNotFoundException
     {
         RepositoryStore rs = rm.getRepositoryStore(getSiteId());
         StoredRepository repo = rs.getRepositoryById(repoId);
-        StoredRevision rev;
-        if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
-        }
-        else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
-        }
+        StoredRevision rev = rs.getLatestRevision(repo.getId());
         return RestModels.repository(repo, rev);
     }
 

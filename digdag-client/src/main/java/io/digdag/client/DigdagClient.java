@@ -157,13 +157,6 @@ public class DigdagClient
                 .resolveTemplate("id", repoId));
     }
 
-    public RestRepository getRepository(int repoId, String revision)
-    {
-        return doGet(RestRepository.class,
-                target("/api/repository/{id}")
-                .resolveTemplate("id", repoId)
-                .queryParam("revision", revision));
-    }
 
     public List<RestRevision> getRevisions(int repoId, Optional<Integer> lastId)
     {
