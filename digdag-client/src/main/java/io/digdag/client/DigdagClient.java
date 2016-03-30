@@ -360,36 +360,48 @@ public class DigdagClient
                 .resolveTemplate("id", workflowId));
     }
 
-    public RestScheduleSummary skipSchedulesToTime(int scheduleId, Date date, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(int scheduleId, Instant untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .nextTime(date.toInstant())
-                    .nextRunTime(runTime.transform(d -> d.toInstant()))
+                    .nextTime(LocalTimeOrInstant.of(untilTime))
+                    .nextRunTime(runTime)
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary skipSchedulesByCount(int scheduleId, Date fromTime, int count, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(int scheduleId, LocalDateTime untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
-                    .fromTime(fromTime.toInstant())
+                    .nextTime(LocalTimeOrInstant.of(untilTime))
+                    .nextRunTime(runTime)
+                    .dryRun(dryRun)
+                    .build(),
+                target("/api/schedules/{id}/skip")
+                .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary skipSchedulesByCount(int scheduleId, Instant fromTime, int count, Optional<Instant> runTime, boolean dryRun)
+    {
+        return doPost(RestScheduleSummary.class,
+                RestScheduleSkipRequest.builder()
+                    .fromTime(fromTime)
                     .count(count)
-                    .nextRunTime(runTime.transform(d -> d.toInstant()))
+                    .nextRunTime(runTime)
                     .dryRun(dryRun)
                     .build(),
                 target("/api/schedules/{id}/skip")
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Date fromTime, String attemptName, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Instant fromTime, String attemptName, boolean dryRun)
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()
-                    .fromTime(fromTime.toInstant())
+                    .fromTime(fromTime)
                     .dryRun(dryRun)
                     .attemptName(attemptName)
                     .build(),

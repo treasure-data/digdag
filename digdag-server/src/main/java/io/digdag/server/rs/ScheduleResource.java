@@ -99,9 +99,7 @@ public class ScheduleResource
     {
         StoredSchedule sched = sm.getScheduleStore(getSiteId())
             .getScheduleById(id);
-        ZoneId timeZone = rm.getRepositoryStore(getSiteId())
-            .getWorkflowDefinitionById(id)
-            .getTimeZone();
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
         StoredRepository repo = rm.getRepositoryStore(getSiteId())
             .getRepositoryById(sched.getRepositoryId());
         return RestModels.schedule(sched, repo, timeZone);
@@ -113,24 +111,35 @@ public class ScheduleResource
     public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
+            .getScheduleById(id);
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
         StoredSchedule updated;
         if (request.getNextTime().isPresent()) {
             updated = exec.skipScheduleToTime(getSiteId(), id,
-                    request.getNextTime().get(),
-                    request.getNextRunTime().transform(t -> t),
+                    request.getNextTime().get().toInstant(timeZone),
+                    request.getNextRunTime(),
                     request.getDryRun());
         }
         else {
             updated = exec.skipScheduleByCount(getSiteId(), id,
                     request.getFromTime().get(),
                     request.getCount().get(),
-                    request.getNextRunTime().transform(t -> t),
+                    request.getNextRunTime(),
                     request.getDryRun());
         }
-        ZoneId timeZone = rm.getRepositoryStore(getSiteId())
-            .getWorkflowDefinitionById(updated.getWorkflowDefinitionId())
-            .getTimeZone();  // TODO this might thorw an exception
+
         return RestModels.scheduleSummary(updated, timeZone);
+    }
+
+    private ZoneId getTimeZoneOfSchedule(StoredSchedule sched)
+        throws ResourceNotFoundException
+    {
+        // TODO optimize
+        return rm.getRepositoryStore(getSiteId())
+            .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
+            .getTimeZone();
     }
 
     @POST

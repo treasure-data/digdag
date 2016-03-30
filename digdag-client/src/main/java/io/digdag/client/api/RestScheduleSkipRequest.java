@@ -17,7 +17,7 @@ public abstract class RestScheduleSkipRequest
 
     public abstract Optional<Instant> getFromTime();
 
-    public abstract Optional<Instant> getNextTime();
+    public abstract Optional<LocalTimeOrInstant> getNextTime();
 
     public abstract Optional<Instant> getNextRunTime();
 

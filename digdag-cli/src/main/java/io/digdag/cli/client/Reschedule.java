@@ -69,14 +69,14 @@ public class Reschedule
         RestScheduleSummary updated;
         if (toTime != null) {
             updated = client.skipSchedulesToTime(schedId,
-                    parseDate(toTime),
-                    Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
+                    parseTime(toTime),
+                    Optional.fromNullable(runAtTime).transform(s -> parseTime(s)),
                     dryRun);
         }
         else {
             updated = client.skipSchedulesByCount(schedId,
-                    Date.from(now), skipCount,
-                    Optional.fromNullable(runAtTime).transform(t -> parseDate(t)),
+                    now, skipCount,
+                    Optional.fromNullable(runAtTime).transform(s -> parseTime(s)),
                     dryRun);
         }
 
@@ -92,10 +92,5 @@ public class Reschedule
         else {
             System.err.println("Use `digdag schedules` to show schedules.");
         }
-    }
-
-    private Date parseDate(String s)
-    {
-        return Date.from(parseTime(s));
     }
 }
