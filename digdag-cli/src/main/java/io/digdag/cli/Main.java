@@ -285,11 +285,12 @@ public class Main
         System.err.println("  Client-mode commands:");
         System.err.println("    push <repo-name>                 create and upload a new revision");
         System.err.println("    start <repo-name> <+name>        start a new session attempt of a workflow");
+        System.err.println("    retry <attempt-id>               retry a session");
         System.err.println("    kill <attempt-id>                kill a running session attempt");
         System.err.println("    backfill                         start sessions of a schedule for past times");
         System.err.println("    reschedule                       skip sessions of a schedule to a future time");
         System.err.println("    log <attempt-id>                 show logs of a session attempt");
-        System.err.println("    workflows [+name]                show registered workflow definitions");
+        System.err.println("    workflows [repo-name] [+name]    show registered workflow definitions");
         System.err.println("    schedules                        show registered schedules");
         System.err.println("    sessions [repo-name] [+name]     show past and current sessions");
         System.err.println("    attempts [repo-name] [+name]     show past and current session attempts");
