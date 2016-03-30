@@ -17,18 +17,15 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.WebTarget;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.common.base.Optional;
-import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.databind.InjectableValues;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.crypto.MacProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import com.fasterxml.jackson.databind.InjectableValues;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
@@ -70,6 +67,14 @@ public class DigdagClient
         }
     }
 
+    public static ObjectMapper objectMapper()
+    {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new GuavaModule());
+        mapper.registerModule(new JacksonTimeModule());
+        return mapper;
+    }
+
     public static Builder builder()
     {
         return new Builder();
@@ -90,10 +95,7 @@ public class DigdagClient
             headers.putSingle("Authorization", buildAuthorizationHeader(builder.apiKey.get()));
         }
 
-        Injector injector = buildInjector();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new GuavaModule());
-        mapper.registerModule(new JacksonTimeModule());
+        ObjectMapper mapper = objectMapper();
 
         // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
         InjectableValues.Std injects = new InjectableValues.Std();
@@ -125,18 +127,6 @@ public class DigdagClient
     public Config newConfig()
     {
         return cf.create();
-    }
-
-    private static Injector buildInjector()
-    {
-        return Guice.createInjector(
-            (binder) -> {
-                binder.bind(ConfigFactory.class);
-            },
-            new ObjectMapperModule()
-                .registerModule(new GuavaModule())
-                .registerModule(new JacksonTimeModule())
-            );
     }
 
     public RestRepository getRepository(String name)
