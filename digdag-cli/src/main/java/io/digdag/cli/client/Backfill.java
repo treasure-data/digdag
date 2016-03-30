@@ -36,7 +36,7 @@ public class Backfill
         if (args.size() != 1) {
             throw usage(null);
         }
-        long schedId = parseLongOrUsage(args.get(0));
+        int schedId = parseIntOrUsage(args.get(0));
 
         backfill(schedId);
     }
@@ -52,7 +52,7 @@ public class Backfill
         return systemExit(error);
     }
 
-    public void backfill(long schedId)
+    public void backfill(int schedId)
         throws Exception
     {
         if (fromTime == null || attemptName == null) {

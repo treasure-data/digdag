@@ -1,8 +1,10 @@
 package io.digdag.server.rs;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,16 +61,28 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules")
-    public List<RestSchedule> getSchedules()
+    public List<RestSchedule> getSchedules(@QueryParam("last_id") Integer lastId)
     {
-        // TODO paging
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
-        return sm.getScheduleStore(getSiteId())
-            .getSchedules(100, Optional.absent())
-            .stream()
+        List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
+            .getSchedules(100, Optional.fromNullable(lastId));
+
+        RepositoryMap repos = rm.getRepositoryStore(getSiteId())
+            .getRepositoriesByIdList(
+                    scheds.stream()
+                    .map(StoredSchedule::getRepositoryId)
+                    .collect(Collectors.toList()));
+        TimeZoneMap defTimeZones = rm.getRepositoryStore(getSiteId())
+            .getWorkflowTimeZonesByIdList(
+                    scheds.stream()
+                    .map(StoredSchedule::getWorkflowDefinitionId)
+                    .collect(Collectors.toList()));
+
+        return scheds.stream()
             .map(sched -> {
                 try {
-                    return RestModels.schedule(sched, repos.get(sched.getRepositoryId()));
+                    return RestModels.schedule(sched,
+                            repos.get(sched.getRepositoryId()),
+                            defTimeZones.get(sched.getWorkflowDefinitionId()));
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
@@ -80,20 +94,23 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules/{id}")
-    public RestSchedule getSchedules(@PathParam("id") long id)
+    public RestSchedule getSchedules(@PathParam("id") int id)
         throws ResourceNotFoundException
     {
         StoredSchedule sched = sm.getScheduleStore(getSiteId())
             .getScheduleById(id);
+        ZoneId timeZone = rm.getRepositoryStore(getSiteId())
+            .getWorkflowDefinitionById(id)
+            .getTimeZone();
         StoredRepository repo = rm.getRepositoryStore(getSiteId())
             .getRepositoryById(sched.getRepositoryId());
-        return RestModels.schedule(sched, repo);
+        return RestModels.schedule(sched, repo, timeZone);
     }
 
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/skip")
-    public RestScheduleSummary skipSchedule(@PathParam("id") long id, RestScheduleSkipRequest request)
+    public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
         StoredSchedule updated;
@@ -110,30 +127,20 @@ public class ScheduleResource
                     request.getNextRunTime().transform(t -> t),
                     request.getDryRun());
         }
-        return RestModels.scheduleSummary(updated);
+        ZoneId timeZone = rm.getRepositoryStore(getSiteId())
+            .getWorkflowDefinitionById(updated.getWorkflowDefinitionId())
+            .getTimeZone();  // TODO this might thorw an exception
+        return RestModels.scheduleSummary(updated, timeZone);
     }
 
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public List<RestSessionAttempt> backfillSchedule(@PathParam("id") long id, RestScheduleBackfillRequest request)
+    public List<RestSessionAttempt> backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getDryRun());
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
-
-        return attempts.stream()
-            .map(attempt -> {
-                try {
-                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
-                }
-                catch (ResourceNotFoundException ex) {
-                    // must not happen
-                    return null;
-                }
-            })
-            .filter(a -> a != null)
-            .collect(Collectors.toList());
+        return AttemptResource.attemptModels(rm, getSiteId(), attempts);
     }
 }

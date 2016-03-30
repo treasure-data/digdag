@@ -115,19 +115,7 @@ public class AttemptResource
             attempts = ss.getSessions(includeRetried, 100, Optional.fromNullable(lastId));
         }
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
-
-        return attempts.stream()
-            .map(attempt -> {
-                try {
-                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
-                }
-                catch (ResourceNotFoundException ex) {
-                    return null;
-                }
-            })
-            .filter(a -> a != null)
-            .collect(Collectors.toList());
+        return attemptModels(rm, getSiteId(), attempts);
     }
 
     @GET
@@ -137,10 +125,10 @@ public class AttemptResource
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
             .getSessionAttemptById(id);
+        StoredRepository repo = rm.getRepositoryStore(getSiteId())
+                .getRepositoryById(attempt.getSession().getRepositoryId());
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
-
-        return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+        return RestModels.attempt(attempt, repo.getName());
     }
 
     @GET
@@ -151,7 +139,19 @@ public class AttemptResource
         List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
             .getOtherAttempts(id);
 
-        RepositoryMap repos = RepositoryMap.get(rm.getRepositoryStore(getSiteId()));
+        return attemptModels(rm, getSiteId(), attempts);
+    }
+
+    // used by ScheduleResource.backfillSchedule
+    static List<RestSessionAttempt> attemptModels(
+            RepositoryStoreManager rm, int siteId,
+            List<StoredSessionAttemptWithSession> attempts)
+    {
+        RepositoryMap repos = rm.getRepositoryStore(siteId)
+            .getRepositoriesByIdList(
+                    attempts.stream()
+                    .map(attempt -> attempt.getSession().getRepositoryId())
+                    .collect(Collectors.toList()));
 
         return attempts.stream()
             .map(attempt -> {
@@ -159,6 +159,7 @@ public class AttemptResource
                     return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
+                    // must not happen
                     return null;
                 }
             })
@@ -208,14 +209,14 @@ public class AttemptResource
             StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
             resolvedRevision = rev.getName();
             resolvedWorkflowId = def.getId();
-            timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def);
+            timeZone = def.getTimeZone();
             schedulerSupplier = () -> srm.tryGetScheduler(rev, def);
         }
         else {
             StoredWorkflowDefinitionWithRepository details = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
             resolvedRevision = details.getRevisionName();
             resolvedWorkflowId = details.getId();
-            timeZone = ScheduleExecutor.getTimeZoneOfStoredWorkflow(details);
+            timeZone = details.getTimeZone();
             schedulerSupplier = () -> srm.tryGetScheduler(details);
         }
 

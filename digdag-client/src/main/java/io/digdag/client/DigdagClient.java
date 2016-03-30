@@ -360,7 +360,7 @@ public class DigdagClient
                 .resolveTemplate("id", workflowId));
     }
 
-    public RestScheduleSummary skipSchedulesToTime(long scheduleId, Date date, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(int scheduleId, Date date, Optional<Date> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
@@ -372,7 +372,7 @@ public class DigdagClient
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary skipSchedulesByCount(long scheduleId, Date fromTime, int count, Optional<Date> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesByCount(int scheduleId, Date fromTime, int count, Optional<Date> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
@@ -385,7 +385,7 @@ public class DigdagClient
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSessionAttempt> backfillSchedule(long scheduleId, Date fromTime, String attemptName, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Date fromTime, String attemptName, boolean dryRun)
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()

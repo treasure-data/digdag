@@ -129,6 +129,17 @@ public abstract class ClientCommand
         }
     }
 
+    public int parseIntOrUsage(String arg)
+        throws SystemExitException
+    {
+        try {
+            return Integer.parseInt(args.get(0));
+        }
+        catch (NumberFormatException ex) {
+            throw usage(ex.getMessage());
+        }
+    }
+
     protected ModelPrinter modelPrinter()
     {
         return new ModelPrinter();

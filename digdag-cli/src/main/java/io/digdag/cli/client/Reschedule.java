@@ -37,7 +37,7 @@ public class Reschedule
         if (args.size() != 1) {
             throw usage(null);
         }
-        long schedId = parseLongOrUsage(args.get(0));
+        int schedId = parseIntOrUsage(args.get(0));
 
         if (toTime != null && skipCount > 0) {
             throw systemExit("-s and -t can't be set together");
@@ -60,7 +60,7 @@ public class Reschedule
         return systemExit(error);
     }
 
-    public void reschedule(long schedId)
+    public void reschedule(int schedId)
         throws Exception
     {
         Instant now = Instant.now();

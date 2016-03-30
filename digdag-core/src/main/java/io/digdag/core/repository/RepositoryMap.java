@@ -1,4 +1,4 @@
-package io.digdag.server.rs;
+package io.digdag.core.repository;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class RepositoryMap
 
     private final Map<Integer, StoredRepository> map;
 
-    private RepositoryMap(Map<Integer, StoredRepository> map)
+    public RepositoryMap(Map<Integer, StoredRepository> map)
     {
         this.map = map;
     }

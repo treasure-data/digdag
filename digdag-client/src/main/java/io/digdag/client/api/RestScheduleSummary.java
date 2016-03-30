@@ -12,7 +12,7 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableRestScheduleSummary.class)
 public abstract class RestScheduleSummary
 {
-    public abstract long getId();
+    public abstract int getId();
 
     public abstract String getWorkflowName();
 

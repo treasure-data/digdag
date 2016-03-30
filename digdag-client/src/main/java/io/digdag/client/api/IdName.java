@@ -9,11 +9,11 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableIdName.class)
 public abstract class IdName
 {
-    public abstract long getId();
+    public abstract int getId();
 
     public abstract String getName();
 
-    public static IdName of(long id, String name)
+    public static IdName of(int id, String name)
     {
         return ImmutableIdName.builder()
             .id(id)

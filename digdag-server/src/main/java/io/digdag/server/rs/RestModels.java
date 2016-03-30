@@ -83,24 +83,24 @@ public final class RestModels
             .build();
     }
 
-    public static RestSchedule schedule(StoredSchedule sched, StoredRepository repo)
+    public static RestSchedule schedule(StoredSchedule sched, StoredRepository repo, ZoneId timeZone)
     {
         return RestSchedule.builder()
             .id(sched.getId())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .workflowName(sched.getWorkflowName())
             .nextRunTime(sched.getNextRunTime())
-            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), sched.getTimeZone()))
+            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .build();
     }
 
-    public static RestScheduleSummary scheduleSummary(StoredSchedule sched)
+    public static RestScheduleSummary scheduleSummary(StoredSchedule sched, ZoneId timeZone)
     {
         return RestScheduleSummary.builder()
             .id(sched.getId())
             .workflowName(sched.getWorkflowName())
             .nextRunTime(sched.getNextRunTime())
-            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), sched.getTimeZone()))
+            .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
             .build();

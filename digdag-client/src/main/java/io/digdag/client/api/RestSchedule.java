@@ -13,13 +13,11 @@ import io.digdag.client.config.Config;
 @JsonDeserialize(as = ImmutableRestSchedule.class)
 public abstract class RestSchedule
 {
-    public abstract long getId();
+    public abstract int getId();
 
     public abstract IdName getRepository();
 
     public abstract String getWorkflowName();
-
-    // TODO add timezone here so that Check and ShowSchedule can show "next session time" in this timezone
 
     public abstract Instant getNextRunTime();
 

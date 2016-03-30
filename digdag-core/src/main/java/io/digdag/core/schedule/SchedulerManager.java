@@ -17,6 +17,24 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
 
 public class SchedulerManager
 {
+    private static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
+    {
+        return def.getConfig().getOptional("_schedule", Config.class);
+    }
+
+    // used only by SchedulerManager and Check command
+    public static Config getScheduleConfig(WorkflowDefinition def)
+    {
+        return def.getConfig().getNested("_schedule");
+    }
+
+    // used only through WorkflowDefinition.getTimeZone
+    public static ZoneId getTimeZoneOfWorkflow(Revision rev, WorkflowDefinition def)
+    {
+        return rev.getDefaultParams().get("timezone", ZoneId.class,
+                    ZoneId.of("UTC"));
+    }
+
     private final Map<String, SchedulerFactory> types;
 
     @Inject
@@ -31,27 +49,27 @@ public class SchedulerManager
 
     public Optional<Scheduler> tryGetScheduler(Revision rev, WorkflowDefinition def)
     {
-        return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
-                    getScheduler(it, ScheduleExecutor.getTimeZoneOfStoredWorkflow(rev, def))
+        return tryGetScheduleConfig(def).transform(it ->
+                    getScheduler(it, WorkflowDefinition.getTimeZoneOfWorkflow(rev, def))
                 );
     }
 
     public Optional<Scheduler> tryGetScheduler(StoredWorkflowDefinitionWithRepository def)
     {
-        return ScheduleExecutor.tryGetScheduleConfig(def).transform(it ->
-                    getScheduler(it, ScheduleExecutor.getTimeZoneOfStoredWorkflow(def))
+        return tryGetScheduleConfig(def).transform(it ->
+                    getScheduler(it, def.getTimeZone())
                 );
     }
 
-    public Scheduler getScheduler(WorkflowDefinition def, ZoneId workflowTimeZone)
+    // used by ScheduleExecutor which is certain that the workflow has a scheduler
+    Scheduler getScheduler(StoredWorkflowDefinition def)
     {
-        return getScheduler(ScheduleExecutor.getScheduleConfig(def), workflowTimeZone);
+        return getScheduler(getScheduleConfig(def), def.getTimeZone());
     }
 
-    // get workflowTimeZone using ScheduleExecutor.getTimeZoneOfStoredWorkflow
-    public Scheduler getScheduler(Config config, ZoneId workflowTimeZone)
+    private Scheduler getScheduler(Config schedulerConfig, ZoneId workflowTimeZone)
     {
-        Config c = config.deepCopy();
+        Config c = schedulerConfig.deepCopy();
 
         String type;
         if (c.has("_type")) {

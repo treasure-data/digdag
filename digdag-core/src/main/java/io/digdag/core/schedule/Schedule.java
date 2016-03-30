@@ -2,7 +2,6 @@ package io.digdag.core.schedule;
 
 import java.util.List;
 import java.time.Instant;
-import java.time.ZoneId;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -19,16 +18,13 @@ public abstract class Schedule
 
     public abstract Instant getNextScheduleTime();
 
-    public abstract ZoneId getTimeZone();
-
-    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime, ZoneId timeZone)
+    public static Schedule of(String workflowName, long workflowDefinitionId, Instant nextRunTime, Instant nextScheduleTime)
     {
         return ImmutableSchedule.builder()
             .workflowName(workflowName)
             .workflowDefinitionId(workflowDefinitionId)
             .nextRunTime(nextRunTime)
             .nextScheduleTime(nextScheduleTime)
-            .timeZone(timeZone)
             .build();
     }
 }

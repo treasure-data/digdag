@@ -304,8 +304,9 @@ public class DatabaseMigrator
                     new CreateTableBuilder("workflow_configs")
                     .addIntId("id")
                     .addInt("repository_id", "not null references repositories (id)")
-                    .addMediumText("config", "not null")
                     .addLong("config_digest", "not null")
+                    .addString("timezone", "not null")
+                    .addMediumText("config", "not null")
                     .build());
             handle.update("create index workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
 
@@ -328,7 +329,6 @@ public class DatabaseMigrator
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
                     .addLong("last_session_time", "")
-                    .addString("timezone", "not null")
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());

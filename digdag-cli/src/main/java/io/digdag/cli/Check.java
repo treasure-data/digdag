@@ -31,7 +31,6 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
-import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.Scheduler;
@@ -184,7 +183,7 @@ public class Check
             Formatter f, Revision rev,
             Scheduler sr, WorkflowDefinition def)
     {
-        Config schedConfig = ScheduleExecutor.getScheduleConfig(def);
+        Config schedConfig = SchedulerManager.getScheduleConfig(def);
 
         Instant now = Instant.now();
         ScheduleTime firstTime = sr.getFirstScheduleTime(now);

@@ -5,9 +5,13 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
+import java.nio.ByteBuffer;
+import java.time.ZoneId;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.immutables.value.Value;
 import com.google.common.base.*;
 import com.google.common.collect.*;
@@ -27,6 +31,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
 import static java.util.Locale.ENGLISH;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class DatabaseRepositoryStoreManager
@@ -104,6 +109,29 @@ public class DatabaseRepositoryStoreManager
         public List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId)
         {
             return autoCommit((handle, dao) -> dao.getRepositories(siteId, pageSize, lastId.or(0)));
+        }
+
+        @Override
+        public RepositoryMap getRepositoriesByIdList(List<Integer> repoIdList)
+        {
+            List<StoredRepository> repos = autoCommit((handle, dao) ->
+                    handle.createQuery(
+                        "select * from repositories" +
+                        " where site_id = :siteId" +
+                        " and id in (" +
+                            repoIdList.stream()
+                            .map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")"
+                    )
+                    .bind("siteId", siteId)
+                    .map(new StoredRepositoryMapper(cfm))
+                    .list()
+                );
+
+            ImmutableMap.Builder<Integer, StoredRepository> builder = ImmutableMap.builder();
+            for (StoredRepository repo : repos) {
+                builder.put(repo.getId(), repo);
+            }
+            return new RepositoryMap(builder.build());
         }
 
         @Override
@@ -233,6 +261,60 @@ public class DatabaseRepositoryStoreManager
                     (handle, dao) -> dao.getWorkflowDefinitionByName(siteId, revId, name),
                     "workflow name=%s in revision id=%d", name, revId);
         }
+
+        @Override
+        public TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList)
+        {
+            List<IdTimeZone> list = autoCommit((handle, dao) ->
+                    handle.createQuery(
+                        "select wd.id, wc.timezone from workflow_definitions wd" +
+                        " join revisions rev on rev.id = wd.revision_id" +
+                        " join repositories repo on repo.id = rev.repository_id" +
+                        " join workflow_configs wc on wc.id = wd.config_id" +
+                        " where wd.id in (" + defIdList.stream()
+                            .map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")" +
+                        " and site_id = :siteId"
+                    )
+                    .bind("siteId", siteId)
+                    .map(new IdTimeZoneMapper())
+                    .list()
+            );
+
+            Map<Long, ZoneId> map = IdTimeZone.listToMap(list);
+            return new TimeZoneMap(map);
+        }
+    }
+
+    private static class IdTimeZone
+    {
+        protected final long id;
+        protected final ZoneId timeZone;
+
+        public IdTimeZone(long id, ZoneId timeZone)
+        {
+            this.id = id;
+            this.timeZone = timeZone;
+        }
+
+        public static Map<Long, ZoneId> listToMap(List<IdTimeZone> list)
+        {
+            ImmutableMap.Builder<Long, ZoneId> builder = ImmutableMap.builder();
+            for (IdTimeZone pair : list) {
+                builder.put(pair.id, pair.timeZone);
+            }
+            return builder.build();
+        }
+    }
+
+    private static class IdTimeZoneMapper
+            implements ResultSetMapper<IdTimeZone>
+    {
+        @Override
+        public IdTimeZone map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return new IdTimeZone(r.getLong("id"), ZoneId.of(r.getString("timezone")));
+        }
     }
 
     private class DatabaseRepositoryControlStore
@@ -291,19 +373,21 @@ public class DatabaseRepositoryStoreManager
          * interface is available only if site is is valid.
          */
         @Override
-        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def)
+        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
             throws ResourceConflictException
         {
-            String text = cfm.toText(def.getConfig());
-            long configDigest = cfm.toConfigDigest(text);
+            String configText = cfm.toText(def.getConfig());
+            String zoneId = workflowTimeZone.getId();
+            long configDigest = WorkflowConfig.digest(configText, zoneId);
 
             int configId;
+
             WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
-            if (found != null && found.getConfig().equals(cfm.toText(def.getConfig()))) {
+            if (found != null && WorkflowConfig.isEquivalent(found, configText, zoneId)) {
                 configId = found.getId();
             }
             else {
-                configId = dao.insertWorkflowConfig(repoId, text, configDigest);
+                configId = dao.insertWorkflowConfig(repoId, configText, zoneId, configDigest);
             }
 
             long wfId = catchConflict(() ->
@@ -324,7 +408,7 @@ public class DatabaseRepositoryStoreManager
         public void updateSchedules(int repoId, List<Schedule> schedules)
             throws ResourceConflictException
         {
-            Map<String, Long> oldNames = idNameListToHashMap(dao.getScheduleNames(repoId));
+            Map<String, Integer> oldNames = idNameListToHashMap(dao.getScheduleNames(repoId));
 
             for (Schedule schedule : schedules) {
                 if (oldNames.containsKey(schedule.getWorkflowName())) {
@@ -349,14 +433,13 @@ public class DatabaseRepositoryStoreManager
                     catchConflict(() ->
                             handle.createStatement(
                                 "insert into schedules" +
-                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, timezone, created_at, updated_at)" +
-                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, :timezone, now(), now())"
+                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
+                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
                             )
                             .bind("repoId", repoId)
                             .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
                             .bind("nextRunTime", schedule.getNextRunTime().getEpochSecond())
                             .bind("nextScheduleTime", schedule.getNextScheduleTime().getEpochSecond())
-                            .bind("timezone", schedule.getTimeZone().getId())
                             .execute(),
                             "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
                 }
@@ -366,7 +449,7 @@ public class DatabaseRepositoryStoreManager
                 handle.createStatement(
                         "delete from schedules" +
                         " where id in (" +
-                            oldNames.values().stream().map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")")
+                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")")
                     .execute();
             }
         }
@@ -447,7 +530,7 @@ public class DatabaseRepositoryStoreManager
                 " where id = :revId")
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);
 
-        @SqlQuery("select wd.*, wc.config," +
+        @SqlQuery("select wd.*, wc.config, wc.timezone," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
@@ -466,7 +549,7 @@ public class DatabaseRepositoryStoreManager
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
 
-        @SqlQuery("select wd.*, wc.config," +
+        @SqlQuery("select wd.*, wc.config, wc.timezone," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
@@ -476,7 +559,7 @@ public class DatabaseRepositoryStoreManager
                 " where wd.id = :id")
         StoredWorkflowDefinitionWithRepository getWorkflowDetailsByIdInternal(@Bind("id") long id);
 
-        @SqlQuery("select wd.*, wc.config," +
+        @SqlQuery("select wd.*, wc.config, wc.timezone," +
                 " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
@@ -487,7 +570,7 @@ public class DatabaseRepositoryStoreManager
                 " and site_id = :siteId")
         StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
@@ -495,7 +578,7 @@ public class DatabaseRepositoryStoreManager
                 " and site_id = :siteId")
         StoredWorkflowDefinition getWorkflowDefinitionById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
@@ -505,16 +588,16 @@ public class DatabaseRepositoryStoreManager
                 " limit 1")
         StoredWorkflowDefinition getWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
 
-        @SqlQuery("select id, config" +
+        @SqlQuery("select id, config, timezone" +
                 " from workflow_configs" +
                 " where repository_id = :repoId and config_digest = :configDigest")
         WorkflowConfig findWorkflowConfigByDigest(@Bind("repoId") int repoId, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into workflow_configs" +
-                " (repository_id, config, config_digest)" +
-                " values (:repoId, :config, :configDigest)")
+                " (repository_id, config, timezone, config_digest)" +
+                " values (:repoId, :config, :timezone, :configDigest)")
         @GetGeneratedKeys
-        int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("configDigest") long configDigest);
+        int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("timezone") String timezone, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into revisions" +
                 " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
@@ -522,7 +605,7 @@ public class DatabaseRepositoryStoreManager
         @GetGeneratedKeys
         int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
 
-        @SqlQuery("select wd.*, wc.config from workflow_definitions wd" +
+        @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
@@ -555,7 +638,37 @@ public class DatabaseRepositoryStoreManager
     {
         public abstract int getId();
 
-        public abstract String getConfig();
+        public abstract String getConfigText();
+
+        public abstract String getTimeZone();
+
+        private static final MessageDigest md5;
+
+        static {
+            try {
+                md5 = MessageDigest.getInstance("MD5");
+            }
+            catch (NoSuchAlgorithmException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        public static long digest(String configText, String zoneId)
+        {
+            try {
+                String target = configText + " " + zoneId;
+                byte[] digest = ((MessageDigest) md5.clone()).digest(target.getBytes(UTF_8));
+                return ByteBuffer.wrap(digest).getLong(0);
+            }
+            catch (CloneNotSupportedException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        public static boolean isEquivalent(WorkflowConfig c, String configText, String zoneId)
+        {
+            return configText.equals(c.getConfigText()) && zoneId.equals(c.getTimeZone());
+        }
     }
 
     private static class StoredRepositoryMapper
@@ -625,6 +738,7 @@ public class DatabaseRepositoryStoreManager
             return ImmutableStoredWorkflowDefinition.builder()
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
+                .timeZone(ZoneId.of(r.getString("timezone")))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
@@ -648,6 +762,7 @@ public class DatabaseRepositoryStoreManager
             return ImmutableStoredWorkflowDefinitionWithRepository.builder()
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
+                .timeZone(ZoneId.of(r.getString("timezone")))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .repository(
@@ -672,7 +787,8 @@ public class DatabaseRepositoryStoreManager
         {
             return ImmutableWorkflowConfig.builder()
                 .id(r.getInt("id"))
-                .config(r.getString("config"))
+                .configText(r.getString("config"))
+                .timeZone(r.getString("timezone"))
                 .build();
         }
     }
@@ -684,13 +800,13 @@ public class DatabaseRepositoryStoreManager
         public IdName map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return IdName.of(r.getLong("id"), r.getString("name"));
+            return IdName.of(r.getInt("id"), r.getString("name"));
         }
     }
 
-    private HashMap<String, Long> idNameListToHashMap(List<IdName> list)
+    private HashMap<String, Integer> idNameListToHashMap(List<IdName> list)
     {
-        HashMap<String, Long> map = new HashMap<>();
+        HashMap<String, Integer> map = new HashMap<>();
         for (IdName idName : list) {
             map.put(idName.getName(), idName.getId());
         }
