@@ -26,7 +26,7 @@ Built environment is cached as a new image of Docker.
 
     run: +main
 
-    export:
+    _export:
       docker:
         image: ubuntu:14.04
         build:
