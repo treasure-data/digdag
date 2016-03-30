@@ -198,12 +198,29 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
+    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflow")
+                .queryParam("name", name)
+                .queryParam("repository", repoName));
+    }
+
+    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name, String revision)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflow")
+                .queryParam("name", name)
+                .queryParam("repository", repoName)
+                .queryParam("revision", revision));
+    }
+
     public RestRepository putRepositoryRevision(String repoName, String revision, File body)
         throws IOException
     {
         return doPut(RestRepository.class,
                 "application/gzip",
-                body,  // TODO does this work?
+                body,
                 target("/api/repositories")
                 .queryParam("repository", repoName)
                 .queryParam("revision", revision));
