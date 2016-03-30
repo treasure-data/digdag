@@ -4,16 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
-import java.time.ZonedDateTime;
-import java.time.DateTimeException;
 import java.io.File;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -142,9 +133,6 @@ public class Start
         System.err.println("Use `digdag sessions` to show status.");
     }
 
-    private static final DateTimeFormatter SESSION_TIME_ARG_PARSER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
-
     private RestSessionAttemptPrepareRequest buildPrepareRequest(String repoName, String workflowName)
         throws SystemExitException
     {
@@ -174,20 +162,8 @@ public class Start
                 .build();
 
         default:
-            TemporalAccessor parsed;
-            try {
-                parsed = SESSION_TIME_ARG_PARSER.parse(sessionString);
-            }
-            catch (DateTimeParseException ex) {
-                throw new ConfigException("--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format: " + sessionString);
-            }
-            LocalDateTime local;
-            try {
-                local = LocalDateTime.from(parsed);
-            }
-            catch (DateTimeException ex) {
-                local = LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0));
-            }
+            LocalDateTime local = parseLocalTime(sessionString,
+                    "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format");
             return builder
                 .sessionTime(LocalTimeOrInstant.of(local))
                 .sessionTimeTruncate(Optional.absent())

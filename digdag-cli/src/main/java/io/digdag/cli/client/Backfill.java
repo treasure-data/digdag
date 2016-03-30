@@ -59,7 +59,8 @@ public class Backfill
             throw new ParameterException("-f, --from option and -R, --attempt-name option are required");
         }
 
-        Instant from = parseTime(fromTime);
+        Instant from = parseTime(fromTime,
+            "-f, --from option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp");
 
         DigdagClient client = buildClient();
         List<RestSessionAttempt> attempts = client.backfillSchedule(schedId, from, attemptName, dryRun);
