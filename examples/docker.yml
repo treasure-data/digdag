@@ -1,0 +1,8 @@
+run: +main
+
+_export:
+  docker:
+    image: ubuntu:14.04
+
++main:
+  sh>: cat /etc/issue

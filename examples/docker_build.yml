@@ -1,0 +1,19 @@
+run: +main
+
++main:
+  docker:
+    image: ubuntu:14.04
+    build:
+      - apt-get update -y
+      - apt-get install -y curl nodejs npm jq python-lxml python-pip
+      - ln -s /usr/bin/nodejs /usr/bin/node
+      - curl -o /usr/bin/scrape https://raw.githubusercontent.com/jeroenjanssens/data-science-at-the-command-line/master/tools/scrape
+      - chmod +x /usr/bin/scrape
+      - npm install -g xml2json-command
+      - pip install cssselect
+  sh>: >
+    curl -s https://en.wikipedia.org/wiki/List_of_countries_and_territories_by_border/area_ratio |
+    scrape -be 'table.wikitable > tr:not(:first-child)' |
+    xml2json |
+    jq -c '.html.body.tr[] | {country: .td[1][], border: .td[2][], surface: .td[3][], ratio: .td[4][]}' |
+    head

@@ -1,0 +1,16 @@
+run: +main
+
++main:
+  +step1:
+    sh>: cat /etc/issue
+    docker:
+      image: ubuntu:14.04
+      build:
+        - echo build1
+  +step2:
+    sh>: cat /etc/issue
+    docker:
+      image: ubuntu:12.04
+      build:
+        - echo build2
+
