@@ -30,6 +30,7 @@ import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.ShowLog;
 import io.digdag.cli.client.Start;
+import io.digdag.cli.client.Retry;
 import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Kill;
@@ -128,6 +129,7 @@ public class Main
 
         jc.addCommand("workflow", new ShowWorkflow(), "workflows");
         jc.addCommand("start", new Start());
+        jc.addCommand("retry", new Retry());
         jc.addCommand("session", new ShowSession(), "sessions");
         jc.addCommand("atteempt", new ShowAttempt(), "attempts");
         jc.addCommand("reschedule", new Reschedule());

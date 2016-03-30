@@ -143,19 +143,22 @@ public class Start
             .params(overwriteParams)
             .build();
 
-        RestSessionAttempt attempt = client.startSessionAttempt(request);
+        RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 
         ln("Started a session attempt:");
-        ln("  id: %d", attempt.getId());
-        ln("  uuid: %s", attempt.getSessionUuid());
-        ln("  repository: %s", attempt.getRepository().getName());
-        ln("  workflow: %s", attempt.getWorkflow().getName());
-        ln("  session time: %s", formatTime(attempt.getSessionTime()));
-        ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
-        ln("  params: %s", attempt.getParams());
-        ln("  created at: %s", formatTime(attempt.getCreatedAt()));
+        ln("  id: %d", newAttempt.getId());
+        ln("  uuid: %s", newAttempt.getSessionUuid());
+        ln("  repository: %s", newAttempt.getRepository().getName());
+        ln("  workflow: %s", newAttempt.getWorkflow().getName());
+        ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
+        ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
+        ln("  params: %s", newAttempt.getParams());
+        ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        System.err.println("Use `digdag sessions` to show status.");
+        System.err.println("* Use `digdag sessions` to list session attempts.");
+        System.err.println(String.format(ENGLISH,
+                    "* Use `digdag task %d` and `digdag log %d` to show status.",
+                    newAttempt.getId(), newAttempt.getId()));
     }
 }
