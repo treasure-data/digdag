@@ -196,6 +196,8 @@ public class DockerCommandExecutor
             command.add("-t").add(buildImageName);
             command.add(archivePath.toString());
 
+            logger.trace("Executing docker build: {}", command.build());
+
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
             docker.redirectOutput(ProcessBuilder.Redirect.INHERIT);
