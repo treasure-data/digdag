@@ -215,6 +215,30 @@ public class DigdagClient
                 .queryParam("revision", revision));
     }
 
+    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
+    {
+        return doGet(RestWorkflowDefinition.class,
+                target("/api/workflows/{id}")
+                .resolveTemplate("id", workflowId));
+    }
+
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time)
+    {
+        return doGet(RestWorkflowSessionTime.class,
+                target("/api/workflows/{id}/truncated_session_time")
+                .resolveTemplate("id", workflowId)
+                .queryParam("session_time", time.toString()));
+    }
+
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time, SessionTimeTruncate mode)
+    {
+        return doGet(RestWorkflowSessionTime.class,
+                target("/api/workflows/{id}/truncated_session_time")
+                .resolveTemplate("id", workflowId)
+                .queryParam("session_time", time.toString())
+                .queryParam("mode", mode.toString()));
+    }
+
     public RestRepository putRepositoryRevision(String repoName, String revision, File body)
         throws IOException
     {
@@ -345,19 +369,6 @@ public class DigdagClient
                 new HashMap<String, String>(),
                 target("/api/attempts/{id}/kill")
                 .resolveTemplate("id", attemptId));
-    }
-
-    //public List<RestWorkflowDefinition> getWorkflowDefinitions()
-    //{
-    //    return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
-    //            target("/api/workflows"));
-    //}
-
-    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
-    {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/workflows/{id}")
-                .resolveTemplate("id", workflowId));
     }
 
     public RestScheduleSummary skipSchedulesToTime(int scheduleId, Instant untilTime, Optional<Instant> runTime, boolean dryRun)

@@ -17,6 +17,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.ConfigException;
 import io.digdag.server.rs.RepositoryResource;
+import io.digdag.server.rs.WorkflowResource;
 import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
@@ -42,6 +43,7 @@ public class ServerModule
     {
         builder.addResources(
                 RepositoryResource.class,
+                WorkflowResource.class,
                 ScheduleResource.class,
                 AttemptResource.class,
                 LogResource.class

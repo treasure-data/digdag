@@ -21,8 +21,9 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
-import io.digdag.client.api.RestSessionAttemptPrepareRequest;
 import io.digdag.client.api.RestSessionAttemptPrepareResult;
+import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowSessionTime;
 import io.digdag.client.api.ImmutableRestSessionAttemptPrepareRequest;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
@@ -99,15 +100,47 @@ public class Start
 
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
-        RestSessionAttemptPrepareRequest prepareRequest = buildPrepareRequest(repoName, workflowName);
+        LocalTimeOrInstant time;
+        SessionTimeTruncate mode;
+
+        switch (sessionString) {
+        case "hourly":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = SessionTimeTruncate.HOUR;
+            break;
+
+        case "daily":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = SessionTimeTruncate.DAY;
+            break;
+
+        case "now":
+            time = LocalTimeOrInstant.of(Instant.now());
+            mode = null;
+            break;
+
+        default:
+            time = LocalTimeOrInstant.of(
+                    parseLocalTime(sessionString,
+                        "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
+            mode = null;
+        }
 
         DigdagClient client = buildClient();
 
-        RestSessionAttemptPrepareResult prepareResult = client.prepareSessionAttempt(prepareRequest);
+        RestWorkflowDefinition def;
+        if (revision == null) {
+            def = client.getWorkflowDefinition(repoName, workflowName);
+        }
+        else {
+            def = client.getWorkflowDefinition(repoName, workflowName, revision);
+        }
+
+        RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(def.getId(), time);
 
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
-            .workflowId(prepareResult.getWorkflowId())
-            .sessionTime(prepareResult.getSessionTime().toInstant())
+            .workflowId(def.getId())
+            .sessionTime(truncatedTime.getSessionTime().toInstant())
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
             .params(overwriteParams)
             .build();
@@ -126,43 +159,5 @@ public class Start
         ln("");
 
         System.err.println("Use `digdag sessions` to show status.");
-    }
-
-    private RestSessionAttemptPrepareRequest buildPrepareRequest(String repoName, String workflowName)
-        throws SystemExitException
-    {
-        ImmutableRestSessionAttemptPrepareRequest.Builder builder =
-            RestSessionAttemptPrepareRequest.builder()
-            .repositoryName(repoName)
-            .revision(Optional.fromNullable(revision))
-            .workflowName(workflowName);
-
-        switch (sessionString) {
-        case "hourly":
-            return builder
-                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
-                .sessionTimeTruncate(Optional.of(SessionTimeTruncate.HOUR))
-                .build();
-
-        case "daily":
-            return builder
-                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
-                .sessionTimeTruncate(Optional.of(SessionTimeTruncate.DAY))
-                .build();
-
-        case "now":
-            return builder
-                .sessionTime(LocalTimeOrInstant.of(Instant.now()))
-                .sessionTimeTruncate(Optional.absent())
-                .build();
-
-        default:
-            LocalDateTime local = parseLocalTime(sessionString,
-                    "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format");
-            return builder
-                .sessionTime(LocalTimeOrInstant.of(local))
-                .sessionTimeTruncate(Optional.absent())
-                .build();
-        }
     }
 }

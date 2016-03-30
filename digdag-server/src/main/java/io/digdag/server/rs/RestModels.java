@@ -11,6 +11,7 @@ import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptPrepareResult;
 import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowSessionTime;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestDirectDownloadHandle;
@@ -82,6 +83,19 @@ public final class RestModels
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)
             .config(def.getConfig())
+            .build();
+    }
+
+    public static RestWorkflowSessionTime workflowSessionTime(
+            StoredWorkflowDefinitionWithRepository def,
+            Instant sessionTime, ZoneId timeZone)
+    {
+        StoredRepository repo = def.getRepository();
+        return RestWorkflowSessionTime.builder()
+            .repository(IdName.of(repo.getId(), repo.getName()))
+            .revision(def.getRevisionName())
+            .sessionTime(OffsetDateTime.ofInstant(sessionTime, timeZone))
+            .timeZone(timeZone)
             .build();
     }
 
