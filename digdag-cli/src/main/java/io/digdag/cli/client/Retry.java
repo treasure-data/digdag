@@ -58,7 +58,7 @@ public class Retry
     @Parameter(names = {"--from"})
     String from = null;
 
-    @Parameter(names = {"-R", "--retry"})
+    @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
     @Override
@@ -76,7 +76,7 @@ public class Retry
             error += "--all, --resume, or --from <name> option is required. ";
         }
         if (retryAttemptName == null) {
-            error += "--retry <name> option is required.";
+            error += "--name <name> option is required.";
         }
         if (!error.isEmpty()) {
             throw usage(error);
@@ -101,7 +101,7 @@ public class Retry
     {
         System.err.println("Usage: digdag restart <attempt-id>");
         System.err.println("  Options:");
-        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss] Z\">  set session_time to this time (required)");
+        System.err.println("        --name <name>                unique identifier of this retry attempt");
         System.err.println("        --last-revision              use the last revision");
         System.err.println("        --keep-revision              keep the same revision");
         System.err.println("        --revision <name>            use a specific revision");

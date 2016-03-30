@@ -319,13 +319,29 @@ start
 
 .. code-block:: console
 
-    $ digdag start <repo-name> <+name> [--now or "yyyy-MM-dd HH:mm:ss Z"]
+    $ digdag start <repo-name> <+name> --session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">
 
 Starts a new session. This command requires repository name, workflow name, and session_time. Examples:
 
 .. code-block:: console
 
-    $ digdag start myrepo +main "2016-01-01 00:00:00 -08:00"
+    $ digdag start myrepo +main --session daily
+    $ digdag start myrepo +main --session hourly
+    $ digdag start myrepo +main --session "2016-01-01 00:00:00"
+
+:command:`--session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">`
+  Use this time as session_time.
+
+  If ``daily`` is set, today's 00:00:00 is used.
+
+  If ``hourly`` is set, this hour's 00:00:00 is used.
+
+  If a time is set in "yyyy-MM-dd" or "yyyy-MM-dd HH:mm:ss" format, this time is used.
+
+  Timezone is based on the workflow's time zone (not your machine's time zone). For example, if a workflow uses Europe/Moscow (+03:00), and your machine's time zone is Asia/Tokyo (+09:00), ``--session 2016-01-01 00:00:00`` means 2016-01-01 00:00:00 +03:00 (2016-01-01 06:00:00 +09:00).
+
+:command:`--retry <name>`
+  Set retry attempt name to the new attempt. Usually, you will use ``digdag retry`` command instead of using this option.
 
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
@@ -337,10 +353,38 @@ Starts a new session. This command requires repository name, workflow name, and 
 
   Example: -P params.yml
 
-:command:`-R, --retry NAME`
-  Set attempt name to retry a session.
 
-  -R 1
+retry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag retry <attempt-id>
+
+Retry a session. Either of ``--last-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
+
+Examples:
+
+.. code-block:: console
+
+    $ digdag retry 35 --last-revision --all --name retry1
+    $ digdag retry 35 --keep-revision --all --name retry2
+    $ digdag retry 35 --revision rev29a87a9c --all --name retry2
+
+:command:`--last-revision`
+  Use the last revision to retry the session.
+
+:command:`--keep-revision`
+  Use the same revision with the specified attempt to retry the session.
+
+:command:`--revision <name>`
+  Use a specific revision to retry the session.
+
+:command:`--name <name>`
+  An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.
+
+:command:`--all`
+  Retries all tasks. Other options (``--resume``, ``--from <+name>``) are not implemented yet.
 
 
 log
@@ -348,9 +392,9 @@ log
 
 .. code-block:: console
 
-    $ digdag log <session-id> [+task name prefix]
+    $ digdag log <attempt-id> [+task name prefix]
 
-Shows logs of tasks. This command works only if server (or scheduler) runs with ``-O, --task-log`` option.
+Shows logs of a session attempt. This command works only if server (or scheduler) runs with ``-O, --task-log`` option.
 
 .. code-block:: console
 
@@ -364,9 +408,9 @@ kill
 
 .. code-block:: console
 
-    $ digdag kill <session-id>
+    $ digdag kill <attempt-id>
 
-Kills a session. Examples:
+Kills a session attempt. Examples:
 
 .. code-block:: console
 
@@ -378,7 +422,7 @@ workflows
 
 .. code-block:: console
 
-    $ digdag workflows [+name]
+    $ digdag workflows [repo-name] [+name]
 
 Shows list of workflows or details of a workflow. Examples:
 
@@ -387,9 +431,6 @@ Shows list of workflows or details of a workflow. Examples:
     $ digdag workflows
     $ digdag workflows -r myrepo
     $ digdag workflows +main
-
-:command:`-r, --repository NAME`
-  Repository name.
 
 
 schedules
@@ -416,8 +457,8 @@ Starts sessions of a schedule for past session times.
 
   Example: --from '2016-01-01 00:00:00 -0800'
 
-:command:`-R, --attempt-name NAME`
-  Session attempt name (required). This name is used not to run backfill sessions twice accidentally.
+:command:`--attempt-name NAME`
+  Unique retry attempt name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.
 
   Example: --attempt-name backfill1
 
@@ -435,7 +476,7 @@ reschedule
 Skips schedule forward to a future time. To run past schedules, use backfill instead.
 
 :command:`-s, --skip N`
-  Skips specified number of schedules from now. This number "N" doesn't mean number of sessions to be skipped. "N" is the number of sessions to be skipped
+  Skips specified number of schedules from now. This number "N" doesn't mean number of sessions to be skipped. "N" is the number of sessions to be skipped.
 
 :command:`-t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'`
   Skips schedules until the specified time (exclusive).
@@ -454,25 +495,45 @@ sessions
 
     $ digdag sessions [repo-name] [+name]
 
-Shows list of schedules. Examples:
+Shows list of sessions. This command shows only the latest attempts of sessions (doesn't include attempts retried by another attempt). To show all attempts, use ``digdag attempts``. Examples:
 
 .. code-block:: console
 
-    $ digdag schedules
-    $ digdag schedules myrepo
-    $ digdag schedules myrepo +main
+    $ digdag sessions
+    $ digdag sessions myrepo
+    $ digdag sessions myrepo +main
 
 :command:`-i, --last-id ID`
-  Shows more sessions from this id
+  Shows more sessions older than this id.
+
+
+attempts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag attempts [repo-name] [+name]
+
+Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:
+
+.. code-block:: console
+
+    $ digdag attempts
+    $ digdag attempts myrepo
+    $ digdag attempts myrepo +main
+
+:command:`-i, --last-id ID`
+  Shows more attempts older than this id.
+
 
 tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
-    $ digdag tasks <session-id>
+    $ digdag tasks <attempt-id>
 
-Shows tasks of a session. Examples:
+Shows tasks of an session attempt. Examples:
 
 .. code-block:: console
 

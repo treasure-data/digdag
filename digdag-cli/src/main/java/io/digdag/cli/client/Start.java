@@ -39,7 +39,7 @@ public class Start
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    @Parameter(names = {"-R", "--retry"})
+    @Parameter(names = {"--retry"})
     String retryAttemptName = null;
 
     @Parameter(names = {"--session"})
@@ -65,9 +65,9 @@ public class Start
     {
         System.err.println("Usage: digdag start <repo-name> <+name>");
         System.err.println("  Options:");
-        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss] Z\">  set session_time to this time (required)");
+        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
         System.err.println("        --revision <name>            use a past revision");
-        System.err.println("    -R, --retry NAME                 set attempt name to retry a session");
+        System.err.println("        --retry NAME                 set retry attempt name to a new session");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         ClientCommand.showCommonOptions();
