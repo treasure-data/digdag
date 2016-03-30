@@ -1,0 +1,55 @@
+package io.digdag.cli;
+
+import java.util.Map;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.io.File;
+import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigException;
+import io.digdag.core.config.ConfigLoaderManager;
+import static java.util.Locale.ENGLISH;
+
+public class Arguments
+{
+    private Arguments()
+    { }
+
+    public static Config loadParams(ConfigFactory cf,
+            ConfigLoaderManager loader,
+            String paramsFile, Map<String, String> params)
+        throws IOException
+    {
+        Config overwriteParams = cf.create();
+        if (paramsFile != null) {
+            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
+        }
+        for (Map.Entry<String, String> pair : params.entrySet()) {
+            setDotNestedKey(overwriteParams, pair.getKey(), pair.getValue());
+        }
+        return overwriteParams;
+    }
+
+    private static void setDotNestedKey(Config dest, String key, String value)
+    {
+        Config nest = dest;
+        String[] nestKeys = key.split("\\.");
+        for (int i = 0; i < nestKeys.length - 1; i++) {
+            try {
+                nest = nest.getNestedOrSetEmpty(nestKeys[i]);
+            }
+            catch (ConfigException e) {
+                // if nest1.nest2 = 1 and nest1 = 1 are set together, this error happens.
+                String nonObjectKey = Stream.of(Arrays.copyOfRange(nestKeys, 0, i + 1))
+                    .collect(Collectors.joining("."));
+                throw new ConfigException(String.format(ENGLISH,
+                            "Parameter '%s' is set but '%s' is not a object (%s)",
+                            key, nonObjectKey, nest.get(nestKeys[i], JsonNode.class)));
+            }
+        }
+        nest.set(nestKeys[nestKeys.length - 1], value);
+    }
+}
