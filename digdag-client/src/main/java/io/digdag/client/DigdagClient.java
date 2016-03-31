@@ -2,7 +2,10 @@ package io.digdag.client;
 
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 import java.util.HashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.security.Key;
@@ -36,7 +39,8 @@ public class DigdagClient
     {
         private String host;
         private int port;
-        private Optional<RestApiKey> apiKey;
+        private final Map<String, String> baseHeaders = new HashMap<>();
+        private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
 
         public Builder host(String host)
         {
@@ -50,14 +54,31 @@ public class DigdagClient
             return this;
         }
 
-        public Builder apiKey(RestApiKey apiKey)
+        public Builder header(String key, String value)
         {
-            return apiKey(Optional.of(apiKey));
+            this.baseHeaders.put(key, value);
+            return this;
         }
 
-        public Builder apiKey(Optional<RestApiKey> apiKey)
+        public Builder headerBuilder(Function<Map<String, String>, Map<String, String>> headerBuilder)
         {
-            this.apiKey = apiKey;
+            this.headerBuilder = headerBuilder;
+            return this;
+        }
+
+        public Builder apiKeyHeaderBuilder(Optional<RestApiKey> apiKey)
+        {
+            return apiKeyHeaderBuilder(apiKey.orNull());
+        }
+
+        public Builder apiKeyHeaderBuilder(RestApiKey apiKey)
+        {
+            if (apiKey == null) {
+                headerBuilder = null;
+            }
+            else {
+                headerBuilder = (orig) -> buildApiKeyHeader(apiKey, orig);
+            }
             return this;
         }
 
@@ -81,7 +102,7 @@ public class DigdagClient
     }
 
     private final String endpoint;
-    private final MultivaluedMap<String, Object> headers;
+    private final Supplier<MultivaluedMap<String, Object>> headers;
 
     private final Client client;
     private final ConfigFactory cf;
@@ -90,9 +111,15 @@ public class DigdagClient
     {
         this.endpoint = "http://" + builder.host + ":" + builder.port;
 
-        this.headers = new MultivaluedHashMap<>();
-        if (builder.apiKey.isPresent()) {
-            headers.putSingle("Authorization", buildAuthorizationHeader(builder.apiKey.get()));
+        final Map<String, String> baseHeaders = builder.baseHeaders;
+        final Function<Map<String, String>, Map<String, String>> headerBuilder = builder.headerBuilder;
+
+        if (headerBuilder != null) {
+            this.headers = () -> new MultivaluedHashMap<>(headerBuilder.apply(new HashMap<>(baseHeaders)));
+        }
+        else {
+            final MultivaluedMap<String, Object> staticHeaders = new MultivaluedHashMap<>(baseHeaders);
+            this.headers = () -> staticHeaders;
         }
 
         ObjectMapper mapper = objectMapper();
@@ -108,7 +135,13 @@ public class DigdagClient
         this.cf = new ConfigFactory(mapper);
     }
 
-    private static String buildAuthorizationHeader(RestApiKey apiKey)
+    public static Map<String, String> buildApiKeyHeader(RestApiKey apiKey, Map<String, String> map)
+    {
+        map.put("Authorization", buildApiKeyHeader(apiKey));
+        return map;
+    }
+
+    public static String buildApiKeyHeader(RestApiKey apiKey)
     {
         Instant now = Instant.now();
 
@@ -257,7 +290,7 @@ public class DigdagClient
             .resolveTemplate("id", repoId)
             .queryParam("revision", revision)
             .request()
-            .headers(headers)
+            .headers(headers.get())
             .get();
         // TODO check status code
         return res.readEntity(InputStream.class);
@@ -338,7 +371,7 @@ public class DigdagClient
             .resolveTemplate("id", attemptId)
             .resolveTemplate("fileName", fileName)
             .request()
-            .headers(headers)
+            .headers(headers.get())
             .get();
         // TODO check status code
         return res.readEntity(InputStream.class);
@@ -417,35 +450,35 @@ public class DigdagClient
     private <T> T doGet(GenericType<T> type, WebTarget target)
     {
         return target.request("application/json")
-            .headers(headers)
+            .headers(headers.get())
             .get(type);
     }
 
     private <T> T doGet(Class<T> type, WebTarget target)
     {
         return target.request("application/json")
-            .headers(headers)
+            .headers(headers.get())
             .get(type);
     }
 
     private <T> T doPut(Class<T> type, String contentType, Object body, WebTarget target)
     {
         return target.request("application/json")
-            .headers(headers)
+            .headers(headers.get())
             .put(Entity.entity(body, contentType), type);
     }
 
     private <T> T doPost(GenericType<T> type, Object body, WebTarget target)
     {
         return target.request("application/json")
-            .headers(headers)
+            .headers(headers.get())
             .post(Entity.entity(body, "application/json"), type);
     }
 
     private <T> T doPost(Class<T> type, Object body, WebTarget target)
     {
         return target.request("application/json")
-            .headers(headers)
+            .headers(headers.get())
             .post(Entity.entity(body, "application/json"), type);
     }
 }

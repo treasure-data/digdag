@@ -111,7 +111,7 @@ public abstract class ClientCommand
         return DigdagClient.builder()
             .host(host)
             .port(port)
-            .apiKey(key)
+            .apiKeyHeaderBuilder(key)
             .build();
     }
 
