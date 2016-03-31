@@ -12,7 +12,7 @@ import io.digdag.client.config.Config;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
-import org.msgpack.value.Value;
+import org.msgpack.value.ArrayValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -121,13 +121,13 @@ public class TDJobOperator
         .or(ImmutableList.of());
     }
 
-    public <R> R getResult(Function<Iterator<Value>, R> resultStreamHandler)
+    public <R> R getResult(Function<Iterator<ArrayValue>, R> resultStreamHandler)
     {
         try {
             return defaultRetryExecutor.run(() ->
                     client.jobResult(jobId, TDResultFormat.MESSAGE_PACK_GZ, (in) -> {
                         try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new GZIPInputStream(in, 32*1024))) {
-                            return resultStreamHandler.apply(new Iterator<Value>() {
+                            return resultStreamHandler.apply(new Iterator<ArrayValue>() {
                                 public boolean hasNext()
                                 {
                                     try {
@@ -138,10 +138,10 @@ public class TDJobOperator
                                     }
                                 }
 
-                                public Value next()
+                                public ArrayValue next()
                                 {
                                     try {
-                                        return unpacker.unpackValue();
+                                        return unpacker.unpackValue().asArrayValue();
                                     }
                                     catch (IOException ex) {
                                         throw Throwables.propagate(ex);

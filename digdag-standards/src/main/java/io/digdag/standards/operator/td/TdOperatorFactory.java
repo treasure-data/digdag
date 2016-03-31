@@ -8,7 +8,9 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.nio.file.Path;
 import java.io.File;
+import java.io.Writer;
 import java.io.BufferedWriter;
+import java.io.StringWriter;
 import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.*;
@@ -28,6 +30,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
 import io.digdag.standards.operator.ArchiveFiles;
+import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDJobRequest;
@@ -45,6 +48,8 @@ public class TdOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdOperatorFactory.class);
+
+    private static final int PREVIEW_ROWS = 20;
 
     private final TemplateEngine templateEngine;
 
@@ -102,6 +107,8 @@ public class TdOperatorFactory
 
             boolean storeLastResults = params.get("store_last_results", boolean.class, false);
 
+            boolean preview = params.get("preview", boolean.class, false);
+
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 String stmt;
 
@@ -152,6 +159,21 @@ public class TdOperatorFactory
 
                 TDJobSummary summary = joinJob(j, archive, downloadFile);
 
+                if (preview) {
+                    try {
+                        if (insertInto.isPresent() || createTable.isPresent()) {
+                            selectPreviewRows(op, "job id " + j.getJobId(),
+                                    insertInto.isPresent() ? insertInto.get() : createTable.get());
+                        }
+                        else {
+                            downloadPreviewRows(j, "job id " + j.getJobId());
+                        }
+                    }
+                    catch (Exception ex) {
+                        logger.info("Getting rows for preview failed. Ignoring this error.", ex);
+                    }
+                }
+
                 Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
 
                 return TaskResult.defaultBuilder(request)
@@ -159,6 +181,44 @@ public class TdOperatorFactory
                     .build();
             }
         }
+    }
+
+    static void selectPreviewRows(TDOperator op, String description, TableParam destTable)
+    {
+        String comment = "-- preview results of " + description;
+
+        TDJobRequest req = new TDJobRequestBuilder()
+            .setType("presto")
+            .setDatabase(op.getDatabase())
+            .setQuery(comment + "\nSELECT * FROM " + escapePrestoTableName(destTable) + " LIMIT 20")
+            .setPriority(0)
+            .createTDJobRequest();
+
+        TDJobOperator j = op.submitNewJob(req);
+        downloadPreviewRows(j, "table " + destTable.toString());
+    }
+
+    static void downloadPreviewRows(TDJobOperator j, String description)
+    {
+        StringWriter out = new StringWriter();
+
+        try {
+            addCsvHeader(out, j.getResultColumnNames());
+
+            List<ArrayValue> rows = downloadFirstResults(j, PREVIEW_ROWS);
+            if (rows.isEmpty()) {
+                logger.info("preview of {}: (no results)", description, j.getJobId());
+                return;
+            }
+            for (ArrayValue row : rows) {
+                addCsvRow(out, row);
+            }
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
+
+        logger.info("preview of {}:\r\n{}", description, out.toString());
     }
 
     private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*");
@@ -186,17 +246,17 @@ public class TdOperatorFactory
         return command + "\n" + original;
     }
 
-    private void ensureTableDeleted(TDOperator op, TableParam table)
+    private static void ensureTableDeleted(TDOperator op, TableParam table)
     {
         op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableDeleted(table.getTable());
     }
 
-    private void ensureTableCreated(TDOperator op, TableParam table)
+    private static void ensureTableCreated(TDOperator op, TableParam table)
     {
         op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableCreated(table.getTable());
     }
 
-    private String escapeHiveTableName(TableParam table)
+    private static String escapeHiveTableName(TableParam table)
     {
         if (table.getDatabase().isPresent()) {
             return escapeHiveIdent(table.getDatabase().get()) + '.' + escapeHiveIdent(table.getTable());
@@ -206,7 +266,7 @@ public class TdOperatorFactory
         }
     }
 
-    private String escapePrestoTableName(TableParam table)
+    private static String escapePrestoTableName(TableParam table)
     {
         if (table.getDatabase().isPresent()) {
             return escapePrestoIdent(table.getDatabase().get()) + '.' + escapePrestoIdent(table.getTable());
@@ -243,32 +303,12 @@ public class TdOperatorFactory
         if (downloadFile.isPresent()) {
             j.getResult(ite -> {
                 try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
-                    // write csv file header
-                    boolean firstCol = true;
-                    for (String columnName : j.getResultColumnNames()) {
-                        if (firstCol) { firstCol = false; }
-                        else { out.write(DELIMITER_CHAR); }
-                        addCsvText(out, columnName);
-                    }
-                    out.write("\r\n");
+                    addCsvHeader(out, j.getResultColumnNames());
 
-                    // write values
-                    try {
-                        while (ite.hasNext()) {
-                            ArrayValue row = ite.next().asArrayValue();
-                            boolean first = true;
-                            for (Value v : row) {
-                                if (first) { first = false; }
-                                else { out.write(DELIMITER_CHAR); }
-                                addCsvValue(out, v);
-                            }
-                            out.write("\r\n");
-                        }
-                        return true;
+                    while (ite.hasNext()) {
+                        addCsvRow(out, ite.next().asArrayValue());
                     }
-                    catch (IOException ex) {
-                        throw Throwables.propagate(ex);
-                    }
+                    return true;
                 }
                 catch (IOException ex) {
                     throw Throwables.propagate(ex);
@@ -277,6 +317,30 @@ public class TdOperatorFactory
         }
 
         return summary;
+    }
+
+    private static void addCsvHeader(Writer out, List<String> columnNames)
+        throws IOException
+    {
+        boolean first = true;
+        for (String columnName : columnNames) {
+            if (first) { first = false; }
+            else { out.write(DELIMITER_CHAR); }
+            addCsvText(out, columnName);
+        }
+        out.write("\r\n");
+    }
+
+    private static void addCsvRow(Writer out, ArrayValue row)
+        throws IOException
+    {
+        boolean first = true;
+        for (Value v : row) {
+            if (first) { first = false; }
+            else { out.write(DELIMITER_CHAR); }
+            addCsvValue(out, v);
+        }
+        out.write("\r\n");
     }
 
     static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, TDJobSummary summary, boolean storeLastResults)
@@ -308,22 +372,27 @@ public class TdOperatorFactory
     private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max)
     {
         List<ArrayValue> results = new ArrayList<ArrayValue>(max);
-        j.getResult(ite -> {
-            for (int i=0; i < max; i++) {
-                if (ite.hasNext()) {
-                    ArrayValue row = ite.next().asArrayValue();
-                    results.add(row);
+        try {
+            j.getResult(ite -> {
+                for (int i=0; i < max; i++) {
+                    if (ite.hasNext()) {
+                        ArrayValue row = ite.next().asArrayValue();
+                        results.add(row);
+                    }
+                    else {
+                        break;
+                    }
                 }
-                else {
-                    break;
-                }
-            }
-            return true;
-        });
+                return true;
+            });
+        }
+        catch (TDClientHttpNotFoundException ex) {
+            // this happens if query is INSERT or CREATE. return empty results
+        }
         return results;
     }
 
-    private static void addCsvValue(BufferedWriter out, Value value)
+    private static void addCsvValue(Writer out, Value value)
         throws IOException
     {
         if (value.isStringValue()) {
@@ -337,7 +406,7 @@ public class TdOperatorFactory
         }
     }
 
-    private static void addCsvText(BufferedWriter out, String value)
+    private static void addCsvText(Writer out, String value)
         throws IOException
     {
         out.write(escapeAndQuoteCsvValue(value));

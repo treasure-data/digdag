@@ -224,6 +224,11 @@ Parameters
 
   * :command:`store_last_results: true`
 
+:command:`preview: BOOLEAN`
+  Tries to show some query results to confirm the results of a query.
+
+  * :command:`preview: true`
+
 :command:`result_url: NAME`
   Output the query results to the URL:
 
@@ -303,6 +308,11 @@ Parameters
   td.last_results is a map of column name and a value. To access to a single value, you can use ``${td.last_results.my_count}`` syntax.
 
   * :command:`store_last_results: true`
+
+:command:`preview: BOOLEAN`
+  Tries to show some query results to confirm the results of a query.
+
+  * :command:`preview: true`
 
 :command:`apikey: APIKEY`
   API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.

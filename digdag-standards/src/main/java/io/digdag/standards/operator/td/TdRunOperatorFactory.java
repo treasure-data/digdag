@@ -67,12 +67,22 @@ public class TdRunOperatorFactory
             Instant sessionTime = params.get("session_time", Instant.class);
             Optional<String> downloadFile = params.getOptional("download_file", String.class);
             boolean storeLastResults = params.get("store_last_results", boolean.class, false);
+            boolean preview = params.get("preview", boolean.class, false);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
                 TDJobOperator j = op.startSavedQuery(name, Date.from(sessionTime));
                 logger.info("Started a saved query name={} with time={}", name, sessionTime);
 
                 TDJobSummary summary = joinJob(j, archive, downloadFile);
+
+                if (preview) {
+                    try {
+                        TdOperatorFactory.downloadPreviewRows(j, "job id " + j.getJobId());
+                    }
+                    catch (Exception ex) {
+                        logger.info("Getting rows for preview failed. Ignoring this error.", ex);
+                    }
+                }
 
                 Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
 
