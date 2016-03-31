@@ -60,6 +60,12 @@ public class DigdagClient
             return this;
         }
 
+        public Builder headers(Map<String, String> map)
+        {
+            this.baseHeaders.putAll(map);
+            return this;
+        }
+
         public Builder headerBuilder(Function<Map<String, String>, Map<String, String>> headerBuilder)
         {
             this.headerBuilder = headerBuilder;

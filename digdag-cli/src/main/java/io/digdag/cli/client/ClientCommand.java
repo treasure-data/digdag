@@ -1,6 +1,8 @@
 package io.digdag.cli.client;
 
 import java.util.Properties;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.time.Instant;
@@ -18,6 +20,7 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.DynamicParameter;
 import io.digdag.cli.Main;
 import io.digdag.cli.Command;
 import io.digdag.cli.SystemExitException;
@@ -40,6 +43,9 @@ public abstract class ClientCommand
 
     @Parameter(names = {"-c", "--config"})
     protected String configPath = null;
+
+    @DynamicParameter(names = {"-H", "--header"})
+    Map<String, String> httpHeaders = new HashMap<>();
 
     @Override
     public void main()
@@ -91,9 +97,9 @@ public abstract class ClientCommand
             apiKey = props.getProperty("apikey");
         }
 
-        Optional<RestApiKey> key = Optional.absent();
+        Optional<RestApiKey> restApiKey = Optional.absent();
         if (apiKey != null && !apiKey.isEmpty()) {
-            key = Optional.of(RestApiKey.of(apiKey));
+            restApiKey = Optional.of(RestApiKey.of(apiKey));
         }
 
         String[] fragments = endpoint.split(":", 2);
@@ -108,10 +114,19 @@ public abstract class ClientCommand
             port = Integer.parseInt(fragments[1]);
         }
 
+        Map<String, String> headers = new HashMap<>();
+        for (String key : props.stringPropertyNames()) {
+            if (key.startsWith("header.")) {
+                headers.put(key.substring("header.".length()), props.getProperty(key));
+            }
+        }
+        headers.putAll(this.httpHeaders);
+
         return DigdagClient.builder()
             .host(host)
             .port(port)
-            .apiKeyHeaderBuilder(key)
+            .headers(headers)
+            .apiKeyHeaderBuilder(restApiKey)
             .build();
     }
 

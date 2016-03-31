@@ -308,6 +308,9 @@ Client-mode common options:
 
   Example: -k "RqveUY_CG84/nGO8OIMlfwQu7Qzb-TRi9zP0Pif63pcHnQWCCNKXr70"
 
+:command:`-H, --header KEY=VALUE`
+  Add a custom HTTP header. Use multiple times to set multiple headers.
+
 :command:`-c, --config PATH`
   Configuration file path (default: ~/.digdag/client.properties).
 
