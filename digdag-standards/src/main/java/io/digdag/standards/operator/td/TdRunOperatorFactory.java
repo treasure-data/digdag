@@ -76,7 +76,6 @@ public class TdRunOperatorFactory
 
                 Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
 
-
                 return TaskResult.defaultBuilder(request)
                     .storeParams(storeParams)
                     .build();

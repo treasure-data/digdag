@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.nio.file.Path;
 import java.io.File;
 import java.io.BufferedWriter;
@@ -11,6 +13,7 @@ import java.io.IOException;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -106,11 +109,11 @@ public class TdOperatorFactory
                 case "presto":
                     if (insertInto.isPresent()) {
                         ensureTableCreated(op, insertInto.get());
-                        stmt = "INSERT INTO " + escapePrestoTableName(insertInto.get()) + "\n" + query;
+                        stmt = insertCommandStatement("INSERT INTO " + escapePrestoTableName(insertInto.get()), query);
                     }
                     else if (createTable.isPresent()) {
                         ensureTableDeleted(op, createTable.get());  // TODO this is not atomic.
-                        stmt = "CREATE TABLE " + escapePrestoTableName(createTable.get()) + " AS\n" + query;
+                        stmt = insertCommandStatement("CREATE TABLE " + escapePrestoTableName(createTable.get()) + " AS", query);
                     }
                     else {
                         stmt = query;
@@ -120,11 +123,11 @@ public class TdOperatorFactory
                 case "hive":
                     if (insertInto.isPresent()) {
                         ensureTableCreated(op, insertInto.get());
-                        stmt = "INSERT INTO TABLE " + escapeHiveTableName(insertInto.get()) + "\n" + query;
+                        stmt = insertCommandStatement("INSERT INTO TABLE " + escapeHiveTableName(insertInto.get()), query);
                     }
                     else if (createTable.isPresent()) {
                         ensureTableCreated(op, createTable.get());
-                        stmt = "INSERT OVERWRITE TABLE " + escapeHiveTableName(createTable.get()) + "\n" + query;
+                        stmt = insertCommandStatement("INSERT OVERWRITE TABLE " + escapeHiveTableName(createTable.get()), query);
                     }
                     else {
                         stmt = query;
@@ -156,6 +159,31 @@ public class TdOperatorFactory
                     .build();
             }
         }
+    }
+
+    private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*");
+
+    private final static Pattern COMMENT_BLOCK_PATTERN = Pattern.compile("(?:(?:\\A|\\r?\\n)\\-\\-(?:(?!\\n|\\z).)*)+");
+
+    @VisibleForTesting
+    static String insertCommandStatement(String command, String original)
+    {
+        // try to insert command at "-- DIGDAG_INSERT_LINE" line
+        Matcher ml = INSERT_LINE_PATTERN.matcher(original);
+        if (ml.find()) {
+            return ml.replaceAll(ml.group(1) + command);
+        }
+
+        // try to insert command after comments
+        Matcher mc = COMMENT_BLOCK_PATTERN.matcher(original);
+        if (mc.find()) {
+            return mc.group() +
+                "\n" +
+                command + original.substring(mc.group().length());
+        }
+
+        // add command at the head
+        return command + "\n" + original;
     }
 
     private void ensureTableDeleted(TDOperator op, TableParam table)

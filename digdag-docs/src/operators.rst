@@ -202,10 +202,14 @@ Parameters
 :command:`create_table: NAME`
   Name of a table to create from the results. This option deletes the table if it already exists.
 
+  This option adds CREATE TABLE AS (Presto) or INSERT OVERWRITE (Hive) command at the beginning of SELECT statement. If the query includes ``-- DIGDAG_INSERT_LINE`` line, the command is inserted to the line.
+
   * :command:`create_table: my_table`
 
 :command:`insert_into: NAME`
   Name of a table to append results into.
+
+  This option adds INSERT INTO (Presto) or INSERT INTO TABLE (Hive) command at the beginning of SELECT statement. If the query includes ``-- DIGDAG_INSERT_LINE`` line, the command is inserted to the line.
 
   * :command:`insert_into: my_table`
 

@@ -19,7 +19,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class WorkflowCompilerTest
 {
-
     @Rule public ExpectedException exception = ExpectedException.none();
 
     private DigdagEmbed embed;
@@ -48,7 +47,8 @@ public class WorkflowCompilerTest
     }
 
     @Test
-    public void verifySingleOperatorPasses() {
+    public void verifySingleOperatorPasses()
+    {
         Config config = loadYamlResource("/digdag/workflow/cases/single_operator.yml");
         compiler.compile("+foo", config);
     }
