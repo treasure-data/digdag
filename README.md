@@ -5,7 +5,7 @@
 1. Install Java JDK >= 8
 2. Checkout the latest code: `$ git clone https://github.com/treasure-data/digdag.git && cd digdag`
 3. Build it: `$ ./gradlew cli`
-4. Run example `$ ./pkg/digdag-0.1.0.jar run -f examples/NAME.yml`
+4. Run example `$ ./pkg/digdag-0.5.1.jar run -f examples/NAME.yml`
 5. (optional) install graphviz: `$ brew install graphviz`
 
 ## Commands
