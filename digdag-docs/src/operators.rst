@@ -423,6 +423,21 @@ TODO: add more description here
 
   * :command:`drop_tables: [my_table1, my_table2]`
 
+:command:`create_databases: [ARRAY OF NAMES]`
+  Create new databases if not exists.
+
+  * :command:`create_databases: [my_database1, my_database2]`
+
+:command:`empty_databases: [ARRAY OF NAME]`
+  Create new databases (drop it first if it exists).
+
+  * :command:`empty_databases: [my_database1, my_database2]`
+
+:command:`drop_databases: [ARRAY OF NAMES]`
+  Drop databases if exists.
+
+  * :command:`drop_databases: [my_database1, my_database2]`
+
 :command:`apikey: APIKEY`
   API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
 

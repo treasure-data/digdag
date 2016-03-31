@@ -51,16 +51,31 @@ public class TdDdlOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            List<TableParam> deleteList = params.getListOrEmpty("drop_tables", TableParam.class);
-            List<TableParam> createList = params.getListOrEmpty("create_tables", TableParam.class);
-            List<TableParam> emptyList = params.getListOrEmpty("empty_tables", TableParam.class);
+            List<String> dropDatabaseList = params.getListOrEmpty("drop_databases", String.class);
+            List<String> createDatabaseList = params.getListOrEmpty("create_databases", String.class);
+            List<String> emptyDatabaseList = params.getListOrEmpty("empty_databases", String.class);
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
-                for (TableParam t : Iterables.concat(deleteList, emptyList)) {
+                for (String d : Iterables.concat(dropDatabaseList, emptyDatabaseList)) {
+                    logger.info("Deleting TD database {}.{}", d);
+                    op.withDatabase(d).ensureDatabaseDeleted(d);
+                }
+                for (String d : Iterables.concat(createDatabaseList, emptyDatabaseList)) {
+                    logger.info("Creating TD database {}.{}", op.getDatabase(), d);
+                    op.withDatabase(d).ensureDatabaseCreated(d);
+                }
+            }
+
+            List<TableParam> dropTableList = params.getListOrEmpty("drop_tables", TableParam.class);
+            List<TableParam> createTableList = params.getListOrEmpty("create_tables", TableParam.class);
+            List<TableParam> emptyTableList = params.getListOrEmpty("empty_tables", TableParam.class);
+
+            try (TDOperator op = TDOperator.fromConfig(params)) {
+                for (TableParam t : Iterables.concat(dropTableList, emptyTableList)) {
                     logger.info("Deleting TD table {}.{}", op.getDatabase(), t);
                     op.withDatabase(t.getDatabase().or(op.getDatabase())).ensureTableDeleted(t.getTable());
                 }
-                for (TableParam t : Iterables.concat(createList, emptyList)) {
+                for (TableParam t : Iterables.concat(createTableList, emptyTableList)) {
                     logger.info("Creating TD table {}.{}", op.getDatabase(), t);
                     op.withDatabase(t.getDatabase().or(op.getDatabase())).ensureTableCreated(t.getTable());
                 }

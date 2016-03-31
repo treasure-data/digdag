@@ -67,6 +67,36 @@ public class TDOperator
         return database;
     }
 
+    public void ensureDatabaseCreated(String name)
+        throws TDClientException
+    {
+        try {
+            defaultRetryExecutor.run(() -> client.createDatabase(name));
+        }
+        catch (RetryGiveupException ex) {
+            if (ex.getCause() instanceof TDClientHttpConflictException) {
+                // ignore
+                return;
+            }
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
+    public void ensureDatabaseDeleted(String name)
+        throws TDClientException
+    {
+        try {
+            defaultRetryExecutor.run(() -> client.deleteDatabase(name));
+        }
+        catch (RetryGiveupException ex) {
+            if (ex.getCause() instanceof TDClientHttpNotFoundException) {
+                // ignore
+                return;
+            }
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
     public void ensureTableCreated(String tableName)
         throws TDClientException
     {
