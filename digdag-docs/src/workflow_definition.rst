@@ -182,7 +182,7 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 Parallel execution
 ----------------------------------
 
-If ``_parallel: true`` parameter is set, child tasks run in parallel (grandchildren are not affected):
+If ``_parallel: true`` parameter is set to a group, child tasks in the group run in parallel (grandchildren are not affected):
 
 .. code-block:: yaml
 
@@ -204,6 +204,30 @@ If ``_parallel: true`` parameter is set, child tasks run in parallel (grandchild
 
       +analyze
           sh>: tasks/analyze_prepared_data_sets.sh
+
+If ``_background: true`` parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.
+
+.. code-block:: yaml
+
+    run: +main
+
+    +main:
+      +prepare
+        +data1:
+          sh>: tasks/prepare_data1.sh
+
+        # +data1 and +data2 run in parallel.
+        +data2:
+          _background: true
+          sh>: tasks/prepare_data2.sh
+
+        # +data3 runs after +data1 and +data2.
+        +data3:
+          sh>: tasks/prepare_data3.sh
+
+      +analyze
+          sh>: tasks/analyze_prepared_data_sets.sh
+
 
 Sending error notification
 ----------------------------------

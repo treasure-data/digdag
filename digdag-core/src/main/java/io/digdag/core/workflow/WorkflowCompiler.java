@@ -181,10 +181,13 @@ public class WorkflowCompiler
                     .collect(Collectors.toList());
 
                 if (config.get("_parallel", boolean.class, false)) {
-                    // after: is valid only when parallel: is true
+                    // _after: is valid only when parallel: is true
                     Map<String, TaskBuilder> names = new HashMap<>();
                     for (TaskBuilder subtask : subtasks) {
-                        for (String upName : subtask.getConfig().getListOrEmpty("after", String.class)) {
+                        if (subtask.getConfig().get("_background", boolean.class, false)) {
+                            throw new ConfigException("Setting \"_background: true\" option is invalid (unnecessary) is its parent task has \"_parallel: true\" option");
+                        }
+                        for (String upName : subtask.getConfig().getListOrEmpty("_after", String.class)) {
                             TaskBuilder up = names.get(upName);
                             if (up == null) {
                                 throw new ConfigException("Dependency task '"+upName+"' does not exist");
@@ -195,16 +198,21 @@ public class WorkflowCompiler
                     }
                 }
                 else {
-                    // after: is automatically generated if parallel: is false
-                    if (config.has("after")) {
-                        throw new ConfigException("Option 'after' is valid only if 'parallel' is true");
-                    }
-                    TaskBuilder before = null;
+                    List<TaskBuilder> beforeList = new ArrayList<>();
                     for (TaskBuilder subtask : subtasks) {
-                        if (before != null) {
-                            subtask.addUpstream(before);
+                        if (subtask.getConfig().has("_after")) {
+                            throw new ConfigException("Option '_after' is valid only if 'parallel' is true");
                         }
-                        before = subtask;
+                        if (subtask.getConfig().get("_background", boolean.class, false)) {
+                            beforeList.add(subtask);
+                        }
+                        else {
+                            for (TaskBuilder before : beforeList) {
+                                subtask.addUpstream(before);
+                            }
+                            beforeList.clear();
+                            beforeList.add(subtask);
+                        }
                     }
                 }
 
