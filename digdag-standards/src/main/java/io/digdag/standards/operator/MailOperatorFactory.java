@@ -50,9 +50,9 @@ public class MailOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new MailOperator(archivePath, request);
+        return new MailOperator(workspacePath, request);
     }
 
     @Value.Immutable
@@ -68,9 +68,9 @@ public class MailOperatorFactory
     private class MailOperator
             extends BaseOperator
     {
-        public MailOperator(Path archivePath, TaskRequest request)
+        public MailOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -79,7 +79,7 @@ public class MailOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));
 
-            String body = templateEngine.templateCommand(archivePath, params, "body", UTF_8);
+            String body = templateEngine.templateCommand(workspacePath, params, "body", UTF_8);
             String subject = params.get("subject", String.class);
 
             List<String> toList;

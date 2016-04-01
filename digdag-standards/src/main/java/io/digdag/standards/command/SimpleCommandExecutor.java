@@ -11,19 +11,14 @@ import io.digdag.spi.TaskRequest;
 public class SimpleCommandExecutor
     implements CommandExecutor
 {
-    // TODO make these parameters configurable
-    private final boolean extractArchive = false;
-    private final File archiveBuildPath = new File("tmp/");
-
     @Inject
     public SimpleCommandExecutor()
-    {
-    }
+    { }
 
-    public Process start(Path archivePath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
         // TODO set TZ environment variable
-        return pb.directory(archivePath.toFile()).start();
+        return pb.directory(workspacePath.toFile()).start();
     }
 }

@@ -41,7 +41,7 @@ public class OperatorManager
     protected final AgentConfig config;
     protected final AgentId agentId;
     protected final TaskCallbackApi callback;
-    private final ArchiveManager archiveManager;
+    private final WorkspaceManager workspaceManager;
     private final ConfigLoaderManager configLoader;
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
@@ -53,14 +53,14 @@ public class OperatorManager
 
     @Inject
     public OperatorManager(AgentConfig config, AgentId agentId,
-            TaskCallbackApi callback, ArchiveManager archiveManager,
+            TaskCallbackApi callback, WorkspaceManager workspaceManager,
             ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<OperatorFactory> factories)
     {
         this.config = config;
         this.agentId = agentId;
         this.callback = callback;
-        this.archiveManager = archiveManager;
+        this.workspaceManager = workspaceManager;
         this.configLoader = configLoader;
         this.compiler = compiler;
         this.cf = cf;
@@ -126,8 +126,8 @@ public class OperatorManager
 
         runningTaskMap.put(taskId, request);
         try {
-            archiveManager.withExtractedArchive(request, (archivePath) -> {
-                runWithArchive(archivePath, request, nextState);
+            workspaceManager.withExtractedArchive(request, (workspacePath) -> {
+                runWithWorkspace(workspacePath, request, nextState);
                 return true;
             });
         }
@@ -136,7 +136,7 @@ public class OperatorManager
         }
     }
 
-    private void runWithArchive(Path archivePath, TaskRequest request, Config nextState)
+    private void runWithWorkspace(Path workspacePath, TaskRequest request, Config nextState)
     {
         long taskId = request.getTaskId();
 
@@ -148,7 +148,7 @@ public class OperatorManager
                 all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
                 Config evalParams = all.deepCopy();
                 all.merge(request.getLocalConfig());
-                config = evalEngine.eval(archivePath, all, evalParams);
+                config = evalEngine.eval(workspacePath, all, evalParams);
             }
             catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to process task config templates", ex);
@@ -190,7 +190,7 @@ public class OperatorManager
                 .config(checkedConfig)
                 .build();
 
-            TaskResult result = callExecutor(archivePath, type, mergedRequest);
+            TaskResult result = callExecutor(workspacePath, type, mergedRequest);
 
             warnUnusedKeys(checkedConfig.getUnusedKeys(), request);
 
@@ -227,13 +227,13 @@ public class OperatorManager
         }
     }
 
-    protected TaskResult callExecutor(Path archivePath, String type, TaskRequest mergedRequest)
+    protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = executorTypes.get(type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
-        Operator executor = factory.newTaskExecutor(archivePath, mergedRequest);
+        Operator executor = factory.newTaskExecutor(workspacePath, mergedRequest);
 
         return executor.run();
     }

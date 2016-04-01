@@ -14,17 +14,17 @@ import io.digdag.spi.Operator;
 public abstract class BaseOperator
         implements Operator
 {
-    protected final Path archivePath;
-    protected final ArchiveFiles archive;
+    protected final Path workspacePath;
+    protected final Workspace archive;
     protected final TaskRequest request;
 
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
-    public BaseOperator(Path archivePath, TaskRequest request)
+    public BaseOperator(Path workspacePath, TaskRequest request)
     {
-        this.archivePath = archivePath;
-        this.archive = new ArchiveFiles(archivePath);
+        this.workspacePath = workspacePath;
+        this.archive = new Workspace(workspacePath);
         this.request = request;
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();

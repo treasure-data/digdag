@@ -55,11 +55,11 @@ public class ConfigEvalEngine
         this.jsEngineFactory = new NashornScriptEngineFactory();
     }
 
-    protected Config eval(Path archivePath, Config config, Config params)
+    protected Config eval(Path workspacePath, Config config, Config params)
         throws TemplateException
     {
         ObjectNode object = config.convert(ObjectNode.class);
-        ObjectNode built = new Context(archivePath, params).evalObjectRecursive(object);
+        ObjectNode built = new Context(workspacePath, params).evalObjectRecursive(object);
         return config.getFactory().create(built);
     }
 
@@ -80,7 +80,7 @@ public class ConfigEvalEngine
         return (Invocable) jsEngine;
     }
 
-    private String invokeTemplate(Invocable templateInvocable, Path archivePath, String code, Config params)
+    private String invokeTemplate(Invocable templateInvocable, Path workspacePath, String code, Config params)
         throws TemplateException
     {
         try {
@@ -94,13 +94,13 @@ public class ConfigEvalEngine
 
     private class Context
     {
-        private final Path archivePath;
+        private final Path workspacePath;
         private final Config params;
         private final Invocable templateInvocable;
 
-        public Context(Path archivePath, Config params)
+        public Context(Path workspacePath, Config params)
         {
-            this.archivePath = archivePath;
+            this.workspacePath = workspacePath;
             this.params = params;
             this.templateInvocable = newTemplateInvocable(params);
         }
@@ -167,7 +167,7 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = invokeTemplate(templateInvocable, archivePath, code, scopedParams);
+            String resultText = invokeTemplate(templateInvocable, workspacePath, code, scopedParams);
             if (resultText == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }

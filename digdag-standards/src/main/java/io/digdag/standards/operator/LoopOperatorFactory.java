@@ -35,17 +35,17 @@ public class LoopOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new LoopOperator(archivePath, request);
+        return new LoopOperator(workspacePath, request);
     }
 
     private static class LoopOperator
             extends BaseOperator
     {
-        public LoopOperator(Path archivePath, TaskRequest request)
+        public LoopOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override

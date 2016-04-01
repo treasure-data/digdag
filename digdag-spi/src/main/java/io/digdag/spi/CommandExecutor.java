@@ -6,6 +6,6 @@ import com.google.common.base.Optional;
 
 public interface CommandExecutor
 {
-    Process start(Path archivePath, TaskRequest request, ProcessBuilder pb)
+    Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
         throws IOException;
 }

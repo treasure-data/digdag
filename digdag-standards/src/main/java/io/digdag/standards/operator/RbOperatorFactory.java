@@ -65,17 +65,17 @@ public class RbOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new RbOperator(archivePath, request);
+        return new RbOperator(workspacePath, request);
     }
 
     private class RbOperator
             extends BaseOperator
     {
-        public RbOperator(Path archivePath, TaskRequest request)
+        public RbOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -127,7 +127,7 @@ public class RbOperatorFactory
 
             ImmutableList.Builder<String> cmdline = ImmutableList.builder();
             cmdline.add("ruby");
-            cmdline.add("-I").add(archivePath.toString());
+            cmdline.add("-I").add(workspacePath.toString());
             if (feature.isPresent()) {
                 cmdline.add("-r").add(feature.get());
             }
@@ -136,7 +136,7 @@ public class RbOperatorFactory
 
             ProcessBuilder pb = new ProcessBuilder(cmdline.build());
             pb.redirectErrorStream(true);
-            Process p = exec.start(archivePath, request, pb);
+            Process p = exec.start(workspacePath, request, pb);
 
             // feed script to stdin
             try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {

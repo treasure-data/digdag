@@ -41,20 +41,20 @@ public class DockerCommandExecutor
         this.simple = simple;
     }
 
-    public Process start(Path archivePath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
         // TODO set TZ environment variable
         Config config = request.getConfig();
         if (config.has("docker")) {
-            return startWithDocker(archivePath, request, pb);
+            return startWithDocker(workspacePath, request, pb);
         }
         else {
-            return simple.start(archivePath, request, pb);
+            return simple.start(workspacePath, request, pb);
         }
     }
 
-    private Process startWithDocker(Path archivePath, TaskRequest request, ProcessBuilder pb)
+    private Process startWithDocker(Path workspacePath, TaskRequest request, ProcessBuilder pb)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String image = dockerConfig.get("image", String.class);
@@ -65,7 +65,7 @@ public class DockerCommandExecutor
                     request.getRepositoryId(),
                     request.getRevision().or(UUID.randomUUID().toString()));
 
-            buildImage(archivePath, dockerConfig, image, buildImageName);
+            buildImage(workspacePath, dockerConfig, image, buildImageName);
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
@@ -82,7 +82,7 @@ public class DockerCommandExecutor
             }
             else {
                 command.add("-v").add(String.format(ENGLISH,
-                            "%s:%s:rw", archivePath.toAbsolutePath(), "/digdag"));
+                            "%s:%s:rw", workspacePath.toAbsolutePath(), "/digdag"));
             }
 
             // workdir
@@ -124,7 +124,7 @@ public class DockerCommandExecutor
             docker.redirectErrorStream(pb.redirectErrorStream());
             docker.redirectInput(pb.redirectInput());
             docker.redirectOutput(pb.redirectOutput());
-            docker.directory(archivePath.toFile());
+            docker.directory(workspacePath.toFile());
 
             return docker.start();
         }
@@ -133,7 +133,7 @@ public class DockerCommandExecutor
         }
     }
 
-    private void buildImage(Path archivePath, Config dockerConfig, String image, String buildImageName) {
+    private void buildImage(Path workspacePath, Config dockerConfig, String image, String buildImageName) {
         try {
             Pattern pattern = Pattern.compile("\n" + Pattern.quote(buildImageName) + " ");
 
@@ -167,7 +167,7 @@ public class DockerCommandExecutor
         logger.debug("Building image {}", buildImageName);
         try {
             // create Dockerfile
-            Path tmpPath = archivePath.resolve("digdag.tmp");
+            Path tmpPath = workspacePath.resolve("digdag.tmp");
             Files.createDirectories(tmpPath);
             Path dockerFilePath = tmpPath.resolve("Dockerfile." + buildImageName);
 
@@ -194,12 +194,12 @@ public class DockerCommandExecutor
             command.add("-f").add(dockerFilePath.toString());
             command.add("--force-rm");
             command.add("-t").add(buildImageName);
-            command.add(archivePath.toString());
+            command.add(workspacePath.toString());
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
             docker.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-            docker.directory(archivePath.toFile());
+            docker.directory(workspacePath.toFile());
 
             Process p = docker.start();
             int ecode = p.waitFor();

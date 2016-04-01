@@ -44,17 +44,17 @@ public class TdRunOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new TdRunOperator(archivePath, request);
+        return new TdRunOperator(workspacePath, request);
     }
 
     private class TdRunOperator
             extends BaseOperator
     {
-        public TdRunOperator(Path archivePath, TaskRequest request)
+        public TdRunOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override

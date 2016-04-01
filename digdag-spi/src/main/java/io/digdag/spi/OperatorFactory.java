@@ -6,5 +6,5 @@ public interface OperatorFactory
 {
     String getType();
 
-    Operator newTaskExecutor(Path archivePath, TaskRequest request);
+    Operator newTaskExecutor(Path workspacePath, TaskRequest request);
 }

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
-import io.digdag.standards.operator.ArchiveFiles;
+import io.digdag.standards.operator.Workspace;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
@@ -65,17 +65,17 @@ public class TdOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new TdOperator(archivePath, request);
+        return new TdOperator(workspacePath, request);
     }
 
     private class TdOperator
             extends BaseOperator
     {
-        public TdOperator(Path archivePath, TaskRequest request)
+        public TdOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -84,7 +84,7 @@ public class TdOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            String query = templateEngine.templateCommand(archivePath, params, "query", UTF_8);
+            String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
 
             Optional<TableParam> insertInto = params.getOptional("insert_into", TableParam.class);
             Optional<TableParam> createTable = params.getOptional("create_table", TableParam.class);
@@ -276,7 +276,7 @@ public class TdOperatorFactory
         }
     }
 
-    static TDJobSummary joinJob(TDJobOperator j, ArchiveFiles archive, Optional<String> downloadFile)
+    static TDJobSummary joinJob(TDJobOperator j, Workspace archive, Optional<String> downloadFile)
     {
         TDJobSummary summary;
         try {

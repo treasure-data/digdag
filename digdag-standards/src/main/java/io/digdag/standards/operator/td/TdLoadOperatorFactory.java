@@ -43,17 +43,17 @@ public class TdLoadOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new TdLoadOperator(archivePath, request);
+        return new TdLoadOperator(workspacePath, request);
     }
 
     private class TdLoadOperator
             extends BaseOperator
     {
-        public TdLoadOperator(Path archivePath, TaskRequest request)
+        public TdLoadOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -67,7 +67,7 @@ public class TdLoadOperatorFactory
                 String built;
                 String command = params.get("_command", String.class);
                 try {
-                    built = templateEngine.templateFile(archivePath, command, UTF_8, params);
+                    built = templateEngine.templateFile(workspacePath, command, UTF_8, params);
                 }
                 catch (IOException | TemplateException ex) {
                     throw new ConfigException("Failed to load bulk load file", ex);

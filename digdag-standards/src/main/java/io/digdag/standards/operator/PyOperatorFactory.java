@@ -65,17 +65,17 @@ public class PyOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new PyOperator(archivePath, request);
+        return new PyOperator(workspacePath, request);
     }
 
     private class PyOperator
             extends BaseOperator
     {
-        public PyOperator(Path archivePath, TaskRequest request)
+        public PyOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -129,7 +129,7 @@ public class PyOperatorFactory
                 .build();
             ProcessBuilder pb = new ProcessBuilder(cmdline);
             pb.redirectErrorStream(true);
-            Process p = exec.start(archivePath, request, pb);
+            Process p = exec.start(workspacePath, request, pb);
 
             // feed script to stdin
             try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {

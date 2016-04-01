@@ -37,17 +37,17 @@ public class TdTableExportOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new TdTableExportOperator(archivePath, request);
+        return new TdTableExportOperator(workspacePath, request);
     }
 
     private class TdTableExportOperator
             extends BaseOperator
     {
-        public TdTableExportOperator(Path archivePath, TaskRequest request)
+        public TdTableExportOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override

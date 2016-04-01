@@ -20,8 +20,8 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.agent.ArchiveManager;
-import io.digdag.core.agent.CurrentDirectoryArchiveManager;
+import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.agent.NoopWorkspaceManager;
 import static io.digdag.cli.Main.systemExit;
 
 public class Sched
@@ -113,8 +113,8 @@ public class Sched
                     binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 })
                 .overrideModulesWith((binder) -> {
-                    // overwrite server that uses InProcessArchiveManager
-                    binder.bind(ArchiveManager.class).to(CurrentDirectoryArchiveManager.class).in(Scopes.SINGLETON);
+                    // overwrite server that uses LocalWorkspaceManager
+                    binder.bind(WorkspaceManager.class).to(NoopWorkspaceManager.class).in(Scopes.SINGLETON);
                 });
         }
     }

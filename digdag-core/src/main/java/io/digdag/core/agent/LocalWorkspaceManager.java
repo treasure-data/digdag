@@ -24,8 +24,8 @@ import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
 import static io.digdag.core.TempFileManager.deleteFilesIfExistsRecursively;
 
-public class InProcessArchiveManager
-    implements ArchiveManager
+public class LocalWorkspaceManager
+    implements WorkspaceManager
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -33,14 +33,14 @@ public class InProcessArchiveManager
     private final TempFileManager tempFiles;
 
     @Inject
-    public InProcessArchiveManager(RepositoryStoreManager rm, TempFileManager tempFiles)
+    public LocalWorkspaceManager(RepositoryStoreManager rm, TempFileManager tempFiles)
     {
         this.rm = rm;
         this.tempFiles = tempFiles;
     }
 
     @Override
-    public <T> T withExtractedArchive(TaskRequest request, WithArchiveAction<T> func)
+    public <T> T withExtractedArchive(TaskRequest request, WithWorkspaceAction<T> func)
             throws IOException
     {
         try {

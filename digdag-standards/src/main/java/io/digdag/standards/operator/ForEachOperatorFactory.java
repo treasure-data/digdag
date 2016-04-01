@@ -40,17 +40,17 @@ public class ForEachOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new ForEachOperator(archivePath, request);
+        return new ForEachOperator(workspacePath, request);
     }
 
     private static class ForEachOperator
             extends BaseOperator
     {
-        public ForEachOperator(Path archivePath, TaskRequest request)
+        public ForEachOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override

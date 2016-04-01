@@ -54,17 +54,17 @@ public class EmbulkOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new EmbulkOperator(archivePath, request);
+        return new EmbulkOperator(workspacePath, request);
     }
 
     private class EmbulkOperator
             extends BaseOperator
     {
-        public EmbulkOperator(Path archivePath, TaskRequest request)
+        public EmbulkOperator(Path workspacePath, TaskRequest request)
         {
-            super(archivePath, request);
+            super(workspacePath, request);
         }
 
         @Override
@@ -79,7 +79,7 @@ public class EmbulkOperatorFactory
 
                 if (params.has("_command")) {
                     String command = params.get("_command", String.class);
-                    String data = templateEngine.templateFile(archivePath, command, UTF_8, params);
+                    String data = templateEngine.templateFile(workspacePath, command, UTF_8, params);
                     Files.write(archive.getPath(tempFile), data.getBytes(UTF_8));
                 }
                 else {
@@ -98,7 +98,7 @@ public class EmbulkOperatorFactory
             int ecode;
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                Process p = exec.start(archivePath, request, pb);
+                Process p = exec.start(workspacePath, request, pb);
                 p.getOutputStream().close();
                 try (InputStream stdout = p.getInputStream()) {
                     ByteStreams.copy(stdout, buffer);

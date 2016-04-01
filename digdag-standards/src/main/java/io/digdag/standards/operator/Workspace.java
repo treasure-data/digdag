@@ -13,13 +13,13 @@ import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.charset.Charset;
 
-public class ArchiveFiles
+public class Workspace
     implements Closeable
 {
     private final Path path;
     private final List<String> tempFiles = new ArrayList<>();
 
-    public ArchiveFiles(Path path)
+    public Workspace(Path path)
     {
         this.path = path;
     }
@@ -32,7 +32,7 @@ public class ArchiveFiles
     public String createTempFile(String prefix, String suffix)
         throws IOException
     {
-        // file will be deleted by ArchiveManager
+        // file will be deleted by WorkspaceManager
         Path file = Files.createTempFile(getTempDir(), prefix, suffix);
         String relative = path.relativize(file).toString();
         tempFiles.add(relative);

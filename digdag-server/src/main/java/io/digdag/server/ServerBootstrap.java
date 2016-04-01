@@ -32,8 +32,8 @@ import io.digdag.server.ServerModule;
 import io.digdag.server.ServerConfig;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.config.PropertyUtils;
-import io.digdag.core.agent.ArchiveManager;
-import io.digdag.core.agent.InProcessArchiveManager;
+import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 
@@ -93,7 +93,7 @@ public class ServerBootstrap
         return bootstrap
             .setSystemConfig(serverConfig.getSystemConfig())
             .overrideModulesWith((binder) -> {
-                binder.bind(ArchiveManager.class).to(InProcessArchiveManager.class).in(Scopes.SINGLETON);
+                binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
             })
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);

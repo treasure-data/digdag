@@ -60,7 +60,7 @@ import io.digdag.core.agent.OperatorManager;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
-import io.digdag.core.agent.ArchiveManager;
+import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.agent.AgentConfig;
 import io.digdag.core.workflow.TaskTree;
@@ -602,12 +602,12 @@ public class Run
         @Inject
         public OperatorManagerWithSkip(
                 AgentConfig config, AgentId agentId,
-                TaskCallbackApi callback, ArchiveManager archiveManager,
+                TaskCallbackApi callback, WorkspaceManager workspaceManager,
                 ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<OperatorFactory> factories,
                 Run cmd, YamlMapper yamlMapper)
         {
-            super(config, agentId, callback, archiveManager, configLoader, compiler, cf, evalEngine, factories);
+            super(config, agentId, callback, workspaceManager, configLoader, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;
@@ -632,7 +632,7 @@ public class Run
         }
 
         @Override
-        protected TaskResult callExecutor(Path archivePath, String type, TaskRequest mergedRequest)
+        protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
         {
             if (cmd.showParams) {
                 StringBuilder sb = new StringBuilder();
@@ -645,7 +645,7 @@ public class Run
                 return TaskResult.empty(cf);
             }
             else {
-                return super.callExecutor(archivePath, type, mergedRequest);
+                return super.callExecutor(workspacePath, type, mergedRequest);
             }
         }
     }
