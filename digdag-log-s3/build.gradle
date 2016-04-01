@@ -1,0 +1,5 @@
+
+dependencies {
+    compile project(':digdag-core')
+    compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
+}
