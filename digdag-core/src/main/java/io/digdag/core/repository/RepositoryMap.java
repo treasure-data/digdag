@@ -10,14 +10,9 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public class RepositoryMap
 {
-    public static RepositoryMap get(RepositoryStore rs)
+    public static RepositoryMap empty()
     {
-        List<StoredRepository> repos = rs.getRepositories(Integer.MAX_VALUE, Optional.absent());
-        ImmutableMap.Builder<Integer, StoredRepository> builder = ImmutableMap.builder();
-        for (StoredRepository repo : repos) {
-            builder.put(repo.getId(), repo);
-        }
-        return new RepositoryMap(builder.build());
+        return new RepositoryMap(ImmutableMap.of());
     }
 
     private final Map<Integer, StoredRepository> map;

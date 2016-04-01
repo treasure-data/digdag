@@ -6,6 +6,11 @@ import com.google.common.collect.ImmutableMap;
 
 public class TimeZoneMap
 {
+    public static TimeZoneMap empty()
+    {
+        return new TimeZoneMap(ImmutableMap.of());
+    }
+
     private final Map<Long, ZoneId> map;
 
     public TimeZoneMap(Map<Long, ZoneId> map)

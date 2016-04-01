@@ -114,6 +114,10 @@ public class DatabaseRepositoryStoreManager
         @Override
         public RepositoryMap getRepositoriesByIdList(List<Integer> repoIdList)
         {
+            if (repoIdList.isEmpty()) {
+                return RepositoryMap.empty();
+            }
+
             List<StoredRepository> repos = autoCommit((handle, dao) ->
                     handle.createQuery(
                         "select * from repositories" +
@@ -265,6 +269,10 @@ public class DatabaseRepositoryStoreManager
         @Override
         public TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList)
         {
+            if (defIdList.isEmpty()) {
+                return TimeZoneMap.empty();
+            }
+
             List<IdTimeZone> list = autoCommit((handle, dao) ->
                     handle.createQuery(
                         "select wd.id, wc.timezone from workflow_definitions wd" +
