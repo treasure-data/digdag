@@ -60,7 +60,7 @@ public class S3LogServerFactory
         if (logPath.startsWith("/")) {
             logPath = logPath.substring(1);
         }
-        if (!logPath.endsWith("/")) {
+        if (!logPath.endsWith("/") && !logPath.isEmpty()) {
             logPath = logPath + "/";
         }
         this.logPath = logPath;
