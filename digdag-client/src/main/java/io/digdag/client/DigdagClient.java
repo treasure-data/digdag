@@ -371,6 +371,20 @@ public class DigdagClient
                 .queryParam("task_name", taskName));
     }
 
+    public InputStream getLogFile(long attemptId, RestLogFileHandle handle)
+    {
+        if (handle.getDirect().isPresent() && handle.getDirect().get().getType().equals("http")) {
+            Response res = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
+                    .request()
+                    .get();
+            // TODO check status code
+            return res.readEntity(InputStream.class);
+        }
+        else {
+            return getLogFile(attemptId, handle.getFileName());
+        }
+    }
+
     public InputStream getLogFile(long attemptId, String fileName)
     {
         Response res = target("/api/logs/{id}/files/{fileName}")

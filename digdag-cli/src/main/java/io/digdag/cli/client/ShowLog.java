@@ -63,7 +63,7 @@ public class ShowLog
 
         for (Map.Entry<String, List<RestLogFileHandle>> pair : sortHandles(handles).entrySet()) {
             for (RestLogFileHandle handle : pair.getValue()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(attemptId, handle.getFileName())), UTF_8))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(attemptId, handle)), UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         System.out.println(line);
