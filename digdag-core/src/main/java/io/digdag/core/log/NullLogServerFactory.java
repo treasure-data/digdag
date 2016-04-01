@@ -28,7 +28,7 @@ public class NullLogServerFactory
     }
 
     @Override
-    public LogServer getLogServer(Config systemConfig)
+    public LogServer getLogServer()
     {
         return new NullLogServer();
     }

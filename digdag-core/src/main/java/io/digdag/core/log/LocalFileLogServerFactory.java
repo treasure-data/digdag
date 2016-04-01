@@ -37,11 +37,15 @@ public class LocalFileLogServerFactory
 {
     private static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
 
+    private final Path logPath;
     private final AgentId agentId;
 
     @Inject
-    public LocalFileLogServerFactory(AgentId agentId)
+    public LocalFileLogServerFactory(Config systemConfig, AgentId agentId)
     {
+        this.logPath = FileSystems.getDefault().getPath(systemConfig.get("log-server.local.path", String.class, "digdag.log"))
+            .toAbsolutePath()
+            .normalize();
         this.agentId = agentId;
     }
 
@@ -52,12 +56,9 @@ public class LocalFileLogServerFactory
     }
 
     @Override
-    public LogServer getLogServer(Config systemConfig)
+    public LogServer getLogServer()
     {
         try {
-            Path logPath = FileSystems.getDefault().getPath(systemConfig.get("log-server.path", String.class, "digdag.log"))
-                .toAbsolutePath()
-                .normalize();
             return new LocalFileLogServer(logPath);
         }
         catch (IOException ex) {

@@ -20,11 +20,7 @@ public class TaskContextLogging
 
     public static void leave()
     {
-        Context ctx = getContext();
-        if (ctx != null) {
-            ctx.getLogger().close();
-            contexts.set(null);
-        }
+        contexts.set(null);
     }
 
     public static Context getContext()

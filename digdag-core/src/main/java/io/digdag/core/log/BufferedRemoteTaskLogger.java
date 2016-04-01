@@ -33,6 +33,7 @@ public class BufferedRemoteTaskLogger
     private final ReadLock logAppendLock;
     private final WriteLock logUploadLock;
     private volatile CountingLogOutputStream currentFile = null;
+    private volatile boolean closed;
 
     public BufferedRemoteTaskLogger(TempFileManager tempFiles, String tempFilePrefix,
             Uploader uploader)
@@ -84,6 +85,9 @@ public class BufferedRemoteTaskLogger
         if (currentFile == null) {
             synchronized (this) {
                 if (currentFile == null) {
+                    if (closed) {
+                        throw new IOException("Task logger is already closed");
+                    }
                     currentFile = new CountingLogOutputStream(
                             tempFiles.createTempFile("logs", tempFilePrefix, ".log.gz").get()
                             );
@@ -92,12 +96,12 @@ public class BufferedRemoteTaskLogger
         }
     }
 
-    private void tryUpload(boolean force)
+    private void tryUpload(boolean atClose)
         throws IOException
     {
         logUploadLock.lock();
         try {
-            if (currentFile != null && (force || currentFile.getUncompressedSize() > UPLOAD_THRESHOLD)) {
+            if (currentFile != null && (atClose || currentFile.getUncompressedSize() > UPLOAD_THRESHOLD)) {
                 currentFile.close();
                 Path path = currentFile.getPath();
                 Instant firstLogTime = currentFile.getOpenTime();
@@ -110,6 +114,9 @@ public class BufferedRemoteTaskLogger
 
                 uploader.upload(firstLogTime, gzData);
                 Files.deleteIfExists(path);
+            }
+            if (atClose) {
+                closed = true;
             }
         }
         finally {

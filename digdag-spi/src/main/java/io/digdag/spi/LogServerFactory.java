@@ -6,5 +6,5 @@ public interface LogServerFactory
 {
     public String getType();
 
-    public LogServer getLogServer(Config systemConfig);
+    public LogServer getLogServer();
 }

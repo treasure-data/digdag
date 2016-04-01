@@ -30,6 +30,7 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.repository.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.log.TaskLogger;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.LogLevel;
 import io.digdag.spi.*;
@@ -102,19 +103,21 @@ public class OperatorManager
 
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
-            TaskContextLogging.enter(LogLevel.DEBUG, callback.newTaskLogger(request));
-            try {
-                runWithHeartbeat(request, nextState);
-            }
-            catch (RuntimeException | IOException ex) {
-                logger.error("Task failed", ex);
-                Config error = makeExceptionError(cf, ex);
-                callback.taskFailed(request.getSiteId(),
-                        request.getTaskId(), request.getLockId(), agentId,
-                        error);  // no retry
-            }
-            finally {
-                TaskContextLogging.leave();
+            try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
+                TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
+                try {
+                    runWithHeartbeat(request, nextState);
+                }
+                catch (RuntimeException | IOException ex) {
+                    logger.error("Task failed", ex);
+                    Config error = makeExceptionError(cf, ex);
+                    callback.taskFailed(request.getSiteId(),
+                            request.getTaskId(), request.getLockId(), agentId,
+                            error);  // no retry
+                }
+                finally {
+                    TaskContextLogging.leave();
+                }
             }
         }
     }

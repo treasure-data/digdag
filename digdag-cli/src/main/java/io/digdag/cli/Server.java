@@ -96,7 +96,7 @@ public class Server
         }
         if (taskLogPath != null) {
             props.setProperty("log-server.type", "local");
-            props.setProperty("log-server.path", taskLogPath);
+            props.setProperty("log-server.local.path", taskLogPath);
         }
 
         return props;

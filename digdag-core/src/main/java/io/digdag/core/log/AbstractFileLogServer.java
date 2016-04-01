@@ -37,10 +37,10 @@ public abstract class AbstractFileLogServer
 
     protected abstract void putFile(String dateDir, String attemptDir, String fileName, byte[] gzData);
 
-    protected abstract void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer);
-
     protected abstract byte[] getFile(String dateDir, String attemptDir, String fileName)
             throws FileNotFoundException;
+
+    protected abstract void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer);
 
     @Override
     public Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId)
@@ -61,6 +61,15 @@ public abstract class AbstractFileLogServer
         putFile(dateDir, attemptDir, fileName, gzData);
 
         return fileName;
+    }
+
+    @Override
+    public byte[] getFile(LogFilePrefix prefix, String fileName)
+            throws FileNotFoundException
+    {
+        String dateDir = LogFiles.formatDataDir(prefix);
+        String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
+        return getFile(dateDir, attemptDir, fileName);
     }
 
     @Override
@@ -92,14 +101,5 @@ public abstract class AbstractFileLogServer
         LogFiles.sortLogFileHandles(handles);
 
         return handles;
-    }
-
-    @Override
-    public byte[] getFile(LogFilePrefix prefix, String fileName)
-            throws FileNotFoundException
-    {
-        String dateDir = LogFiles.formatDataDir(prefix);
-        String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-        return getFile(dateDir, attemptDir, fileName);
     }
 }

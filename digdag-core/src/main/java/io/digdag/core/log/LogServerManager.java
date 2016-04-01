@@ -24,7 +24,7 @@ public class LogServerManager
     {
         String logServerType = systemConfig.get("log-server.type", String.class, "null");
         LogServerFactory factory = findLogServer(factories, logServerType);
-        this.logServer = factory.getLogServer(systemConfig);
+        this.logServer = factory.getLogServer();
         this.tempFiles = tempFiles;
     }
 
