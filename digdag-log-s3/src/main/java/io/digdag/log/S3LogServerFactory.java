@@ -82,7 +82,7 @@ public class S3LogServerFactory
             final BasicAWSCredentials creds = new BasicAWSCredentials(
                 systemConfig.get("log-server.s3.credentials.access-key-id", String.class),
                 systemConfig.get("log-server.s3.credentials.secret-access-key", String.class));
-            return new AWSCredentialsProviderChain() {
+            return new AWSCredentialsProvider() {
                 @Override
                 public AWSCredentials getCredentials()
                 {
