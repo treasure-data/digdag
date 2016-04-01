@@ -32,9 +32,10 @@ public class ServerModule
         ApplicationBindingBuilder builder = bindApplication()
             .matches("/api/*")
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
+            .addProvider(AuthRequestFilter.class);
             ;
         bindResources(builder);
-        bindAuthInterceptor(builder);
+        bindAuthenticator();
         bindExceptionhandlers(builder);
         binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
     }
@@ -50,9 +51,9 @@ public class ServerModule
             );
     }
 
-    protected void bindAuthInterceptor(ApplicationBindingBuilder builder)
+    protected void bindAuthenticator()
     {
-        builder.addProvider(JwtAuthInterceptor.class);
+        binder().bind(Authenticator.class).to(JwtAuthenticator.class);
     }
 
     protected void bindExceptionhandlers(ApplicationBindingBuilder builder)

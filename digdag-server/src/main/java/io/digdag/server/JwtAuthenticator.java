@@ -1,15 +1,16 @@
 package io.digdag.server;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.security.Key;
 import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 import com.google.inject.Inject;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwsHeader;
@@ -20,31 +21,38 @@ import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.client.api.RestApiKey;
+import io.digdag.client.config.Config;
 
-@Provider
-public class JwtAuthInterceptor
-    implements ContainerRequestFilter
+public class JwtAuthenticator
+    implements Authenticator
 {
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthInterceptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticator.class);
 
     private final Map<String, UserConfig> userMap;
     private final boolean allowPublicAccess;
-    private final GenericJsonExceptionHandler<NotAuthorizedException> errorResultHandler;
 
     @Inject
-    public JwtAuthInterceptor(ServerConfig config)
+    public JwtAuthenticator(Config systemConfig)
     {
-        ImmutableMap.Builder<String, UserConfig> builder = ImmutableMap.builder();
-        for (UserConfig user : config.getApiKeyAuthUsers()) {
-            builder.put(user.getApiKey().getIdString(), user);
+        Optional<RestApiKey> apiKey = systemConfig.getOptional("server.apikey", RestApiKey.class);
+
+        if (apiKey.isPresent()) {
+            UserConfig user = UserConfig.builder()
+                .siteId(0)
+                .apiKey(apiKey.get())
+                .build();
+            this.userMap = ImmutableMap.of(user.getApiKey().getIdString(), user);
+            this.allowPublicAccess = false;
         }
-        this.userMap = builder.build();
-        this.allowPublicAccess = config.getAllowPublicAccess();
-        this.errorResultHandler = new GenericJsonExceptionHandler<NotAuthorizedException>(Response.Status.UNAUTHORIZED) { };
+        else {
+            this.userMap = ImmutableMap.of();
+            this.allowPublicAccess = true;
+        }
     }
 
     @Override
-    public void filter(ContainerRequestContext requestContext)
+    public Result authenticate(ContainerRequestContext requestContext)
     {
         int siteId;
 
@@ -55,19 +63,16 @@ public class JwtAuthInterceptor
                 siteId = 0;
             }
             else {
-                requestContext.abortWith(errorResultHandler.toResponse("Authorization is required"));
-                return;
+                return Result.reject("Authorization is required");
             }
         }
         else {
             String[] typeData = auth.split(" ", 2);
             if (typeData.length != 2) {
-                requestContext.abortWith(errorResultHandler.toResponse("Invalid authorization header"));
-                return;
+                return Result.reject("Invalid authorization header");
             }
             if (!typeData[0].equals("Bearer")) {
-                requestContext.abortWith(errorResultHandler.toResponse("Invalid authorization header"));
-                return;
+                return Result.reject("Invalid authorization header");
             }
             String token = typeData[1];
             try {
@@ -104,12 +109,11 @@ public class JwtAuthInterceptor
                 siteId = user.getSiteId();
             }
             catch (JwtException ex) {
-                requestContext.abortWith(errorResultHandler.toResponse("Authorization failed"));
                 logger.trace("Authentication failed: ", ex);
-                return;
+                return Result.reject("Authorization failed");
             }
         }
 
-        requestContext.setProperty("siteId", siteId);
+        return Result.accept(siteId);
     }
 }

@@ -16,22 +16,18 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableServerConfig.class)
 @JsonDeserialize(as = ImmutableServerConfig.class)
-public abstract class ServerConfig
+public interface ServerConfig
 {
     public static final int DEFAULT_PORT = 65432;
     public static final String DEFAULT_BIND = "127.0.0.1";
 
-    public abstract int getPort();
+    public int getPort();
 
-    public abstract String getBind();
+    public String getBind();
 
-    public abstract boolean getAllowPublicAccess();
+    public ConfigElement getSystemConfig();
 
-    public abstract List<UserConfig> getApiKeyAuthUsers();
-
-    public abstract ConfigElement getSystemConfig();
-
-    private static ImmutableServerConfig.Builder defaultBuilder()
+    public static ImmutableServerConfig.Builder defaultBuilder()
     {
         return ImmutableServerConfig.builder()
             .port(DEFAULT_PORT)
@@ -45,18 +41,9 @@ public abstract class ServerConfig
 
     public static ServerConfig convertFrom(Config config)
     {
-        Optional<RestApiKey> apikey = config.getOptional("server.apikey", RestApiKey.class);
-        List<UserConfig> users = apikey.transform(key -> ImmutableList.<UserConfig>of(
-                UserConfig.builder()
-                    .siteId(0)
-                    .apiKey(key)
-                    .build()
-                )).or(ImmutableList.of());
         return defaultBuilder()
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
-            .allowPublicAccess(users.isEmpty())
-            .apiKeyAuthUsers(users)
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .build();
     }
