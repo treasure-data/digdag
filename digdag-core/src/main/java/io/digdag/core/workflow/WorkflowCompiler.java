@@ -201,7 +201,7 @@ public class WorkflowCompiler
                     List<TaskBuilder> beforeList = new ArrayList<>();
                     for (TaskBuilder subtask : subtasks) {
                         if (subtask.getConfig().has("_after")) {
-                            throw new ConfigException("Option '_after' is valid only if 'parallel' is true");
+                            throw new ConfigException("Option \"_after\" is valid only if its parent task has \"_parallel: true\"");
                         }
                         if (subtask.getConfig().get("_background", boolean.class, false)) {
                             beforeList.add(subtask);
