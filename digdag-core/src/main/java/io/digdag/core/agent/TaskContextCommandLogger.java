@@ -30,7 +30,7 @@ public class TaskContextCommandLogger
             }
 
             logger.log(buffer, 0, r);
-            copy.write(buffer);
+            copy.write(buffer, 0, r);
         }
     }
 }
