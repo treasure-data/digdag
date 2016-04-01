@@ -65,7 +65,7 @@ public class ServerModule
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
             .addProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
-            .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<IllegalArgumentException>(Response.Status.BAD_REQUEST) { })
             ;
     }
 
