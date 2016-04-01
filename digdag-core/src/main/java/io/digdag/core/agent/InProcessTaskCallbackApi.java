@@ -41,6 +41,7 @@ public class InProcessTaskCallbackApi
     private final SessionStoreManager sm;
     private final LogServerManager lm;
     private final AttemptBuilder attemptBuilder;
+    private final AgentId agentId;
     private final WorkflowExecutor exec;
     private final TaskQueueClient queueClient;
 
@@ -50,12 +51,14 @@ public class InProcessTaskCallbackApi
             SessionStoreManager sm,
             TaskQueueManager qm,
             LogServerManager lm,
+            AgentId agentId,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
         this.rm = rm;
         this.sm = sm;
         this.lm = lm;
+        this.agentId = agentId;
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
         this.queueClient = qm.getInProcessTaskQueueClient();
@@ -76,7 +79,7 @@ public class InProcessTaskCallbackApi
         catch (ResourceNotFoundException ex) {
             throw new RuntimeException(ex);
         }
-        return lm.newInProcessTaskLogger(prefix, taskName);
+        return lm.newInProcessTaskLogger(agentId, prefix, taskName);
     }
 
     @Override

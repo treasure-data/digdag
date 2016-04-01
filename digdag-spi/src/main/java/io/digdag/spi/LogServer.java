@@ -8,9 +8,9 @@ import com.google.common.base.Optional;
 
 public interface LogServer
 {
-    String putFile(LogFilePrefix prefix, String taskName, Instant fileTime, String nodeId, byte[] gzData);
+    String putFile(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId, byte[] gzData);
 
-    Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant fileTime, String nodeId);
+    Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId);
 
     List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName);
 

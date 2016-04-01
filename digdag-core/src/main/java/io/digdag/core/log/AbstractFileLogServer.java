@@ -43,20 +43,20 @@ public abstract class AbstractFileLogServer
             throws FileNotFoundException;
 
     @Override
-    public Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant fileTime, String agentId)
+    public Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId)
     {
         String dateDir = LogFiles.formatDataDir(prefix);
         String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-        String fileName = LogFiles.formatFileName(taskName, fileTime, agentId);
+        String fileName = LogFiles.formatFileName(taskName, firstLogTime, agentId);
         return getDirectUploadHandle(dateDir, attemptDir, fileName);
     }
 
     @Override
-    public String putFile(LogFilePrefix prefix, String taskName, Instant fileTime, String agentId, byte[] gzData)
+    public String putFile(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId, byte[] gzData)
     {
         String dateDir = LogFiles.formatDataDir(prefix);
         String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
-        String fileName = LogFiles.formatFileName(taskName, fileTime, agentId);
+        String fileName = LogFiles.formatFileName(taskName, firstLogTime, agentId);
 
         putFile(dateDir, attemptDir, fileName, gzData);
 

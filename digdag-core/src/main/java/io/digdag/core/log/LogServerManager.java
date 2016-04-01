@@ -9,19 +9,23 @@ import io.digdag.spi.LogFilePrefix;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.agent.AgentId;
 import io.digdag.core.log.NullLogServerFactory.NullLogServer;
 import io.digdag.core.log.LocalFileLogServerFactory.LocalFileLogServer;
+import io.digdag.core.TempFileManager;
 
 public class LogServerManager
 {
     private final LogServer logServer;
+    private final TempFileManager tempFiles;
 
     @Inject
-    public LogServerManager(Set<LogServerFactory> factories, Config systemConfig)
+    public LogServerManager(Set<LogServerFactory> factories, Config systemConfig, TempFileManager tempFiles)
     {
         String logServerType = systemConfig.get("log-server.type", String.class, "null");
         LogServerFactory factory = findLogServer(factories, logServerType);
         this.logServer = factory.getLogServer(systemConfig);
+        this.tempFiles = tempFiles;
     }
 
     private static LogServerFactory findLogServer(Set<LogServerFactory> factories, String type)
@@ -39,7 +43,8 @@ public class LogServerManager
         return logServer;
     }
 
-    public TaskLogger newInProcessTaskLogger(LogFilePrefix prefix, String taskName)
+    // this is called when server == agent (server runs a local agent).
+    public TaskLogger newInProcessTaskLogger(AgentId agentId, LogFilePrefix prefix, String taskName)
     {
         if (logServer instanceof NullLogServer) {
             return new NullTaskLogger();
@@ -48,8 +53,10 @@ public class LogServerManager
             return ((LocalFileLogServer) logServer).newDirectTaskLogger(prefix, taskName);
         }
         else {
-            // TODO implement buffered logger that sends logs to getLogServer()
-            throw new UnsupportedOperationException("not implemented yet");
+            return new BufferedRemoteTaskLogger(tempFiles, taskName,
+                    (firstLogTime, gzData) -> {
+                        logServer.putFile(prefix, taskName, firstLogTime, agentId.toString(), gzData);
+                    });
         }
     }
 

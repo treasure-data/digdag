@@ -73,7 +73,6 @@ public class LocalFileLogServerFactory
         public LocalFileLogServer(Path logPath)
             throws IOException
         {
-            Files.createDirectories(logPath);
             this.logPath = logPath;
         }
 
@@ -86,9 +85,13 @@ public class LocalFileLogServerFactory
         @Override
         protected void putFile(String dateDir, String attemptDir, String fileName, byte[] gzData)
         {
-            Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
-            try (OutputStream out = Files.newOutputStream(path)) {
-                out.write(gzData);
+            Path dir = getPrefixDir(dateDir, attemptDir);
+            try {
+                Files.createDirectories(dir);
+                Path path = dir.resolve(fileName);
+                try (OutputStream out = Files.newOutputStream(path)) {
+                    out.write(gzData);
+                }
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
@@ -157,10 +160,10 @@ public class LocalFileLogServerFactory
                 String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
 
                 Path dir = getPrefixDir(dateDir, attemptDir);
-                Path filePath = dir.resolve(fileName);
                 Files.createDirectories(dir);
+                Path path = dir.resolve(fileName);
 
-                this.output = new GZIPOutputStream(Files.newOutputStream(filePath, CREATE, APPEND), 16*1024);
+                this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
             }
 
             @Override

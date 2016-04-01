@@ -163,7 +163,7 @@ public final class RestModels
         return RestLogFileHandle.builder()
             .fileName(handle.getFileName())
             .taskName(handle.getTaskName())
-            .fileTime(handle.getFileTime())
+            .fileTime(handle.getFirstLogTime())
             .agentId(handle.getAgentId())
             .direct(handle.getDirect().transform(it -> directDownloadHandle(it)))
             .build();

@@ -66,6 +66,18 @@ public class TempFileManager
         }
     }
 
+    public TempFile createTempFile(String subdirName, String prefix, String suffix)
+    {
+        try {
+            Path subdir = dir.resolve(subdirName);
+            Files.createDirectories(subdir);
+            return new TempFile(Files.createTempFile(subdir, prefix, suffix));
+        }
+        catch (IOException ex) {
+            throw new AllocationException(ex);
+        }
+    }
+
     public TempDir createTempDir()
     {
         return createTempDir(Thread.currentThread().getName()+"_");

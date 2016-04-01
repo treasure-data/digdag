@@ -15,7 +15,7 @@ public abstract class LogFileHandle
 
     public abstract String getTaskName();
 
-    public abstract Instant getFileTime();
+    public abstract Instant getFirstLogTime();
 
     public abstract String getAgentId();
 

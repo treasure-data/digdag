@@ -52,13 +52,13 @@ public class LogFiles
         return formatAttemptPrefix(formatSessoinPrefix(prefix), prefix);
     }
 
-    public static String formatFileName(String taskName, Instant fileTime, String agentId)
+    public static String formatFileName(String taskName, Instant firstLogTime, String agentId)
     {
         return String.format(ENGLISH,
                 "%s@%08x%08x.%s",
                 taskName,
-                fileTime.getEpochSecond(),
-                fileTime.getNano(),
+                firstLogTime.getEpochSecond(),
+                firstLogTime.getNano(),
                 agentId) + LOG_GZ_FILE_SUFFIX;
     }
 
@@ -76,11 +76,11 @@ public class LogFiles
             return null;
         }
 
-        Instant fileTime;
+        Instant firstLogTime;
         try {
             long sec = Long.parseLong(timeAndRest[0].substring(0, 8), 16);
             int nsec = Integer.parseInt(timeAndRest[0].substring(8, 16), 16);
-            fileTime = Instant.ofEpochSecond(sec, nsec);
+            firstLogTime = Instant.ofEpochSecond(sec, nsec);
         }
         catch (NumberFormatException ex) {
             return null;
@@ -91,7 +91,7 @@ public class LogFiles
         return LogFileHandle.builder()
             .fileName(fileName)
             .taskName(taskName)
-            .fileTime(fileTime)
+            .firstLogTime(firstLogTime)
             .agentId(agentId)
             .direct(Optional.absent())
             .build();
