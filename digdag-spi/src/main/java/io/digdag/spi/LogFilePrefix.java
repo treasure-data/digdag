@@ -14,7 +14,7 @@ public abstract class LogFilePrefix
 {
     public abstract int getSiteId();
 
-    public abstract String getRepositoryName();
+    public abstract int getRepositoryId();
 
     public abstract String getWorkflowName();
 

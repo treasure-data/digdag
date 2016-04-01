@@ -58,7 +58,7 @@ public class LogServerManager
     {
         return LogFilePrefix.builder()
             .siteId(attempt.getSiteId())
-            .repositoryName("default")  // TODO not available from StoredSessionAttemptWithSession!
+            .repositoryId(attempt.getSession().getRepositoryId())
             .workflowName(attempt.getSession().getWorkflowName())
             .sessionTime(attempt.getSession().getSessionTime())
             .timeZone(attempt.getTimeZone())

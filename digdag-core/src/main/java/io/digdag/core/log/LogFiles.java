@@ -35,9 +35,9 @@ public class LogFiles
     public static String formatSessoinPrefix(LogFilePrefix prefix)
     {
         return String.format(ENGLISH,
-                "%d.%s%s@%s",
+                "%d.%d%s@%s",
                 prefix.getSiteId(),
-                prefix.getRepositoryName(),
+                prefix.getRepositoryId(),
                 prefix.getWorkflowName(),
                 SESSION_TIME_FORMATTER.withZone(prefix.getTimeZone()).format(prefix.getSessionTime()));
     }
