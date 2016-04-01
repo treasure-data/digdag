@@ -56,7 +56,7 @@ public class S3LogServerFactory
         }
 
         this.bucket = systemConfig.get("log-server.s3.bucket", String.class);
-        String logPath = systemConfig.get("log-server.s3.path", String.class, "digdag.log");
+        String logPath = systemConfig.get("log-server.s3.path", String.class, "");
         if (logPath.startsWith("/")) {
             logPath = logPath.substring(1);
         }
