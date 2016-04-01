@@ -1,12 +1,12 @@
 package io.digdag.spi;
 
-import java.io.PrintStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 public interface CommandLogger
 {
-    default void copyStdout(Process p, PrintStream copy)
+    default void copyStdout(Process p, OutputStream copy)
         throws IOException
     {
         try (InputStream in = p.getInputStream()) {
@@ -14,6 +14,6 @@ public interface CommandLogger
         }
     }
 
-    void copy(InputStream in, PrintStream copy)
+    void copy(InputStream in, OutputStream copy)
         throws IOException;
 }
