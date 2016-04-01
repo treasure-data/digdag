@@ -146,6 +146,7 @@ public class DigdagEmbed
                     new WorkflowModule(),
                     new QueueModule(),
                     (binder) -> {
+                        binder.bind(WorkdirManager.class).in(Scopes.SINGLETON);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                     }

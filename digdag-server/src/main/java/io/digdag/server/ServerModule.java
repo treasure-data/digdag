@@ -22,7 +22,6 @@ import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.VersionResource;
-import io.digdag.server.rs.TempFileManager;
 
 public class ServerModule
         extends GuiceRsModule
@@ -38,7 +37,6 @@ public class ServerModule
         bindResources(builder);
         bindAuthenticator();
         bindExceptionhandlers(builder);
-        binder().bind(TempFileManager.class).in(Scopes.SINGLETON);
     }
 
     protected void bindResources(ApplicationBindingBuilder builder)

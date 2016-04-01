@@ -28,7 +28,6 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.client.api.*;
-import io.digdag.server.rs.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;

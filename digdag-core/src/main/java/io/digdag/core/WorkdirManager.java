@@ -1,8 +1,7 @@
-package io.digdag.server.rs;
+package io.digdag.core;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.FileVisitResult;
@@ -10,22 +9,37 @@ import java.io.File;
 import java.io.IOException;
 import com.google.inject.Inject;
 
-public class TempFileManager
+public class WorkdirManager
 {
+    public static class AllocationException
+            extends RuntimeException
+    {
+        public AllocationException(IOException cause)
+        {
+            super(cause);
+        }
+
+        @Override
+        public IOException getCause()
+        {
+            return (IOException) super.getCause();
+        }
+    }
+
     private final Path path;
 
-    @Inject  // TODO configurable
-    public TempFileManager()
+    @Inject
+    public WorkdirManager()
     {
         try {
             this.path = Files.createTempDirectory("temp");
         }
         catch (IOException ex) {
-            throw new TempFileException(ex);
+            throw new AllocationException(ex);
         }
     }
 
-    public TempFileManager(File path)
+    public WorkdirManager(File path)
     {
         this.path = path.toPath();
     }
@@ -44,10 +58,10 @@ public class TempFileManager
     {
         try {
             Files.createDirectories(path);
-            return new TempFile(Files.createTempFile(path, prefix, suffix).toFile());
+            return new TempFile(Files.createTempFile(path, prefix, suffix));
         }
         catch (IOException ex) {
-            throw new TempFileException(ex);
+            throw new AllocationException(ex);
         }
     }
 
@@ -60,66 +74,66 @@ public class TempFileManager
     {
         try {
             Files.createDirectories(path);
-            return new TempDir(Files.createTempDirectory(path, prefix).toFile());
+            return new TempDir(Files.createTempDirectory(path, prefix));
         }
         catch (IOException ex) {
-            throw new TempFileException(ex);
+            throw new AllocationException(ex);
         }
     }
 
     public static class TempFile
             implements AutoCloseable
     {
-        private final File file;
+        private final Path path;
 
-        TempFile(File file)
+        TempFile(Path path)
         {
-            this.file = file;
+            this.path = path;
         }
 
-        public File get()
+        public Path get()
         {
-            return file;
+            return path;
         }
 
         @Override
         public void close()
         {
-            deleteFilesIfExistsRecursively(file);
+            deleteFilesIfExistsRecursively(path);
         }
     }
 
     public static class TempDir
             implements AutoCloseable
     {
-        private final File dir;
+        private final Path path;
 
-        TempDir(File dir)
+        TempDir(Path path)
         {
-            this.dir = dir;
+            this.path = path;
         }
 
-        public File get()
+        public Path get()
         {
-            return dir;
+            return path;
         }
 
-        public File child(String child)
+        public Path child(String child)
         {
-            return new File(dir, child);
+            return path.resolve(child);
         }
 
         @Override
         public void close()
         {
-            deleteFilesIfExistsRecursively(dir);
+            deleteFilesIfExistsRecursively(path);
         }
     }
 
-    public static void deleteFilesIfExistsRecursively(File dir)
+    public static void deleteFilesIfExistsRecursively(Path dir)
     {
         try {
-            Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>()
+            Files.walkFileTree(dir, new SimpleFileVisitor<Path>()
             {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)

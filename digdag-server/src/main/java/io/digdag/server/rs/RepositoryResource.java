@@ -7,8 +7,9 @@ import java.time.Instant;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.ws.rs.Consumes;
@@ -31,9 +32,10 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.WorkdirManager;
+import io.digdag.core.WorkdirManager.TempDir;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
-import io.digdag.server.rs.TempFileManager.TempDir;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -62,7 +64,7 @@ public class RepositoryResource
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
-    private final TempFileManager temp;
+    private final WorkdirManager workDir;
 
     @Inject
     public RepositoryResource(
@@ -72,7 +74,7 @@ public class RepositoryResource
             RepositoryStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            TempFileManager temp)
+            WorkdirManager workDir)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -80,7 +82,7 @@ public class RepositoryResource
         this.compiler = compiler;
         this.rm = rm;
         this.sm = sm;
-        this.temp = temp;
+        this.workDir = workDir;
     }
 
     @GET
@@ -218,13 +220,13 @@ public class RepositoryResource
         byte[] data = ByteStreams.toByteArray(body);
 
         ArchiveMetadata meta;
-        try (TempDir dir = temp.createTempDir()) {
+        try (TempDir dir = workDir.createTempDir()) {
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }
             // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
-                    dir.child(ArchiveMetadata.FILE_NAME)).toConfig(cf);
+                    dir.child(ArchiveMetadata.FILE_NAME).toFile()).toConfig(cf);
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
@@ -252,10 +254,10 @@ public class RepositoryResource
 
     // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
     //      rawLoader.loadFile doesn't have to render the file because it's already rendered.
-    private List<File> extractConfigFiles(File dir, ArchiveInputStream archive)
+    private List<java.nio.file.Path> extractConfigFiles(java.nio.file.Path dir, ArchiveInputStream archive)
         throws IOException
     {
-        ImmutableList.Builder<File> files = ImmutableList.builder();
+        ImmutableList.Builder<java.nio.file.Path> files = ImmutableList.builder();
         ArchiveEntry entry;
         while (true) {
             entry = archive.getNextEntry();
@@ -266,12 +268,12 @@ public class RepositoryResource
                 // do nothing
             }
             else {
-                File file = new File(dir, entry.getName());
-                file.getParentFile().mkdirs();
-                try (FileOutputStream out = new FileOutputStream(file)) {
+                java.nio.file.Path file = dir.resolve(entry.getName());
+                Files.createDirectories(file.getParent());
+                try (OutputStream out = Files.newOutputStream(file)) {
                     ByteStreams.copy(archive, out);
                 }
-                files.add(new File(entry.getName()));
+                files.add(dir.relativize(file));
             }
         }
         return files.build();

@@ -5,11 +5,7 @@ import java.io.FileOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.Files;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.FileVisitResult;
 import com.google.inject.Inject;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -24,6 +20,7 @@ import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
+import static io.digdag.core.WorkdirManager.deleteFilesIfExistsRecursively;
 
 public class InProcessArchiveManager
     implements ArchiveManager
@@ -111,41 +108,5 @@ public class InProcessArchiveManager
     {
         Files.createDirectories(tempDir);
         return Files.createTempDirectory(tempDir, prefix);
-    }
-
-    // TODO copied from io.digdag.server.TempFileManager.deleteFilesIfExistsRecursively
-    public static void deleteFilesIfExistsRecursively(Path path)
-    {
-        try {
-            Files.walkFileTree(path, new SimpleFileVisitor<Path>()
-            {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                {
-                    try {
-                        Files.deleteIfExists(file);
-                    }
-                    catch (IOException ex) {
-                        // ignore IOException
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-                {
-                    try {
-                        Files.deleteIfExists(dir);
-                    }
-                    catch (IOException ex) {
-                        // ignore IOException
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }
-        catch (IOException ex) {
-            // ignore IOException
-        }
     }
 }
