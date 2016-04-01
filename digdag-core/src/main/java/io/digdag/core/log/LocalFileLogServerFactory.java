@@ -1,9 +1,8 @@
 package io.digdag.core.log;
 
 import java.util.List;
-import java.util.Comparator;
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.function.BiConsumer;
 import java.util.zip.GZIPOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,6 +23,7 @@ import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogFileHandle;
+import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.client.config.Config;
 import java.time.format.DateTimeFormatter;
@@ -55,26 +55,18 @@ public class LocalFileLogServerFactory
     public LogServer getLogServer(Config systemConfig)
     {
         try {
-            Path path = FileSystems.getDefault().getPath(systemConfig.get("log-server.path", String.class, "digdag.log"))
+            Path logPath = FileSystems.getDefault().getPath(systemConfig.get("log-server.path", String.class, "digdag.log"))
                 .toAbsolutePath()
                 .normalize();
-            return new LocalFileLogServer(path);
+            return new LocalFileLogServer(logPath);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    private static DateTimeFormatter CREATE_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd", ENGLISH)
-        .withZone(ZoneId.of("UTC"));
-
-    // don't include \ / : * ? " < > | which are not usable on windows
-    private static DateTimeFormatter SESSION_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssxx", ENGLISH);
-
     class LocalFileLogServer
-        implements LogServer
+            extends AbstractFileLogServer
     {
         private final Path logPath;
 
@@ -86,77 +78,48 @@ public class LocalFileLogServerFactory
         }
 
         @Override
-        public String putFile(LogFilePrefix prefix, String taskName, Instant fileTime, String nodeId, byte[] gzData)
-        {
-            try {
-                String fileName = buildFileName(taskName, fileTime, nodeId);
-                Path prefixDir = getPrefixPath(prefix);
-                Files.createDirectories(prefixDir);
-                Path filePath = prefixDir.resolve(fileName);
-                try (OutputStream out = Files.newOutputStream(filePath)) {
-                    out.write(gzData);
-                }
-                return fileName;
-            }
-            catch (IOException ex) {
-                throw Throwables.propagate(ex);
-            }
-        }
-
-        @Override
-        public Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant fileTime, String nodeId)
+        public Optional<DirectUploadHandle> getDirectUploadHandle(String dateDir, String attemptDir, String fileName)
         {
             return Optional.absent();
         }
 
         @Override
-        public List<LogFileHandle> getFileHandles(LogFilePrefix prefix, Optional<String> taskName)
+        protected void putFile(String dateDir, String attemptDir, String fileName, byte[] gzData)
         {
-            Path dir = getPrefixPath(prefix);
+            Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
+            try (OutputStream out = Files.newOutputStream(path)) {
+                out.write(gzData);
+            }
+            catch (IOException ex) {
+                throw Throwables.propagate(ex);
+            }
+        }
+
+        @Override
+        protected void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer)
+        {
+            Path dir = getPrefixDir(dateDir, attemptDir);
             if (!Files.exists(dir)) {
-                return new ArrayList<>();
+                return;
             }
 
-            List<LogFileHandle> handles = new ArrayList<>();
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir)) {
                 for (Path path : dirStream) {
-                    String name = path.getFileName().toString();
-                    if (name.endsWith(LOG_GZ_FILE_SUFFIX) && (!taskName.isPresent() || name.startsWith(taskName.get()))) {
-                        LogFileHandle handle = parseFileName(name);
-                        if (handle != null) {
-                            handles.add(handle);
-                        }
-                    }
+                    fileNameConsumer.accept(path.getFileName().toString(), null);
                 }
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
             }
-
-            Collections.sort(handles, new Comparator<LogFileHandle>() {
-                public int compare(LogFileHandle o1, LogFileHandle o2)
-                {
-                    return o1.getFileName().compareTo(o2.getFileName());
-                }
-
-                public boolean equals(Object o)
-                {
-                    return o == this;
-                }
-            });
-
-            return handles;
         }
 
         @Override
-        public byte[] getFile(LogFilePrefix prefix, String fileName)
+        protected byte[] getFile(String dateDir, String attemptDir, String fileName)
             throws FileNotFoundException
         {
-            try {
-                Path filePath = getPrefixPath(prefix).resolve(fileName);
-                try (InputStream in = Files.newInputStream(filePath)) {
-                    return ByteStreams.toByteArray(in);
-                }
+            Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
+            try (InputStream in = Files.newInputStream(path)) {
+                return ByteStreams.toByteArray(in);
             }
             catch (FileNotFoundException ex) {
                 throw ex;
@@ -166,63 +129,9 @@ public class LocalFileLogServerFactory
             }
         }
 
-        private Path getPrefixPath(LogFilePrefix prefix)
+        private Path getPrefixDir(String dateDir, String attemptDir)
         {
-            String dateDir = CREATE_TIME_FORMATTER.format(prefix.getCreatedAt());
-            String sessionPrefix =
-                String.format(ENGLISH,
-                    "%d.%s%s@%s",
-                    prefix.getSiteId(),
-                    prefix.getRepositoryName(),
-                    prefix.getWorkflowName(),
-                    SESSION_TIME_FORMATTER.withZone(prefix.getTimeZone()).format(prefix.getSessionTime()));
-            String attemptPrefix = sessionPrefix + prefix.getRetryAttemptName().transform(it -> "_" + it).or("");
-            return logPath.resolve(dateDir).resolve(attemptPrefix);
-        }
-
-        private String buildFileName(String taskName, Instant fileTime, String nodeId)
-        {
-            return String.format(ENGLISH,
-                    "%s@%08x%08x.%s",
-                    taskName,
-                    fileTime.getEpochSecond(),
-                    fileTime.getNano(),
-                    nodeId) + LOG_GZ_FILE_SUFFIX;
-        }
-
-        private LogFileHandle parseFileName(String fileName)
-        {
-            // TODO use regexp for reliable parsing logic
-            String[] taskNameAndRest = fileName.split("@", 2);
-            if (taskNameAndRest.length < 2) {
-                return null;
-            }
-            String taskName = taskNameAndRest[0];
-
-            String[] timeAndRest = taskNameAndRest[1].split("\\.", 2);
-            if (timeAndRest.length < 2) {
-                return null;
-            }
-
-            Instant fileTime;
-            try {
-                long sec = Long.parseLong(timeAndRest[0].substring(0, 8), 16);
-                int nsec = Integer.parseInt(timeAndRest[0].substring(8, 16), 16);
-                fileTime = Instant.ofEpochSecond(sec, nsec);
-            }
-            catch (NumberFormatException ex) {
-                return null;
-            }
-
-            String agentId = timeAndRest[1].substring(0, timeAndRest[1].length() - LOG_GZ_FILE_SUFFIX.length());
-
-            return LogFileHandle.builder()
-                .fileName(fileName)
-                .taskName(taskName)
-                .fileTime(fileTime)
-                .agentId(agentId)
-                .direct(Optional.absent())
-                .build();
+            return logPath.resolve(dateDir).resolve(attemptDir);
         }
 
         public LocalFileDirectTaskLogger newDirectTaskLogger(LogFilePrefix prefix, String taskName)
@@ -243,9 +152,14 @@ public class LocalFileLogServerFactory
             public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
                 throws IOException
             {
-                Path prefixDir = getPrefixPath(prefix);
-                Files.createDirectories(prefixDir);
-                Path filePath = prefixDir.resolve(buildFileName(taskName, Instant.now(), agentId.toString()));
+                String dateDir = LogFiles.formatDataDir(prefix);
+                String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
+                String fileName = LogFiles.formatFileName(taskName, Instant.now(), agentId.toString());
+
+                Path dir = getPrefixDir(dateDir, attemptDir);
+                Path filePath = dir.resolve(fileName);
+                Files.createDirectories(dir);
+
                 this.output = new GZIPOutputStream(Files.newOutputStream(filePath, CREATE, APPEND), 16*1024);
             }
 
