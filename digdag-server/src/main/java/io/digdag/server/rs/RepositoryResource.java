@@ -32,8 +32,8 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.core.WorkdirManager;
-import io.digdag.core.WorkdirManager.TempDir;
+import io.digdag.core.TempFileManager;
+import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -64,7 +64,7 @@ public class RepositoryResource
     private final RepositoryStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
-    private final WorkdirManager workDir;
+    private final TempFileManager tempFiles;
 
     @Inject
     public RepositoryResource(
@@ -74,7 +74,7 @@ public class RepositoryResource
             RepositoryStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            WorkdirManager workDir)
+            TempFileManager tempFiles)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -82,7 +82,7 @@ public class RepositoryResource
         this.compiler = compiler;
         this.rm = rm;
         this.sm = sm;
-        this.workDir = workDir;
+        this.tempFiles = tempFiles;
     }
 
     @GET
@@ -220,7 +220,7 @@ public class RepositoryResource
         byte[] data = ByteStreams.toByteArray(body);
 
         ArchiveMetadata meta;
-        try (TempDir dir = workDir.createTempDir()) {
+        try (TempDir dir = tempFiles.createTempDir("push", name)) {
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
                 extractConfigFiles(dir.get(), archive);
             }

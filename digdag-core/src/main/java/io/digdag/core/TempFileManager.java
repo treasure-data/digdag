@@ -6,10 +6,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.FileVisitResult;
 import java.io.File;
+import java.io.Closeable;
 import java.io.IOException;
 import com.google.inject.Inject;
 
-public class WorkdirManager
+public class TempFileManager
 {
     public static class AllocationException
             extends RuntimeException
@@ -26,22 +27,22 @@ public class WorkdirManager
         }
     }
 
-    private final Path path;
+    private final Path dir;
 
     @Inject
-    public WorkdirManager()
+    public TempFileManager()
     {
         try {
-            this.path = Files.createTempDirectory("temp");
+            this.dir = Files.createTempDirectory("temp");
         }
         catch (IOException ex) {
             throw new AllocationException(ex);
         }
     }
 
-    public WorkdirManager(File path)
+    public TempFileManager(Path dir)
     {
-        this.path = path.toPath();
+        this.dir = dir;
     }
 
     public TempFile createTempFile()
@@ -57,8 +58,8 @@ public class WorkdirManager
     public TempFile createTempFile(String prefix, String suffix)
     {
         try {
-            Files.createDirectories(path);
-            return new TempFile(Files.createTempFile(path, prefix, suffix));
+            Files.createDirectories(dir);
+            return new TempFile(Files.createTempFile(dir, prefix, suffix));
         }
         catch (IOException ex) {
             throw new AllocationException(ex);
@@ -73,8 +74,20 @@ public class WorkdirManager
     public TempDir createTempDir(String prefix)
     {
         try {
-            Files.createDirectories(path);
-            return new TempDir(Files.createTempDirectory(path, prefix));
+            Files.createDirectories(dir);
+            return new TempDir(Files.createTempDirectory(dir, prefix + "_"));
+        }
+        catch (IOException ex) {
+            throw new AllocationException(ex);
+        }
+    }
+
+    public TempDir createTempDir(String subdirName, String prefix)
+    {
+        try {
+            Path subdir = dir.resolve(subdirName);
+            Files.createDirectories(subdir);
+            return new TempDir(Files.createTempDirectory(subdir, prefix + "_"));
         }
         catch (IOException ex) {
             throw new AllocationException(ex);
@@ -82,7 +95,7 @@ public class WorkdirManager
     }
 
     public static class TempFile
-            implements AutoCloseable
+            implements Closeable
     {
         private final Path path;
 
@@ -104,7 +117,7 @@ public class WorkdirManager
     }
 
     public static class TempDir
-            implements AutoCloseable
+            implements Closeable
     {
         private final Path path;
 

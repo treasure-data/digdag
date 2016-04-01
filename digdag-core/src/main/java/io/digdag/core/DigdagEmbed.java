@@ -3,6 +3,10 @@ package io.digdag.core;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Guice;
@@ -146,9 +150,9 @@ public class DigdagEmbed
                     new WorkflowModule(),
                     new QueueModule(),
                     (binder) -> {
-                        binder.bind(WorkdirManager.class).in(Scopes.SINGLETON);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
+                        binder.bind(TempFileManager.class).toProvider(TempFileManagerProvider.class).in(Scopes.SINGLETON);
                     }
                 ));
             if (withWorkflowExecutor) {
@@ -187,6 +191,34 @@ public class DigdagEmbed
         public Config get()
         {
             return systemConfig;
+        }
+    }
+
+    public static class TempFileManagerProvider
+            implements Provider<TempFileManager>
+    {
+        private final TempFileManager manager;
+
+        @Inject
+        public TempFileManagerProvider(Config systemConfig)
+        {
+            Path dir = systemConfig.getOptional("tmpdir", String.class)
+                    .transform(s -> Paths.get(s))
+                    .or(() -> {
+                        try {
+                            return Files.createTempDirectory("digdag-tempdir");
+                        }
+                        catch (IOException ex) {
+                            throw Throwables.propagate(ex);
+                        }
+                    });
+            this.manager = new TempFileManager(dir);
+        }
+
+        @Override
+        public TempFileManager get()
+        {
+            return manager;
         }
     }
 

@@ -20,7 +20,9 @@ import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
-import static io.digdag.core.WorkdirManager.deleteFilesIfExistsRecursively;
+import io.digdag.core.TempFileManager;
+import io.digdag.core.TempFileManager.TempDir;
+import static io.digdag.core.TempFileManager.deleteFilesIfExistsRecursively;
 
 public class InProcessArchiveManager
     implements ArchiveManager
@@ -28,20 +30,13 @@ public class InProcessArchiveManager
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final RepositoryStoreManager rm;
-    private final Path tempDir;
+    private final TempFileManager tempFiles;
 
     @Inject
-    public InProcessArchiveManager(RepositoryStoreManager rm)
+    public InProcessArchiveManager(RepositoryStoreManager rm, TempFileManager tempFiles)
     {
         this.rm = rm;
-        try {
-            // TODO make this path configurable
-            this.tempDir = Files.createTempDirectory("temp");
-        }
-        catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-        logger.debug("Using {} for working extract path", tempDir);
+        this.tempFiles = tempFiles;
     }
 
     @Override
@@ -58,18 +53,14 @@ public class InProcessArchiveManager
                 rev = rs.getLatestRevision(request.getRepositoryId());
             }
 
-            Path archivePath = createNewArchiveDirectory("revision-" + rev.getName());
-            try {
+            try (TempDir workspacePath = createNewWorkspace(request)) {
                 if (rev.getArchiveType().equals("db")) {  // TODO delegate in-process archive to another class
                     byte[] data = rs.getRevisionArchiveData(rev.getId());
                     try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
-                        extractArchive(archivePath, archive);
+                        extractArchive(workspacePath.get(), archive);
                     }
                 }
-                return func.run(archivePath);
-            }
-            finally {
-                deleteFilesIfExistsRecursively(archivePath);
+                return func.run(workspacePath.get());
             }
         }
         catch (ResourceNotFoundException ex) {
@@ -103,10 +94,9 @@ public class InProcessArchiveManager
         }
     }
 
-    private Path createNewArchiveDirectory(String prefix)
+    private TempDir createNewWorkspace(TaskRequest request)
         throws IOException
     {
-        Files.createDirectories(tempDir);
-        return Files.createTempDirectory(tempDir, prefix);
+        return tempFiles.createTempDir("workspace", request.getTaskName());
     }
 }
