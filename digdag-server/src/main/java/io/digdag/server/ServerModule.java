@@ -21,6 +21,7 @@ import io.digdag.server.rs.WorkflowResource;
 import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
+import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.TempFileManager;
 
 public class ServerModule
@@ -47,7 +48,8 @@ public class ServerModule
                 WorkflowResource.class,
                 ScheduleResource.class,
                 AttemptResource.class,
-                LogResource.class
+                LogResource.class,
+                VersionResource.class
             );
     }
 

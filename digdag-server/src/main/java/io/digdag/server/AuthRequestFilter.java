@@ -25,6 +25,10 @@ public class AuthRequestFilter
     @Override
     public void filter(ContainerRequestContext requestContext)
     {
+        if (requestContext.getUriInfo().getPath().equals("/api/version")) {
+            return;
+        }
+
         Authenticator.Result result = auth.authenticate(requestContext);
         if (result.isAccepted()) {
             requestContext.setProperty("siteId", result.getSiteId());
