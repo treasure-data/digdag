@@ -217,6 +217,7 @@ public class RepositoryResource
         Preconditions.checkArgument(name != null, "repository= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
 
+        // TODO if content-length is too large, reject this request.
         byte[] data = ByteStreams.toByteArray(body);
 
         ArchiveMetadata meta;

@@ -52,8 +52,8 @@ public class Push
         System.err.println("    Names of the files to add the archive.");
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ git ls-files | digdag push myrepo -r \"$(date +%Y-%m-%dT%H:%M:%S%z)\"");
-        System.err.println("    $ find . | digdag push default -r \"$(git show --pretty=format:'%T' | head -n 1)\"");
+        System.err.println("    $ find . | digdag push myrepo -r \"$(date +%Y-%m-%dT%H:%M:%S%z)\"");
+        System.err.println("    $ git ls-files | digdag push default -r \"$(git show --pretty=format:'%T' | head -n 1)\"");
         System.err.println("");
         return systemExit(error);
     }
