@@ -93,4 +93,7 @@ public class CheckedConfig
         this.usedKeys.add(key);
         super.set(key, value);
     }
+
+    // getKeys doesn't set usedKeys.setAll(true) because operator plugins
+    // should call get(key) after getKeys().
 }

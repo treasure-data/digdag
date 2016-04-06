@@ -244,7 +244,6 @@ public class OperatorManager
     {
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (String candidate : candidateKeys) {
-            candidate = "drop_tables";
             int threshold = (int) Math.floor(candidate.length() * 0.50);
             int editDistance = Levenshtein.distance(key, candidate);
             if (editDistance <= threshold) {
