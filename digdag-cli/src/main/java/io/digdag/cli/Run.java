@@ -64,7 +64,6 @@ import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.agent.AgentConfig;
 import io.digdag.core.workflow.TaskTree;
-import io.digdag.core.workflow.SubtaskExtract;
 import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.Workflow;
@@ -198,7 +197,7 @@ public class Run
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag run [+task] [options...]");
+        System.err.println("Usage: digdag run [+workflow[+task]] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
         System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
@@ -358,7 +357,7 @@ public class Run
         if (subtaskPattern.isPresent()) {
             int fromIndex = subtaskPattern.get().findIndex(workflow.getTasks());
             tasks = (fromIndex > 0) ?  // findIndex may return 0
-                SubtaskExtract.extract(workflow.getTasks(), fromIndex) :
+                SubtreeExtract.extractSubtree(workflow.getTasks(), fromIndex) :
                 workflow.getTasks();
         }
         else {

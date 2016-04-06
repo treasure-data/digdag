@@ -1,4 +1,4 @@
-package io.digdag.core.workflow;
+package io.digdag.cli;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -10,28 +10,29 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
 
-public class SubtaskExtract
+public class SubtreeExtract
 {
-    public static WorkflowTaskList extract(WorkflowTaskList tasks, int rootTaskIndex)
+    public static WorkflowTaskList extractSubtree(WorkflowTaskList tasks, int targetTaskIndex)
     {
-        return new SubtaskExtract(tasks, rootTaskIndex).getExtracted();
+        return new SubtreeExtract(tasks, targetTaskIndex).getExtracted();
     }
 
     private final WorkflowTaskList tasks;
-    private final int rootTaskIndex;
+    private final int targetTaskIndex;
     private final List<WorkflowTask> extracted;
 
-    private SubtaskExtract(WorkflowTaskList tasks, int rootTaskIndex)
+    private SubtreeExtract(WorkflowTaskList tasks, int targetTaskIndex)
     {
         this.tasks = tasks;
-        this.rootTaskIndex = rootTaskIndex;
+        this.targetTaskIndex = targetTaskIndex;
         this.extracted = new ArrayList<>();
     }
 
     public WorkflowTaskList getExtracted()
     {
-        extracted.add(tasks.get(0));  // always add root
-        addExtracted(tasks.get(rootTaskIndex));
+        extracted.add(tasks.get(0));  // always add the root (=workflow itself) because root must exist
+
+        addSubtasksRecursively(tasks.get(targetTaskIndex));
 
         Map<Integer, Integer> map = new HashMap<>();
         for (int i=0; i < extracted.size(); i++) {
@@ -47,7 +48,7 @@ public class SubtaskExtract
                             map.containsKey(index) ? map.get(index) : 0
                         ))
                 .upstreamIndexes(
-                        (task.getIndex() == rootTaskIndex) ?
+                        (task.getIndex() == targetTaskIndex) ?
                         ImmutableList.of() :
                         task.getUpstreamIndexes().stream()
                             .map(index -> map.get(index))
@@ -58,24 +59,17 @@ public class SubtaskExtract
         return WorkflowTaskList.of(builder.build());
     }
 
-    public void addExtracted(WorkflowTask task)
+    public void addSubtasksRecursively(WorkflowTask task)
     {
         if (extracted.stream().anyMatch(t -> t.getIndex() == task.getIndex())) {
             return;
         }
         extracted.add(task);
 
-        // add child tasks
+        // add child tasks recursively
         for (WorkflowTask t : tasks.subList(task.getIndex(), tasks.size())) {
             if (t.getParentIndex().isPresent() && t.getParentIndex().get() == task.getIndex()) {
-                addExtracted(t);
-            }
-        }
-
-        // add downstream tasks
-        for (WorkflowTask t : tasks.subList(task.getIndex(), tasks.size())) {
-            if (t.getUpstreamIndexes().contains(task.getIndex())) {
-                addExtracted(t);
+                addSubtasksRecursively(t);
             }
         }
     }
