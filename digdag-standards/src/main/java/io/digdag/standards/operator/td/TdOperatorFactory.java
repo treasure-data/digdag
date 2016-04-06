@@ -119,8 +119,11 @@ public class TdOperatorFactory
                         stmt = insertCommandStatement("INSERT INTO " + escapePrestoTableName(insertInto.get()), query);
                     }
                     else if (createTable.isPresent()) {
-                        ensureTableDeleted(op, createTable.get());  // TODO this is not atomic.
-                        stmt = insertCommandStatement("CREATE TABLE " + escapePrestoTableName(createTable.get()) + " AS", query);
+                        // TODO: this is not atomic
+                        String tableName = escapePrestoTableName(createTable.get());
+                        stmt = insertCommandStatement(
+                                "DROP TABLE IF EXISTS " + tableName + ";\n" +
+                                "CREATE TABLE " + tableName + " AS", query);
                     }
                     else {
                         stmt = query;
