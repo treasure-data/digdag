@@ -134,7 +134,7 @@ public class Start
             def = client.getWorkflowDefinition(repoName, workflowName, revision);
         }
 
-        RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(def.getId(), time);
+        RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(def.getId(), time, mode);
 
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
             .workflowId(def.getId())

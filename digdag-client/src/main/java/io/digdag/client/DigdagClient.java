@@ -275,7 +275,7 @@ public class DigdagClient
                 target("/api/workflows/{id}/truncated_session_time")
                 .resolveTemplate("id", workflowId)
                 .queryParam("session_time", time.toString())
-                .queryParam("mode", mode.toString()));
+                .queryParam("mode", mode == null ? null : mode.toString()));
     }
 
     public RestRepository putRepositoryRevision(String repoName, String revision, File body)
