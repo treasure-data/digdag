@@ -1,16 +1,24 @@
 package io.digdag.core.agent;
 
+import java.util.Set;
+import java.util.HashSet;
+import java.util.EnumSet;
+import java.io.IOException;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import com.google.inject.Inject;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,30 +76,74 @@ public class LocalWorkspaceManager
         }
     }
 
-    private void extractArchive(Path destDir, ArchiveInputStream archive)
+    private void extractArchive(Path destDir, TarArchiveInputStream archive)
         throws IOException
     {
-        String prefix = destDir.normalize().toString();
-        ArchiveEntry entry;
+        String prefix = destDir.toAbsolutePath().normalize().toString();
+        TarArchiveEntry entry;
         while (true) {
-            entry = archive.getNextEntry();
+            entry = archive.getNextTarEntry();
             if (entry == null) {
                 break;
             }
-            Path file = destDir.resolve(entry.getName()).normalize();
-            if (!file.toString().startsWith(prefix)) {
+            Path path = destDir.resolve(entry.getName()).normalize();
+            if (!path.toString().startsWith(prefix)) {
                 throw new RuntimeException("Archive includes an invalid entry: " + entry.getName());
             }
             if (entry.isDirectory()) {
-                Files.createDirectories(file);
+                Files.createDirectories(path);
+            }
+            else if (entry.isSymbolicLink()) {
+                Files.createDirectories(path.getParent());
+                String dest = entry.getLinkName();
+                Path destAbsPath = path.getParent().resolve(dest);
+                if (!destAbsPath.normalize().toString().startsWith(prefix)) {
+                    throw new RuntimeException("Archive includes an invalid symlink: " + entry.getName() + " -> " + dest);
+                }
+                Files.createSymbolicLink(path, Paths.get(dest));
             }
             else {
-                Files.createDirectories(file.getParent());
-                try (FileOutputStream out = new FileOutputStream(file.toFile())) {
+                Files.createDirectories(path.getParent());
+                try (OutputStream out = Files.newOutputStream(path)) {
                     ByteStreams.copy(archive, out);
                 }
             }
+            Files.setPosixFilePermissions(path, getPosixFilePermissions(entry));
         }
+    }
+
+    private Set<PosixFilePermission> getPosixFilePermissions(TarArchiveEntry entry)
+    {
+        int mode = entry.getMode();
+        Set<PosixFilePermission> perms = new HashSet<>();
+        if ((mode & 0400) != 0) {
+            perms.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((mode & 0200) != 0) {
+            perms.add(PosixFilePermission.OWNER_WRITE);
+        }
+        if ((mode & 0100) != 0) {
+            perms.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((mode & 0040) != 0) {
+            perms.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((mode & 0020) != 0) {
+            perms.add(PosixFilePermission.GROUP_WRITE);
+        }
+        if ((mode & 0010) != 0) {
+            perms.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((mode & 0004) != 0) {
+            perms.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((mode & 0002) != 0) {
+            perms.add(PosixFilePermission.OTHERS_WRITE);
+        }
+        if ((mode & 0001) != 0) {
+            perms.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        return perms;
     }
 
     private TempDir createNewWorkspace(TaskRequest request)
