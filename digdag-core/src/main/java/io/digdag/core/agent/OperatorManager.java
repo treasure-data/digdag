@@ -186,7 +186,7 @@ public class OperatorManager
                 shouldBeUsedKeys.remove(operatorKey.get());
             }
 
-            CheckedConfig checkedConfig = new CheckedConfig(config, shouldBeUsedKeys);
+            CheckedConfig checkedConfig = new CheckedConfig(config);
 
             TaskRequest mergedRequest = TaskRequest.builder()
                 .from(request)
@@ -195,7 +195,13 @@ public class OperatorManager
 
             TaskResult result = callExecutor(workspacePath, type, mergedRequest);
 
-            warnUnusedKeys(checkedConfig.getUnusedKeys(), request);
+            if (!checkedConfig.isAllUsed()) {
+                List<String> usedKeys = checkedConfig.getUsedKeys();
+                shouldBeUsedKeys.removeAll(usedKeys);
+                if (!shouldBeUsedKeys.isEmpty()) {
+                    warnUnusedKeys(request, shouldBeUsedKeys, usedKeys);
+                }
+            }
 
             callback.taskSucceeded(request.getSiteId(),
                     taskId, request.getLockId(), agentId,
@@ -223,11 +229,29 @@ public class OperatorManager
         }
     }
 
-    private void warnUnusedKeys(List<String> unusedKeys, TaskRequest request)
+    private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, List<String> candidateKeys)
     {
-        if (!unusedKeys.isEmpty()) {
-            logger.warn("Some parameters are not used at {}: {}", request.getTaskName(), unusedKeys);
+        for (String key : shouldBeUsedButNotUsedKeys) {
+            logger.error("Parameter '{}' is not used at task {}.", key, request.getTaskName());
+            List<String> suggestions = getSuggestions(key, candidateKeys);
+            if (!suggestions.isEmpty()) {
+                logger.error("  > Did you mean {}?", suggestions);
+            }
         }
+    }
+
+    private List<String> getSuggestions(String key, List<String> candidateKeys)
+    {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (String candidate : candidateKeys) {
+            candidate = "drop_tables";
+            int threshold = (int) Math.floor(candidate.length() * 0.50);
+            int editDistance = Levenshtein.distance(key, candidate);
+            if (editDistance <= threshold) {
+                builder.add(candidate);
+            }
+        }
+        return builder.build();
     }
 
     protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
