@@ -48,6 +48,9 @@ public class Start
     @Parameter(names = {"--revision"})
     String revision = null;
 
+    @Parameter(names = {"-d", "--dry-run"})
+    boolean dryRun = false;
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -68,6 +71,7 @@ public class Start
         System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
         System.err.println("        --revision <name>            use a past revision");
         System.err.println("        --retry NAME                 set retry attempt name to a new session");
+        System.err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
         System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         ClientCommand.showCommonOptions();
@@ -143,22 +147,38 @@ public class Start
             .params(overwriteParams)
             .build();
 
-        RestSessionAttempt newAttempt = client.startSessionAttempt(request);
+        if (dryRun) {
+            ln("Session attempt:");
+            ln("  id: (dry run)");
+            ln("  uuid: (dry run)");
+            ln("  repository: %s", def.getRepository().getName());
+            ln("  workflow: %s", def.getName());
+            ln("  session time: %s", formatTime(request.getSessionTime()));
+            ln("  retry attempt name: %s", request.getRetryAttemptName().or(""));
+            ln("  params: %s", request.getParams());
+            //ln("  created at: (dry run)");
+            ln("");
 
-        ln("Started a session attempt:");
-        ln("  id: %d", newAttempt.getId());
-        ln("  uuid: %s", newAttempt.getSessionUuid());
-        ln("  repository: %s", newAttempt.getRepository().getName());
-        ln("  workflow: %s", newAttempt.getWorkflow().getName());
-        ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
-        ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
-        ln("  params: %s", newAttempt.getParams());
-        ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
-        ln("");
+            System.err.println("Session attempt is not started.");
+        }
+        else {
+            RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 
-        System.err.println("* Use `digdag sessions` to list session attempts.");
-        System.err.println(String.format(ENGLISH,
-                    "* Use `digdag task %d` and `digdag log %d` to show status.",
-                    newAttempt.getId(), newAttempt.getId()));
+            ln("Started a session attempt:");
+            ln("  id: %d", newAttempt.getId());
+            ln("  uuid: %s", newAttempt.getSessionUuid());
+            ln("  repository: %s", newAttempt.getRepository().getName());
+            ln("  workflow: %s", newAttempt.getWorkflow().getName());
+            ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
+            ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
+            ln("  params: %s", newAttempt.getParams());
+            ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
+            ln("");
+
+            System.err.println("* Use `digdag sessions` to list session attempts.");
+            System.err.println(String.format(ENGLISH,
+                        "* Use `digdag task %d` and `digdag log %d` to show status.",
+                        newAttempt.getId(), newAttempt.getId()));
+        }
     }
 }

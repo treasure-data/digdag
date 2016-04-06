@@ -346,6 +346,9 @@ Starts a new session. This command requires repository name, workflow name, and 
 :command:`--retry <name>`
   Set retry attempt name to the new attempt. Usually, you will use ``digdag retry`` command instead of using this option.
 
+:command:`-d, --dry-run`
+  Tries to start a new session attempt and validates the results but does nothing.
+
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
