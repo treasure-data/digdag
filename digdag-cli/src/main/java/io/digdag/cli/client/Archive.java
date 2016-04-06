@@ -10,13 +10,16 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.io.File;
 import java.io.IOException;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.time.ZoneId;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.Files;
 import java.nio.file.FileSystems;
 import java.nio.charset.StandardCharsets;
 import com.google.common.io.ByteStreams;
@@ -43,6 +46,7 @@ import io.digdag.cli.SystemExitException;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarConstants;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.cli.Arguments.loadParams;
 
@@ -136,7 +140,7 @@ public class Archive
 
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
-        Path absoluteCurrentPath = FileSystems.getDefault().getPath("").toAbsolutePath().normalize();
+        Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
 
         // normalize the path
         String dagfileName = normalizeRelativePath(absoluteCurrentPath, dagfilePath);
@@ -160,17 +164,18 @@ public class Archive
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
             for (String line : stdinLines) {
-                File file = new File(line);
-                if (file.isDirectory()) {
+                Path path = Paths.get(line);
+                if (Files.isDirectory(path)) {
                     continue;
                 }
 
                 String name = normalizeRelativePath(absoluteCurrentPath, line);
                 System.out.println("  Archiving "+name);
 
-                tar.putArchiveEntry(new TarArchiveEntry(new File(name)));
-                if (file.isFile()) {
-                    try (FileInputStream in = new FileInputStream(file)) {
+                TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
+                tar.putArchiveEntry(e);
+                if (!e.isSymbolicLink()) {
+                    try (InputStream in = Files.newInputStream(path)) {
                         ByteStreams.copy(in, tar);
                     }
                     tar.closeArchiveEntry();
@@ -184,7 +189,7 @@ public class Archive
             if (!dagfileLoaded) {
                 System.out.println("  Archiving "+dagfileName);
                 tar.putArchiveEntry(new TarArchiveEntry(new File(dagfileName)));
-                try (FileInputStream in = new FileInputStream(new File(dagfilePath))) {
+                try (InputStream in = Files.newInputStream(Paths.get(dagfilePath))) {
                     ByteStreams.copy(in, tar);
                 }
                 tar.closeArchiveEntry();
@@ -208,9 +213,69 @@ public class Archive
         System.out.println("");
     }
 
+    private TarArchiveEntry buildTarArchiveEntry(Path absoluteCurrentPath, Path path, String name)
+        throws IOException
+    {
+        TarArchiveEntry e;
+        if (Files.isSymbolicLink(path)) {
+            e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
+            Path dest = Files.readSymbolicLink(path);
+            if (!dest.isAbsolute()) {
+                dest = path.getParent().resolve(dest);
+            }
+            String fromCurrentPath = normalizeRelativePath(absoluteCurrentPath, dest.toString());
+            Path relativeFromPath = path.getParent().toAbsolutePath().relativize(absoluteCurrentPath.resolve(fromCurrentPath).normalize());
+            e.setLinkName(relativeFromPath.toString());
+        }
+        else {
+            e = new TarArchiveEntry(path.toFile(), name);
+            try {
+                int mode = 0;
+                for (PosixFilePermission perm : Files.getPosixFilePermissions(path)) {
+                    switch (perm) {
+                    case OWNER_READ:
+                        mode |= 0400;
+                        break;
+                    case OWNER_WRITE:
+                        mode |= 0200;
+                        break;
+                    case OWNER_EXECUTE:
+                        mode |= 0100;
+                        break;
+                    case GROUP_READ:
+                        mode |= 0040;
+                        break;
+                    case GROUP_WRITE:
+                        mode |= 0020;
+                        break;
+                    case GROUP_EXECUTE:
+                        mode |= 0010;
+                        break;
+                    case OTHERS_READ:
+                        mode |= 0004;
+                        break;
+                    case OTHERS_WRITE:
+                        mode |= 0002;
+                        break;
+                    case OTHERS_EXECUTE:
+                        mode |= 0001;
+                        break;
+                    default:
+                        // ignore
+                    }
+                }
+                e.setMode(mode);
+            }
+            catch (UnsupportedOperationException ex) {
+                // ignore custom mode
+            }
+        }
+        return e;
+    }
+
     private String normalizeRelativePath(Path absoluteCurrentPath, String rawPath)
     {
-        Path absPath = FileSystems.getDefault().getPath(rawPath).toAbsolutePath().normalize();
+        Path absPath = Paths.get(rawPath).toAbsolutePath().normalize();
         Path relPath = absoluteCurrentPath.relativize(absPath).normalize();
 
         StringBuilder sb = new StringBuilder();
