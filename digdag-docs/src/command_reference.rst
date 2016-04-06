@@ -54,10 +54,10 @@ Options:
 
   Example: -o digdag.status
 
-:command:`-a, --all`
-  Run all tasks even if the tasks successfully finished before. In other words, ignore files at ``-o, --save`` directory.
+:command:`-a, --rerun`
+  Rerun all tasks even if the tasks successfully finished before. In other words, ignore files at ``-o, --save`` directory.
 
-  Example: --all
+  Example: --rerun
 
 :command:`-s, --start +NAME`
   If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at ``-o, --save`` directory.
@@ -370,9 +370,9 @@ Examples:
 
 .. code-block:: console
 
-    $ digdag retry 35 --last-revision --all --name retry1
-    $ digdag retry 35 --keep-revision --all --name retry2
-    $ digdag retry 35 --revision rev29a87a9c --all --name retry2
+    $ digdag retry 35 --last-revision --rerun --name retry1
+    $ digdag retry 35 --keep-revision --rerun --name retry2
+    $ digdag retry 35 --revision rev29a87a9c --rerun --name retry2
 
 :command:`--last-revision`
   Use the last revision to retry the session.
@@ -386,7 +386,7 @@ Examples:
 :command:`--name <name>`
   An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.
 
-:command:`--all`
+:command:`--rerun`
   Retries all tasks. Other options (``--resume``, ``--from <+name>``) are not implemented yet.
 
 

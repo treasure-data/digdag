@@ -95,8 +95,8 @@ public class Run
     @Parameter(names = {"-f", "--file"})
     String dagfilePath = null;
 
-    @Parameter(names = {"-a", "--all"})
-    boolean runAll = false;
+    @Parameter(names = {"-a", "--rerun", "--all"})  // --all is kept here for backward compatibility but should be removed
+    boolean rerunAll = false;
 
     @Parameter(names = {"-s", "--start"})
     String runStart = null;
@@ -171,12 +171,12 @@ public class Run
             throw usage("-s, --start and -e, --end don't work together");
         }
 
-        if (runAll && runStart != null) {
-            throw usage("-a, --all and -s, --start don't work together");
+        if (rerunAll && runStart != null) {
+            throw usage("-a, --rerun and -s, --start don't work together");
         }
 
-        if (runAll && runStartStop != null) {
-            throw usage("-a, --all and -g, --goal don't work together");
+        if (rerunAll && runStartStop != null) {
+            throw usage("-a, --rerun and -g, --goal don't work together");
         }
 
         String taskNamePattern;
@@ -201,7 +201,7 @@ public class Run
         System.err.println("Usage: digdag run [+task] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -a, --all                        ignores status files saved at digdag.status and runs all tasks");
+        System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
         System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at digdag.status");
         System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at digdag.status");
         System.err.println("    -e, --end +NAME                  skips this task and its following tasks");
@@ -333,7 +333,7 @@ public class Run
                 System.err.println(String.format(ENGLISH, "Success. Task state is saved at %s directory.", resumeStatePath));
             }
             System.err.println(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time."));
-            System.err.println(String.format(ENGLISH, "  * Use --all, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
+            System.err.println(String.format(ENGLISH, "  * Use --rerun, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
         }
     }
 
@@ -379,7 +379,7 @@ public class Run
             logger.info("Using session {}.", resumeStatePath);
         }
 
-        // process --all, --start, --goal, and --end options
+        // process --rerun, --start, --goal, and --end options
         List<Long> resumeStateFileEnabledTaskIndexList = USE_ALL;
         List<Long> runTaskIndexList = USE_ALL;
         if (runStartStop != null) {
@@ -411,7 +411,7 @@ public class Run
                     );
             resumeStateFileEnabledTaskIndexList.remove(startIndex);
         }
-        if (runAll) {
+        if (rerunAll) {
             // all tasks: force run
             resumeStateFileEnabledTaskIndexList = ImmutableList.of();
         }
