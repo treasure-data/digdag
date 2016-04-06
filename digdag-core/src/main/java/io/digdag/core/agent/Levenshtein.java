@@ -11,10 +11,10 @@ class Levenshtein
         int len2 = str2.length();
 
         if (len2 == 0) {
-            return len2;
+            return len1;
         }
         if (len1 == 0) {
-            return len1;
+            return len2;
         }
 
         int[] ds = new int[len2 + 1];
