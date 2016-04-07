@@ -199,8 +199,13 @@ public class WorkflowExecutor
         TaskConfig.validateAttempt(attempt);
 
         StoredSessionAttemptWithSession stored;
+        TaskStateCode rootTaskState;
         try {
             final WorkflowTask root = tasks.get(0);
+            rootTaskState = root.getTaskType().isGroupingOnly()
+                ? TaskStateCode.PLANNED
+                : TaskStateCode.READY;
+
             stored = sm
                 .getSessionStore(siteId)
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
@@ -211,12 +216,13 @@ public class WorkflowExecutor
                     logger.info("Starting a new session repository id={} workflow name={} session_time={}",
                             repoId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
 
+                    // root task is already ready to run
                     final Task rootTask = Task.taskBuilder()
                         .parentId(Optional.absent())
                         .fullName(root.getFullName())
                         .config(TaskConfig.validate(root.getConfig()))
                         .taskType(root.getTaskType())
-                        .state(root.getTaskType().isGroupingOnly() ? TaskStateCode.PLANNED : TaskStateCode.READY)  // root task is already ready to run
+                        .state(rootTaskState)
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                         TaskControl.addTasksExceptingRootTask(taskStore, storedAttempt.getId(),
@@ -245,14 +251,19 @@ public class WorkflowExecutor
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
 
-        try {
+        if (rootTaskState == TaskStateCode.READY) {
             // this is an optimization to dispatch tasks to a queue quickly.
-            enqueueTask(dispatcher, stored.getId());
+            try {
+                enqueueTask(dispatcher, stored.getId());
+            }
+            catch (Exception ex) {
+                // fakkback to the normal operation.
+                // exception of the optimization shouldn't be propagated to
+                // the caller. enqueueReadyTasks will get the same error later.
+                noticeStatusPropagate();
+            }
         }
-        catch (Exception ex) {
-            // fakkback to the normal operation.
-            // exception of the optimization shouldn't be propagated to
-            // the caller. enqueueReadyTasks will get the same error later.
+        else {
             noticeStatusPropagate();
         }
 
