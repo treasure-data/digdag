@@ -405,8 +405,17 @@ Shows logs of a session attempt. This command works only if server (or scheduler
 .. code-block:: console
 
     $ digdag log 32
+    $ digdag log 32 -f
     $ digdag log 32 +main
     $ digdag log 32 +main+task1
+
+:command:`-v, --verbose`
+  Show all logs. By default, log level less than INFO and lines following those lines are skipped.
+
+:command:`-f, --follow`
+  Show new logs until attempt finishes. This is similar to UNIX ``tail -f`` command. Because server buffers logs, there're some delay until logs are actually show.
+
+  Example: --follow
 
 
 kill
