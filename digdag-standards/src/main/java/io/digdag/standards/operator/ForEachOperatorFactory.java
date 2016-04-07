@@ -6,10 +6,13 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import java.net.URLEncoder;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -126,9 +129,27 @@ public class ForEachOperatorFactory
                 }
                 sb.append(key);
                 sb.append('=');
-                sb.append(combination.get(key, Object.class).toString());  // TODO percent encode
+                sb.append(encodeValue(combination, key));
             }
             return sb.toString();
+        }
+
+        private static String encodeValue(Config map, String key)
+        {
+            JsonNode node = map.get(key, JsonNode.class);
+            String raw;
+            if (node.isTextual()) {
+                raw = node.textValue();
+            }
+            else {
+                raw = node.toString();
+            }
+            try {
+                return URLEncoder.encode(raw, "UTF-8");
+            }
+            catch (UnsupportedEncodingException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 }
