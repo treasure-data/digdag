@@ -151,7 +151,12 @@ public class OperatorManager
                 all.merge(request.getConfig());  // export / carry params (TaskRequest.config sent by WorkflowExecutor doesn't include config of this task)
                 Config evalParams = all.deepCopy();
                 all.merge(request.getLocalConfig());
-                config = evalEngine.eval(workspacePath, all, evalParams);
+
+                // workdir can't include ${...}.
+                // TODO throw exeption if workdir includes ${...}.
+                String workdir = all.get("_workdir", String.class, "");
+
+                config = evalEngine.eval(workspacePath.resolve(workdir), all, evalParams);
             }
             catch (RuntimeException | TemplateException ex) {
                 throw new RuntimeException("Failed to process task config templates", ex);
@@ -193,7 +198,10 @@ public class OperatorManager
                 .config(checkedConfig)
                 .build();
 
-            TaskResult result = callExecutor(workspacePath, type, mergedRequest);
+            // re-get workdir from CheckedConfig
+            String workdir = checkedConfig.get("_workdir", String.class, "");
+
+            TaskResult result = callExecutor(workspacePath.resolve(workdir), type, mergedRequest);
 
             if (!checkedConfig.isAllUsed()) {
                 List<String> usedKeys = checkedConfig.getUsedKeys();
