@@ -202,7 +202,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.5.7
+    $ digdag selfupdate 0.5.8
 
 Server-mode commands
 ----------------------------------
@@ -413,7 +413,7 @@ Shows logs of a session attempt. This command works only if server (or scheduler
   Show all logs. By default, log level less than INFO and lines following those lines are skipped.
 
 :command:`-f, --follow`
-  Show new logs until attempt finishes. This is similar to UNIX ``tail -f`` command. Because server buffers logs, there're some delay until logs are actually show.
+  Show new logs until attempt or task finishes. This is similar to UNIX ``tail -f`` command. Because server buffers logs, there're some delay until logs are actually show.
 
   Example: --follow
 

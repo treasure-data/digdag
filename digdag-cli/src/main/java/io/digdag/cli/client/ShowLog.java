@@ -41,7 +41,7 @@ public class ShowLog
     {
         System.err.println("Usage: digdag log <attempt-id> [+task name prefix]");
         System.err.println("    -v, --verbose                    show debug logs");
-        System.err.println("    -f, --follow                     show new logs until attempt finishes");
+        System.err.println("    -f, --follow                     show new logs until attempt or task finishes");
         System.err.println("  Options:");
         ClientCommand.showCommonOptions();
         return systemExit(error);
