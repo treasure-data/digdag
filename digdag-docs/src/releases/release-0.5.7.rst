@@ -19,7 +19,6 @@ Client-mode changes
 * Fixed wrong session time truncation of ``didgag start --session`` option.
 
 
-
 Release Date
 ------------------
 2016-04-06

@@ -13,6 +13,8 @@ public abstract class LogFileHandle
 {
     public abstract String getFileName();
 
+    public abstract long getFileSize();
+
     public abstract String getTaskName();
 
     public abstract Instant getFirstLogTime();

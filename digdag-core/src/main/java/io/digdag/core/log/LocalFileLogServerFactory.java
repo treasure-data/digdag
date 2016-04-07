@@ -2,7 +2,6 @@ package io.digdag.core.log;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.function.BiConsumer;
 import java.util.zip.GZIPOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -100,7 +99,7 @@ public class LocalFileLogServerFactory
         }
 
         @Override
-        protected void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer)
+        protected void listFiles(String dateDir, String attemptDir, FileMetadataConsumer consumer)
         {
             Path dir = getPrefixDir(dateDir, attemptDir);
             if (!Files.exists(dir)) {
@@ -109,7 +108,10 @@ public class LocalFileLogServerFactory
 
             try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir)) {
                 for (Path path : dirStream) {
-                    fileNameConsumer.accept(path.getFileName().toString(), null);
+                    consumer.accept(
+                            path.getFileName().toString(),
+                            Files.size(path),
+                            null);
                 }
             }
             catch (IOException ex) {

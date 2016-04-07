@@ -2,7 +2,6 @@ package io.digdag.core.log;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.function.BiConsumer;
 import java.util.zip.GZIPOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,7 +39,12 @@ public abstract class AbstractFileLogServer
     protected abstract byte[] getFile(String dateDir, String attemptDir, String fileName)
             throws FileNotFoundException;
 
-    protected abstract void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer);
+    protected abstract void listFiles(String dateDir, String attemptDir, FileMetadataConsumer fileNameConsumer);
+
+    public interface FileMetadataConsumer
+    {
+        public void accept(String name, long size, DirectDownloadHandle directOrNull);
+    }
 
     @Override
     public Optional<DirectUploadHandle> getDirectUploadHandle(LogFilePrefix prefix, String taskName, Instant firstLogTime, String agentId)
@@ -80,9 +84,9 @@ public abstract class AbstractFileLogServer
 
         List<LogFileHandle> handles = new ArrayList<>();
 
-        listFiles(dateDir, attemptDir, (name, direct) -> {
+        listFiles(dateDir, attemptDir, (name, size, direct) -> {
             if (name.endsWith(LogFiles.LOG_GZ_FILE_SUFFIX) && (!taskName.isPresent() || name.startsWith(taskName.get()))) {
-                LogFileHandle handle = LogFiles.parseFileName(name);
+                LogFileHandle handle = LogFiles.buildLogFileHandleFromFileName(name, size);
                 if (handle != null) {
                     if (direct != null) {
                         handles.add(

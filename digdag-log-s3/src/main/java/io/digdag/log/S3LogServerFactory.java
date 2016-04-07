@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Date;
 import java.time.Instant;
-import java.util.function.BiConsumer;
 import com.google.inject.Inject;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
@@ -197,7 +196,7 @@ public class S3LogServerFactory
         }
 
         @Override
-        protected void listFiles(String dateDir, String attemptDir, BiConsumer<String, DirectDownloadHandle> fileNameConsumer)
+        protected void listFiles(String dateDir, String attemptDir, FileMetadataConsumer consumer)
         {
             String dir = getPrefixDir(dateDir, attemptDir);
 
@@ -222,7 +221,10 @@ public class S3LogServerFactory
                                 .url(url)
                                 .build();
 
-                        fileNameConsumer.accept(fileName, directDownload);
+                        consumer.accept(
+                                fileName,
+                                summary.getSize(),
+                                directDownload);
                     });
                 req.setMarker(listing.getNextMarker());
             } while (listing.isTruncated());

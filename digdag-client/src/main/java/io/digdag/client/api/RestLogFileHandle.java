@@ -13,6 +13,8 @@ public abstract class RestLogFileHandle
 {
     public abstract String getFileName();
 
+    public abstract long getFileSize();
+
     public abstract String getTaskName();
 
     public abstract Instant getFileTime();

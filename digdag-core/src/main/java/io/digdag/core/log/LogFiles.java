@@ -62,7 +62,7 @@ public class LogFiles
                 agentId) + LOG_GZ_FILE_SUFFIX;
     }
 
-    public static LogFileHandle parseFileName(String fileName)
+    public static LogFileHandle buildLogFileHandleFromFileName(String fileName, long fileSize)
     {
         // TODO use regexp for reliable parsing logic
         String[] taskNameAndRest = fileName.split("@", 2);
@@ -90,6 +90,7 @@ public class LogFiles
 
         return LogFileHandle.builder()
             .fileName(fileName)
+            .fileSize(fileSize)
             .taskName(taskName)
             .firstLogTime(firstLogTime)
             .agentId(agentId)

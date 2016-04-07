@@ -162,6 +162,7 @@ public final class RestModels
     {
         return RestLogFileHandle.builder()
             .fileName(handle.getFileName())
+            .fileSize(handle.getFileSize())
             .taskName(handle.getTaskName())
             .fileTime(handle.getFirstLogTime())
             .agentId(handle.getAgentId())
