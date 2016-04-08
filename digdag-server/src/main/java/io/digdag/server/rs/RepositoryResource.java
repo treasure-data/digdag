@@ -146,7 +146,7 @@ public class RepositoryResource
 
     @GET
     @Path("/api/repositories/{id}/workflow")
-    public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
+    public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("package") String pkg, @QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "name= is required");
@@ -161,7 +161,8 @@ public class RepositoryResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
+        PackageName packageName = (pkg == null) ?  PackageName.root() : PackageName.of(pkg);
+        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), packageName, name);
 
         return RestModels.workflowDefinition(repo, rev, def);
     }

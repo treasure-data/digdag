@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
@@ -47,6 +48,8 @@ public abstract class AttemptRequest
 
     // TODO to support one-time non-stored workflows, this should be Optional<Stored>. See also Session.getRepositoryId.
     public abstract Stored getStored();
+
+    public abstract PackageName getPackageName();
 
     public abstract String getWorkflowName();
 

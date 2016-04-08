@@ -18,6 +18,8 @@ public abstract class TaskRequest
 
     public abstract int getRepositoryId();
 
+    public abstract String getPackageName();
+
     public abstract String getWorkflowName();
 
     public abstract Optional<String> getRevision();

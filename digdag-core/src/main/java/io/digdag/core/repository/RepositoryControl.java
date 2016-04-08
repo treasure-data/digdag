@@ -82,6 +82,9 @@ public class RepositoryControl
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
         for (StoredWorkflowDefinition def : defs) {
+            if (!def.getPackageName().isRoot()) {
+                throw new IllegalArgumentException("Workflow in sub packages can't have schedules");
+            }
             Optional<Scheduler> sr = srm.tryGetScheduler(revision, def);
             if (sr.isPresent()) {
                 ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);

@@ -86,7 +86,7 @@ public class ShowSession
             ln("  attempt id: %d", attempt.getId());
             ln("  uuid: %s", attempt.getSessionUuid());
             ln("  repository: %s", attempt.getRepository().getName());
-            ln("  workflow: %s", attempt.getWorkflow().getName());
+            ln("  workflow: %s%s", attempt.getPackageName(), attempt.getWorkflow().getName());
             ln("  session time: %s", formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
             ln("  params: %s", attempt.getParams());

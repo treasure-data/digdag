@@ -30,6 +30,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -778,8 +779,8 @@ public class DatabaseSessionStoreManager
                         try {
                             sesId = catchForeignKeyNotFound(()->
                                     catchConflict(() ->
-                                        dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
-                                        "session instant=%s in repository_id=%d and workflow_name=%s", session.getSessionTime(), session.getRepositoryId(), session.getWorkflowName()),
+                                        dao.insertSession(session.getRepositoryId(), session.getPackageName().getFullName(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
+                                        "session instant=%s in repository_id=%d and package_name=%s and workflow_name=%s", session.getSessionTime(), session.getRepositoryId(), session.getPackageName().getFullName(), session.getWorkflowName()),
                                     "repository id=%d", session.getRepositoryId());
                         }
                         catch (ResourceConflictException ex) {
@@ -788,7 +789,7 @@ public class DatabaseSessionStoreManager
                         }
                     }
                     else {
-                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond());
+                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getRepositoryId(), session.getPackageName().getFullName(), session.getWorkflowName(), session.getSessionTime().getEpochSecond());
                         if (storedSession == null) {
                             throw new IllegalStateException("Database state error", ts.getLastException());
                         }
@@ -848,21 +849,21 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, String workflowName, Instant sessionTime)
+        public StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, PackageName packageName, String workflowName, Instant sessionTime)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getLastSessionAttemptByNames(siteId, repositoryId, workflowName, sessionTime.getEpochSecond()),
-                    "session time=%s in repository id=%d workflow name=%s", sessionTime, repositoryId, workflowName);
+                    (handle, dao) -> dao.getLastSessionAttemptByNames(siteId, repositoryId, packageName.getFullName(), workflowName, sessionTime.getEpochSecond()),
+                    "session time=%s in repository id=%d workflow name=%s in package=%s", sessionTime, repositoryId, workflowName, packageName.getFullName());
         }
 
         @Override
-        public StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, String workflowName, Instant sessionTime, String retryAttemptName)
+        public StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, PackageName packageName, String workflowName, Instant sessionTime, String retryAttemptName)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getSessionAttemptByNames(siteId, repositoryId, workflowName, sessionTime.getEpochSecond(), retryAttemptName),
-                    "session attempt name=%s in session repository id=%d workflow name=%s time=%s", retryAttemptName, repositoryId, workflowName, sessionTime);
+                    (handle, dao) -> dao.getSessionAttemptByNames(siteId, repositoryId, packageName.getFullName(), workflowName, sessionTime.getEpochSecond(), retryAttemptName),
+                    "session attempt name=%s in session repository id=%d workflow name=%s in package %s time=%s", retryAttemptName, repositoryId, workflowName, packageName.getFullName(), sessionTime);
         }
 
         @Override
@@ -1004,7 +1005,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select now() as date")
         Instant now();
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id and s.last_attempt_id = sa.id" +
                 " where sa.site_id = :siteId" +
@@ -1013,7 +1014,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.site_id = :siteId" +
@@ -1023,7 +1024,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessionsWithRetriedAttempts(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id and s.last_attempt_id = sa.id" +
                 " where sa.repository_id = :repoId" +
@@ -1033,7 +1034,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessionsOfRepository(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.repository_id = :repoId" +
@@ -1044,7 +1045,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessionsOfRepositoryWithRetriedAttempts(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id and s.last_attempt_id = sa.id" +
                 " where sa.workflow_definition_id = :wfId" +
@@ -1054,7 +1055,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessionsOfWorkflow(@Bind("siteId") int siteId, @Bind("wfId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.workflow_definition_id = :wfId" +
@@ -1065,7 +1066,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getSessionsOfWorkflowWithRetriedAttempts(@Bind("siteId") int siteId, @Bind("wfId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.id = :id" +
@@ -1073,27 +1074,29 @@ public class DatabaseSessionStoreManager
                 " and s.last_attempt_id is not null")
         StoredSessionAttemptWithSession getSessionAttemptById(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
                 " where s.repository_id = :repositoryId" +
+                " and s.package_name = :packageName" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.site_id = :siteId")
-        StoredSessionAttemptWithSession getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+        StoredSessionAttemptWithSession getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("packageName") String packageName, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where s.repository_id = :repositoryId" +
+                " and s.package_name = :packageName" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.attempt_name = :attemptName" +
                 " and sa.site_id = :siteId" +
                 " limit 1")
-        StoredSessionAttemptWithSession getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime, @Bind("attemptName") String attemptName);
+        StoredSessionAttemptWithSession getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("packageName") String packageName, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime, @Bind("attemptName") String attemptName);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.session_id = (" +
@@ -1115,7 +1118,7 @@ public class DatabaseSessionStoreManager
                 " limit 1")
         StoredSessionAttempt getLastAttemptInternal(@Bind("sessionId") long sessionId);
 
-        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+        @SqlQuery("select sa.*, s.session_uuid, s.package_name, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.id = :attemptId limit 1")
@@ -1126,19 +1129,20 @@ public class DatabaseSessionStoreManager
                 " for update")
         StoredSession lockSession(@Bind("sessionId") long sessionId);
 
-        @SqlUpdate("insert into sessions (repository_id, workflow_name, session_time, last_attempt_id)" +
-                " values (:repositoryId, :workflowName, :sessionTime, NULL)")
+        @SqlUpdate("insert into sessions (repository_id, package_name, workflow_name, session_time, last_attempt_id)" +
+                " values (:repositoryId, :packageName, :workflowName, :sessionTime, NULL)")
         @GetGeneratedKeys
         long insertSession(@Bind("repositoryId") int repositoryId,
-                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+                @Bind("packageName") String packageName, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlQuery("select * from sessions" +
                 " where repository_id = :repositoryId" +
+                " and package_name = :packageName" +
                 " and workflow_name = :workflowName" +
                 " and session_time = :sessionTime" +
                 " limit 1")  // here allows last_attempt_id == NULL
         StoredSession getSessionByConflictedNamesInternal(@Bind("repositoryId") int repositoryId,
-                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+                @Bind("packageName") String packageName, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
                 " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
@@ -1323,6 +1327,7 @@ public class DatabaseSessionStoreManager
             return ImmutableStoredSession.builder()
                 .id(r.getLong("id"))
                 .repositoryId(r.getInt("repository_id"))
+                .packageName(PackageName.of(r.getString("package_name")))
                 .workflowName(r.getString("workflow_name"))
                 .sessionTime(Instant.ofEpochSecond(r.getLong("session_time")))
                 .uuid(getUuid(r, "session_uuid"))
@@ -1388,6 +1393,7 @@ public class DatabaseSessionStoreManager
                 .session(
                     ImmutableSession.builder()
                         .repositoryId(r.getInt("repository_id"))
+                        .packageName(PackageName.of(r.getString("package_name")))
                         .workflowName(r.getString("workflow_name"))
                         .sessionTime(Instant.ofEpochSecond(r.getLong("session_time")))
                         .build())

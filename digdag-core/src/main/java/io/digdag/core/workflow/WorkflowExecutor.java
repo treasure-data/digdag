@@ -30,6 +30,7 @@ import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredRevision;
@@ -165,7 +166,8 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
 
-        logger.debug("Checking a session of workflow '{}' ({}) with session parameters: {}",
+        logger.debug("Checking a session of workflow '{}{}' ({}) with session parameters: {}",
+                def.getPackageName().getFullName(),
                 def.getName(),
                 def.getConfig().getNestedOrGetEmpty("meta"),
                 ar.getSessionParams());
@@ -188,7 +190,7 @@ public class WorkflowExecutor
         }
 
         int repoId = ar.getStored().getRepositoryId();
-        Session session = Session.of(repoId, ar.getWorkflowName(), ar.getSessionTime());
+        Session session = Session.of(repoId, ar.getPackageName(), ar.getWorkflowName(), ar.getSessionTime());
 
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
@@ -242,11 +244,11 @@ public class WorkflowExecutor
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sm.getSessionStore(siteId)
-                    .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
+                    .getSessionAttemptByNames(session.getRepositoryId(), session.getPackageName(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
             }
             else {
                 conflicted = sm.getSessionStore(siteId)
-                    .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
+                    .getLastSessionAttemptByNames(session.getRepositoryId(), session.getPackageName(), session.getWorkflowName(), session.getSessionTime());
             }
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
@@ -777,6 +779,7 @@ public class WorkflowExecutor
                 TaskRequest request = TaskRequest.builder()
                     .siteId(attempt.getSiteId())
                     .repositoryId(attempt.getSession().getRepositoryId())
+                    .packageName(attempt.getSession().getPackageName().getFullName())
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
                     .taskId(task.getId())

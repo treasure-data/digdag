@@ -234,11 +234,11 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
+        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, PackageName packageName, String name)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, name),
+                    (handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, packageName.getFullName(), name),
                     "workflow name=%s in the latest revision of repository id=%d", name, repoId);
         }
 
@@ -258,11 +258,11 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
+        public StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, PackageName packageName, String name)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getWorkflowDefinitionByName(siteId, revId, name),
+                    (handle, dao) -> dao.getWorkflowDefinitionByName(siteId, revId, packageName.getFullName(), name),
                     "workflow name=%s in revision id=%d", name, revId);
         }
 
@@ -399,7 +399,7 @@ public class DatabaseRepositoryStoreManager
             }
 
             long wfId = catchConflict(() ->
-                dao.insertWorkflowDefinition(revId, def.getName(), configId),
+                dao.insertWorkflowDefinition(revId, def.getPackageName().getFullName(), def.getName(), configId),
                 "workflow=%s in revision id=%d", def.getName(), revId);
 
             try {
@@ -549,10 +549,11 @@ public class DatabaseRepositoryStoreManager
                     "select max(id) from revisions" +
                     " where repository_id = :repoId" +
                 ")" +
+                " and wd.package_name = :packageName" +
                 " and wd.name = :name" +
                 " and repo.site_id = :siteId" +
                 " limit 1")
-        StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
+        StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("packageName") String packageName, @Bind("name") String name);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
@@ -591,10 +592,11 @@ public class DatabaseRepositoryStoreManager
                 " join repositories repo on repo.id = rev.repository_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where revision_id = :revId" +
+                " and wd.package_name = :packageName" +
                 " and wd.name = :name" +
                 " and site_id = :siteId" +
                 " limit 1")
-        StoredWorkflowDefinition getWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("name") String name);
+        StoredWorkflowDefinition getWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("packageName") String packageName, @Bind("name") String name);
 
         @SqlQuery("select id, config, timezone" +
                 " from workflow_configs" +
@@ -630,10 +632,10 @@ public class DatabaseRepositoryStoreManager
         void insertRevisionArchiveData(@Bind("revId") int revId, @Bind("data") byte[] data);
 
         @SqlUpdate("insert into workflow_definitions" +
-                " (revision_id, name, config_id)" +
-                " values (:revId, :name, :configId)")
+                " (revision_id, package_name, name, config_id)" +
+                " values (:revId, :packageName, :name, :configId)")
         @GetGeneratedKeys
-        long insertWorkflowDefinition(@Bind("revId") int revId, @Bind("name") String name, @Bind("configId") int configId);
+        long insertWorkflowDefinition(@Bind("revId") int revId, @Bind("packageName") String packageName, @Bind("name") String name, @Bind("configId") int configId);
 
         @SqlQuery("select wd.name, schedules.id from schedules" +
                 " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
@@ -747,6 +749,7 @@ public class DatabaseRepositoryStoreManager
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
                 .timeZone(ZoneId.of(r.getString("timezone")))
+                .packageName(PackageName.of(r.getString("package_name")))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .build();
@@ -771,6 +774,7 @@ public class DatabaseRepositoryStoreManager
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
                 .timeZone(ZoneId.of(r.getString("timezone")))
+                .packageName(PackageName.of(r.getString("package_name")))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .repository(

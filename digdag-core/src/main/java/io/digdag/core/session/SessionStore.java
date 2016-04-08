@@ -3,6 +3,7 @@ package io.digdag.core.session;
 import java.util.List;
 import java.time.Instant;
 import com.google.common.base.*;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -17,10 +18,10 @@ public interface SessionStore
     StoredSessionAttemptWithSession getSessionAttemptById(long attemptId)
         throws ResourceNotFoundException;
 
-    StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, String workflowName, Instant instant)
+    StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, PackageName packageName, String workflowName, Instant instant)
         throws ResourceNotFoundException;
 
-    StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, String workflowName, Instant instant, String retryAttemptName)
+    StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, PackageName packageName, String workflowName, Instant instant, String retryAttemptName)
         throws ResourceNotFoundException;
 
     List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)

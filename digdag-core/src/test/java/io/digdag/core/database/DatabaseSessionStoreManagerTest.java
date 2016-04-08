@@ -194,6 +194,7 @@ public class DatabaseSessionStoreManagerTest
         Instant sessionTime2 = sessionTime1.plusSeconds(3600);
 
         WorkflowDefinition def1 = WorkflowDefinition.of(
+                wf1.getPackageName(),
                 wf1.getName(),
                 cf.create()
                 .setNested("+step1", cf.create().set("sh>", "echo step1"))
@@ -300,15 +301,15 @@ public class DatabaseSessionStoreManagerTest
         assertNotFound(() ->store.getSessionAttemptById(attempt1.getId() + 10));
         assertNotFound(() -> anotherSite.getSessionAttemptById(attempt1.getId()));
 
-        assertEquals(attempt1, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, ""));
-        assertEquals(attempt2, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, ""));
-        assertEquals(attempt3, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, "attempt3"));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId() + 10, wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName() + " ", sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, " "));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt1, store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime1, ""));
+        assertEquals(attempt2, store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt3, store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime2, "attempt3"));
+        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId() + 10, wf1.getPackageName(), wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName() + " ", sessionTime1, ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime1, " "));
+        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getPackageName(), wf1.getName(), sessionTime2, ""));
 
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt2.getId()));
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt3.getId()));

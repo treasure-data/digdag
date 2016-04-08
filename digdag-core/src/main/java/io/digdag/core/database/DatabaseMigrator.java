@@ -65,6 +65,11 @@ public class DatabaseMigrator
         }
     }
 
+    private boolean isH2()
+    {
+        return databaseType.equals("h2");
+    }
+
     private boolean isPostgres()
     {
         return databaseType.equals("postgresql");
@@ -98,23 +103,11 @@ public class DatabaseMigrator
         }
     }
 
-    private class CreateTableBuilder
+    private abstract class AbstractDdlBuilder <T extends AbstractDdlBuilder>
     {
-        private final String name;
-        private final List<String> columns = new ArrayList<>();
+        public abstract T add(String column, String typeAndOptions);
 
-        public CreateTableBuilder(String name)
-        {
-            this.name = name;
-        }
-
-        public CreateTableBuilder add(String column, String typeAndOptions)
-        {
-            columns.add(column + " " + typeAndOptions);
-            return this;
-        }
-
-        public CreateTableBuilder addIntId(String column)
+        public T addIntId(String column)
         {
             if (isPostgres()) {
                 return add(column, "serial primary key");
@@ -124,7 +117,7 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addIntIdNoAutoIncrement(String column, String options)
+        public T addIntIdNoAutoIncrement(String column, String options)
         {
             if (isPostgres()) {
                 return add(column, "serial primary key " + options);
@@ -134,7 +127,7 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addLongId(String column)
+        public T addLongId(String column)
         {
             if (isPostgres()) {
                 return add(column, "bigserial primary key");
@@ -144,32 +137,32 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addLongIdNoAutoIncrement(String column, String options)
+        public T addLongIdNoAutoIncrement(String column, String options)
         {
             return add(column, "bigint primary key " + options);
         }
 
-        public CreateTableBuilder addShort(String column, String options)
+        public T addShort(String column, String options)
         {
             return add(column, "smallint " + options);
         }
 
-        public CreateTableBuilder addInt(String column, String options)
+        public T addInt(String column, String options)
         {
             return add(column, "int " + options);
         }
 
-        public CreateTableBuilder addLong(String column, String options)
+        public T addLong(String column, String options)
         {
             return add(column, "bigint " + options);
         }
 
-        public CreateTableBuilder addUuid(String column, String options)
+        public T addUuid(String column, String options)
         {
             return add(column, "uuid " + options);
         }
 
-        public CreateTableBuilder addString(String column, String options)
+        public T addString(String column, String options)
         {
             if (isPostgres()) {
                 return add(column, "text " + options);
@@ -179,17 +172,17 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addMediumText(String column, String options)
+        public T addMediumText(String column, String options)
         {
             return add(column, "text " + options);
         }
 
-        public CreateTableBuilder addLongText(String column, String options)
+        public T addLongText(String column, String options)
         {
             return add(column, "text " + options);
         }
 
-        public CreateTableBuilder addBinary(String column, String options)
+        public T addBinary(String column, String options)
         {
             if (isPostgres()) {
                 return add(column, "bytea " + options);
@@ -199,7 +192,7 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addLongBinary(String column, String options)
+        public T addLongBinary(String column, String options)
         {
             if (isPostgres()) {
                 return add(column, "bytea " + options);
@@ -209,7 +202,7 @@ public class DatabaseMigrator
             }
         }
 
-        public CreateTableBuilder addTimestamp(String column, String options)
+        public T addTimestamp(String column, String options)
         {
             if (isPostgres()) {
                 return add(column, "timestamp with time zone " + options);
@@ -217,6 +210,25 @@ public class DatabaseMigrator
             else {
                 return add(column, "timestamp " + options);
             }
+        }
+    }
+
+    private class CreateTableBuilder
+            extends AbstractDdlBuilder<CreateTableBuilder>
+    {
+        private final String name;
+        private final List<String> columns = new ArrayList<>();
+
+        public CreateTableBuilder(String name)
+        {
+            this.name = name;
+        }
+
+        @Override
+        public CreateTableBuilder add(String column, String typeAndOptions)
+        {
+            columns.add(column + " " + typeAndOptions);
+            return this;
         }
 
         public String build()
@@ -233,6 +245,74 @@ public class DatabaseMigrator
                 }
             }
             sb.append(")");
+            return sb.toString();
+        }
+    }
+
+    private class AlterTableBuilder
+            extends AbstractDdlBuilder<AlterTableBuilder>
+    {
+        private final String name;
+        private final List<String> columns = new ArrayList<>();
+        private final List<String> dropColumns = new ArrayList<>();
+        private final List<String> dropDefaultColumns = new ArrayList<>();
+
+        public AlterTableBuilder(String name)
+        {
+            this.name = name;
+        }
+
+        @Override
+        public AlterTableBuilder add(String column, String typeAndOptions)
+        {
+            columns.add(column + " " + typeAndOptions);
+            return this;
+        }
+
+        public AlterTableBuilder drop(String column)
+        {
+            dropColumns.add(column);
+            return this;
+        }
+
+        public AlterTableBuilder dropDefault(String column)
+        {
+            dropDefaultColumns.add(column);
+            return this;
+        }
+
+        public String build()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("ALTER TABLE " + name + "\n");
+            for (int i=0; i < columns.size(); i++) {
+                sb.append("  ADD ");
+                sb.append(columns.get(i));
+                if (i + 1 < columns.size() + dropColumns.size() + dropDefaultColumns.size()) {
+                    sb.append(",\n");
+                } else {
+                    sb.append("\n");
+                }
+            }
+            for (int i=0; i < dropColumns.size(); i++) {
+                sb.append("  DROP ");
+                sb.append(dropColumns.get(i));
+                if (i + 1 < dropColumns.size() + dropDefaultColumns.size()) {
+                    sb.append(",\n");
+                } else {
+                    sb.append("\n");
+                }
+            }
+            for (int i=0; i < dropDefaultColumns.size(); i++) {
+                sb.append("  ALTER ");
+                sb.append(dropDefaultColumns.get(i));
+                sb.append(" DROP DEFAULT");
+                if (i + 1 < dropDefaultColumns.size()) {
+                    sb.append(",\n");
+                } else {
+                    sb.append("\n");
+                }
+            }
             return sb.toString();
         }
     }
@@ -316,9 +396,10 @@ public class DatabaseMigrator
                     .addLongId("id")
                     .addInt("config_id", "not null references workflow_configs (id)")
                     .addInt("revision_id", "not null references revisions (id)")
+                    .addString("package_name", "not null")
                     .addString("name", "not null")
                     .build());
-            handle.update("create unique index workflow_definitions_on_revision_id_and_name on workflow_definitions (revision_id, name)");
+            handle.update("create unique index workflow_definitions_on_revision_id_and_package_name_and_name on workflow_definitions (revision_id, package_name, name)");
 
             // schedules
             handle.update(
@@ -341,12 +422,13 @@ public class DatabaseMigrator
                     new CreateTableBuilder("sessions")
                     .addLongId("id")
                     .addInt("repository_id", "not null references repositories (id)")
+                    .addString("package_name", "not null")
                     .addString("workflow_name", "not null")
                     .addLong("session_time", "not null")
                     .addUuid("session_uuid", isPostgres() ? "not null default(uuid_generate_v4())" : "not null default(RANDOM_UUID())")
                     .addLong("last_attempt_id", "")
                     .build());
-            handle.update("create unique index sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
+            handle.update("create unique index sessions_on_repository_id_and_package_name_and_workflow_name_and_session_time on sessions (repository_id, package_name, workflow_name, session_time)");
             handle.update("create index sessions_on_repository_id on sessions (repository_id, id)");
 
             // session_attempts

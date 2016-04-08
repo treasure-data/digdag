@@ -22,9 +22,10 @@ public abstract class WorkflowDefinitionList
     @JsonCreator
     public static WorkflowDefinitionList of(Config object)
     {
+        PackageName packageName = PackageName.root(); // TODO how should here get PackageName? PackageName is nested.
         ImmutableList.Builder<WorkflowDefinition> builder = ImmutableList.builder();
         for (String key : object.getKeys()) {
-            builder.add(WorkflowDefinition.of(key, object.getNestedOrderedOrGetEmpty(key)));
+            builder.add(WorkflowDefinition.of(packageName, key, object.getNestedOrderedOrGetEmpty(key)));
         }
         return of(builder.build());
     }

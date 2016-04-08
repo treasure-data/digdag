@@ -40,6 +40,7 @@ public class AttemptBuilder
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
+            .packageName(def.getPackageName())
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)
@@ -59,6 +60,7 @@ public class AttemptBuilder
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))
+            .packageName(def.getPackageName())
             .workflowName(def.getName())
             .sessionMonitors(buildSessionMonitors(def, time.getRunTime(), timeZone))
             .timeZone(timeZone)

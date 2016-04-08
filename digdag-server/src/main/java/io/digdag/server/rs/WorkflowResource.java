@@ -73,6 +73,7 @@ public class WorkflowResource
     public RestWorkflowDefinition getWorkflowDefinition(
             @QueryParam("repository") String repoName,
             @QueryParam("revision") String revName,
+            @QueryParam("package") String pkg,
             @QueryParam("name") String wfName)
         throws ResourceNotFoundException
     {
@@ -88,7 +89,8 @@ public class WorkflowResource
         else {
             rev = rs.getRevisionByName(repo.getId(), revName);
         }
-        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
+        PackageName packageName = (pkg == null) ?  PackageName.root() : PackageName.of(pkg);
+        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), packageName, wfName);
         return RestModels.workflowDefinition(repo, rev, def);
     }
 

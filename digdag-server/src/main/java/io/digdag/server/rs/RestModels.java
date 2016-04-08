@@ -80,6 +80,7 @@ public final class RestModels
     {
         return RestWorkflowDefinition.builder()
             .id(def.getId())
+            .packageName(def.getPackageName().getFullName())
             .name(def.getName())
             .repository(IdName.of(repo.getId(), repo.getName()))
             .revision(revName)
@@ -128,6 +129,7 @@ public final class RestModels
         return RestSessionAttempt.builder()
             .id(attempt.getId())
             .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
+            .packageName(attempt.getSession().getPackageName().getFullName())
             .workflow(NameOptionalId.of(attempt.getSession().getWorkflowName(), attempt.getWorkflowDefinitionId()))
             .sessionUuid(attempt.getSessionUuid())
             .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))

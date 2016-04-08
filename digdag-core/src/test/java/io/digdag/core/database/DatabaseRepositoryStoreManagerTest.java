@@ -226,11 +226,11 @@ public class DatabaseRepositoryStoreManagerTest
         assertNotFound(() -> store.getWorkflowDefinitionById(wf1.getId() + 10));
         assertNotFound(() -> anotherSite.getWorkflowDefinitionById(wf1.getId()));
 
-        assertEquals(wf1, store.getWorkflowDefinitionByName(rev1.getId(), wf1.getName()));
-        assertEquals(wf2, store.getWorkflowDefinitionByName(rev2.getId(), wf2.getName()));
-        assertNotFound(() -> store.getWorkflowDefinitionByName(rev1.getId() + 10, wf1.getName()));
-        assertNotFound(() -> store.getWorkflowDefinitionByName(rev1.getId(), wf2.getName()));
-        assertNotFound(() -> anotherSite.getWorkflowDefinitionByName(rev1.getId(), wf1.getName()));
+        assertEquals(wf1, store.getWorkflowDefinitionByName(rev1.getId(), wf1.getPackageName(), wf1.getName()));
+        assertEquals(wf2, store.getWorkflowDefinitionByName(rev2.getId(), wf2.getPackageName(), wf2.getName()));
+        assertNotFound(() -> store.getWorkflowDefinitionByName(rev1.getId() + 10, wf1.getPackageName(), wf1.getName()));
+        assertNotFound(() -> store.getWorkflowDefinitionByName(rev1.getId(), wf2.getPackageName(), wf2.getName()));
+        assertNotFound(() -> anotherSite.getWorkflowDefinitionByName(rev1.getId(), wf1.getPackageName(), wf1.getName()));
 
         ////
         // complex getters
@@ -239,8 +239,8 @@ public class DatabaseRepositoryStoreManagerTest
         assertEquals(rev3, store.getLatestRevision(repo2.getId()));
         assertNotFound(() -> anotherSite.getLatestRevision(repo1.getId()));
 
-        assertEquals(wfDetails3, store.getLatestWorkflowDefinitionByName(repo2.getId(), wf3.getName()));
-        assertNotFound(() -> store.getLatestWorkflowDefinitionByName(repo2.getId(), wf2.getName()));
+        assertEquals(wfDetails3, store.getLatestWorkflowDefinitionByName(repo2.getId(), wf3.getPackageName(), wf3.getName()));
+        assertNotFound(() -> store.getLatestWorkflowDefinitionByName(repo2.getId(), wf2.getPackageName(), wf2.getName()));
 
         // getRevisionArchiveData returns NotFound if insertRevisionArchiveData is not called
         assertNotFound(() -> store.getRevisionArchiveData(rev1.getId()));

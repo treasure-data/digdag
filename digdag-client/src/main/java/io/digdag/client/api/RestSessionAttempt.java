@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
@@ -19,6 +20,9 @@ public abstract class RestSessionAttempt
     public abstract IdName getRepository();
 
     //public abstract Optional<String> getRevision();
+
+    @JsonProperty("package")
+    public abstract String getPackageName();
 
     public abstract NameOptionalId getWorkflow();
 

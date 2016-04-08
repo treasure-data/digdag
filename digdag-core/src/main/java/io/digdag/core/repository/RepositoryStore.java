@@ -44,13 +44,13 @@ public interface RepositoryStore
 
     List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId);
 
-    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
+    StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, PackageName packageName, String name)
         throws ResourceNotFoundException;
 
     StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
-    StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
+    StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, PackageName packageName, String name)
         throws ResourceNotFoundException;
 
     TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList);

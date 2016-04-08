@@ -258,7 +258,7 @@ public class ScheduleExecutor
             // confirm sessions with the same attemptName doesn't exist
             for (Instant instant : instants) {
                 try {
-                    ss.getSessionAttemptByNames(def.getRepository().getId(), def.getName(), instant, attemptName);
+                    ss.getSessionAttemptByNames(def.getRepository().getId(), def.getPackageName(), def.getName(), instant, attemptName);
                     throw new ResourceConflictException(String.format(Locale.ENGLISH,
                                 "Attempt of repository id=%d workflow=%s instant=%s attempt name=%s already exists",
                                 def.getRepository().getId(), def.getName(), instant, attemptName));
@@ -274,7 +274,7 @@ public class ScheduleExecutor
                 if (dryRun) {
                     attempts.add(
                             StoredSessionAttemptWithSession.dryRunDummy(siteId,
-                                Session.of(def.getRepository().getId(), def.getName(), instant),
+                                Session.of(def.getRepository().getId(), def.getPackageName(), def.getName(), instant),
                                 ImmutableStoredSessionAttempt.builder()
                                     .retryAttemptName(Optional.of(attemptName))
                                     .workflowDefinitionId(Optional.of(def.getId()))

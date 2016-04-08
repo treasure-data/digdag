@@ -25,38 +25,38 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 
-public class RequireOperatorFactory
+public class CallOperatorFactory
         implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(RequireOperatorFactory.class);
+    private static Logger logger = LoggerFactory.getLogger(CallOperatorFactory.class);
 
     private final TaskCallbackApi callback;
 
     @Inject
-    public RequireOperatorFactory(TaskCallbackApi callback)
+    public CallOperatorFactory(TaskCallbackApi callback)
     {
         this.callback = callback;
     }
 
     public String getType()
     {
-        return "require";
+        return "call";
     }
 
     @Override
     public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new RequireOperator(callback, request);
+        return new CallOperator(callback, request);
     }
 
-    private static class RequireOperator
+    private static class CallOperator
             implements Operator
     {
         private final TaskCallbackApi callback;
         private final TaskRequest request;
         private ConfigFactory cf;
 
-        public RequireOperator(TaskCallbackApi callback, TaskRequest request)
+        public CallOperator(TaskCallbackApi callback, TaskRequest request)
         {
             this.callback = callback;
             this.request = request;
@@ -66,41 +66,11 @@ public class RequireOperatorFactory
         @Override
         public TaskResult run()
         {
-            RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
-            boolean isDone;
-            try {
-                isDone = runTask();
-            }
-            catch (RuntimeException ex) {
-                Config error = OperatorManager.makeExceptionError(request.getConfig().getFactory(), ex);
-                boolean doRetry = retry.evaluate();
-                if (doRetry) {
-                    throw new TaskExecutionException(ex, error,
-                            retry.getNextRetryInterval(),
-                            retry.getNextRetryStateParams());
-                }
-                else {
-                    throw ex;
-                }
-            }
-
-            if (isDone) {
-                return TaskResult.empty(cf);
-            }
-            else {
-                // TODO use exponential-backoff to calculate retry interval
-                throw new TaskExecutionException(1, request.getLastStateParams());
-            }
-        }
-
-        private boolean runTask()
-        {
             Config config = request.getConfig();
+
             String workflowName = config.get("_command", String.class);
             int repositoryId = config.get("repository_id", int.class);
-            Instant instant = config.get("session_time", Instant.class);
-            Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
-            Config overwriteParams = config.getNestedOrGetEmpty("params");
+            Config exportParams = config.getNestedOrGetEmpty("params");
 
             PackageName currentPackage = PackageName.of(request.getPackageName());
             PackageName packageName;
@@ -116,21 +86,22 @@ public class RequireOperatorFactory
                 packageName = currentPackage;
             }
 
+            Config def;
             try {
-                SessionStateFlags flags = callback.startSession(
+                def = callback.getWorkflowDefinition(
                         request.getSiteId(),
                         repositoryId,
                         packageName,
-                        workflowName,
-                        instant,
-                        retryAttemptName,
-                        overwriteParams);
-
-                return flags.isDone();
+                        workflowName);
             }
             catch (ResourceNotFoundException ex) {
                 throw new ConfigException(ex);
             }
+
+            return TaskResult.defaultBuilder(request)
+                .subtaskConfig(def)
+                .exportParams(exportParams)
+                .build();
         }
     }
 }

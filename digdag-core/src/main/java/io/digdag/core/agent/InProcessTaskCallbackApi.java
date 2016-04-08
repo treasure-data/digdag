@@ -9,6 +9,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.core.session.Session;
 import io.digdag.core.repository.StoredRepository;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.RepositoryStore;
 import io.digdag.core.repository.RepositoryStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -121,6 +122,7 @@ public class InProcessTaskCallbackApi
     public SessionStateFlags startSession(
             int siteId,
             int repositoryId,
+            PackageName packageName,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
@@ -130,7 +132,7 @@ public class InProcessTaskCallbackApi
         RepositoryStore repoStore = rm.getRepositoryStore(siteId);
 
         StoredRepository repo = repoStore.getRepositoryById(repositoryId);
-        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
+        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), packageName, workflowName);
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -147,5 +149,21 @@ public class InProcessTaskCallbackApi
         catch (SessionAttemptConflictException ex) {
             return ex.getConflictedSession().getStateFlags();
         }
+    }
+
+    @Override
+    public Config getWorkflowDefinition(
+            int siteId,
+            int repositoryId,
+            PackageName packageName,
+            String workflowName)
+        throws ResourceNotFoundException
+    {
+        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
+
+        StoredRepository repo = repoStore.getRepositoryById(repositoryId);
+        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), packageName, workflowName);
+
+        return def.getConfig();
     }
 }

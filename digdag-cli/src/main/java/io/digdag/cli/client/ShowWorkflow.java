@@ -55,7 +55,7 @@ public class ShowWorkflow
             RestRepository repo = client.getRepository(repoName);
             ln("  %s", repo.getName());
             for (RestWorkflowDefinition def : client.getWorkflowDefinitions(repo.getId())) {
-                ln("    %s", def.getName());
+                ln("    %s%s", def.getPackageName(), def.getName());
             }
         }
         else {
@@ -64,7 +64,7 @@ public class ShowWorkflow
                     List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(repo.getId());
                     ln("  %s", repo.getName());
                     for (RestWorkflowDefinition def : defs) {
-                        ln("    %s", def.getName());
+                        ln("    %s%s", def.getPackageName(), def.getName());
                     }
                 }
                 catch (NotFoundException ex) {

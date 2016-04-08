@@ -8,6 +8,7 @@ import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.repository.PackageName;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskCallbackApi
@@ -33,9 +34,17 @@ public interface TaskCallbackApi
     SessionStateFlags startSession(
             int siteId,
             int repositoryId,
+            PackageName packageName,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
+        throws ResourceNotFoundException;
+
+    Config getWorkflowDefinition(
+            int siteId,
+            int repositoryId,
+            PackageName packageName,
+            String workflowName)
         throws ResourceNotFoundException;
 }

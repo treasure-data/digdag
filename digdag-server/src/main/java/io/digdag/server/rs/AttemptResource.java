@@ -88,6 +88,7 @@ public class AttemptResource
     @Path("/api/attempts")
     public List<RestSessionAttempt> getAttempts(
             @QueryParam("repository") String repoName,
+            @QueryParam("package") String pkg,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId)
@@ -101,7 +102,8 @@ public class AttemptResource
             StoredRepository repo = rs.getRepositoryByName(repoName);
             if (wfName != null) {
                 // of workflow
-                StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
+                PackageName packageName = (pkg == null) ?  PackageName.root() : PackageName.of(pkg);
+                StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(repo.getId(), packageName, wfName);
                 attempts = ss.getSessionsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
             }
             else {

@@ -169,6 +169,7 @@ public class DatabaseTestingUtils
     public static WorkflowDefinition createWorkflow(String name)
     {
         return WorkflowDefinition.of(
+                PackageName.root(),
                 name,
                 createConfig().set("uniq", System.nanoTime()));
     }
