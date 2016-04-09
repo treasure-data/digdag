@@ -25,6 +25,7 @@ public class LocalAgentModule
         // built-in operators
         Multibinder<OperatorFactory> taskExecutorBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);
         taskExecutorBinder.addBinding().to(RequireOperatorFactory.class).in(Scopes.SINGLETON);
+        taskExecutorBinder.addBinding().to(CallOperatorFactory.class).in(Scopes.SINGLETON);
 
         binder.bind(LocalAgentStarter.class).asEagerSingleton();
     }

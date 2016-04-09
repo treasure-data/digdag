@@ -148,4 +148,19 @@ public class InProcessTaskCallbackApi
             return ex.getConflictedSession().getStateFlags();
         }
     }
+
+    @Override
+    public Config getWorkflowDefinition(
+            int siteId,
+            int repositoryId,
+            String workflowName)
+        throws ResourceNotFoundException
+    {
+        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
+
+        StoredRepository repo = repoStore.getRepositoryById(repositoryId);
+        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
+
+        return def.getConfig();
+    }
 }

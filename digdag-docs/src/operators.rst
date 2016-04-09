@@ -5,10 +5,32 @@ Operators
    :local:
    :depth: 2
 
-require>: Runs another workflow
+call>: Calls another workflow
 ----------------------------------
 
-**require>:** operator runs another workflow. It's skipped if the workflow is already done successfully.
+**call>:** operator calls another workflow.
+
+This operator embeds another workflow as a subtask.
+
+.. code-block:: yaml
+
+    run: +main
+    +main:
+      call>: +another
+    +another:
+      sh>: tasks/another.sh
+
+:command:`call>: +NAME`
+  Name of a workflow.
+
+  Example: +another_workflow
+
+require>: Depends on another workflow
+----------------------------------
+
+**require>:** operator runs another workflow. Unlike ``call>`` operator, the workflow is skipped if the workflow for the session time is already done successfully before.
+
+This operator submits a new session to digdag.
 
 .. code-block:: yaml
 
@@ -21,7 +43,7 @@ require>: Runs another workflow
 :command:`require>: +NAME`
   Name of a workflow.
 
-  Example: +another_task
+  Example: +another_workflow
 
 py>: Python scripts
 ----------------------------------
