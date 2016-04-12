@@ -5,12 +5,14 @@ buildscript {
     }
 }
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'idea'
 
 allprojects {
     group = 'io.digdag'
     version = '0.5.9'
 
     apply plugin: 'java'
+    apply plugin: 'idea'
 }
 
 subprojects {
