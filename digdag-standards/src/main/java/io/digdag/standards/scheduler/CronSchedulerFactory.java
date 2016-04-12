@@ -18,7 +18,7 @@ public class CronSchedulerFactory
     public Scheduler newScheduler(Config config, ZoneId timeZone)
     {
         return new CronScheduler(
-                config.get("cron", String.class),
+                config.get("_command", String.class),
                 timeZone,
                 config.get("delay", long.class, 0L));
     }
