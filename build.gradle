@@ -6,6 +6,7 @@ buildscript {
 }
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'idea'
+apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
@@ -120,6 +121,19 @@ subprojects {
     //artifacts {
     //    archives testsJar, sourcesJar, javadocJar
     //}
+
+    // Generate maven manifests for sub-modules
+    task pom << {
+        pom {
+            project {
+                parent {
+                    groupId project.group
+                    artifactId 'digdag'
+                    version project.version
+                }
+            }
+        }.writeTo("${delegate.project.projectDir}/pom.xml")
+    }
 }
 
 task wrapper(type: Wrapper) {
@@ -274,3 +288,36 @@ task releaseCheck << {
     println "Ready. Run 'release' task."
 }
 
+// Generate parent maven manifest
+task pom << {
+    pom {
+        project {
+            packaging 'pom'
+            repositories {
+                repository {
+                    id 'jcenter'
+                    url 'http://jcenter'
+                    releases {
+                        enabled 'true'
+                    }
+                }
+            }
+            modules {
+                subprojects.each {
+                    module it.name
+                }
+            }
+        }
+    }.withXml {
+        // XXX (dano): http://stackoverflow.com/a/27978130
+        def build = asNode().appendNode('build', '')
+        def plugins = build.appendNode('plugins', '')
+        def compiler = plugins.appendNode('plugin', '')
+        compiler.appendNode('groupId', 'org.apache.maven.plugins')
+        compiler.appendNode('artifactId', 'maven-compiler-plugin')
+        compiler.appendNode('version', '3.5.1')
+        def compiler_configuration = compiler.appendNode('configuration', '')
+        compiler_configuration.appendNode('source', sourceCompatibility)
+        compiler_configuration.appendNode('target', targetCompatibility)
+    }.writeTo("pom.xml")
+}
