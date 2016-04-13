@@ -1,4 +1,5 @@
-name: +rb_args
+name: rb_args
+timezone: UTC
 
 _export:
   require: "examples/ruby_args"

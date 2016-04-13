@@ -1,4 +1,5 @@
-name: +error_task
+name: error_task
+timezone: UTC
 
 _error:
   py>: examples.error_task.show_error

@@ -98,7 +98,7 @@ public class Sched
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
             try {
-                autoReloader.loadProject(ImmutableList.of(Paths.get(autoLoadLocalDagfile)), ZoneId.of("UTC"));
+                autoReloader.loadProject(ImmutableList.of(Paths.get(autoLoadLocalDagfile)));
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

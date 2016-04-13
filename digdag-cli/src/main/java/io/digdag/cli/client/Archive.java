@@ -147,8 +147,7 @@ public class Archive
 
         ProjectArchive project = projectLoader.load(
                 dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
-                overwriteParams,
-                ZoneId.of("UTC"));
+                overwriteParams);
 
         project.listFiles(absoluteCurrentPath, relPath -> {
             try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {

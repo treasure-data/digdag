@@ -24,7 +24,7 @@ public class WorkflowCompiler
         return Workflow.builder()
             .name(name)
             .meta(config.getNestedOrGetEmpty("meta"))
-            .tasks(compileTasks("", name, config))
+            .tasks(compileTasks("", "+" + name, config))  // root task name is "+workflowName"
             .build();
     }
 

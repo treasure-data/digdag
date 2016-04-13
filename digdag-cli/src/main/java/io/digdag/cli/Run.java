@@ -180,26 +180,23 @@ public class Run
             throw usage("-a, --rerun and -g, --goal don't work together");
         }
 
-        String taskNamePattern;
+        String matchPattern;
         switch (args.size()) {
         case 0:
-            taskNamePattern = null;
+            matchPattern = null;
             break;
         case 1:
-            taskNamePattern = args.get(0);
-            if (!taskNamePattern.startsWith("+")) {
-                throw usage("Task name '" + taskNamePattern + "' does not exist in file " + dagfilePath + ".");
-            }
+            matchPattern = args.get(0);
             break;
         default:
             throw usage(null);
         }
-        run(taskNamePattern);
+        run(matchPattern);
     }
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag run [+workflow[+task]] [options...]");
+        System.err.println("Usage: digdag run [workflow][+task] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
         System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
@@ -230,7 +227,7 @@ public class Run
 
     private static final List<Long> USE_ALL = null;
 
-    public void run(String taskNamePattern) throws Exception
+    public void run(String matchPattern) throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
@@ -255,12 +252,23 @@ public class Run
         // read workflow definitions
         ProjectArchive project = projectLoader.load(
                 ImmutableList.of(Paths.get(dagfilePath)),
-                overwriteParams,
-                ZoneId.of("UTC"));
-        if (taskNamePattern == null) {
-            taskNamePattern = project.getMetadata().getWorkflowList().get().get(0).getName();
+                overwriteParams);
+
+        String workflowName;
+        Optional<TaskMatchPattern> taskMatchPattern;
+        if (matchPattern.startsWith("+")) {
+            workflowName = project.getMetadata().getWorkflowList().get().get(0).getName();
+            taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
         }
-        TaskMatchPattern taskMatchPattern = TaskMatchPattern.compile(taskNamePattern);
+        else if (matchPattern.contains("+")) {
+            String[] matchFragments = matchPattern.split("\\+", 2);
+            workflowName = matchFragments[0];
+            taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchFragments[1]));
+        }
+        else {
+            workflowName = matchPattern;
+            taskMatchPattern = Optional.absent();
+        }
 
         // store workflow definition archive
         ArchiveMetadata archive = project.getMetadata();
@@ -272,7 +280,8 @@ public class Run
         // submit workflow
         StoredSessionAttemptWithSession attempt = submitWorkflow(injector,
                 stored.getRevision(), stored.getWorkflowDefinitions(),
-                archive, overwriteParams, taskMatchPattern);
+                archive, overwriteParams,
+                workflowName, taskMatchPattern);
 
         // wait until it's done
         localSite.runUntilDone(attempt.getId());
@@ -338,7 +347,8 @@ public class Run
 
     private StoredSessionAttemptWithSession submitWorkflow(Injector injector,
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
-            ArchiveMetadata archive, Config overwriteParams, TaskMatchPattern taskMatchPattern)
+            ArchiveMetadata archive, Config overwriteParams,
+            String workflowName, Optional<TaskMatchPattern> taskMatchPattern)
         throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, SessionAttemptConflictException
     {
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
@@ -348,14 +358,23 @@ public class Run
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         // compile the target workflow
-        StoredWorkflowDefinition def = taskMatchPattern.findRootWorkflow(defs);
+        StoredWorkflowDefinition def = null;
+        for (StoredWorkflowDefinition candidate : defs) {
+            if (candidate.getName().equals(workflowName)) {
+                def = candidate;
+                break;
+            }
+        }
+        if (def == null) {
+            throw new TaskMatchPattern.NoMatchException(String.format(
+                        "Workflow '%s' doesn't not exist.", workflowName));
+        }
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
 
         // extract subtasks if necessary from the workflow
         WorkflowTaskList tasks;
-        Optional<SubtaskMatchPattern> subtaskPattern = taskMatchPattern.getSubtaskMatchPattern();
-        if (subtaskPattern.isPresent()) {
-            int fromIndex = subtaskPattern.get().findIndex(workflow.getTasks());
+        if (taskMatchPattern.isPresent()) {
+            int fromIndex = taskMatchPattern.get().findIndex(workflow.getTasks());
             tasks = (fromIndex > 0) ?  // findIndex may return 0
                 SubtreeExtract.extractSubtree(workflow.getTasks(), fromIndex) :
                 workflow.getTasks();
@@ -383,7 +402,7 @@ public class Run
         List<Long> runTaskIndexList = USE_ALL;
         if (runStartStop != null) {
             // --goal
-            long taskIndex = SubtaskMatchPattern.compile(runStartStop).findIndex(tasks);
+            long taskIndex = TaskMatchPattern.compile(runStartStop).findIndex(tasks);
             TaskTree taskTree = makeIndexTaskTree(tasks);
             // tasks before this: resume
             // the others (tasks after this and this task): force run
@@ -401,7 +420,7 @@ public class Run
                     ));
         }
         if (runStart != null) {
-            long startIndex = SubtaskMatchPattern.compile(runStart).findIndex(tasks);
+            long startIndex = TaskMatchPattern.compile(runStart).findIndex(tasks);
             TaskTree taskTree = makeIndexTaskTree(tasks);
             // tasks before this: resume
             // the others (tasks after this and this tasks): force run
@@ -415,7 +434,7 @@ public class Run
             resumeStateFileEnabledTaskIndexList = ImmutableList.of();
         }
         if (runEnd != null) {
-            long endIndex = SubtaskMatchPattern.compile(runEnd).findIndex(tasks);
+            long endIndex = TaskMatchPattern.compile(runEnd).findIndex(tasks);
             TaskTree taskTree = makeIndexTaskTree(tasks);
             // tasks before this: run
             // the others (tasks after this and this task): skip
@@ -512,7 +531,7 @@ public class Run
                 }
                 else if (sr.isPresent()) {
                     Instant t = sr.get().lastScheduleTime(Instant.now()).getTime();
-                    logger.warn("Using a new session time {} based on _schedule.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(t));
+                    logger.warn("Using a new session time {} based on schedule.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(t));
                     return t;
                 }
                 else {
@@ -528,7 +547,7 @@ public class Run
             if (sr.isPresent()) {
                 return sr.get().lastScheduleTime(Instant.now()).getTime();
             }
-            throw systemExit("--session schedule is set but _schedule is not set to this workflow.");
+            throw systemExit("--session schedule is set but schedule is not set to this workflow.");
 
         default:
             TemporalAccessor parsed;

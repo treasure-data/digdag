@@ -59,6 +59,12 @@ public class ModelValidator
         return this;
     }
 
+    public ModelValidator checkWorkflowName(String fieldName, String value)
+    {
+        // same with project name
+        return checkProjectName(fieldName, value);
+    }
+
     // retry attempt name, revision name
     public ModelValidator checkIdentifierName(String fieldName, String value)
     {

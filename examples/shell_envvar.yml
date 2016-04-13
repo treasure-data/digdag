@@ -1,4 +1,5 @@
-name: +shell_envvar
+name: shell_envvar
+timezone: UTC
 
 +simple:
   sh>: ./examples/shell_envvar.sh

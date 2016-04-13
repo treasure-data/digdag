@@ -66,7 +66,7 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <project-name> <+name>");
+        System.err.println("Usage: digdag start <project-name> <name>");
         System.err.println("  Options:");
         System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
         System.err.println("        --revision <name>            use a past revision");
@@ -77,9 +77,9 @@ public class Start
         ClientCommand.showCommonOptions();
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ digdag start myproj +workflow1 --session \"2016-01-01 -07:00\"");
-        System.err.println("    $ digdag start myproj +workflow1 --session hourly      # use current hour's 00:00");
-        System.err.println("    $ digdag start myproj +workflow1 --session daily       # use current day's 00:00:00");
+        System.err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 -07:00\"");
+        System.err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
+        System.err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
         System.err.println("");
         return systemExit(error);
     }

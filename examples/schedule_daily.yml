@@ -1,10 +1,10 @@
-name: +daily1
-_timezone: America/Los_Angeles   # this considers daylight saving time
+name: schedule_daily
+timezone: America/Los_Angeles   # this considers daylight saving time
 
-_schedule:
+schedule:
   daily>: 10:00:00   # daily at 10 AM
 
-+task:
++task1:
   sh>: echo "This schedule is for ${session_time}"
 
 # See also sla.yml

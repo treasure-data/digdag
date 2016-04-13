@@ -1,8 +1,9 @@
-name: +generate_subtasks
+name: generate_subtasks
+timezone: UTC
 
-+process:
-  +split:
-    py>: examples.generate_subtasks.ParallelProcess.split
-  +parallel_process:
-    py>: examples.generate_subtasks.ParallelProcess.run
++split:
+  py>: examples.generate_subtasks.ParallelProcess.split
+
++parallel_process:
+  py>: examples.generate_subtasks.ParallelProcess.run
 

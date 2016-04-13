@@ -26,14 +26,14 @@ run
 
 .. code-block:: console
 
-    $ digdag run [+task] [options...]
+    $ digdag run [workflow][+task] [options...]
 
 Runs workflow.
 
 .. code-block:: console
 
     $ digdag run
-    $ digdag run +another
+    $ digdag run +step2
     $ digdag run -f workflow/another.yml --start +step2
     $ digdag run -f workflow/another.yml --start +step2 --end +step4
     $ digdag run -f workflow/another.yml -g +step1 --hour
@@ -79,8 +79,8 @@ Options:
 
     * daily: uses today's 00:00:00 as the session time (update session time every day).
     * hourly: uses current hour's 00:00 as the session time (update session time every hour).
-    * schedule: calculates time based on ``_schedule`` configuration of the workflow. Error if ``_schedule`` is not set.
-    * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``_schedule``, or uses today's 00:00:00.
+    * schedule: calculates time based on ``schedule`` configuration of the workflow. Error if ``schedule`` is not set.
+    * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``schedule``, or uses today's 00:00:00.
     * timestmap in *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss* format: uses the specified time as the session time.
 
   Default is "last".

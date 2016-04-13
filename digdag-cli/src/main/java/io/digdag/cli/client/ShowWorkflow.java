@@ -22,12 +22,7 @@ public class ShowWorkflow
             showWorkflows(null);
             break;
         case 1:
-            if (args.get(0).contains("+")) {
-                showWorkflowDetails(null, args.get(0));
-            }
-            else {
-                showWorkflows(args.get(0));
-            }
+            showWorkflows(args.get(0));
             break;
         case 2:
             showWorkflowDetails(args.get(0), args.get(1));
@@ -39,7 +34,7 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag workflows [project-name] [+name]");
+        System.err.println("Usage: digdag workflows [project-name] [name]");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
@@ -70,7 +65,7 @@ public class ShowWorkflow
             }
         }
         ln("");
-        System.err.println("Use `digdag workflows +NAME` to show details.");
+        System.err.println("Use `digdag workflows <project-name> <name>` to show details.");
     }
 
     public void showWorkflowDetails(String projName, String defName)

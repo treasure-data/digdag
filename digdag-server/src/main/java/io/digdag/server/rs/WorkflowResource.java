@@ -152,7 +152,7 @@ public class WorkflowResource
             {
                 Optional<Scheduler> scheduler = schedulerSupplier.get();
                 if (!scheduler.isPresent()) {
-                    throw new IllegalArgumentException("session_time_truncate=" + mode + " is set but _schedule is not set to this workflow");
+                    throw new IllegalArgumentException("session_time_truncate=" + mode + " is set but schedule is not set to this workflow");
                 }
                 switch (mode) {
                 case SCHEDULE:

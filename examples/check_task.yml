@@ -1,4 +1,5 @@
-name: +check_task
+name: check_task
+timezone: UTC
 
 +generate_methods:
   py>: examples.check_task.generate

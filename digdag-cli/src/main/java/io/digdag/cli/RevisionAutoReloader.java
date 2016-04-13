@@ -58,10 +58,10 @@ public class RevisionAutoReloader
         }
     }
 
-    public void loadProject(List<Path> files, ZoneId defaultTimeZone)
+    public void loadProject(List<Path> files)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(files, defaultTimeZone);
+        ReloadTarget target = new ReloadTarget(files);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -99,14 +99,12 @@ public class RevisionAutoReloader
     private class ReloadTarget
     {
         private final List<Path> dagfilePaths;
-        private final ZoneId defaultTimeZone;
         private int lastRevId;
         private ArchiveMetadata lastMetadata;
 
-        public ReloadTarget(List<Path> dagfilePaths, ZoneId defaultTimeZone)
+        public ReloadTarget(List<Path> dagfilePaths)
         {
             this.dagfilePaths = dagfilePaths;
-            this.defaultTimeZone = defaultTimeZone;
             this.lastMetadata = null;
         }
 
@@ -146,14 +144,14 @@ public class RevisionAutoReloader
         private ProjectArchive readProject()
             throws IOException
         {
-            return loader.load(dagfilePaths, cf.create(), defaultTimeZone);
+            return loader.load(dagfilePaths, cf.create());
         }
 
         private String makeRevisionName()
         {
             DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.ENGLISH)
-                .withZone(defaultTimeZone);
+                .withZone(ZoneId.systemDefault());
             return formatter.format(Instant.now());
         }
     }

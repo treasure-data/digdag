@@ -1,4 +1,5 @@
-name: +mail_test
+name: mail_test
+timezone: UTC
 
 _export:
   mail:

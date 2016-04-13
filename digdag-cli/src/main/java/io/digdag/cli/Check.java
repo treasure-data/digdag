@@ -109,8 +109,7 @@ public class Check
 
         ProjectArchive project = projectLoader.load(
                 ImmutableList.of(Paths.get(dagfilePath)),
-                overwriteParams,
-                ZoneId.of("UTC"));
+                overwriteParams);
 
         showProject(injector, project);
     }

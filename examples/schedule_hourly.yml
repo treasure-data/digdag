@@ -1,9 +1,9 @@
-name: hourly1
-_timezone: America/Los_Angeles   # this considers daylight saving time
+name: schedule_hourly
+timezone: America/Los_Angeles   # this considers daylight saving time
 
-_schedule:
+schedule:
   hourly>: 30:00   # hourly at 30 minute
 
-+task:
++task1:
   sh>: echo "This schedule is for ${session_time}"
 

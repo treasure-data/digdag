@@ -15,18 +15,79 @@ import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 
-@Value.Immutable
-public abstract class Dagfile
+public class Dagfile
 {
-    public abstract String getWorkflowName();  // name: workflow-name
+    // name, timezone, _export, and others
+    private static final String[] TOP_LEVEL_CONFIG = new String[] {
+        "schedule",
+        "sla",
+        "_error",
+        "_check",
+        "_parallel",
+    };
 
-    public abstract Config getTasks();  // +name: ...
+    private final String workflowName;
 
-    public abstract Optional<ZoneId> getTimeZone();  // timezone: UTC
+    private final Config tasks;
 
-    public abstract Config getDefaultParams();  // _export: ...
+    private final ZoneId timeZone;
 
-    @JsonCreator
+    private final Config topLevelExport;
+
+    private final Config otherTopLevelConfig;
+
+    private Dagfile(
+            String workflowName,
+            Config tasks,
+            ZoneId timeZone,
+            Config topLevelExport,
+            Config otherTopLevelConfig)
+    {
+        this.workflowName = workflowName;
+        this.tasks = tasks;
+        this.timeZone = timeZone;
+        this.topLevelExport = topLevelExport;
+        this.otherTopLevelConfig = otherTopLevelConfig;
+        check();
+    }
+
+    protected void check()
+    {
+        ModelValidator validator = ModelValidator.builder();
+        for (String taskName : tasks.getKeys()) {
+            validator.checkTaskName("task name", taskName);
+        }
+        validator
+            .checkWorkflowName("name", getWorkflowName())
+            .validate("workflow", this);
+        // TODO should here validate key names of defaultParams?
+    }
+
+    public String getWorkflowName()
+    {
+        return workflowName;
+    }
+
+    public Config getTasks()
+    {
+        return tasks;
+    }
+
+    public ZoneId getTimeZone()
+    {
+        return timeZone;
+    }
+
+    public Config getTopLevelExport()
+    {
+        return topLevelExport;
+    }
+
+    public Config getOtherTopLevelConfig()
+    {
+        return otherTopLevelConfig;
+    }
+
     public static Dagfile fromConfig(Config config)
     {
         Config copy = config.deepCopy();
@@ -34,11 +95,19 @@ public abstract class Dagfile
         String workflowName = copy.get("name", String.class);
         copy.remove("name");
 
-        Optional<ZoneId> timeZone = copy.getOptional("timezone", ZoneId.class);
+        ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
         copy.remove("timezone");
 
-        Config defaultParams = copy.getNestedOrGetEmpty("_export");
+        Config topLevelExport = copy.getNestedOrGetEmpty("_export");
         copy.remove("_export");
+
+        Config otherTopLevelConfig = copy.getFactory().create();
+        for (String key : TOP_LEVEL_CONFIG) {
+            if (copy.has(key)) {
+                otherTopLevelConfig.set(key, copy.getNested(key));
+                copy.remove(key);
+            }
+        }
 
         Config tasks = config.getFactory().create();
         for (String key : copy.getKeys()) {
@@ -52,38 +121,36 @@ public abstract class Dagfile
             throw new ConfigException("Workflow definition file includes unknown keys: " + copy.getKeys());
         }
 
-        return ImmutableDagfile.builder()
-            .workflowName(workflowName)
-            .tasks(tasks)
-            .timeZone(timeZone)
-            .defaultParams(defaultParams)
-            .build();
+        return new Dagfile(
+                workflowName,
+                tasks,
+                timeZone,
+                topLevelExport,
+                otherTopLevelConfig);
     }
 
-    @JsonValue
-    public Config toConfig()
+    public Config buildConfig()
     {
         Config config = getTasks().getFactory().create();
 
         config.set("name", getWorkflowName());
 
-        if (getTimeZone().isPresent()) {
-            config.set("timezone", getTimeZone().get());
-        }
+        config.set("timezone", getTimeZone());
 
-        config.set("_export", getDefaultParams());
+        config.set("_export", getTopLevelExport());
+
+        config.setAll(getOtherTopLevelConfig());
 
         config.setAll(getTasks());
 
         return config;
     }
 
-    @Value.Check
-    protected void check()
+    public WorkflowDefinition toWorkflowDefinition()
     {
-        // TODO validate key names of defaultParams?
-        ModelValidator.builder()
-            .checkTaskName("name", getWorkflowName())
-            .validate("workflow", this);
+        return WorkflowDefinition.of(
+                getWorkflowName(),
+                buildConfig(),
+                getTimeZone());
     }
 }

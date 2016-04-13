@@ -7,25 +7,20 @@ Scheduling workflow
 Satting up a schedule:
 ----------------------------------
 
-To run a workflow periodically, add a ``_schedule:`` option to top-level workflow definitions.
+To run a workflow periodically, add a ``schedule:`` option to top-level workflow definitions.
 
 .. code-block:: yaml
 
-    +daily_job:
-      _schedule:
-        daily>: 07:00:00
+    name: daily_job
+    timezone: UTC
 
-      +step1:
-        sh>: tasks/shell_sample.sh
+    schedule:
+      daily>: 07:00:00
 
-    +hourly_job:
-      _schedule:
-        hourly>: 30:00
+    +step1:
+      sh>: tasks/shell_sample.sh
 
-      +step1:
-        sh>: tasks/shell_sample.sh
-
-In ``_schedule:`` directive, you can choose one of following options:
+In ``schedule:`` directive, you can choose one of following options:
 
 =============================== =========================================== ==========================
 Syntax                          Description                                 Example
@@ -44,15 +39,11 @@ cron>: ``CRON``                 Use cron format for complex scheduling      cron
     $ ./digdag check
       ...
     
-      Schedules (2 entries):
-        +daily_job:
+      Schedules (1 entries):
+        daily_job:
           daily>: "07:00:00"
           first session time: 2016-02-10 16:00:00 -0800
           first runs at: 2016-02-10 23:00:00 -0800 (11h 16m 32s later)
-        +hourly_job:
-          hourly>: "30:00"
-          first session time: 2016-02-10 12:00:00 -0800
-          first runs at: 2016-02-10 12:30:00 -0800 (    46m 32s later)
 
 Running scheduler
 ----------------------------------
@@ -79,18 +70,18 @@ Setting an alert if a workflow doesn't finish within expected time
 
 .. code-block:: yaml
 
-    run: +main
+    name: +main
+    timezone: UTC
 
-    +main:
-      _schedule:
-        daily>: 07:00:00
+    schedule:
+      daily>: 07:00:00
 
-      sla:
-        # triggers this task at 02:00
-        time: 02:00
-        +notice:
-          sh>: notice.sh
+    sla:
+      # triggers this task at 02:00
+      time: 02:00
+      +notice:
+        sh>: notice.sh
 
-      +long_running_job:
-        sh>: long_running_job.sh
+    +long_running_job:
+      sh>: long_running_job.sh
 

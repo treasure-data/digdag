@@ -32,8 +32,7 @@ public class ProjectArchiveLoader
 
     public ProjectArchive load(
             List<Path> dagfilePaths,
-            Config overwriteParams,
-            ZoneId defaultTimeZone)
+            Config overwriteParams)
         throws IOException
     {
         ImmutableList.Builder<Path> baseDirs = ImmutableList.builder();
@@ -44,10 +43,7 @@ public class ProjectArchiveLoader
             //      a dependent project will be in a separated namespace (therefore
             //      workflows in the namespace will have package name as prefix like
             //      mylib+wf1 or mylib/sublib+wf2).
-            defs.add(WorkflowDefinition.of(
-                        dagfile.getWorkflowName(),
-                        buildWorkflowDefinitionConfig(dagfile),
-                        dagfile.getTimeZone().or(defaultTimeZone)));
+            defs.add(dagfile.toWorkflowDefinition());
             baseDirs.add(path.getParent());
         }
 
@@ -58,11 +54,6 @@ public class ProjectArchiveLoader
         List<Path> includeFileDirs = baseDirs.build();
         return new ProjectArchive(metadata, (baseDir, consumer) ->
                 listFiles(baseDir.toAbsolutePath().normalize(), includeFileDirs, consumer));
-    }
-
-    private Config buildWorkflowDefinitionConfig(Dagfile dagfile)
-    {
-        return dagfile.getTasks();
     }
 
     private static void listFiles(Path absBaseDir, Collection<Path> baseDirs, PathConsumer consumer)

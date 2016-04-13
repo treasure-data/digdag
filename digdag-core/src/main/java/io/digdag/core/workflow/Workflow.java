@@ -37,7 +37,7 @@ public abstract class Workflow
     protected void check()
     {
         ModelValidator.builder()
-            .checkTaskName("name", getName())
+            .checkWorkflowName("name", getName())
             .check("tasks", getTasks(), !getTasks().isEmpty(), "must not be empty")
             .validate("workflow", this);
     }

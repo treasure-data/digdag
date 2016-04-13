@@ -19,13 +19,13 @@ public class SchedulerManager
 {
     private static Optional<Config> tryGetScheduleConfig(WorkflowDefinition def)
     {
-        return def.getConfig().getOptional("_schedule", Config.class);
+        return def.getConfig().getOptional("schedule", Config.class);
     }
 
     // used only by SchedulerManager and Check command
     public static Config getScheduleConfig(WorkflowDefinition def)
     {
-        return def.getConfig().getNested("_schedule");
+        return def.getConfig().getNested("schedule");
     }
 
     private final Map<String, SchedulerFactory> types;

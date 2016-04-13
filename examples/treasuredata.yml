@@ -1,9 +1,9 @@
-name: +treasuredata
+name: treasuredata
 
-_schedule:
+schedule:
   daily>: 03:00:00
 
-_sla:
+sla:
   time: 05:00:00
   +mail:
     _type: mail
@@ -11,7 +11,7 @@ _sla:
     subject: Query not finished
     to: [sf@treasure-data.com]
 
-error:
+_error:
   +cleanup:
     _type: td_ddl
     delete_table: garbage

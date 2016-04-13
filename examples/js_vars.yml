@@ -1,4 +1,5 @@
-name: +js_vars
+name: js_vars
+timezone: UTC
 
 +task1:
   val: 1

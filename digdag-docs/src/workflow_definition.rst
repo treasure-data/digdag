@@ -11,29 +11,21 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 .. code-block:: yaml
 
-    run: +main
+    name: hello_world
+    timezone: UTC
     
-    +main:
-      +step1:
-        sh>: tasks/shell_sample.sh
+    +step1:
+      sh>: tasks/shell_sample.sh
     
-      +step2:
-        py>: tasks.MyWorkflow.step2
-        param1: this is param1
+    +step2:
+      py>: tasks.MyWorkflow.step2
+      param1: this is param1
     
-      +step3:
-        rb>: MyWorkflow.step3
-        require: tasks/ruby_sample.rb
-    
-      +step4:
-        require>: +another_workflow
-    
-    +another_workflow:
-      +step1:
-        sh>: tasks/shell_sample.sh
+    +step3:
+      rb>: MyWorkflow.step3
+      require: tasks/ruby_sample.rb
 
-
-``run:`` parameter is used to declare the default workflow to run. You can run another workflow using ``$ digdag run +another_workflow`` command.
+``name`` parameter is used to declare the name of workflow. ``timezone`` parameter is used to format timestamp using this timezone. This can be UTC, America/Los_Angeles, Europe/Berlin, Asia/Tokyo, etc.
 
 
 "+" is a task
@@ -114,19 +106,18 @@ If a task has ``_export`` directive, the task and its children can use the varia
     _export:
       foo: 1
 
-    +workflow1:
-      +prepare:
-        py>: tasks.MyWorkflow.prepare
+    +prepare:
+      py>: tasks.MyWorkflow.prepare
 
-      +analyze:
-        _export:
-          bar: 2
+    +analyze:
+      _export:
+        bar: 2
 
-        +step1:
-          py>: tasks.MyWorkflow.analyze_step1
+      +step1:
+        py>: tasks.MyWorkflow.analyze_step1
 
-      +dump:
-        py>: tasks.MyWorkflow.dump
+    +dump:
+      py>: tasks.MyWorkflow.dump
 
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

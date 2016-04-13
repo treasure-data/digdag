@@ -1,4 +1,5 @@
-name: +conditions
+name: conditions
+timezone: UTC
 
 +algorithms:
   +try:

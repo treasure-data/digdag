@@ -1,4 +1,5 @@
-name: +export_params
+name: export_params
+timezone: UTC
 
 +set:
   py>: examples.export_params.set_my_param

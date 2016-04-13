@@ -31,7 +31,7 @@ public abstract class WorkflowDefinition
     protected void check()
     {
         ModelValidator.builder()
-            .checkTaskName("name", getName())
+            .checkWorkflowName("name", getName())
             .validate("workflow", this);
     }
 }
