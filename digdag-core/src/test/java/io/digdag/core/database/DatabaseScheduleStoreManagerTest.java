@@ -44,12 +44,12 @@ public class DatabaseScheduleStoreManagerTest
     {
         Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
-        WorkflowDefinition srcWf1Rev1 = createWorkflow("+wf1");
-        WorkflowDefinition srcWf2 = createWorkflow("+wf2");
+        WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
+        WorkflowDefinition srcWf2 = createWorkflow("wf2");
 
         Revision srcRev2 = createRevision("rev2");
-        WorkflowDefinition srcWf1Rev2 = createWorkflow("+wf1");
-        WorkflowDefinition srcWf3 = createWorkflow("+wf3");
+        WorkflowDefinition srcWf1Rev2 = createWorkflow("wf1");
+        WorkflowDefinition srcWf3 = createWorkflow("wf3");
 
         Instant now = Instant.ofEpochSecond(Instant.now().getEpochSecond());
         Instant runTime1 = now.plusSeconds(1);

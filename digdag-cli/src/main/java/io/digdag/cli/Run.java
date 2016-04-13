@@ -89,7 +89,7 @@ import static java.util.Locale.ENGLISH;
 public class Run
     extends Command
 {
-    public static final String DEFAULT_DAGFILE = "digdag.yml";
+    public static final String DEFAULT_DAGFILE = "workflow.yml";
 
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
@@ -198,7 +198,7 @@ public class Run
     {
         System.err.println("Usage: digdag run [workflow][+task] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
+        System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: workflow.yml)");
         System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
         System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at digdag.status");
         System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at digdag.status");
@@ -256,7 +256,11 @@ public class Run
 
         String workflowName;
         Optional<TaskMatchPattern> taskMatchPattern;
-        if (matchPattern.startsWith("+")) {
+        if (matchPattern == null || matchPattern.isEmpty()) {
+            workflowName = project.getMetadata().getWorkflowList().get().get(0).getName();
+            taskMatchPattern = Optional.absent();
+        }
+        else if (matchPattern.startsWith("+")) {
             workflowName = project.getMetadata().getWorkflowList().get().get(0).getName();
             taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
         }

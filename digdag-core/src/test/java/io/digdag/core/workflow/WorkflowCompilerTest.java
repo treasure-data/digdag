@@ -50,7 +50,7 @@ public class WorkflowCompilerTest
     public void verifySingleOperatorPasses()
     {
         Config config = loadYamlResource("/digdag/workflow/cases/single_operator.yml");
-        compiler.compile("+foo", config);
+        compiler.compile("single_operator", config);
     }
 
     @Test
@@ -58,6 +58,6 @@ public class WorkflowCompilerTest
     {
         Config config = loadYamlResource("/digdag/workflow/cases/multiple_operators.yml");
         exception.expect(ConfigException.class);
-        compiler.compile("+foo", config);
+        compiler.compile("multiple_operators", config);
     }
 }

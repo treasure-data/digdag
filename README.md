@@ -61,31 +61,9 @@ $ cd my-workflow
 $ ./digdag run
 ```
 
-This `./digdag run` command reads `./digdag.yml` file and runs a workflow defined in the file.
+This `./digdag run` command reads `./workflow.yml` file and runs a workflow defined in the file.
 
 All keys starting with `+` are tasks. Tasks in a workflow run from the top to the bottom one by one. A task can be nested, a nested group has `parallel: true` option, tasks in the group runs in parallel. For more examples, checkout example definitions at [examples/](https://github.com/treasure-data/digdag/blob/master/examples).
-
-### Adding another workflow
-
-You can define multiple workflows in a `digdag.yml` file. For example,
-
-```yaml
-run: +main
-
-+main:
-  +task1:
-    sh>: echo "this main task."
-
-+sub:
-  +task1:
-    sh>: echo "this a sub task."
-```
-
-To run the new workflow named `+sub`, you can use following command:
-
-```
-$ ./digdag run +sub
-```
 
 ### Including files
 

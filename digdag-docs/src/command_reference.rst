@@ -14,7 +14,7 @@ new
 
     $ digdag new <dir>
 
-Creates a new workflow project. This command generates a sample digdag.yml, executable digdag file, and .gitignore file in **<dir>** directory. Examples:
+Creates a new workflow project. This command generates a sample workflow.yml, executable digdag file, and .gitignore file in **<dir>** directory. Examples:
 
 .. code-block:: console
 
@@ -43,7 +43,7 @@ Runs workflow.
 Options:
 
 :command:`-f, --file PATH.yml`
-  Use this file to load tasks (default: digdag.yml).
+  Use this file to load tasks (default: workflow.yml).
 
   Example: -f tasks/another.yml
 
@@ -129,7 +129,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
     $ digdag check -f workflow/another.yml
 
 :command:`-f, --file PATH`
-  Use this file to load tasks (default: digdag.yml).
+  Use this file to load tasks (default: workflow.yml).
 
   Example: -f tasks/another.yml
 
@@ -160,7 +160,7 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
     $ digdag scheduler -b 0.0.0.0
 
 :command:`-f, --file PATH`
-  Use this file to load tasks (default: digdag.yml). This file is reloaded automatically when it's changed.
+  Use this file to load tasks (default: workflow.yml). This file is reloaded automatically when it's changed.
 
   Example: -f tasks/another.yml
 
@@ -574,7 +574,7 @@ STDIN
   Names of the files to add the archive.
 
 :command:`-f, --file PATH.yml`
-  Use this file to load tasks (default: digdag.yml)
+  Use this file to load tasks (default: workflow.yml)
 
   Example: -f tasks/another.yml
 

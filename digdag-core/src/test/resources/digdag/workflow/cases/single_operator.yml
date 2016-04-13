@@ -1,3 +1,4 @@
-name: +foo
+name: single_operator
 
-sh>: echo hello world
++step1:
+  sh>: echo hello world

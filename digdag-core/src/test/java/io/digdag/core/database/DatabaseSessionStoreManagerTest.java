@@ -50,8 +50,8 @@ public class DatabaseSessionStoreManagerTest
 
         Project srcProj = Project.of("repo1");
         Revision srcRev = createRevision("rev1");
-        WorkflowDefinition srcWf1 = createWorkflow("+wf1");
-        WorkflowDefinition srcWf2 = createWorkflow("+wf2");
+        WorkflowDefinition srcWf1 = createWorkflow("wf1");
+        WorkflowDefinition srcWf2 = createWorkflow("wf2");
 
         attemptBuilder = new AttemptBuilder(
                 new SchedulerManager(ImmutableSet.of()),

@@ -4,10 +4,10 @@ Workflow definition
 .. contents::
    :local:
 
-digdag.yml: the entry point
+workflow.yml: the entry point
 ----------------------------------
 
-Workflow is defined in a YAML file named "digdag.yml". An example is like this:
+Workflow is defined in a YAML file named "workflow.yml". An example is like this:
 
 .. code-block:: yaml
 

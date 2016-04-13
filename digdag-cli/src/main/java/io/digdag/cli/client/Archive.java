@@ -82,7 +82,7 @@ public class Archive
     {
         System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: workflow.yml)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions();
         System.err.println("  Stdin:");

@@ -79,7 +79,7 @@ public class Check
     {
         System.err.println("Usage: digdag check [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        System.err.println("    -f, --file PATH                  use this file to load tasks (default: workflow.yml)");
         System.err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");

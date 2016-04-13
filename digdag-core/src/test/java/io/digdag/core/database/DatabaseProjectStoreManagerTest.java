@@ -41,7 +41,7 @@ public class DatabaseProjectStoreManagerTest
     {
         Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
-        WorkflowDefinition srcWf1 = createWorkflow("+wf1");
+        WorkflowDefinition srcWf1 = createWorkflow("wf1");
 
         StoredProject storedProj = store.putAndLockProject(
                 srcProj1,
@@ -93,15 +93,15 @@ public class DatabaseProjectStoreManagerTest
     {
         Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
-        WorkflowDefinition srcWf1 = createWorkflow("+wf1");
+        WorkflowDefinition srcWf1 = createWorkflow("wf1");
 
         Project srcProj2 = Project.of("proj2");
         Revision srcRev2 = createRevision("rev2");
-        WorkflowDefinition srcWf2 = createWorkflow("+wf2");
+        WorkflowDefinition srcWf2 = createWorkflow("wf2");
 
         Revision srcRev3 = createRevision("rev3");
-        WorkflowDefinition srcWf3 = createWorkflow("+wf3");
-        WorkflowDefinition srcWf4 = createWorkflow("+wf4");
+        WorkflowDefinition srcWf3 = createWorkflow("wf3");
+        WorkflowDefinition srcWf4 = createWorkflow("wf4");
 
         final AtomicReference<StoredRevision> revRef = new AtomicReference<>();
         final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();

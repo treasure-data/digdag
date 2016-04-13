@@ -1,4 +1,5 @@
-name: +foo
+name: multiple_operators
 
-sh>: echo this should fail
-py>: bar
++step1:
+  sh>: echo this should fail
+  py>: bar

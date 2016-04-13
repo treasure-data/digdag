@@ -68,7 +68,7 @@ public class Init
             gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
             gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cp("digdag.yml", Run.DEFAULT_DAGFILE);
+            gen.cp("workflow.yml", Run.DEFAULT_DAGFILE);
             if (path.equals(".")) {
                 System.out.println("Done. Type `./digdag r` to run the workflow. Enjoy!");
             }
