@@ -7,7 +7,7 @@ import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
-import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestProject;
 import static io.digdag.cli.Main.systemExit;
 
 public class Upload
@@ -31,7 +31,7 @@ public class Upload
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag upload <path.tar.gz> <repository>");
+        System.err.println("Usage: digdag upload <path.tar.gz> <project>");
         System.err.println("  Options:");
         System.err.println("    -r, --revision REVISION          revision name");
         //System.err.println("        --time-revision              use current time as the revision name");
@@ -39,23 +39,23 @@ public class Upload
         return systemExit(error);
     }
 
-    public void upload(String path, String repoName)
+    public void upload(String path, String projName)
         throws IOException
     {
         DigdagClient client = buildClient();
-        RestRepository repo = client.putRepositoryRevision(repoName, revision, new File(path));
-        showUploadedRepository(repo);
+        RestProject proj = client.putProjectRevision(projName, revision, new File(path));
+        showUploadedProject(proj);
     }
 
-    static void showUploadedRepository(RestRepository repo)
+    static void showUploadedProject(RestProject proj)
     {
         ln("Uploaded:");
-        ln("  id: %d", repo.getId());
-        ln("  name: %s", repo.getName());
-        ln("  revision: %s", repo.getRevision());
-        ln("  archive type: %s", repo.getArchiveType());
-        ln("  repository created at: %s", repo.getRevision());
-        ln("  revision updated at: %s", repo.getUpdatedAt());
+        ln("  id: %d", proj.getId());
+        ln("  name: %s", proj.getName());
+        ln("  revision: %s", proj.getRevision());
+        ln("  archive type: %s", proj.getArchiveType());
+        ln("  project created at: %s", proj.getRevision());
+        ln("  revision updated at: %s", proj.getUpdatedAt());
         ln("");
         ln("Use `digdag workflows` to show all workflows.");
     }

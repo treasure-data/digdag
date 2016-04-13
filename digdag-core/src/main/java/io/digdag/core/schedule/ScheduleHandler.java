@@ -12,8 +12,8 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.repository.RepositoryStoreManager;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.Session;
@@ -26,14 +26,14 @@ import io.digdag.core.workflow.WorkflowExecutor;
 public class ScheduleHandler
 {
     private final ConfigFactory cf;
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
 
     @Inject
     public ScheduleHandler(
             ConfigFactory cf,
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
@@ -43,7 +43,7 @@ public class ScheduleHandler
         this.exec = exec;
     }
 
-    public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithRepository def,
+    public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithProject def,
             ScheduleTime time, Optional<String> retryAttemptName)
             throws ResourceNotFoundException, SessionAttemptConflictException
     {
@@ -53,7 +53,7 @@ public class ScheduleHandler
                 time,
                 retryAttemptName);
 
-        return exec.submitWorkflow(def.getRepository().getSiteId(),
+        return exec.submitWorkflow(def.getProject().getSiteId(),
                 ar, def);
     }
 }

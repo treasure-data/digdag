@@ -168,89 +168,89 @@ public class DigdagClient
         return cf.create();
     }
 
-    public RestRepository getRepository(String name)
+    public RestProject getProject(String name)
     {
-        return doGet(RestRepository.class,
-                target("/api/repository")
+        return doGet(RestProject.class,
+                target("/api/project")
                 .queryParam("name", name));
     }
 
-    public RestRepository getRepository(String name, String revision)
+    public RestProject getProject(String name, String revision)
     {
-        return doGet(RestRepository.class,
-                target("/api/repository")
+        return doGet(RestProject.class,
+                target("/api/project")
                 .queryParam("name", name)
                 .queryParam("revision", revision));
     }
 
-    public List<RestRepository> getRepositories()
+    public List<RestProject> getProjects()
     {
-        return doGet(new GenericType<List<RestRepository>>() { },
-                target("/api/repositories"));
+        return doGet(new GenericType<List<RestProject>>() { },
+                target("/api/projects"));
     }
 
-    public RestRepository getRepository(int repoId)
+    public RestProject getProject(int projId)
     {
-        return doGet(RestRepository.class,
-                target("/api/repositories/{id}")
-                .resolveTemplate("id", repoId));
+        return doGet(RestProject.class,
+                target("/api/projects/{id}")
+                .resolveTemplate("id", projId));
     }
 
 
-    public List<RestRevision> getRevisions(int repoId, Optional<Integer> lastId)
+    public List<RestRevision> getRevisions(int projId, Optional<Integer> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
-                target("/api/repository/{id}/revisions")
-                .resolveTemplate("id", repoId)
+                target("/api/project/{id}/revisions")
+                .resolveTemplate("id", projId)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(int repoId)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(int projId)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
-                target("/api/repositories/{id}/workflows")
-                .resolveTemplate("id", repoId));
+                target("/api/projects/{id}/workflows")
+                .resolveTemplate("id", projId));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(int repoId, String revision)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(int projId, String revision)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
-                target("/api/repositories/{id}/workflows")
-                .resolveTemplate("id", repoId)
+                target("/api/projects/{id}/workflows")
+                .resolveTemplate("id", projId)
                 .queryParam("revision", revision));
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(int repoId, String name)
+    public RestWorkflowDefinition getWorkflowDefinition(int projId, String name)
     {
         return doGet(RestWorkflowDefinition.class,
-                target("/api/repositories/{id}/workflow")
-                .resolveTemplate("id", repoId)
+                target("/api/projects/{id}/workflow")
+                .resolveTemplate("id", projId)
                 .queryParam("name", name));
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(int repoId, String name, String revision)
+    public RestWorkflowDefinition getWorkflowDefinition(int projId, String name, String revision)
     {
         return doGet(RestWorkflowDefinition.class,
-                target("/api/repositories/{id}/workflow")
-                .resolveTemplate("id", repoId)
+                target("/api/projects/{id}/workflow")
+                .resolveTemplate("id", projId)
                 .queryParam("name", name)
                 .queryParam("revision", revision));
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name)
+    public RestWorkflowDefinition getWorkflowDefinition(String projName, String name)
     {
         return doGet(RestWorkflowDefinition.class,
                 target("/api/workflow")
                 .queryParam("name", name)
-                .queryParam("repository", repoName));
+                .queryParam("project", projName));
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(String repoName, String name, String revision)
+    public RestWorkflowDefinition getWorkflowDefinition(String projName, String name, String revision)
     {
         return doGet(RestWorkflowDefinition.class,
                 target("/api/workflow")
                 .queryParam("name", name)
-                .queryParam("repository", repoName)
+                .queryParam("project", projName)
                 .queryParam("revision", revision));
     }
 
@@ -278,22 +278,22 @@ public class DigdagClient
                 .queryParam("mode", mode == null ? null : mode.toString()));
     }
 
-    public RestRepository putRepositoryRevision(String repoName, String revision, File body)
+    public RestProject putProjectRevision(String projName, String revision, File body)
         throws IOException
     {
-        return doPut(RestRepository.class,
+        return doPut(RestProject.class,
                 "application/gzip",
                 body,
-                target("/api/repositories")
-                .queryParam("repository", repoName)
+                target("/api/projects")
+                .queryParam("project", projName)
                 .queryParam("revision", revision));
     }
 
     // TODO getArchive with streaming
-    public InputStream getRepositoryArchive(int repoId, String revision)
+    public InputStream getProjectArchive(int projId, String revision)
     {
-        Response res = target("/api/repositories/{id}/archive")
-            .resolveTemplate("id", repoId)
+        Response res = target("/api/projects/{id}/archive")
+            .resolveTemplate("id", projId)
             .queryParam("revision", revision)
             .request()
             .headers(headers.get())
@@ -323,20 +323,20 @@ public class DigdagClient
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String repoName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, boolean includeRetried, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
-                .queryParam("repository", repoName)
+                .queryParam("project", projName)
                 .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String repoName, String workflowName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, String workflowName, boolean includeRetried, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
-                .queryParam("repository", repoName)
+                .queryParam("project", projName)
                 .queryParam("workflow", workflowName)
                 .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));

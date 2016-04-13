@@ -30,9 +30,9 @@ public class DatabaseFactory
         return dbi;
     }
 
-    public DatabaseRepositoryStoreManager getRepositoryStoreManager()
+    public DatabaseProjectStoreManager getProjectStoreManager()
     {
-        return new DatabaseRepositoryStoreManager(dbi, createConfigMapper(), config);
+        return new DatabaseProjectStoreManager(dbi, createConfigMapper(), config);
     }
 
     public DatabaseScheduleStoreManager getScheduleStoreManager()
@@ -48,7 +48,7 @@ public class DatabaseFactory
     public WorkflowExecutor getWorkflowExecutor()
     {
         return new WorkflowExecutor(
-                getRepositoryStoreManager(),
+                getProjectStoreManager(),
                 getSessionStoreManager(),
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),

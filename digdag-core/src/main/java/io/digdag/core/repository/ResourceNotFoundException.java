@@ -1,7 +1,7 @@
 package io.digdag.core.repository;
 
 /**
- * An exception thrown when a required resource (repository, revision, session, etc.) does not exist.
+ * An exception thrown when a required resource (project, revision, session, etc.) does not exist.
  *
  * This exception is deterministic.
  */

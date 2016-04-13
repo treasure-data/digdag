@@ -7,10 +7,10 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.session.Session;
-import io.digdag.core.repository.StoredRepository;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
-import io.digdag.core.repository.RepositoryStore;
-import io.digdag.core.repository.RepositoryStoreManager;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.AttemptBuilder;
@@ -37,7 +37,7 @@ public class InProcessTaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final LogServerManager lm;
     private final AttemptBuilder attemptBuilder;
@@ -47,7 +47,7 @@ public class InProcessTaskCallbackApi
 
     @Inject
     public InProcessTaskCallbackApi(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             SessionStoreManager sm,
             TaskQueueManager qm,
             LogServerManager lm,
@@ -120,17 +120,17 @@ public class InProcessTaskCallbackApi
     @Override
     public SessionStateFlags startSession(
             int siteId,
-            int repositoryId,
+            int projectId,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
         throws ResourceNotFoundException
     {
-        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
+        ProjectStore projectStore = rm.getProjectStore(siteId);
 
-        StoredRepository repo = repoStore.getRepositoryById(repositoryId);
-        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
+        StoredProject proj = projectStore.getProjectById(projectId);
+        StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -152,14 +152,14 @@ public class InProcessTaskCallbackApi
     @Override
     public Config getWorkflowDefinition(
             int siteId,
-            int repositoryId,
+            int projectId,
             String workflowName)
         throws ResourceNotFoundException
     {
-        RepositoryStore repoStore = rm.getRepositoryStore(siteId);
+        ProjectStore projectStore = rm.getProjectStore(siteId);
 
-        StoredRepository repo = repoStore.getRepositoryById(repositoryId);
-        StoredWorkflowDefinitionWithRepository def = repoStore.getLatestWorkflowDefinitionByName(repo.getId(), workflowName);
+        StoredProject proj = projectStore.getProjectById(projectId);
+        StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
 
         return def.getConfig();
     }

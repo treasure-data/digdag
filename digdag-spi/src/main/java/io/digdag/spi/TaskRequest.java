@@ -16,7 +16,7 @@ public abstract class TaskRequest
 {
     public abstract int getSiteId();
 
-    public abstract int getRepositoryId();
+    public abstract int getProjectId();
 
     public abstract String getWorkflowName();
 

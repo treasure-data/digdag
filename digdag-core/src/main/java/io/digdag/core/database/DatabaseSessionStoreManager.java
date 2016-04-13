@@ -770,7 +770,7 @@ public class DatabaseSessionStoreManager
                 switch (databaseType) {
                 //// This query doesn't work because ID increments when keys conflicted
                 //case "h2":
-                //    "merge into sessions key (repository_id, workflow_name, instant) values (DEFAULT, :repositoryId, :workflowName, :instant, NULL)";
+                //    "merge into sessions key (project_id, workflow_name, instant) values (DEFAULT, :projectId, :workflowName, :instant, NULL)";
                 //    break;
                 default:
                     if (!ts.isRetried()) {
@@ -778,9 +778,9 @@ public class DatabaseSessionStoreManager
                         try {
                             sesId = catchForeignKeyNotFound(()->
                                     catchConflict(() ->
-                                        dao.insertSession(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
-                                        "session instant=%s in repository_id=%d and workflow_name=%s", session.getSessionTime(), session.getRepositoryId(), session.getWorkflowName()),
-                                    "repository id=%d", session.getRepositoryId());
+                                        dao.insertSession(session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
+                                        "session instant=%s in project_id=%d and workflow_name=%s", session.getSessionTime(), session.getProjectId(), session.getWorkflowName()),
+                                    "project id=%d", session.getProjectId());
                         }
                         catch (ResourceConflictException ex) {
                             ts.retry(ex);
@@ -788,7 +788,7 @@ public class DatabaseSessionStoreManager
                         }
                     }
                     else {
-                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond());
+                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond());
                         if (storedSession == null) {
                             throw new IllegalStateException("Database state error", ts.getLastException());
                         }
@@ -817,13 +817,13 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public List<StoredSessionAttemptWithSession> getSessionsOfRepository(boolean withRetriedAttempts, int repositoryId, int pageSize, Optional<Long> lastId)
+        public List<StoredSessionAttemptWithSession> getSessionsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId)
         {
             if (withRetriedAttempts) {
-                return autoCommit((handle, dao) -> dao.getSessionsOfRepositoryWithRetriedAttempts(siteId, repositoryId, pageSize, lastId.or(Long.MAX_VALUE)));
+                return autoCommit((handle, dao) -> dao.getSessionsOfProjectWithRetriedAttempts(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE)));
             }
             else {
-                return autoCommit((handle, dao) -> dao.getSessionsOfRepository(siteId, repositoryId, pageSize, lastId.or(Long.MAX_VALUE)));
+                return autoCommit((handle, dao) -> dao.getSessionsOfProject(siteId, projectId, pageSize, lastId.or(Long.MAX_VALUE)));
             }
         }
 
@@ -848,21 +848,21 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionAttemptWithSession getLastSessionAttemptByNames(int repositoryId, String workflowName, Instant sessionTime)
+        public StoredSessionAttemptWithSession getLastSessionAttemptByNames(int projectId, String workflowName, Instant sessionTime)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getLastSessionAttemptByNames(siteId, repositoryId, workflowName, sessionTime.getEpochSecond()),
-                    "session time=%s in repository id=%d workflow name=%s", sessionTime, repositoryId, workflowName);
+                    (handle, dao) -> dao.getLastSessionAttemptByNames(siteId, projectId, workflowName, sessionTime.getEpochSecond()),
+                    "session time=%s in project id=%d workflow name=%s", sessionTime, projectId, workflowName);
         }
 
         @Override
-        public StoredSessionAttemptWithSession getSessionAttemptByNames(int repositoryId, String workflowName, Instant sessionTime, String retryAttemptName)
+        public StoredSessionAttemptWithSession getSessionAttemptByNames(int projectId, String workflowName, Instant sessionTime, String retryAttemptName)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getSessionAttemptByNames(siteId, repositoryId, workflowName, sessionTime.getEpochSecond(), retryAttemptName),
-                    "session attempt name=%s in session repository id=%d workflow name=%s time=%s", retryAttemptName, repositoryId, workflowName, sessionTime);
+                    (handle, dao) -> dao.getSessionAttemptByNames(siteId, projectId, workflowName, sessionTime.getEpochSecond(), retryAttemptName),
+                    "session attempt name=%s in session project id=%d workflow name=%s time=%s", retryAttemptName, projectId, workflowName, sessionTime);
         }
 
         @Override
@@ -940,12 +940,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredSessionAttempt insertAttempt(long sessionId, int repoId, SessionAttempt attempt)
+        public StoredSessionAttempt insertAttempt(long sessionId, int projId, SessionAttempt attempt)
             throws ResourceConflictException, ResourceNotFoundException
         {
             long attemptId = catchForeignKeyNotFound(() ->
                     catchConflict(() ->
-                        dao.insertAttempt(siteId, repoId, sessionId,
+                        dao.insertAttempt(siteId, projId, sessionId,
                                 attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), attempt.getWorkflowDefinitionId().orNull(),
                                 SessionStateFlags.empty().get(), attempt.getTimeZone().getId(), attempt.getParams()),
                         "session attempt name=%s in session id=%d", attempt.getRetryAttemptName().or(DEFAULT_ATTEMPT_NAME), sessionId),
@@ -1026,23 +1026,23 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id and s.last_attempt_id = sa.id" +
-                " where sa.repository_id = :repoId" +
+                " where sa.project_id = :projId" +
                 " and sa.site_id = :siteId" +
                 " and sa.id < :lastId" +
                 " order by sa.id desc" +
                 " limit :limit")
-        List<StoredSessionAttemptWithSession> getSessionsOfRepository(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredSessionAttemptWithSession> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
-                " where sa.repository_id = :repoId" +
+                " where sa.project_id = :projId" +
                 " and sa.site_id = :siteId" +
                 " and s.last_attempt_id is not null" +
                 " and sa.id < :lastId" +
                 " order by sa.id desc" +
                 " limit :limit")
-        List<StoredSessionAttemptWithSession> getSessionsOfRepositoryWithRetriedAttempts(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+        List<StoredSessionAttemptWithSession> getSessionsOfProjectWithRetriedAttempts(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
@@ -1076,22 +1076,22 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.last_attempt_id = sa.id" +
-                " where s.repository_id = :repositoryId" +
+                " where s.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.site_id = :siteId")
-        StoredSessionAttemptWithSession getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+        StoredSessionAttemptWithSession getLastSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
                 " join sessions s on s.id = sa.session_id" +
-                " where s.repository_id = :repositoryId" +
+                " where s.project_id = :projectId" +
                 " and s.workflow_name = :workflowName" +
                 " and s.session_time = :sessionTime" +
                 " and sa.attempt_name = :attemptName" +
                 " and sa.site_id = :siteId" +
                 " limit 1")
-        StoredSessionAttemptWithSession getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime, @Bind("attemptName") String attemptName);
+        StoredSessionAttemptWithSession getSessionAttemptByNames(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime, @Bind("attemptName") String attemptName);
 
         @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
                 " from session_attempts sa" +
@@ -1126,24 +1126,24 @@ public class DatabaseSessionStoreManager
                 " for update")
         StoredSession lockSession(@Bind("sessionId") long sessionId);
 
-        @SqlUpdate("insert into sessions (repository_id, workflow_name, session_time, last_attempt_id)" +
-                " values (:repositoryId, :workflowName, :sessionTime, NULL)")
+        @SqlUpdate("insert into sessions (project_id, workflow_name, session_time, last_attempt_id)" +
+                " values (:projectId, :workflowName, :sessionTime, NULL)")
         @GetGeneratedKeys
-        long insertSession(@Bind("repositoryId") int repositoryId,
+        long insertSession(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlQuery("select * from sessions" +
-                " where repository_id = :repositoryId" +
+                " where project_id = :projectId" +
                 " and workflow_name = :workflowName" +
                 " and session_time = :sessionTime" +
                 " limit 1")  // here allows last_attempt_id == NULL
-        StoredSession getSessionByConflictedNamesInternal(@Bind("repositoryId") int repositoryId,
+        StoredSession getSessionByConflictedNamesInternal(@Bind("projectId") int projectId,
                 @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
-        @SqlUpdate("insert into session_attempts (session_id, site_id, repository_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
-                " values (:sessionId, :siteId, :repositoryId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
+        @SqlUpdate("insert into session_attempts (session_id, site_id, project_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
+                " values (:sessionId, :siteId, :projectId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
         @GetGeneratedKeys
-        long insertAttempt(@Bind("siteId") int siteId, @Bind("repositoryId") int repositoryId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
+        long insertAttempt(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
 
         @SqlUpdate("update sessions" +
                 " set last_attempt_id = :attemptId" +
@@ -1322,7 +1322,7 @@ public class DatabaseSessionStoreManager
         {
             return ImmutableStoredSession.builder()
                 .id(r.getLong("id"))
-                .repositoryId(r.getInt("repository_id"))
+                .projectId(r.getInt("project_id"))
                 .workflowName(r.getString("workflow_name"))
                 .sessionTime(Instant.ofEpochSecond(r.getLong("session_time")))
                 .uuid(getUuid(r, "session_uuid"))
@@ -1387,7 +1387,7 @@ public class DatabaseSessionStoreManager
                 .sessionUuid(getUuid(r, "session_uuid"))
                 .session(
                     ImmutableSession.builder()
-                        .repositoryId(r.getInt("repository_id"))
+                        .projectId(r.getInt("project_id"))
                         .workflowName(r.getString("workflow_name"))
                         .sessionTime(Instant.ofEpochSecond(r.getLong("session_time")))
                         .build())

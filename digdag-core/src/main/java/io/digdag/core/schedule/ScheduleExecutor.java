@@ -18,12 +18,12 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
-import io.digdag.core.repository.RepositoryStoreManager;
+import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStateFlags;
@@ -39,7 +39,7 @@ public class ScheduleExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
@@ -48,7 +48,7 @@ public class ScheduleExecutor
 
     @Inject
     public ScheduleExecutor(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
             ScheduleHandler handler,
@@ -100,7 +100,7 @@ public class ScheduleExecutor
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
         try {
-            StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+            StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
 
             Scheduler sr = srm.getScheduler(def);
 
@@ -133,7 +133,7 @@ public class ScheduleExecutor
     }
 
     private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
-            StoredWorkflowDefinitionWithRepository def)
+            StoredWorkflowDefinitionWithProject def)
         throws ResourceNotFoundException, ResourceConflictException
     {
         Instant scheduleTime = sched.getNextScheduleTime();
@@ -230,7 +230,7 @@ public class ScheduleExecutor
     private Scheduler getSchedulerOfSchedule(StoredSchedule sched)
         throws ResourceNotFoundException
     {
-        StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+        StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
         return srm.getScheduler(def);
     }
 
@@ -244,7 +244,7 @@ public class ScheduleExecutor
         return sm.lockScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
-            StoredWorkflowDefinitionWithRepository def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+            StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
             Scheduler sr = srm.getScheduler(def);
 
             List<Instant> instants = new ArrayList<>();
@@ -258,10 +258,10 @@ public class ScheduleExecutor
             // confirm sessions with the same attemptName doesn't exist
             for (Instant instant : instants) {
                 try {
-                    ss.getSessionAttemptByNames(def.getRepository().getId(), def.getName(), instant, attemptName);
+                    ss.getSessionAttemptByNames(def.getProject().getId(), def.getName(), instant, attemptName);
                     throw new ResourceConflictException(String.format(Locale.ENGLISH,
-                                "Attempt of repository id=%d workflow=%s instant=%s attempt name=%s already exists",
-                                def.getRepository().getId(), def.getName(), instant, attemptName));
+                                "Attempt of project id=%d workflow=%s instant=%s attempt name=%s already exists",
+                                def.getProject().getId(), def.getName(), instant, attemptName));
                 }
                 catch (ResourceNotFoundException ex) {
                     // OK
@@ -274,7 +274,7 @@ public class ScheduleExecutor
                 if (dryRun) {
                     attempts.add(
                             StoredSessionAttemptWithSession.dryRunDummy(siteId,
-                                Session.of(def.getRepository().getId(), def.getName(), instant),
+                                Session.of(def.getProject().getId(), def.getName(), instant),
                                 ImmutableStoredSessionAttempt.builder()
                                     .retryAttemptName(Optional.of(attemptName))
                                     .workflowDefinitionId(Optional.of(def.getId()))

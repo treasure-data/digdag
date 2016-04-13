@@ -7,9 +7,9 @@ import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRestRepository.class)
-@JsonDeserialize(as = ImmutableRestRepository.class)
-public abstract class RestRepository
+@JsonSerialize(as = ImmutableRestProject.class)
+@JsonDeserialize(as = ImmutableRestProject.class)
+public abstract class RestProject
 {
     public abstract int getId();
 
@@ -25,8 +25,8 @@ public abstract class RestRepository
 
     public abstract Optional<byte[]> getArchiveMd5();
 
-    public static ImmutableRestRepository.Builder builder()
+    public static ImmutableRestProject.Builder builder()
     {
-        return ImmutableRestRepository.builder();
+        return ImmutableRestProject.builder();
     }
 }

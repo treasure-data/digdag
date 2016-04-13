@@ -15,7 +15,7 @@ public abstract class RestSchedule
 {
     public abstract int getId();
 
-    public abstract IdName getRepository();
+    public abstract IdName getProject();
 
     public abstract NameLongId getWorkflow();
 

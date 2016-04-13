@@ -38,18 +38,18 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class ScheduleResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/schedules                                   # list schedules of the latest revision of all repositories
+    // [*] GET  /api/schedules                                   # list schedules of the latest revision of all projects
     // [*] GET  /api/schedules/{id}                              # show a particular schedule (which belongs to a workflow)
     // [*] POST /api/schedules/{id}/skip                         # skips schedules forward to a future time
     // [*] POST /api/schedules/{id}/backfill                     # run or re-run past schedules
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final ScheduleExecutor exec;
 
     @Inject
     public ScheduleResource(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             ScheduleStoreManager sm,
             ScheduleExecutor exec)
     {
@@ -65,12 +65,12 @@ public class ScheduleResource
         List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
             .getSchedules(100, Optional.fromNullable(lastId));
 
-        RepositoryMap repos = rm.getRepositoryStore(getSiteId())
-            .getRepositoriesByIdList(
+        ProjectMap projs = rm.getProjectStore(getSiteId())
+            .getProjectsByIdList(
                     scheds.stream()
-                    .map(StoredSchedule::getRepositoryId)
+                    .map(StoredSchedule::getProjectId)
                     .collect(Collectors.toList()));
-        TimeZoneMap defTimeZones = rm.getRepositoryStore(getSiteId())
+        TimeZoneMap defTimeZones = rm.getProjectStore(getSiteId())
             .getWorkflowTimeZonesByIdList(
                     scheds.stream()
                     .map(StoredSchedule::getWorkflowDefinitionId)
@@ -80,7 +80,7 @@ public class ScheduleResource
             .map(sched -> {
                 try {
                     return RestModels.schedule(sched,
-                            repos.get(sched.getRepositoryId()),
+                            projs.get(sched.getProjectId()),
                             defTimeZones.get(sched.getWorkflowDefinitionId()));
                 }
                 catch (ResourceNotFoundException ex) {
@@ -99,9 +99,9 @@ public class ScheduleResource
         StoredSchedule sched = sm.getScheduleStore(getSiteId())
             .getScheduleById(id);
         ZoneId timeZone = getTimeZoneOfSchedule(sched);
-        StoredRepository repo = rm.getRepositoryStore(getSiteId())
-            .getRepositoryById(sched.getRepositoryId());
-        return RestModels.schedule(sched, repo, timeZone);
+        StoredProject proj = rm.getProjectStore(getSiteId())
+            .getProjectById(sched.getProjectId());
+        return RestModels.schedule(sched, proj, timeZone);
     }
 
     @POST
@@ -136,7 +136,7 @@ public class ScheduleResource
         throws ResourceNotFoundException
     {
         // TODO optimize
-        return rm.getRepositoryStore(getSiteId())
+        return rm.getProjectStore(getSiteId())
             .getWorkflowDefinitionById(sched.getWorkflowDefinitionId())
             .getTimeZone();
     }

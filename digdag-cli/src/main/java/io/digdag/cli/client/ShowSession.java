@@ -43,27 +43,27 @@ public class ShowSession
     public SystemExitException usage(String error)
     {
         String commandName = includeRetries() ? "attempts" : "sessions";
-        System.err.println("Usage: digdag " + commandName + " [repo-name] [+name]");
+        System.err.println("Usage: digdag " + commandName + " [project-name] [+name]");
         System.err.println("  Options:");
         System.err.println("    -i, --last-id ID                 shows more session attempts from this id");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showSessions(String repoName, String workflowName)
+    public void showSessions(String projName, String workflowName)
         throws Exception
     {
         DigdagClient client = buildClient();
         List<RestSessionAttempt> attempts;
 
-        if (repoName == null) {
+        if (projName == null) {
             attempts = client.getSessionAttempts(includeRetries(), Optional.fromNullable(lastId));
         }
         else if (workflowName == null) {
-            attempts = client.getSessionAttempts(repoName, includeRetries(), Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(projName, includeRetries(), Optional.fromNullable(lastId));
         }
         else {
-            attempts = client.getSessionAttempts(repoName, workflowName, includeRetries(), Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(projName, workflowName, includeRetries(), Optional.fromNullable(lastId));
         }
 
         if (includeRetries()) {
@@ -85,7 +85,7 @@ public class ShowSession
             }
             ln("  attempt id: %d", attempt.getId());
             ln("  uuid: %s", attempt.getSessionUuid());
-            ln("  repository: %s", attempt.getRepository().getName());
+            ln("  project: %s", attempt.getProject().getName());
             ln("  workflow: %s", attempt.getWorkflow().getName());
             ln("  session time: %s", formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));

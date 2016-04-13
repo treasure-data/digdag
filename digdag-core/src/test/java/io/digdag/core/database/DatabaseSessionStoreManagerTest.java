@@ -21,8 +21,8 @@ import static org.junit.Assert.*;
 public class DatabaseSessionStoreManagerTest
 {
     private DatabaseFactory factory;
-    private RepositoryStoreManager repoManager;
-    private RepositoryStore repoStore;
+    private ProjectStoreManager projectStoreManager;
+    private ProjectStore projectStore;
 
     private SessionStoreManager manager;
     private SessionStore store;
@@ -31,7 +31,7 @@ public class DatabaseSessionStoreManagerTest
     private WorkflowExecutor exec;
     private AttemptBuilder attemptBuilder;
 
-    private StoredRepository repo;
+    private StoredProject proj;
     private StoredRevision rev;
     private StoredWorkflowDefinition wf1;
     private StoredWorkflowDefinition wf2;
@@ -41,14 +41,14 @@ public class DatabaseSessionStoreManagerTest
         throws Exception
     {
         factory = setupDatabase();
-        repoManager = factory.getRepositoryStoreManager();
-        repoStore = repoManager.getRepositoryStore(0);
+        projectStoreManager = factory.getProjectStoreManager();
+        projectStore = projectStoreManager.getProjectStore(0);
         manager = factory.getSessionStoreManager();
         store = manager.getSessionStore(0);
 
         exec = factory.getWorkflowExecutor();
 
-        Repository srcRepo = Repository.of("repo1");
+        Project srcProj = Project.of("repo1");
         Revision srcRev = createRevision("rev1");
         WorkflowDefinition srcWf1 = createWorkflow("+wf1");
         WorkflowDefinition srcWf2 = createWorkflow("+wf2");
@@ -57,10 +57,10 @@ public class DatabaseSessionStoreManagerTest
                 new SchedulerManager(ImmutableSet.of()),
                 new SlaCalculator());
 
-        repo = repoStore.putAndLockRepository(
-                srcRepo,
+        proj = projectStore.putAndLockProject(
+                srcProj,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
 
                     rev = lock.insertRevision(srcRev);
 
@@ -161,13 +161,13 @@ public class DatabaseSessionStoreManagerTest
             );
         });
 
-        // wrong repository id causes NotFound
+        // wrong project id causes NotFound
         assertNotFound(() -> {
             propagateOnly(ResourceNotFoundException.class, () ->
                 exec.submitWorkflow(0,
                     ImmutableAttemptRequest.builder().from(ar1)
-                    .stored(AttemptRequest.Stored.of(ImmutableStoredRevision.builder().from(rev).repositoryId(30).build(), wf1))
-                    .retryAttemptName(Optional.of("retryWithWrongRepoId"))
+                    .stored(AttemptRequest.Stored.of(ImmutableStoredRevision.builder().from(rev).projectId(30).build(), wf1))
+                    .retryAttemptName(Optional.of("retryWithWrongProjectId"))
                     .build(),
                     wf1)
             );
@@ -257,22 +257,22 @@ public class DatabaseSessionStoreManagerTest
         assertEmpty(anotherSite.getSessions(true, 100, Optional.absent()));
 
         assertEquals(ImmutableList.of(attempt3, attempt1),
-                store.getSessionsOfRepository(false, repo.getId(), 100, Optional.absent()));
+                store.getSessionsOfProject(false, proj.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3),
-                store.getSessionsOfRepository(false, repo.getId(), 1, Optional.absent()));
+                store.getSessionsOfProject(false, proj.getId(), 1, Optional.absent()));
         assertEquals(ImmutableList.of(attempt1),
-                store.getSessionsOfRepository(false, repo.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfRepository(false, repo.getId(), 100, Optional.absent()));
-        // TODO test with another repository
+                store.getSessionsOfProject(false, proj.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getSessionsOfProject(false, proj.getId(), 100, Optional.absent()));
+        // TODO test with another project
 
         assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
-                store.getSessionsOfRepository(true, repo.getId(), 100, Optional.absent()));
+                store.getSessionsOfProject(true, proj.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3, attempt2),
-                store.getSessionsOfRepository(true, repo.getId(), 2, Optional.absent()));
+                store.getSessionsOfProject(true, proj.getId(), 2, Optional.absent()));
         assertEquals(ImmutableList.of(attempt2, attempt1),
-                store.getSessionsOfRepository(true, repo.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfRepository(true, repo.getId(), 100, Optional.absent()));
-        // TODO test with another repository
+                store.getSessionsOfProject(true, proj.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getSessionsOfProject(true, proj.getId(), 100, Optional.absent()));
+        // TODO test with another project
 
         assertEquals(ImmutableList.of(attempt3, attempt1),
                 store.getSessionsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
@@ -300,15 +300,15 @@ public class DatabaseSessionStoreManagerTest
         assertNotFound(() ->store.getSessionAttemptById(attempt1.getId() + 10));
         assertNotFound(() -> anotherSite.getSessionAttemptById(attempt1.getId()));
 
-        assertEquals(attempt1, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, ""));
-        assertEquals(attempt2, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, ""));
-        assertEquals(attempt3, store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, "attempt3"));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId() + 10, wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName() + " ", sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, " "));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(repo.getId(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt1, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, ""));
+        assertEquals(attempt2, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt3, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, "attempt3"));
+        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId() + 10, wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName() + " ", sessionTime1, ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
+        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, " "));
+        assertNotFound(() -> anotherSite.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> anotherSite.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, ""));
 
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt2.getId()));
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt3.getId()));

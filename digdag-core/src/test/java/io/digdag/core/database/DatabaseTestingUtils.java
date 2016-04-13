@@ -89,7 +89,7 @@ public class DatabaseTestingUtils
     }
 
     public static final String[] ALL_TABLES = new String[] {
-        "repositories",
+        "projects",
         "revisions",
         "revision_archives",
         "workflow_configs",

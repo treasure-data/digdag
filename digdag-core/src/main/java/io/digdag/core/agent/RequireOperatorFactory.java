@@ -96,14 +96,14 @@ public class RequireOperatorFactory
         {
             Config config = request.getConfig();
             String workflowName = config.get("_command", String.class);
-            int repositoryId = config.get("repository_id", int.class);
+            int projectId = config.get("project_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overwriteParams = config.getNestedOrGetEmpty("params");
             try {
                 SessionStateFlags flags = callback.startSession(
                         request.getSiteId(),
-                        repositoryId,
+                        projectId,
                         workflowName,
                         instant,
                         retryAttemptName,

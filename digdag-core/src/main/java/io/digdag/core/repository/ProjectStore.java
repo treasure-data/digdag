@@ -5,38 +5,38 @@ import java.util.Map;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
 
-public interface RepositoryStore
+public interface ProjectStore
 {
-    List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId);
+    List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId);
 
-    RepositoryMap getRepositoriesByIdList(List<Integer> repoIdList);
+    ProjectMap getProjectsByIdList(List<Integer> projIdList);
 
-    StoredRepository getRepositoryById(int repoId)
+    StoredProject getProjectById(int projId)
         throws ResourceNotFoundException;
 
-    StoredRepository getRepositoryByName(String repoName)
+    StoredProject getProjectByName(String projName)
         throws ResourceNotFoundException;
 
-    interface RepositoryLockAction <T>
+    interface ProjectLockAction <T>
     {
-        T call(RepositoryControlStore store, StoredRepository storedRepo)
+        T call(ProjectControlStore store, StoredProject storedProject)
             throws ResourceConflictException;
     }
 
-    <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
+    <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
         throws ResourceConflictException;
 
 
     StoredRevision getRevisionById(int revId)
         throws ResourceNotFoundException;
 
-    StoredRevision getRevisionByName(int repoId, String revName)
+    StoredRevision getRevisionByName(int projId, String revName)
         throws ResourceNotFoundException;
 
-    StoredRevision getLatestRevision(int repoId)
+    StoredRevision getLatestRevision(int projId)
         throws ResourceNotFoundException;
 
-    List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId);
+    List<StoredRevision> getRevisions(int projId, int pageSize, Optional<Integer> lastId);
 
     byte[] getRevisionArchiveData(int revId)
             throws ResourceNotFoundException;
@@ -47,10 +47,10 @@ public interface RepositoryStore
     StoredWorkflowDefinition getWorkflowDefinitionByName(int revId, String name)
         throws ResourceNotFoundException;
 
-    StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
+    StoredWorkflowDefinitionWithProject getWorkflowDefinitionById(long wfId)
         throws ResourceNotFoundException;
 
-    StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
+    StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(int projId, String name)
         throws ResourceNotFoundException;
 
     TimeZoneMap getWorkflowTimeZonesByIdList(List<Long> defIdList);

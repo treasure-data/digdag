@@ -1,14 +1,14 @@
 package io.digdag.core.repository;
 
-public interface RepositoryStoreManager
+public interface ProjectStoreManager
 {
-    RepositoryStore getRepositoryStore(int siteId);
+    ProjectStore getProjectStore(int siteId);
 
     // used by the standard ScheduleHandler
-    StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(long wfId)
+    StoredWorkflowDefinitionWithProject getWorkflowDetailsById(long wfId)
         throws ResourceNotFoundException;
 
-    StoredRepository getRepositoryByIdInternal(int repoId)
+    StoredProject getProjectByIdInternal(int projId)
         throws ResourceNotFoundException;
 
     StoredRevision getRevisionOfWorkflowDefinition(long wfId)

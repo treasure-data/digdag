@@ -16,7 +16,7 @@ public abstract class RestSessionAttempt
 {
     public abstract long getId();
 
-    public abstract IdName getRepository();
+    public abstract IdName getProject();
 
     //public abstract Optional<String> getRevision();
 

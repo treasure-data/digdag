@@ -13,20 +13,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class DatabaseRepositoryStoreManagerTest
+public class DatabaseProjectStoreManagerTest
 {
     private DatabaseFactory factory;
-    private RepositoryStoreManager manager;
+    private ProjectStoreManager manager;
     private SchedulerManager sm;
-    private RepositoryStore store;
+    private ProjectStore store;
 
     @Before
     public void setUp()
     {
         factory = setupDatabase();
-        manager = factory.getRepositoryStoreManager();
+        manager = factory.getProjectStoreManager();
         sm = new SchedulerManager(ImmutableSet.of());
-        store = manager.getRepositoryStore(0);
+        store = manager.getProjectStore(0);
     }
 
     @After
@@ -39,33 +39,33 @@ public class DatabaseRepositoryStoreManagerTest
     public void testConflicts()
         throws Exception
     {
-        Repository srcRepo1 = Repository.of("repo1");
+        Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
         WorkflowDefinition srcWf1 = createWorkflow("+wf1");
 
-        StoredRepository storedRepo = store.putAndLockRepository(
-                srcRepo1,
+        StoredProject storedProj = store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> stored);
 
-        // putAndLockRepository doesn't conflict
-        StoredRepository storedRepo2 = store.putAndLockRepository(
-                srcRepo1,
+        // putAndLockProject doesn't conflict
+        StoredProject storedProj2 = store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> stored);
 
-        assertEquals(storedRepo, storedRepo2);
+        assertEquals(storedProj, storedProj2);
 
-        StoredRevision storedRev = store.putAndLockRepository(
-                srcRepo1,
+        StoredRevision storedRev = store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     return lock.insertRevision(srcRev1);
                 });
 
         assertConflict(() -> {
-            store.putAndLockRepository(
-                    srcRepo1,
+            store.putAndLockProject(
+                    srcProj1,
                     (store, stored) -> {
-                        RepositoryControl lock = new RepositoryControl(store, stored);
+                        ProjectControl lock = new ProjectControl(store, stored);
 
                         // workflow conflicts if name conflicts
                         assertNotConflict(() -> {
@@ -76,10 +76,10 @@ public class DatabaseRepositoryStoreManagerTest
         });
 
         assertConflict(() -> {
-            store.putAndLockRepository(
-                    srcRepo1,
+            store.putAndLockProject(
+                    srcProj1,
                     (store, stored) -> {
-                        RepositoryControl lock = new RepositoryControl(store, stored);
+                        ProjectControl lock = new ProjectControl(store, stored);
 
                         // revision conflicts if name conflicts
                         return lock.insertRevision(srcRev1);
@@ -91,11 +91,11 @@ public class DatabaseRepositoryStoreManagerTest
     public void testGetAndNotFounds()
         throws Exception
     {
-        Repository srcRepo1 = Repository.of("repo1");
+        Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
         WorkflowDefinition srcWf1 = createWorkflow("+wf1");
 
-        Repository srcRepo2 = Repository.of("repo2");
+        Project srcProj2 = Project.of("proj2");
         Revision srcRev2 = createRevision("rev2");
         WorkflowDefinition srcWf2 = createWorkflow("+wf2");
 
@@ -107,10 +107,10 @@ public class DatabaseRepositoryStoreManagerTest
         final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();
         final AtomicReference<StoredWorkflowDefinition> wfRefB = new AtomicReference<>();
 
-        StoredRepository repo1 = store.putAndLockRepository(
-                srcRepo1,
+        StoredProject proj1 = store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     assertNotConflict(() -> {
                         revRef.set(lock.insertRevision(srcRev1));
                         wfRefA.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf1), sm, Instant.now()).get(0));
@@ -119,12 +119,12 @@ public class DatabaseRepositoryStoreManagerTest
                 });
         StoredRevision rev1 = revRef.get();
         StoredWorkflowDefinition wf1 = wfRefA.get();
-        StoredWorkflowDefinitionWithRepository wfDetails1 = StoredWorkflowDefinitionWithRepository.of(wf1, repo1, srcRev1);
+        StoredWorkflowDefinitionWithProject wfDetails1 = StoredWorkflowDefinitionWithProject.of(wf1, proj1, srcRev1);
 
-        StoredRepository repo2 = store.putAndLockRepository(
-                srcRepo2,
+        StoredProject proj2 = store.putAndLockProject(
+                srcProj2,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     assertNotConflict(() -> {
                         revRef.set(lock.insertRevision(srcRev2));
                         wfRefA.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf2), sm, Instant.now()).get(0));
@@ -133,12 +133,12 @@ public class DatabaseRepositoryStoreManagerTest
                 });
         StoredRevision rev2 = revRef.get();
         StoredWorkflowDefinition wf2 = wfRefA.get();
-        StoredWorkflowDefinitionWithRepository wfDetails2 = StoredWorkflowDefinitionWithRepository.of(wf2, repo2, srcRev2);
+        StoredWorkflowDefinitionWithProject wfDetails2 = StoredWorkflowDefinitionWithProject.of(wf2, proj2, srcRev2);
 
-        store.putAndLockRepository(
-                srcRepo2,
+        store.putAndLockProject(
+                srcProj2,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     assertNotConflict(() -> {
                         revRef.set(lock.insertRevision(srcRev3));
                         wfRefA.set(lock.insertWorkflowDefinitions(revRef.get(), ImmutableList.of(srcWf3), sm, Instant.now()).get(0));
@@ -149,27 +149,27 @@ public class DatabaseRepositoryStoreManagerTest
         StoredRevision rev3 = revRef.get();
         StoredWorkflowDefinition wf3 = wfRefA.get();
         StoredWorkflowDefinition wf4 = wfRefB.get();
-        StoredWorkflowDefinitionWithRepository wfDetails3 = StoredWorkflowDefinitionWithRepository.of(wf3, repo2, srcRev3);
+        StoredWorkflowDefinitionWithProject wfDetails3 = StoredWorkflowDefinitionWithProject.of(wf3, proj2, srcRev3);
 
-        RepositoryStore anotherSite = manager.getRepositoryStore(1);
+        ProjectStore anotherSite = manager.getProjectStore(1);
 
         ////
         // return value of setters
         //
-        assertEquals(srcRepo1, ImmutableRepository.builder().from(repo1).build());
+        assertEquals(srcProj1, ImmutableProject.builder().from(proj1).build());
         assertEquals(srcRev1, ImmutableRevision.builder().from(rev1).build());
         assertEquals(srcWf1, ImmutableWorkflowDefinition.builder().from(wf1).build());
 
-        assertEquals(srcRepo1, ImmutableRepository.builder().from(repo1).build());
+        assertEquals(srcProj1, ImmutableProject.builder().from(proj1).build());
         assertEquals(srcRev1, ImmutableRevision.builder().from(rev1).build());
         assertEquals(srcWf1, ImmutableWorkflowDefinition.builder().from(wf1).build());
 
         ////
         // manager internal getters
         //
-        assertEquals(repo1, manager.getRepositoryByIdInternal(repo1.getId()));
-        assertEquals(repo2, manager.getRepositoryByIdInternal(repo2.getId()));
-        assertNotFound(() -> manager.getRepositoryByIdInternal(repo1.getId() + 10));
+        assertEquals(proj1, manager.getProjectByIdInternal(proj1.getId()));
+        assertEquals(proj2, manager.getProjectByIdInternal(proj2.getId()));
+        assertNotFound(() -> manager.getProjectByIdInternal(proj1.getId() + 10));
 
         assertEquals(wfDetails1, manager.getWorkflowDetailsById(wf1.getId()));
         assertEquals(wfDetails2, manager.getWorkflowDetailsById(wf2.getId()));
@@ -182,15 +182,15 @@ public class DatabaseRepositoryStoreManagerTest
         ////
         // public simple listings
         //
-        assertEquals(ImmutableList.of(repo1, repo2), store.getRepositories(100, Optional.absent()));
-        assertEquals(ImmutableList.of(repo1), store.getRepositories(1, Optional.absent()));
-        assertEquals(ImmutableList.of(repo2), store.getRepositories(100, Optional.of(repo1.getId())));
-        assertEmpty(anotherSite.getRepositories(100, Optional.absent()));
+        assertEquals(ImmutableList.of(proj1, proj2), store.getProjects(100, Optional.absent()));
+        assertEquals(ImmutableList.of(proj1), store.getProjects(1, Optional.absent()));
+        assertEquals(ImmutableList.of(proj2), store.getProjects(100, Optional.of(proj1.getId())));
+        assertEmpty(anotherSite.getProjects(100, Optional.absent()));
 
-        assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(repo2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
-        assertEquals(ImmutableList.of(rev3), store.getRevisions(repo2.getId(), 1, Optional.absent()));
-        assertEquals(ImmutableList.of(rev2), store.getRevisions(repo2.getId(), 100, Optional.of(rev3.getId())));
-        assertEmpty(anotherSite.getRevisions(repo2.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rev3, rev2), store.getRevisions(proj2.getId(), 100, Optional.absent()));  // revision is returned in reverse order
+        assertEquals(ImmutableList.of(rev3), store.getRevisions(proj2.getId(), 1, Optional.absent()));
+        assertEquals(ImmutableList.of(rev2), store.getRevisions(proj2.getId(), 100, Optional.of(rev3.getId())));
+        assertEmpty(anotherSite.getRevisions(proj2.getId(), 100, Optional.absent()));
 
         assertEquals(ImmutableList.of(wf3, wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(wf3), store.getWorkflowDefinitions(rev3.getId(), 1, Optional.absent()));
@@ -200,26 +200,26 @@ public class DatabaseRepositoryStoreManagerTest
         ////
         // public simple getters
         //
-        assertEquals(repo1, store.getRepositoryById(repo1.getId()));
-        assertEquals(repo2, store.getRepositoryById(repo2.getId()));
-        assertNotFound(() -> store.getRepositoryById(repo1.getId() + 10));
-        assertNotFound(() -> anotherSite.getRepositoryById(repo1.getId()));
+        assertEquals(proj1, store.getProjectById(proj1.getId()));
+        assertEquals(proj2, store.getProjectById(proj2.getId()));
+        assertNotFound(() -> store.getProjectById(proj1.getId() + 10));
+        assertNotFound(() -> anotherSite.getProjectById(proj1.getId()));
 
-        assertEquals(repo1, store.getRepositoryByName(repo1.getName()));
-        assertEquals(repo2, store.getRepositoryByName(repo2.getName()));
-        assertNotFound(() -> store.getRepositoryByName(repo1.getName() + " "));
-        assertNotFound(() -> anotherSite.getRepositoryByName(repo1.getName()));
+        assertEquals(proj1, store.getProjectByName(proj1.getName()));
+        assertEquals(proj2, store.getProjectByName(proj2.getName()));
+        assertNotFound(() -> store.getProjectByName(proj1.getName() + " "));
+        assertNotFound(() -> anotherSite.getProjectByName(proj1.getName()));
 
         assertEquals(rev1, store.getRevisionById(rev1.getId()));
         assertEquals(rev2, store.getRevisionById(rev2.getId()));
         assertNotFound(() -> store.getRevisionById(rev1.getId() + 10));
         assertNotFound(() -> anotherSite.getRevisionById(rev1.getId()));
 
-        assertEquals(rev1, store.getRevisionByName(repo1.getId(), rev1.getName()));
-        assertEquals(rev2, store.getRevisionByName(repo2.getId(), rev2.getName()));
-        assertNotFound(() -> store.getRevisionByName(repo1.getId() + 10, rev1.getName()));
-        assertNotFound(() -> store.getRevisionByName(repo1.getId(), rev2.getName()));
-        assertNotFound(() -> anotherSite.getRevisionByName(repo1.getId(), rev1.getName()));
+        assertEquals(rev1, store.getRevisionByName(proj1.getId(), rev1.getName()));
+        assertEquals(rev2, store.getRevisionByName(proj2.getId(), rev2.getName()));
+        assertNotFound(() -> store.getRevisionByName(proj1.getId() + 10, rev1.getName()));
+        assertNotFound(() -> store.getRevisionByName(proj1.getId(), rev2.getName()));
+        assertNotFound(() -> anotherSite.getRevisionByName(proj1.getId(), rev1.getName()));
 
         assertEquals(wfDetails1, store.getWorkflowDefinitionById(wf1.getId()));
         assertEquals(wfDetails2, store.getWorkflowDefinitionById(wf2.getId()));
@@ -235,20 +235,20 @@ public class DatabaseRepositoryStoreManagerTest
         ////
         // complex getters
         //
-        assertEquals(rev1, store.getLatestRevision(repo1.getId()));
-        assertEquals(rev3, store.getLatestRevision(repo2.getId()));
-        assertNotFound(() -> anotherSite.getLatestRevision(repo1.getId()));
+        assertEquals(rev1, store.getLatestRevision(proj1.getId()));
+        assertEquals(rev3, store.getLatestRevision(proj2.getId()));
+        assertNotFound(() -> anotherSite.getLatestRevision(proj1.getId()));
 
-        assertEquals(wfDetails3, store.getLatestWorkflowDefinitionByName(repo2.getId(), wf3.getName()));
-        assertNotFound(() -> store.getLatestWorkflowDefinitionByName(repo2.getId(), wf2.getName()));
+        assertEquals(wfDetails3, store.getLatestWorkflowDefinitionByName(proj2.getId(), wf3.getName()));
+        assertNotFound(() -> store.getLatestWorkflowDefinitionByName(proj2.getId(), wf2.getName()));
 
         // getRevisionArchiveData returns NotFound if insertRevisionArchiveData is not called
         assertNotFound(() -> store.getRevisionArchiveData(rev1.getId()));
 
-        RepositoryMap repos = store.getRepositoriesByIdList(ImmutableList.of(repo1.getId(), repo2.getId()));
-        assertEquals(repo1, repos.get(repo1.getId()));
-        assertEquals(repo2, repos.get(repo2.getId()));
-        assertNotFound(() -> repos.get(repo2.getId() + 10));
+        ProjectMap projs = store.getProjectsByIdList(ImmutableList.of(proj1.getId(), proj2.getId()));
+        assertEquals(proj1, projs.get(proj1.getId()));
+        assertEquals(proj2, projs.get(proj2.getId()));
+        assertNotFound(() -> projs.get(proj2.getId() + 10));
 
         TimeZoneMap defTimeZones = store.getWorkflowTimeZonesByIdList(ImmutableList.of(wf3.getId(), wf4.getId()));
         assertEquals(wf3.getTimeZone(), defTimeZones.get(wf3.getId()));
@@ -262,10 +262,10 @@ public class DatabaseRepositoryStoreManagerTest
     {
         byte[] data = "archive data".getBytes(UTF_8);
 
-        StoredRevision rev = store.putAndLockRepository(
-                Repository.of("repo1"),
+        StoredRevision rev = store.putAndLockProject(
+                Project.of("proj1"),
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
 
                     StoredRevision storedRev = lock.insertRevision(createRevision("rev1"));
                     lock.insertRevisionArchiveData(storedRev.getId(), data);

@@ -62,7 +62,7 @@ public class DockerCommandExecutor
         String buildImageName = null;
         if (dockerConfig.has("build")) {
             buildImageName = String.format(ENGLISH, "rev-%d-%s",
-                    request.getRepositoryId(),
+                    request.getProjectId(),
                     request.getRevision().or(UUID.randomUUID().toString()));
 
             buildImage(workspacePath, dockerConfig, image, buildImageName);

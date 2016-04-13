@@ -32,7 +32,7 @@ public interface TaskCallbackApi
 
     SessionStateFlags startSession(
             int siteId,
-            int repositoryId,
+            int projectId,
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
@@ -41,7 +41,7 @@ public interface TaskCallbackApi
 
     Config getWorkflowDefinition(
             int siteId,
-            int repositoryId,
+            int projectId,
             String workflowName)
         throws ResourceNotFoundException;
 }

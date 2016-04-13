@@ -16,8 +16,8 @@ import static org.junit.Assert.*;
 public class DatabaseScheduleStoreManagerTest
 {
     private DatabaseFactory factory;
-    private RepositoryStoreManager manager;
-    private RepositoryStore store;
+    private ProjectStoreManager manager;
+    private ProjectStore store;
 
     private ScheduleStoreManager schedManager;
     private ScheduleStore schedStore;
@@ -26,8 +26,8 @@ public class DatabaseScheduleStoreManagerTest
     public void setUp()
     {
         factory = setupDatabase();
-        manager = factory.getRepositoryStoreManager();
-        store = manager.getRepositoryStore(0);
+        manager = factory.getProjectStoreManager();
+        store = manager.getProjectStore(0);
         schedManager = factory.getScheduleStoreManager();
         schedStore = schedManager.getScheduleStore(0);
     }
@@ -42,7 +42,7 @@ public class DatabaseScheduleStoreManagerTest
     public void testGetAndNotFounds()
         throws Exception
     {
-        Repository srcRepo1 = Repository.of("repo1");
+        Project srcProj1 = Project.of("proj1");
         Revision srcRev1 = createRevision("rev1");
         WorkflowDefinition srcWf1Rev1 = createWorkflow("+wf1");
         WorkflowDefinition srcWf2 = createWorkflow("+wf2");
@@ -61,10 +61,10 @@ public class DatabaseScheduleStoreManagerTest
         final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();
         final AtomicReference<StoredWorkflowDefinition> wfRefB = new AtomicReference<>();
 
-        StoredRepository repo1 = store.putAndLockRepository(
-                srcRepo1,
+        StoredProject proj1 = store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     revRef.set(lock.insertRevision(srcRev1));
                     wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev1)).get(0));
                     wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf2)).get(0));
@@ -90,10 +90,10 @@ public class DatabaseScheduleStoreManagerTest
         StoredSchedule sched1 = schedList1.get(0);
         StoredSchedule sched2 = schedList1.get(1);
 
-        store.putAndLockRepository(
-                srcRepo1,
+        store.putAndLockProject(
+                srcProj1,
                 (store, stored) -> {
-                    RepositoryControl lock = new RepositoryControl(store, stored);
+                    ProjectControl lock = new ProjectControl(store, stored);
                     revRef.set(lock.insertRevision(srcRev2));
                     wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev2)).get(0));
                     wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf3)).get(0));
@@ -121,15 +121,15 @@ public class DatabaseScheduleStoreManagerTest
         ////
         // return value of setters
         //
-        assertEquals(repo1.getId(), sched1.getRepositoryId());
-        assertEquals(repo1.getId(), sched2.getRepositoryId());
+        assertEquals(proj1.getId(), sched1.getProjectId());
+        assertEquals(proj1.getId(), sched2.getProjectId());
         assertEquals(wf1Rev1.getName(), sched1.getWorkflowName());
         assertEquals(wf2.getName(), sched2.getWorkflowName());
         assertEquals(wf1Rev1.getId(), sched1.getWorkflowDefinitionId());
         assertEquals(wf2.getId(), sched2.getWorkflowDefinitionId());
 
-        assertEquals(repo1.getId(), sched3.getRepositoryId());
-        assertEquals(repo1.getId(), sched4.getRepositoryId());
+        assertEquals(proj1.getId(), sched3.getProjectId());
+        assertEquals(proj1.getId(), sched4.getProjectId());
         assertEquals(wf1Rev2.getName(), sched3.getWorkflowName());
         assertEquals(wf3.getName(), sched4.getWorkflowName());
         assertEquals(wf1Rev2.getId(), sched3.getWorkflowDefinitionId());

@@ -111,7 +111,7 @@ public class Archive
         runArchive();
 
         System.out.println("Created "+output+".");
-        System.out.println("Use `digdag upload <path.tar.gz> <repository> <revision>` to upload it a server.");
+        System.out.println("Use `digdag upload <path.tar.gz> <project> <revision>` to upload it a server.");
         System.out.println("");
         System.out.println("  Examples:");
         System.out.println("    $ digdag upload "+output+" $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");

@@ -48,18 +48,18 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class WorkflowResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/workflow?repository=<name>&name=<name>      # lookup a workflow of the latest revision of a repository by name
-    // [*] GET  /api/workflow?repository=<name>&revision=<name>&name=<name>  # lookup a workflow of a past revision of a repository by name
+    // [*] GET  /api/workflow?project=<name>&name=<name>      # lookup a workflow of the latest revision of a project by name
+    // [*] GET  /api/workflow?project=<name>&revision=<name>&name=<name>  # lookup a workflow of a past revision of a project by name
     // [*] GET  /api/workflows/{id}                              # get a workflow
     // [*] GET  /api/workflows/{id}/truncated_session_time       # truncate a time based on timzeone of this workflow
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
 
     @Inject
     public WorkflowResource(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm)
     {
@@ -71,25 +71,25 @@ public class WorkflowResource
     @GET
     @Path("/api/workflow")
     public RestWorkflowDefinition getWorkflowDefinition(
-            @QueryParam("repository") String repoName,
+            @QueryParam("project") String projName,
             @QueryParam("revision") String revName,
             @QueryParam("name") String wfName)
         throws ResourceNotFoundException
     {
-        Preconditions.checkArgument(repoName != null, "repository= is required");
+        Preconditions.checkArgument(projName != null, "project= is required");
         Preconditions.checkArgument(wfName != null, "name= is required");
 
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryByName(repoName);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectByName(projName);
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
+            rev = rs.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
+            rev = rs.getRevisionByName(proj.getId(), revName);
         }
         StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
-        return RestModels.workflowDefinition(repo, rev, def);
+        return RestModels.workflowDefinition(proj, rev, def);
     }
 
     @GET
@@ -97,8 +97,8 @@ public class WorkflowResource
     public RestWorkflowDefinition getWorkflowDefinition(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
-        StoredWorkflowDefinitionWithRepository def =
-            rm.getRepositoryStore(getSiteId())
+        StoredWorkflowDefinitionWithProject def =
+            rm.getProjectStore(getSiteId())
             .getWorkflowDefinitionById(id);
         return RestModels.workflowDefinition(def);
     }
@@ -113,8 +113,8 @@ public class WorkflowResource
     {
         Preconditions.checkArgument(localTime != null, "session_time= is required");
 
-        StoredWorkflowDefinitionWithRepository def =
-            rm.getRepositoryStore(getSiteId())
+        StoredWorkflowDefinitionWithProject def =
+            rm.getProjectStore(getSiteId())
             .getWorkflowDefinitionById(id);
 
         ZoneId timeZone = def.getTimeZone();

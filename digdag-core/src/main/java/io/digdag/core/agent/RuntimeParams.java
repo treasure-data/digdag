@@ -51,8 +51,8 @@ public class RuntimeParams
             // skip next_session_time
         }
 
-        // repository_*
-        params.set("repository_id", request.getRepositoryId());
+        // project_*
+        params.set("project_id", request.getProjectId());
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
 

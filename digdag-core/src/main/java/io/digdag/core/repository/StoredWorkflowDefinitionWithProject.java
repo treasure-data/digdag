@@ -7,23 +7,23 @@ import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredWorkflowDefinitionWithRepository.class)
-@JsonDeserialize(as = ImmutableStoredWorkflowDefinitionWithRepository.class)
-public abstract class StoredWorkflowDefinitionWithRepository
+@JsonSerialize(as = ImmutableStoredWorkflowDefinitionWithProject.class)
+@JsonDeserialize(as = ImmutableStoredWorkflowDefinitionWithProject.class)
+public abstract class StoredWorkflowDefinitionWithProject
         extends StoredWorkflowDefinition
 {
-    public abstract StoredRepository getRepository();
+    public abstract StoredProject getProject();
 
     public abstract Config getRevisionDefaultParams();
 
     public abstract String getRevisionName();
 
-    public static StoredWorkflowDefinitionWithRepository of(
-            StoredWorkflowDefinition def, StoredRepository repo, Revision rev)
+    public static StoredWorkflowDefinitionWithProject of(
+            StoredWorkflowDefinition def, StoredProject proj, Revision rev)
     {
-        return ImmutableStoredWorkflowDefinitionWithRepository.builder()
+        return ImmutableStoredWorkflowDefinitionWithProject.builder()
             .from(def)
-            .repository(repo)
+            .project(proj)
             .revisionDefaultParams(rev.getDefaultParams().deepCopy())
             .revisionName(rev.getName())
             .build();

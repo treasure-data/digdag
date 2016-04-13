@@ -6,7 +6,7 @@ import javax.ws.rs.NotFoundException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
-import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestWorkflowDefinition;
 import static io.digdag.cli.Main.systemExit;
 
@@ -22,7 +22,7 @@ public class ShowWorkflow
             showWorkflows(null);
             break;
         case 1:
-            if (args.get(0).startsWith("+")) {
+            if (args.get(0).contains("+")) {
                 showWorkflowDetails(null, args.get(0));
             }
             else {
@@ -39,30 +39,28 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag workflows [repo-name] [+name]");
-        System.err.println("  Options:");
-        System.err.println("    -r, --repository NAME            repository name");
+        System.err.println("Usage: digdag workflows [project-name] [+name]");
         ClientCommand.showCommonOptions();
         return systemExit(error);
     }
 
-    public void showWorkflows(String repoName)
+    public void showWorkflows(String projName)
         throws Exception
     {
         DigdagClient client = buildClient();
 
-        if (repoName != null) {
-            RestRepository repo = client.getRepository(repoName);
-            ln("  %s", repo.getName());
-            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(repo.getId())) {
+        if (projName != null) {
+            RestProject proj = client.getProject(projName);
+            ln("  %s", proj.getName());
+            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(proj.getId())) {
                 ln("    %s", def.getName());
             }
         }
         else {
-            for (RestRepository repo : client.getRepositories()) {
+            for (RestProject proj : client.getProjects()) {
                 try {
-                    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(repo.getId());
-                    ln("  %s", repo.getName());
+                    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(proj.getId());
+                    ln("  %s", proj.getName());
                     for (RestWorkflowDefinition def : defs) {
                         ln("    %s", def.getName());
                     }
@@ -75,21 +73,21 @@ public class ShowWorkflow
         System.err.println("Use `digdag workflows +NAME` to show details.");
     }
 
-    public void showWorkflowDetails(String repoName, String defName)
+    public void showWorkflowDetails(String projName, String defName)
         throws Exception
     {
         DigdagClient client = buildClient();
 
-        if (repoName != null) {
-            RestRepository repo = client.getRepository(repoName);
-            RestWorkflowDefinition def = client.getWorkflowDefinition(repo.getId(), defName);
+        if (projName != null) {
+            RestProject proj = client.getProject(projName);
+            RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
             String yaml = yamlMapper().toYaml(def.getConfig());
             ln("%s", yaml);
         }
         else {
-            for (RestRepository repo : client.getRepositories()) {
+            for (RestProject proj : client.getProjects()) {
                 try {
-                    RestWorkflowDefinition def = client.getWorkflowDefinition(repo.getId(), defName);
+                    RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
                     String yaml = yamlMapper().toYaml(def.getConfig());
                     ln("%s", yaml);
                     return;

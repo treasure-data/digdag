@@ -264,23 +264,23 @@ public class DatabaseMigrator
                 }
             }
 
-            // repositories
+            // projects
             handle.update(
-                    new CreateTableBuilder("repositories")
+                    new CreateTableBuilder("projects")
                     .addIntId("id")
                     .addInt("site_id", "not null")
                     .addString("name", "not null")
                     .addTimestamp("created_at", "not null")
-                    //.addTimestamp("deleted_at", "not null")  // this points UNIXTIME 0 (1970-01-01 00:00:00 UTC) if this repository is not deleted
+                    //.addTimestamp("deleted_at", "not null")  // this points UNIXTIME 0 (1970-01-01 00:00:00 UTC) if this project is not deleted
                     .build());
-            handle.update("create unique index repositories_on_site_id_and_name on repositories (site_id, name)");
-            //handle.update("create unique index repositories_on_site_id_and_name on repositories (site_id, name, deleted_at)");
+            handle.update("create unique index projects_on_site_id_and_name on projects (site_id, name)");
+            //handle.update("create unique index projects_on_site_id_and_name on projects (site_id, name, deleted_at)");
 
             // revisions
             handle.update(
                     new CreateTableBuilder("revisions")
                     .addIntId("id")
-                    .addInt("repository_id", "not null references repositories (id)")
+                    .addInt("project_id", "not null references projects (id)")
                     .addString("name", "not null")
                     // TODO disabled flag
                     .addMediumText("default_params", "")  // TODO move this to revision_params as like workflow_configs
@@ -289,8 +289,8 @@ public class DatabaseMigrator
                     .addBinary("archive_md5", "")
                     .addTimestamp("created_at", "not null")
                     .build());
-            handle.update("create unique index revisions_on_repository_id_and_name on revisions (repository_id, name)");
-            handle.update("create index revisions_on_repository_id_and_id on revisions (repository_id, id desc)");
+            handle.update("create unique index revisions_on_project_id_and_name on revisions (project_id, name)");
+            handle.update("create index revisions_on_project_id_and_id on revisions (project_id, id desc)");
 
             // revision_archives
             handle.update(
@@ -303,12 +303,12 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("workflow_configs")
                     .addIntId("id")
-                    .addInt("repository_id", "not null references repositories (id)")
+                    .addInt("project_id", "not null references projects (id)")
                     .addLong("config_digest", "not null")
                     .addString("timezone", "not null")
                     .addMediumText("config", "not null")
                     .build());
-            handle.update("create index workflow_configs_on_repository_id_and_config_digest on workflow_configs (repository_id, config_digest)");
+            handle.update("create index workflow_configs_on_project_id_and_config_digest on workflow_configs (project_id, config_digest)");
 
             // workflow_definitions
             handle.update(
@@ -324,7 +324,7 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("schedules")
                     .addIntId("id")
-                    .addInt("repository_id", "not null references repositories (id)")
+                    .addInt("project_id", "not null references projects (id)")
                     .addLong("workflow_definition_id", "not null references workflow_definitions (id)")
                     .addLong("next_run_time", "not null")
                     .addLong("next_schedule_time", "not null")
@@ -332,7 +332,7 @@ public class DatabaseMigrator
                     .addTimestamp("created_at", "not null")
                     .addTimestamp("updated_at", "not null")
                     .build());
-            handle.update("create index schedules_on_repository_id on schedules (repository_id)");
+            handle.update("create index schedules_on_project_id on schedules (project_id)");
             handle.update("create unique index schedules_on_workflow_definition_id on schedules (workflow_definition_id)");
             handle.update("create index schedules_on_next_run_time on schedules (next_run_time)");
 
@@ -340,14 +340,14 @@ public class DatabaseMigrator
             handle.update(
                     new CreateTableBuilder("sessions")
                     .addLongId("id")
-                    .addInt("repository_id", "not null references repositories (id)")
+                    .addInt("project_id", "not null references projects (id)")
                     .addString("workflow_name", "not null")
                     .addLong("session_time", "not null")
                     .addUuid("session_uuid", isPostgres() ? "not null default(uuid_generate_v4())" : "not null default(RANDOM_UUID())")
                     .addLong("last_attempt_id", "")
                     .build());
-            handle.update("create unique index sessions_on_repository_id_and_workflow_name_and_session_time on sessions (repository_id, workflow_name, session_time)");
-            handle.update("create index sessions_on_repository_id on sessions (repository_id, id)");
+            handle.update("create unique index sessions_on_project_id_and_workflow_name_and_session_time on sessions (project_id, workflow_name, session_time)");
+            handle.update("create index sessions_on_project_id on sessions (project_id, id)");
 
             // session_attempts
             handle.update(
@@ -355,7 +355,7 @@ public class DatabaseMigrator
                     .addLongId("id")
                     .addLong("session_id", "not null references sessions (id)")
                     .addInt("site_id", "not null")  // denormalized for performance
-                    .addInt("repository_id", "not null references repositories (id)")  // denormalized for performance
+                    .addInt("project_id", "not null references projects (id)")  // denormalized for performance
                     .addString("attempt_name", "not null")
                     .addLong("workflow_definition_id", "references workflow_definitions (id)")
                     .addShort("state_flags", "not null")  // 0=running or blocked, 1=cancel_requested, 2=done, 4=success
@@ -366,7 +366,7 @@ public class DatabaseMigrator
             handle.update("create unique index session_attempts_on_session_id_and_attempt_name on session_attempts (session_id, attempt_name)");
             handle.update("create index session_attempts_on_site_id on session_attempts (site_id, id desc)");
             handle.update("create index session_attempts_on_workflow_definition_id on session_attempts (workflow_definition_id, id desc)");
-            handle.update("create index session_attempts_on_repository_id on session_attempts (repository_id, id desc)");
+            handle.update("create index session_attempts_on_project_id on session_attempts (project_id, id desc)");
 
             // task_archives
             handle.update(

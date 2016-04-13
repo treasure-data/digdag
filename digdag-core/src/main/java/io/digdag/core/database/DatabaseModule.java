@@ -8,7 +8,7 @@ import com.google.inject.Provider;
 import javax.sql.DataSource;
 import javax.annotation.PostConstruct;
 import io.digdag.core.queue.QueueSettingStoreManager;
-import io.digdag.core.repository.RepositoryStoreManager;
+import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import org.skife.jdbi.v2.DBI;
@@ -26,7 +26,7 @@ public class DatabaseModule
         binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
-        binder.bind(RepositoryStoreManager.class).to(DatabaseRepositoryStoreManager.class).in(Scopes.SINGLETON);
+        binder.bind(ProjectStoreManager.class).to(DatabaseProjectStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(QueueSettingStoreManager.class).to(DatabaseQueueSettingStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(SessionStoreManager.class).to(DatabaseSessionStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(ScheduleStoreManager.class).to(DatabaseScheduleStoreManager.class).in(Scopes.SINGLETON);

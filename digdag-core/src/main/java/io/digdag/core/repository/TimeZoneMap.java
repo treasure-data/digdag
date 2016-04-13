@@ -26,10 +26,10 @@ public class TimeZoneMap
     public ZoneId get(long id)
         throws ResourceNotFoundException
     {
-        ZoneId repo = map.get(id);
-        if (repo == null) {
+        ZoneId proj = map.get(id);
+        if (proj == null) {
             throw new ResourceNotFoundException("timezone of workflow definition id=" + id);
         }
-        return repo;
+        return proj;
     }
 }

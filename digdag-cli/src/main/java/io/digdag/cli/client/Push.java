@@ -10,7 +10,7 @@ import io.digdag.cli.Run;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
-import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestProject;
 import static io.digdag.cli.Main.systemExit;
 
 public class Push
@@ -43,7 +43,7 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag push [-f workflow.yml...] <repository>");
+        System.err.println("Usage: digdag push [-f workflow.yml...] <project>");
         System.err.println("  Options:");
         System.err.println("    -r, --revision REVISION          revision name");
         //System.err.println("        --time-revision              use current time as the revision name");
@@ -52,13 +52,13 @@ public class Push
         System.err.println("    Names of the files to add the archive.");
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ find . | digdag push myrepo -r \"$(date +%Y-%m-%dT%H:%M:%S%z)\"");
+        System.err.println("    $ find . | digdag push myproj -r \"$(date +%Y-%m-%dT%H:%M:%S%z)\"");
         System.err.println("    $ git ls-files | digdag push default -r \"$(git show --pretty=format:'%T' | head -n 1)\"");
         System.err.println("");
         return systemExit(error);
     }
 
-    public void push(String repoName)
+    public void push(String projName)
         throws Exception
     {
         String path = "digdag.archive.tar.gz";
@@ -66,7 +66,7 @@ public class Push
         Archive.archive(dagfilePath, params, paramsFile, path);
 
         DigdagClient client = buildClient();
-        RestRepository repo = client.putRepositoryRevision(repoName, revision, new File(path));
-        Upload.showUploadedRepository(repo);
+        RestProject proj = client.putProjectRevision(projName, revision, new File(path));
+        Upload.showUploadedProject(proj);
     }
 }

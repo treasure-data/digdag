@@ -65,7 +65,7 @@ public class LogServerManager
     {
         return LogFilePrefix.builder()
             .siteId(attempt.getSiteId())
-            .repositoryId(attempt.getSession().getRepositoryId())
+            .projectId(attempt.getSession().getProjectId())
             .workflowName(attempt.getSession().getWorkflowName())
             .sessionTime(attempt.getSession().getSessionTime())
             .timeZone(attempt.getTimeZone())

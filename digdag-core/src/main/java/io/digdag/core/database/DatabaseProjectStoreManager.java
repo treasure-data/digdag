@@ -34,21 +34,21 @@ import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class DatabaseRepositoryStoreManager
-        extends BasicDatabaseStoreManager<DatabaseRepositoryStoreManager.Dao>
-        implements RepositoryStoreManager
+public class DatabaseProjectStoreManager
+        extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
+        implements ProjectStoreManager
 {
     private final ConfigMapper cfm;
 
     @Inject
-    public DatabaseRepositoryStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
         super(config.getType(), Dao.class, dbi);
 
-        dbi.registerMapper(new StoredRepositoryMapper(cfm));
+        dbi.registerMapper(new StoredProjectMapper(cfm));
         dbi.registerMapper(new StoredRevisionMapper(cfm));
         dbi.registerMapper(new StoredWorkflowDefinitionMapper(cfm));
-        dbi.registerMapper(new StoredWorkflowDefinitionWithRepositoryMapper(cfm));
+        dbi.registerMapper(new StoredWorkflowDefinitionWithProjectMapper(cfm));
         dbi.registerMapper(new WorkflowConfigMapper());
         dbi.registerMapper(new IdNameMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
@@ -57,13 +57,13 @@ public class DatabaseRepositoryStoreManager
     }
 
     @Override
-    public RepositoryStore getRepositoryStore(int siteId)
+    public ProjectStore getProjectStore(int siteId)
     {
-        return new DatabaseRepositoryStore(siteId);
+        return new DatabaseProjectStore(siteId);
     }
 
     @Override
-    public StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(long wfId)
+    public StoredWorkflowDefinitionWithProject getWorkflowDetailsById(long wfId)
             throws ResourceNotFoundException
     {
         return requiredResource(
@@ -72,12 +72,12 @@ public class DatabaseRepositoryStoreManager
     }
 
     @Override
-    public StoredRepository getRepositoryByIdInternal(int repoId)
+    public StoredProject getProjectByIdInternal(int projId)
         throws ResourceNotFoundException
     {
         return requiredResource(
-                (handle, dao) -> dao.getRepositoryByIdInternal(repoId),
-                "repository id=%s", repoId);
+                (handle, dao) -> dao.getProjectByIdInternal(projId),
+                "project id=%s", projId);
     }
 
     @Override
@@ -89,85 +89,85 @@ public class DatabaseRepositoryStoreManager
                 "revision of workflow definition id=%s", wfId);
     }
 
-    private class DatabaseRepositoryStore
-            implements RepositoryStore
+    private class DatabaseProjectStore
+            implements ProjectStore
     {
         // TODO retry
         private final int siteId;
 
-        public DatabaseRepositoryStore(int siteId)
+        public DatabaseProjectStore(int siteId)
         {
             this.siteId = siteId;
         }
 
-        //public List<StoredRepository> getAllRepositories()
+        //public List<StoredProject> getAllProjects()
         //{
-        //    return dao.getRepositories(siteId, Integer.MAX_VALUE, 0);
+        //    return dao.getProjects(siteId, Integer.MAX_VALUE, 0);
         //}
 
         @Override
-        public List<StoredRepository> getRepositories(int pageSize, Optional<Integer> lastId)
+        public List<StoredProject> getProjects(int pageSize, Optional<Integer> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getRepositories(siteId, pageSize, lastId.or(0)));
+            return autoCommit((handle, dao) -> dao.getProjects(siteId, pageSize, lastId.or(0)));
         }
 
         @Override
-        public RepositoryMap getRepositoriesByIdList(List<Integer> repoIdList)
+        public ProjectMap getProjectsByIdList(List<Integer> projIdList)
         {
-            if (repoIdList.isEmpty()) {
-                return RepositoryMap.empty();
+            if (projIdList.isEmpty()) {
+                return ProjectMap.empty();
             }
 
-            List<StoredRepository> repos = autoCommit((handle, dao) ->
+            List<StoredProject> projs = autoCommit((handle, dao) ->
                     handle.createQuery(
-                        "select * from repositories" +
+                        "select * from projects" +
                         " where site_id = :siteId" +
                         " and id in (" +
-                            repoIdList.stream()
+                            projIdList.stream()
                             .map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")"
                     )
                     .bind("siteId", siteId)
-                    .map(new StoredRepositoryMapper(cfm))
+                    .map(new StoredProjectMapper(cfm))
                     .list()
                 );
 
-            ImmutableMap.Builder<Integer, StoredRepository> builder = ImmutableMap.builder();
-            for (StoredRepository repo : repos) {
-                builder.put(repo.getId(), repo);
+            ImmutableMap.Builder<Integer, StoredProject> builder = ImmutableMap.builder();
+            for (StoredProject proj : projs) {
+                builder.put(proj.getId(), proj);
             }
-            return new RepositoryMap(builder.build());
+            return new ProjectMap(builder.build());
         }
 
         @Override
-        public StoredRepository getRepositoryById(int repoId)
+        public StoredProject getProjectById(int projId)
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getRepositoryById(siteId, repoId),
-                    "repository id=%d", repoId);
+                    (handle, dao) -> dao.getProjectById(siteId, projId),
+                    "project id=%d", projId);
         }
 
         @Override
-        public StoredRepository getRepositoryByName(String repoName)
+        public StoredProject getProjectByName(String projName)
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getRepositoryByName(siteId, repoName),
-                    "repository name=%s", repoName);
+                    (handle, dao) -> dao.getProjectByName(siteId, projName),
+                    "project name=%s", projName);
         }
 
         @Override
-        public <T> T putAndLockRepository(Repository repository, RepositoryLockAction<T> func)
+        public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
         {
             return transaction((handle, dao, ts) -> {
-                int repoId;
+                int projId;
 
                 if (!ts.isRetried()) {
                     try {
-                        repoId = catchConflict(() ->
-                                dao.insertRepository(siteId, repository.getName()),
-                                "repository name=%s", repository.getName());
+                        projId = catchConflict(() ->
+                                dao.insertProject(siteId, project.getName()),
+                                "project name=%s", project.getName());
                     }
                     catch (ResourceConflictException ex) {
                         ts.retry(ex);
@@ -175,19 +175,19 @@ public class DatabaseRepositoryStoreManager
                     }
                 }
                 else {
-                    StoredRepository repo = dao.getRepositoryByName(siteId, repository.getName());
-                    if (repo == null) {
+                    StoredProject proj = dao.getProjectByName(siteId, project.getName());
+                    if (proj == null) {
                         throw new IllegalStateException("Database state error", ts.getLastException());
                     }
-                    repoId = repo.getId();
+                    projId = proj.getId();
                 }
 
-                StoredRepository repo = dao.lockRepository(repoId);
-                if (repo == null) {
+                StoredProject proj = dao.lockProject(projId);
+                if (proj == null) {
                     throw new IllegalStateException("Database state error");
                 }
 
-                return func.call(new DatabaseRepositoryControlStore(handle, siteId), repo);
+                return func.call(new DatabaseProjectControlStore(handle, siteId), proj);
             }, ResourceConflictException.class);
         }
 
@@ -201,27 +201,27 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredRevision getRevisionByName(int repoId, String revName)
+        public StoredRevision getRevisionByName(int projId, String revName)
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getRevisionByName(siteId, repoId, revName),
-                    "revision name=%s in repository id=%d", revName, repoId);
+                    (handle, dao) -> dao.getRevisionByName(siteId, projId, revName),
+                    "revision name=%s in project id=%d", revName, projId);
         }
 
         @Override
-        public StoredRevision getLatestRevision(int repoId)
+        public StoredRevision getLatestRevision(int projId)
                 throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getLatestRevision(siteId, repoId),
-                    "repository id=%d", repoId);
+                    (handle, dao) -> dao.getLatestRevision(siteId, projId),
+                    "project id=%d", projId);
         }
 
         @Override
-        public List<StoredRevision> getRevisions(int repoId, int pageSize, Optional<Integer> lastId)
+        public List<StoredRevision> getRevisions(int projId, int pageSize, Optional<Integer> lastId)
         {
-            return autoCommit((handle, dao) -> dao.getRevisions(siteId, repoId, pageSize, lastId.or(Integer.MAX_VALUE)));
+            return autoCommit((handle, dao) -> dao.getRevisions(siteId, projId, pageSize, lastId.or(Integer.MAX_VALUE)));
         }
 
         @Override
@@ -234,12 +234,12 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(int repoId, String name)
+        public StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(int projId, String name)
             throws ResourceNotFoundException
         {
             return requiredResource(
-                    (handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, repoId, name),
-                    "workflow name=%s in the latest revision of repository id=%d", name, repoId);
+                    (handle, dao) -> dao.getLatestWorkflowDefinitionByName(siteId, projId, name),
+                    "workflow name=%s in the latest revision of project id=%d", name, projId);
         }
 
         @Override
@@ -249,7 +249,7 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public StoredWorkflowDefinitionWithRepository getWorkflowDefinitionById(long wfId)
+        public StoredWorkflowDefinitionWithProject getWorkflowDefinitionById(long wfId)
             throws ResourceNotFoundException
         {
             return requiredResource(
@@ -277,7 +277,7 @@ public class DatabaseRepositoryStoreManager
                     handle.createQuery(
                         "select wd.id, wc.timezone from workflow_definitions wd" +
                         " join revisions rev on rev.id = wd.revision_id" +
-                        " join repositories repo on repo.id = rev.repository_id" +
+                        " join projects proj on proj.id = rev.project_id" +
                         " join workflow_configs wc on wc.id = wd.config_id" +
                         " where wd.id in (" + defIdList.stream()
                             .map(it -> Long.toString(it)).collect(Collectors.joining(", ")) + ")" +
@@ -325,14 +325,14 @@ public class DatabaseRepositoryStoreManager
         }
     }
 
-    private class DatabaseRepositoryControlStore
-            implements RepositoryControlStore
+    private class DatabaseProjectControlStore
+            implements ProjectControlStore
     {
         private final Handle handle;
         private final int siteId;
         private final Dao dao;
 
-        public DatabaseRepositoryControlStore(Handle handle, int siteId)
+        public DatabaseProjectControlStore(Handle handle, int siteId)
         {
             this.handle = handle;
             this.siteId = siteId;
@@ -342,16 +342,16 @@ public class DatabaseRepositoryStoreManager
         /**
          * Create or overwrite a revision.
          *
-         * This method doesn't check site id because RepositoryControl
+         * This method doesn't check site id because ProjectControl
          * interface is avaiable only if site is is valid.
          */
         @Override
-        public StoredRevision insertRevision(int repoId, Revision revision)
+        public StoredRevision insertRevision(int projId, Revision revision)
             throws ResourceConflictException
         {
             int revId = catchConflict(() ->
-                dao.insertRevision(repoId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
-                "revision=%s in repository id=%d", revision.getName(), repoId);
+                dao.insertRevision(projId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
+                "revision=%s in project id=%d", revision.getName(), projId);
             try {
                 return requiredResource(
                         dao.getRevisionById(siteId, revId),
@@ -377,11 +377,11 @@ public class DatabaseRepositoryStoreManager
         /**
          * Create a revision.
          *
-         * This method doesn't check site id because RepositoryControl
+         * This method doesn't check site id because ProjectControl
          * interface is available only if site is is valid.
          */
         @Override
-        public StoredWorkflowDefinition insertWorkflowDefinition(int repoId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
+        public StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition def, ZoneId workflowTimeZone)
             throws ResourceConflictException
         {
             String configText = cfm.toText(def.getConfig());
@@ -390,12 +390,12 @@ public class DatabaseRepositoryStoreManager
 
             int configId;
 
-            WorkflowConfig found = dao.findWorkflowConfigByDigest(repoId, configDigest);
+            WorkflowConfig found = dao.findWorkflowConfigByDigest(projId, configDigest);
             if (found != null && WorkflowConfig.isEquivalent(found, configText, zoneId)) {
                 configId = found.getId();
             }
             else {
-                configId = dao.insertWorkflowConfig(repoId, configText, zoneId, configDigest);
+                configId = dao.insertWorkflowConfig(projId, configText, zoneId, configDigest);
             }
 
             long wfId = catchConflict(() ->
@@ -413,10 +413,10 @@ public class DatabaseRepositoryStoreManager
         }
 
         @Override
-        public void updateSchedules(int repoId, List<Schedule> schedules)
+        public void updateSchedules(int projId, List<Schedule> schedules)
             throws ResourceConflictException
         {
-            Map<String, Integer> oldNames = idNameListToHashMap(dao.getScheduleNames(repoId));
+            Map<String, Integer> oldNames = idNameListToHashMap(dao.getScheduleNames(projId));
 
             for (Schedule schedule : schedules) {
                 if (oldNames.containsKey(schedule.getWorkflowName())) {
@@ -441,10 +441,10 @@ public class DatabaseRepositoryStoreManager
                     catchConflict(() ->
                             handle.createStatement(
                                 "insert into schedules" +
-                                " (repository_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
-                                " values (:repoId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
+                                " (project_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
+                                " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
                             )
-                            .bind("repoId", repoId)
+                            .bind("projId", projId)
                             .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
                             .bind("nextRunTime", schedule.getNextRunTime().getEpochSecond())
                             .bind("nextScheduleTime", schedule.getNextScheduleTime().getEpochSecond())
@@ -465,21 +465,21 @@ public class DatabaseRepositoryStoreManager
 
     public interface Dao
     {
-        @SqlQuery("select * from repositories" +
+        @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
                 " and id > :lastId" +
                 " order by id asc" +
                 " limit :limit")
-        List<StoredRepository> getRepositories(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredProject> getProjects(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
-        @SqlQuery("select * from repositories" +
+        @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
                 " and id = :id")
-        StoredRepository getRepositoryById(@Bind("siteId") int siteId, @Bind("id") int id);
+        StoredProject getProjectById(@Bind("siteId") int siteId, @Bind("id") int id);
 
-        @SqlQuery("select * from repositories" +
+        @SqlQuery("select * from projects" +
                 " where id = :id")
-        StoredRepository getRepositoryByIdInternal(@Bind("id") int id);
+        StoredProject getProjectByIdInternal(@Bind("id") int id);
 
         @SqlQuery("select rev.*" +
                 " from workflow_definitions wd" +
@@ -487,100 +487,100 @@ public class DatabaseRepositoryStoreManager
                 " where wd.id = :id")
         StoredRevision getRevisionOfWorkflowDefinition(@Bind("id") long wfId);
 
-        @SqlQuery("select * from repositories" +
+        @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
                 " and name = :name" +
                 " limit 1")
-        StoredRepository getRepositoryByName(@Bind("siteId") int siteId, @Bind("name") String name);
+        StoredProject getProjectByName(@Bind("siteId") int siteId, @Bind("name") String name);
 
-        @SqlQuery("select * from repositories where id = :id" +
+        @SqlQuery("select * from projects where id = :id" +
                 " for update")
-        StoredRepository lockRepository(@Bind("id") int id);
+        StoredProject lockProject(@Bind("id") int id);
 
-        @SqlUpdate("insert into repositories" +
+        @SqlUpdate("insert into projects" +
                 " (site_id, name, created_at)" +
                 " values (:siteId, :name, now())")
         @GetGeneratedKeys
-        int insertRepository(@Bind("siteId") int siteId, @Bind("name") String name);
+        int insertProject(@Bind("siteId") int siteId, @Bind("name") String name);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
                 " and rev.id = :id")
         StoredRevision getRevisionById(@Bind("siteId") int siteId, @Bind("id") int id);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
-                " and rev.repository_id = :repoId" +
+                " and rev.project_id = :projId" +
                 " and rev.name = :name" +
                 " limit 1")
-        StoredRevision getRevisionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
+        StoredRevision getRevisionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
-                " and rev.repository_id = :repoId" +
+                " and rev.project_id = :projId" +
                 " order by rev.id desc" +
                 " limit 1")
-        StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("repoId") int repoId);
+        StoredRevision getLatestRevision(@Bind("siteId") int siteId, @Bind("projId") int projId);
 
         @SqlQuery("select rev.* from revisions rev" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " where site_id = :siteId" +
-                " and rev.repository_id = :repoId" +
+                " and rev.project_id = :projId" +
                 " and rev.id < :lastId" +
                 " order by rev.id desc" +
                 " limit :limit")
-        List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+        List<StoredRevision> getRevisions(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
         @SqlQuery("select archive_data from revision_archives" +
                 " where id = :revId")
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.revision_id = (" +
                     "select max(id) from revisions" +
-                    " where repository_id = :repoId" +
+                    " where project_id = :projId" +
                 ")" +
                 " and wd.name = :name" +
-                " and repo.site_id = :siteId" +
+                " and proj.site_id = :siteId" +
                 " limit 1")
-        StoredWorkflowDefinitionWithRepository getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("repoId") int repoId, @Bind("name") String name);
+        StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id = :id")
-        StoredWorkflowDefinitionWithRepository getWorkflowDetailsByIdInternal(@Bind("id") long id);
+        StoredWorkflowDefinitionWithProject getWorkflowDetailsByIdInternal(@Bind("id") long id);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " repo.id as repo_id, repo.name as repo_name, repo.site_id, repo.created_at as repo_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id = :id" +
                 " and site_id = :siteId")
-        StoredWorkflowDefinitionWithRepository getWorkflowDetailsById(@Bind("siteId") int siteId, @Bind("id") long id);
+        StoredWorkflowDefinitionWithProject getWorkflowDetailsById(@Bind("siteId") int siteId, @Bind("id") long id);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.id = :id" +
                 " and site_id = :siteId")
@@ -588,7 +588,7 @@ public class DatabaseRepositoryStoreManager
 
         @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where revision_id = :revId" +
                 " and wd.name = :name" +
@@ -598,28 +598,28 @@ public class DatabaseRepositoryStoreManager
 
         @SqlQuery("select id, config, timezone" +
                 " from workflow_configs" +
-                " where repository_id = :repoId and config_digest = :configDigest")
-        WorkflowConfig findWorkflowConfigByDigest(@Bind("repoId") int repoId, @Bind("configDigest") long configDigest);
+                " where project_id = :projId and config_digest = :configDigest")
+        WorkflowConfig findWorkflowConfigByDigest(@Bind("projId") int projId, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into workflow_configs" +
-                " (repository_id, config, timezone, config_digest)" +
-                " values (:repoId, :config, :timezone, :configDigest)")
+                " (project_id, config, timezone, config_digest)" +
+                " values (:projId, :config, :timezone, :configDigest)")
         @GetGeneratedKeys
-        int insertWorkflowConfig(@Bind("repoId") int repoId, @Bind("config") String config, @Bind("timezone") String timezone, @Bind("configDigest") long configDigest);
+        int insertWorkflowConfig(@Bind("projId") int projId, @Bind("config") String config, @Bind("timezone") String timezone, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into revisions" +
-                " (repository_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
-                " values (:repoId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
+                " (project_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
+                " values (:projId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("repoId") int repoId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
+        int insertRevision(@Bind("projId") int projId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
-                " join repositories repo on repo.id = rev.repository_id" +
+                " join projects proj on proj.id = rev.project_id" +
                 " join workflow_configs wc on wc.id = wd.config_id" +
                 " where wd.revision_id = :revId" +
                 " and wd.id > :lastId" +
-                " and repo.site_id = :siteId" +
+                " and proj.site_id = :siteId" +
                 " order by wd.id asc" +
                 " limit :limit")
         List<StoredWorkflowDefinition> getWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("revId") int revId, @Bind("limit") int limit, @Bind("lastId") long lastId);
@@ -637,8 +637,8 @@ public class DatabaseRepositoryStoreManager
 
         @SqlQuery("select wd.name, schedules.id from schedules" +
                 " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
-                " where schedules.repository_id = :repoId")
-        List<IdName> getScheduleNames(@Bind("repoId") int repoId);
+                " where schedules.project_id = :projId")
+        List<IdName> getScheduleNames(@Bind("projId") int projId);
     }
 
     @Value.Immutable
@@ -679,21 +679,21 @@ public class DatabaseRepositoryStoreManager
         }
     }
 
-    private static class StoredRepositoryMapper
-            implements ResultSetMapper<StoredRepository>
+    private static class StoredProjectMapper
+            implements ResultSetMapper<StoredProject>
     {
         private final ConfigMapper cfm;
 
-        public StoredRepositoryMapper(ConfigMapper cfm)
+        public StoredProjectMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
 
         @Override
-        public StoredRepository map(int index, ResultSet r, StatementContext ctx)
+        public StoredProject map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return ImmutableStoredRepository.builder()
+            return ImmutableStoredProject.builder()
                 .id(r.getInt("id"))
                 .name(r.getString("name"))
                 .siteId(r.getInt("site_id"))
@@ -718,7 +718,7 @@ public class DatabaseRepositoryStoreManager
         {
             return ImmutableStoredRevision.builder()
                 .id(r.getInt("id"))
-                .repositoryId(r.getInt("repository_id"))
+                .projectId(r.getInt("project_id"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .name(r.getString("name"))
                 .defaultParams(cfm.fromResultSetOrEmpty(r, "default_params"))
@@ -753,32 +753,32 @@ public class DatabaseRepositoryStoreManager
         }
     }
 
-    private static class StoredWorkflowDefinitionWithRepositoryMapper
-            implements ResultSetMapper<StoredWorkflowDefinitionWithRepository>
+    private static class StoredWorkflowDefinitionWithProjectMapper
+            implements ResultSetMapper<StoredWorkflowDefinitionWithProject>
     {
         private final ConfigMapper cfm;
 
-        public StoredWorkflowDefinitionWithRepositoryMapper(ConfigMapper cfm)
+        public StoredWorkflowDefinitionWithProjectMapper(ConfigMapper cfm)
         {
             this.cfm = cfm;
         }
 
         @Override
-        public StoredWorkflowDefinitionWithRepository map(int index, ResultSet r, StatementContext ctx)
+        public StoredWorkflowDefinitionWithProject map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            return ImmutableStoredWorkflowDefinitionWithRepository.builder()
+            return ImmutableStoredWorkflowDefinitionWithProject.builder()
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
                 .timeZone(ZoneId.of(r.getString("timezone")))
                 .name(r.getString("name"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
-                .repository(
-                        ImmutableStoredRepository.builder()
-                            .id(r.getInt("repo_id"))
-                            .name(r.getString("repo_name"))
+                .project(
+                        ImmutableStoredProject.builder()
+                            .id(r.getInt("proj_id"))
+                            .name(r.getString("proj_name"))
                             .siteId(r.getInt("site_id"))
-                            .createdAt(getTimestampInstant(r, "repo_created_at"))
+                            .createdAt(getTimestampInstant(r, "proj_created_at"))
                             .build())
                 .revisionName(r.getString("rev_name"))
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))

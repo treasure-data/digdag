@@ -17,7 +17,7 @@ public class LocalSite
     private static Logger logger = LoggerFactory.getLogger(LocalSite.class);
 
     private final WorkflowCompiler compiler;
-    private final RepositoryStore repositoryStore;
+    private final ProjectStore projectStore;
     private final SessionStore sessionStore;
     private final AttemptBuilder attemptBuilder;
     private final WorkflowExecutor exec;
@@ -26,14 +26,14 @@ public class LocalSite
     @Inject
     public LocalSite(
             WorkflowCompiler compiler,
-            RepositoryStoreManager repoStoreManager,
+            ProjectStoreManager projectStoreManager,
             SessionStoreManager sessionStoreManager,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec,
             SchedulerManager srm)
     {
         this.compiler = compiler;
-        this.repositoryStore = repoStoreManager.getRepositoryStore(0);
+        this.projectStore = projectStoreManager.getProjectStore(0);
         this.sessionStore = sessionStoreManager.getSessionStore(0);
         this.attemptBuilder = attemptBuilder;
         this.exec = exec;
@@ -45,9 +45,9 @@ public class LocalSite
         return attemptBuilder;
     }
 
-    public RepositoryStore getRepositoryStore()
+    public ProjectStore getProjectStore()
     {
-        return repositoryStore;
+        return projectStore;
     }
 
     public SessionStore getSessionStore()
@@ -78,41 +78,41 @@ public class LocalSite
     }
 
     private StoreWorkflowResult storeLocalWorkflowsImpl(
-            String repositoryName, Revision revision,
+            String projectName, Revision revision,
             WorkflowDefinitionList defs,
             Optional<Instant> currentTimeToSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
         // validate workflow
-        // TODO move this to RepositoryControl
+        // TODO move this to ProjectControl
         defs.get()
             .stream()
             .forEach(workflowSource -> compiler.compile(workflowSource.getName(), workflowSource.getConfig()));
 
-        return repositoryStore.putAndLockRepository(
-                Repository.of(repositoryName),
-                (store, storedRepo) -> {
-                    RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
-                    StoredRevision rev = lockedRepo.insertRevision(revision);
+        return projectStore.putAndLockProject(
+                Project.of(projectName),
+                (store, storedProject) -> {
+                    ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                    StoredRevision rev = lockedProj.insertRevision(revision);
                     List<StoredWorkflowDefinition> storedDefs;
                     if (currentTimeToSchedule.isPresent()) {
-                        storedDefs = lockedRepo.insertWorkflowDefinitions(rev, defs.get(), srm, currentTimeToSchedule.get());
+                        storedDefs = lockedProj.insertWorkflowDefinitions(rev, defs.get(), srm, currentTimeToSchedule.get());
                     }
                     else {
-                        storedDefs = lockedRepo.insertWorkflowDefinitionsWithoutSchedules(rev, defs.get());
+                        storedDefs = lockedProj.insertWorkflowDefinitionsWithoutSchedules(rev, defs.get());
                     }
                     return new StoreWorkflowResult(rev, storedDefs);
                 });
     }
 
     public StoreWorkflowResult storeLocalWorkflowsWithoutSchedule(
-            String repositoryName,
+            String projectName,
             String revisionName,
             ArchiveMetadata archive)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
-                repositoryName,
+                projectName,
                 Revision.builderFromArchive(revisionName, archive)
                     .archiveType("none")
                     .build(),
@@ -121,14 +121,14 @@ public class LocalSite
     }
 
     public StoreWorkflowResult storeLocalWorkflows(
-            String repositoryName,
+            String projectName,
             String revisionName,
             ArchiveMetadata archive,
             Instant currentTimeForSchedule)
         throws ResourceConflictException, ResourceNotFoundException
     {
         return storeLocalWorkflowsImpl(
-                repositoryName,
+                projectName,
                 Revision.builderFromArchive(revisionName, archive)
                     .archiveType("none")
                     .build(),

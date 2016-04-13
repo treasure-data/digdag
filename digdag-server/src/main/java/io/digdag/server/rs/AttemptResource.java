@@ -52,15 +52,15 @@ public class AttemptResource
 {
     // [*] GET  /api/attempts                                    # list attempts from recent to old
     // [*] GET  /api/attempts?include_retried=1                  # list attempts from recent to old
-    // [*] GET  /api/attempts?repository=<name>                  # list attempts that belong to a particular repository
-    // [*] GET  /api/attempts?repository=<name>&workflow=<name>  # list attempts that belong to a particular workflow
+    // [*] GET  /api/attempts?project=<name>                  # list attempts that belong to a particular project
+    // [*] GET  /api/attempts?project=<name>&workflow=<name>  # list attempts that belong to a particular workflow
     // [*] GET  /api/attempts/{id}                               # show a session
     // [*] GET  /api/attempts/{id}/tasks                         # list tasks of a session
     // [*] GET  /api/attempts/{id}/retries                       # list retried attempts of this session
     // [*] PUT  /api/attempts                                    # starts a new session
     // [*] POST /api/attempts/{id}/kill                          # kill a session
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final SchedulerManager srm;
     private final AttemptBuilder attemptBuilder;
@@ -69,7 +69,7 @@ public class AttemptResource
 
     @Inject
     public AttemptResource(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             SessionStoreManager sm,
             SchedulerManager srm,
             AttemptBuilder attemptBuilder,
@@ -87,7 +87,7 @@ public class AttemptResource
     @GET
     @Path("/api/attempts")
     public List<RestSessionAttempt> getAttempts(
-            @QueryParam("repository") String repoName,
+            @QueryParam("project") String projName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
             @QueryParam("last_id") Long lastId)
@@ -95,18 +95,18 @@ public class AttemptResource
     {
         List<StoredSessionAttemptWithSession> attempts;
 
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        ProjectStore rs = rm.getProjectStore(getSiteId());
         SessionStore ss = sm.getSessionStore(getSiteId());
-        if (repoName != null) {
-            StoredRepository repo = rs.getRepositoryByName(repoName);
+        if (projName != null) {
+            StoredProject proj = rs.getProjectByName(projName);
             if (wfName != null) {
                 // of workflow
-                StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(repo.getId(), wfName);
+                StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(proj.getId(), wfName);
                 attempts = ss.getSessionsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
             }
             else {
-                // of repository
-                attempts = ss.getSessionsOfRepository(includeRetried, repo.getId(), 100, Optional.fromNullable(lastId));
+                // of project
+                attempts = ss.getSessionsOfProject(includeRetried, proj.getId(), 100, Optional.fromNullable(lastId));
             }
         }
         else {
@@ -124,10 +124,10 @@ public class AttemptResource
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
             .getSessionAttemptById(id);
-        StoredRepository repo = rm.getRepositoryStore(getSiteId())
-                .getRepositoryById(attempt.getSession().getRepositoryId());
+        StoredProject proj = rm.getProjectStore(getSiteId())
+                .getProjectById(attempt.getSession().getProjectId());
 
-        return RestModels.attempt(attempt, repo.getName());
+        return RestModels.attempt(attempt, proj.getName());
     }
 
     @GET
@@ -143,19 +143,19 @@ public class AttemptResource
 
     // used by ScheduleResource.backfillSchedule
     static List<RestSessionAttempt> attemptModels(
-            RepositoryStoreManager rm, int siteId,
+            ProjectStoreManager rm, int siteId,
             List<StoredSessionAttemptWithSession> attempts)
     {
-        RepositoryMap repos = rm.getRepositoryStore(siteId)
-            .getRepositoriesByIdList(
+        ProjectMap projs = rm.getProjectStore(siteId)
+            .getProjectsByIdList(
                     attempts.stream()
-                    .map(attempt -> attempt.getSession().getRepositoryId())
+                    .map(attempt -> attempt.getSession().getProjectId())
                     .collect(Collectors.toList()));
 
         return attempts.stream()
             .map(attempt -> {
                 try {
-                    return RestModels.attempt(attempt, repos.get(attempt.getSession().getRepositoryId()).getName());
+                    return RestModels.attempt(attempt, projs.get(attempt.getSession().getProjectId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
                     // must not happen
@@ -183,9 +183,9 @@ public class AttemptResource
     public Response startAttempt(RestSessionAttemptRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
+        ProjectStore rs = rm.getProjectStore(getSiteId());
 
-        StoredWorkflowDefinitionWithRepository def = rs.getWorkflowDefinitionById(request.getWorkflowId());
+        StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(request.getWorkflowId());
 
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -196,12 +196,12 @@ public class AttemptResource
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);
-            RestSessionAttempt res = RestModels.attempt(attempt, def.getRepository().getName());
+            RestSessionAttempt res = RestModels.attempt(attempt, def.getProject().getName());
             return Response.ok(res).build();
         }
         catch (SessionAttemptConflictException ex) {
             StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
-            RestSessionAttempt res = RestModels.attempt(conflicted, def.getRepository().getName());
+            RestSessionAttempt res = RestModels.attempt(conflicted, def.getProject().getName());
             return Response.status(Response.Status.CONFLICT).entity(res).build();
         }
     }

@@ -13,7 +13,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 
 public class SchedulerManager
 {
@@ -54,7 +54,7 @@ public class SchedulerManager
                 );
     }
 
-    public Optional<Scheduler> tryGetScheduler(StoredWorkflowDefinitionWithRepository def)
+    public Optional<Scheduler> tryGetScheduler(StoredWorkflowDefinitionWithProject def)
     {
         return tryGetScheduleConfig(def).transform(it ->
                     getScheduler(it, def.getTimeZone())

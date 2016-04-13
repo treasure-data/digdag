@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Value.Immutable
 @ImmutableImplStyle
-@JsonSerialize(as = ImmutableRepository.class)
-public abstract class RepositoryImpl
-        extends Repository
+@JsonSerialize(as = ImmutableProject.class)
+public abstract class ProjectImpl
+        extends Project
 { }

@@ -30,10 +30,10 @@ import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.repository.RepositoryStoreManager;
-import io.digdag.core.repository.StoredRepository;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -129,7 +129,7 @@ public class WorkflowExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final SessionStoreManager sm;
     private final WorkflowCompiler compiler;
     private final TaskQueueDispatcher dispatcher;
@@ -142,7 +142,7 @@ public class WorkflowExecutor
 
     @Inject
     public WorkflowExecutor(
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             SessionStoreManager sm,
             TaskQueueDispatcher dispatcher,
             WorkflowCompiler compiler,
@@ -187,8 +187,8 @@ public class WorkflowExecutor
             logger.trace("    config: {}", task.getConfig());
         }
 
-        int repoId = ar.getStored().getRepositoryId();
-        Session session = Session.of(repoId, ar.getWorkflowName(), ar.getSessionTime());
+        int projId = ar.getStored().getProjectId();
+        Session session = Session.of(projId, ar.getWorkflowName(), ar.getSessionTime());
 
         SessionAttempt attempt = SessionAttempt.of(
                 ar.getRetryAttemptName(),
@@ -211,10 +211,10 @@ public class WorkflowExecutor
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
                 .putAndLockSession(session, (store, storedSession) -> {
                     StoredSessionAttempt storedAttempt;
-                    storedAttempt = store.insertAttempt(storedSession.getId(), repoId, attempt);  // this may throw ResourceConflictException
+                    storedAttempt = store.insertAttempt(storedSession.getId(), projId, attempt);  // this may throw ResourceConflictException
 
-                    logger.info("Starting a new session repository id={} workflow name={} session_time={}",
-                            repoId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
+                    logger.info("Starting a new session project id={} workflow name={} session_time={}",
+                            projId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
 
                     // root task is already ready to run
                     final Task rootTask = Task.taskBuilder()
@@ -242,11 +242,11 @@ public class WorkflowExecutor
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sm.getSessionStore(siteId)
-                    .getSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
+                    .getSessionAttemptByNames(session.getProjectId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
             }
             else {
                 conflicted = sm.getSessionStore(siteId)
-                    .getLastSessionAttemptByNames(session.getRepositoryId(), session.getWorkflowName(), session.getSessionTime());
+                    .getLastSessionAttemptByNames(session.getProjectId(), session.getWorkflowName(), session.getSessionTime());
             }
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
@@ -776,7 +776,7 @@ public class WorkflowExecutor
                 // so that OperatorManager can build it using the reloaded local config.
                 TaskRequest request = TaskRequest.builder()
                     .siteId(attempt.getSiteId())
-                    .repositoryId(attempt.getSession().getRepositoryId())
+                    .projectId(attempt.getSession().getProjectId())
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
                     .taskId(task.getId())

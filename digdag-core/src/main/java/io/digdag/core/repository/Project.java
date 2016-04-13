@@ -6,14 +6,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import java.util.regex.Pattern;
 
-@JsonDeserialize(as = ImmutableRepository.class)
-public abstract class Repository
+@JsonDeserialize(as = ImmutableProject.class)
+public abstract class Project
 {
     public abstract String getName();
 
-    public static Repository of(String name)
+    public static Project of(String name)
     {
-        return ImmutableRepository.builder()
+        return ImmutableProject.builder()
             .name(name)
             .build();
     }
@@ -22,7 +22,7 @@ public abstract class Repository
     protected void check()
     {
         ModelValidator.builder()
-            .checkResourceName("name", getName())
-            .validate("repository", this);
+            .checkProjectName("name", getName())
+            .validate("project", this);
     }
 }

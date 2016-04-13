@@ -15,26 +15,26 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import java.util.stream.Collectors;
 
-public class RepositoryControl
+public class ProjectControl
 {
-    private final RepositoryControlStore store;
-    private final StoredRepository repository;
+    private final ProjectControlStore store;
+    private final StoredProject project;
 
-    public RepositoryControl(RepositoryControlStore store, StoredRepository repository)
+    public ProjectControl(ProjectControlStore store, StoredProject project)
     {
         this.store = store;
-        this.repository = repository;
+        this.project = project;
     }
 
-    public StoredRepository get()
+    public StoredProject get()
     {
-        return repository;
+        return project;
     }
 
     public StoredRevision insertRevision(Revision revision)
         throws ResourceConflictException
     {
-        return store.insertRevision(repository.getId(), revision);
+        return store.insertRevision(project.getId(), revision);
     }
 
     public void insertRevisionArchiveData(int revId, byte[] data)
@@ -61,7 +61,7 @@ public class RepositoryControl
             return defs.stream()
                 .map(def -> {
                     try {
-                        return store.insertWorkflowDefinition(repository.getId(), revision.getId(), def, WorkflowDefinition.getTimeZoneOfWorkflow(revision, def));
+                        return store.insertWorkflowDefinition(project.getId(), revision.getId(), def, WorkflowDefinition.getTimeZoneOfWorkflow(revision, def));
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);
@@ -94,6 +94,6 @@ public class RepositoryControl
         //   * compile workflow
         //   * validate SubtaskMatchPattern
 
-        store.updateSchedules(repository.getId(), schedules.build());
+        store.updateSchedules(project.getId(), schedules.build());
     }
 }

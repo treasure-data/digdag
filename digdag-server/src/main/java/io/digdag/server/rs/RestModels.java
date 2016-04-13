@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
-import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
@@ -23,10 +23,10 @@ import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.core.repository.Revision;
-import io.digdag.core.repository.StoredRepository;
+import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.ArchivedTask;
@@ -40,20 +40,20 @@ public final class RestModels
     private RestModels()
     { }
 
-    public static RestRepository repository(StoredRepository repo, StoredRevision lastRevision)
+    public static RestProject project(StoredProject proj, StoredRevision lastRevision)
     {
-        return RestRepository.builder()
-            .id(repo.getId())
-            .name(repo.getName())
+        return RestProject.builder()
+            .id(proj.getId())
+            .name(proj.getName())
             .revision(lastRevision.getName())
-            .createdAt(repo.getCreatedAt())
+            .createdAt(proj.getCreatedAt())
             .updatedAt(lastRevision.getCreatedAt())
             .archiveType(lastRevision.getArchiveType())
             .archiveMd5(lastRevision.getArchiveMd5())
             .build();
     }
 
-    public static RestRevision revision(StoredRepository repo, StoredRevision rev)
+    public static RestRevision revision(StoredProject proj, StoredRevision rev)
     {
         return RestRevision.builder()
             .revision(rev.getName())
@@ -63,48 +63,48 @@ public final class RestModels
             .build();
     }
 
-    public static RestWorkflowDefinition workflowDefinition(StoredRepository repo, Revision rev,
+    public static RestWorkflowDefinition workflowDefinition(StoredProject proj, Revision rev,
             StoredWorkflowDefinition def)
     {
-        return workflowDefinition(repo, rev.getName(), def);
+        return workflowDefinition(proj, rev.getName(), def);
     }
 
-    public static RestWorkflowDefinition workflowDefinition(StoredWorkflowDefinitionWithRepository wfDetails)
+    public static RestWorkflowDefinition workflowDefinition(StoredWorkflowDefinitionWithProject wfDetails)
     {
-        return workflowDefinition(wfDetails.getRepository(), wfDetails.getRevisionName(), wfDetails);
+        return workflowDefinition(wfDetails.getProject(), wfDetails.getRevisionName(), wfDetails);
     }
 
     private static RestWorkflowDefinition workflowDefinition(
-            StoredRepository repo, String revName,
+            StoredProject proj, String revName,
             StoredWorkflowDefinition def)
     {
         return RestWorkflowDefinition.builder()
             .id(def.getId())
             .name(def.getName())
-            .repository(IdName.of(repo.getId(), repo.getName()))
+            .project(IdName.of(proj.getId(), proj.getName()))
             .revision(revName)
             .config(def.getConfig())
             .build();
     }
 
     public static RestWorkflowSessionTime workflowSessionTime(
-            StoredWorkflowDefinitionWithRepository def,
+            StoredWorkflowDefinitionWithProject def,
             Instant sessionTime, ZoneId timeZone)
     {
-        StoredRepository repo = def.getRepository();
+        StoredProject proj = def.getProject();
         return RestWorkflowSessionTime.builder()
-            .repository(IdName.of(repo.getId(), repo.getName()))
+            .project(IdName.of(proj.getId(), proj.getName()))
             .revision(def.getRevisionName())
             .sessionTime(OffsetDateTime.ofInstant(sessionTime, timeZone))
             .timeZone(timeZone)
             .build();
     }
 
-    public static RestSchedule schedule(StoredSchedule sched, StoredRepository repo, ZoneId timeZone)
+    public static RestSchedule schedule(StoredSchedule sched, StoredProject proj, ZoneId timeZone)
     {
         return RestSchedule.builder()
             .id(sched.getId())
-            .repository(IdName.of(repo.getId(), repo.getName()))
+            .project(IdName.of(proj.getId(), proj.getName()))
             .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
@@ -123,11 +123,11 @@ public final class RestModels
             .build();
     }
 
-    public static RestSessionAttempt attempt(StoredSessionAttemptWithSession attempt, String repositoryName)
+    public static RestSessionAttempt attempt(StoredSessionAttemptWithSession attempt, String projectName)
     {
         return RestSessionAttempt.builder()
             .id(attempt.getId())
-            .repository(IdName.of(attempt.getSession().getRepositoryId(), repositoryName))
+            .project(IdName.of(attempt.getSession().getProjectId(), projectName))
             .workflow(NameOptionalId.of(attempt.getSession().getWorkflowName(), attempt.getWorkflowDefinitionId()))
             .sessionUuid(attempt.getSessionUuid())
             .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))

@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredRepository.class)
-@JsonDeserialize(as = ImmutableStoredRepository.class)
-public abstract class StoredRepository
-        extends Repository
+@JsonSerialize(as = ImmutableStoredProject.class)
+@JsonDeserialize(as = ImmutableStoredProject.class)
+public abstract class StoredProject
+        extends Project
 {
     public abstract int getId();
 

@@ -68,14 +68,14 @@ public class CallOperatorFactory
             Config config = request.getConfig();
 
             String workflowName = config.get("_command", String.class);
-            int repositoryId = config.get("repository_id", int.class);
+            int projectId = config.get("project_id", int.class);
             Config exportParams = config.getNestedOrGetEmpty("params");
 
             Config def;
             try {
                 def = callback.getWorkflowDefinition(
                         request.getSiteId(),
-                        repositoryId,
+                        projectId,
                         workflowName);
             }
             catch (ResourceNotFoundException ex) {

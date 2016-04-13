@@ -41,7 +41,7 @@ public class ShowSchedule
         int count = 0;
         for (RestSchedule sched : client.getSchedules()) {
             ln("  id: %d", sched.getId());
-            ln("  repository: %s", sched.getRepository().getName());
+            ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());
             ln("  next session time: %s", formatTime(sched.getNextScheduleTime()));
             ln("  next runs at: %s (%s later)", formatTime(sched.getNextRunTime()), formatTimeDiff(now, sched.getNextRunTime()));

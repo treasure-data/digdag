@@ -43,35 +43,35 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Path("/")
 @Produces("application/json")
-public class RepositoryResource
+public class ProjectResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/repository?name=<name>                      # lookup a repository by name
-    // [*] GET  /api/repositories                                # list repositories
-    // [*] GET  /api/repositories/{id}                           # show a repository
-    // [*] GET  /api/repositories/{id}/revisions                 # list revisions of a repository from recent to old
-    // [*] GET  /api/repositories/{id}/workflow?name=name        # lookup a workflow of a repository by name
-    // [*] GET  /api/repositories/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a repository by name
-    // [*] GET  /api/repositories/{id}/workflows                 # list workflows of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/workflows?revision=name   # list workflows of a past revision of a repository
-    // [*] GET  /api/repositories/{id}/archive                   # download archive file of the latest revision of a repository
-    // [*] GET  /api/repositories/{id}/archive?revision=name     # download archive file of a former revision of a repository
-    // [*] PUT  /api/repositories?repository=<name>&revision=<name>  # create a new revision (also create a repository if it doesn't exist)
+    // [*] GET  /api/project?name=<name>                     # lookup a project by name
+    // [*] GET  /api/projects                                # list projects
+    // [*] GET  /api/projects/{id}                           # show a project
+    // [*] GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
+    // [*] GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
+    // [*] GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
+    // [*] GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
+    // [*] GET  /api/projects/{id}/workflows?revision=name   # list workflows of a past revision of a project
+    // [*] GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
+    // [*] GET  /api/projects/{id}/archive?revision=name     # download archive file of a former revision of a project
+    // [*] PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TempFileManager tempFiles;
 
     @Inject
-    public RepositoryResource(
+    public ProjectResource(
             ConfigFactory cf,
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
-            RepositoryStoreManager rm,
+            ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
             TempFileManager tempFiles)
@@ -86,135 +86,135 @@ public class RepositoryResource
     }
 
     @GET
-    @Path("/api/repository")
-    public RestRepository getRepository(@QueryParam("name") String name)
+    @Path("/api/project")
+    public RestProject getProject(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "name= is required");
 
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryByName(name);
-        StoredRevision rev = rs.getLatestRevision(repo.getId());
-        return RestModels.repository(repo, rev);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectByName(name);
+        StoredRevision rev = rs.getLatestRevision(proj.getId());
+        return RestModels.project(proj, rev);
     }
 
     @GET
-    @Path("/api/repositories")
-    public List<RestRepository> getRepositories()
+    @Path("/api/projects")
+    public List<RestProject> getProjects()
         throws ResourceNotFoundException
     {
         // TODO n-m db access
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        return rs.getRepositories(100, Optional.absent())
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        return rs.getProjects(100, Optional.absent())
             .stream()
-            .map(repo -> {
+            .map(proj -> {
                 try {
-                    StoredRevision rev = rs.getLatestRevision(repo.getId());
-                    return RestModels.repository(repo, rev);
+                    StoredRevision rev = rs.getLatestRevision(proj.getId());
+                    return RestModels.project(proj, rev);
                 }
                 catch (ResourceNotFoundException ex) {
                     return null;
                 }
             })
-            .filter(repo -> repo != null)
+            .filter(proj -> proj != null)
             .collect(Collectors.toList());
     }
 
     @GET
-    @Path("/api/repositories/{id}")
-    public RestRepository getRepository(@PathParam("id") int repoId)
+    @Path("/api/projects/{id}")
+    public RestProject getProject(@PathParam("id") int projId)
         throws ResourceNotFoundException
     {
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryById(repoId);
-        StoredRevision rev = rs.getLatestRevision(repo.getId());
-        return RestModels.repository(repo, rev);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectById(projId);
+        StoredRevision rev = rs.getLatestRevision(proj.getId());
+        return RestModels.project(proj, rev);
     }
 
     @GET
-    @Path("/api/repositories/{id}/revisions")
-    public List<RestRevision> getRevisions(@PathParam("id") int repoId, @QueryParam("last_id") Integer lastId)
+    @Path("/api/projects/{id}/revisions")
+    public List<RestRevision> getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
         throws ResourceNotFoundException
     {
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryById(repoId);
-        List<StoredRevision> revs = rs.getRevisions(repo.getId(), 100, Optional.fromNullable(lastId));
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectById(projId);
+        List<StoredRevision> revs = rs.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
         return revs.stream()
-            .map(rev -> RestModels.revision(repo, rev))
+            .map(rev -> RestModels.revision(proj, rev))
             .collect(Collectors.toList());
     }
 
     @GET
-    @Path("/api/repositories/{id}/workflow")
-    public RestWorkflowDefinition getWorkflow(@PathParam("id") int repoId, @QueryParam("name") String name, @QueryParam("revision") String revName)
+    @Path("/api/projects/{id}/workflow")
+    public RestWorkflowDefinition getWorkflow(@PathParam("id") int projId, @QueryParam("name") String name, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "name= is required");
 
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryById(repoId);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectById(projId);
 
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
+            rev = rs.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
+            rev = rs.getRevisionByName(proj.getId(), revName);
         }
         StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
 
-        return RestModels.workflowDefinition(repo, rev, def);
+        return RestModels.workflowDefinition(proj, rev, def);
     }
 
     @GET
-    @Path("/api/repositories/{id}/workflows")
-    public List<RestWorkflowDefinition> getWorkflows(@PathParam("id") int repoId, @QueryParam("revision") String revName)
+    @Path("/api/projects/{id}/workflows")
+    public List<RestWorkflowDefinition> getWorkflows(@PathParam("id") int projId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
         // TODO paging?
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryById(repoId);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectById(projId);
 
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
+            rev = rs.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
+            rev = rs.getRevisionByName(proj.getId(), revName);
         }
         List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
         return defs.stream()
-            .map(def -> RestModels.workflowDefinition(repo, rev, def))
+            .map(def -> RestModels.workflowDefinition(proj, rev, def))
             .collect(Collectors.toList());
     }
 
     @GET
-    @Path("/api/repositories/{id}/archive")
+    @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
-    public byte[] getArchive(@PathParam("id") int repoId, @QueryParam("revision") String revName)
+    public byte[] getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
-        RepositoryStore rs = rm.getRepositoryStore(getSiteId());
-        StoredRepository repo = rs.getRepositoryById(repoId);
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        StoredProject proj = rs.getProjectById(projId);
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(repo.getId());
+            rev = rs.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(repo.getId(), revName);
+            rev = rs.getRevisionByName(proj.getId(), revName);
         }
         return rs.getRevisionArchiveData(rev.getId());
     }
 
     @PUT
     @Consumes("application/gzip")
-    @Path("/api/repositories")
-    public RestRepository putRepository(@QueryParam("repository") String name, @QueryParam("revision") String revision,
+    @Path("/api/projects")
+    public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
             InputStream body)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        Preconditions.checkArgument(name != null, "repository= is required");
+        Preconditions.checkArgument(name != null, "project= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
 
         // TODO if content-length is too large, reject this request.
@@ -231,23 +231,23 @@ public class RepositoryResource
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
-        RestRepository stored = rm.getRepositoryStore(getSiteId()).putAndLockRepository(
-                Repository.of(name),
-                (store, storedRepo) -> {
-                    RepositoryControl lockedRepo = new RepositoryControl(store, storedRepo);
-                    StoredRevision rev = lockedRepo.insertRevision(
+        RestProject stored = rm.getProjectStore(getSiteId()).putAndLockProject(
+                Project.of(name),
+                (store, storedProject) -> {
+                    ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                    StoredRevision rev = lockedProj.insertRevision(
                             Revision.builderFromArchive(revision, meta)
                                 .archiveType("db")
                                 .archivePath(Optional.absent())
                                 .archiveMd5(Optional.of(calculateArchiveMd5(data)))
                                 .build()
                             );
-                    lockedRepo.insertRevisionArchiveData(rev.getId(), data);
+                    lockedProj.insertRevisionArchiveData(rev.getId(), data);
                     List<StoredWorkflowDefinition> defs =
-                        lockedRepo.insertWorkflowDefinitions(rev,
+                        lockedProj.insertWorkflowDefinitions(rev,
                                 meta.getWorkflowList().get(),
                                 srm, Instant.now());
-                    return RestModels.repository(storedRepo, rev);
+                    return RestModels.project(storedProject, rev);
                 });
 
         return stored;

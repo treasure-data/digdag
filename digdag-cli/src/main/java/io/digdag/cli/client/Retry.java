@@ -20,7 +20,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestTask;
-import io.digdag.client.api.RestRepository;
+import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestSessionAttemptRequest;
@@ -129,15 +129,15 @@ public class Retry
             workflowId = id.get();
         }
         else if (lastRevision) {
-            // get the latest workflow with the same name in the same repository
+            // get the latest workflow with the same name in the same project
             RestWorkflowDefinition def = client.getWorkflowDefinition(
-                    attempt.getRepository().getId(), attempt.getWorkflow().getName());
+                    attempt.getProject().getId(), attempt.getWorkflow().getName());
             workflowId = def.getId();
         }
         else {
-            // get workflow in a specific revision with the same name in the same repository
+            // get workflow in a specific revision with the same name in the same project
             RestWorkflowDefinition def = client.getWorkflowDefinition(
-                    attempt.getRepository().getId(), attempt.getWorkflow().getName(), revision);
+                    attempt.getProject().getId(), attempt.getWorkflow().getName(), revision);
             workflowId = def.getId();
         }
 
@@ -153,7 +153,7 @@ public class Retry
         ln("Started a session attempt:");
         ln("  id: %d", newAttempt.getId());
         ln("  uuid: %s", newAttempt.getSessionUuid());
-        ln("  repository: %s", newAttempt.getRepository().getName());
+        ln("  project: %s", newAttempt.getProject().getName());
         ln("  workflow: %s", newAttempt.getWorkflow().getName());
         ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
         ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));

@@ -14,6 +14,7 @@ public class ModelValidator
     }
 
     private static final Pattern FIRST_NUMBER_CHAR = Pattern.compile("^[0-9]");
+    private static final Pattern RESTRICTED_SYMBOL_CHAR = Pattern.compile("^[\\+\\^\\@\\/\\\\\\:\\*\\?\\\"\\<\\>\\|]");
 
     // Windows path special chars: \ / : * ? " < > |
     // UNIX special chars: ~
@@ -49,10 +50,11 @@ public class ModelValidator
         return check(fieldName, value, value.length() <= max, "can't be longer than " + max + " characters");
     }
 
-    public ModelValidator checkResourceName(String fieldName, String value)
+    public ModelValidator checkProjectName(String fieldName, String value)
     {
         checkNotEmpty(fieldName, value);
         check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "can't start with a numeric digit (0-9)");
+        check(fieldName, value, !RESTRICTED_SYMBOL_CHAR.matcher(value).find(), "can't include special symbols (+ ^ @ / \\ / : * ? \" < > |)");
         checkMaxLength(fieldName, value, 255);
         return this;
     }

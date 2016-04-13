@@ -12,7 +12,7 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableRestWorkflowSessionTime.class)
 public abstract class RestWorkflowSessionTime
 {
-    public abstract IdName getRepository();
+    public abstract IdName getProject();
 
     public abstract String getRevision();
 

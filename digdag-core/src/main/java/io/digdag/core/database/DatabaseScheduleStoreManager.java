@@ -173,9 +173,9 @@ public class DatabaseScheduleStoreManager
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where exists (" +
-                    "select * from repositories repo" +
-                    " where repo.id = s.repository_id" +
-                    " and repo.site_id = :siteId" +
+                    "select * from projects proj" +
+                    " where proj.id = s.project_id" +
+                    " and proj.site_id = :siteId" +
                 ")" +
                 " and s.id > :lastId" +
                 " order by s.id asc" +
@@ -186,9 +186,9 @@ public class DatabaseScheduleStoreManager
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId" +
                 " and exists (" +
-                    "select * from repositories repo" +
-                    " where repo.id = s.repository_id" +
-                    " and repo.site_id = :siteId" +
+                    "select * from projects proj" +
+                    " where proj.id = s.project_id" +
+                    " and proj.site_id = :siteId" +
                 ")")
         StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
 
@@ -230,7 +230,7 @@ public class DatabaseScheduleStoreManager
         {
             return ImmutableStoredSchedule.builder()
                 .id(r.getInt("id"))
-                .repositoryId(r.getInt("repository_id"))
+                .projectId(r.getInt("project_id"))
                 .workflowDefinitionId(r.getLong("workflow_definition_id"))
                 .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
                 .nextScheduleTime(Instant.ofEpochSecond(r.getLong("next_schedule_time")))

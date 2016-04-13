@@ -37,7 +37,7 @@ public class LogFiles
         return String.format(ENGLISH,
                 "%d.%d%s@%s",
                 prefix.getSiteId(),
-                prefix.getRepositoryId(),
+                prefix.getProjectId(),
                 prefix.getWorkflowName(),
                 SESSION_TIME_FORMATTER.withZone(prefix.getTimeZone()).format(prefix.getSessionTime()));
     }

@@ -322,15 +322,15 @@ start
 
 .. code-block:: console
 
-    $ digdag start <repo-name> <+name> --session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">
+    $ digdag start <project-name> <+name> --session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">
 
-Starts a new session. This command requires repository name, workflow name, and session_time. Examples:
+Starts a new session. This command requires project name, workflow name, and session_time. Examples:
 
 .. code-block:: console
 
-    $ digdag start myrepo +main --session daily
-    $ digdag start myrepo +main --session hourly
-    $ digdag start myrepo +main --session "2016-01-01 00:00:00"
+    $ digdag start myproj +main --session daily
+    $ digdag start myproj +main --session hourly
+    $ digdag start myproj +main --session "2016-01-01 00:00:00"
 
 :command:`--session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">`
   Use this time as session_time.
@@ -437,15 +437,16 @@ workflows
 
 .. code-block:: console
 
-    $ digdag workflows [repo-name] [+name]
+    $ digdag workflows [project-name] [+name]
 
 Shows list of workflows or details of a workflow. Examples:
 
 .. code-block:: console
 
     $ digdag workflows
-    $ digdag workflows -r myrepo
+    $ digdag workflows myproj
     $ digdag workflows +main
+    $ digdag workflows myproj +main
 
 
 schedules
@@ -508,15 +509,15 @@ sessions
 
 .. code-block:: console
 
-    $ digdag sessions [repo-name] [+name]
+    $ digdag sessions [project-name] [+name]
 
 Shows list of sessions. This command shows only the latest attempts of sessions (doesn't include attempts retried by another attempt). To show all attempts, use ``digdag attempts``. Examples:
 
 .. code-block:: console
 
     $ digdag sessions
-    $ digdag sessions myrepo
-    $ digdag sessions myrepo +main
+    $ digdag sessions myproj
+    $ digdag sessions myproj +main
 
 :command:`-i, --last-id ID`
   Shows more sessions older than this id.
@@ -527,15 +528,15 @@ attempts
 
 .. code-block:: console
 
-    $ digdag attempts [repo-name] [+name]
+    $ digdag attempts [project-name] [+name]
 
 Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:
 
 .. code-block:: console
 
     $ digdag attempts
-    $ digdag attempts myrepo
-    $ digdag attempts myrepo +main
+    $ digdag attempts myproj
+    $ digdag attempts myproj +main
 
 :command:`-i, --last-id ID`
   Shows more attempts older than this id.
@@ -560,13 +561,13 @@ push
 
 .. code-block:: console
 
-    $ digdag push [-f workflow.yml...] <repository> [options...]
+    $ digdag push [-f workflow.yml...] <project> [options...]
 
-Creates a repository archive and upload it to the server. This command reads list of files to add this archive from STDIN. Examples:
+Creates a project archive and upload it to the server. This command reads list of files to add this archive from STDIN. Examples:
 
 .. code-block:: console
 
-    $ git ls-files | digdag push myrepo -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
+    $ git ls-files | digdag push myproj -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
     $ find . | digdag push default -r "$(git show --pretty=format:'%T' | head -n 1)"
 
 STDIN

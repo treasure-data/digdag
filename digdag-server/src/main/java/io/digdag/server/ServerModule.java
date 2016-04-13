@@ -16,7 +16,7 @@ import io.digdag.guice.rs.GuiceRsModule.ApplicationBindingBuilder;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.client.config.ConfigException;
-import io.digdag.server.rs.RepositoryResource;
+import io.digdag.server.rs.ProjectResource;
 import io.digdag.server.rs.WorkflowResource;
 import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.AttemptResource;
@@ -42,7 +42,7 @@ public class ServerModule
     protected void bindResources(ApplicationBindingBuilder builder)
     {
         builder.addResources(
-                RepositoryResource.class,
+                ProjectResource.class,
                 WorkflowResource.class,
                 ScheduleResource.class,
                 AttemptResource.class,

@@ -23,11 +23,11 @@ Usage: digdag <command> [options...]
 
   Client-mode commands:
     archive <workflow.yml...>        create a project archive
-    start <repo-name> <+name>        start a new session of a workflow
+    start <project-name> <+name>     start a new session of a workflow
     kill <session-id>                kill a running session
     workflows [+name]                show registered workflow definitions
     schedules                        show registered schedules
-    sessions [repo-name] [+name]     show past and current sessions
+    sessions [project-name] [+name]  show past and current sessions
     tasks <session-id>               show tasks of a session
 
   Options:

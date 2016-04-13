@@ -17,7 +17,7 @@ public abstract class RestWorkflowDefinition
 
     public abstract String getName();
 
-    public abstract IdName getRepository();
+    public abstract IdName getProject();
 
     public abstract String getRevision();
 

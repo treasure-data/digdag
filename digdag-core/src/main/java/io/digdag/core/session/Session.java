@@ -10,16 +10,16 @@ import io.digdag.core.repository.WorkflowDefinition;
 public abstract class Session
 {
     // TODO to support one-time non-stored workflows, this should be Optional<Integer>. See also AttemptRequest.getStored.
-    public abstract int getRepositoryId();
+    public abstract int getProjectId();
 
     public abstract String getWorkflowName();
 
     public abstract Instant getSessionTime();
 
-    public static Session of(int repositoryId, String workflowName, Instant sessionTime)
+    public static Session of(int projectId, String workflowName, Instant sessionTime)
     {
         return ImmutableSession.builder()
-            .repositoryId(repositoryId)
+            .projectId(projectId)
             .workflowName(workflowName)
             .sessionTime(sessionTime)
             .build();

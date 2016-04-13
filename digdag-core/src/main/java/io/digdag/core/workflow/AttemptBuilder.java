@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.SessionMonitor;
@@ -50,7 +50,7 @@ public class AttemptBuilder
     }
 
     public AttemptRequest buildFromStoredWorkflow(
-            StoredWorkflowDefinitionWithRepository def,
+            StoredWorkflowDefinitionWithProject def,
             Config overwriteParams,
             ScheduleTime time,
             Optional<String> retryAttemptName)

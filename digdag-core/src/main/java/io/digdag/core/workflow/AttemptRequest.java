@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithRepository;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.repository.ModelValidator;
 
@@ -26,26 +26,26 @@ public abstract class AttemptRequest
     {
         public abstract long getWorkflowDefinitionId();
 
-        public abstract int getRepositoryId();
+        public abstract int getProjectId();
 
         public static Stored of(StoredRevision rev, StoredWorkflowDefinition def)
         {
             return ImmutableStored.builder()
                 .workflowDefinitionId(def.getId())
-                .repositoryId(rev.getRepositoryId())
+                .projectId(rev.getProjectId())
                 .build();
         }
 
-        public static Stored of(StoredWorkflowDefinitionWithRepository def)
+        public static Stored of(StoredWorkflowDefinitionWithProject def)
         {
             return ImmutableStored.builder()
                 .workflowDefinitionId(def.getId())
-                .repositoryId(def.getRepository().getId())
+                .projectId(def.getProject().getId())
                 .build();
         }
     }
 
-    // TODO to support one-time non-stored workflows, this should be Optional<Stored>. See also Session.getRepositoryId.
+    // TODO to support one-time non-stored workflows, this should be Optional<Stored>. See also Session.getProjectId.
     public abstract Stored getStored();
 
     public abstract String getWorkflowName();

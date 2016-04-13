@@ -16,7 +16,7 @@ public abstract class StoredSchedule
 {
     public abstract int getId();
 
-    public abstract int getRepositoryId();
+    public abstract int getProjectId();
 
     public abstract Instant getCreatedAt();
 

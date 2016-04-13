@@ -23,10 +23,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
-import io.digdag.core.repository.RepositoryStore;
-import io.digdag.core.repository.StoredRepository;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.RepositoryStoreManager;
+import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
@@ -37,11 +37,11 @@ public class LocalWorkspaceManager
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final RepositoryStoreManager rm;
+    private final ProjectStoreManager rm;
     private final TempFileManager tempFiles;
 
     @Inject
-    public LocalWorkspaceManager(RepositoryStoreManager rm, TempFileManager tempFiles)
+    public LocalWorkspaceManager(ProjectStoreManager rm, TempFileManager tempFiles)
     {
         this.rm = rm;
         this.tempFiles = tempFiles;
@@ -52,13 +52,13 @@ public class LocalWorkspaceManager
             throws IOException
     {
         try {
-            RepositoryStore rs = rm.getRepositoryStore(request.getSiteId());
+            ProjectStore rs = rm.getProjectStore(request.getSiteId());
             StoredRevision rev;
             if (request.getRevision().isPresent()) {
-                rev = rs.getRevisionByName(request.getRepositoryId(), request.getRevision().get());
+                rev = rs.getRevisionByName(request.getProjectId(), request.getRevision().get());
             }
             else {
-                rev = rs.getLatestRevision(request.getRepositoryId());
+                rev = rs.getLatestRevision(request.getProjectId());
             }
 
             try (TempDir workspacePath = createNewWorkspace(request)) {
