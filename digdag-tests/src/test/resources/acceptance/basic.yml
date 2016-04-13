@@ -1,0 +1,8 @@
+run: +main
+
++main:
+  +foo:
+    sh>: "touch foo.out"
+
+  +bar:
+    sh>: "touch bar.out"

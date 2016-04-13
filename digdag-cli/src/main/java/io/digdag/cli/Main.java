@@ -102,7 +102,7 @@ public class Main
         return systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u71 (1.8.0_71).");
     }
 
-    public static void main(String[] args)
+    public static void main(String... args)
         throws Exception
     {
         if (args.length == 1 && args[0].equals("--version")) {
