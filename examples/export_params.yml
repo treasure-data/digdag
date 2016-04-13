@@ -1,8 +1,8 @@
-run: +export_params
-+export_params:
-  +set:
-    py>: examples.export_params.set_my_param
+name: +export_params
 
-  +get:
-    py>: examples.export_params.show_my_param
++set:
+  py>: examples.export_params.set_my_param
+
++get:
+  py>: examples.export_params.show_my_param
 

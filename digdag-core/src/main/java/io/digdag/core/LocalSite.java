@@ -7,6 +7,7 @@ import com.google.common.base.*;
 import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.*;

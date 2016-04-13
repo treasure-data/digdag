@@ -1,5 +1,4 @@
-run: +foo
+name: +foo
 
-+foo:
-  sh>: echo this should fail
-  py>: bar
+sh>: echo this should fail
+py>: bar

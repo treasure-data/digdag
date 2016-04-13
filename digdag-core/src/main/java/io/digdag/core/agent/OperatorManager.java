@@ -28,7 +28,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
-import io.digdag.core.repository.Dagfile;
+import io.digdag.core.archive.Dagfile;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.log.TaskContextLogging;

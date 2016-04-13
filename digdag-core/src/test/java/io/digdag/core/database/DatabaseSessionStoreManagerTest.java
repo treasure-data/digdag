@@ -196,8 +196,9 @@ public class DatabaseSessionStoreManagerTest
         WorkflowDefinition def1 = WorkflowDefinition.of(
                 wf1.getName(),
                 cf.create()
-                .setNested("+step1", cf.create().set("sh>", "echo step1"))
-                .setNested("+step2", cf.create().set("sh>", "echo step2"))
+                    .setNested("+step1", cf.create().set("sh>", "echo step1"))
+                    .setNested("+step2", cf.create().set("sh>", "echo step2")),
+                ZoneId.of("UTC")
                 );
 
         // session

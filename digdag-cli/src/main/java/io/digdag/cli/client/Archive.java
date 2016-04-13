@@ -31,8 +31,10 @@ import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.repository.Dagfile;
-import io.digdag.core.repository.ArchiveMetadata;
+import io.digdag.core.archive.Dagfile;
+import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
@@ -54,7 +56,7 @@ public class Archive
     extends Command
 {
     @Parameter(names = {"-f", "--file"})
-    String dagfilePath = Run.DEFAULT_DAGFILE;
+    List<String> dagfilePaths = ImmutableList.of(Run.DEFAULT_DAGFILE);
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -94,11 +96,11 @@ public class Archive
     }
 
     // used by Push.push
-    static void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
+    static void archive(List<String> dagfilePaths, Map<String, String> params, String paramsFile, String output)
         throws IOException
     {
         Archive cmd = new Archive();
-        cmd.dagfilePath = dagfilePath;
+        cmd.dagfilePaths = dagfilePaths;
         cmd.params = params;
         cmd.paramsFile = paramsFile;
         cmd.output = output;
@@ -136,78 +138,49 @@ public class Archive
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
 
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
 
-        // normalize the path
-        String dagfileName = normalizeRelativePath(absoluteCurrentPath, dagfilePath);
-        boolean dagfileLoaded = false;
+        ProjectArchive project = projectLoader.load(
+                dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
+                overwriteParams,
+                ZoneId.of("UTC"));
 
-        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        project.listFiles(absoluteCurrentPath, relPath -> {
+            try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
+                Path path = absoluteCurrentPath.resolve(relPath);
+                if (!Files.isDirectory(path)) {
+                    String name = relPath.toString();
+                    System.out.println("  Archiving "+name);
 
-        if (!dagfile.getDefaultTimeZone().isPresent()) {
-            throw new ConfigException("timezone: parameter is required but not set at " + dagfilePath + ". Example is 'timezone: " + ZoneId.systemDefault() + "'.");
-        }
-
-        ArchiveMetadata meta = dagfile.toArchiveMetadata(dagfile.getDefaultTimeZone().get());
-
-        List<String> stdinLines;
-        if (System.console() != null) {
-            stdinLines = ImmutableList.of();
-        }
-        else {
-            stdinLines = CharStreams.readLines(new BufferedReader(new InputStreamReader(System.in)));
-        }
-
-        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
-            for (String line : stdinLines) {
-                Path path = Paths.get(line);
-                if (Files.isDirectory(path)) {
-                    continue;
-                }
-
-                String name = normalizeRelativePath(absoluteCurrentPath, line);
-                System.out.println("  Archiving "+name);
-
-                TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
-                tar.putArchiveEntry(e);
-                if (!e.isSymbolicLink()) {
-                    try (InputStream in = Files.newInputStream(path)) {
-                        ByteStreams.copy(in, tar);
+                    TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
+                    tar.putArchiveEntry(e);
+                    if (!e.isSymbolicLink()) {
+                        try (InputStream in = Files.newInputStream(path)) {
+                            ByteStreams.copy(in, tar);
+                        }
+                        tar.closeArchiveEntry();
                     }
-                    tar.closeArchiveEntry();
                 }
 
-                if (name.equals(dagfileName)) {
-                    dagfileLoaded = true;
-                }
-            }
-
-            if (!dagfileLoaded) {
-                System.out.println("  Archiving "+dagfileName);
-                tar.putArchiveEntry(new TarArchiveEntry(new File(dagfileName)));
-                try (InputStream in = Files.newInputStream(Paths.get(dagfilePath))) {
-                    ByteStreams.copy(in, tar);
-                }
+                // create .digdag.yml
+                // TODO set default time zone if not set?
+                byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
+                TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
+                metaEntry.setSize(metaBody.length);
+                metaEntry.setModTime(new Date());
+                tar.putArchiveEntry(metaEntry);
+                tar.write(metaBody);
                 tar.closeArchiveEntry();
             }
-
-            // create .digdag.yml
-            // TODO set default time zone if not set?
-            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
-            TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
-            metaEntry.setSize(metaBody.length);
-            metaEntry.setModTime(new Date());
-            tar.putArchiveEntry(metaEntry);
-            tar.write(metaBody);
-            tar.closeArchiveEntry();
-        }
+        });
 
         System.out.println("Workflows:");
-        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
+        for (WorkflowDefinition workflow : project.getMetadata().getWorkflowList().get()) {
             System.out.println("  "+workflow.getName());
         }
         System.out.println("");

@@ -3,6 +3,7 @@ package io.digdag.core.repository;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.time.ZoneId;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -24,18 +25,23 @@ public abstract class WorkflowDefinitionList
     {
         ImmutableList.Builder<WorkflowDefinition> builder = ImmutableList.builder();
         for (String key : object.getKeys()) {
-            builder.add(WorkflowDefinition.of(key, object.getNestedOrderedOrGetEmpty(key)));
+            Config copy = object.getNestedOrderedOrGetEmpty(key).deepCopy();
+            ZoneId timeZone = copy.get("timezone", ZoneId.class);
+            copy.remove("timezone");
+            builder.add(WorkflowDefinition.of(key, copy, timeZone));
         }
         return of(builder.build());
     }
 
     @JsonValue
-    public Map<String, Config> toJson()
+    public LinkedHashMap<String, Config> toJson()
     {
         // workflow source list must be an order-preserving map
-        Map<String, Config> map = new LinkedHashMap<String, Config>();
+        LinkedHashMap<String, Config> map = new LinkedHashMap<String, Config>();
         for (WorkflowDefinition wf : get()) {
-            map.put(wf.getName(), wf.getConfig());
+            Config copy = wf.getConfig().deepCopy();
+            copy.set("timezone", wf.getTimeZone());
+            map.put(wf.getName(), copy);
         }
         return map;
     }

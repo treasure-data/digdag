@@ -43,8 +43,10 @@ import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.LocalSite.StoreWorkflowResult;
-import io.digdag.core.repository.Dagfile;
-import io.digdag.core.repository.ArchiveMetadata;
+import io.digdag.core.archive.Dagfile;
+import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -245,25 +247,23 @@ public class Run
         final LocalSite localSite = injector.getInstance(LocalSite.class);
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
         // read parameters
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         // read workflow definitions
-        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        ProjectArchive project = projectLoader.load(
+                ImmutableList.of(Paths.get(dagfilePath)),
+                overwriteParams,
+                ZoneId.of("UTC"));
         if (taskNamePattern == null) {
-            if (dagfile.getDefaultTaskName().isPresent()) {
-                taskNamePattern = dagfile.getDefaultTaskName().get();
-            }
-            else {
-                throw new ConfigException(String.format(
-                            "run: option is not written at %s file. Please add run: option or add +NAME option to command line", dagfilePath));
-            }
+            taskNamePattern = project.getMetadata().getWorkflowList().get().get(0).getName();
         }
         TaskMatchPattern taskMatchPattern = TaskMatchPattern.compile(taskNamePattern);
 
         // store workflow definition archive
-        ArchiveMetadata archive = dagfile.toArchiveMetadata(Optional.fromNullable(timeZoneName).transform(it -> ZoneId.of(it)).or(ZoneId.systemDefault()));
+        ArchiveMetadata archive = project.getMetadata();
         StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 Instant.now().toString(),  // TODO revision name
@@ -366,7 +366,7 @@ public class Run
 
         // calculate session_time
         Optional<Scheduler> sr = srm.tryGetScheduler(rev, def);
-        ZoneId timeZone = sr.transform(it -> it.getTimeZone()).or(archive.getDefaultTimeZone());
+        ZoneId timeZone = def.getTimeZone();
         Instant sessionTime = parseSessionTime(sessionString, Paths.get(sessionStatusDir), def.getName(), sr, timeZone);
 
         // calculate ./digdag.status/<session_time> path.

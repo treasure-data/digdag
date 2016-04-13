@@ -20,7 +20,6 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.core.queue.QueueModule;
 import io.digdag.core.log.NullLogServerFactory;
 import io.digdag.core.log.LocalFileLogServerFactory;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.workflow.WorkflowModule;
@@ -28,6 +27,7 @@ import io.digdag.core.workflow.WorkflowExecutorModule;
 import io.digdag.core.schedule.ScheduleModule;
 import io.digdag.core.schedule.ScheduleExecutorModule;
 import io.digdag.core.config.ConfigModule;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.agent.AgentModule;
 import io.digdag.core.agent.LocalAgentModule;
 import io.digdag.core.log.LogModule;
@@ -150,6 +150,7 @@ public class DigdagEmbed
                     new WorkflowModule(),
                     new QueueModule(),
                     (binder) -> {
+                        binder.bind(ProjectArchiveLoader.class);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                         binder.bind(TempFileManager.class).toProvider(TempFileManagerProvider.class).in(Scopes.SINGLETON);

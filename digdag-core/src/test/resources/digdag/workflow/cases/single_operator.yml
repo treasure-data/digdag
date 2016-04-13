@@ -1,4 +1,3 @@
-run: +foo
+name: +foo
 
-+foo:
-  sh>: echo hello world
+sh>: echo hello world

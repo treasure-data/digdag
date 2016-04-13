@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.io.File;
+import com.google.common.collect.ImmutableList;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.cli.Run;
@@ -17,7 +18,7 @@ public class Push
     extends ClientCommand
 {
     @Parameter(names = {"-f", "--file"})
-    String dagfilePath = Run.DEFAULT_DAGFILE;
+    List<String> dagfilePaths = ImmutableList.of(Run.DEFAULT_DAGFILE);
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -63,7 +64,7 @@ public class Push
     {
         String path = "digdag.archive.tar.gz";
         new File(path).deleteOnExit();
-        Archive.archive(dagfilePath, params, paramsFile, path);
+        Archive.archive(dagfilePaths, params, paramsFile, path);
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));

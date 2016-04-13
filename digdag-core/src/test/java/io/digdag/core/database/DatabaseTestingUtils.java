@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Properties;
 import java.io.IOException;
 import java.io.StringReader;
+import java.time.ZoneId;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.base.Optional;
@@ -170,7 +171,8 @@ public class DatabaseTestingUtils
     {
         return WorkflowDefinition.of(
                 name,
-                createConfig().set("uniq", System.nanoTime()));
+                createConfig().set("uniq", System.nanoTime()),
+                ZoneId.of("UTC"));
     }
 
     public interface MayConflict

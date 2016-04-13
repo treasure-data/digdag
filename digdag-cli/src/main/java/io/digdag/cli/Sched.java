@@ -5,11 +5,13 @@ import java.util.List;
 import java.time.ZoneId;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -96,7 +98,7 @@ public class Sched
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
             try {
-                autoReloader.loadFile(new File(autoLoadLocalDagfile), ZoneId.systemDefault());
+                autoReloader.loadProject(ImmutableList.of(Paths.get(autoLoadLocalDagfile)), ZoneId.of("UTC"));
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

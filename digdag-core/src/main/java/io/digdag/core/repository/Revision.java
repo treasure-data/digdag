@@ -3,6 +3,7 @@ package io.digdag.core.repository;
 import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.client.config.Config;
 
 @JsonDeserialize(as = ImmutableRevision.class)
@@ -27,8 +28,7 @@ public abstract class Revision
     {
         return ImmutableRevision.builder()
             .name(name)
-            .defaultParams(
-                    meta.getDefaultParams().deepCopy().set("timezone", meta.getDefaultTimeZone()));
+            .defaultParams(meta.getDefaultParams().deepCopy());
     }
 
     @Value.Check

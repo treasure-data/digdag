@@ -1,10 +1,11 @@
-package io.digdag.core.repository;
+package io.digdag.core.archive;
 
 import java.time.ZoneId;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.immutables.value.Value;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.client.config.Config;
 
 @Value.Immutable
@@ -17,17 +18,13 @@ public abstract class ArchiveMetadata
     @JsonProperty("workflows")
     public abstract WorkflowDefinitionList getWorkflowList();
 
-    @JsonProperty("timezone")
-    public abstract ZoneId getDefaultTimeZone();
-
     @JsonProperty("params")
     public abstract Config getDefaultParams();
 
-    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams, ZoneId defaultTimeZone)
+    public static ArchiveMetadata of(WorkflowDefinitionList workflows, Config defaultParams)
     {
         return ImmutableArchiveMetadata.builder()
             .workflowList(workflows)
-            .defaultTimeZone(defaultTimeZone)
             .defaultParams(defaultParams)
             .build();
     }

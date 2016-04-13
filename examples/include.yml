@@ -1,3 +1,6 @@
-run: +basic
-!include : basic.yml
-!include : conditions.yml
+name: +include
+
++basic:
+  !include : basic.yml
++conditions:
+  !include : conditions.yml

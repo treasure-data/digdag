@@ -28,13 +28,6 @@ public class SchedulerManager
         return def.getConfig().getNested("_schedule");
     }
 
-    // used only through WorkflowDefinition.getTimeZone
-    public static ZoneId getTimeZoneOfWorkflow(Revision rev, WorkflowDefinition def)
-    {
-        return rev.getDefaultParams().get("timezone", ZoneId.class,
-                    ZoneId.of("UTC"));
-    }
-
     private final Map<String, SchedulerFactory> types;
 
     @Inject
@@ -50,7 +43,7 @@ public class SchedulerManager
     public Optional<Scheduler> tryGetScheduler(Revision rev, WorkflowDefinition def)
     {
         return tryGetScheduleConfig(def).transform(it ->
-                    getScheduler(it, WorkflowDefinition.getTimeZoneOfWorkflow(rev, def))
+                    getScheduler(it, def.getTimeZone())
                 );
     }
 

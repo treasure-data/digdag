@@ -28,6 +28,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;

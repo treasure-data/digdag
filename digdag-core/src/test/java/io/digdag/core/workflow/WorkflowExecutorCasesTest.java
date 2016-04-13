@@ -12,6 +12,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.Resources;
 import io.digdag.core.LocalSite;
+import io.digdag.core.archive.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
@@ -68,10 +69,18 @@ public class WorkflowExecutorCasesTest
     {
         try {
             LocalSite localSite = embed.getLocalSite();
+            Dagfile dagfile = Dagfile.fromConfig(config);
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                     "defualt",
                     "revision-" + UUID.randomUUID(),
-                    Dagfile.fromConfig(config).toArchiveMetadata(ZoneId.of("UTC")));
+                    ArchiveMetadata.of(
+                        WorkflowDefinitionList.of(ImmutableList.of(
+                            WorkflowDefinition.of(
+                                dagfile.getWorkflowName(),
+                                dagfile.getTasks(),
+                                dagfile.getTimeZone().or(ZoneId.of("UTC")))
+                            )),
+                        config.getFactory().create()));
             StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), name);
             AttemptRequest ar = localSite.getAttemptBuilder()
                 .buildFromStoredWorkflow(
