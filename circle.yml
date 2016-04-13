@@ -5,23 +5,42 @@ machine:
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
     GRADLE_OPTS: -Dorg.gradle.daemon=true
+  services:
+    - docker
 
 dependencies:
   override:
-    - ./gradlew -v
-    - ./gradlew testClasses  # download and cache dependencies in circleci
+    - | # download and cache dependencies in circleci
+      docker run \
+      -w /digdag \
+      -v `pwd`/:/digdag \
+      -v ~/.gradle:/root/.gradle \
+      java:8u72 \
+      ./gradlew testClasses
 
 test:
   override:
-    - ./gradlew clean test --info
     - |
-      DIGDAG_TEST_POSTGRESQL="
-        host = localhost
-        port = 5432
-        user = ubuntu
-        password =
-        database = circle_test
-      " ./gradlew cleanTest check --info
+      docker run \
+      -w /digdag \
+      -v `pwd`/:/digdag \
+      -v ~/.gradle:/root/.gradle \
+      java:8u72 \
+      ./gradlew clean test --info
+    - |
+      docker run \
+      -w /digdag -v `pwd`/:/digdag \
+      -v ~/.gradle:/root/.gradle \
+      -e DIGDAG_TEST_POSTGRESQL="
+      host = $(ifconfig -a | grep eth0 -A1 | grep 'inet addr' | awk '{print $2}' | cut -d: -f2)
+      port = 5432
+      user = ubuntu
+      password =
+      database = circle_test
+      " \
+      java:8u72 \
+      ./gradlew cleanTest check --info
+
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
