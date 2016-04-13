@@ -28,7 +28,7 @@ public class TaskStateFlags
         checkArgument(flags >= 0 && flags < Short.MAX_VALUE, "TaskStateFlags must be positive 16-bit signed integer");
         int unknown = flags
             & ~CANCEL_REQUESTED
-            & ~DELAYED_GROUP_ERROR
+            & ~DELAYED_ERROR
             & ~DELAYED_GROUP_ERROR;
         checkArgument(unknown == 0, "Unknown TaskStateFlags is set");
         this.flags = flags;
