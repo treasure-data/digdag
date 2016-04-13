@@ -9,3 +9,10 @@
 /config/test_postgresql.properties
 MANIFEST
 pom.xml
+.digdag
+
+# intellij idea
+*.iml
+*.ipr
+*.iws
+*.idea
