@@ -1,0 +1,5 @@
+
+dependencies {
+    testCompile project(':digdag-cli')
+    testCompile 'org.hamcrest:hamcrest-library:1.3'
+}
