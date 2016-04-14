@@ -149,8 +149,8 @@ public class Archive
                 dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
                 overwriteParams);
 
-        project.listFiles(absoluteCurrentPath, relPath -> {
-            try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
+        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
+            project.listFiles(absoluteCurrentPath, relPath -> {
                 Path path = absoluteCurrentPath.resolve(relPath);
                 if (!Files.isDirectory(path)) {
                     String name = relPath.toString();
@@ -165,18 +165,18 @@ public class Archive
                         tar.closeArchiveEntry();
                     }
                 }
+            });
 
-                // create .digdag.yml
-                // TODO set default time zone if not set?
-                byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
-                TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
-                metaEntry.setSize(metaBody.length);
-                metaEntry.setModTime(new Date());
-                tar.putArchiveEntry(metaEntry);
-                tar.write(metaBody);
-                tar.closeArchiveEntry();
-            }
-        });
+            // create .digdag.yml
+            // TODO set default time zone if not set?
+            byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
+            TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
+            metaEntry.setSize(metaBody.length);
+            metaEntry.setModTime(new Date());
+            tar.putArchiveEntry(metaEntry);
+            tar.write(metaBody);
+            tar.closeArchiveEntry();
+        }
 
         System.out.println("Workflows:");
         for (WorkflowDefinition workflow : project.getMetadata().getWorkflowList().get()) {
