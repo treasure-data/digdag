@@ -43,7 +43,7 @@ public class ProjectArchiveLoader
             //      a dependent project will be in a separated namespace (therefore
             //      workflows in the namespace will have package name as prefix like
             //      mylib+wf1 or mylib/sublib+wf2).
-            defs.add(dagfile.toWorkflowDefinition());
+            defs.addAll(dagfile.toWorkflowDefinitionList().get());
             baseDirs.add(path.getParent());
         }
 

@@ -3,6 +3,7 @@ package io.digdag.core.archive;
 import java.util.Map;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.immutables.value.Value;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 
@@ -58,35 +60,15 @@ public class Dagfile
             validator.checkTaskName("task name", taskName);
         }
         validator
-            .checkWorkflowName("name", getWorkflowName())
+            .checkWorkflowName("name", workflowName)
             .validate("workflow", this);
         // TODO should here validate key names of defaultParams?
     }
 
-    public String getWorkflowName()
-    {
-        return workflowName;
-    }
-
-    public Config getTasks()
-    {
-        return tasks;
-    }
-
-    public ZoneId getTimeZone()
-    {
-        return timeZone;
-    }
-
-    public Config getTopLevelExport()
-    {
-        return topLevelExport;
-    }
-
-    public Config getOtherTopLevelConfig()
-    {
-        return otherTopLevelConfig;
-    }
+    //public String getFirstWorkflowName()
+    //{
+    //    return workflowName;
+    //}
 
     public static Dagfile fromConfig(Config config)
     {
@@ -131,26 +113,28 @@ public class Dagfile
 
     public Config buildConfig()
     {
-        Config config = getTasks().getFactory().create();
+        Config config = tasks.getFactory().create();
 
-        config.set("name", getWorkflowName());
+        config.set("name", workflowName);
 
-        config.set("timezone", getTimeZone());
+        config.set("timezone", timeZone);
 
-        config.set("_export", getTopLevelExport());
+        config.set("_export", topLevelExport);
 
-        config.setAll(getOtherTopLevelConfig());
+        config.setAll(otherTopLevelConfig);
 
-        config.setAll(getTasks());
+        config.setAll(tasks);
 
         return config;
     }
 
-    public WorkflowDefinition toWorkflowDefinition()
+    public WorkflowDefinitionList toWorkflowDefinitionList()
     {
-        return WorkflowDefinition.of(
-                getWorkflowName(),
-                buildConfig(),
-                getTimeZone());
+        return WorkflowDefinitionList.of(
+                ImmutableList.of(
+                    WorkflowDefinition.of(
+                        workflowName,
+                        buildConfig(),
+                        timeZone)));
     }
 }

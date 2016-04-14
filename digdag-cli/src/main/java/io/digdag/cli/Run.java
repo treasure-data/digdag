@@ -94,7 +94,7 @@ public class Run
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
     @Parameter(names = {"-f", "--file"})
-    String dagfilePath = null;
+    List<String> dagfilePaths = ImmutableList.of();
 
     @Parameter(names = {"-a", "--rerun", "--all"})  // --all is kept here for backward compatibility but should be removed
     boolean rerunAll = false;
@@ -156,12 +156,12 @@ public class Run
             dryRun = showParams = true;
         }
 
-        if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
+        if (runAsImplicit && args.isEmpty() && dagfilePaths.isEmpty()) {
             throw Main.usage(null);
         }
 
-        if (dagfilePath == null) {
-            dagfilePath = DEFAULT_DAGFILE;
+        if (dagfilePaths.isEmpty()) {
+            dagfilePaths = ImmutableList.of(DEFAULT_DAGFILE);
         }
 
         if (runStart != null && runStartStop != null) {
@@ -251,7 +251,7 @@ public class Run
 
         // read workflow definitions
         ProjectArchive project = projectLoader.load(
-                ImmutableList.of(Paths.get(dagfilePath)),
+                dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
                 overwriteParams);
 
         String workflowName;

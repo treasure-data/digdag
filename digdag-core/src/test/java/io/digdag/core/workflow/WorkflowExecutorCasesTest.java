@@ -69,14 +69,13 @@ public class WorkflowExecutorCasesTest
     {
         try {
             LocalSite localSite = embed.getLocalSite();
-            Dagfile dagfile = Dagfile.fromConfig(config);
+            WorkflowDefinitionList defs = Dagfile.fromConfig(config).toWorkflowDefinitionList();
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                     "defualt",
                     "revision-" + UUID.randomUUID(),
-                    ArchiveMetadata.of(
-                        WorkflowDefinitionList.of(ImmutableList.of(dagfile.toWorkflowDefinition())),
-                        config.getFactory().create()));
-            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), dagfile.getWorkflowName());
+                    ArchiveMetadata.of(defs, config.getFactory().create())
+                    );
+            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), defs.get().get(0).getName());
             AttemptRequest ar = localSite.getAttemptBuilder()
                 .buildFromStoredWorkflow(
                         stored.getRevision(),
