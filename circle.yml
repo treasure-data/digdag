@@ -9,13 +9,16 @@ machine:
     - docker
 
 dependencies:
+  cache_directories:
+    - "~/docker"
   override:
+    - docker/setup.sh
     - | # download and cache dependencies in circleci
       docker run \
       -w /digdag \
       -v `pwd`/:/digdag \
       -v ~/.gradle:/root/.gradle \
-      java:8u72 \
+      digdag-build \
       ./gradlew testClasses
 
 test:
@@ -25,20 +28,21 @@ test:
       -w /digdag \
       -v `pwd`/:/digdag \
       -v ~/.gradle:/root/.gradle \
-      java:8u72 \
+      digdag-build \
       ./gradlew clean test --info
     - |
       docker run \
-      -w /digdag -v `pwd`/:/digdag \
+      -w /digdag \
+      -v `pwd`/:/digdag \
       -v ~/.gradle:/root/.gradle \
       -e DIGDAG_TEST_POSTGRESQL="
-      host = $(ifconfig -a | grep eth0 -A1 | grep 'inet addr' | awk '{print $2}' | cut -d: -f2)
+      host = localhost
       port = 5432
-      user = ubuntu
+      user = digdag_test
       password =
-      database = circle_test
+      database = digdag_test
       " \
-      java:8u72 \
+      digdag-build \
       ./gradlew cleanTest check --info
 
   post:
