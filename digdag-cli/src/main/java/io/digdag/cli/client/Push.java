@@ -47,6 +47,8 @@ public class Push
         System.err.println("Usage: digdag push [-f workflow.yml...] <project>");
         System.err.println("  Options:");
         System.err.println("    -r, --revision REVISION          revision name");
+        System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         //System.err.println("        --time-revision              use current time as the revision name");
         ClientCommand.showCommonOptions();
         System.err.println("  Stdin:");
