@@ -38,6 +38,7 @@ public class ProjectArchiveLoader
         ImmutableList.Builder<Path> baseDirs = ImmutableList.builder();
         ImmutableList.Builder<WorkflowDefinition> defs = ImmutableList.builder();
         for (Path path : dagfilePaths) {
+            path = path.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.yml").getParent() returns null instead of Paths.get("")
             Dagfile dagfile = Dagfile.fromConfig(configLoader.loadParameterizedFile(path.toFile(), overwriteParams));
             // TODO add recursive loading here to support inter-project dependency.
             //      a dependent project will be in a separated namespace (therefore
