@@ -87,6 +87,6 @@ public class ProjectArchiveLoader
     private static DirectoryStream.Filter<Path> archiveFileFilter()
     {
         // exclude dot files
-        return (target) -> !target.getFileName().startsWith(".");
+        return (target) -> !target.getFileName().toString().startsWith(".");
     }
 }
