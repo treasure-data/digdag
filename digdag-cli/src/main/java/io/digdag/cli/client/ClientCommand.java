@@ -56,15 +56,22 @@ public abstract class ClientCommand
         }
         catch (ClientErrorException ex) {
             Response res = ex.getResponse();
+            String body;
+            try {
+                body = res.readEntity(String.class);
+            }
+            catch (Exception readFailed) {
+                body = "";
+            }
             switch (res.getStatus()) {
             case 404:  // NOT_FOUND
-                throw systemExit("Resource not found: " + res.readEntity(String.class));
+                throw systemExit("Resource not found: " + body);
             case 409:  // CONFLICT
-                throw systemExit("Request conflicted: " + res.readEntity(String.class));
+                throw systemExit("Request conflicted: " + body);
             case 422:  // UNPROCESSABLE_ENTITY
-                throw systemExit("Invalid option: " + res.readEntity(String.class));
+                throw systemExit("Invalid option: " + body);
             default:
-                throw systemExit("Status code " + res.getStatus() + ": " + res.readEntity(String.class));
+                throw systemExit("Status code " + res.getStatus() + ": " + body);
             }
         }
     }
