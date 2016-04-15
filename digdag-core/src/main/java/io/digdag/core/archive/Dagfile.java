@@ -119,7 +119,9 @@ public class Dagfile
 
         config.set("timezone", timeZone);
 
-        config.set("_export", topLevelExport);
+        if (!topLevelExport.isEmpty()) {
+            config.set("_export", topLevelExport);
+        }
 
         config.setAll(otherTopLevelConfig);
 

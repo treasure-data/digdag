@@ -367,18 +367,18 @@ retry
 
     $ digdag retry <attempt-id>
 
-Retry a session. Either of ``--last-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
+Retry a session. Either of ``--latest-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
 
 Examples:
 
 .. code-block:: console
 
-    $ digdag retry 35 --last-revision --rerun --name retry1
+    $ digdag retry 35 --latest-revision --rerun --name retry1
     $ digdag retry 35 --keep-revision --rerun --name retry2
     $ digdag retry 35 --revision rev29a87a9c --rerun --name retry2
 
-:command:`--last-revision`
-  Use the last revision to retry the session.
+:command:`--latest-revision`
+  Use the latest revision to retry the session.
 
 :command:`--keep-revision`
   Use the same revision with the specified attempt to retry the session.

@@ -43,8 +43,8 @@ public class Retry
     @Parameter(names = {"--keep-revision"})
     boolean keepRevision = false;
 
-    @Parameter(names = {"--last-revision"})
-    boolean lastRevision = false;
+    @Parameter(names = {"--latest-revision"})
+    boolean latestRevision = false;
 
     @Parameter(names = {"--revision"})
     String revision = null;
@@ -69,8 +69,8 @@ public class Retry
             throw usage(null);
         }
         String error = "";
-        if (!keepRevision && !lastRevision && revision == null) {
-            error += "--keep-revision, --last-revision, or --revision <name> option is required. ";
+        if (!keepRevision && !latestRevision && revision == null) {
+            error += "--keep-revision, --latest-revision, or --revision <name> option is required. ";
         }
         if (!all && !resume && from == null) {
             error += "--all, --resume, or --from <name> option is required. ";
@@ -82,8 +82,8 @@ public class Retry
             throw usage(error);
         }
 
-        if (keepRevision && lastRevision || lastRevision && revision != null || keepRevision && revision != null) {
-            throw usage("Setting --keep-revision, --last-revision, or --revision together is invalid.");
+        if (keepRevision && latestRevision || latestRevision && revision != null || keepRevision && revision != null) {
+            throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.");
         }
 
         if (all && resume || resume && from != null || all && from != null) {
@@ -102,7 +102,7 @@ public class Retry
         System.err.println("Usage: digdag restart <attempt-id>");
         System.err.println("  Options:");
         System.err.println("        --name <name>                unique identifier of this retry attempt");
-        System.err.println("        --last-revision              use the last revision");
+        System.err.println("        --latest-revision            use the latest revision");
         System.err.println("        --keep-revision              keep the same revision");
         System.err.println("        --revision <name>            use a specific revision");
         System.err.println("        --all                        retry all tasks");
@@ -128,7 +128,7 @@ public class Retry
             }
             workflowId = id.get();
         }
-        else if (lastRevision) {
+        else if (latestRevision) {
             // get the latest workflow with the same name in the same project
             RestWorkflowDefinition def = client.getWorkflowDefinition(
                     attempt.getProject().getId(), attempt.getWorkflow().getName());
