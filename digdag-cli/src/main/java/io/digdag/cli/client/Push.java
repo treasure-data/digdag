@@ -44,7 +44,7 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag push [-f workflow.yml...] <project>");
+        System.err.println("Usage: digdag push [-f workflow.yml...] <project> -r <revision>");
         System.err.println("  Options:");
         System.err.println("    -r, --revision REVISION          revision name");
         System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
