@@ -48,10 +48,12 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class WorkflowResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/workflow?project=<name>&name=<name>      # lookup a workflow of the latest revision of a project by name
-    // [*] GET  /api/workflow?project=<name>&revision=<name>&name=<name>  # lookup a workflow of a past revision of a project by name
-    // [*] GET  /api/workflows/{id}                              # get a workflow
-    // [*] GET  /api/workflows/{id}/truncated_session_time       # truncate a time based on timzeone of this workflow
+    // GET  /api/workflows/{id}                              # get a workflow
+    // GET  /api/workflows/{id}/truncated_session_time       # truncate a time based on timzeone of this workflow
+    //
+    // Deprecated:
+    // GET  /api/workflow?project=<name>&name=<name>      # lookup a workflow of the latest revision of a project by name
+    // GET  /api/workflow?project=<name>&revision=<name>&name=<name>  # lookup a workflow of a past revision of a project by name
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;

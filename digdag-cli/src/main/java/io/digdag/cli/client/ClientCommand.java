@@ -61,7 +61,7 @@ public abstract class ClientCommand
                 body = res.readEntity(String.class);
             }
             catch (Exception readFailed) {
-                body = "";
+                body = ex.getMessage();
             }
             switch (res.getStatus()) {
             case 404:  // NOT_FOUND

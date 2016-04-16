@@ -48,10 +48,10 @@ import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttemp
 public class LogResource
     extends AuthenticatedResource
 {
-    // [*] PUT  /api/logs/{attempt_id}/files?task_name=<name>&file_time=<unixtime sec>&node_id=<node_id>
-    // [*] GET  /api/logs/{attempt_id}/files[?task_name=<name>]
-    // [*] GET  /api/logs/{attempt_id}/files/{file_name}
-    // [*] GET  /api/logs/{attempt_id}/upload_handle?task_name=<name>&file_time=<unixtime sec>&node_id=<nodeId>
+    // PUT  /api/logs/{attempt_id}/files?task=<name>&file_time=<unixtime sec>&node_id=<node_id>
+    // GET  /api/logs/{attempt_id}/files[?task=<name>]
+    // GET  /api/logs/{attempt_id}/files/{file_name}
+    // GET  /api/logs/{attempt_id}/upload_handle?task=<name>&file_time=<unixtime sec>&node_id=<nodeId>
 
     private final SessionStoreManager sm;
     private final LogServer logServer;
@@ -70,7 +70,7 @@ public class LogResource
     @Path("/api/logs/{attempt_id}/files")
     public RestLogFilePutResult putFile(
             @PathParam("attempt_id") long attemptId,
-            @QueryParam("task_name") String taskName,
+            @QueryParam("task") String taskName,
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId,
             InputStream body)
@@ -89,7 +89,7 @@ public class LogResource
     @Path("/api/logs/{attempt_id}/upload_handle")
     public DirectUploadHandle getFileHandles(
             @PathParam("attempt_id") long attemptId,
-            @QueryParam("task_name") String taskName,
+            @QueryParam("task") String taskName,
             @QueryParam("file_time") long unixFileTime,
             @QueryParam("node_id") String nodeId)
         throws ResourceNotFoundException
@@ -116,7 +116,7 @@ public class LogResource
     @Path("/api/logs/{attempt_id}/files")
     public List<RestLogFileHandle> getFileHandles(
             @PathParam("attempt_id") long attemptId,
-            @QueryParam("task_name") String taskName)
+            @QueryParam("task") String taskName)
         throws ResourceNotFoundException
     {
         LogFilePrefix prefix = getPrefix(attemptId);
