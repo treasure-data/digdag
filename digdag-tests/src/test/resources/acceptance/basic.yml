@@ -1,5 +1,3 @@
-name: basic
-
 +foo:
   sh>: "touch foo.out"
 

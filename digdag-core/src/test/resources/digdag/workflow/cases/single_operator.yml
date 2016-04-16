@@ -1,4 +1,2 @@
-name: single_operator
-
 +step1:
   sh>: echo hello world

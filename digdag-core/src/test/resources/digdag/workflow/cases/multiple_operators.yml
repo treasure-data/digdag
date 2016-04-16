@@ -1,5 +1,3 @@
-name: multiple_operators
-
 +step1:
   sh>: echo this should fail
   py>: bar
