@@ -1,4 +1,3 @@
-name: schedule_daily
 timezone: America/Los_Angeles   # this considers daylight saving time
 
 schedule:

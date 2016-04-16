@@ -1,4 +1,3 @@
-name: check_task
 timezone: UTC
 
 +generate_methods:

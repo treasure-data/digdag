@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import io.digdag.core.archive.Dagfile;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -58,10 +57,10 @@ public class RevisionAutoReloader
         }
     }
 
-    public void loadProject(List<Path> files)
+    public void watch(Path dagfilePath)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(files);
+        ReloadTarget target = new ReloadTarget(dagfilePath);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -98,13 +97,13 @@ public class RevisionAutoReloader
 
     private class ReloadTarget
     {
-        private final List<Path> dagfilePaths;
+        private final Path dagfilePath;
         private int lastRevId;
         private ArchiveMetadata lastMetadata;
 
-        public ReloadTarget(List<Path> dagfilePaths)
+        public ReloadTarget(Path dagfilePath)
         {
-            this.dagfilePaths = dagfilePaths;
+            this.dagfilePath = dagfilePath;
             this.lastMetadata = null;
         }
 
@@ -125,7 +124,7 @@ public class RevisionAutoReloader
                 ProjectArchive project = readProject();  // TODO optimize this code
                 ArchiveMetadata metadata = project.getMetadata();
                 if (!metadata.equals(lastMetadata)) {
-                    logger.info("Reloading {}", dagfilePaths);
+                    logger.info("Reloading {}", dagfilePath);
                     StoredRevision rev = localSite.storeLocalWorkflows(
                             "default",
                             makeRevisionName(),
@@ -144,7 +143,7 @@ public class RevisionAutoReloader
         private ProjectArchive readProject()
             throws IOException
         {
-            return loader.load(dagfilePaths, cf.create());
+            return loader.loadProjectOrSingleWorkflow(dagfilePath, cf.create());
         }
 
         private String makeRevisionName()

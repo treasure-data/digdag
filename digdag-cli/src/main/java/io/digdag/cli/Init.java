@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.util.Map;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,7 +8,9 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.cli.Main.systemExit;
 
 public class Init
@@ -38,6 +41,7 @@ public class Init
         throws Exception
     {
         File dir = new File(path);
+        String workflowName = dir.getName();
 
         ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", dir);
         gen.mkdir(".");  // creates `dir`
@@ -68,7 +72,10 @@ public class Init
             gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
             gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cp("workflow.yml", Run.DEFAULT_DAGFILE);
+            gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
+                    ImmutableMap.of("@@name@@", workflowName));
+            gen.cpWithReplace("workflow.yml", workflowName + ".yml",
+                    ImmutableMap.of("@@name@@", workflowName));
             if (path.equals(".")) {
                 System.out.println("Done. Type `./digdag r` to run the workflow. Enjoy!");
             }
@@ -131,6 +138,20 @@ public class Init
             cpAbsoluteDest(src, file(name));
         }
 
+        public void cpWithReplace(String src, String name, Map<String, String> replacements)
+            throws IOException
+        {
+            String data = getResource(src);
+            for (Map.Entry<String, String> pair : replacements.entrySet()) {
+                data = data.replaceAll(pair.getKey(), pair.getValue());
+            }
+            File dest = file(name);
+            System.out.println("  Creating " + dest);
+            try (FileOutputStream out = new FileOutputStream(dest)) {
+                out.write(data.getBytes(UTF_8));
+            }
+        }
+
         public void setExecutable(String name)
         {
             boolean success = file(name).setExecutable(true);
@@ -160,6 +181,17 @@ public class Init
                 path = new File(path, f);
             }
             return path;
+        }
+
+        private String getResource(String src)
+            throws IOException
+        {
+            try (InputStream in = getClass().getResourceAsStream(sourcePrefix + src)) {
+                if (in == null) {
+                    throw new RuntimeException("Resource not exists: " + sourcePrefix + src);
+                }
+                return new String(ByteStreams.toByteArray(in), UTF_8);
+            }
         }
     }
 }

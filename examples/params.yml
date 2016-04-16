@@ -1,4 +1,3 @@
-name: params
 timezone: UTC
 
 # If you haven't checked python_args.yml, please check it first.

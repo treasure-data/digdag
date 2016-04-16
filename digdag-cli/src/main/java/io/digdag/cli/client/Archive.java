@@ -31,7 +31,6 @@ import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.archive.Dagfile;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -56,7 +55,7 @@ public class Archive
     extends Command
 {
     @Parameter(names = {"-f", "--file"})
-    List<String> dagfilePaths = ImmutableList.of(Run.DEFAULT_DAGFILE);
+    String dagfilePath = Run.DEFAULT_DAGFILE;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -80,27 +79,20 @@ public class Archive
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
+        System.err.println("Usage: digdag archive [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: workflow.yml)");
+        System.err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions();
-        System.err.println("  Stdin:");
-        System.err.println("    Names of the files to add the archive.");
-        System.err.println("");
-        System.err.println("  Examples:");
-        System.err.println("    $ git ls-files | digdag archive");
-        System.err.println("    $ find . | digdag archive -o digdag.archive.tar.gz");
-        System.err.println("");
         return systemExit(error);
     }
 
     // used by Push.push
-    static void archive(List<String> dagfilePaths, Map<String, String> params, String paramsFile, String output)
+    static void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
         throws IOException
     {
         Archive cmd = new Archive();
-        cmd.dagfilePaths = dagfilePaths;
+        cmd.dagfilePath = dagfilePath;
         cmd.params = params;
         cmd.paramsFile = paramsFile;
         cmd.output = output;
@@ -145,9 +137,7 @@ public class Archive
 
         Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
 
-        ProjectArchive project = projectLoader.load(
-                dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
-                overwriteParams);
+        ProjectArchive project = projectLoader.loadProject(Paths.get(dagfilePath), overwriteParams);
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
             project.listFiles(absoluteCurrentPath, relPath -> {

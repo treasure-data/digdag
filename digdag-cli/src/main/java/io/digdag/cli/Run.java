@@ -43,7 +43,6 @@ import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.LocalSite.StoreWorkflowResult;
-import io.digdag.core.archive.Dagfile;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -89,12 +88,12 @@ import static java.util.Locale.ENGLISH;
 public class Run
     extends Command
 {
-    public static final String DEFAULT_DAGFILE = "workflow.yml";
+    public static final String DEFAULT_DAGFILE = "digdag.yml";
 
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
     @Parameter(names = {"-f", "--file"})
-    List<String> dagfilePaths = ImmutableList.of();
+    String dagfilePath = null;
 
     @Parameter(names = {"-a", "--rerun", "--all"})  // --all is kept here for backward compatibility but should be removed
     boolean rerunAll = false;
@@ -156,12 +155,12 @@ public class Run
             dryRun = showParams = true;
         }
 
-        if (runAsImplicit && args.isEmpty() && dagfilePaths.isEmpty()) {
+        if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
             throw Main.usage(null);
         }
 
-        if (dagfilePaths.isEmpty()) {
-            dagfilePaths = ImmutableList.of(DEFAULT_DAGFILE);
+        if (dagfilePath == null) {
+            dagfilePath = DEFAULT_DAGFILE;
         }
 
         if (runStart != null && runStartStop != null) {
@@ -198,7 +197,7 @@ public class Run
     {
         System.err.println("Usage: digdag run [workflow][+task] [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: workflow.yml)");
+        System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
         System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
         System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at digdag.status");
         System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at digdag.status");
@@ -249,10 +248,16 @@ public class Run
         // read parameters
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
+        Path path = Paths.get(dagfilePath);
+        if (!path.toAbsolutePath().normalize().getParent().equals(Paths.get("").toAbsolutePath()) && !overwriteParams.has("_workdir")) {
+            // -f is set to a subdir
+            String subdir = path.getParent().toString();
+            logger.info("Setting workdir to {}", subdir);
+            overwriteParams.set("_workdir", subdir);
+        }
+
         // read workflow definitions
-        ProjectArchive project = projectLoader.load(
-                dagfilePaths.stream().map(str -> Paths.get(str)).collect(Collectors.toList()),
-                overwriteParams);
+        ProjectArchive project = projectLoader.loadProjectOrSingleWorkflow(path, overwriteParams);
 
         String workflowName;
         Optional<TaskMatchPattern> taskMatchPattern;

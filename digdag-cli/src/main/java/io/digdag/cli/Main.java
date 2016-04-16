@@ -295,8 +295,6 @@ public class Main
         System.err.println("    sessions [project-name] [name]   show past and current sessions");
         System.err.println("    attempts [project-name] [name]   show past and current session attempts");
         System.err.println("    tasks <attempt-id>               show tasks of a session attempt");
-        //System.err.println("    archive <workflow.yml...>        create a project archive");
-        //System.err.println("    upload <workflow.yml...>         upload a project archive to a server");
         System.err.println("");
         System.err.println("  Options:");
         showCommonOptions();

@@ -1,4 +1,4 @@
-name: treasuredata
+timezone: UTC
 
 schedule:
   daily>: 03:00:00
@@ -7,7 +7,7 @@ sla:
   time: 05:00:00
   +mail:
     _type: mail
-    body: Not finished: ${session_time}
+    body: "Not finished: ${session_time}"
     subject: Query not finished
     to: [sf@treasure-data.com]
 

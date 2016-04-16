@@ -3,7 +3,6 @@ package io.digdag.core.archive;
 import java.util.Map;
 import java.time.ZoneId;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -13,11 +12,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.immutables.value.Value;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 
-public class Dagfile
+public class WorkflowFile
 {
     // name, timezone, _export, and others
     private static final String[] TOP_LEVEL_CONFIG = new String[] {
@@ -38,7 +36,7 @@ public class Dagfile
 
     private final Config otherTopLevelConfig;
 
-    private Dagfile(
+    private WorkflowFile(
             String workflowName,
             Config tasks,
             ZoneId timeZone,
@@ -53,6 +51,14 @@ public class Dagfile
         check();
     }
 
+    public void setWorkdir(String value)
+    {
+        topLevelExport.set("_workdir",
+                topLevelExport.getOptional("_workdir", String.class)
+                .transform(it -> it + "/" + value)
+                .or(value));
+    }
+
     protected void check()
     {
         ModelValidator validator = ModelValidator.builder();
@@ -65,17 +71,9 @@ public class Dagfile
         // TODO should here validate key names of defaultParams?
     }
 
-    //public String getFirstWorkflowName()
-    //{
-    //    return workflowName;
-    //}
-
-    public static Dagfile fromConfig(Config config)
+    public static WorkflowFile fromConfig(String workflowName, Config config)
     {
         Config copy = config.deepCopy();
-
-        String workflowName = copy.get("name", String.class);
-        copy.remove("name");
 
         ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
         copy.remove("timezone");
@@ -103,7 +101,7 @@ public class Dagfile
             throw new ConfigException("Workflow definition file includes unknown keys: " + copy.getKeys());
         }
 
-        return new Dagfile(
+        return new WorkflowFile(
                 workflowName,
                 tasks,
                 timeZone,
@@ -111,11 +109,9 @@ public class Dagfile
                 otherTopLevelConfig);
     }
 
-    public Config buildConfig()
+    public WorkflowDefinition toWorkflowDefinition()
     {
         Config config = tasks.getFactory().create();
-
-        config.set("name", workflowName);
 
         config.set("timezone", timeZone);
 
@@ -127,16 +123,6 @@ public class Dagfile
 
         config.setAll(tasks);
 
-        return config;
-    }
-
-    public WorkflowDefinitionList toWorkflowDefinitionList()
-    {
-        return WorkflowDefinitionList.of(
-                ImmutableList.of(
-                    WorkflowDefinition.of(
-                        workflowName,
-                        buildConfig(),
-                        timeZone)));
+        return WorkflowDefinition.of(workflowName, config, timeZone);
     }
 }

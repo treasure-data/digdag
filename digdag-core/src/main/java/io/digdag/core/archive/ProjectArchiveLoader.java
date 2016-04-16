@@ -14,6 +14,8 @@ import java.nio.file.DirectoryStream;
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.config.ConfigLoaderManager;
@@ -30,41 +32,112 @@ public class ProjectArchiveLoader
         this.configLoader = configLoader;
     }
 
-    public ProjectArchive load(
-            List<Path> dagfilePaths,
+    public ProjectArchive loadProject(
+            Path dagfilePath,
             Config overwriteParams)
         throws IOException
     {
-        ImmutableList.Builder<Path> baseDirs = ImmutableList.builder();
+        return load(dagfilePath, overwriteParams, false);
+    }
+
+    public ProjectArchive loadProjectOrSingleWorkflow(
+            Path dagfilePath,
+            Config overwriteParams)
+        throws IOException
+    {
+        return load(dagfilePath, overwriteParams, true);
+    }
+
+    private ProjectArchive load(
+            Path dagfilePath,
+            Config overwriteParams,
+            boolean singleWorkflowAllowed)
+        throws IOException
+    {
+        Path path = dagfilePath.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.yml").getParent() returns null instead of Paths.get("")
+
+        Config projectConfig = configLoader.loadParameterizedFile(path.toFile(), overwriteParams);
+
+        if (singleWorkflowAllowed && !projectConfig.has("workflows")) {
+            return loadSingleWorkflowProject(path, overwriteParams);
+        }
+
+        Path projectDir = path.getParent();
+        ProjectFile projectFile = ProjectFile.fromConfig(projectConfig);
+
+        Config projectParams = projectFile.getDefaultParams().deepCopy().setAll(overwriteParams);
+
         ImmutableList.Builder<WorkflowDefinition> defs = ImmutableList.builder();
-        for (Path path : dagfilePaths) {
-            path = path.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.yml").getParent() returns null instead of Paths.get("")
-            Dagfile dagfile = Dagfile.fromConfig(configLoader.loadParameterizedFile(path.toFile(), overwriteParams));
-            // TODO add recursive loading here to support inter-project dependency.
-            //      a dependent project will be in a separated namespace (therefore
-            //      workflows in the namespace will have package name as prefix like
-            //      mylib+wf1 or mylib/sublib+wf2).
-            defs.addAll(dagfile.toWorkflowDefinitionList().get());
-            baseDirs.add(path.getParent());
+        for (String relativeFileName : projectFile.getWorkflowFiles()) {
+            Path workflowFilePath = projectDir.resolve(relativeFileName).normalize();
+
+            try {
+                WorkflowFile workflowFile = loadWorkflowFile(projectDir, workflowFilePath, projectParams);
+
+                defs.add(workflowFile.toWorkflowDefinition());
+            }
+            catch (Exception ex) {
+                throw new ConfigException("Failed to load a workflow file: " + workflowFilePath, ex);
+            }
         }
 
         ArchiveMetadata metadata = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(defs.build()),
-                overwriteParams);
+                projectParams);
 
-        List<Path> includeFileDirs = baseDirs.build();
         return new ProjectArchive(metadata, (baseDir, consumer) ->
-                listFiles(baseDir.toAbsolutePath().normalize(), includeFileDirs, consumer));
+                listFiles(baseDir, projectDir, consumer));
     }
 
-    private static void listFiles(Path absBaseDir, Collection<Path> baseDirs, PathConsumer consumer)
+    private ProjectArchive loadSingleWorkflowProject(Path path, Config overwriteParams)
         throws IOException
     {
-        Set<Path> listed = new HashSet<>();
-        for (Path baseDir : baseDirs) {
-            Path relPath = absBaseDir.relativize(baseDir.toAbsolutePath().normalize());
-            listFilesRecursively(absBaseDir, absBaseDir.resolve(relPath), consumer, listed);
+        Path dir = path.getParent();
+        WorkflowFile workflowFile = loadWorkflowFile(dir, path, overwriteParams);
+
+        ArchiveMetadata metadata = ArchiveMetadata.of(
+                WorkflowDefinitionList.of(ImmutableList.of(workflowFile.toWorkflowDefinition())),
+                overwriteParams);
+
+        return new ProjectArchive(metadata, (baseDir, consumer) ->
+                listFiles(baseDir, dir, consumer));
+    }
+
+    private WorkflowFile loadWorkflowFile(Path projectDir, Path workflowFilePath, Config projectParams)
+        throws IOException
+    {
+        // remove last .yml and use it as workflowName
+        String fileName = workflowFilePath.getFileName().toString();
+        int lastPosDot = fileName.lastIndexOf('.');
+        String workflowName;
+        if (lastPosDot > 0) {
+            workflowName = fileName.substring(0, lastPosDot);
         }
+        else {
+            workflowName = fileName;
+        }
+
+        WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
+                configLoader.loadParameterizedFile(workflowFilePath.toFile(), projectParams));
+
+        Path workflowSubdir = projectDir.relativize(workflowFilePath).getParent();
+        if (workflowSubdir != null) {
+            // workflow file is in a subdirectory. set _workdir to point the directory
+            workflowFile.setWorkdir(
+                    projectParams.getOptional("_workdir", String.class)
+                    .transform(it -> it + "/" + workflowSubdir)
+                    .or(workflowSubdir.toString()));
+        }
+
+        return workflowFile;
+    }
+
+    private static void listFiles(Path baseDir, Path dir, PathConsumer consumer)
+        throws IOException
+    {
+        Path absBaseDir = baseDir.toAbsolutePath().normalize();
+        Path relPath = absBaseDir.relativize(dir.toAbsolutePath().normalize());
+        listFilesRecursively(absBaseDir, absBaseDir.resolve(relPath), consumer, new HashSet<>());
     }
 
     private static void listFilesRecursively(Path absBaseDir, Path targetDir, PathConsumer consumer, Set<Path> listed)

@@ -19,7 +19,7 @@ public class Show
     extends Command
 {
     @Parameter(names = {"-o", "--output"})
-    String output = "workflow.png";
+    String output = "digdag.png";
 
     // TODO support -p option? for jinja template rendering
 
@@ -36,9 +36,9 @@ public class Show
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag show <workflow.yml> [options...]");
+        System.err.println("Usage: digdag show <digdag.yml> [options...]");
         System.err.println("  Options:");
-        System.err.println("    -s, --show PATH.png              store a PNG file to this path (default: workflow.png)");
+        System.err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
         Main.showCommonOptions();
         return systemExit(error);
     }

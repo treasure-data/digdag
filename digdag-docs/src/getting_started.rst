@@ -40,7 +40,7 @@ If you got an error such as **'Unsupported major.minor version 52.0'**, please d
     $ cd mydag
     $ ./digdag run
 
-Did it work? Next step is adding tasks to ``workflow.yml`` file to automate your jobs.
+Did it work? Next step is adding tasks to ``digdag.yml`` file to automate your jobs.
 
 3. (Adding a data loding task from MySQL to CSV files...)
 ----------------------------------
