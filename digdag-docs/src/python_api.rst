@@ -8,14 +8,11 @@ workflow.yml:
 
 .. code-block:: yaml
 
-    run: +main
+    +step1:
+      py>: tasks.MyWorkflow.step1
 
-    +main:
-      +step1:
-        py>: tasks.MyWorkflow.step1
-
-      +step2:
-        py>: tasks.MyWorkflow.step2
+    +step2:
+      py>: tasks.MyWorkflow.step2
 
 tasks/__init__.py:
 
