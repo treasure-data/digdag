@@ -14,11 +14,15 @@ This operator embeds another workflow as a subtask.
 
 .. code-block:: yaml
 
-    run: +main
-    +main:
-      call>: +another
-    +another:
-      sh>: tasks/another.sh
+    # workflow1.yml
+    +step1:
+      call>: +workflow1
+
+.. code-block:: yaml
+
+    # workflow1.yml
+    +step2:
+      sh>: tasks/step2.sh
 
 :command:`call>: +NAME`
   Name of a workflow.
@@ -34,11 +38,15 @@ This operator submits a new session to digdag.
 
 .. code-block:: yaml
 
-    run: +main
-    +main:
-      require>: +another
-    +another:
-      sh>: tasks/another.sh
+    # workflow1.yml
+    +step1:
+      require>: +workflow2
+
+.. code-block:: yaml
+
+    # workflow2.yml
+    +step2:
+      sh>: tasks/step2.sh
 
 :command:`require>: +NAME`
   Name of a workflow.
