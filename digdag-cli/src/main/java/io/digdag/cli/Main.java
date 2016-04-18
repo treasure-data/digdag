@@ -115,7 +115,7 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("new", new Init(), "init");
+        jc.addCommand("init", new Init(), "new");
         jc.addCommand("run", new Run(), "r");
         jc.addCommand("check", new Check(), "c");
         jc.addCommand("scheduler", new Sched(), "sched");
