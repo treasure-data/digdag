@@ -57,10 +57,10 @@ public class RevisionAutoReloader
         }
     }
 
-    public void watch(Path dagfilePath)
+    public void watch(Path dagfilePath, Config overwriteParams)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(dagfilePath);
+        ReloadTarget target = new ReloadTarget(dagfilePath, overwriteParams);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -98,12 +98,14 @@ public class RevisionAutoReloader
     private class ReloadTarget
     {
         private final Path dagfilePath;
+        private final Config overwriteParams;
         private int lastRevId;
         private ArchiveMetadata lastMetadata;
 
-        public ReloadTarget(Path dagfilePath)
+        public ReloadTarget(Path dagfilePath, Config overwriteParams)
         {
             this.dagfilePath = dagfilePath;
+            this.overwriteParams = overwriteParams;
             this.lastMetadata = null;
         }
 
@@ -143,7 +145,7 @@ public class RevisionAutoReloader
         private ProjectArchive readProject()
             throws IOException
         {
-            return loader.loadProjectOrSingleWorkflow(dagfilePath, cf.create());
+            return loader.loadProjectOrSingleWorkflow(dagfilePath, overwriteParams);
         }
 
         private String makeRevisionName()

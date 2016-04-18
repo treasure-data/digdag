@@ -20,6 +20,7 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.*;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
+import static io.digdag.client.DigdagClient.objectMapper;
 
 public class DatabaseTestingUtils
 {
@@ -138,14 +139,9 @@ public class DatabaseTestingUtils
         }
     }
 
-    public static ObjectMapper createObjectMapper()
-    {
-        return new ObjectMapper();
-    }
-
     public static ConfigFactory createConfigFactory()
     {
-        return new ConfigFactory(createObjectMapper());
+        return new ConfigFactory(objectMapper());
     }
 
     public static ConfigMapper createConfigMapper()

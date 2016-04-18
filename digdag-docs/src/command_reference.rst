@@ -184,6 +184,16 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
 
   Example: --task-log digdag.log
 
+:command:`-p, --param KEY=VALUE`
+  Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
+
+  Example: -p environment=staging
+
+:command:`-P, --params-file PATH`
+  Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using "." syntax (like \${mysql.user}).
+
+  Example: -P params.yml
+
 :command:`-c, --config PATH`
   Server configuration property path. This is same with server command. See `Digdag server <digdag_server.html>`_ for details.
 

@@ -10,6 +10,7 @@ import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.agent.AgentId;
 import io.digdag.spi.TaskRequest;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
+import static io.digdag.client.DigdagClient.objectMapper;
 
 public class DatabaseFactory
         implements AutoCloseable, Provider<DBI>
@@ -42,7 +43,7 @@ public class DatabaseFactory
 
     public DatabaseSessionStoreManager getSessionStoreManager()
     {
-        return new DatabaseSessionStoreManager(dbi, createConfigFactory(), createConfigMapper(), createObjectMapper(), config);
+        return new DatabaseSessionStoreManager(dbi, createConfigFactory(), createConfigMapper(), objectMapper(), config);
     }
 
     public WorkflowExecutor getWorkflowExecutor()
@@ -53,7 +54,7 @@ public class DatabaseFactory
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),
                 createConfigFactory(),
-                createObjectMapper());
+                objectMapper());
     }
 
     public static class NullTaskQueueDispatcher

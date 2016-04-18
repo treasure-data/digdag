@@ -28,7 +28,6 @@ import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.ConfigException;
 import static java.util.Locale.ENGLISH;
-import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Main.systemExit;
 
 public class Retry
