@@ -45,11 +45,8 @@ subprojects {
                     url 's3://digdag-beta-release/maven'
                 }
                 credentials(AwsCredentials) {
-                    // write at your S3 keys to ~/.gradle/gradle.properties file:
-                    // digdag_beta_release_s3_access_key=ABCDEFGHIJKLMN
-                    // digdag_beta_release_s3_secret_key=DEADBEEF/PUTYOURAPIKEY
-                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
-                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
+                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
                 }
             }
         }
