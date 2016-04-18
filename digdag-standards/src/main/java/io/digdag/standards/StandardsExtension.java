@@ -12,6 +12,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.MonthlySchedulerFactory;
+import io.digdag.standards.scheduler.WeeklySchedulerFactory;
 import io.digdag.standards.scheduler.DailySchedulerFactory;
 import io.digdag.standards.scheduler.HourlySchedulerFactory;
 import io.digdag.standards.scheduler.MinutesIntervalSchedulerFactory;
@@ -66,6 +67,7 @@ public class StandardsExtension
             Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
             schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(MonthlySchedulerFactory.class).in(Scopes.SINGLETON);
+            schedulerBinder.addBinding().to(WeeklySchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(DailySchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(HourlySchedulerFactory.class).in(Scopes.SINGLETON);
             schedulerBinder.addBinding().to(MinutesIntervalSchedulerFactory.class).in(Scopes.SINGLETON);
