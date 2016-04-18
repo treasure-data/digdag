@@ -203,8 +203,8 @@ uploadReleases {
                 ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact]-[revision].[ext]'
                 //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
                 credentials(AwsCredentials) {
-                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
-                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
+                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
                 }
             }
         }
@@ -220,8 +220,8 @@ uploadRootFiles {
                 ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact].[ext]'
                 //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
                 credentials(AwsCredentials) {
-                    accessKey project.hasProperty('digdag_beta_release_s3_access_key') ? digdag_beta_release_s3_access_key : ''
-                    secretKey project.hasProperty('digdag_beta_release_s3_secret_key') ? digdag_beta_release_s3_secret_key : ''
+                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
+                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
                 }
             }
         }
