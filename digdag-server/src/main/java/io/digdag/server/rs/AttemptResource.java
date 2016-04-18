@@ -50,15 +50,15 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class AttemptResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/attempts                                    # list attempts from recent to old
-    // [*] GET  /api/attempts?include_retried=1                  # list attempts from recent to old
-    // [*] GET  /api/attempts?project=<name>                  # list attempts that belong to a particular project
-    // [*] GET  /api/attempts?project=<name>&workflow=<name>  # list attempts that belong to a particular workflow
-    // [*] GET  /api/attempts/{id}                               # show a session
-    // [*] GET  /api/attempts/{id}/tasks                         # list tasks of a session
-    // [*] GET  /api/attempts/{id}/retries                       # list retried attempts of this session
-    // [*] PUT  /api/attempts                                    # starts a new session
-    // [*] POST /api/attempts/{id}/kill                          # kill a session
+    // GET  /api/attempts                                    # list attempts from recent to old
+    // GET  /api/attempts?include_retried=1                  # list attempts from recent to old
+    // GET  /api/attempts?project=<name>                     # list attempts that belong to a particular project
+    // GET  /api/attempts?project=<name>&workflow=<name>     # list attempts that belong to a particular workflow
+    // GET  /api/attempts/{id}                               # show a session
+    // GET  /api/attempts/{id}/tasks                         # list tasks of a session
+    // GET  /api/attempts/{id}/retries                       # list retried attempts of this session
+    // PUT  /api/attempts                                    # starts a new session
+    // POST /api/attempts/{id}/kill                          # kill a session
 
     private final ProjectStoreManager rm;
     private final SessionStoreManager sm;

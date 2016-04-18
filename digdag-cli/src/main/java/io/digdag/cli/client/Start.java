@@ -19,6 +19,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
@@ -66,7 +67,7 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <project-name> <+name>");
+        System.err.println("Usage: digdag start <project-name> <name>");
         System.err.println("  Options:");
         System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
         System.err.println("        --revision <name>            use a past revision");
@@ -77,9 +78,9 @@ public class Start
         ClientCommand.showCommonOptions();
         System.err.println("");
         System.err.println("  Examples:");
-        System.err.println("    $ digdag start myproj +workflow1 --session \"2016-01-01 -07:00\"");
-        System.err.println("    $ digdag start myproj +workflow1 --session hourly      # use current hour's 00:00");
-        System.err.println("    $ digdag start myproj +workflow1 --session daily       # use current day's 00:00:00");
+        System.err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 -07:00\"");
+        System.err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
+        System.err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
         System.err.println("");
         return systemExit(error);
     }
@@ -130,12 +131,14 @@ public class Start
 
         DigdagClient client = buildClient();
 
+        RestProject proj = client.getProject(projName);
+
         RestWorkflowDefinition def;
         if (revision == null) {
-            def = client.getWorkflowDefinition(projName, workflowName);
+            def = client.getWorkflowDefinition(proj.getId(), workflowName);
         }
         else {
-            def = client.getWorkflowDefinition(projName, workflowName, revision);
+            def = client.getWorkflowDefinition(proj.getId(), workflowName, revision);
         }
 
         RestWorkflowSessionTime truncatedTime = client.getWorkflowTruncatedSessionTime(def.getId(), time, mode);

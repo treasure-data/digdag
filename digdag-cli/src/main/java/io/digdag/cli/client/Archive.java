@@ -31,8 +31,9 @@ import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.repository.Dagfile;
-import io.digdag.core.repository.ArchiveMetadata;
+import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
@@ -78,18 +79,11 @@ public class Archive
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag archive [-f workflow.yml...] [options...]");
+        System.err.println("Usage: digdag archive [options...]");
         System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        System.err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
         System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions();
-        System.err.println("  Stdin:");
-        System.err.println("    Names of the files to add the archive.");
-        System.err.println("");
-        System.err.println("  Examples:");
-        System.err.println("    $ git ls-files | digdag archive");
-        System.err.println("    $ find . | digdag archive -o digdag.archive.tar.gz");
-        System.err.println("");
         return systemExit(error);
     }
 
@@ -136,68 +130,36 @@ public class Archive
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
 
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
 
-        // normalize the path
-        String dagfileName = normalizeRelativePath(absoluteCurrentPath, dagfilePath);
-        boolean dagfileLoaded = false;
-
-        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
-
-        if (!dagfile.getDefaultTimeZone().isPresent()) {
-            throw new ConfigException("timezone: parameter is required but not set at " + dagfilePath + ". Example is 'timezone: " + ZoneId.systemDefault() + "'.");
-        }
-
-        ArchiveMetadata meta = dagfile.toArchiveMetadata(dagfile.getDefaultTimeZone().get());
-
-        List<String> stdinLines;
-        if (System.console() != null) {
-            stdinLines = ImmutableList.of();
-        }
-        else {
-            stdinLines = CharStreams.readLines(new BufferedReader(new InputStreamReader(System.in)));
-        }
+        ProjectArchive project = projectLoader.loadProject(Paths.get(dagfilePath), overwriteParams);
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
-            for (String line : stdinLines) {
-                Path path = Paths.get(line);
-                if (Files.isDirectory(path)) {
-                    continue;
-                }
+            project.listFiles(absoluteCurrentPath, relPath -> {
+                Path path = absoluteCurrentPath.resolve(relPath);
+                if (!Files.isDirectory(path)) {
+                    String name = relPath.toString();
+                    System.out.println("  Archiving "+name);
 
-                String name = normalizeRelativePath(absoluteCurrentPath, line);
-                System.out.println("  Archiving "+name);
-
-                TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
-                tar.putArchiveEntry(e);
-                if (!e.isSymbolicLink()) {
-                    try (InputStream in = Files.newInputStream(path)) {
-                        ByteStreams.copy(in, tar);
+                    TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
+                    tar.putArchiveEntry(e);
+                    if (!e.isSymbolicLink()) {
+                        try (InputStream in = Files.newInputStream(path)) {
+                            ByteStreams.copy(in, tar);
+                        }
+                        tar.closeArchiveEntry();
                     }
-                    tar.closeArchiveEntry();
                 }
-
-                if (name.equals(dagfileName)) {
-                    dagfileLoaded = true;
-                }
-            }
-
-            if (!dagfileLoaded) {
-                System.out.println("  Archiving "+dagfileName);
-                tar.putArchiveEntry(new TarArchiveEntry(new File(dagfileName)));
-                try (InputStream in = Files.newInputStream(Paths.get(dagfilePath))) {
-                    ByteStreams.copy(in, tar);
-                }
-                tar.closeArchiveEntry();
-            }
+            });
 
             // create .digdag.yml
             // TODO set default time zone if not set?
-            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
+            byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(metaBody.length);
             metaEntry.setModTime(new Date());
@@ -207,7 +169,7 @@ public class Archive
         }
 
         System.out.println("Workflows:");
-        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
+        for (WorkflowDefinition workflow : project.getMetadata().getWorkflowList().get()) {
             System.out.println("  "+workflow.getName());
         }
         System.out.println("");

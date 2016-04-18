@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.io.File;
+import com.google.common.collect.ImmutableList;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.cli.Run;
@@ -43,18 +44,14 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag push [-f workflow.yml...] <project>");
+        System.err.println("Usage: digdag push <project> -r <revision>");
         System.err.println("  Options:");
+        System.err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
         System.err.println("    -r, --revision REVISION          revision name");
+        System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         //System.err.println("        --time-revision              use current time as the revision name");
         ClientCommand.showCommonOptions();
-        System.err.println("  Stdin:");
-        System.err.println("    Names of the files to add the archive.");
-        System.err.println("");
-        System.err.println("  Examples:");
-        System.err.println("    $ find . | digdag push myproj -r \"$(date +%Y-%m-%dT%H:%M:%S%z)\"");
-        System.err.println("    $ git ls-files | digdag push default -r \"$(git show --pretty=format:'%T' | head -n 1)\"");
-        System.err.println("");
         return systemExit(error);
     }
 

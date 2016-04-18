@@ -1,4 +1,4 @@
-run: +mail_test
+timezone: UTC
 
 _export:
   mail:
@@ -16,7 +16,7 @@ _export:
     password: "...password..."
     debug: true
 
-+mail_test:
++step:
   mail>: examples/mail.txt
   subject: this is a smtp test mail
   to: [to1@example.com, to2@example.com]

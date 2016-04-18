@@ -27,7 +27,7 @@ public class ShOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ShOperatorFactory.class);
 
-    private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_]+");
+    private static Pattern VALID_ENV_KEY = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
 
     private final CommandExecutor exec;
     private final CommandLogger clog;
@@ -61,8 +61,8 @@ public class ShOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().mergeDefault(
-                    request.getConfig().getNestedOrGetEmpty("sh"));
+            Config params = request.getConfig()
+                .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
 
             String command = params.get("_command", String.class);
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);

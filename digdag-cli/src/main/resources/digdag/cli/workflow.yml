@@ -1,0 +1,21 @@
+timezone: UTC
+
+_export:
+  hello: "Hello, world!"
+
++step1:
+  sh>: tasks/shell_sample.sh
+
++step2:
+  _parallel: true
+
+  +worker1:
+    sh>: tasks/repeat_hello.sh
+
+  +worker2:
+    sh>: tasks/repeat_hello.sh
+
++step3:
+  # defined at tasks/__init__.py
+  py>: tasks.MyWorkflow.step3
+

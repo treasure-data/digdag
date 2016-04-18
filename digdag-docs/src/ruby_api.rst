@@ -4,22 +4,19 @@ Language API - Ruby
 Programmable workflow in Ruby
 ----------------------------------
 
-digdag.yml:
+workflow.yml:
 
 .. code-block:: yaml
 
-    run: +main
+    export:
+      rb:
+        require: 'tasks/my_workflow'
 
-    +main:
-      export:
-        rb:
-          require: 'tasks/my_workflow'
+    +step1:
+      rb>: MyWorkflow.step1
 
-      +step1:
-        rb>: MyWorkflow.step1
-
-      +step2:
-        rb>: MyWorkflow.step2
+    +step2:
+      rb>: MyWorkflow.step2
 
 tasks/my_workflow.rb:
 

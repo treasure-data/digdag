@@ -1,17 +1,17 @@
-run: +conditions
-+conditions:
-  +algorithms:
-    +try:
-      _parallel: true
-      +zlib:
-        py>: examples.conditions.Algorithm.zlib
-      +gzip:
-        py>: examples.conditions.Algorithm.deflate
-      +bzip2:
-        py>: examples.conditions.Algorithm.bzip2
-    +decide:
-      py>: examples.conditions.Algorithm.decide_algorithm
+timezone: UTC
 
-  +show:
-    py>: examples.conditions.show_algorithm
++algorithms:
+  +try:
+    _parallel: true
+    +zlib:
+      py>: examples.conditions.Algorithm.zlib
+    +gzip:
+      py>: examples.conditions.Algorithm.deflate
+    +bzip2:
+      py>: examples.conditions.Algorithm.bzip2
+  +decide:
+    py>: examples.conditions.Algorithm.decide_algorithm
+
++show:
+  py>: examples.conditions.show_algorithm
 

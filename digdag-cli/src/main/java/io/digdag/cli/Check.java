@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.io.File;
@@ -22,9 +23,10 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.repository.Dagfile;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.Revision;
-import io.digdag.core.repository.ArchiveMetadata;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -98,14 +100,15 @@ public class Check
 
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
         Config overwriteParams = loadParams(cf, loader, paramsFile, params);
 
         showSystemDefaults();
 
-        Dagfile dagfile = loader.loadParameterizedFile(new File(dagfilePath), overwriteParams).convert(Dagfile.class);
+        ProjectArchive project = projectLoader.loadProjectOrSingleWorkflow(Paths.get(dagfilePath), overwriteParams);
 
-        showDagfile(injector, dagfile);
+        showProject(injector, project);
     }
 
     public static void showSystemDefaults()
@@ -115,13 +118,13 @@ public class Check
         ln("");
     }
 
-    public static void showDagfile(Injector injector, Dagfile dagfile)
+    public static void showProject(Injector injector, ProjectArchive project)
     {
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
-        ArchiveMetadata meta = dagfile.toArchiveMetadata(ZoneId.systemDefault());
+        ArchiveMetadata meta = project.getMetadata();
 
         Revision rev = Revision.builderFromArchive("check", meta)
             .archiveType("null")

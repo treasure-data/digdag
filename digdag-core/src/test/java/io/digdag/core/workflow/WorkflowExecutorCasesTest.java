@@ -12,6 +12,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.Resources;
 import io.digdag.core.LocalSite;
+import io.digdag.core.archive.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
@@ -47,7 +48,7 @@ public class WorkflowExecutorCasesTest
     public void run()
         throws Exception
     {
-        runWorkflow("+basic", loadYamlResource("/digdag/workflow/cases/basic.yml"));
+        runWorkflow("basic", loadYamlResource("/digdag/workflow/cases/basic.yml"));
     }
 
     private Config loadYamlResource(String name)
@@ -63,16 +64,21 @@ public class WorkflowExecutorCasesTest
         }
     }
 
-    private void runWorkflow(String name, Config config)
+    private void runWorkflow(String workflowName, Config config)
         throws InterruptedException
     {
         try {
             LocalSite localSite = embed.getLocalSite();
+            ArchiveMetadata meta = ArchiveMetadata.of(
+                    WorkflowDefinitionList.of(ImmutableList.of(
+                            WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
+                            )),
+                    config.getFactory().create());
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                     "defualt",
                     "revision-" + UUID.randomUUID(),
-                    Dagfile.fromConfig(config).toArchiveMetadata(ZoneId.of("UTC")));
-            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), name);
+                    meta);
+            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), workflowName);
             AttemptRequest ar = localSite.getAttemptBuilder()
                 .buildFromStoredWorkflow(
                         stored.getRevision(),

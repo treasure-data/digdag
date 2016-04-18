@@ -1,21 +1,21 @@
-run: +python_args
-+python_args:
-  +a:
-    py>: examples.python_args.required_arguments
-    required1: "1"
-    required2: 2
+timezone: UTC
 
-  +b:
-    py>: examples.python_args.optional_arguments
++a:
+  py>: examples.python_args.required_arguments
+  required1: "1"
+  required2: 2
 
-  +c:
-    py>: examples.python_args.mixed_arguments
-    arg1: "a"
-    arg2: {b: "c"}
++b:
+  py>: examples.python_args.optional_arguments
 
-  +d:
-    py>: examples.python_args.keyword_arguments
-    arg1: "a"
-    key1: "a"
-    key2: "val2"
++c:
+  py>: examples.python_args.mixed_arguments
+  arg1: "a"
+  arg2: {b: "c"}
+
++d:
+  py>: examples.python_args.keyword_arguments
+  arg1: "a"
+  key1: "a"
+  key2: "val2"
 

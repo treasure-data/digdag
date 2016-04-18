@@ -8,12 +8,12 @@ Getting started
 1. Downloading the latest version
 ----------------------------------
 
-`Digdag <index.html>`_ is a simple executable file. You can download the file to ``~/bin`` directory using ``curl`` command as following:
+`Digdag <index.html>`_ is a simple executable file. You can download the file to ``/usr/local/bin`` directory using ``curl`` command as following:
 
 .. code-block:: console
 
-    $ curl -u beta -o ~/bin/digdag --create-dirs -L "https://dl.digdag.io/digdag-latest"
-    $ chmod +x ~/bin/digdag
+    $ curl -u beta -o /usr/local/bin/digdag --create-dirs -L "https://dl.digdag.io/digdag-latest"
+    $ chmod +x /usr/local/bin/digdag
 
 If ``digdag --help`` command works, Digdag is installed successfully.
 
@@ -22,7 +22,7 @@ On Windows, or if curl command doesn't work
 
 On Windows, you can download a file named ``digdag-<VERSION>.jar`` from `https://dl.digdag.io/digdag-latest <https://dl.digdag.io/digdag-latest>`_. This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).
 
-Once download completed, please rename the file to ``digdag.bat`` (Windows) or ``~/bin/digdag`` (Linux/UNIX).
+Once download completed, please rename the file to ``digdag.bat`` (Windows) or ``/usr/local/bin/digdag`` (Linux/UNIX).
 
 Got error?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,13 +32,13 @@ If you got an error such as **'Unsupported major.minor version 52.0'**, please d
 2. Running sample workflow
 ----------------------------------
 
-``digdag new <dir>`` command generates sample workflow for you:
+``digdag init <dir>`` command generates sample workflow for you:
 
 .. code-block:: console
 
-    $ digdag new mydag
+    $ digdag init mydag
     $ cd mydag
-    $ ./digdag run
+    $ digdag run
 
 Did it work? Next step is adding tasks to ``digdag.yml`` file to automate your jobs.
 

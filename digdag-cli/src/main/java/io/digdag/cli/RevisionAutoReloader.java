@@ -12,18 +12,19 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import io.digdag.core.repository.Dagfile;
-import io.digdag.core.repository.ArchiveMetadata;
+import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.LocalSite;
@@ -34,12 +35,12 @@ public class RevisionAutoReloader
 
     private final LocalSite localSite;
     private final ConfigFactory cf;
-    private final ConfigLoaderManager loader;
+    private final ProjectArchiveLoader loader;
     private ScheduledExecutorService executor = null;
     private List<ReloadTarget> targets;
 
     @Inject
-    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ConfigLoaderManager loader)
+    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ProjectArchiveLoader loader)
     {
         this.localSite = localSite;
         this.cf = cf;
@@ -56,11 +57,10 @@ public class RevisionAutoReloader
         }
     }
 
-    public void loadFile(File file,
-            ZoneId defaultTimeZone)
+    public void watch(Path dagfilePath)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(file, defaultTimeZone);
+        ReloadTarget target = new ReloadTarget(dagfilePath);
         target.load();
         targets.add(target);
         startAutoReload();
@@ -97,45 +97,41 @@ public class RevisionAutoReloader
 
     private class ReloadTarget
     {
-        private final File dagfilePath;
-        private final ZoneId defaultTimeZone;
+        private final Path dagfilePath;
         private int lastRevId;
-        private Dagfile lastDagfile;
+        private ArchiveMetadata lastMetadata;
 
-        public ReloadTarget(File dagfilePath, ZoneId defaultTimeZone)
+        public ReloadTarget(Path dagfilePath)
         {
             this.dagfilePath = dagfilePath;
-            this.defaultTimeZone = defaultTimeZone;
-            this.lastDagfile = null;
+            this.lastMetadata = null;
         }
 
         public void load()
             throws IOException, ResourceConflictException, ResourceNotFoundException
         {
-            lastDagfile = readDagfile();
+            ProjectArchive project = readProject();
             localSite.storeLocalWorkflows(
                     "default",
                     makeRevisionName(),
-                    lastDagfile.toArchiveMetadata(defaultTimeZone),
+                    project.getMetadata(),
                     Instant.now());
         }
 
         public void tryReload()
         {
             try {
-                Dagfile dagfile = readDagfile();  // TODO optimize this code
-                if (!dagfile.equals(lastDagfile)) {
+                ProjectArchive project = readProject();  // TODO optimize this code
+                ArchiveMetadata metadata = project.getMetadata();
+                if (!metadata.equals(lastMetadata)) {
                     logger.info("Reloading {}", dagfilePath);
                     StoredRevision rev = localSite.storeLocalWorkflows(
                             "default",
                             makeRevisionName(),
-                            ArchiveMetadata.of(
-                                dagfile.getWorkflowList(),
-                                dagfile.getDefaultParams(),
-                                lastDagfile.getDefaultTimeZone().or(defaultTimeZone)),
+                            metadata,
                             Instant.now())
                         .getRevision();
-                    lastDagfile = dagfile;
+                    lastMetadata = metadata;
                     logger.info("Added new revision {}", rev.getName());
                 }
             }
@@ -144,17 +140,17 @@ public class RevisionAutoReloader
             }
         }
 
-        private Dagfile readDagfile()
+        private ProjectArchive readProject()
             throws IOException
         {
-            return loader.loadParameterizedFile(dagfilePath, cf.create()).convert(Dagfile.class);
+            return loader.loadProjectOrSingleWorkflow(dagfilePath, cf.create());
         }
 
         private String makeRevisionName()
         {
             DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.ENGLISH)
-                .withZone(defaultTimeZone);
+                .withZone(ZoneId.systemDefault());
             return formatter.format(Instant.now());
         }
     }

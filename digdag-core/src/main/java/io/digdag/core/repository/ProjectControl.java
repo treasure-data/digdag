@@ -61,7 +61,7 @@ public class ProjectControl
             return defs.stream()
                 .map(def -> {
                     try {
-                        return store.insertWorkflowDefinition(project.getId(), revision.getId(), def, WorkflowDefinition.getTimeZoneOfWorkflow(revision, def));
+                        return store.insertWorkflowDefinition(project.getId(), revision.getId(), def, def.getTimeZone());
                     }
                     catch (ResourceConflictException ex) {
                         throw new IllegalStateException("Database state error", ex);

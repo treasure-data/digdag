@@ -4,36 +4,38 @@ Workflow definition
 .. contents::
    :local:
 
-digdag.yml: the entry point
+workflow.yml: the entry point
 ----------------------------------
 
 Workflow is defined in a YAML file named "digdag.yml". An example is like this:
 
 .. code-block:: yaml
 
-    run: +main
-    
-    +main:
-      +step1:
-        sh>: tasks/shell_sample.sh
-    
-      +step2:
-        py>: tasks.MyWorkflow.step2
-        param1: this is param1
-    
-      +step3:
-        rb>: MyWorkflow.step3
-        require: tasks/ruby_sample.rb
-    
-      +step4:
-        require>: +another_workflow
-    
-    +another_workflow:
-      +step1:
-        sh>: tasks/shell_sample.sh
+   name: my_project
+   workflows:
+     - hello_world.yml
+     - another.yml
 
+This file should include name of the project and list of workflows in the project.
 
-``run:`` parameter is used to declare the default workflow to run. You can run another workflow using ``$ digdag run +another_workflow`` command.
+Each workflow definition file is like this:
+
+.. code-block:: yaml
+
+    timezone: UTC
+    
+    +step1:
+      sh>: tasks/shell_sample.sh
+    
+    +step2:
+      py>: tasks.MyWorkflow.step2
+      param1: this is param1
+    
+    +step3:
+      rb>: MyWorkflow.step3
+      require: tasks/ruby_sample.rb
+
+``name`` parameter is used to declare the name of workflow. ``timezone`` parameter is used to format timestamp using this timezone. This can be UTC, America/Los_Angeles, Europe/Berlin, Asia/Tokyo, etc.
 
 
 "+" is a task
@@ -114,19 +116,18 @@ If a task has ``_export`` directive, the task and its children can use the varia
     _export:
       foo: 1
 
-    +workflow1:
-      +prepare:
-        py>: tasks.MyWorkflow.prepare
+    +prepare:
+      py>: tasks.MyWorkflow.prepare
 
-      +analyze:
-        _export:
-          bar: 2
+    +analyze:
+      _export:
+        bar: 2
 
-        +step1:
-          py>: tasks.MyWorkflow.analyze_step1
+      +step1:
+        py>: tasks.MyWorkflow.analyze_step1
 
-      +dump:
-        py>: tasks.MyWorkflow.dump
+    +dump:
+      py>: tasks.MyWorkflow.dump
 
 Using API
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -170,14 +171,14 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 
 .. code-block:: yaml
 
-    run: +main
-    !include : 'main.yml'
-    !include : 'another.yml'
     _export:
       mysql:
         !include : 'config/mysql.yml'
       hive:
         !include : 'config/hive.yml'
+
+    !include : 'tasks/foo.yml'
+
 
 Parallel execution
 ----------------------------------
@@ -186,47 +187,41 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
 
 .. code-block:: yaml
 
-    run: +main
+    +prepare
+      # +data1, +data2, and +data3 run in parallel.
+      _parallel: true
 
-    +main:
-      +prepare
-        # +data1, +data2, and +data3 run in parallel.
-        _parallel: true
+      +data1:
+        sh>: tasks/prepare_data1.sh
 
-        +data1:
-          sh>: tasks/prepare_data1.sh
+      +data2:
+        sh>: tasks/prepare_data2.sh
 
-        +data2:
-          sh>: tasks/prepare_data2.sh
+      +data3:
+        sh>: tasks/prepare_data3.sh
 
-        +data3:
-          sh>: tasks/prepare_data3.sh
-
-      +analyze
-          sh>: tasks/analyze_prepared_data_sets.sh
+    +analyze
+        sh>: tasks/analyze_prepared_data_sets.sh
 
 If ``_background: true`` parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.
 
 .. code-block:: yaml
 
-    run: +main
+    +prepare
+      +data1:
+        sh>: tasks/prepare_data1.sh
 
-    +main:
-      +prepare
-        +data1:
-          sh>: tasks/prepare_data1.sh
+      # +data1 and +data2 run in parallel.
+      +data2:
+        _background: true
+        sh>: tasks/prepare_data2.sh
 
-        # +data1 and +data2 run in parallel.
-        +data2:
-          _background: true
-          sh>: tasks/prepare_data2.sh
+      # +data3 runs after +data1 and +data2.
+      +data3:
+        sh>: tasks/prepare_data3.sh
 
-        # +data3 runs after +data1 and +data2.
-        +data3:
-          sh>: tasks/prepare_data3.sh
-
-      +analyze
-          sh>: tasks/analyze_prepared_data_sets.sh
+    +analyze
+        sh>: tasks/analyze_prepared_data_sets.sh
 
 
 Sending error notification
@@ -236,15 +231,12 @@ If an operator configuration is set at ``_error:`` parameter, the operator runs 
 
 .. code-block:: yaml
 
-    run: +main
+    # this task runs when a workflow fails.
+    _error:
+      sh>: tasks/runs_when_workflow_failed.sh
 
-    +main:
-      # this task runs when a workflow fails.
-      _error:
-        sh>: tasks/runs_when_workflow_failed.sh
-
-      +analyze
-          sh>: tasks/analyze_prepared_data_sets.sh
+    +analyze
+        sh>: tasks/analyze_prepared_data_sets.sh
 
 To send mails, you can use `mail> operator <operators.html#mail-sending-email>`_.
 

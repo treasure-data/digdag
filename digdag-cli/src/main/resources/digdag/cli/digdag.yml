@@ -1,22 +1,3 @@
-run: +main
-
-_export:
-  hello: "Hello, world!"
-
-+main:
-  +step1:
-    sh>: tasks/shell_sample.sh
-
-  +step2:
-    _parallel: true
-
-    +worker1:
-      sh>: tasks/repeat_hello.sh
-
-    +worker2:
-      sh>: tasks/repeat_hello.sh
-
-  +step3:
-    # defined at tasks/__init__.py
-    py>: tasks.MyWorkflow.step3
-
+name: @@name@@
+workflows:
+  - @@name@@.yml

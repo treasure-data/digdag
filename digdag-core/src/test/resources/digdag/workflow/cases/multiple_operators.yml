@@ -1,5 +1,3 @@
-run: +foo
-
-+foo:
++step1:
   sh>: echo this should fail
   py>: bar

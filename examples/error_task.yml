@@ -1,7 +1,7 @@
-run: +error_task
-+error_task:
-  _error:
-    py>: examples.error_task.show_error
+timezone: UTC
 
-  +test:
-    py>: examples.error_task.fails
+_error:
+  py>: examples.error_task.show_error
+
++test:
+  py>: examples.error_task.fails

@@ -12,6 +12,7 @@ import java.security.Key;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
@@ -32,6 +33,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
+import static java.util.Locale.ENGLISH;
 
 public class DigdagClient
 {
@@ -170,17 +172,17 @@ public class DigdagClient
 
     public RestProject getProject(String name)
     {
-        return doGet(RestProject.class,
-                target("/api/project")
+        List<RestProject> projs = doGet(new GenericType<List<RestProject>>() { },
+                target("/api/projects")
                 .queryParam("name", name));
-    }
-
-    public RestProject getProject(String name, String revision)
-    {
-        return doGet(RestProject.class,
-                target("/api/project")
-                .queryParam("name", name)
-                .queryParam("revision", revision));
+        if (projs.isEmpty()) {
+            throw new NotFoundException(String.format(ENGLISH,
+                        "project not found: %s",
+                        name));
+        }
+        else {
+            return projs.get(0);
+        }
     }
 
     public List<RestProject> getProjects()
@@ -196,11 +198,10 @@ public class DigdagClient
                 .resolveTemplate("id", projId));
     }
 
-
     public List<RestRevision> getRevisions(int projId, Optional<Integer> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
-                target("/api/project/{id}/revisions")
+                target("/api/projects/{id}/revisions")
                 .resolveTemplate("id", projId)
                 .queryParam("last_id", lastId.orNull()));
     }
@@ -222,36 +223,35 @@ public class DigdagClient
 
     public RestWorkflowDefinition getWorkflowDefinition(int projId, String name)
     {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/projects/{id}/workflow")
+        List<RestWorkflowDefinition> defs = doGet(new GenericType<List<RestWorkflowDefinition>>() { },
+                target("/api/projects/{id}/workflows")
                 .resolveTemplate("id", projId)
                 .queryParam("name", name));
+        if (defs.isEmpty()) {
+            throw new NotFoundException(String.format(ENGLISH,
+                        "workflow not found in the latest revision of project id = %d: %s",
+                        projId, name));
+        }
+        else {
+            return defs.get(0);
+        }
     }
 
     public RestWorkflowDefinition getWorkflowDefinition(int projId, String name, String revision)
     {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/projects/{id}/workflow")
+        List<RestWorkflowDefinition> defs = doGet(new GenericType<List<RestWorkflowDefinition>>() { },
+                target("/api/projects/{id}/workflows")
                 .resolveTemplate("id", projId)
                 .queryParam("name", name)
                 .queryParam("revision", revision));
-    }
-
-    public RestWorkflowDefinition getWorkflowDefinition(String projName, String name)
-    {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/workflow")
-                .queryParam("name", name)
-                .queryParam("project", projName));
-    }
-
-    public RestWorkflowDefinition getWorkflowDefinition(String projName, String name, String revision)
-    {
-        return doGet(RestWorkflowDefinition.class,
-                target("/api/workflow")
-                .queryParam("name", name)
-                .queryParam("project", projName)
-                .queryParam("revision", revision));
+        if (defs.isEmpty()) {
+            throw new NotFoundException(String.format(ENGLISH,
+                        "workflow not found in revision = %s of project id = %d: %s",
+                        revision, projId, name));
+        }
+        else {
+            return defs.get(0);
+        }
     }
 
     public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
@@ -368,7 +368,7 @@ public class DigdagClient
         return doGet(new GenericType<List<RestLogFileHandle>>() { },
                 target("/api/logs/{id}/files")
                 .resolveTemplate("id", attemptId)
-                .queryParam("task_name", taskName));
+                .queryParam("task", taskName));
     }
 
     public InputStream getLogFile(long attemptId, RestLogFileHandle handle)

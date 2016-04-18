@@ -26,14 +26,14 @@ run
 
 .. code-block:: console
 
-    $ digdag run [+task] [options...]
+    $ digdag run [workflow][+task] [options...]
 
 Runs workflow.
 
 .. code-block:: console
 
     $ digdag run
-    $ digdag run +another
+    $ digdag run +step2
     $ digdag run -f workflow/another.yml --start +step2
     $ digdag run -f workflow/another.yml --start +step2 --end +step4
     $ digdag run -f workflow/another.yml -g +step1 --hour
@@ -43,7 +43,7 @@ Runs workflow.
 Options:
 
 :command:`-f, --file PATH.yml`
-  Use this file to load tasks (default: digdag.yml).
+  Use this file to load a project (default: digdag.yml).
 
   Example: -f tasks/another.yml
 
@@ -79,8 +79,8 @@ Options:
 
     * daily: uses today's 00:00:00 as the session time (update session time every day).
     * hourly: uses current hour's 00:00 as the session time (update session time every hour).
-    * schedule: calculates time based on ``_schedule`` configuration of the workflow. Error if ``_schedule`` is not set.
-    * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``_schedule``, or uses today's 00:00:00.
+    * schedule: calculates time based on ``schedule`` configuration of the workflow. Error if ``schedule`` is not set.
+    * last: reuses the last session time of the last execution. If it's not available, tries to calculate based on ``schedule``, or uses today's 00:00:00.
     * timestmap in *yyyy-MM-dd* or *yyyy-MM-dd HH:mm:ss* format: uses the specified time as the session time.
 
   Default is "last".
@@ -367,18 +367,18 @@ retry
 
     $ digdag retry <attempt-id>
 
-Retry a session. Either of ``--last-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
+Retry a session. Either of ``--latest-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
 
 Examples:
 
 .. code-block:: console
 
-    $ digdag retry 35 --last-revision --rerun --name retry1
+    $ digdag retry 35 --latest-revision --rerun --name retry1
     $ digdag retry 35 --keep-revision --rerun --name retry2
     $ digdag retry 35 --revision rev29a87a9c --rerun --name retry2
 
-:command:`--last-revision`
-  Use the last revision to retry the session.
+:command:`--latest-revision`
+  Use the latest revision to retry the session.
 
 :command:`--keep-revision`
   Use the same revision with the specified attempt to retry the session.
@@ -561,7 +561,7 @@ push
 
 .. code-block:: console
 
-    $ digdag push [-f workflow.yml...] <project> [options...]
+    $ digdag push <project> [options...]
 
 Creates a project archive and upload it to the server. This command reads list of files to add this archive from STDIN. Examples:
 
@@ -574,7 +574,7 @@ STDIN
   Names of the files to add the archive.
 
 :command:`-f, --file PATH.yml`
-  Use this file to load tasks (default: digdag.yml)
+  Use this file to load a project (default: digdag.yml)
 
   Example: -f tasks/another.yml
 

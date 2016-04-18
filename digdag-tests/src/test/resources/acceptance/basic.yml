@@ -1,8 +1,5 @@
-run: +main
++foo:
+  sh>: "touch foo.out"
 
-+main:
-  +foo:
-    sh>: "touch foo.out"
-
-  +bar:
-    sh>: "touch bar.out"
++bar:
+  sh>: "touch bar.out"

@@ -28,6 +28,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
@@ -46,17 +47,21 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class ProjectResource
     extends AuthenticatedResource
 {
-    // [*] GET  /api/project?name=<name>                     # lookup a project by name
-    // [*] GET  /api/projects                                # list projects
-    // [*] GET  /api/projects/{id}                           # show a project
-    // [*] GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
-    // [*] GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
-    // [*] GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
-    // [*] GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
-    // [*] GET  /api/projects/{id}/workflows?revision=name   # list workflows of a past revision of a project
-    // [*] GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
-    // [*] GET  /api/projects/{id}/archive?revision=name     # download archive file of a former revision of a project
-    // [*] PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)
+    // GET  /api/projects                                # list projects
+    // GET  /api/projects?name=<name>                    # lookup a project by name, or return an empty array
+    // GET  /api/projects/{id}                           # show a project
+    // GET  /api/projects/{id}/revisions                 # list revisions of a project from recent to old
+    // GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
+    // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
+    // GET  /api/projects/{id}/workflows?name=<name>     # lookup a workflow of a project by name
+    // GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
+    // GET  /api/projects/{id}/archive?revision=<name>   # download archive file of a former revision of a project
+    // PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)
+    //
+    // Deprecated:
+    // GET  /api/project?name=<name>                     # lookup a project by name
+    // GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
+    // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -100,24 +105,37 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects")
-    public List<RestProject> getProjects()
+    public List<RestProject> getProjects(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
-        // TODO n-m db access
         ProjectStore rs = rm.getProjectStore(getSiteId());
-        return rs.getProjects(100, Optional.absent())
-            .stream()
-            .map(proj -> {
-                try {
-                    StoredRevision rev = rs.getLatestRevision(proj.getId());
-                    return RestModels.project(proj, rev);
-                }
-                catch (ResourceNotFoundException ex) {
-                    return null;
-                }
-            })
-            .filter(proj -> proj != null)
-            .collect(Collectors.toList());
+
+        if (name != null) {
+            try {
+                StoredProject proj = rs.getProjectByName(name);
+                StoredRevision rev = rs.getLatestRevision(proj.getId());
+                return ImmutableList.of(RestModels.project(proj, rev));
+            }
+            catch (ResourceNotFoundException ex) {
+                return ImmutableList.of();
+            }
+        }
+        else {
+            // TODO fix n-m db access
+            return rs.getProjects(100, Optional.absent())
+                .stream()
+                .map(proj -> {
+                    try {
+                        StoredRevision rev = rs.getLatestRevision(proj.getId());
+                        return RestModels.project(proj, rev);
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        return null;
+                    }
+                })
+                .filter(proj -> proj != null)
+                .collect(Collectors.toList());
+        }
     }
 
     @GET
@@ -168,10 +186,12 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects/{id}/workflows")
-    public List<RestWorkflowDefinition> getWorkflows(@PathParam("id") int projId, @QueryParam("revision") String revName)
+    public List<RestWorkflowDefinition> getWorkflows(
+            @PathParam("id") int projId,
+            @QueryParam("revision") String revName,
+            @QueryParam("name") String name)
         throws ResourceNotFoundException
     {
-        // TODO paging?
         ProjectStore rs = rm.getProjectStore(getSiteId());
         StoredProject proj = rs.getProjectById(projId);
 
@@ -182,11 +202,24 @@ public class ProjectResource
         else {
             rev = rs.getRevisionByName(proj.getId(), revName);
         }
-        List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
-        return defs.stream()
-            .map(def -> RestModels.workflowDefinition(proj, rev, def))
-            .collect(Collectors.toList());
+        if (name != null) {
+            try {
+                StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
+                return ImmutableList.of(RestModels.workflowDefinition(proj, rev, def));
+            }
+            catch (ResourceNotFoundException ex) {
+                return ImmutableList.of();
+            }
+        }
+        else {
+            // TODO should here support pagination?
+            List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
+
+            return defs.stream()
+                .map(def -> RestModels.workflowDefinition(proj, rev, def))
+                .collect(Collectors.toList());
+        }
     }
 
     @GET

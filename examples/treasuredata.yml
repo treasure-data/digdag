@@ -1,26 +1,26 @@
-run: +treasuredata
-+treasuredata:
-  _schedule:
-    daily>: 03:00:00
+timezone: UTC
 
-  _sla:
-    time: 05:00:00
-    +mail:
-      _type: mail
-      body: Not finished: ${session_time}
-      subject: Query not finished
-      to: [sf@treasure-data.com]
+schedule:
+  daily>: 03:00:00
 
-  error:
-    +cleanup:
-      _type: td_ddl
-      delete_table: garbage
-    +notify:
-      _type: mail
-      body: Query failed!
-      subject: Query not finished
-      to: [sf@treasure-data.com]
+sla:
+  time: 05:00:00
+  +mail:
+    _type: mail
+    body: "Not finished: ${session_time}"
+    subject: Query not finished
+    to: [sf@treasure-data.com]
 
-  +task:
-    sh>: echo NG
+_error:
+  +cleanup:
+    _type: td_ddl
+    delete_table: garbage
+  +notify:
+    _type: mail
+    body: Query failed!
+    subject: Query not finished
+    to: [sf@treasure-data.com]
+
++task:
+  sh>: echo NG
 

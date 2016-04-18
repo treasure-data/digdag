@@ -43,7 +43,7 @@ public class ShowSession
     public SystemExitException usage(String error)
     {
         String commandName = includeRetries() ? "attempts" : "sessions";
-        System.err.println("Usage: digdag " + commandName + " [project-name] [+name]");
+        System.err.println("Usage: digdag " + commandName + " [project-name] [workflow-name]");
         System.err.println("  Options:");
         System.err.println("    -i, --last-id ID                 shows more session attempts from this id");
         ClientCommand.showCommonOptions();

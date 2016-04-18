@@ -16,11 +16,14 @@ public abstract class WorkflowDefinition
 
     public abstract Config getConfig();
 
-    public static WorkflowDefinition of(String name, Config config)
+    public abstract ZoneId getTimeZone();
+
+    public static WorkflowDefinition of(String name, Config config, ZoneId timeZone)
     {
         return ImmutableWorkflowDefinition.builder()
             .name(name)
             .config(config)
+            .timeZone(timeZone)
             .build();
     }
 
@@ -28,12 +31,7 @@ public abstract class WorkflowDefinition
     protected void check()
     {
         ModelValidator.builder()
-            .checkTaskName("name", getName())
+            .checkWorkflowName("name", getName())
             .validate("workflow", this);
-    }
-
-    public static ZoneId getTimeZoneOfWorkflow(Revision rev, WorkflowDefinition def)
-    {
-        return SchedulerManager.getTimeZoneOfWorkflow(rev, def);
     }
 }

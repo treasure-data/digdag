@@ -23,7 +23,7 @@ public class BasicIT {
 
     @Before
     public void setUp() throws Exception {
-        definition = folder.getRoot().toPath().resolve("digdag.yml");
+        definition = folder.getRoot().toPath().resolve("workflow.yml");
         try (InputStream input = Resources.getResource("acceptance/basic.yml").openStream()) {
             Files.copy(input, definition);
         }
