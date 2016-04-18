@@ -29,11 +29,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag new <dir>");
+        System.err.println("Usage: digdag init <dir>");
         System.err.println("  Options:");
         Main.showCommonOptions();
         System.err.println("  Example:");
-        System.err.println("    $ digdag new mydag");
+        System.err.println("    $ digdag init mydag");
         return systemExit(error);
     }
 
@@ -44,37 +44,38 @@ public class Init
         String workflowName = dir.getName();
 
         ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", dir);
-        gen.mkdir(".");  // creates `dir`
 
-        if (!gen.exists("digdag")) {
-            gen.cp("digdag.sh", "digdag");
-            gen.setExecutable("digdag");
-        }
+        gen.mkdir(".");  // creates dir itself
 
-        gen.mkdir(".digdag-wrapper");
-        File localJarPath = getFatJarPath();
-        if (localJarPath != null) {
-            gen.cpAbsoluteSource(localJarPath, ".digdag-wrapper/digdag.jar");
-            gen.setExecutable(".digdag-wrapper/digdag.jar");
-        }
-
-        if (!gen.exists(".gitignore")) {
-            gen.cp("gitignore", ".gitignore");
-        }
+        //if (!gen.exists("digdag")) {
+        //    gen.cp("digdag.sh", "digdag");
+        //    gen.setExecutable("digdag");
+        //}
+        //
+        //gen.mkdir(".digdag-wrapper");
+        //File localJarPath = getFatJarPath();
+        //if (localJarPath != null) {
+        //    gen.cpAbsoluteSource(localJarPath, ".digdag-wrapper/digdag.jar");
+        //    gen.setExecutable(".digdag-wrapper/digdag.jar");
+        //}
 
         if (gen.exists(Run.DEFAULT_DAGFILE)) {
             System.out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
         }
         else {
+            if (!gen.exists(".gitignore")) {
+                gen.cp("gitignore", ".gitignore");
+            }
+
             gen.mkdir("tasks");
             gen.cp("tasks/shell_sample.sh", "tasks/shell_sample.sh");
             gen.setExecutable("tasks/shell_sample.sh");
             gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
             gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
-                    ImmutableMap.of("@@name@@", workflowName));
             gen.cpWithReplace("workflow.yml", workflowName + ".yml",
+                    ImmutableMap.of("@@name@@", workflowName));
+            gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
                     ImmutableMap.of("@@name@@", workflowName));
             if (path.equals(".")) {
                 System.out.println("Done. Type `./digdag r` to run the workflow. Enjoy!");
@@ -85,15 +86,15 @@ public class Init
         }
     }
 
-    private static File getFatJarPath()
-        throws URISyntaxException
-    {
-        URI uri = Main.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-        if (!"file".equals(uri.getScheme())) {
-            return null;
-        }
-        return new File(uri.getPath());
-    }
+    //private static File getFatJarPath()
+    //    throws URISyntaxException
+    //{
+    //    URI uri = Main.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+    //    if (!"file".equals(uri.getScheme())) {
+    //        return null;
+    //    }
+    //    return new File(uri.getPath());
+    //}
 
     private static class ResourceGenerator
     {
