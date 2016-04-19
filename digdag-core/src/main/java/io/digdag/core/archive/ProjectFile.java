@@ -8,8 +8,6 @@ import io.digdag.client.config.ConfigException;
 
 class ProjectFile
 {
-    private final String projectName;
-
     private final List<String> workflowFiles;
 
     private final ZoneId defaultTimeZone;
@@ -17,12 +15,10 @@ class ProjectFile
     private final Config defaultParams;
 
     private ProjectFile(
-            String projectName,
             List<String> workflowFiles,
             ZoneId defaultTimeZone,
             Config defaultParams)
     {
-        this.projectName = projectName;
         this.workflowFiles = workflowFiles;
         this.defaultTimeZone = defaultTimeZone;
         this.defaultParams = defaultParams;
@@ -32,16 +28,12 @@ class ProjectFile
     protected void check()
     {
         ModelValidator.builder()
-            .checkProjectName("name", projectName)
             .validate("project", this);
     }
 
     public static ProjectFile fromConfig(Config config)
     {
         Config copy = config.deepCopy();
-
-        String projectName = copy.get("name", String.class);
-        copy.remove("name");
 
         ZoneId defaultTimeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
         copy.remove("timezone");
@@ -59,7 +51,6 @@ class ProjectFile
         }
 
         return new ProjectFile(
-                projectName,
                 workflowFiles,
                 defaultTimeZone,
                 defaultParams);

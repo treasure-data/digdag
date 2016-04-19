@@ -99,7 +99,6 @@ public class Main
     }
 
     public static void main(String... args)
-        throws Exception
     {
         if (args.length == 1 && args[0].equals("--version")) {
             System.out.println("0.6.1-SNAPSHOT");
@@ -172,14 +171,19 @@ public class Main
             command.main();
         }
         catch (ParameterException ex) {
-            System.err.println("error: "+ex.getMessage());
+            System.err.println("error: " + ex.getMessage());
             System.exit(1);
         }
         catch (SystemExitException ex) {
             if (ex.getMessage() != null) {
-                System.err.println("error: "+ex.getMessage());
+                System.err.println("error: " + ex.getMessage());
             }
             System.exit(ex.getCode());
+        } catch (Exception ex) {
+            if (ex.getMessage() != null) {
+                System.err.println("error: " + ex.getMessage());
+            }
+            System.exit(1);
         }
     }
 
