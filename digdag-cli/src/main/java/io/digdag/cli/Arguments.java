@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import java.util.Map;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.io.File;
@@ -20,16 +21,29 @@ public class Arguments
 
     public static Config loadParams(ConfigFactory cf,
             ConfigLoaderManager loader,
+            Properties systemProps,
             String paramsFile, Map<String, String> params)
         throws IOException
     {
         Config overwriteParams = cf.create();
+
+        // ~/.digdag/config and JVM system properties
+        for (String key : systemProps.stringPropertyNames()) {
+            if (key.startsWith("params.")) {
+                setDotNestedKey(overwriteParams, key.substring("params.".length()), systemProps.getProperty(key));
+            }
+        }
+
+        // -P files
         if (paramsFile != null) {
             overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
+
+        // -p options
         for (Map.Entry<String, String> pair : params.entrySet()) {
             setDotNestedKey(overwriteParams, pair.getKey(), pair.getValue());
         }
+
         return overwriteParams;
     }
 

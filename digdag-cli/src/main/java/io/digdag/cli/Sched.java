@@ -90,14 +90,15 @@ public class Sched
             memoryDatabase = true;
         }
 
-        Properties props = buildProperties();
-        props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
+        Properties props = buildServerProperties();
 
         // read parameters
         ConfigFactory cf = new ConfigFactory(objectMapper());
         Config overwriteParams = loadParams(
                 cf, new ConfigLoaderManager(cf, new YamlConfigLoader()),
-                paramsFile, params);
+                props, paramsFile, params);
+
+        props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
         props.setProperty(SYSTEM_CONFIG_OVERWRITE_PARAMS, overwriteParams.toString());
 
         ServerBootstrap.startServer(props, SchedulerServerBootStrap.class);

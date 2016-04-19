@@ -10,4 +10,6 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.5'
     compile 'org.fusesource.jansi:jansi:1.11'
     compile 'com.beust:jcommander:1.48'
+
+    testCompile 'org.hamcrest:hamcrest-library:1.3'
 }

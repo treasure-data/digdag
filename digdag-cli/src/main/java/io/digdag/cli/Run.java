@@ -246,7 +246,7 @@ public class Run
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
         // read parameters
-        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         Path path = Paths.get(dagfilePath);
         if (!path.toAbsolutePath().normalize().getParent().equals(Paths.get("").toAbsolutePath()) && !overwriteParams.has("_workdir")) {

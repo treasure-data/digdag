@@ -39,8 +39,9 @@ public class DigdagClient
 {
     public static class Builder
     {
-        private String host;
-        private int port;
+        private String host = null;
+        private int port = -1;
+        private boolean ssl = false;
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
 
@@ -53,6 +54,12 @@ public class DigdagClient
         public Builder port(int port)
         {
             this.port = port;
+            return this;
+        }
+
+        public Builder ssl(boolean ssl)
+        {
+            this.ssl = ssl;
             return this;
         }
 
@@ -110,6 +117,7 @@ public class DigdagClient
     }
 
     private final String endpoint;
+
     private final Supplier<MultivaluedMap<String, Object>> headers;
 
     private final Client client;
@@ -117,7 +125,26 @@ public class DigdagClient
 
     private DigdagClient(Builder builder)
     {
-        this.endpoint = "http://" + builder.host + ":" + builder.port;
+        if (builder.host == null) {
+            throw new IllegalArgumentException("host is not set");
+        }
+
+        if (builder.ssl) {
+            if (builder.port < 0) {
+                this.endpoint = "https://" + builder.host;
+            }
+            else {
+                this.endpoint = "https://" + builder.host + ":" + builder.port;
+            }
+        }
+        else {
+            if (builder.port < 0) {
+                this.endpoint = "http://" + builder.host;
+            }
+            else {
+                this.endpoint = "http://" + builder.host + ":" + builder.port;
+            }
+        }
 
         final Map<String, String> baseHeaders = builder.baseHeaders;
         final Function<Map<String, String>, Map<String, String>> headerBuilder = builder.headerBuilder;

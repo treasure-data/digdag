@@ -40,7 +40,7 @@ public class Upload
     }
 
     public void upload(String path, String projName)
-        throws IOException
+        throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));

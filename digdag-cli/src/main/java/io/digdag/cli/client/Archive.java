@@ -133,7 +133,7 @@ public class Archive
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
 
-        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
 
