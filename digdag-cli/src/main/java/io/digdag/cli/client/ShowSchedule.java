@@ -49,6 +49,6 @@ public class ShowSchedule
             count++;
         }
         ln("%d entries.", count);
-        System.err.println("Use `digdag workflows +NAME` to show workflow details.");
+        System.err.println("Use `digdag workflows [project-name] [workflow-name]` to show workflow details.");
     }
 }
