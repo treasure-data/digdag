@@ -4,10 +4,10 @@ Workflow definition
 .. contents::
    :local:
 
-workflow.yml: the entry point
+The entry point: ``digdag.yml``
 ----------------------------------
 
-Workflow is defined in a YAML file named "digdag.yml". An example is like this:
+A digdag workflow project is defined in a YAML file named "digdag.yml". For example:
 
 .. code-block:: yaml
 
@@ -16,26 +16,26 @@ Workflow is defined in a YAML file named "digdag.yml". An example is like this:
      - hello_world.yml
      - another.yml
 
-This file should include name of the project and list of workflows in the project.
+This file specifies the name of the project and lists the workflow definition files in the project.
 
-Each workflow definition file is like this:
+A workflow definition file looks like this:
 
 .. code-block:: yaml
 
     timezone: UTC
-    
+
     +step1:
       sh>: tasks/shell_sample.sh
-    
+
     +step2:
       py>: tasks.MyWorkflow.step2
       param1: this is param1
-    
+
     +step3:
       rb>: MyWorkflow.step3
       require: tasks/ruby_sample.rb
 
-``name`` parameter is used to declare the name of workflow. ``timezone`` parameter is used to format timestamp using this timezone. This can be UTC, America/Los_Angeles, Europe/Berlin, Asia/Tokyo, etc.
+The ``timezone`` parameter is used to configure the time zone of the workflow and affects session timestamp variables and scheduling. The default time zone is ``UTC``. Some examples of other valid time zones are ``America/Los_Angeles``, ``Europe/Berlin``, ``Asia/Tokyo``, etc.
 
 
 "+" is a task
