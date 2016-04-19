@@ -3,14 +3,11 @@ package io.digdag.cli;
 import java.util.Properties;
 import java.util.Map;
 import java.util.Date;
-import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.base.Optional;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -20,7 +17,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.MissingCommandException;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.PropertyUtils;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.ShowSession;
@@ -249,22 +245,6 @@ public class Main
         } catch (JoranException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    public static Properties loadProperties(String additionalConfigFile)
-        throws IOException
-    {
-        Properties props = new Properties();
-
-        // load from a file
-        if (additionalConfigFile != null) {
-            props.putAll(PropertyUtils.loadFile(new File(additionalConfigFile)));
-        }
-
-        // system property overwrites params
-        props.putAll(System.getProperties());
-
-        return props;
     }
 
     // called also by Run

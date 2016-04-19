@@ -1,12 +1,14 @@
 package io.digdag.cli;
 
 import java.util.Properties;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.server.ServerBootstrap;
 import static io.digdag.cli.Main.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
@@ -71,29 +73,34 @@ public class Server
     private void server()
             throws ServletException, IOException
     {
-        ServerBootstrap.startServer(buildProperties(), ServerBootstrap.class);
+        ServerBootstrap.startServer(buildServerProperties(), ServerBootstrap.class);
     }
 
-    protected Properties buildProperties()
+    protected Properties buildServerProperties()
         throws IOException
     {
         // parameters for ServerBootstrap
-        Properties props = Main.loadProperties(configPath);
+        Properties props = loadSystemProperties();
+
+        props.putAll(PropertyUtils.loadFile(new File(configPath)));
 
         // overwrite by command-line parameters
         if (database != null) {
             props.setProperty("database.type", "h2");
-            props.setProperty("database.path", FileSystems.getDefault().getPath(database).toAbsolutePath().toString());
+            props.setProperty("database.path", Paths.get(database).toAbsolutePath().toString());
         }
         else if (memoryDatabase) {
             props.setProperty("database.type", "memory");
         }
+
         if (port != null) {
             props.setProperty("server.port", Integer.toString(port));
         }
+
         if (bind != null) {
             props.setProperty("server.bind", bind);
         }
+
         if (taskLogPath != null) {
             props.setProperty("log-server.type", "local");
             props.setProperty("log-server.local.path", taskLogPath);

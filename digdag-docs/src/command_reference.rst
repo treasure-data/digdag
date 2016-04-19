@@ -322,7 +322,7 @@ Client-mode common options:
   Add a custom HTTP header. Use multiple times to set multiple headers.
 
 :command:`-c, --config PATH`
-  Configuration file path (default: ~/.digdag/client.properties).
+  Configuration file path in addition to ~/.digdag/config to overwrite.
 
   Example: -c digdag-server/client.properties
 

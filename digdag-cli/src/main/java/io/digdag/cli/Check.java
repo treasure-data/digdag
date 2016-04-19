@@ -102,7 +102,7 @@ public class Check
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
-        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         showSystemDefaults();
 

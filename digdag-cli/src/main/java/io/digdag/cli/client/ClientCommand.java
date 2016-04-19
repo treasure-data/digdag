@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.time.Instant;
@@ -25,6 +26,7 @@ import io.digdag.cli.Main;
 import io.digdag.cli.Command;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestApiKey;
 import static io.digdag.cli.Main.systemExit;
@@ -83,30 +85,20 @@ public abstract class ClientCommand
         throws IOException
     {
         // load config file
-        Properties props;
-        if (configPath == null) {
-            try {
-                props = Main.loadProperties(FileSystems.getDefault().getPath(System.getProperty("user.home")).resolve(".digdag").resolve("client.properties").toString());
-            }
-            catch (IOException ex) {
-                props = Main.loadProperties(null);
-            }
-        }
-        else {
-            props = Main.loadProperties(configPath);
-        }
-
-        if (endpoint == null) {
-            endpoint = props.getProperty("endpoint", DEFAULT_ENDPOINT);
-        }
+        Properties props = loadSystemProperties();
 
         if (apiKey == null) {
             apiKey = props.getProperty("apikey");
         }
 
+        // TODO remove support for api key
         Optional<RestApiKey> restApiKey = Optional.absent();
         if (apiKey != null && !apiKey.isEmpty()) {
             restApiKey = Optional.of(RestApiKey.of(apiKey));
+        }
+
+        if (endpoint == null) {
+            endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
         String[] fragments = endpoint.split(":", 2);
@@ -123,8 +115,8 @@ public abstract class ClientCommand
 
         Map<String, String> headers = new HashMap<>();
         for (String key : props.stringPropertyNames()) {
-            if (key.startsWith("header.")) {
-                headers.put(key.substring("header.".length()), props.getProperty(key));
+            if (key.startsWith("client.http.headers.")) {
+                headers.put(key.substring("client.http.headers.".length()), props.getProperty(key));
             }
         }
         headers.putAll(this.httpHeaders);
@@ -137,11 +129,22 @@ public abstract class ClientCommand
             .build();
     }
 
+    @Override
+    protected Properties loadSystemProperties()
+        throws IOException
+    {
+        Properties props = super.loadSystemProperties();
+
+        props.putAll(PropertyUtils.loadFile(new File(configPath)));
+
+        return props;
+    }
+
     public static void showCommonOptions()
     {
         System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: 127.0.0.1:65432)");
         System.err.println("    -k, --apikey APIKEY              authentication API key");
-        System.err.println("    -c, --config PATH.properties     configuration file path (default: ~/.digdag/client.properties)");
+        System.err.println("    -c, --config PATH.properties     additional config file to overwrite ~/.digdag/config");
         Main.showCommonOptions();
     }
 

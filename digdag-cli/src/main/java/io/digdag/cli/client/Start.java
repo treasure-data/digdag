@@ -101,7 +101,7 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = loadParams(cf, loader, paramsFile, params);
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         LocalTimeOrInstant time;
         SessionTimeTruncate mode;
