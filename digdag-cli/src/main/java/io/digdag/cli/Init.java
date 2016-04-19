@@ -78,10 +78,10 @@ public class Init
             gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
                     ImmutableMap.of("@@name@@", workflowName));
             if (path.equals(".")) {
-                System.out.println("Done. Type `./digdag r` to run the workflow. Enjoy!");
+                System.out.println("Done. Type `digdag r` to run the workflow. Enjoy!");
             }
             else {
-                System.out.println("Done. Type `cd " + path +"` and `./digdag r` to run the workflow. Enjoy!");
+                System.out.println("Done. Type `cd " + path + "` and then `digdag r` to run the workflow. Enjoy!");
             }
         }
     }
