@@ -28,13 +28,20 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestApiKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.digdag.cli.Main.systemExit;
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
     extends Command
 {
+    private static final Logger log = LoggerFactory.getLogger(ClientCommand.class);
+
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
     @Parameter(names = {"-e", "--endpoint"})
@@ -250,9 +257,28 @@ public abstract class ClientCommand
         }
     }
 
-    protected LocalDateTime parseLocalTime(String s, String errorMessage)
+    protected LocalTimeOrInstant parseLocalTimeOrInstant(String s, String errorMessage)
         throws SystemExitException
     {
+        // First try parsing as UNIX epoch
+        try {
+            Instant i = Instant.ofEpochSecond(Long.parseLong(s));
+            return LocalTimeOrInstant.of(i);
+        }
+        catch (NumberFormatException ex) {
+            log.trace("Failed to parse as UNIX epoch: {}", s, ex);
+        }
+
+        // Then try ISO8601
+        try {
+            Instant i = Instant.from(ISO_DATE_TIME.parse(s));
+            return LocalTimeOrInstant.of(i);
+        }
+        catch (DateTimeException ex) {
+            log.trace("Failed to parse as ISO8601: {}", s, ex);
+        }
+
+        // Then try local time (without time zone)
         TemporalAccessor parsed;
         try {
             parsed = LOCAL_TIME_PARSER.parse(s);
@@ -260,12 +286,18 @@ public abstract class ClientCommand
         catch (DateTimeParseException ex) {
             throw systemExit(errorMessage + ": " + s);
         }
-        LocalDateTime local;
         try {
-            return LocalDateTime.from(parsed);
+            return LocalTimeOrInstant.of(LocalDateTime.from(parsed));
         }
         catch (DateTimeException ex) {
-            return LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0));
+            log.trace("Failed to parse as local datetime: {}", s, ex);
+        }
+
+        // Finally try local date (without time and time zone)
+        try {
+            return LocalTimeOrInstant.of(LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0)));
+        } catch (Exception e) {
+            throw systemExit(errorMessage + ": " + s);
         }
     }
 
