@@ -117,7 +117,6 @@ public class Main
         jc.addCommand("scheduler", new Sched(), "sched");
 
         jc.addCommand("server", new Server());
-        jc.addCommand("genapikey", new GenApiKey());
 
         jc.addCommand("push", new Push());
         jc.addCommand("archive", new Archive());
@@ -260,7 +259,6 @@ public class Main
         System.err.println("");
         System.err.println("  Server-mode commands:");
         System.err.println("    server                           start digdag server");
-        System.err.println("    genapikey -o <dir>               generates an API key for authentication");
         System.err.println("");
         System.err.println("  Client-mode commands:");
         System.err.println("    push <project-name>              create and upload a new revision");
