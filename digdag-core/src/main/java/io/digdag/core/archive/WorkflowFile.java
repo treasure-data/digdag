@@ -71,11 +71,12 @@ public class WorkflowFile
         // TODO should here validate key names of defaultParams?
     }
 
-    public static WorkflowFile fromConfig(String workflowName, Config config)
+    public static WorkflowFile fromConfig(String workflowName, ZoneId defaultTimeZone,
+            Config config)
     {
         Config copy = config.deepCopy();
 
-        ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
+        ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(defaultTimeZone);
         copy.remove("timezone");
 
         Config topLevelExport = copy.getNestedOrGetEmpty("_export");

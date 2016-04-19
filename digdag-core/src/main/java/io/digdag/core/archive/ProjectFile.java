@@ -1,25 +1,30 @@
 package io.digdag.core.archive;
 
 import java.util.List;
+import java.time.ZoneId;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 
-public class ProjectFile
+class ProjectFile
 {
     private final String projectName;
 
     private final List<String> workflowFiles;
+
+    private final ZoneId defaultTimeZone;
 
     private final Config defaultParams;
 
     private ProjectFile(
             String projectName,
             List<String> workflowFiles,
+            ZoneId defaultTimeZone,
             Config defaultParams)
     {
         this.projectName = projectName;
         this.workflowFiles = workflowFiles;
+        this.defaultTimeZone = defaultTimeZone;
         this.defaultParams = defaultParams;
         check();
     }
@@ -38,7 +43,10 @@ public class ProjectFile
         String projectName = copy.get("name", String.class);
         copy.remove("name");
 
-        // TODO if users want to put parameters to the project file, enable this code
+        ZoneId defaultTimeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
+        copy.remove("timezone");
+
+        // TODO if users want to put parameters to a project file, enable this code.
         //Config defaultParams = copy.getNestedOrGetEmpty("params");
         //copy.remove("params");
         Config defaultParams = copy.getFactory().create();
@@ -53,12 +61,18 @@ public class ProjectFile
         return new ProjectFile(
                 projectName,
                 workflowFiles,
+                defaultTimeZone,
                 defaultParams);
     }
 
     public List<String> getWorkflowFiles()
     {
         return workflowFiles;
+    }
+
+    public ZoneId getDefaultTimeZone()
+    {
+        return defaultTimeZone;
     }
 
     public Config getDefaultParams()

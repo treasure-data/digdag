@@ -72,7 +72,7 @@ public class ProjectArchiveLoader
             Path workflowFilePath = projectDir.resolve(relativeFileName).normalize();
 
             try {
-                WorkflowFile workflowFile = loadWorkflowFile(projectDir, workflowFilePath, projectParams);
+                WorkflowFile workflowFile = loadWorkflowFile(projectDir, workflowFilePath, projectFile.getDefaultTimeZone(), projectParams);
 
                 defs.add(workflowFile.toWorkflowDefinition());
             }
@@ -93,7 +93,7 @@ public class ProjectArchiveLoader
         throws IOException
     {
         Path dir = path.getParent();
-        WorkflowFile workflowFile = loadWorkflowFile(dir, path, overwriteParams);
+        WorkflowFile workflowFile = loadWorkflowFile(dir, path, ZoneId.of("UTC"), overwriteParams);
 
         ArchiveMetadata metadata = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(workflowFile.toWorkflowDefinition())),
@@ -103,7 +103,8 @@ public class ProjectArchiveLoader
                 listFiles(baseDir, dir, consumer));
     }
 
-    private WorkflowFile loadWorkflowFile(Path projectDir, Path workflowFilePath, Config projectParams)
+    private WorkflowFile loadWorkflowFile(Path projectDir, Path workflowFilePath,
+            ZoneId defaultTimeZone, Config projectParams)
         throws IOException
     {
         // remove last .yml and use it as workflowName
@@ -117,7 +118,8 @@ public class ProjectArchiveLoader
             workflowName = fileName;
         }
 
-        WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
+        WorkflowFile workflowFile = WorkflowFile.fromConfig(
+                workflowName, defaultTimeZone,
                 configLoader.loadParameterizedFile(workflowFilePath.toFile(), projectParams));
 
         Path workflowSubdir = projectDir.relativize(workflowFilePath).getParent();
