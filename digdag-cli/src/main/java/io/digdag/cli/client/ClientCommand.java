@@ -35,7 +35,7 @@ import static java.util.Locale.ENGLISH;
 public abstract class ClientCommand
     extends Command
 {
-    private static final String DEFAULT_ENDPOINT = "127.0.0.1:65432";
+    private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
@@ -82,7 +82,7 @@ public abstract class ClientCommand
         throws Exception;
 
     protected DigdagClient buildClient()
-        throws IOException
+        throws IOException, SystemExitException
     {
         // load config file
         Properties props = loadSystemProperties();
@@ -102,11 +102,28 @@ public abstract class ClientCommand
         }
 
         String[] fragments = endpoint.split(":", 2);
+
+        boolean useSsl = false;
+        if (fragments.length == 2 && fragments[1].startsWith("//")) {
+            // http:// or https://
+            switch (fragments[0]) {
+            case "http":
+                useSsl = false;
+                break;
+            case "https":
+                useSsl = true;
+                break;
+            default:
+                throw systemExit("Endpoint must start with http:// or https://: " + endpoint);
+            }
+            fragments = fragments[1].substring(2).split(":", 2);
+        }
+
         String host;
         int port;
         if (fragments.length == 1) {
             host = fragments[0];
-            port = 80;
+            port = useSsl ? 443 : 80;
         }
         else {
             host = fragments[0];
@@ -124,6 +141,7 @@ public abstract class ClientCommand
         return DigdagClient.builder()
             .host(host)
             .port(port)
+            .ssl(useSsl)
             .headers(headers)
             .apiKeyHeaderBuilder(restApiKey)
             .build();
@@ -135,14 +153,16 @@ public abstract class ClientCommand
     {
         Properties props = super.loadSystemProperties();
 
-        props.putAll(PropertyUtils.loadFile(new File(configPath)));
+        if (configPath != null) {
+            props.putAll(PropertyUtils.loadFile(new File(configPath)));
+        }
 
         return props;
     }
 
     public static void showCommonOptions()
     {
-        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: 127.0.0.1:65432)");
+        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
         System.err.println("    -k, --apikey APIKEY              authentication API key");
         System.err.println("    -c, --config PATH.properties     additional config file to overwrite ~/.digdag/config");
         Main.showCommonOptions();

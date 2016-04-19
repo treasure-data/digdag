@@ -309,7 +309,7 @@ Client-mode commands
 Client-mode common options:
 
 :command:`-e, --endpoint HOST`
-  HTTP endpoint of the server (default: 127.0.0.1:65432)
+  HTTP endpoint of the server (default: http://127.0.0.1:65432)
 
   Example: digdag-server.example.com:65432
 
@@ -325,6 +325,13 @@ Client-mode common options:
   Configuration file path in addition to ~/.digdag/config to overwrite.
 
   Example: -c digdag-server/client.properties
+
+You can include following promerters in ~/.digdag/config file:
+
+In the config file, following parameters are available
+
+* cilent.http.endpoint = http://HOST:PORT or https://HOST:PORT
+* client.http.headers.KEY = VALUE (set custom HTTP header)
 
 
 start
