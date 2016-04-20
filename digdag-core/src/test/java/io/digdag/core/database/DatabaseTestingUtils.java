@@ -167,7 +167,7 @@ public class DatabaseTestingUtils
     {
         return WorkflowDefinition.of(
                 name,
-                createConfig().set("uniq", System.nanoTime()),
+                createConfig().set("+uniq", createConfig().set("sh>", "echo " + System.nanoTime())),
                 ZoneId.of("UTC"));
     }
 

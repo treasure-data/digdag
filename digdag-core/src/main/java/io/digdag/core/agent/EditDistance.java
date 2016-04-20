@@ -1,11 +1,28 @@
 package io.digdag.core.agent;
 
-class Levenshtein
+import java.util.List;
+import java.util.Collection;
+import com.google.common.collect.ImmutableList;
+
+public class EditDistance
 {
-    private Levenshtein()
+    public static List<String> suggest(String key, Collection<String> candidateKeys, double thresholdRatio)
+    {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (String candidate : candidateKeys) {
+            int threshold = (int) Math.floor(candidate.length() * thresholdRatio);
+            int editDistance = distance(key, candidate);
+            if (editDistance <= threshold) {
+                builder.add(candidate);
+            }
+        }
+        return builder.build();
+    }
+
+    private EditDistance()
     { }
 
-    public static int distance(String str1, String str2)
+    static int distance(String str1, String str2)
     {
         int len1 = str1.length();
         int len2 = str2.length();

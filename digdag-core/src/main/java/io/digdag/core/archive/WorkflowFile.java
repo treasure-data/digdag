@@ -23,6 +23,7 @@ public class WorkflowFile
         "sla",
         "_error",
         "_check",
+        "_retry",
         "_parallel",
     };
 
@@ -113,8 +114,6 @@ public class WorkflowFile
     public WorkflowDefinition toWorkflowDefinition()
     {
         Config config = tasks.getFactory().create();
-
-        config.set("timezone", timeZone);
 
         if (!topLevelExport.isEmpty()) {
             config.set("_export", topLevelExport);
