@@ -3,11 +3,14 @@ package io.digdag.cli;
 import java.util.Properties;
 import java.util.Map;
 import java.util.Date;
+import java.util.Set;
+import java.util.HashSet;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.base.Throwables;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -100,9 +103,17 @@ public class Main
 
     public static void main(String... args)
     {
+        int code = new Main().cli(args);
+        if (code != 0) {
+            System.exit(code);
+        }
+    }
+
+    public int cli(String... args)
+    {
         if (args.length == 1 && args[0].equals("--version")) {
             System.out.println("0.6.1-SNAPSHOT");
-            return;
+            return 0;
         }
         System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.6.1-SNAPSHOT");
 
@@ -168,21 +179,44 @@ public class Main
             processCommonOptions(command);
 
             command.main();
+            return 0;
         }
         catch (ParameterException ex) {
             System.err.println("error: " + ex.getMessage());
-            System.exit(1);
+            return 1;
         }
         catch (SystemExitException ex) {
             if (ex.getMessage() != null) {
                 System.err.println("error: " + ex.getMessage());
             }
-            System.exit(ex.getCode());
-        } catch (Exception ex) {
-            if (ex.getMessage() != null) {
-                System.err.println("error: " + ex.getMessage());
+            return ex.getCode();
+        }
+        catch (Exception ex) {
+            System.err.println("error: " + formatException(ex));
+            return 1;
+        }
+    }
+
+    private static String formatException(Exception ex)
+    {
+        StringBuilder sb = new StringBuilder();
+        collectExceptionMessage(sb, ex, new HashSet<>());
+        return sb.toString();
+    }
+
+    private static void collectExceptionMessage(StringBuilder sb, Throwable ex, Set<String> used)
+    {
+        if (ex.getMessage() != null && used.add(ex.getMessage())) {
+            if (sb.length() > 0) {
+                sb.append("\n> ");
             }
-            System.exit(1);
+            sb.append(ex.getMessage());
+        }
+        if (ex.getCause() != null) {
+            collectExceptionMessage(sb, ex.getCause(), used);
+        }
+        for (Throwable t : ex.getSuppressed()) {
+            collectExceptionMessage(sb, t, used);
         }
     }
 

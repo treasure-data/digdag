@@ -1,4 +1,3 @@
-name: example_project
 workflows:
   - basic.yml
   - call.yml

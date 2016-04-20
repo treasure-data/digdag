@@ -60,7 +60,7 @@ public class SelfUpdate
     }
 
     public void selfUpdate(String version)
-        throws IOException, URISyntaxException, InterruptedException
+        throws IOException, SystemExitException, URISyntaxException, InterruptedException
     {
         Path dest = Paths.get(Command.class.getProtectionDomain().getCodeSource().getLocation().toURI());
 
@@ -73,8 +73,7 @@ public class SelfUpdate
         }
         String password = new String(console.readPassword("Password of 'beta': "));
         if (password.isEmpty()) {
-            System.out.println("aborted.");
-            System.exit(1);
+            throw systemExit("aborted.");
         }
         BasicAuthentication auth = new BasicAuthentication("beta", password);
 
