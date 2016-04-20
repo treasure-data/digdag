@@ -20,12 +20,15 @@ public interface ServerConfig
 {
     public static final int DEFAULT_PORT = 65432;
     public static final String DEFAULT_BIND = "127.0.0.1";
+    public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
     public int getPort();
 
     public String getBind();
 
     public Optional<String> getAccessLogPath();
+
+    public String getAccessLogPattern();
 
     public ConfigElement getSystemConfig();
 
@@ -47,6 +50,7 @@ public interface ServerConfig
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
+            .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .build();
     }
