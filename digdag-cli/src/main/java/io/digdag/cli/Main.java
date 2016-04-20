@@ -100,9 +100,17 @@ public class Main
 
     public static void main(String... args)
     {
+        int code = new Main().cli(args);
+        if (code != 0) {
+            System.exit(code);
+        }
+    }
+
+    public int cli(String... args)
+    {
         if (args.length == 1 && args[0].equals("--version")) {
             System.out.println("0.6.1-SNAPSHOT");
-            return;
+            return 0;
         }
         System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.6.1-SNAPSHOT");
 
@@ -168,21 +176,22 @@ public class Main
             processCommonOptions(command);
 
             command.main();
+            return 0;
         }
         catch (ParameterException ex) {
             System.err.println("error: " + ex.getMessage());
-            System.exit(1);
+            return 1;
         }
         catch (SystemExitException ex) {
             if (ex.getMessage() != null) {
                 System.err.println("error: " + ex.getMessage());
             }
-            System.exit(ex.getCode());
+            return ex.getCode();
         } catch (Exception ex) {
             if (ex.getMessage() != null) {
                 System.err.println("error: " + ex.getMessage());
             }
-            System.exit(1);
+            return 1;
         }
     }
 

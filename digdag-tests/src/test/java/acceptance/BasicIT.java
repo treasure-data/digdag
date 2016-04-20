@@ -12,13 +12,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static io.digdag.cli.Main.main;
+import io.digdag.cli.Main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class BasicIT
 {
+    public static int main(String... args)
+    {
+        return new Main().cli(args);
+    }
+
     private interface Action
     {
         public void run() throws Exception;
