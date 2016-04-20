@@ -34,6 +34,9 @@ public class Server
     @Parameter(names = {"-O", "--task-log"})
     String taskLogPath = null;
 
+    @Parameter(names = {"-A", "--access-log"})
+    String accessLogPath = null;
+
     @Parameter(names = {"-c", "--config"})
     String configPath = null;
 
@@ -65,6 +68,7 @@ public class Server
         System.err.println("    -m, --memory                     uses memory database");
         System.err.println("    -o, --database DIR               store status to this database");
         System.err.println("    -O, --task-log DIR               store task logs to this database");
+        System.err.println("    -A, --access-log DIR             store access logs files to this path");
         System.err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions();
         return systemExit(error);
@@ -106,6 +110,10 @@ public class Server
         if (taskLogPath != null) {
             props.setProperty("log-server.type", "local");
             props.setProperty("log-server.local.path", taskLogPath);
+        }
+
+        if (accessLogPath != null) {
+            props.setProperty("server.access-log.path", accessLogPath);
         }
 
         return props;

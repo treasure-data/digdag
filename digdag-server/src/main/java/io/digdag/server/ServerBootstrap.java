@@ -3,9 +3,15 @@ package io.digdag.server;
 import java.util.Properties;
 import java.util.List;
 import java.util.Map;
-import java.io.File;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
@@ -13,11 +19,15 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.undertow.Undertow;
 import io.undertow.Handlers;
+import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.accesslog.AccessLogHandler;
+import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -131,12 +141,47 @@ public class ServerBootstrap
         PathHandler path = Handlers.path(Handlers.redirect("/"))
             .addPrefixPath("/", manager.start());
 
+        HttpHandler handler;
+        if (config.getAccessLogPath().isPresent()) {
+            System.out.println("accesslog: "+config.getAccessLogPath());
+            handler = buildAccessLogHandler(config, path);
+        }
+        else {
+            System.out.println("accesslog - no: "+config.getAccessLogPath());
+            handler = path;
+        }
+
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
         Undertow server = Undertow.builder()
             .addHttpListener(config.getPort(), config.getBind())
-            .setHandler(path)
+            .setHandler(handler)
             .build();
         server.start();
+    }
+
+    private static AccessLogHandler buildAccessLogHandler(ServerConfig config, HttpHandler nextHandler)
+    {
+        Path path = Paths.get(config.getAccessLogPath().get()).toAbsolutePath().normalize();
+
+        try {
+            Files.createDirectories(path);
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
+
+        Executor logWriterExecutor = Executors.newCachedThreadPool(
+                new ThreadFactoryBuilder()
+                .setDaemon(false)  // non-daemon
+                .setNameFormat("access-log-%d")
+                .build()
+                );
+
+        return new AccessLogHandler(
+                nextHandler,
+                new DefaultAccessLogReceiver(logWriterExecutor, path.toFile(), "access", ".log"),
+                "%h %l %u %t \"%r\" %s %b",
+                ServerBootstrap.class.getClassLoader());
     }
 
     private static class ServerControl

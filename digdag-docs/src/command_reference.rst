@@ -255,7 +255,12 @@ Runs a digdag server. --memory or --database option is required. Examples:
 :command:`-O, --task-log DIR`
   Store task logs to this directory. If this option is not set, ``digdag log`` command doesn't work.
 
-  Example: --task-log digdag.log
+  Example: --task-log digdag/sessions
+
+:command:`-A, --access-log DIR`
+  Store access logs to this directory.
+
+  Example: --access-log digdag/log
 
 :command:`-c, --config PATH`
   Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.
@@ -267,6 +272,7 @@ In the config file, following parameters are available
 
 * server.bind (ip address)
 * server.port (integer)
+* server.access-log.path (string. same with --access-log)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)

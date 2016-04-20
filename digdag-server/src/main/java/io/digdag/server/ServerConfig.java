@@ -25,6 +25,8 @@ public interface ServerConfig
 
     public String getBind();
 
+    public Optional<String> getAccessLogPath();
+
     public ConfigElement getSystemConfig();
 
     public static ImmutableServerConfig.Builder defaultBuilder()
@@ -44,6 +46,7 @@ public interface ServerConfig
         return defaultBuilder()
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
+            .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .build();
     }
