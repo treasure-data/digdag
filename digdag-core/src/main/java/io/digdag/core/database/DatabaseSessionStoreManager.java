@@ -105,6 +105,17 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    private String addSeconds(String timestamp, int seconds)
+    {
+        switch (databaseType) {
+        case "h2":
+            return "TIMESTAMPADD('SECOND', " + timestamp + ", " + seconds + ")";
+        default:
+            // postgresql
+            return "(" + timestamp + " + interval '" + seconds + " second')";
+        }
+    }
+
     private String selectTaskDetailsQuery()
     {
         return "select t.*, td.full_name, td.local_config, td.export_config, " +
@@ -686,7 +697,7 @@ public class DatabaseSessionStoreManager
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
-                        " retry_at = TIMESTAMPADD('SECOND', :retryInterval, now())" +  // TODO this doesn't work on PostgreSQL
+                        " retry_at = " + addSeconds("now()", retryInterval) +
                     " where id = :id" +
                     " and state = :oldState"
                 )
@@ -694,7 +705,6 @@ public class DatabaseSessionStoreManager
                 .bind("oldState", beforeState.get())
                 .bind("newState", afterState.get())
                 .bind("stateParams", cfm.toBinding(stateParams))
-                .bind("retryInterval", retryInterval)
                 .execute();
             if (n > 0) {
                 if (updateError.isPresent()) {
