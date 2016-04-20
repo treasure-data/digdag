@@ -21,6 +21,9 @@ import static com.google.common.collect.Maps.immutableEntry;
 public class WorkflowCompiler
 {
     private static final Set<String> GROUPING_TASK_CONFIG_KEYS = new HashSet<>(ImmutableList.of(
+        "timezone",
+        "schedule",
+        "sla",
         "_parallel",
         "_background",
         "_after",

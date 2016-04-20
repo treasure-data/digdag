@@ -17,7 +17,6 @@ import io.digdag.client.config.ConfigException;
 
 public class WorkflowFile
 {
-    // name, timezone, _export, and others
     private static final String[] TOP_LEVEL_CONFIG = new String[] {
         "schedule",
         "sla",
