@@ -38,9 +38,9 @@ import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import static java.util.Locale.ENGLISH;
 
 @Path("/")
 @Produces("application/json")
@@ -62,6 +62,9 @@ public class ProjectResource
     // GET  /api/project?name=<name>                     # lookup a project by name
     // GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
     // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
+
+    private static final long ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
+    private static final long ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -250,14 +253,27 @@ public class ProjectResource
         Preconditions.checkArgument(name != null, "project= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
 
-        // TODO if content-length is too large, reject this request.
         byte[] data = ByteStreams.toByteArray(body);
+
+        if (data.length > ARCHIVE_TOTAL_SIZE_LIMIT) {
+            // TODO throw this exception before reading all data in memory
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                        "Size of the uploaded archive file exceeds limit (%d bytes)",
+                        ARCHIVE_TOTAL_SIZE_LIMIT));
+        }
 
         ArchiveMetadata meta;
         try (TempDir dir = tempFiles.createTempDir("push", name)) {
+            long totalSize = 0;
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
-                extractConfigFiles(dir.get(), archive);
+                totalSize = extractConfigFiles(dir.get(), archive);
             }
+            if (totalSize > ARCHIVE_TOTAL_SIZE_LIMIT) {
+                throw new IllegalArgumentException(String.format(ENGLISH,
+                            "Total size of the archive exceeds limit (%d > %d bytes)",
+                            totalSize, ARCHIVE_TOTAL_SIZE_LIMIT));
+            }
+
             // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
                     dir.child(ArchiveMetadata.FILE_NAME).toFile()).toConfig(cf);
@@ -288,13 +304,13 @@ public class ProjectResource
 
     // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
     //      rawLoader.loadFile doesn't have to render the file because it's already rendered.
-    private List<java.nio.file.Path> extractConfigFiles(java.nio.file.Path dir, ArchiveInputStream archive)
+    private long extractConfigFiles(java.nio.file.Path dir, TarArchiveInputStream archive)
         throws IOException
     {
-        ImmutableList.Builder<java.nio.file.Path> files = ImmutableList.builder();
-        ArchiveEntry entry;
+        long totalSize = 0;
+        TarArchiveEntry entry;
         while (true) {
-            entry = archive.getNextEntry();
+            entry = archive.getNextTarEntry();
             if (entry == null) {
                 break;
             }
@@ -302,15 +318,17 @@ public class ProjectResource
                 // do nothing
             }
             else {
+                validateTarEntry(entry);
+                totalSize += entry.getSize();
+
                 java.nio.file.Path file = dir.resolve(entry.getName());
                 Files.createDirectories(file.getParent());
                 try (OutputStream out = Files.newOutputStream(file)) {
                     ByteStreams.copy(archive, out);
                 }
-                files.add(dir.relativize(file));
             }
         }
-        return files.build();
+        return totalSize;
     }
 
     private byte[] calculateArchiveMd5(byte[] data)
@@ -321,6 +339,15 @@ public class ProjectResource
         }
         catch (NoSuchAlgorithmException ex) {
             throw Throwables.propagate(ex);
+        }
+    }
+
+    private void validateTarEntry(TarArchiveEntry entry)
+    {
+        if (entry.getSize() > ARCHIVE_FILE_SIZE_LIMIT) {
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                        "Size of a file in the archive exceeds limit (%d > %d bytes): %s",
+                        entry.getSize(), ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
         }
     }
 }
