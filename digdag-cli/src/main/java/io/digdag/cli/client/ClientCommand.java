@@ -28,7 +28,6 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestApiKey;
 import static io.digdag.cli.Main.systemExit;
 import static java.util.Locale.ENGLISH;
 
@@ -39,9 +38,6 @@ public abstract class ClientCommand
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
-
-    @Parameter(names = {"-k", "--apikey"})
-    protected String apiKey = null;
 
     @Parameter(names = {"-c", "--config"})
     protected String configPath = null;
@@ -86,16 +82,6 @@ public abstract class ClientCommand
     {
         // load config file
         Properties props = loadSystemProperties();
-
-        if (apiKey == null) {
-            apiKey = props.getProperty("apikey");
-        }
-
-        // TODO remove support for api key
-        Optional<RestApiKey> restApiKey = Optional.absent();
-        if (apiKey != null && !apiKey.isEmpty()) {
-            restApiKey = Optional.of(RestApiKey.of(apiKey));
-        }
 
         if (endpoint == null) {
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
@@ -143,7 +129,6 @@ public abstract class ClientCommand
             .port(port)
             .ssl(useSsl)
             .headers(headers)
-            .apiKeyHeaderBuilder(restApiKey)
             .build();
     }
 
@@ -163,7 +148,6 @@ public abstract class ClientCommand
     public static void showCommonOptions()
     {
         System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        System.err.println("    -k, --apikey APIKEY              authentication API key");
         System.err.println("    -c, --config PATH.properties     additional config file to overwrite ~/.digdag/config");
         Main.showCommonOptions();
     }

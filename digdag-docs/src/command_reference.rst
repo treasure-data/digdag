@@ -267,7 +267,6 @@ In the config file, following parameters are available
 
 * server.bind (ip address)
 * server.port (integer)
-* server.apikey (string)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)
@@ -282,26 +281,6 @@ In the config file, following parameters are available
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: 10)
 
-genapikey
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: console
-
-    $ digdag genapikey
-
-Generates a API key for authentication. Optionally, creates server / client configuration files to use the generated key. Examples:
-
-.. code-block:: console
-
-    $ digdag genapikey
-    $ digdag genapikey -o digdag-server
-
-:command:`-o, --output DIR`
-  Creates server and client configration files in this directory.
-
-  Example: -o digdag-server
-
-
 
 Client-mode commands
 ----------------------------------
@@ -312,11 +291,6 @@ Client-mode common options:
   HTTP endpoint of the server (default: http://127.0.0.1:65432)
 
   Example: digdag-server.example.com:65432
-
-:command:`-k, --apikey APIKEY`
-  Authentication API key.
-
-  Example: -k "RqveUY_CG84/nGO8OIMlfwQu7Qzb-TRi9zP0Pif63pcHnQWCCNKXr70"
 
 :command:`-H, --header KEY=VALUE`
   Add a custom HTTP header. Use multiple times to set multiple headers.

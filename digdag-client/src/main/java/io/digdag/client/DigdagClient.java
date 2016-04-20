@@ -81,22 +81,6 @@ public class DigdagClient
             return this;
         }
 
-        public Builder apiKeyHeaderBuilder(Optional<RestApiKey> apiKey)
-        {
-            return apiKeyHeaderBuilder(apiKey.orNull());
-        }
-
-        public Builder apiKeyHeaderBuilder(RestApiKey apiKey)
-        {
-            if (apiKey == null) {
-                headerBuilder = null;
-            }
-            else {
-                headerBuilder = (orig) -> buildApiKeyHeader(apiKey, orig);
-            }
-            return this;
-        }
-
         public DigdagClient build()
         {
             return new DigdagClient(this);
@@ -168,28 +152,6 @@ public class DigdagClient
             .register(new JacksonJsonProvider(mapper))
             .build();
         this.cf = new ConfigFactory(mapper);
-    }
-
-    public static Map<String, String> buildApiKeyHeader(RestApiKey apiKey, Map<String, String> map)
-    {
-        map.put("Authorization", buildApiKeyHeader(apiKey));
-        return map;
-    }
-
-    public static String buildApiKeyHeader(RestApiKey apiKey)
-    {
-        Instant now = Instant.now();
-
-        String sharedKey =
-            Jwts.builder()
-            .setSubject(apiKey.getIdString())
-            .setExpiration(Date.from(now.plusSeconds(300)))
-            .setHeaderParam("knd", "ps1")
-            .setIssuedAt(Date.from(now))
-            .signWith(SignatureAlgorithm.HS512, apiKey.getSecret())
-            .compact();
-
-        return "Bearer " + sharedKey;
     }
 
     public Config newConfig()
