@@ -250,22 +250,32 @@ task setVersion << {
     File gradle_ver = file('build.gradle')
     gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
-    List<String> docs = [
-        'README.md',
+    List<String> files = [
         'digdag-cli/src/main/resources/digdag/cli/version.txt',
         'digdag-cli/src/main/java/io/digdag/cli/Main.java',
         'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
-        'digdag-docs/src/command_reference.rst',
     ]
-    docs.each() { path ->
+
+    files.each() { path ->
         File doc = file(path)
         doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
     }
 
-    file("digdag-docs/src/releases/release-${to}.rst").append("")
-    "git add digdag-docs/src/releases/release-${to}.rst".execute().waitFor()
+    if (!to.endsWith('-SNAPSHOT')) {
+        List<String> docs = [
+            'digdag-docs/src/command_reference.rst',
+        ]
 
-    println "add 'release/release-${to}' line to digdag-docs/src/releases.rst"
+        docs.each() { path ->
+            File doc = file(path)
+            doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
+        }
+
+        file("digdag-docs/src/releases/release-${to}.rst").append("")
+        "git add digdag-docs/src/releases/release-${to}.rst".execute().waitFor()
+
+        println "add 'release/release-${to}' line to digdag-docs/src/releases.rst"
+    }
 }
 
 task releaseCheck << {
