@@ -112,10 +112,10 @@ public class Main
     public int cli(String... args)
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            System.out.println("0.6.1-SNAPSHOT");
+            System.out.println("0.7.0-SNAPSHOT");
             return 0;
         }
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.6.1-SNAPSHOT");
+        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.7.0-SNAPSHOT");
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
