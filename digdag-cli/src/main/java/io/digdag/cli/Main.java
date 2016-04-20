@@ -3,11 +3,14 @@ package io.digdag.cli;
 import java.util.Properties;
 import java.util.Map;
 import java.util.Date;
+import java.util.Set;
+import java.util.HashSet;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.base.Throwables;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -187,11 +190,33 @@ public class Main
                 System.err.println("error: " + ex.getMessage());
             }
             return ex.getCode();
-        } catch (Exception ex) {
-            if (ex.getMessage() != null) {
-                System.err.println("error: " + ex.getMessage());
-            }
+        }
+        catch (Exception ex) {
+            System.err.println("error: " + formatException(ex));
             return 1;
+        }
+    }
+
+    private static String formatException(Exception ex)
+    {
+        StringBuilder sb = new StringBuilder();
+        collectExceptionMessage(sb, ex, new HashSet<>());
+        return sb.toString();
+    }
+
+    private static void collectExceptionMessage(StringBuilder sb, Throwable ex, Set<String> used)
+    {
+        if (ex.getMessage() != null && used.add(ex.getMessage())) {
+            if (sb.length() > 0) {
+                sb.append("\n> ");
+            }
+            sb.append(ex.getMessage());
+        }
+        if (ex.getCause() != null) {
+            collectExceptionMessage(sb, ex.getCause(), used);
+        }
+        for (Throwable t : ex.getSuppressed()) {
+            collectExceptionMessage(sb, t, used);
         }
     }
 
