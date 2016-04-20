@@ -18,6 +18,10 @@
 }
 */
 
+.rst-content .highlighted {
+  padding: 0;  /* don't add confusing spaces around highlights */
+}
+
 .rst-content dl {
   border: 1px solid #e1e4e5;
 }
