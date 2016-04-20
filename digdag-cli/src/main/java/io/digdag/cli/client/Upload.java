@@ -54,7 +54,7 @@ public class Upload
         ln("  name: %s", proj.getName());
         ln("  revision: %s", proj.getRevision());
         ln("  archive type: %s", proj.getArchiveType());
-        ln("  project created at: %s", proj.getRevision());
+        ln("  project created at: %s", proj.getCreatedAt());
         ln("  revision updated at: %s", proj.getUpdatedAt());
         ln("");
         ln("Use `digdag workflows` to show all workflows.");

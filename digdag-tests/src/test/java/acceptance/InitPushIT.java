@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestProject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -9,10 +10,17 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.digdag.cli.Main.main;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertThat;
 
 public class InitPushIT {
     @Rule
@@ -21,7 +29,7 @@ public class InitPushIT {
     private ExecutorService executor;
     private Path clientProperties;
     private Path serverProperties;
-    private Path project;
+    private Path projectDir;
 
     private String host;
     private int port;
@@ -29,7 +37,7 @@ public class InitPushIT {
 
     @Before
     public void setUp() throws Exception {
-        project = folder.getRoot().toPath().resolve("foobar");
+        projectDir = folder.getRoot().toPath().resolve("foobar");
         clientProperties = Files.createFile(folder.getRoot().toPath().resolve("client.properties"));
         serverProperties = Files.createFile(folder.getRoot().toPath().resolve("server.properties"));
         executor = Executors.newCachedThreadPool();
@@ -62,11 +70,25 @@ public class InitPushIT {
 
     @Test
     public void initAndPush() throws Exception {
-        main("init", project.toString());
+        main("init", projectDir.toString());
         main("push",
                 "foobar",
-                "-f", project.resolve("digdag.yml").toString(),
+                "-f", projectDir.resolve("digdag.yml").toString(),
                 "-e", endpoint,
-                "-r", "1");
+                "-r", "4711");
+        DigdagClient client = DigdagClient.builder()
+                .host(host)
+                .port(port)
+                .build();
+
+        RestProject project = client.getProject("foobar");
+
+        assertThat(project.getName(), is("foobar"));
+        assertThat(project.getRevision(), is("4711"));
+        long now = Instant.now().toEpochMilli();
+        long error = MINUTES.toMillis(1);
+        assertThat(project.getCreatedAt().toEpochMilli(), is(both(
+                greaterThan(now - error))
+                .and(lessThan(now + error))));
     }
 }
