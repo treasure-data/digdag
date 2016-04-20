@@ -109,7 +109,7 @@ public class DatabaseSessionStoreManager
     {
         switch (databaseType) {
         case "h2":
-            return "TIMESTAMPADD('SECOND', " + timestamp + ", " + seconds + ")";
+            return "TIMESTAMPADD('SECOND', " + seconds + ", " + timestamp + ")";
         default:
             // postgresql
             return "(" + timestamp + " + interval '" + seconds + " second')";
@@ -551,10 +551,35 @@ public class DatabaseSessionStoreManager
         @Override
         public long addSubtask(long attemptId, Task task)
         {
-            long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
+            long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get(), task.getStateFlags().get());  // tasks table don't have unique index
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
             return taskId;
+        }
+
+        @Override
+        public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
+        {
+            List<StoredTask> tasks = handle.createQuery(
+                    selectTaskDetailsQuery() + " where t.id in (" +
+                    recursiveChildrenIdList.stream()
+                    .map(id -> Long.toString(id)).collect(Collectors.joining(", ")) + ")" +
+                    " and " + bitAnd("t.state_flags", Integer.toString(TaskStateFlags.INITIAL_TASK)) + " != 0"  // only initial tasks
+                )
+                .map(stm)
+                .list();
+            if (tasks.isEmpty()) {
+                return false;
+            }
+            for (StoredTask task : tasks) {
+                Task newTask = Task.taskBuilder()
+                    .from(task)
+                    .state(TaskStateCode.BLOCKED)
+                    .stateFlags(TaskStateFlags.empty())
+                    .build();
+                addSubtask(tasks.get(0).getAttemptId(), newTask);
+            }
+            return true;
         }
 
         @Override
@@ -994,7 +1019,7 @@ public class DatabaseSessionStoreManager
         @Override
         public <T> T insertRootTask(long attemptId, Task task, SessionBuilderAction<T> func)
         {
-            long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get());  // tasks table don't have unique index
+            long taskId = dao.insertTask(attemptId, task.getParentId().orNull(), task.getTaskType().get(), task.getState().get(), task.getStateFlags().get());  // tasks table don't have unique index
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
             return func.call(new DatabaseTaskControlStore(handle), taskId);
@@ -1180,10 +1205,10 @@ public class DatabaseSessionStoreManager
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);
 
         @SqlUpdate("insert into tasks (attempt_id, parent_id, task_type, state, state_flags, updated_at)" +
-                " values (:attemptId, :parentId, :taskType, :state, 0, now())")
+                " values (:attemptId, :parentId, :taskType, :state, :stateFlags, now())")
         @GetGeneratedKeys
         long insertTask(@Bind("attemptId") long attemptId, @Bind("parentId") Long parentId,
-                @Bind("taskType") int taskType, @Bind("state") short state);
+                @Bind("taskType") int taskType, @Bind("state") short state, @Bind("stateFlags") int stateFlags);
 
         // TODO this should be optimized out by using TRIGGER that runs when a task is inserted
         @SqlUpdate("insert into task_details (id, full_name, local_config, export_config)" +
@@ -1251,8 +1276,8 @@ public class DatabaseSessionStoreManager
 
         @SqlUpdate("update tasks " +
                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")"+
-                " and retry_at >= now()")
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                " and retry_at <= now()")
         int trySetRetryWaitingToReady();
 
         @SqlQuery("select * from session_monitors" +

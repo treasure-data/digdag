@@ -46,39 +46,26 @@ public class TaskControl
         return state;
     }
 
-    public long addTasksExceptingRootTask(WorkflowTaskList tasks)
+    public static long addInitialTasksExceptingRootTask(
+            TaskControlStore store, long attemptId, long rootTaskId,
+            WorkflowTaskList tasks)
     {
-        return addTasks(task, tasks, ImmutableList.of(), false, true);
+        return addTasks(store, attemptId, rootTaskId,
+                tasks, ImmutableList.of(),
+                false, true, true);
     }
 
-    public static long addTasksExceptingRootTask(
-            TaskControlStore store, long attemptId,
-            long rootTaskId, WorkflowTaskList tasks)
-    {
-        return addTasks(store, attemptId,
-                rootTaskId, tasks,
-                ImmutableList.of(), false, true);
-    }
-
-    public long addSubtasks(WorkflowTaskList tasks,
+    public long addGeneratedSubtasks(WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
-        return addTasks(task, tasks, rootUpstreamIds, cancelSiblings, false);
-    }
-
-    private long addTasks(StoredTask parentTask, WorkflowTaskList tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask)
-    {
-        Preconditions.checkArgument(getId() == parentTask.getId());
-
-        return addTasks(store, parentTask.getAttemptId(),
-                parentTask.getId(), tasks,
-                rootUpstreamIds, cancelSiblings, firstTaskIsRootStoredParentTask);
+        return addTasks(store, task.getAttemptId(), task.getId(),
+                tasks, rootUpstreamIds,
+                cancelSiblings, false, false);
     }
 
     private static long addTasks(TaskControlStore store,
-            long attemptId, long parentTaskId, WorkflowTaskList tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask)
+            long attemptId, long parentTaskId, WorkflowTaskList tasks, List<Long> rootUpstreamIds,
+            boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask)
     {
         List<Long> indexToId = new ArrayList<>();
 
@@ -113,6 +100,7 @@ public class TaskControl
                 .config(TaskConfig.validate(wt.getConfig()))
                 .taskType(wt.getTaskType())
                 .state(TaskStateCode.BLOCKED)
+                .stateFlags(isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty())
                 .build();
 
             long id = store.addSubtask(attemptId, task);
@@ -226,9 +214,25 @@ public class TaskControl
     {
         if (store.setRetryWaitingState(getId(), TaskStateCode.PLANNED, TaskStateCode.GROUP_RETRY_WAITING, retryInterval, stateParams, Optional.absent())) {
             state = TaskStateCode.GROUP_RETRY_WAITING;
+            return true;
         }
         return false;
         // propagateChildrenErrorWithRetry
+    }
+
+    public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
+    {
+        return store.copyInitialTasksForRetry(recursiveChildrenIdList);
+    }
+
+    public boolean setGroupRetryReadyToPlanned()
+    {
+        if (store.setPlannedStateSuccessful(getId(), TaskStateCode.READY, TaskStateCode.PLANNED, TaskResult.empty(task.getStateParams().getFactory()))) {
+            state = TaskStateCode.PLANNED;
+            return true;
+        }
+        return false;
+        // transitionToPlanned
     }
 
     ////

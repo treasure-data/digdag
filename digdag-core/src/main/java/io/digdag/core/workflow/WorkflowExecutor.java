@@ -63,7 +63,6 @@ import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
  *         : RUNNING
  *
  * RUNNING:
- *
  *   taskFailed:
  *     (if retryInterval is set) lockedTask.setRunningToRetryWaiting:
  *       : RETRY_WAITING with error
@@ -223,9 +222,10 @@ public class WorkflowExecutor
                         .config(TaskConfig.validate(root.getConfig()))
                         .taskType(root.getTaskType())
                         .state(rootTaskState)
+                        .stateFlags(TaskStateFlags.empty().withInitialTask())
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
-                        TaskControl.addTasksExceptingRootTask(taskStore, storedAttempt.getId(),
+                        TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
                                 storedTaskId, tasks);
                         return null;
                     });
@@ -257,7 +257,7 @@ public class WorkflowExecutor
                 enqueueTask(dispatcher, stored.getId());
             }
             catch (Exception ex) {
-                // fakkback to the normal operation.
+                // fallback to the normal operation.
                 // exception of the optimization shouldn't be propagated to
                 // the caller. enqueueReadyTasks will get the same error later.
                 noticeStatusPropagate();
@@ -738,6 +738,10 @@ public class WorkflowExecutor
                 return false;
             }
 
+            if (task.getTaskType().isGroupingOnly()) {
+                return retryGroupingTask(lockedTask);
+            }
+
             StoredSessionAttemptWithSession attempt;
             try {
                 attempt = sm.getAttemptWithSessionById(task.getAttemptId());
@@ -825,6 +829,20 @@ public class WorkflowExecutor
                         OperatorManager.makeExceptionError(cf, ex));
             }
         }).or(false);
+    }
+
+    private boolean retryGroupingTask(TaskControl lockedTask)
+    {
+        // rest task state of subtasks
+        StoredTask task = lockedTask.get();
+
+        TaskTree tree = new TaskTree(sm.getTaskRelations(task.getAttemptId()));
+        List<Long> childrenIdList = tree.getRecursiveChildrenIdList(task.getId());
+        lockedTask.copyInitialTasksForRetry(childrenIdList);
+
+        lockedTask.setGroupRetryReadyToPlanned();
+
+        return true;
     }
 
     public boolean taskFailed(int siteId, long taskId, String lockId, AgentId agentId,
@@ -998,7 +1016,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sub tasks: {}"+tasks);
-        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), true);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true);
         return Optional.of(rootTaskId);
     }
 
@@ -1020,7 +1038,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding error tasks: {}", tasks);
-        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
         return Optional.of(rootTaskId);
     }
 
@@ -1038,7 +1056,7 @@ public class WorkflowExecutor
 
         logger.trace("Adding check tasks: {}"+tasks);
         List<Long> upstreamTaskIdList = upstreamTaskId.transform(id -> ImmutableList.of(id)).or(ImmutableList.of());
-        long rootTaskId = lockedTask.addSubtasks(tasks, upstreamTaskIdList, false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, upstreamTaskIdList, false);
         return Optional.of(rootTaskId);
     }
 
@@ -1050,7 +1068,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding {} tasks: {}", type, tasks);
-        long rootTaskId = lockedTask.addSubtasks(tasks, ImmutableList.of(), false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
         return Optional.of(rootTaskId);
     }
 }

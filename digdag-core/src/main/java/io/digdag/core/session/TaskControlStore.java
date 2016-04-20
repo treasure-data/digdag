@@ -10,6 +10,8 @@ public interface TaskControlStore
 {
     long addSubtask(long attemptId, Task task);
 
+    boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
+
     StoredTask getTaskById(long taskId)
         throws ResourceNotFoundException;
 

@@ -20,8 +20,6 @@ public abstract class StoredTask
 
     public abstract List<Long> getUpstreams();  // list of task_id
 
-    public abstract TaskStateFlags getStateFlags();
-
     public abstract Instant getUpdatedAt();
 
     public abstract Optional<Instant> getRetryAt();

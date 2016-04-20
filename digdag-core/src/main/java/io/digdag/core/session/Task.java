@@ -19,6 +19,8 @@ public abstract class Task
 
     public abstract TaskStateCode getState();
 
+    public abstract TaskStateFlags getStateFlags();
+
     public static ImmutableTask.Builder taskBuilder()
     {
         return ImmutableTask.builder();

@@ -280,18 +280,6 @@ public class ProjectResource
             meta = renderedConfig.convert(ArchiveMetadata.class);
         }
 
-        // validate config
-        for (WorkflowDefinition def : meta.getWorkflowList().get()) {
-            try {
-                compiler.compile(def.getName(), def.getConfig());
-            }
-            catch (RuntimeException ex) {
-                throw new IllegalArgumentException(String.format(ENGLISH,
-                            "Workflow '%s' is invalid: %s",
-                            def.getName(), ex.getMessage()), ex);
-            }
-        }
-
         RestProject stored = rm.getProjectStore(getSiteId()).putAndLockProject(
                 Project.of(name),
                 (store, storedProject) -> {
