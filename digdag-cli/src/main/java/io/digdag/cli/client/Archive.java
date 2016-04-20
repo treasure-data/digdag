@@ -135,18 +135,18 @@ public class Archive
 
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
-        Path absoluteCurrentPath = Paths.get("").toAbsolutePath().normalize();
+        Path absoluteProjectPath = Paths.get(dagfilePath).toAbsolutePath().normalize().getParent();
 
         ProjectArchive project = projectLoader.loadProject(Paths.get(dagfilePath), overwriteParams);
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(new File(output)))))) {
-            project.listFiles(absoluteCurrentPath, relPath -> {
-                Path path = absoluteCurrentPath.resolve(relPath);
+            project.listFiles(absoluteProjectPath, relPath -> {
+                Path path = absoluteProjectPath.resolve(relPath);
                 if (!Files.isDirectory(path)) {
                     String name = relPath.toString();
                     System.out.println("  Archiving "+name);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(absoluteCurrentPath, path, name);
+                    TarArchiveEntry e = buildTarArchiveEntry(absoluteProjectPath, path, name);
                     tar.putArchiveEntry(e);
                     if (!e.isSymbolicLink()) {
                         try (InputStream in = Files.newInputStream(path)) {
