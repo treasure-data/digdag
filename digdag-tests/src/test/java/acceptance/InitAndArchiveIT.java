@@ -4,7 +4,6 @@ import com.google.common.io.ByteStreams;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,12 +15,13 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import static acceptance.BasicIT.main;
+import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class InitAndArchiveIT {
+public class InitAndArchiveIT
+{
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -29,13 +29,17 @@ public class InitAndArchiveIT {
     private Path archive;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp()
+            throws Exception
+    {
         project = folder.getRoot().toPath().resolve("foobar");
         archive = folder.getRoot().toPath().resolve("digdag.tar.gz");
     }
 
     @Test
-    public void archive() throws Exception {
+    public void archive()
+            throws Exception
+    {
         main("init", project.toString());
         main("archive",
                 "-f", project.resolve("digdag.yml").toString(),
@@ -50,7 +54,9 @@ public class InitAndArchiveIT {
         assertThat(entries, hasKey("foobar.yml"));
     }
 
-    private Map<String, byte[]> readEntries() throws IOException {
+    private Map<String, byte[]> readEntries()
+            throws IOException
+    {
         Map<String, byte[]> entries = new HashMap<>();
         try (TarArchiveInputStream s = new TarArchiveInputStream(
                 new GzipCompressorInputStream(Files.newInputStream(archive)))) {

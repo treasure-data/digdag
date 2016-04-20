@@ -7,21 +7,18 @@ import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
-import io.digdag.core.config.PropertyUtils;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.DateTimeException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -34,22 +31,19 @@ import static io.digdag.cli.SystemExitException.systemExit;
 import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
-    extends Command
+        extends Command
 {
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
 
-    @Parameter(names = {"-c", "--config"})
-    protected String configPath = null;
-
     @DynamicParameter(names = {"-H", "--header"})
     Map<String, String> httpHeaders = new HashMap<>();
 
     @Override
     public void main()
-        throws Exception
+            throws Exception
     {
         try {
             mainWithClientException();
@@ -64,23 +58,23 @@ public abstract class ClientCommand
                 body = ex.getMessage();
             }
             switch (res.getStatus()) {
-            case 404:  // NOT_FOUND
-                throw systemExit("Resource not found: " + body);
-            case 409:  // CONFLICT
-                throw systemExit("Request conflicted: " + body);
-            case 422:  // UNPROCESSABLE_ENTITY
-                throw systemExit("Invalid option: " + body);
-            default:
-                throw systemExit("Status code " + res.getStatus() + ": " + body);
+                case 404:  // NOT_FOUND
+                    throw systemExit("Resource not found: " + body);
+                case 409:  // CONFLICT
+                    throw systemExit("Request conflicted: " + body);
+                case 422:  // UNPROCESSABLE_ENTITY
+                    throw systemExit("Invalid option: " + body);
+                default:
+                    throw systemExit("Status code " + res.getStatus() + ": " + body);
             }
         }
     }
 
     public abstract void mainWithClientException()
-        throws Exception;
+            throws Exception;
 
     protected DigdagClient buildClient()
-        throws IOException, SystemExitException
+            throws IOException, SystemExitException
     {
         // load config file
         Properties props = loadSystemProperties();
@@ -95,14 +89,14 @@ public abstract class ClientCommand
         if (fragments.length == 2 && fragments[1].startsWith("//")) {
             // http:// or https://
             switch (fragments[0]) {
-            case "http":
-                useSsl = false;
-                break;
-            case "https":
-                useSsl = true;
-                break;
-            default:
-                throw systemExit("Endpoint must start with http:// or https://: " + endpoint);
+                case "http":
+                    useSsl = false;
+                    break;
+                case "https":
+                    useSsl = true;
+                    break;
+                default:
+                    throw systemExit("Endpoint must start with http:// or https://: " + endpoint);
             }
             fragments = fragments[1].substring(2).split(":", 2);
         }
@@ -127,35 +121,21 @@ public abstract class ClientCommand
         headers.putAll(this.httpHeaders);
 
         return DigdagClient.builder()
-            .host(host)
-            .port(port)
-            .ssl(useSsl)
-            .headers(headers)
-            .build();
-    }
-
-    @Override
-    protected Properties loadSystemProperties()
-        throws IOException
-    {
-        Properties props = super.loadSystemProperties();
-
-        if (configPath != null) {
-            props.putAll(PropertyUtils.loadFile(new File(configPath)));
-        }
-
-        return props;
+                .host(host)
+                .port(port)
+                .ssl(useSsl)
+                .headers(headers)
+                .build();
     }
 
     public static void showCommonOptions()
     {
         System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        System.err.println("    -c, --config PATH.properties     additional config file to overwrite ~/.digdag/config");
         Main.showCommonOptions();
     }
 
     public long parseLongOrUsage(String arg)
-        throws SystemExitException
+            throws SystemExitException
     {
         try {
             return Long.parseLong(args.get(0));
@@ -166,7 +146,7 @@ public abstract class ClientCommand
     }
 
     public int parseIntOrUsage(String arg)
-        throws SystemExitException
+            throws SystemExitException
     {
         try {
             return Integer.parseInt(args.get(0));
@@ -182,7 +162,7 @@ public abstract class ClientCommand
     }
 
     private static final DateTimeFormatter formatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
     public static String formatTime(Instant instant)
     {
@@ -213,14 +193,14 @@ public abstract class ClientCommand
     }
 
     private final DateTimeFormatter INSTANT_PARSER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
-        .withZone(ZoneId.systemDefault());
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
+                    .withZone(ZoneId.systemDefault());
 
     private static final DateTimeFormatter LOCAL_TIME_PARSER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
 
     protected Instant parseTime(String s, String errorMessage)
-        throws SystemExitException
+            throws SystemExitException
     {
         try {
             Instant i = Instant.ofEpochSecond(Long.parseLong(s));
@@ -237,7 +217,7 @@ public abstract class ClientCommand
     }
 
     protected LocalDateTime parseLocalTime(String s, String errorMessage)
-        throws SystemExitException
+            throws SystemExitException
     {
         TemporalAccessor parsed;
         try {
