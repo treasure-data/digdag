@@ -1,0 +1,7 @@
++clear:
+  sh>: echo "" > out
++doit:
+  _retry: 3
+  +task1:
+    sh>: echo try >> out && no-such-command
+

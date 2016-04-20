@@ -1,6 +1,7 @@
 package io.digdag.core.workflow;
 
 import java.util.*;
+import java.nio.file.Files;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -27,13 +28,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.workflow.WorkflowTestingUtils.*;
 import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
 
 public class WorkflowExecutorCasesTest
 {
     @Rule public ExpectedException exception = ExpectedException.none();
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     private DigdagEmbed embed;
 
@@ -72,6 +78,14 @@ public class WorkflowExecutorCasesTest
                 );
     }
 
+    @Test
+    public void retryOnGroupingTask()
+        throws Exception
+    {
+        runWorkflow("retry_on_group", loadYamlResource("/digdag/workflow/cases/retry_on_group.yml"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("\ntry\ntry\ntry\ntry\n"));
+    }
+
     private Config loadYamlResource(String name)
     {
         try {
@@ -94,7 +108,7 @@ public class WorkflowExecutorCasesTest
                     WorkflowDefinitionList.of(ImmutableList.of(
                             WorkflowFile.fromConfig(workflowName, ZoneId.of("UTC"), config).toWorkflowDefinition()
                             )),
-                    config.getFactory().create());
+                    config.getFactory().create().set("_workdir", folder.getRoot().toString()));
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                     "defualt",
                     "revision-" + UUID.randomUUID(),

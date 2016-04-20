@@ -6,9 +6,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class TaskStateFlags
 {
-    public static final int CANCEL_REQUESTED = 1;
-    public static final int DELAYED_ERROR = 2;
-    public static final int DELAYED_GROUP_ERROR = 4;
+    public static final int CANCEL_REQUESTED = 1 << 0;
+    public static final int DELAYED_ERROR = 1 << 1;
+    public static final int DELAYED_GROUP_ERROR = 1 << 2;
+    public static final int INITIAL_TASK = 1 << 3;
 
     @JsonCreator
     public static TaskStateFlags of(int flags)
@@ -29,7 +30,8 @@ public class TaskStateFlags
         int unknown = flags
             & ~CANCEL_REQUESTED
             & ~DELAYED_ERROR
-            & ~DELAYED_GROUP_ERROR;
+            & ~DELAYED_GROUP_ERROR
+            & ~INITIAL_TASK;
         checkArgument(unknown == 0, "Unknown TaskStateFlags is set");
         this.flags = flags;
     }
@@ -70,6 +72,16 @@ public class TaskStateFlags
         return (flags & DELAYED_GROUP_ERROR) != 0;
     }
 
+    public TaskStateFlags withInitialTask()
+    {
+        return TaskStateFlags.of(flags | INITIAL_TASK);
+    }
+
+    public boolean isInitialTask()
+    {
+        return (flags & INITIAL_TASK) != 0;
+    }
+
     @Override
     public int hashCode()
     {
@@ -101,6 +113,11 @@ public class TaskStateFlags
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("DELAYED_GROUP_ERROR");
+        }
+        else if (isInitialTask()) {
+            if (first) { first = false; }
+            else { sb.append(", "); }
+            sb.append("INITIAL_TASK");
         }
         return "TaskStateFlags{"+sb.toString()+"}";
     }

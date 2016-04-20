@@ -20,7 +20,11 @@ public enum TaskStateCode
     public static final short READY_CODE = (short) 1;
     public static final short RETRY_WAITING_CODE = (short) 2;
     public static final short GROUP_RETRY_WAITING_CODE = (short) 3;
+    public static final short RUNNING_CODE = (short) 4;
     public static final short PLANNED_CODE = (short) 5;
+    public static final short GROUP_RETRY_ERROR_CODE = (short) 6;
+    public static final short SUCCESS_CODE = (short) 7;
+    public static final short ERROR_CODE = (short) 8;
     public static final short CANCELED_CODE = (short) 9;
 
     // state:
