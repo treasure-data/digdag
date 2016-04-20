@@ -82,7 +82,9 @@ public class Server
         // parameters for ServerBootstrap
         Properties props = loadSystemProperties();
 
-        props.putAll(PropertyUtils.loadFile(new File(configPath)));
+        if (configPath != null) {
+            props.putAll(PropertyUtils.loadFile(new File(configPath)));
+        }
 
         // overwrite by command-line parameters
         if (database != null) {
