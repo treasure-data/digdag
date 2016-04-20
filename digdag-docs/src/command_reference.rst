@@ -48,11 +48,11 @@ Options:
   Example: -f tasks/another.yml
 
 :command:`-o, --save DIR`
-  Use this directory to read and write session status (default: digdag.status).
+  Use this directory to read and write session status (default: .digdag/status).
 
   Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.
 
-  Example: -o digdag.status
+  Example: -o .digdag/status
 
 :command:`-a, --rerun`
   Rerun all tasks even if the tasks successfully finished before. In other words, ignore files at ``-o, --save`` directory.

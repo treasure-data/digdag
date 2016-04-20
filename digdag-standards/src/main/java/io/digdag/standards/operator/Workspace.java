@@ -76,7 +76,7 @@ public class Workspace
     private synchronized Path getTempDir()
         throws IOException
     {
-        Path dir = path.resolve("digdag.tmp");
+        Path dir = path.resolve(".digdag/tmp");
         Files.createDirectories(dir);
         return dir;
     }

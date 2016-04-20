@@ -108,7 +108,7 @@ public class Run
     String runEnd = null;
 
     @Parameter(names = {"-o", "--save"})
-    String sessionStatusDir = "digdag.status";
+    String sessionStatusDir = ".digdag/status";
 
     @Parameter(names = {"--no-save"})
     boolean noSave = false;
@@ -198,18 +198,18 @@ public class Run
         System.err.println("Usage: digdag run [workflow][+task] [options...]");
         System.err.println("  Options:");
         System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -a, --rerun                      ignores status files saved at digdag.status and re-runs all tasks");
-        System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at digdag.status");
-        System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at digdag.status");
+        System.err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
+        System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at .digdag/status");
+        System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at .digdag/status");
         System.err.println("    -e, --end +NAME                  skips this task and its following tasks");
-        System.err.println("    -o, --save DIR                   uses this directory to read and write status files (default: digdag.status)");
-        System.err.println("        --no-save                    doesn't save status files at digdag.status");
+        System.err.println("    -o, --save DIR                   uses this directory to read and write status files (default: .digdag/status)");
+        System.err.println("        --no-save                    doesn't save status files at .digdag/status");
         System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         System.err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
         System.err.println("    -E, --show-params                show task parameters before running a task");
         System.err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
-        System.err.println("                                     (default: last, reuses the latest session time stored at digdag.status)");
+        System.err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
         Main.showCommonOptions();
         return systemExit(error);
     }
@@ -397,8 +397,8 @@ public class Run
         ZoneId timeZone = def.getTimeZone();
         Instant sessionTime = parseSessionTime(sessionString, Paths.get(sessionStatusDir), def.getName(), sr, timeZone);
 
-        // calculate ./digdag.status/<session_time> path.
-        // if sessionStatusDir is not set, use digdag.status.
+        // calculate ./.digdag/status/<session_time> path.
+        // if sessionStatusDir is not set, use .digdag/status.
         this.resumeStatePath = Paths.get(sessionStatusDir).resolve(
                 SESSION_STATE_TIME_DIRNAME_FORMATTER.withZone(timeZone).format(sessionTime)
                 );

@@ -167,7 +167,7 @@ public class DockerCommandExecutor
         logger.debug("Building image {}", buildImageName);
         try {
             // create Dockerfile
-            Path tmpPath = workspacePath.resolve("digdag.tmp");
+            Path tmpPath = workspacePath.resolve(".digdag/tmp");  // TODO this should not be workspacePath. This should go to a configured working directory
             Files.createDirectories(tmpPath);
             Path dockerFilePath = tmpPath.resolve("Dockerfile." + buildImageName);
 
