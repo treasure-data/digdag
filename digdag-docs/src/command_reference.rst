@@ -273,6 +273,7 @@ In the config file, following parameters are available
 * server.bind (ip address)
 * server.port (integer)
 * server.access-log.path (string. same with --access-log)
+* server.access-log.pattern (string, "json", "combined" or "common")
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)

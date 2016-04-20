@@ -25,8 +25,10 @@ import com.google.common.collect.ImmutableSet;
 import io.undertow.Undertow;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
+import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
@@ -143,11 +145,9 @@ public class ServerBootstrap
 
         HttpHandler handler;
         if (config.getAccessLogPath().isPresent()) {
-            System.out.println("accesslog: "+config.getAccessLogPath());
             handler = buildAccessLogHandler(config, path);
         }
         else {
-            System.out.println("accesslog - no: "+config.getAccessLogPath());
             handler = path;
         }
 
@@ -159,7 +159,7 @@ public class ServerBootstrap
         server.start();
     }
 
-    private static AccessLogHandler buildAccessLogHandler(ServerConfig config, HttpHandler nextHandler)
+    private static HttpHandler buildAccessLogHandler(ServerConfig config, HttpHandler nextHandler)
     {
         Path path = Paths.get(config.getAccessLogPath().get()).toAbsolutePath().normalize();
 
@@ -177,11 +177,20 @@ public class ServerBootstrap
                 .build()
                 );
 
-        return new AccessLogHandler(
-                nextHandler,
-                new DefaultAccessLogReceiver(logWriterExecutor, path.toFile(), "access", ".log"),
-                "%h %l %u %t \"%r\" %s %b",
-                ServerBootstrap.class.getClassLoader());
+        AccessLogReceiver logReceiver = new DefaultAccessLogReceiver(logWriterExecutor, path.toFile(), "access", ".log");
+
+        if (JsonLogFormatter.isJsonPattern(config.getAccessLogPattern())) {
+            return new AccessLogHandler(nextHandler, logReceiver,
+                    config.getAccessLogPattern(),  // this name is used by AccessLogHandler.toString
+                    JsonLogFormatter.buildExchangeAttribute(
+                        config.getAccessLogPattern(),
+                        ServerBootstrap.class.getClassLoader()));
+        }
+        else {
+            return new AccessLogHandler(nextHandler, logReceiver,
+                    config.getAccessLogPattern(),
+                    ServerBootstrap.class.getClassLoader());
+        }
     }
 
     private static class ServerControl
