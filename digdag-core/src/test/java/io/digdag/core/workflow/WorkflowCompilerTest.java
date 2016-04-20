@@ -60,4 +60,12 @@ public class WorkflowCompilerTest
         exception.expect(ConfigException.class);
         compiler.compile("multiple_operators", config);
     }
+
+    @Test
+    public void verifyUnusedKeysInGroupingTask()
+    {
+        Config config = loadYamlResource("/digdag/workflow/cases/unused_keys_in_group.yml");
+        exception.expect(ConfigException.class);
+        compiler.compile("unused_keys_in_group", config);
+    }
 }

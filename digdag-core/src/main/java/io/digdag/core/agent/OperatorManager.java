@@ -240,24 +240,11 @@ public class OperatorManager
     {
         for (String key : shouldBeUsedButNotUsedKeys) {
             logger.error("Parameter '{}' is not used at task {}.", key, request.getTaskName());
-            List<String> suggestions = getSuggestions(key, candidateKeys);
+            List<String> suggestions = EditDistance.suggest(key, candidateKeys, 0.50);
             if (!suggestions.isEmpty()) {
                 logger.error("  > Did you mean {}?", suggestions);
             }
         }
-    }
-
-    private List<String> getSuggestions(String key, List<String> candidateKeys)
-    {
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (String candidate : candidateKeys) {
-            int threshold = (int) Math.floor(candidate.length() * 0.50);
-            int editDistance = Levenshtein.distance(key, candidate);
-            if (editDistance <= threshold) {
-                builder.add(candidate);
-            }
-        }
-        return builder.build();
     }
 
     protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)

@@ -17,12 +17,12 @@ import io.digdag.client.config.ConfigException;
 
 public class WorkflowFile
 {
-    // name, timezone, _export, and others
     private static final String[] TOP_LEVEL_CONFIG = new String[] {
         "schedule",
         "sla",
         "_error",
         "_check",
+        "_retry",
         "_parallel",
     };
 
@@ -113,8 +113,6 @@ public class WorkflowFile
     public WorkflowDefinition toWorkflowDefinition()
     {
         Config config = tasks.getFactory().create();
-
-        config.set("timezone", timeZone);
 
         if (!topLevelExport.isEmpty()) {
             config.set("_export", topLevelExport);

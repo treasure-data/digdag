@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
@@ -12,10 +14,25 @@ import io.digdag.core.session.TaskType;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ModelValidator;
+import io.digdag.core.agent.EditDistance;
+import static java.util.Locale.ENGLISH;
 import static com.google.common.collect.Maps.immutableEntry;
 
 public class WorkflowCompiler
 {
+    private static final Set<String> GROUPING_TASK_CONFIG_KEYS = new HashSet<>(ImmutableList.of(
+        "timezone",
+        "schedule",
+        "sla",
+        "_parallel",
+        "_background",
+        "_after",
+        "_error",
+        "_check",
+        "_retry",
+        "_export"
+    ));
+
     public WorkflowCompiler()
     { }
 
@@ -168,12 +185,35 @@ public class WorkflowCompiler
                 // group node
                 TaskBuilder tb = addTask(parent, name, fullName, true, config);
 
-                // validation
+                // validate task names
                 subtaskConfigs
                     .stream()
                     .forEach(pair -> {
                         validator.checkRawTaskName("task name", pair.getKey());
                     });
+
+                // validate unused keys
+                List<String> unusedKeys = config.getKeys().stream()
+                    .filter(key -> !GROUPING_TASK_CONFIG_KEYS.contains(key))
+                    .collect(Collectors.toList());
+                if (!unusedKeys.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (String unusedKey : unusedKeys) {
+                        List<String> candidates = EditDistance.suggest(unusedKey, GROUPING_TASK_CONFIG_KEYS, 0.50);
+                        if (sb.length() > 0) {
+                            sb.append(", ");
+                        }
+                        if (candidates.isEmpty()) {
+                            sb.append(String.format(ENGLISH, "'%s'", unusedKey));
+                        }
+                        else {
+                            sb.append(String.format(ENGLISH,
+                                        "'%s' (did you mean %s?)",
+                                        unusedKey, candidates.toString()));
+                        }
+                    }
+                    validator.check(fullName, config, unusedKeys.isEmpty(), "contains invalid keys: " + sb.toString());
+                }
 
                 List<TaskBuilder> subtasks = subtaskConfigs
                     .stream()

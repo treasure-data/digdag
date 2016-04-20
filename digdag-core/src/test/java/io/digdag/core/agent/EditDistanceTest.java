@@ -13,7 +13,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static org.junit.Assert.*;
 
-public class LevenshteinTest
+public class EditDistanceTest
 {
     @Test
     public void testDistances()
@@ -30,7 +30,7 @@ public class LevenshteinTest
 
     private void assertDistance(int expected, String str1, String str2)
     {
-        assertEquals(expected, Levenshtein.distance(str1, str2));
-        assertEquals(expected, Levenshtein.distance(str2, str1));
+        assertEquals(expected, EditDistance.distance(str1, str2));
+        assertEquals(expected, EditDistance.distance(str2, str1));
     }
 }
