@@ -12,7 +12,7 @@ dependencies:
     - sudo apt-get -y install oracle-java8-set-default
     - mkdir -p ~/bin/
     - curl -u beta:workflow2016 -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
-    - curl chmod +x ~/bin/digdag
+    - chmod +x ~/bin/digdag
 
 test:
   override:
