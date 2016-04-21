@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.io.File;
 import com.google.inject.Injector;
-import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -13,7 +12,7 @@ import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.ConfigFactory;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Show
     extends Command

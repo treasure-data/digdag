@@ -10,7 +10,7 @@ import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
 import io.digdag.core.log.LogLevel;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowLog
     extends ClientCommand

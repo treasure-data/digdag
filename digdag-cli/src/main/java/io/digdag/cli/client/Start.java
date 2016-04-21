@@ -1,21 +1,17 @@
 package io.digdag.cli.client;
 
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.io.File;
+
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
@@ -26,10 +22,10 @@ import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
-import io.digdag.client.config.ConfigException;
+
 import static java.util.Locale.ENGLISH;
 import static io.digdag.cli.Arguments.loadParams;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Start
     extends ClientCommand

@@ -1,20 +1,8 @@
 package io.digdag.cli.client;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.UUID;
-import java.io.File;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Kill
     extends ClientCommand

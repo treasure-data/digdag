@@ -1,24 +1,21 @@
 package io.digdag.cli;
 
-import java.util.Properties;
 import java.io.File;
+import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import com.beust.jcommander.Parameter;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.server.ServerBootstrap;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 import static io.digdag.server.ServerConfig.DEFAULT_BIND;
 
 public class Server
     extends Command
 {
-    private static final Logger logger = LoggerFactory.getLogger(Server.class);
-
     @Parameter(names = {"-n", "--port"})
     Integer port = null;
 
@@ -44,6 +41,8 @@ public class Server
     public void main()
             throws Exception
     {
+        JvmUtil.validateJavaRuntime();
+
         if (args.size() != 0) {
             throw usage(null);
         }

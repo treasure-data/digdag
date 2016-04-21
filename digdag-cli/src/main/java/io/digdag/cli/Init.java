@@ -6,12 +6,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Init
     extends Command

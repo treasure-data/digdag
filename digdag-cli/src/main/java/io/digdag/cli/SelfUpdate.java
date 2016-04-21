@@ -11,15 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.client.Invocation;
 import com.google.common.io.ByteStreams;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import com.beust.jcommander.Parameter;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 

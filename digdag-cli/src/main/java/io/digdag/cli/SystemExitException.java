@@ -11,6 +11,16 @@ public class SystemExitException
         this.code = code;
     }
 
+    public static SystemExitException systemExit(String errorMessage)
+    {
+        if (errorMessage != null) {
+            return new SystemExitException(1, errorMessage);
+        }
+        else {
+            return new SystemExitException(0, null);
+        }
+    }
+
     public int getCode()
     {
         return code;

@@ -1,14 +1,14 @@
 package io.digdag.cli.client;
 
 import java.util.List;
-import com.beust.jcommander.Parameter;
+
 import javax.ws.rs.NotFoundException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestProject;
-import io.digdag.client.api.RestWorkflowDefinition;
-import static io.digdag.cli.Main.systemExit;
+
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowWorkflow
     extends ClientCommand
