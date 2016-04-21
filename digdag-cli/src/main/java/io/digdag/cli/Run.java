@@ -610,11 +610,11 @@ public class Run
         public OperatorManagerWithSkip(
                 AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
-                ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
+                WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<OperatorFactory> factories,
                 Run cmd, YamlMapper yamlMapper)
         {
-            super(config, agentId, callback, workspaceManager, configLoader, compiler, cf, evalEngine, factories);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTask;
@@ -42,7 +41,6 @@ public class OperatorManager
     protected final AgentId agentId;
     protected final TaskCallbackApi callback;
     private final WorkspaceManager workspaceManager;
-    private final ConfigLoaderManager configLoader;
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
@@ -54,14 +52,13 @@ public class OperatorManager
     @Inject
     public OperatorManager(AgentConfig config, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
-            ConfigLoaderManager configLoader, WorkflowCompiler compiler, ConfigFactory cf,
+            WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<OperatorFactory> factories)
     {
         this.config = config;
         this.agentId = agentId;
         this.callback = callback;
         this.workspaceManager = workspaceManager;
-        this.configLoader = configLoader;
         this.compiler = compiler;
         this.cf = cf;
         this.evalEngine = evalEngine;
