@@ -18,9 +18,5 @@ test:
   override:
     - digdag check
 
-deployment:
-  production:
-    branch: digdag-ci-poc
-    commands:
-      - digdag push digdag-ci-poc -X header.authorization="TD $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
-
+  post:
+    - digdag push digdag-ci-poc -X header.authorization="TD $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
