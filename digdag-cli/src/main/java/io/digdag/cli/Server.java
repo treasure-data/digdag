@@ -34,9 +34,6 @@ public class Server
     @Parameter(names = {"-A", "--access-log"})
     String accessLogPath = null;
 
-    @Parameter(names = {"-c", "--config"})
-    String configPath = null;
-
     @Override
     public void main()
             throws Exception
@@ -84,10 +81,6 @@ public class Server
     {
         // parameters for ServerBootstrap
         Properties props = loadSystemProperties();
-
-        if (configPath != null) {
-            props.putAll(PropertyUtils.loadFile(new File(configPath)));
-        }
 
         // overwrite by command-line parameters
         if (database != null) {

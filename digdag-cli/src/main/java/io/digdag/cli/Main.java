@@ -32,6 +32,8 @@ import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
+import static io.digdag.cli.Command.defaultConfigPath;
+
 public class Main
 {
     private static final String PROGRAM_NAME = "digdag";
@@ -264,6 +266,7 @@ public class Main
         System.err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         System.err.println("    -X KEY=VALUE                     add a performance system config");
+        System.err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath() + ")");
         System.err.println("");
     }
 }
