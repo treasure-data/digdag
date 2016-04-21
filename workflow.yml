@@ -1,0 +1,10 @@
+timezone: UTC
+
+_export:
+  database: sample_datasets
+
++query1:
+  td>: query1.sql
+
++query2:
+  td>: query2.sql

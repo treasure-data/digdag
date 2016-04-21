@@ -1,0 +1,20 @@
+machine:
+  timezone: UTC
+
+dependencies:
+  override:
+    - sudo apt-get -y update
+    - apt-get -y install software-properties-common apt-transport-https wget
+    - sudo add-apt-repository ppa:webupd8team/java
+    - echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+    - sudo apt-get -y update
+    - sudo apt-get -y install oracle-java8-installer
+    - sudo apt-get -y install oracle-java8-set-default
+    - mkdir ~/bin/
+    - curl -u beta:workflow2016 -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
+    - curl chmod +x ~/bin/digdag
+
+test:
+  override:
+    - ~/bin/digdag push digdag-ci-poc -X header.authorization="TD $TD_API_KEY"
+

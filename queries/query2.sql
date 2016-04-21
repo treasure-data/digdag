@@ -1,0 +1,1 @@
+SELECT count(*) FROM sample_datasets.www_access LIMIT 10;
