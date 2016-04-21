@@ -1,14 +1,12 @@
 package io.digdag.cli;
 
-import java.util.Properties;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.Properties;
 
-/**
- *
- */
-public class MainTest
+import static org.junit.Assert.fail;
+
+public class JvmUtilTest
 {
     @Test
     public void shouldCheckJavaVersion()
@@ -24,7 +22,7 @@ public class MainTest
     private static void assertJdkVersionValidationNotPass(String v)
     {
         try {
-            Main.validateJavaRuntime(newJdkProperties(v));
+            JvmUtil.validateJavaRuntime(newJdkProperties(v));
             fail();
         }
         catch (SystemExitException ex) {
@@ -34,7 +32,7 @@ public class MainTest
     private static void assertJdkVersionValidationPass(String v)
     {
         try {
-            Main.validateJavaRuntime(newJdkProperties(v));
+            JvmUtil.validateJavaRuntime(newJdkProperties(v));
         }
         catch (SystemExitException ex) {
             fail();

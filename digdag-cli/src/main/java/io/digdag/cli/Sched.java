@@ -1,11 +1,8 @@
 package io.digdag.cli;
 
 import java.util.Properties;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.time.ZoneId;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
@@ -14,12 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.beust.jcommander.Parameter;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
@@ -32,7 +26,7 @@ import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.NoopWorkspaceManager;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.cli.Arguments.loadParams;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Sched
     extends Server
@@ -58,6 +52,8 @@ public class Sched
     public void main()
             throws Exception
     {
+        JvmUtil.validateJavaRuntime();
+
         if (args.size() != 0) {
             throw usage(null);
         }

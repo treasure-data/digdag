@@ -1,39 +1,36 @@
 package io.digdag.cli;
 
-import java.util.Properties;
-import java.util.Map;
-import java.util.Date;
-import java.util.Set;
-import java.util.HashSet;
-import java.text.SimpleDateFormat;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.google.common.base.Throwables;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.beust.jcommander.MissingCommandException;
-import io.digdag.core.DigdagEmbed;
 import io.digdag.cli.client.Archive;
-import io.digdag.cli.client.Push;
-import io.digdag.cli.client.ShowSession;
-import io.digdag.cli.client.ShowAttempt;
-import io.digdag.cli.client.ShowTask;
-import io.digdag.cli.client.ShowWorkflow;
-import io.digdag.cli.client.ShowSchedule;
-import io.digdag.cli.client.ShowLog;
-import io.digdag.cli.client.Start;
-import io.digdag.cli.client.Retry;
-import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Kill;
+import io.digdag.cli.client.Push;
+import io.digdag.cli.client.Reschedule;
+import io.digdag.cli.client.Retry;
+import io.digdag.cli.client.ShowAttempt;
+import io.digdag.cli.client.ShowLog;
+import io.digdag.cli.client.ShowSchedule;
+import io.digdag.cli.client.ShowSession;
+import io.digdag.cli.client.ShowTask;
+import io.digdag.cli.client.ShowWorkflow;
+import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Upload;
+import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Main
 {
@@ -43,62 +40,6 @@ public class Main
     {
         @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
         boolean help;
-    }
-
-    static void validateJavaRuntime(Properties systemProps)
-        throws SystemExitException
-    {
-        String javaVmName = systemProps.getProperty("java.vm.name", "");
-        if (javaVmName.startsWith("OpenJDK") || javaVmName.startsWith("Java HotSpot")) {
-            // OpenJDK: OpenJDK 64-Bit Server VM
-            // Oracle JDK: Java HotSpot(TM) 64-Bit Server VM
-            // Android Dalvik: Dalvik
-            // Kaffe: Kaffe
-            String javaVersion = systemProps.getProperty("java.version", "");
-            validateOpenJdkVersion(javaVersion);
-        }
-        else {
-            System.err.println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Please OpenJDK instead.");
-        }
-    }
-
-    private static void validateOpenJdkVersion(String javaVersion)
-        throws SystemExitException
-    {
-        Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:_(\\d+))?").matcher(javaVersion);
-        if (m.find()) {
-            // OpenJDK: 1.8.0_73
-            int major = Integer.parseInt(m.group(1));
-            int minor = Integer.parseInt(m.group(2));
-            int revision = Integer.parseInt(m.group(3));
-            int update = m.group(4) == null ? 0 : Integer.parseInt(m.group(4));
-            if (major < 1) {
-                throw openJdkVersionCheckError(javaVersion);
-            }
-            else if (major == 1) {
-                if (minor < 8) {
-                    throw openJdkVersionCheckError(javaVersion);
-                }
-                else if (minor == 8) {
-                    if (revision < 0) {
-                        throw openJdkVersionCheckError(javaVersion);
-                    }
-                    else if (revision == 0) {
-                        if (update < 71) {
-                            throw openJdkVersionCheckError(javaVersion);
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            System.err.println("Unsupported java version syntax (" + javaVersion + "). Digdag may not work. Please use OpenJDK instead.");
-        }
-    }
-
-    private static SystemExitException openJdkVersionCheckError(String javaVersion)
-    {
-        return systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u71 (1.8.0_71).");
     }
 
     public static void main(String... args)
@@ -147,8 +88,6 @@ public class Main
         jc.addCommand("selfupdate", new SelfUpdate());
 
         try {
-            validateJavaRuntime(System.getProperties());
-
             try {
                 jc.parse(args);
             }
@@ -170,10 +109,7 @@ public class Main
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                command = Run.asImplicit();
-                jc = new JCommander(command);
-                jc.setProgramName(PROGRAM_NAME);
-                jc.parse(args);
+                throw usage(null);
             }
 
             processCommonOptions(command);
@@ -329,15 +265,5 @@ public class Main
         System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         System.err.println("    -X KEY=VALUE                     add a performance system config");
         System.err.println("");
-    }
-
-    public static SystemExitException systemExit(String errorMessage)
-    {
-        if (errorMessage != null) {
-            return new SystemExitException(1, errorMessage);
-        }
-        else {
-            return new SystemExitException(0, null);
-        }
     }
 }

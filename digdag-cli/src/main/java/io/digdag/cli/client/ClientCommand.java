@@ -1,11 +1,20 @@
 package io.digdag.cli.client;
 
-import java.util.Properties;
-import java.util.Map;
-import java.util.HashMap;
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import io.digdag.cli.Command;
+import io.digdag.cli.Main;
+import io.digdag.cli.SystemExitException;
+import io.digdag.cli.YamlMapper;
+import io.digdag.client.DigdagClient;
+import io.digdag.core.config.PropertyUtils;
+
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.core.Response;
+
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -13,22 +22,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
-import java.time.format.DateTimeParseException;
-import java.time.format.DateTimeFormatter;
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.core.Response;
-import com.google.common.base.Optional;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import io.digdag.cli.Main;
-import io.digdag.cli.Command;
-import io.digdag.cli.SystemExitException;
-import io.digdag.cli.YamlMapper;
-import io.digdag.core.config.PropertyUtils;
-import io.digdag.client.DigdagClient;
-import static io.digdag.cli.Main.systemExit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import static io.digdag.cli.SystemExitException.systemExit;
 import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand

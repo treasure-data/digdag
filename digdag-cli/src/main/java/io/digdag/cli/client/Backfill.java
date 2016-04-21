@@ -1,18 +1,14 @@
 package io.digdag.cli.client;
 
-import java.util.Date;
 import java.util.List;
 import java.time.Instant;
-import java.io.File;
-import com.google.inject.Injector;
-import com.google.inject.Scopes;
-import com.google.common.base.Optional;
+
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Backfill
     extends ClientCommand

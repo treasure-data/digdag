@@ -5,10 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.EnumSet;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -19,7 +17,6 @@ import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,12 +30,10 @@ import com.google.common.base.Optional;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
@@ -48,11 +43,8 @@ import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskRelation;
@@ -82,7 +74,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Arguments.loadParams;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static java.util.Locale.ENGLISH;
 
 public class Run
@@ -135,28 +127,16 @@ public class Run
     @Parameter(names = {"-dE"})
     boolean dryRunAndShowParams = false;
 
-    private boolean runAsImplicit = false;
-
     private Path resumeStatePath;
-
-    // used by Main
-    static Run asImplicit()
-    {
-        Run command = new Run();
-        command.runAsImplicit = true;
-        return command;
-    }
 
     @Override
     public void main()
             throws Exception
     {
+        JvmUtil.validateJavaRuntime();
+
         if (dryRunAndShowParams) {
             dryRun = showParams = true;
-        }
-
-        if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
-            throw Main.usage(null);
         }
 
         if (dagfilePath == null) {

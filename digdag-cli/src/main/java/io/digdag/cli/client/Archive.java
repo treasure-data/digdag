@@ -1,31 +1,19 @@
 package io.digdag.cli.client;
 
-import java.util.List;
 import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.stream.Collectors;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileOutputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.time.ZoneId;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.Files;
-import java.nio.file.FileSystems;
 import java.nio.charset.StandardCharsets;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
@@ -37,7 +25,6 @@ import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.cli.Command;
 import io.digdag.cli.Run;
@@ -48,7 +35,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
-import static io.digdag.cli.Main.systemExit;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.cli.Arguments.loadParams;
 
 public class Archive
