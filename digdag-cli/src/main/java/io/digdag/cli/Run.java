@@ -127,17 +127,7 @@ public class Run
     @Parameter(names = {"-dE"})
     boolean dryRunAndShowParams = false;
 
-    private boolean runAsImplicit = false;
-
     private Path resumeStatePath;
-
-    // used by Main
-    static Run asImplicit()
-    {
-        Run command = new Run();
-        command.runAsImplicit = true;
-        return command;
-    }
 
     @Override
     public void main()
@@ -147,10 +137,6 @@ public class Run
 
         if (dryRunAndShowParams) {
             dryRun = showParams = true;
-        }
-
-        if (runAsImplicit && args.isEmpty() && dagfilePath == null) {
-            throw Main.usage(null);
         }
 
         if (dagfilePath == null) {

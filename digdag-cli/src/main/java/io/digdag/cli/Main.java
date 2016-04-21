@@ -109,10 +109,7 @@ public class Main
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                command = Run.asImplicit();
-                jc = new JCommander(command);
-                jc.setProgramName(PROGRAM_NAME);
-                jc.parse(args);
+                throw usage(null);
             }
 
             processCommonOptions(command);
