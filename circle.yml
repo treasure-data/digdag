@@ -19,4 +19,4 @@ test:
     - digdag check
 
   post:
-    - digdag push digdag-ci-poc -X header.authorization="TD $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
+    - digdag push digdag-ci-poc -e https://api-workflow.treasuredata.com -X header.authorization="TD $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
