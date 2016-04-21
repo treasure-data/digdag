@@ -2,6 +2,8 @@ package io.digdag.cli.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
@@ -13,6 +15,11 @@ public class Upload
 {
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
+
+    public Upload(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
 
     @Override
     public void mainWithClientException()
@@ -29,11 +36,11 @@ public class Upload
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag upload <path.tar.gz> <project>");
-        System.err.println("  Options:");
-        System.err.println("    -r, --revision REVISION          revision name");
-        //System.err.println("        --time-revision              use current time as the revision name");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag upload <path.tar.gz> <project>");
+        err.println("  Options:");
+        err.println("    -r, --revision REVISION          revision name");
+        //err.println("        --time-revision              use current time as the revision name");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -45,7 +52,7 @@ public class Upload
         showUploadedProject(proj);
     }
 
-    static void showUploadedProject(RestProject proj)
+    void showUploadedProject(RestProject proj)
     {
         ln("Uploaded:");
         ln("  id: %d", proj.getId());

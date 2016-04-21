@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.time.Instant;
 
@@ -25,6 +26,11 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Backfill(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -39,12 +45,12 @@ public class Backfill
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag backfill <schedule-id>");
-        System.err.println("  Options:");
-        System.err.println("    -f, --from 'yyyy-MM-dd HH:mm:ss Z'  timestamp to start backfill from (required)");
-        System.err.println("    -R, --attempt-name NAME          retry attempt name (required)");
-        System.err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag backfill <schedule-id>");
+        err.println("  Options:");
+        err.println("    -f, --from 'yyyy-MM-dd HH:mm:ss Z'  timestamp to start backfill from (required)");
+        err.println("    -R, --attempt-name NAME          retry attempt name (required)");
+        err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -75,11 +81,11 @@ public class Backfill
         }
 
         if (dryRun || attempts.isEmpty()) {
-            System.err.println("No session attempts started.");
+            err.println("No session attempts started.");
         }
         else {
-            System.err.println("Backfill session attempts started.");
-            System.err.println("Use `digdag sessions` to show the session attempts.");
+            err.println("Backfill session attempts started.");
+            err.println("Use `digdag sessions` to show the session attempts.");
         }
     }
 }

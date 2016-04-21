@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
@@ -48,6 +49,11 @@ public class Start
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Start(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -63,21 +69,21 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag start <project-name> <name>");
-        System.err.println("  Options:");
-        System.err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
-        System.err.println("        --revision <name>            use a past revision");
-        System.err.println("        --retry NAME                 set retry attempt name to a new session");
-        System.err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
-        System.err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
-        ClientCommand.showCommonOptions();
-        System.err.println("");
-        System.err.println("  Examples:");
-        System.err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 -07:00\"");
-        System.err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
-        System.err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
-        System.err.println("");
+        err.println("Usage: digdag start <project-name> <name>");
+        err.println("  Options:");
+        err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
+        err.println("        --revision <name>            use a past revision");
+        err.println("        --retry NAME                 set retry attempt name to a new session");
+        err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
+        err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
+        showCommonOptions();
+        err.println("");
+        err.println("  Examples:");
+        err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 -07:00\"");
+        err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
+        err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
+        err.println("");
         return systemExit(error);
     }
 
@@ -158,7 +164,7 @@ public class Start
             //ln("  created at: (dry run)");
             ln("");
 
-            System.err.println("Session attempt is not started.");
+            err.println("Session attempt is not started.");
         }
         else {
             RestSessionAttempt newAttempt = client.startSessionAttempt(request);
@@ -174,8 +180,8 @@ public class Start
             ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
             ln("");
 
-            System.err.println("* Use `digdag sessions` to list session attempts.");
-            System.err.println(String.format(ENGLISH,
+            err.println("* Use `digdag sessions` to list session attempts.");
+            err.println(String.format(ENGLISH,
                         "* Use `digdag task %d` and `digdag log %d` to show status.",
                         newAttempt.getId(), newAttempt.getId()));
         }

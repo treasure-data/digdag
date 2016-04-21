@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.time.Instant;
 
 import com.google.common.base.Optional;
@@ -25,6 +26,11 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Reschedule(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -45,13 +51,13 @@ public class Reschedule
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag reschedule <schedule-id>");
-        System.err.println("  Options:");
-        System.err.println("    -s, --skip N                     skips specified number of schedules from now");
-        System.err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
-        System.err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
-        System.err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag reschedule <schedule-id>");
+        err.println("  Options:");
+        err.println("    -s, --skip N                     skips specified number of schedules from now");
+        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
+        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
+        err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -87,10 +93,10 @@ public class Reschedule
         ln("");
 
         if (dryRun) {
-            System.err.println("Schedule is not updated.");
+            err.println("Schedule is not updated.");
         }
         else {
-            System.err.println("Use `digdag schedules` to show schedules.");
+            err.println("Use `digdag schedules` to show schedules.");
         }
     }
 }

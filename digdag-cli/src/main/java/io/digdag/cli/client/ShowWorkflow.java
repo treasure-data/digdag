@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.List;
 
 import javax.ws.rs.NotFoundException;
@@ -13,6 +14,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
+    public ShowWorkflow(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -34,8 +40,8 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag workflows [project-name] [name]");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag workflows [project-name] [name]");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -65,7 +71,7 @@ public class ShowWorkflow
             }
         }
         ln("");
-        System.err.println("Use `digdag workflows <project-name> <name>` to show details.");
+        err.println("Use `digdag workflows <project-name> <name>` to show details.");
     }
 
     public void showWorkflowDetails(String projName, String defName)

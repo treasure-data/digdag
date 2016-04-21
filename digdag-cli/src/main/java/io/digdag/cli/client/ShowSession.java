@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.List;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
@@ -14,6 +15,11 @@ public class ShowSession
 {
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
+
+    public ShowSession(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
 
     // ShowAttempt overrides this method
     protected boolean includeRetries()
@@ -43,10 +49,10 @@ public class ShowSession
     public SystemExitException usage(String error)
     {
         String commandName = includeRetries() ? "attempts" : "sessions";
-        System.err.println("Usage: digdag " + commandName + " [project-name] [workflow-name]");
-        System.err.println("  Options:");
-        System.err.println("    -i, --last-id ID                 shows more session attempts from this id");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag " + commandName + " [project-name] [workflow-name]");
+        err.println("  Options:");
+        err.println("    -i, --last-id ID                 shows more session attempts from this id");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -97,10 +103,10 @@ public class ShowSession
         }
 
         if (attempts.isEmpty()) {
-            System.err.println("Use `digdag start` to start a session.");
+            err.println("Use `digdag start` to start a session.");
         }
         else if (includeRetries() == false) {
-            System.err.println("Use `digdag attempts` to show retried attempts.");
+            err.println("Use `digdag attempts` to show retried attempts.");
         }
     }
 }

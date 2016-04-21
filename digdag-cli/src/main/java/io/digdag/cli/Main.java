@@ -22,8 +22,10 @@ import io.digdag.cli.client.ShowTask;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Upload;
+import io.digdag.cli.client.Version;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -33,10 +35,20 @@ import java.util.Set;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 import static io.digdag.cli.Command.defaultConfigPath;
+import static io.digdag.core.Version.version;
 
 public class Main
 {
     private static final String PROGRAM_NAME = "digdag";
+
+    private final PrintStream out;
+    private final PrintStream err;
+
+    public Main(PrintStream out, PrintStream err)
+    {
+        this.out = out;
+        this.err = err;
+    }
 
     public static class MainOptions
     {
@@ -46,7 +58,7 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main().cli(args);
+        int code = new Main(System.out, System.err).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -55,46 +67,47 @@ public class Main
     public int cli(String... args)
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            System.out.println("0.7.0-SNAPSHOT");
+            out.println(version());
             return 0;
         }
-        System.err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.7.0-SNAPSHOT");
+        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.7.0-SNAPSHOT");
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init(), "new");
-        jc.addCommand("run", new Run(), "r");
-        jc.addCommand("check", new Check(), "c");
-        jc.addCommand("scheduler", new Sched(), "sched");
+        jc.addCommand("init", new Init(out, err), "new");
+        jc.addCommand("run", new Run(out, err), "r");
+        jc.addCommand("check", new Check(out, err), "c");
+        jc.addCommand("scheduler", new Sched(out, err), "sched");
 
-        jc.addCommand("server", new Server());
+        jc.addCommand("server", new Server(out, err));
 
-        jc.addCommand("push", new Push());
-        jc.addCommand("archive", new Archive());
-        jc.addCommand("upload", new Upload());
+        jc.addCommand("push", new Push(out, err));
+        jc.addCommand("archive", new Archive(out, err));
+        jc.addCommand("upload", new Upload(out, err));
 
-        jc.addCommand("workflow", new ShowWorkflow(), "workflows");
-        jc.addCommand("start", new Start());
-        jc.addCommand("retry", new Retry());
-        jc.addCommand("session", new ShowSession(), "sessions");
-        jc.addCommand("atteempt", new ShowAttempt(), "attempts");
-        jc.addCommand("reschedule", new Reschedule());
-        jc.addCommand("backfill", new Backfill());
-        jc.addCommand("log", new ShowLog(), "logs");
-        jc.addCommand("kill", new Kill());
-        jc.addCommand("task", new ShowTask(), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(), "schedules");
+        jc.addCommand("workflow", new ShowWorkflow(out, err), "workflows");
+        jc.addCommand("start", new Start(out, err));
+        jc.addCommand("retry", new Retry(out, err));
+        jc.addCommand("session", new ShowSession(out, err), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(out, err), "attempts");
+        jc.addCommand("reschedule", new Reschedule(out, err));
+        jc.addCommand("backfill", new Backfill(out, err));
+        jc.addCommand("log", new ShowLog(out, err), "logs");
+        jc.addCommand("kill", new Kill(out, err));
+        jc.addCommand("task", new ShowTask(out, err), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(out, err), "schedules");
+        jc.addCommand("version", new Version(out, err), "version");
 
-        jc.addCommand("selfupdate", new SelfUpdate());
+        jc.addCommand("selfupdate", new SelfUpdate(out, err));
 
         try {
             try {
                 jc.parse(args);
             }
             catch (MissingCommandException ex) {
-                throw usage("available commands are: "+jc.getCommands().keySet());
+                throw usage(err, "available commands are: "+jc.getCommands().keySet());
             }
             catch (ParameterException ex) {
                 if (getParsedCommand(jc) == null) {
@@ -106,31 +119,31 @@ public class Main
             }
 
             if (mainOpts.help) {
-                throw usage(null);
+                throw usage(err, null);
             }
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                throw usage(null);
+                throw usage(err, null);
             }
 
-            processCommonOptions(command);
+            processCommonOptions(err, command);
 
             command.main();
             return 0;
         }
         catch (ParameterException ex) {
-            System.err.println("error: " + ex.getMessage());
+            err.println("error: " + ex.getMessage());
             return 1;
         }
         catch (SystemExitException ex) {
             if (ex.getMessage() != null) {
-                System.err.println("error: " + ex.getMessage());
+                err.println("error: " + ex.getMessage());
             }
             return ex.getCode();
         }
         catch (Exception ex) {
-            System.err.println("error: " + formatException(ex));
+            err.println("error: " + formatException(ex));
             return 1;
         }
     }
@@ -168,7 +181,7 @@ public class Main
         return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    private static void processCommonOptions(Command command)
+    private static void processCommonOptions(PrintStream err, Command command)
             throws SystemExitException
     {
         if (command.help) {
@@ -183,7 +196,7 @@ public class Main
         case "trace":
             break;
         default:
-            throw usage("Unknown log level '"+command.logLevel+"'");
+            throw usage(err, "Unknown log level '"+command.logLevel+"'");
         }
 
         configureLogging(command.logLevel, command.logPath);
@@ -223,37 +236,38 @@ public class Main
     }
 
     // called also by Run
-    static SystemExitException usage(String error)
+    static SystemExitException usage(PrintStream err, String error)
     {
-        System.err.println("Usage: digdag <command> [options...]");
-        System.err.println("  Local-mode commands:");
-        System.err.println("    new <path>                       create a new workflow project");
-        System.err.println("    r[un] [name]                     run a workflow");
-        System.err.println("    c[heck]                          show workflow definitions");
-        System.err.println("    sched[uler]                      run a scheduler server");
-        System.err.println("    selfupdate                       update digdag to the latest version");
-        System.err.println("");
-        System.err.println("  Server-mode commands:");
-        System.err.println("    server                           start digdag server");
-        System.err.println("");
-        System.err.println("  Client-mode commands:");
-        System.err.println("    push <project-name>              create and upload a new revision");
-        System.err.println("    start <project-name> <name>      start a new session attempt of a workflow");
-        System.err.println("    retry <attempt-id>               retry a session");
-        System.err.println("    kill <attempt-id>                kill a running session attempt");
-        System.err.println("    backfill                         start sessions of a schedule for past times");
-        System.err.println("    reschedule                       skip sessions of a schedule to a future time");
-        System.err.println("    log <attempt-id>                 show logs of a session attempt");
-        System.err.println("    workflows [project-name] [name]  show registered workflow definitions");
-        System.err.println("    schedules                        show registered schedules");
-        System.err.println("    sessions [project-name] [name]   show past and current sessions");
-        System.err.println("    attempts [project-name] [name]   show past and current session attempts");
-        System.err.println("    tasks <attempt-id>               show tasks of a session attempt");
-        System.err.println("");
-        System.err.println("  Options:");
-        showCommonOptions();
+        err.println("Usage: digdag <command> [options...]");
+        err.println("  Local-mode commands:");
+        err.println("    new <path>                       create a new workflow project");
+        err.println("    r[un] [name]                     run a workflow");
+        err.println("    c[heck]                          show workflow definitions");
+        err.println("    sched[uler]                      run a scheduler server");
+        err.println("    selfupdate                       update digdag to the latest version");
+        err.println("");
+        err.println("  Server-mode commands:");
+        err.println("    server                           start digdag server");
+        err.println("");
+        err.println("  Client-mode commands:");
+        err.println("    push <project-name>              create and upload a new revision");
+        err.println("    start <project-name> <name>      start a new session attempt of a workflow");
+        err.println("    retry <attempt-id>               retry a session");
+        err.println("    kill <attempt-id>                kill a running session attempt");
+        err.println("    backfill                         start sessions of a schedule for past times");
+        err.println("    reschedule                       skip sessions of a schedule to a future time");
+        err.println("    log <attempt-id>                 show logs of a session attempt");
+        err.println("    workflows [project-name] [name]  show registered workflow definitions");
+        err.println("    schedules                        show registered schedules");
+        err.println("    sessions [project-name] [name]   show past and current sessions");
+        err.println("    attempts [project-name] [name]   show past and current session attempts");
+        err.println("    tasks <attempt-id>               show tasks of a session attempt");
+        err.println("    version                          show client and server version");
+        err.println("");
+        err.println("  Options:");
+        showCommonOptions(err);
         if (error == null) {
-            System.err.println("Use `<command> --help` to see detailed usage of a command.");
+            err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
         }
         else {
@@ -261,12 +275,12 @@ public class Main
         }
     }
 
-    public static void showCommonOptions()
+    public static void showCommonOptions(PrintStream err)
     {
-        System.err.println("    -L, --log PATH                   output log messages to a file (default: -)");
-        System.err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
-        System.err.println("    -X KEY=VALUE                     add a performance system config");
-        System.err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath() + ")");
-        System.err.println("");
+        err.println("    -L, --log PATH                   output log messages to a file (default: -)");
+        err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
+        err.println("    -X KEY=VALUE                     add a performance system config");
+        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath() + ")");
+        err.println("");
     }
 }

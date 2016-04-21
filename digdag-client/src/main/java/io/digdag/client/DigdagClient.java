@@ -1,38 +1,50 @@
 package io.digdag.client;
 
-import java.util.List;
-import java.util.Date;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.security.Key;
-import java.io.File;
-import java.io.InputStream;
-import java.io.IOException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
-import com.google.common.base.Optional;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.databind.InjectableValues;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.crypto.MacProvider;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.common.base.Optional;
+import io.digdag.client.api.JacksonTimeModule;
+import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestRevision;
+import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleSkipRequest;
+import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestTask;
+import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowSessionTime;
+import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.api.*;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import static java.util.Locale.ENGLISH;
 
 public class DigdagClient
@@ -449,6 +461,12 @@ public class DigdagClient
                     .build(),
                 target("/api/schedules/{id}/backfill")
                 .resolveTemplate("id", scheduleId));
+    }
+
+    public Map<String, Object> getVersion()
+    {
+        return doGet(new GenericType<Map<String, Object>>() {},
+                target("/api/version"));
     }
 
     private WebTarget target(String path)
