@@ -83,7 +83,7 @@ public class WorkflowExecutorCasesTest
         throws Exception
     {
         runWorkflow("retry_on_group", loadYamlResource("/digdag/workflow/cases/retry_on_group.yml"));
-        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("\ntry\ntry\ntry\ntry\n"));
+        assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("trytrytrytry"));
     }
 
     private Config loadYamlResource(String name)

@@ -1,7 +1,11 @@
-+clear:
-  sh>: echo "" > out
++first:
+  echo>: ""
+  append_file: out
 +doit:
   _retry: 3
   +task1:
-    sh>: echo try >> out && no-such-command
+    echo>: "try"
+    append_file: out
+  +task2:
+    fail>: task failed expectedly
 

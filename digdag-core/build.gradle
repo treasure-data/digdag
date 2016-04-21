@@ -3,7 +3,6 @@ dependencies {
     compile project(':digdag-spi')
     compile project(':digdag-client')
     compile project(':digdag-plugin-utils')
-    testCompile project(':digdag-standards')
 
     compile 'com.google.inject.extensions:guice-multibindings:4.0'
     compile 'org.embulk:guice-bootstrap:0.1.0'

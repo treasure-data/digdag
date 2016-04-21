@@ -1,2 +1,2 @@
 +step1:
-  sh>: echo hello world
+  echo>: hello world

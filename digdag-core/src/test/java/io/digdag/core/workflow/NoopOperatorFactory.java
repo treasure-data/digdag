@@ -20,7 +20,7 @@ public class NoopOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path archivePath, TaskRequest request)
+    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
         return new NoopOperator(request);
     }
