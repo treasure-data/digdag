@@ -156,6 +156,11 @@ project(':digdag-cli') {
             exclude(dependency("org.immutables:value"))
             exclude(dependency("org.immutables:builder"))
         }
+        mergeServiceFiles {
+            // this block is necessary to merge META-INF/services/* files.
+            // undertow is using ServiceLoader to find ExchangeAttributeBuilder
+            // which is used by access logger.
+        }
     }
 
     task classpath(type: Copy, dependsOn: ['jar']) {
