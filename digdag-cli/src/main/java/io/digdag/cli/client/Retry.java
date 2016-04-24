@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -45,6 +46,11 @@ public class Retry
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
+    public Retry(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -83,16 +89,16 @@ public class Retry
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag restart <attempt-id>");
-        System.err.println("  Options:");
-        System.err.println("        --name <name>                unique identifier of this retry attempt");
-        System.err.println("        --latest-revision            use the latest revision");
-        System.err.println("        --keep-revision              keep the same revision");
-        System.err.println("        --revision <name>            use a specific revision");
-        System.err.println("        --all                        retry all tasks");
-        System.err.println("        --resume                     retry failed tasks, canceled tasks and _error tasks (not implemented yet)");
-        System.err.println("        --from <+name>               retry tasks after a specific task (not implemented yet)");
-        System.err.println("");
+        err.println("Usage: digdag restart <attempt-id>");
+        err.println("  Options:");
+        err.println("        --name <name>                unique identifier of this retry attempt");
+        err.println("        --latest-revision            use the latest revision");
+        err.println("        --keep-revision              keep the same revision");
+        err.println("        --revision <name>            use a specific revision");
+        err.println("        --all                        retry all tasks");
+        err.println("        --resume                     retry failed tasks, canceled tasks and _error tasks (not implemented yet)");
+        err.println("        --from <+name>               retry tasks after a specific task (not implemented yet)");
+        err.println("");
         return systemExit(error);
     }
 
@@ -145,8 +151,8 @@ public class Retry
         ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        System.err.println("* Use `digdag attempts` to list attempts.");
-        System.err.println(String.format(ENGLISH,
+        err.println("* Use `digdag attempts` to list attempts.");
+        err.println(String.format(ENGLISH,
                     "* Use `digdag task %d` and `digdag log %d` to show status.",
                     newAttempt.getId(), newAttempt.getId()));
     }

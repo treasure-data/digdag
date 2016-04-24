@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.File;
@@ -27,6 +28,11 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
+    public Push(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -42,14 +48,14 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag push <project> -r <revision>");
-        System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
-        System.err.println("    -r, --revision REVISION          revision name");
-        System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        //System.err.println("        --time-revision              use current time as the revision name");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag push <project> -r <revision>");
+        err.println("  Options:");
+        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
+        err.println("    -r, --revision REVISION          revision name");
+        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        //err.println("        --time-revision              use current time as the revision name");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -58,10 +64,10 @@ public class Push
     {
         String path = "digdag.archive.tar.gz";
         new File(path).deleteOnExit();
-        Archive.archive(dagfilePath, params, paramsFile, path);
+        new Archive(out, err).archive(dagfilePath, params, paramsFile, path);
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
-        Upload.showUploadedProject(proj);
+        new Upload(out, err).showUploadedProject(proj);
     }
 }

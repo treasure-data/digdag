@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.io.File;
@@ -22,6 +23,11 @@ public class Show
 
     // TODO support -p option? for jinja template rendering
 
+    public Show(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -35,10 +41,10 @@ public class Show
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag show <digdag.yml> [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
-        Main.showCommonOptions();
+        err.println("Usage: digdag show <digdag.yml> [options...]");
+        err.println("  Options:");
+        err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 
@@ -74,10 +80,10 @@ public class Show
     }
 
     // used also by Run.run
-    static void show(List<WorkflowVisualizerNode> nodes, File path)
+    void show(List<WorkflowVisualizerNode> nodes, File path)
             throws InterruptedException
     {
         new GraphvizWorkflowVisualizer().visualize(nodes, path);
-        System.err.println("Stored PNG file at '"+path+"'");
+        err.println("Stored PNG file at '"+path+"'");
     }
 }

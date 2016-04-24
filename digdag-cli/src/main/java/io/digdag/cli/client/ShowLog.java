@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.io.IOException;
 import com.google.common.base.Optional;
@@ -21,6 +22,11 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
+    public ShowLog(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -39,11 +45,11 @@ public class ShowLog
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag log <attempt-id> [+task name prefix]");
-        System.err.println("    -v, --verbose                    show debug logs");
-        System.err.println("    -f, --follow                     show new logs until attempt or task finishes");
-        System.err.println("  Options:");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag log <attempt-id> [+task name prefix]");
+        err.println("    -v, --verbose                    show debug logs");
+        err.println("    -f, --follow                     show new logs until attempt or task finishes");
+        err.println("  Options:");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -52,7 +58,8 @@ public class ShowLog
     {
         DigdagClient client = buildClient();
 
-        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, verbose ? null : LogLevel.INFO);
+        LogLevel level = verbose ? null : LogLevel.INFO;
+        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, level, out);
 
         update(client, watcher, attemptId, taskName);
 

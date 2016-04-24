@@ -1,6 +1,7 @@
 package io.digdag.cli;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.Map;
@@ -20,6 +21,9 @@ public abstract class Command
 {
     private static final Logger log = LoggerFactory.getLogger(Command.class);
 
+    protected final PrintStream out;
+    protected final PrintStream err;
+
     @Parameter()
     protected List<String> args = new ArrayList<>();
 
@@ -37,6 +41,12 @@ public abstract class Command
 
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
+
+    protected Command(PrintStream out, PrintStream err)
+    {
+        this.out = out;
+        this.err = err;
+    }
 
     public abstract void main() throws Exception;
 

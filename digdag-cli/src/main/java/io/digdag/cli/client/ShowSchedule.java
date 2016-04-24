@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.time.Instant;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
@@ -9,6 +10,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowSchedule
     extends ClientCommand
 {
+    public ShowSchedule(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -24,9 +30,9 @@ public class ShowSchedule
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag schedules");
-        System.err.println("  Options:");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag schedules");
+        err.println("  Options:");
+        showCommonOptions();
         return systemExit(error);
     }
 
@@ -48,6 +54,6 @@ public class ShowSchedule
             count++;
         }
         ln("%d entries.", count);
-        System.err.println("Use `digdag workflows [project-name] [workflow-name]` to show workflow details.");
+        err.println("Use `digdag workflows [project-name] [workflow-name]` to show workflow details.");
     }
 }

@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
@@ -53,6 +54,11 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
+    public Archive(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -66,19 +72,19 @@ public class Archive
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag archive [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
-        System.err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
-        Main.showCommonOptions();
+        err.println("Usage: digdag archive [options...]");
+        err.println("  Options:");
+        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
+        err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 
     // used by Push.push
-    static void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
+    void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
         throws IOException
     {
-        Archive cmd = new Archive();
+        Archive cmd = new Archive(out, err);
         cmd.dagfilePath = dagfilePath;
         cmd.params = params;
         cmd.paramsFile = paramsFile;
@@ -91,19 +97,19 @@ public class Archive
     {
         runArchive();
 
-        System.out.println("Created "+output+".");
-        System.out.println("Use `digdag upload <path.tar.gz> <project> <revision>` to upload it a server.");
-        System.out.println("");
-        System.out.println("  Examples:");
-        System.out.println("    $ digdag upload "+output+" $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");
-        System.out.println("    $ digdag upload "+output+" $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)");
-        System.out.println("");
+        out.println("Created "+output+".");
+        out.println("Use `digdag upload <path.tar.gz> <project> <revision>` to upload it a server.");
+        out.println("");
+        out.println("  Examples:");
+        out.println("    $ digdag upload "+output+" $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");
+        out.println("    $ digdag upload "+output+" $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)");
+        out.println("");
     }
 
     private void runArchive()
             throws IOException
     {
-        System.out.println("Creating "+output+"...");
+        out.println("Creating "+output+"...");
 
         Injector injector = new DigdagEmbed.Bootstrap()
             .withWorkflowExecutor(false)
@@ -131,7 +137,7 @@ public class Archive
                 Path path = absoluteProjectPath.resolve(relPath);
                 if (!Files.isDirectory(path)) {
                     String name = relPath.toString();
-                    System.out.println("  Archiving "+name);
+                    out.println("  Archiving "+name);
 
                     TarArchiveEntry e = buildTarArchiveEntry(absoluteProjectPath, path, name);
                     tar.putArchiveEntry(e);
@@ -155,11 +161,11 @@ public class Archive
             tar.closeArchiveEntry();
         }
 
-        System.out.println("Workflows:");
+        out.println("Workflows:");
         for (WorkflowDefinition workflow : project.getMetadata().getWorkflowList().get()) {
-            System.out.println("  "+workflow.getName());
+            out.println("  "+workflow.getName());
         }
-        System.out.println("");
+        out.println("");
     }
 
     private TarArchiveEntry buildTarArchiveEntry(Path absoluteCurrentPath, Path path, String name)

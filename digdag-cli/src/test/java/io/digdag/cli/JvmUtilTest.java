@@ -22,7 +22,7 @@ public class JvmUtilTest
     private static void assertJdkVersionValidationNotPass(String v)
     {
         try {
-            JvmUtil.validateJavaRuntime(newJdkProperties(v));
+            JvmUtil.validateJavaRuntime(newJdkProperties(v), System.err);
             fail();
         }
         catch (SystemExitException ex) {
@@ -32,7 +32,7 @@ public class JvmUtilTest
     private static void assertJdkVersionValidationPass(String v)
     {
         try {
-            JvmUtil.validateJavaRuntime(newJdkProperties(v));
+            JvmUtil.validateJavaRuntime(newJdkProperties(v), System.err);
         }
         catch (SystemExitException ex) {
             fail();

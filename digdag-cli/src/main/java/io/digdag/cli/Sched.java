@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
@@ -48,11 +49,16 @@ public class Sched
 
     // TODO no-schedule mode
 
+    public Sched(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
     {
-        JvmUtil.validateJavaRuntime();
+        JvmUtil.validateJavaRuntime(err);
 
         if (args.size() != 0) {
             throw usage(null);
@@ -64,17 +70,17 @@ public class Sched
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag sched [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
-        System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
-        System.err.println("    -o, --database DIR               store status to this database");
-        System.err.println("    -O, --task-log DIR               store task logs to this database");
-        System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        System.err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions();
+        err.println("Usage: digdag sched [options...]");
+        err.println("  Options:");
+        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
+        err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
+        err.println("    -o, --database DIR               store status to this database");
+        err.println("    -O, --task-log DIR               store task logs to this database");
+        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        err.println("    -c, --config PATH.properties     server configuration property path");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 

@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.Console;
@@ -27,6 +28,11 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
+    public SelfUpdate(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -46,14 +52,14 @@ public class SelfUpdate
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag selfupdate [version]]");
-        System.err.println("  Options:");
-        Main.showCommonOptions();
-        System.err.println("");
-        System.err.println("  Examples:");
-        System.err.println("    $ digdag selfupdate");
-        System.err.println("    $ digdag selfupdate 0.7.0-SNAPSHOT");
-        System.err.println("");
+        err.println("Usage: digdag selfupdate [version]]");
+        err.println("  Options:");
+        Main.showCommonOptions(err);
+        err.println("");
+        err.println("  Examples:");
+        err.println("    $ digdag selfupdate");
+        err.println("    $ digdag selfupdate 0.7.0-SNAPSHOT");
+        err.println("");
         return systemExit(error);
     }
 
@@ -76,7 +82,7 @@ public class SelfUpdate
         BasicAuthentication auth = new BasicAuthentication("beta", password);
 
         if (version == null) {
-            System.out.println("Checking the latest version...");
+            out.println("Checking the latest version...");
             Response res = getWithRedirect(client, client
                     .target(fromUri(endpoint + "/digdag-latest-version"))
                     .register(auth)
@@ -90,7 +96,7 @@ public class SelfUpdate
 
         // TODO abort if already this version
 
-        System.out.println("Upgrading to " + version + "...");
+        out.println("Upgrading to " + version + "...");
 
         Response res = getWithRedirect(client, client
                 .target(fromUri(endpoint + "/digdag-" + version))
@@ -109,15 +115,15 @@ public class SelfUpdate
         }
         path.toFile().setExecutable(true);
 
-        System.out.println("Verifying...");
+        out.println("Verifying...");
         verify(path, version);
 
         Files.move(path, dest, REPLACE_EXISTING);
 
-        System.out.println("Upgraded to " + version);
+        out.println("Upgraded to " + version);
     }
 
-    private static void verify(Path path, String expectedVersion)
+    private void verify(Path path, String expectedVersion)
         throws IOException, InterruptedException
     {
         ProcessBuilder pb = new ProcessBuilder(path.toAbsolutePath().toString(), "--version");
@@ -129,13 +135,13 @@ public class SelfUpdate
 
         int ecode = p.waitFor();
         if (ecode != 0) {
-            System.out.println(output);
+            out.println(output);
             throw new RuntimeException("Failed to verify version: command exists with error code " + ecode);
         }
 
         Matcher m = Pattern.compile("^" + Pattern.quote(expectedVersion) + "$").matcher(output);
         if (!m.find()) {
-            System.out.println(output);
+            out.println(output);
             throw new RuntimeException("Failed to verify version: version mismatch");
         }
     }

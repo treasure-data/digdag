@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.Map;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +16,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Init
     extends Command
 {
+    public Init(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
         throws Exception
@@ -28,11 +34,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag init <dir>");
-        System.err.println("  Options:");
-        Main.showCommonOptions();
-        System.err.println("  Example:");
-        System.err.println("    $ digdag init mydag");
+        err.println("Usage: digdag init <dir>");
+        err.println("  Options:");
+        Main.showCommonOptions(err);
+        err.println("  Example:");
+        err.println("    $ digdag init mydag");
         return systemExit(error);
     }
 
@@ -59,7 +65,7 @@ public class Init
         //}
 
         if (gen.exists(Run.DEFAULT_DAGFILE)) {
-            System.out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
+            out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
         }
         else {
             if (!gen.exists(".gitignore")) {
@@ -77,10 +83,10 @@ public class Init
             gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
                     ImmutableMap.of("@@name@@", workflowName));
             if (path.equals(".")) {
-                System.out.println("Done. Type `digdag r` to run the workflow. Enjoy!");
+                out.println("Done. Type `digdag r` to run the workflow. Enjoy!");
             }
             else {
-                System.out.println("Done. Type `cd " + path + "` and then `digdag r` to run the workflow. Enjoy!");
+                out.println("Done. Type `cd " + path + "` and then `digdag r` to run the workflow. Enjoy!");
             }
         }
     }
@@ -95,7 +101,7 @@ public class Init
     //    return new File(uri.getPath());
     //}
 
-    private static class ResourceGenerator
+    private class ResourceGenerator
     {
         private final String sourcePrefix;
         private final File destDir;
@@ -109,7 +115,7 @@ public class Init
         public void cpAbsoluteDest(String src, File dest)
             throws IOException
         {
-            System.out.println("  Creating " + dest);
+            out.println("  Creating " + dest);
             try (InputStream in = getClass().getResourceAsStream(sourcePrefix + src)) {
                 if (in == null) {
                     throw new RuntimeException("Resource not exists: " + sourcePrefix + src);
@@ -124,7 +130,7 @@ public class Init
             throws IOException
         {
             File dest = file(name);
-            System.out.println("  Creating " + dest);
+            out.println("  Creating " + dest);
             try (InputStream in = new FileInputStream(file)) {
                 try (FileOutputStream out = new FileOutputStream(dest)) {
                     ByteStreams.copy(in, out);
@@ -146,7 +152,7 @@ public class Init
                 data = data.replaceAll(pair.getKey(), pair.getValue());
             }
             File dest = file(name);
-            System.out.println("  Creating " + dest);
+            out.println("  Creating " + dest);
             try (FileOutputStream out = new FileOutputStream(dest)) {
                 out.write(data.getBytes(UTF_8));
             }

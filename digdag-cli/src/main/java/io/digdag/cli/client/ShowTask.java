@@ -3,11 +3,19 @@ package io.digdag.cli.client;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestTask;
+
+import java.io.PrintStream;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowTask
     extends ClientCommand
 {
+    public ShowTask(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -20,9 +28,9 @@ public class ShowTask
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag tasks <attempt-id>");
-        System.err.println("  Options:");
-        ClientCommand.showCommonOptions();
+        err.println("Usage: digdag tasks <attempt-id>");
+        err.println("  Options:");
+        showCommonOptions();
         return systemExit(error);
     }
 

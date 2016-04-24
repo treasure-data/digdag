@@ -1,13 +1,12 @@
 package io.digdag.cli;
 
-import java.io.File;
+import java.io.PrintStream;
 import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
 
 import com.beust.jcommander.Parameter;
-import io.digdag.core.config.PropertyUtils;
 import io.digdag.server.ServerBootstrap;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
@@ -34,11 +33,16 @@ public class Server
     @Parameter(names = {"-A", "--access-log"})
     String accessLogPath = null;
 
+    public Server(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
     {
-        JvmUtil.validateJavaRuntime();
+        JvmUtil.validateJavaRuntime(err);
 
         if (args.size() != 0) {
             throw usage(null);
@@ -57,16 +61,16 @@ public class Server
     @Override
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag server [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
-        System.err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
-        System.err.println("    -m, --memory                     uses memory database");
-        System.err.println("    -o, --database DIR               store status to this database");
-        System.err.println("    -O, --task-log DIR               store task logs to this database");
-        System.err.println("    -A, --access-log DIR             store access logs files to this path");
-        System.err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions();
+        err.println("Usage: digdag server [options...]");
+        err.println("  Options:");
+        err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
+        err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
+        err.println("    -m, --memory                     uses memory database");
+        err.println("    -o, --database DIR               store status to this database");
+        err.println("    -O, --task-log DIR               store task logs to this database");
+        err.println("    -A, --access-log DIR             store access logs files to this path");
+        err.println("    -c, --config PATH.properties     server configuration property path");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 

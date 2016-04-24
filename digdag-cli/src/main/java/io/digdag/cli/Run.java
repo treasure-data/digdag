@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -129,11 +130,16 @@ public class Run
 
     private Path resumeStatePath;
 
+    public Run(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
     {
-        JvmUtil.validateJavaRuntime();
+        JvmUtil.validateJavaRuntime(err);
 
         if (dryRunAndShowParams) {
             dryRun = showParams = true;
@@ -175,22 +181,22 @@ public class Run
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag run [workflow][+task] [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
-        System.err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at .digdag/status");
-        System.err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at .digdag/status");
-        System.err.println("    -e, --end +NAME                  skips this task and its following tasks");
-        System.err.println("    -o, --save DIR                   uses this directory to read and write status files (default: .digdag/status)");
-        System.err.println("        --no-save                    doesn't save status files at .digdag/status");
-        System.err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        System.err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
-        System.err.println("    -E, --show-params                show task parameters before running a task");
-        System.err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
-        System.err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        Main.showCommonOptions();
+        err.println("Usage: digdag run [workflow][+task] [options...]");
+        err.println("  Options:");
+        err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
+        err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
+        err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at .digdag/status");
+        err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at .digdag/status");
+        err.println("    -e, --end +NAME                  skips this task and its following tasks");
+        err.println("    -o, --save DIR                   uses this directory to read and write status files (default: .digdag/status)");
+        err.println("        --no-save                    doesn't save status files at .digdag/status");
+        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
+        err.println("    -E, --show-params                show task parameters before running a task");
+        err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
+        err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 
@@ -324,13 +330,13 @@ public class Run
         }
         else {
             if (noSave) {
-                System.err.println(String.format(ENGLISH, "Success."));
+                err.println(String.format(ENGLISH, "Success."));
             }
             else {
-                System.err.println(String.format(ENGLISH, "Success. Task state is saved at %s directory.", resumeStatePath));
+                err.println(String.format(ENGLISH, "Success. Task state is saved at %s directory.", resumeStatePath));
             }
-            System.err.println(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time."));
-            System.err.println(String.format(ENGLISH, "  * Use --rerun, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
+            err.println(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time."));
+            err.println(String.format(ENGLISH, "  * Use --rerun, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
         }
     }
 

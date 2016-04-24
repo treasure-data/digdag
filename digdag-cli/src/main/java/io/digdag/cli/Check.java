@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
@@ -54,6 +55,11 @@ public class Check
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
+    public Check(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -67,13 +73,13 @@ public class Check
 
     public SystemExitException usage(String error)
     {
-        System.err.println("Usage: digdag check [options...]");
-        System.err.println("  Options:");
-        System.err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
-        System.err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
-        System.err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
-        //System.err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        Main.showCommonOptions();
+        err.println("Usage: digdag check [options...]");
+        err.println("  Options:");
+        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
+        //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
+        Main.showCommonOptions(err);
         return systemExit(error);
     }
 
@@ -102,14 +108,14 @@ public class Check
         showProject(injector, project);
     }
 
-    public static void showSystemDefaults()
+    public void showSystemDefaults()
     {
         ln("  System default timezone: %s",
                 ZoneId.systemDefault());
         ln("");
     }
 
-    public static void showProject(Injector injector, ProjectArchive project)
+    public void showProject(Injector injector, ProjectArchive project)
     {
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
@@ -185,12 +191,12 @@ public class Check
         f.indent = "    ";
     }
 
-    private static void ln(String format, Object... args)
+    private void ln(String format, Object... args)
     {
-        System.out.println(String.format(format, args));
+        out.println(String.format(format, args));
     }
 
-    private static class Formatter
+    private class Formatter
     {
         private StringBuilder sb = new StringBuilder();
         String indent;
@@ -218,7 +224,7 @@ public class Check
 
         public void print()
         {
-            System.out.print(sb.toString());
+            out.print(sb.toString());
         }
     }
 }

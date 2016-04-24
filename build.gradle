@@ -197,7 +197,7 @@ configurations {
 
 artifacts {
     releases file: cliBuildFile, name: 'digdag', type: 'text', builtBy: cli
-    rootFiles file: file("digdag-cli/src/main/resources/digdag/cli/version.txt"), name: 'LATEST', type: 'text'
+    rootFiles file: file("digdag-core/src/main/resources/io/digdag/core/version.txt"), name: 'LATEST', type: 'text'
 }
 
 uploadReleases {
@@ -256,7 +256,7 @@ task setVersion << {
     gradle_ver.write(gradle_ver.getText().replaceFirst("version = '(\\d+)(\\.\\d+){2}(-[\\d\\w]+)?'", "version = '${to}'"))
 
     List<String> files = [
-        'digdag-cli/src/main/resources/digdag/cli/version.txt',
+        'digdag-core/src/main/resources/io/digdag/core/version.txt',
         'digdag-cli/src/main/java/io/digdag/cli/Main.java',
         'digdag-cli/src/main/java/io/digdag/cli/SelfUpdate.java',
     ]
@@ -284,8 +284,8 @@ task setVersion << {
 }
 
 task releaseCheck << {
-    if (!file("digdag-cli/src/main/resources/digdag/cli/version.txt").getText().contains("${project.version}")) {
-        throw new GradleException("digdag-cli/src/main/resources/digdag/cli/version.txt doesn't include ${project.version}")
+    if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
+        throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
     }
     if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
         throw new GradleException("Release note for ${project.version} doesn't exist")

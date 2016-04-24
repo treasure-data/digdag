@@ -12,6 +12,7 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +41,11 @@ public abstract class ClientCommand
 
     @DynamicParameter(names = {"-H", "--header"})
     Map<String, String> httpHeaders = new HashMap<>();
+
+    public ClientCommand(PrintStream out, PrintStream err)
+    {
+        super(out, err);
+    }
 
     @Override
     public void main()
@@ -128,10 +134,10 @@ public abstract class ClientCommand
                 .build();
     }
 
-    public static void showCommonOptions()
+    public void showCommonOptions()
     {
-        System.err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        Main.showCommonOptions();
+        err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
+        Main.showCommonOptions(err);
     }
 
     public long parseLongOrUsage(String arg)
@@ -156,9 +162,9 @@ public abstract class ClientCommand
         }
     }
 
-    protected static void ln(String format, Object... args)
+    protected void ln(String format, Object... args)
     {
-        System.out.println(String.format(format, args));
+        out.println(String.format(format, args));
     }
 
     private static final DateTimeFormatter formatter =

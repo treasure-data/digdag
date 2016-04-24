@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -32,12 +33,14 @@ public class TaskLogWatcher
     private final long attemptId;
     private final Map<String, TaskLogState> stateMap;
     private final LogLevel levelFilter;
+    private final PrintStream out;
 
-    public TaskLogWatcher(DigdagClient client, long attemptId, LogLevel levelFilterOrNull)
+    public TaskLogWatcher(DigdagClient client, long attemptId, LogLevel levelFilterOrNull, PrintStream out)
     {
         this.client = client;
         this.attemptId = attemptId;
         this.levelFilter = levelFilterOrNull;
+        this.out = out;
         this.stateMap = new HashMap<>();
     }
 
@@ -168,7 +171,7 @@ public class TaskLogWatcher
 
     private void showLine(String line)
     {
-        System.out.println(line);
+        out.println(line);
     }
 
     private static LinkedHashMap<String, List<RestLogFileHandle>> sortHandles(List<RestLogFileHandle> handles)

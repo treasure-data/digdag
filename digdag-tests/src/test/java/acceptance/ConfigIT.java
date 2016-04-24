@@ -10,17 +10,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class ConfigIT
 {
-    public static int main(String... args)
-    {
-        return new Main().cli(args);
-    }
-
     private interface Action
     {
         public void run() throws Exception;

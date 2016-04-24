@@ -12,6 +12,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.core.Version;
 
 @Path("/")
 @Produces("application/json")
@@ -25,7 +26,6 @@ public class VersionResource
     @Path("/api/version")
     public Map<String, Object> getVersion()
     {
-        // TODO return server version and client version
-        return ImmutableMap.of("version", "unknown");
+        return ImmutableMap.of("version", Version.version());
     }
 }
