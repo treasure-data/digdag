@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -48,7 +49,7 @@ public abstract class ClientCommand
     public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
     {
         super(out, err);
-        this.localVersion = localVersion;
+        this.localVersion = Objects.requireNonNull(localVersion, "localVersion");
     }
 
     @Override
@@ -84,6 +85,12 @@ public abstract class ClientCommand
             throws Exception;
 
     protected DigdagClient buildClient()
+            throws IOException, SystemExitException
+    {
+        return buildClient(true);
+    }
+
+    protected DigdagClient buildClient(boolean checkServerVersion)
             throws IOException, SystemExitException
     {
         // load config file
@@ -130,12 +137,30 @@ public abstract class ClientCommand
         }
         headers.putAll(this.httpHeaders);
 
-        return DigdagClient.builder()
+        DigdagClient client = DigdagClient.builder()
                 .host(host)
                 .port(port)
                 .ssl(useSsl)
                 .headers(headers)
                 .build();
+
+        if (checkServerVersion) {
+            Map<String, Object> remoteVersions = client.getVersion();
+            String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
+
+            if (!localVersion.version().equals(remoteVersion)) {
+                throw systemExit(String.format(""
+                                + "Client and server version mismatch: Client: %s, Server: %s.%n"
+                                + "%n"
+                                + "Please run: digdag selfupdate%n"
+                                + "%n"
+                                + "Before pushing workflows to the server, please run them locally to "
+                                + "verify that they are compatible with the new version of digdag.",
+                        localVersion, remoteVersion));
+            }
+        }
+
+        return client;
     }
 
     public void showCommonOptions()

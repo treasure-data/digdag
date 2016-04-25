@@ -19,7 +19,7 @@ public class Version extends ClientCommand
     public void mainWithClientException()
             throws Exception
     {
-        DigdagClient client = buildClient();
+        DigdagClient client = buildClient(false);
         Map<String, Object> remoteVersion = client.getVersion();
         ln("Client version: " + localVersion);
         ln("Server version: " + remoteVersion.getOrDefault("version", ""));
