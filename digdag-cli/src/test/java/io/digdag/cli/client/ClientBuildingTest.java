@@ -18,7 +18,7 @@ public class ClientBuildingTest
     {
         ShowWorkflow cmd = new ShowWorkflow(buildVersion(), System.out, System.err);
         cmd.endpoint = endpoint;
-        DigdagClient client = cmd.buildClient();
+        DigdagClient client = cmd.buildClient(false);
         Field f = client.getClass().getDeclaredField("endpoint");
         f.setAccessible(true);
         return (String) f.get(client);
