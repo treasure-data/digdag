@@ -1015,7 +1015,7 @@ public class WorkflowExecutor
             return Optional.absent();
         }
 
-        logger.trace("Adding sub tasks: {}"+tasks);
+        logger.trace("Adding sub tasks: {}", tasks);
         long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true);
         return Optional.of(rootTaskId);
     }
