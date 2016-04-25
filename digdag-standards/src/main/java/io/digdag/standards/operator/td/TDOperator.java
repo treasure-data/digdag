@@ -2,8 +2,11 @@ package io.digdag.standards.operator.td;
 
 import java.util.Date;
 import java.io.Closeable;
+
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 import io.digdag.standards.operator.BaseOperator;
@@ -21,12 +24,20 @@ public class TDOperator
 {
     public static TDOperator fromConfig(Config config)
     {
-        String database = config.get("database", String.class);
+        String database = config.get("database", String.class).trim();
+        if (database.isEmpty()) {
+            throw new ConfigException("Parameter 'database' is empty");
+        }
+
+        String apikey = config.get("apikey", String.class).trim();
+        if (apikey.isEmpty()) {
+            throw new ConfigException("Parameter 'apikey' is empty");
+        }
 
         TDClient client = TDClient.newBuilder(false)
             .setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"))
             .setUseSSL(config.get("use_ssl", boolean.class, true))
-            .setApiKey(config.get("apikey", String.class))
+            .setApiKey(apikey)
             .setRetryLimit(0)  // disable td-client's retry mechanism
             .build();
 
