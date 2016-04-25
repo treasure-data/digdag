@@ -70,7 +70,7 @@ public class Main
             out.println(version());
             return 0;
         }
-        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v0.7.0-SNAPSHOT");
+        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version());
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
