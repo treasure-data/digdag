@@ -2,3 +2,7 @@
 dependencies {
     testCompile project(':digdag-cli')
 }
+
+test {
+    forkEvery = 1
+}
