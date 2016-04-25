@@ -7,6 +7,7 @@ import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.core.Version;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
@@ -36,15 +37,18 @@ public abstract class ClientCommand
 {
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
+    protected final io.digdag.core.Version localVersion;
+
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
 
     @DynamicParameter(names = {"-H", "--header"})
     Map<String, String> httpHeaders = new HashMap<>();
 
-    public ClientCommand(PrintStream out, PrintStream err)
+    public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
     {
         super(out, err);
+        this.localVersion = localVersion;
     }
 
     @Override

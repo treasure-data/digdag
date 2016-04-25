@@ -5,14 +5,17 @@ import java.time.Instant;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.core.*;
+import io.digdag.core.Version;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowSchedule
     extends ClientCommand
 {
-    public ShowSchedule(PrintStream out, PrintStream err)
+    public ShowSchedule(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

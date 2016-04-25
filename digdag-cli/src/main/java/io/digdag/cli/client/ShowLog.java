@@ -10,6 +10,8 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
+import io.digdag.core.*;
+import io.digdag.core.Version;
 import io.digdag.core.log.LogLevel;
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -22,9 +24,9 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
-    public ShowLog(PrintStream out, PrintStream err)
+    public ShowLog(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

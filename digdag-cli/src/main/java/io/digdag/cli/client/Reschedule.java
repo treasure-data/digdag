@@ -8,6 +8,8 @@ import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.core.*;
+import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -26,9 +28,9 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Reschedule(PrintStream out, PrintStream err)
+    public Reschedule(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

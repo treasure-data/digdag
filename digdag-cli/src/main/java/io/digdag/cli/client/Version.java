@@ -10,9 +10,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Version extends ClientCommand
 {
-    public Version(PrintStream out, PrintStream err)
+    public Version(io.digdag.core.Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override
@@ -21,7 +21,7 @@ public class Version extends ClientCommand
     {
         DigdagClient client = buildClient();
         Map<String, Object> remoteVersion = client.getVersion();
-        ln("Client version: " + io.digdag.core.Version.version());
+        ln("Client version: " + localVersion);
         ln("Server version: " + remoteVersion.getOrDefault("version", ""));
     }
 

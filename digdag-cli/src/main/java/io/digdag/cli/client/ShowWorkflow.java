@@ -8,15 +8,16 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestProject;
+import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowWorkflow
     extends ClientCommand
 {
-    public ShowWorkflow(PrintStream out, PrintStream err)
+    public ShowWorkflow(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

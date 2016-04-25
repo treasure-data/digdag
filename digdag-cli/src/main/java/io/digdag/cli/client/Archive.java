@@ -19,7 +19,7 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
-import io.digdag.core.DigdagEmbed;
+import io.digdag.core.*;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;

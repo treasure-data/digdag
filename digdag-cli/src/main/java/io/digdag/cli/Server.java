@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import javax.servlet.ServletException;
 
 import com.beust.jcommander.Parameter;
+import io.digdag.core.Version;
 import io.digdag.server.ServerBootstrap;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
@@ -33,9 +34,12 @@ public class Server
     @Parameter(names = {"-A", "--access-log"})
     String accessLogPath = null;
 
-    public Server(PrintStream out, PrintStream err)
+    protected final Version localVersion;
+
+    public Server(Version localVersion, PrintStream out, PrintStream err)
     {
         super(out, err);
+        this.localVersion = localVersion;
     }
 
     @Override
@@ -77,7 +81,7 @@ public class Server
     private void server()
             throws ServletException, IOException
     {
-        ServerBootstrap.startServer(buildServerProperties(), ServerBootstrap.class);
+        ServerBootstrap.startServer(localVersion, buildServerProperties(), ServerBootstrap.class);
     }
 
     protected Properties buildServerProperties()
