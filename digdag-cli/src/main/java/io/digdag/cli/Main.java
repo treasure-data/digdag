@@ -262,7 +262,9 @@ public class Main
         err.println("    workflows [project-name] [name]  show registered workflow definitions");
         err.println("    schedules                        show registered schedules");
         err.println("    sessions [project-name] [name]   show past and current sessions");
+        err.println("    sessions [attempt-id]            show a single sessions");
         err.println("    attempts [project-name] [name]   show past and current session attempts");
+        err.println("    attempts [attempt-id]            show a single session attempt");
         err.println("    tasks <attempt-id>               show tasks of a session attempt");
         err.println("    version                          show client and server version");
         err.println("");

@@ -71,6 +71,7 @@ public class ShowSession
     {
         String commandName = includeRetries() ? "attempts" : "sessions";
         err.println("Usage: digdag " + commandName + " [project-name] [workflow-name]");
+        err.println("       digdag " + commandName + " [attempt-id]");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
         showCommonOptions();
