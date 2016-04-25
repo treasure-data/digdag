@@ -334,3 +334,9 @@ task pom << {
         compiler_configuration.appendNode('target', targetCompatibility)
     }.writeTo("pom.xml")
 }
+
+task runServer(type: JavaExec) {
+    classpath = project(":digdag-cli").sourceSets.main.runtimeClasspath
+    main = 'io.digdag.cli.Main'
+    args 'server', '-m'
+}
