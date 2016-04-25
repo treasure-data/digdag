@@ -35,17 +35,19 @@ import java.util.Set;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 import static io.digdag.cli.Command.defaultConfigPath;
-import static io.digdag.core.Version.version;
+import static io.digdag.core.Version.buildVersion;
 
 public class Main
 {
     private static final String PROGRAM_NAME = "digdag";
 
+    private final io.digdag.core.Version version;
     private final PrintStream out;
     private final PrintStream err;
 
-    public Main(PrintStream out, PrintStream err)
+    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err)
     {
+        this.version = version;
         this.out = out;
         this.err = err;
     }
@@ -58,7 +60,7 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main(System.out, System.err).cli(args);
+        int code = new Main(buildVersion(), System.out, System.err).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -67,10 +69,10 @@ public class Main
     public int cli(String... args)
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            out.println(version());
+            out.println(version.version());
             return 0;
         }
-        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version());
+        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
@@ -79,26 +81,26 @@ public class Main
         jc.addCommand("init", new Init(out, err), "new");
         jc.addCommand("run", new Run(out, err), "r");
         jc.addCommand("check", new Check(out, err), "c");
-        jc.addCommand("scheduler", new Sched(out, err), "sched");
+        jc.addCommand("scheduler", new Sched(version, out, err), "sched");
 
-        jc.addCommand("server", new Server(out, err));
+        jc.addCommand("server", new Server(version, out, err));
 
-        jc.addCommand("push", new Push(out, err));
+        jc.addCommand("push", new Push(version, out, err));
         jc.addCommand("archive", new Archive(out, err));
-        jc.addCommand("upload", new Upload(out, err));
+        jc.addCommand("upload", new Upload(version, out, err));
 
-        jc.addCommand("workflow", new ShowWorkflow(out, err), "workflows");
-        jc.addCommand("start", new Start(out, err));
-        jc.addCommand("retry", new Retry(out, err));
-        jc.addCommand("session", new ShowSession(out, err), "sessions");
-        jc.addCommand("atteempt", new ShowAttempt(out, err), "attempts");
-        jc.addCommand("reschedule", new Reschedule(out, err));
-        jc.addCommand("backfill", new Backfill(out, err));
-        jc.addCommand("log", new ShowLog(out, err), "logs");
-        jc.addCommand("kill", new Kill(out, err));
-        jc.addCommand("task", new ShowTask(out, err), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(out, err), "schedules");
-        jc.addCommand("version", new Version(out, err), "version");
+        jc.addCommand("workflow", new ShowWorkflow(version, out, err), "workflows");
+        jc.addCommand("start", new Start(version, out, err));
+        jc.addCommand("retry", new Retry(version, out, err));
+        jc.addCommand("session", new ShowSession(version, out, err), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(version, out, err), "attempts");
+        jc.addCommand("reschedule", new Reschedule(version, out, err));
+        jc.addCommand("backfill", new Backfill(version, out, err));
+        jc.addCommand("log", new ShowLog(version, out, err), "logs");
+        jc.addCommand("kill", new Kill(version, out, err));
+        jc.addCommand("task", new ShowTask(version, out, err), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
+        jc.addCommand("version", new Version(version, out, err), "version");
 
         jc.addCommand("selfupdate", new SelfUpdate(out, err));
 

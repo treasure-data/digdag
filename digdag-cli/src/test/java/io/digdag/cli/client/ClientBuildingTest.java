@@ -2,13 +2,12 @@ package io.digdag.cli.client;
 
 import java.lang.reflect.Field;
 
-import org.junit.Before;
-import org.junit.Rule;
+import io.digdag.core.*;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import io.digdag.client.DigdagClient;
 
+import static io.digdag.core.Version.buildVersion;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -17,7 +16,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        ShowWorkflow cmd = new ShowWorkflow(System.out, System.err);
+        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), System.out, System.err);
         cmd.endpoint = endpoint;
         DigdagClient client = cmd.buildClient();
         Field f = client.getClass().getDeclaredField("endpoint");

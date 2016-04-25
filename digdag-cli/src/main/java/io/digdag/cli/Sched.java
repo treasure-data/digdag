@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
+
+import io.digdag.core.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -49,9 +51,9 @@ public class Sched
 
     // TODO no-schedule mode
 
-    public Sched(PrintStream out, PrintStream err)
+    public Sched(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override
@@ -103,7 +105,7 @@ public class Sched
         props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
         props.setProperty(SYSTEM_CONFIG_OVERWRITE_PARAMS, overwriteParams.toString());
 
-        ServerBootstrap.startServer(props, SchedulerServerBootStrap.class);
+        ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
     }
 
     public static class SchedulerServerBootStrap
@@ -137,9 +139,9 @@ public class Sched
         }
 
         @Override
-        protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig)
+        protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
         {
-            return super.bootstrap(bootstrap, serverConfig)
+            return super.bootstrap(bootstrap, serverConfig, version)
                 .addModules((binder) -> {
                     binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 })

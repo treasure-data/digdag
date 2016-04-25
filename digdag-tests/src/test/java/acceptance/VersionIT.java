@@ -9,6 +9,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import javax.ws.rs.ProcessingException;
+
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +19,7 @@ import java.util.concurrent.Executors;
 
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 public class VersionIT
@@ -29,14 +33,17 @@ public class VersionIT
     private String host;
     private int port;
     private String endpoint;
+    private String remoteVersionString;
 
     @Before
     public void setUp()
             throws Exception
     {
+        remoteVersionString = "4.5.6-SERVER";
+
         config = Files.createFile(folder.getRoot().toPath().resolve("config"));
         executor = Executors.newCachedThreadPool();
-        executor.execute(() -> main("server", "-m", "-c", config.toString()));
+        executor.execute(() -> main(Version.of(remoteVersionString), "server", "-m", "-c", config.toString()));
 
         host = "localhost";
         port = 65432;
@@ -52,7 +59,8 @@ public class VersionIT
                 client.getProjects();
                 break;
             }
-            catch (Exception e) {
+            catch (ProcessingException e) {
+                assertThat(e.getCause(), instanceOf(ConnectException.class));
                 System.out.println(".");
             }
             Thread.sleep(1000);
@@ -70,8 +78,9 @@ public class VersionIT
     public void testVersion()
             throws Exception
     {
-        CommandStatus status = main("version", "-e", endpoint);
-        assertThat(status.outUtf8(), containsString("Client version: " + Version.version()));
-        assertThat(status.outUtf8(), containsString("Server version: " + Version.version()));
+        String localVersionString = "1.2.3-CLIENT";
+        CommandStatus status = main(Version.of(localVersionString), "version", "-e", endpoint);
+        assertThat(status.outUtf8(), containsString("Client version: " + localVersionString));
+        assertThat(status.outUtf8(), containsString("Server version: " + remoteVersionString));
     }
 }

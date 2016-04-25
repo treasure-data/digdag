@@ -9,6 +9,9 @@ import com.beust.jcommander.ParameterException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.core.*;
+import io.digdag.core.Version;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Backfill
@@ -26,9 +29,9 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Backfill(PrintStream out, PrintStream err)
+    public Backfill(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

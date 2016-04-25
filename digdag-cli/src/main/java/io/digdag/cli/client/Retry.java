@@ -12,6 +12,8 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.core.*;
+import io.digdag.core.Version;
 
 import static java.util.Locale.ENGLISH;
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -46,9 +48,9 @@ public class Retry
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
-    public Retry(PrintStream out, PrintStream err)
+    public Retry(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override

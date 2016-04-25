@@ -11,6 +11,8 @@ import io.digdag.cli.Run;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
+import io.digdag.core.Version;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Push
@@ -28,9 +30,9 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Push(PrintStream out, PrintStream err)
+    public Push(Version version, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(version, out, err);
     }
 
     @Override
@@ -68,6 +70,6 @@ public class Push
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
-        new Upload(out, err).showUploadedProject(proj);
+        new Upload(localVersion, out, err).showUploadedProject(proj);
     }
 }

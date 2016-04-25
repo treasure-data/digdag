@@ -12,6 +12,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.OptionalBinder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import io.digdag.core.Version;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.guice.rs.GuiceRsModule.ApplicationBindingBuilder;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -33,7 +34,7 @@ public class ServerModule
         ApplicationBindingBuilder builder = bindApplication()
             .matches("/api/*")
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
-            .addProvider(AuthRequestFilter.class);
+            .addProvider(AuthRequestFilter.class)
             ;
         bindResources(builder);
         bindAuthenticator();
