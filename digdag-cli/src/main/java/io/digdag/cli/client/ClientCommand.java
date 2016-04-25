@@ -154,7 +154,8 @@ public abstract class ClientCommand
                                 + "%n"
                                 + "Please run: digdag selfupdate%n"
                                 + "%n"
-                                + "Before pushing workflows to the server, please run them locally to verify that they are compatible with the new version of digdag.",
+                                + "Before pushing workflows to the server, please run them locally to "
+                                + "verify that they are compatible with the new version of digdag.",
                         localVersion, remoteVersion));
             }
         }
