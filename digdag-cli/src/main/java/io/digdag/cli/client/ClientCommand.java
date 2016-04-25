@@ -46,6 +46,9 @@ public abstract class ClientCommand
     @DynamicParameter(names = {"-H", "--header"})
     Map<String, String> httpHeaders = new HashMap<>();
 
+    @Parameter(names = {"--disable-version-check"})
+    protected boolean disableVersionCheck;
+
     public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
     {
         super(out, err);
@@ -144,7 +147,7 @@ public abstract class ClientCommand
                 .headers(headers)
                 .build();
 
-        if (checkServerVersion) {
+        if (checkServerVersion && !disableVersionCheck) {
             Map<String, Object> remoteVersions = client.getVersion();
             String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
 
