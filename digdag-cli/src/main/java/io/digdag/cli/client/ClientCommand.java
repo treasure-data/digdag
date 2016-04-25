@@ -152,7 +152,7 @@ public abstract class ClientCommand
                 throw systemExit(String.format(""
                                 + "Client and server version mismatch: Client: %s, Server: %s.%n"
                                 + "%n"
-                                + "Please run: digdag selfupdate.%n"
+                                + "Please run: digdag selfupdate%n"
                                 + "%n"
                                 + "Before pushing workflows to the server, please run them locally to verify that they are compatible with the new version of digdag.",
                         localVersion, remoteVersion));
