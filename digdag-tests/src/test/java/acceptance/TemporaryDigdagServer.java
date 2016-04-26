@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -59,7 +60,15 @@ public class TemporaryDigdagServer
     @Override
     public Statement apply(Statement base, Description description)
     {
-        return temporaryFolder.apply(new Statement()
+        return RuleChain
+                .outerRule(temporaryFolder)
+                .around(this::statement)
+                .apply(base, description);
+    }
+
+    private Statement statement(Statement statement, Description description)
+    {
+        return new Statement()
         {
             @Override
             public void evaluate()
@@ -67,13 +76,13 @@ public class TemporaryDigdagServer
             {
                 before();
                 try {
-                    base.evaluate();
+                    statement.evaluate();
                 }
                 finally {
                     after();
                 }
             }
-        }, description);
+        };
     }
 
     private void before()
@@ -140,7 +149,6 @@ public class TemporaryDigdagServer
     public static TemporaryDigdagServer of(Version version)
     {
         return builder().version(version).build();
-
     }
 
     public static class Builder
