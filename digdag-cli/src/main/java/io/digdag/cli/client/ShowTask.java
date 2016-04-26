@@ -48,7 +48,7 @@ public class ShowTask
             ln("   state: %s", task.getState());
             ln("   config: %s", task.getConfig());
             ln("   parent: %d", task.getParentId().orNull());
-            ln("   upstreamds: %s", task.getUpstreams());
+            ln("   upstreams: %s", task.getUpstreams());
             ln("   export params: %s", task.getExportParams());
             ln("   store params: %s", task.getStoreParams());
             ln("   state params: %s", task.getStateParams());
