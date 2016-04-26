@@ -83,15 +83,18 @@ public class InitPushStartIT
                 .and(lessThan(now + error))));
 
         // Start the workflow
-        CommandStatus startStatus = main("start",
-                "-c", config.toString(),
-                "-e", server.endpoint(),
-                "foobar", "foobar",
-                "--session", "now");
-        assertThat(startStatus.code(), is(0));
-        Matcher startAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-        assertThat(startAttemptIdMatcher.find(), is(true));
-        long attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+        long attemptId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "foobar", "foobar",
+                    "--session", "now");
+            assertThat(startStatus.code(), is(0));
+            Matcher startAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+            assertThat(startAttemptIdMatcher.find(), is(true));
+            attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+        }
 
         // Verify that the workflow is started
         {
@@ -106,39 +109,43 @@ public class InitPushStartIT
             assertThat(attemptById.getProject().getName(), is("foobar"));
             assertThat(attemptById.getId(), is(attemptId));
         }
-        List<CommandStatus> attemptsStatuses = ImmutableList.of(
-                // By attempt id
-                main("attempts",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        String.valueOf(attemptId)),
-                // By project name
-                main("attempts",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        "foobar"),
-                // By project and workflow name
-                main("attempts",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        "foobar", "foobar"));
-        for (CommandStatus attemptsStatus : attemptsStatuses) {
-            assertThat(attemptsStatus.code(), is(0));
-            Matcher attemptsAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-            assertThat(attemptsAttemptIdMatcher.find(), is(true));
-            assertThat(Long.parseLong(attemptsAttemptIdMatcher.group(1)), is(attemptId));
+        {
+            List<CommandStatus> attemptsStatuses = ImmutableList.of(
+                    // By attempt id
+                    main("attempts",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            String.valueOf(attemptId)),
+                    // By project name
+                    main("attempts",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            "foobar"),
+                    // By project and workflow name
+                    main("attempts",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            "foobar", "foobar"));
+            for (CommandStatus attemptsStatus : attemptsStatuses) {
+                assertThat(attemptsStatus.code(), is(0));
+                Matcher attemptsAttemptIdMatcher = ATTEMPTS_ATTEMPT_ID_PATTERN.matcher(attemptsStatus.outUtf8());
+                assertThat(attemptsAttemptIdMatcher.find(), is(true));
+                assertThat(Long.parseLong(attemptsAttemptIdMatcher.group(1)), is(attemptId));
+            }
         }
 
         // Wait for the attempt to complete
-        RestSessionAttempt attempt = null;
-        for (int i = 0; i < 30; i++) {
-            attempt = client.getSessionAttempt(attemptId);
-            if (attempt.getDone()) {
-                break;
+        {
+            RestSessionAttempt attempt = null;
+            for (int i = 0; i < 30; i++) {
+                attempt = client.getSessionAttempt(attemptId);
+                if (attempt.getDone()) {
+                    break;
+                }
+                Thread.sleep(1000);
             }
-            Thread.sleep(1000);
+            assertThat(attempt.getSuccess(), is(true));
         }
-        assertThat(attempt.getSuccess(), is(true));
 
         // Verify that the attempt success is reflected in the cli
         {
