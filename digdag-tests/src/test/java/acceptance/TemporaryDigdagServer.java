@@ -45,6 +45,8 @@ public class TemporaryDigdagServer
 
     private Path configDirectory;
     private Path config;
+    private Path taskLog;
+    private Path accessLog;
 
     public TemporaryDigdagServer(Builder builder)
     {
@@ -90,13 +92,21 @@ public class TemporaryDigdagServer
     {
         try {
             this.configDirectory = temporaryFolder.newFolder().toPath();
+            this.taskLog = temporaryFolder.newFolder().toPath();
+            this.accessLog = temporaryFolder.newFolder().toPath();
             this.config = Files.createFile(configDirectory.resolve("config"));
         }
         catch (IOException e) {
             throw Throwables.propagate(e);
         }
 
-        executor.execute(() -> main(version, "server", "-m", "-c", config.toString()));
+        executor.execute(() -> main(
+                version,
+                "server",
+                "-m",
+                "--task-log", taskLog.toString(),
+                "--access-log", accessLog.toString(),
+                "-c", config.toString()));
 
         // Poll and wait for server to come up
         for (int i = 0; i < 30; i++) {
@@ -169,5 +179,15 @@ public class TemporaryDigdagServer
         {
             return new TemporaryDigdagServer(this);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TemporaryDigdagServer{" +
+                "version=" + version +
+                ", host='" + host + '\'' +
+                ", port=" + port +
+                '}';
     }
 }
