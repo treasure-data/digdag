@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.main;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
@@ -61,6 +62,8 @@ public class InitPushStartIT
                 "-c", config.toString(),
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
+
+        copyResource("acceptance/basic.yml", projectDir.resolve("foobar.yml"));
 
         // Push the project
         CommandStatus pushStatus = main("push",
