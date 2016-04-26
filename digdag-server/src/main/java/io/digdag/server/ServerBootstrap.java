@@ -18,8 +18,9 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
-import io.undertow.Undertow;
 import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
@@ -151,6 +152,7 @@ public class ServerBootstrap
         Undertow server = Undertow.builder()
             .addHttpListener(config.getPort(), config.getBind())
             .setHandler(handler)
+            .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
             .build();
         server.start();
     }
