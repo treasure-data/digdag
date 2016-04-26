@@ -6,8 +6,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ProcessingException;
+
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -18,6 +24,7 @@ import static acceptance.TestUtils.main;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
@@ -27,49 +34,18 @@ public class InitPushIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private ExecutorService executor;
+    @Rule
+    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+
     private Path config;
     private Path projectDir;
-
-    private String host;
-    private int port;
-    private String endpoint;
 
     @Before
     public void setUp()
             throws Exception
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
-        config = Files.createFile(folder.getRoot().toPath().resolve("config"));
-        executor = Executors.newCachedThreadPool();
-        executor.execute(() -> main("server", "-m", "-c", config.toString()));
-
-        host = "localhost";
-        port = 65432;
-        endpoint = "http://" + host + ":" + port;
-
-        // Poll and wait for server to come up
-        for (int i = 0; i < 30; i++) {
-            DigdagClient client = DigdagClient.builder()
-                    .host(host)
-                    .port(port)
-                    .build();
-            try {
-                client.getProjects();
-                break;
-            }
-            catch (Exception e) {
-                System.out.println(".");
-            }
-            Thread.sleep(1000);
-        }
-    }
-
-    @After
-    public void tearDown()
-            throws Exception
-    {
-        executor.shutdownNow();
+        config = folder.newFile().toPath();
     }
 
     @Test
@@ -81,11 +57,11 @@ public class InitPushIT
                 "foobar",
                 "-c", config.toString(),
                 "-f", projectDir.resolve("digdag.yml").toString(),
-                "-e", endpoint,
+                "-e", server.endpoint(),
                 "-r", "4711");
         DigdagClient client = DigdagClient.builder()
-                .host(host)
-                .port(port)
+                .host(server.host())
+                .port(server.port())
                 .build();
 
         RestProject project = client.getProject("foobar");
