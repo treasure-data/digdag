@@ -19,6 +19,7 @@ import io.digdag.cli.client.ShowLog;
 import io.digdag.cli.client.ShowSchedule;
 import io.digdag.cli.client.ShowSession;
 import io.digdag.cli.client.ShowTask;
+import io.digdag.cli.client.ShowTaskTree;
 import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Upload;
@@ -99,6 +100,7 @@ public class Main
         jc.addCommand("log", new ShowLog(version, out, err), "logs");
         jc.addCommand("kill", new Kill(version, out, err));
         jc.addCommand("task", new ShowTask(version, out, err), "tasks");
+        jc.addCommand("tasktree", new ShowTaskTree(version, out, err));
         jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
         jc.addCommand("version", new Version(version, out, err), "version");
 
