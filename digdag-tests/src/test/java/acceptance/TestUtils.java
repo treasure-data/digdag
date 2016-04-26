@@ -12,8 +12,10 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import static io.digdag.core.Version.buildVersion;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 class TestUtils
 {
@@ -41,7 +43,7 @@ class TestUtils
     static void copyResource(String resource, Path dest) throws IOException
     {
         try (InputStream input = Resources.getResource(resource).openStream()) {
-            Files.copy(input, dest);
+            Files.copy(input, dest, REPLACE_EXISTING);
         }
     }
 }
