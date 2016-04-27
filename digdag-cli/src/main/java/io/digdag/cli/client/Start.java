@@ -81,7 +81,7 @@ public class Start
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
-        err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 -07:00\"");
+        err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 07:00:00\"");
         err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
         err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
         err.println("");
