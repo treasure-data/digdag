@@ -3,8 +3,22 @@ timezone: UTC
 _export:
   database: sample_datasets
 
+schedule:
+  daily>: 07:00:00
+
++debug:
+  td>: queries/debug.sql
+
 +nasdaq:
-  td>: nasdaq.sql
+  td>: queries/nasdaq.sql
 
 +www_access:
-  td>: www_access.sql
+  _parallel: true
+  +today:
+    td>: queries/www_access.sql
+    from_days_ago: 1
+    to_days_ago: 0
+  +yesterday:
+    td>: queries/www_access.sql
+    from_days_ago: 2
+    to_days_ago: 1
