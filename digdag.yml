@@ -1,3 +1,2 @@
-name: digdag-ci-poc
 workflows:
   - workflow.yml
