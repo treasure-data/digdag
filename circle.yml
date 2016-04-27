@@ -8,10 +8,15 @@ dependencies:
     - mkdir -p ~/bin/
     - curl -u beta:workflow2016 -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
     - chmod +x ~/bin/digdag
+    - mkdir -p ~/.digdag
+    - touch ~/.digdag/config
+    - echo client.http.headers.authorization = TD1 ${TD_API_KEY} >> ~/.digdag/config
+    - echo client.http.endpoint = https://api-workflow.treasuredata.com >> ~/.digdag/config
 
 test:
   override:
     - digdag check
 
   post:
-    - digdag push digdag-ci-poc -e api-workflow.treasuredata.com -X client.http.headers.authorization="TD1 $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
+    - digdag push digdag-ci-poc -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
+    - digdag start digdag-ci-poc workflow --session now
