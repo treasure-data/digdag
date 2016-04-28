@@ -15,4 +15,4 @@ test:
 
   post:
     - digdag push digdag-ci-poc -e api-workflow.treasuredata.com -X client.http.headers.authorization="TD1 $TD_API_KEY" -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
-    - digdag start digdag-ci-poc workflow --session "2014-10-04 00:00:00" -e api-workflow.treasuredata.com -X client.http.headers.authorization="TD1 $TD_API_KEY"
+    - digdag start digdag-ci-poc workflow --session now -e api-workflow.treasuredata.com -X client.http.headers.authorization="TD1 $TD_API_KEY"
