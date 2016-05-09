@@ -155,6 +155,7 @@ public class TdOperatorFactory
                     .setQuery(stmt)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
+                    .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
                 TDJobOperator j = op.submitNewJob(req);
