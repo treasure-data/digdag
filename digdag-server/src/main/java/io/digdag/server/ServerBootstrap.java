@@ -35,7 +35,7 @@ import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.guice.rs.GuiceRsServerControlModule;
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.config.ConfigUtils;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.DigdagEmbed;
@@ -112,7 +112,7 @@ public class ServerBootstrap
     public static void startServer(Version version, Properties props, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException
     {
-        ConfigElement ce = PropertyUtils.toConfigElement(props);
+        ConfigElement ce = ConfigUtils.toConfigElement(props);
         ServerConfig config = ServerConfig.convertFrom(ce);
         startServer(version, config, bootstrapClass);
     }

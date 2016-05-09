@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
-import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.config.ConfigUtils;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import org.slf4j.Logger;
@@ -59,15 +59,15 @@ public abstract class Command
     protected Properties loadSystemProperties()
         throws IOException
     {
-        Properties props;
+        com.typesafe.config.Config props;
 
         // Load specific configuration file, if specified.
         if (configPath != null) {
-            props = PropertyUtils.loadFile(new File(configPath));
+            props = ConfigUtils.loadFile(new File(configPath));
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(defaultConfigPath().toFile());
+                props = ConfigUtils.loadFile(defaultConfigPath().toFile());
             }
             catch (FileNotFoundException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);

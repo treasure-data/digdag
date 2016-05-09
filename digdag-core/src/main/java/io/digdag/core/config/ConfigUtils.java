@@ -10,22 +10,19 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 
-public class PropertyUtils
+public class ConfigUtils
 {
-    private PropertyUtils()
+    private ConfigUtils()
     { }
 
-    public static Properties loadFile(File file)
+    public static com.typesafe.config.Config loadFile(File file)
         throws IOException
     {
-        Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(file)) {
-            props.load(in);
-        }
-        return props;
+        com.typesafe.config.Config raw = com.typesafe.config.ConfigFactory.parseFile(file);
+        return com.typesafe.config.ConfigFactory.load(raw);
     }
 
-    public static ConfigElement toConfigElement(Properties props)
+    public static ConfigElement toConfigElement(com.typesafe.config.Config props)
     {
         Config builder = new ConfigFactory(new ObjectMapper()).create();
         for (String key : props.stringPropertyNames()) {
