@@ -1,0 +1,6 @@
+timezone: UTC
+
++foo:
+  mail>: mail_body.txt
+  subject: mail test
+  to: test@digdag.io

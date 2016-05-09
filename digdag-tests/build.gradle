@@ -1,6 +1,7 @@
 
 dependencies {
     testCompile project(':digdag-cli')
+    testCompile 'org.subethamail:subethasmtp:3.1.7'
 }
 
 test {
