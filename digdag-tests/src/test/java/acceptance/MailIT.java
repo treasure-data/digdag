@@ -50,7 +50,6 @@ public class MailIT
                 "params.mail.from=" + sender,
                 "params.mail.username=mail-user",
                 "params.mail.password=mail-pass",
-                "params.mail.password=mail-pass",
                 "params.mail.tls=false"
         ));
         Path configFile = configDir.resolve("config");
