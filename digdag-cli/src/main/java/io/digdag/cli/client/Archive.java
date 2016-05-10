@@ -81,7 +81,7 @@ public class Archive
     }
 
     // used by Push.push
-    void archive(String dagfilePath, Map<String, String> params, String paramsFile, String output)
+    void archive(String dagfilePath, Map<String, String> params, String paramsFile, String configPath, String output)
         throws IOException
     {
         Archive cmd = new Archive(out, err);
@@ -89,6 +89,7 @@ public class Archive
         cmd.params = params;
         cmd.paramsFile = paramsFile;
         cmd.output = output;
+        cmd.configPath = configPath;
         cmd.runArchive();
     }
 

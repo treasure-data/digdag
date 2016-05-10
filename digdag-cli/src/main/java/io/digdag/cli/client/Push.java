@@ -66,7 +66,7 @@ public class Push
     {
         String path = "digdag.archive.tar.gz";
         new File(path).deleteOnExit();
-        new Archive(out, err).archive(dagfilePath, params, paramsFile, path);
+        new Archive(out, err).archive(dagfilePath, params, paramsFile, configPath, path);
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
