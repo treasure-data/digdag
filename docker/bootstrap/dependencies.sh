@@ -20,4 +20,7 @@ cp pg_hba.conf /etc/postgresql/9.5/main/
 sudo -u postgres createuser -s digdag_test
 sudo -u postgres createdb -O digdag_test digdag_test
 
+# Python
+apt-get -y install python
+
 rm -rf /var/lib/apt/lists/*
