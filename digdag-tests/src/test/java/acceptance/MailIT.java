@@ -42,6 +42,7 @@ public class MailIT
         mailServer.setPort(4711);
         mailServer.start();
 
+        // Add mail config to digdag configuration file
         copyResource("acceptance/mail_config/mail_config.yml", projectDir.resolve("mail_config.yml"));
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
         String config = Joiner.on("\n").join(asList(
@@ -54,6 +55,8 @@ public class MailIT
         ));
         Path configFile = configDir.resolve("config");
         Files.write(configFile, config.getBytes(UTF_8));
+
+        // Run a workflow that sends a mail
         main("run",
                 "-c", configFile.toString(),
                 "-o", projectDir.toString(),
@@ -68,6 +71,7 @@ public class MailIT
             Thread.sleep(1000);
         }
 
+        // Verify that the mail was correctly delivered
         assertThat(mailServer.getMessages().size(), is(1));
         WiserMessage message = mailServer.getMessages().get(0);
         assertThat(message.getEnvelopeSender(), is(sender));
