@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import static io.digdag.core.Version.buildVersion;
@@ -44,6 +45,18 @@ class TestUtils
     {
         try (InputStream input = Resources.getResource(resource).openStream()) {
             Files.copy(input, dest, REPLACE_EXISTING);
+        }
+    }
+
+    static void fakeHome(String home, Action a) throws Exception
+    {
+        String orig = System.setProperty("user.home", home);
+        try {
+            Files.createDirectories(Paths.get(home).resolve(".digdag"));
+            a.run();
+        }
+        finally {
+            System.setProperty("user.home", orig);
         }
     }
 }

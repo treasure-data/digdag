@@ -2,7 +2,9 @@ package acceptance;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
@@ -10,20 +12,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.fakeHome;
 import static acceptance.TestUtils.main;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class InitPushStartIT
@@ -39,6 +48,7 @@ public class InitPushStartIT
 
     private Path config;
     private Path projectDir;
+    private DigdagClient client;
 
     @Before
     public void setUp()
@@ -46,17 +56,17 @@ public class InitPushStartIT
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
+
+        client = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
     }
 
     @Test
     public void initPushStart()
             throws Exception
     {
-        DigdagClient client = DigdagClient.builder()
-                .host(server.host())
-                .port(server.port())
-                .build();
-
         // Create new project
         CommandStatus initStatus = main("init",
                 "-c", config.toString(),
