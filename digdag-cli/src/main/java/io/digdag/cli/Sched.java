@@ -2,8 +2,6 @@ package io.digdag.cli;
 
 import java.io.PrintStream;
 import java.util.Properties;
-import java.util.Map;
-import java.util.HashMap;
 import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
@@ -13,7 +11,6 @@ import io.digdag.core.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -23,12 +20,9 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.NoopWorkspaceManager;
-import static io.digdag.client.DigdagClient.objectMapper;
-import static io.digdag.cli.Arguments.loadParams;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Sched
@@ -38,16 +32,8 @@ public class Sched
 
     private static final String SYSTEM_CONFIG_DAGFILE_KEY = "server.autoLoadLocalDagfile";
 
-    private static final String SYSTEM_CONFIG_OVERWRITE_PARAMS = "server.overwriteParams";
-
     @Parameter(names = {"-f", "--file"})
     String dagfilePath = Run.DEFAULT_DAGFILE;
-
-    @DynamicParameter(names = {"-p", "--param"})
-    Map<String, String> params = new HashMap<>();
-
-    @Parameter(names = {"-P", "--params-file"})
-    String paramsFile = null;
 
     // TODO no-schedule mode
 
@@ -96,14 +82,7 @@ public class Sched
 
         Properties props = buildServerProperties();
 
-        // read parameters
-        ConfigFactory cf = new ConfigFactory(objectMapper());
-        Config overwriteParams = loadParams(
-                cf, new ConfigLoaderManager(cf, new YamlConfigLoader()),
-                props, paramsFile, params);
-
         props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
-        props.setProperty(SYSTEM_CONFIG_OVERWRITE_PARAMS, overwriteParams.toString());
 
         ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
     }
@@ -129,7 +108,7 @@ public class Sched
             try {
                 autoReloader.watch(
                         Paths.get(systemConfig.get(SYSTEM_CONFIG_DAGFILE_KEY, String.class)),
-                        cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_OVERWRITE_PARAMS, String.class)));
+                        cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class)));
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

@@ -134,6 +134,7 @@ public class WorkflowExecutor
     private final TaskQueueDispatcher dispatcher;
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
+    private final Config systemConfig;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -146,7 +147,8 @@ public class WorkflowExecutor
             TaskQueueDispatcher dispatcher,
             WorkflowCompiler compiler,
             ConfigFactory cf,
-            ObjectMapper archiveMapper)
+            ObjectMapper archiveMapper,
+            Config systemConfig)
     {
         this.rm = rm;
         this.sm = sm;
@@ -154,6 +156,7 @@ public class WorkflowExecutor
         this.dispatcher = dispatcher;
         this.cf = cf;
         this.archiveMapper = archiveMapper;
+        this.systemConfig = systemConfig;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -1002,6 +1005,8 @@ public class WorkflowExecutor
             params.merge(s);
         }
         params.merge(task.getConfig().getExport());
+        Config defaultParams = cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class, "{}"));
+        params.merge(defaultParams);
     }
 
     private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)

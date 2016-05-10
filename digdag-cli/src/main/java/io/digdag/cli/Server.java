@@ -1,15 +1,25 @@
 package io.digdag.cli;
 
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.server.ServerBootstrap;
+
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 import static io.digdag.server.ServerConfig.DEFAULT_BIND;
 
@@ -33,6 +43,12 @@ public class Server
 
     @Parameter(names = {"-A", "--access-log"})
     String accessLogPath = null;
+
+    @DynamicParameter(names = {"-p", "--param"})
+    Map<String, String> params = new HashMap<>();
+
+    @Parameter(names = {"-P", "--params-file"})
+    String paramsFile = null;
 
     protected final Version localVersion;
 
@@ -73,6 +89,8 @@ public class Server
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -A, --access-log DIR             store access logs files to this path");
+        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(err);
         return systemExit(error);
@@ -115,6 +133,14 @@ public class Server
         if (accessLogPath != null) {
             props.setProperty("server.access-log.path", accessLogPath);
         }
+
+        // Load default parameters
+        ConfigFactory cf = new ConfigFactory(objectMapper());
+        Config defaultParams = loadParams(
+                cf, new ConfigLoaderManager(cf, new YamlConfigLoader()),
+                props, paramsFile, params);
+
+        props.setProperty("digdag.defaultParams", defaultParams.toString());
 
         return props;
     }

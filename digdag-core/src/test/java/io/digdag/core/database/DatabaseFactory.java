@@ -1,7 +1,9 @@
 package io.digdag.core.database;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.inject.Provider;
+import io.digdag.client.config.ConfigFactory;
 import org.skife.jdbi.v2.DBI;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.TaskQueueDispatcher;
@@ -48,13 +50,15 @@ public class DatabaseFactory
 
     public WorkflowExecutor getWorkflowExecutor()
     {
+        ConfigFactory configFactory = createConfigFactory();
         return new WorkflowExecutor(
                 getProjectStoreManager(),
                 getSessionStoreManager(),
                 new NullTaskQueueDispatcher(),
                 new WorkflowCompiler(),
-                createConfigFactory(),
-                objectMapper());
+                configFactory,
+                objectMapper(),
+                configFactory.create());
     }
 
     public static class NullTaskQueueDispatcher
