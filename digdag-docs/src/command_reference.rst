@@ -303,13 +303,11 @@ Client-mode common options:
   Add a custom HTTP header. Use multiple times to set multiple headers.
 
 :command:`-c, --config PATH`
-  Configuration file path in addition to ~/.digdag/config to overwrite.
+  Configuration file to load. (default: ~/.config/digdag/config)
 
   Example: -c digdag-server/client.properties
 
-You can include following promerters in ~/.digdag/config file:
-
-In the config file, following parameters are available
+You can include following parameters in ~/.config/digdag/config file:
 
 * cilent.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)

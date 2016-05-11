@@ -58,7 +58,7 @@ public class InitPushStartConfigIT
     {
         Path tempdir = folder.getRoot().toPath().toAbsolutePath();
         Path homedir = folder.newFolder("home").toPath();
-        Path configDir = homedir.resolve(".digdag");
+        Path configDir = homedir.resolve(".config").resolve("digdag");
         Files.createDirectories(configDir);
         Path configFile = configDir.resolve("config");
         Path projectDir = tempdir.resolve("echo_params");

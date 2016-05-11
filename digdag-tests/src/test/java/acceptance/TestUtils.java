@@ -52,7 +52,7 @@ class TestUtils
     {
         String orig = System.setProperty("user.home", home);
         try {
-            Files.createDirectories(Paths.get(home).resolve(".digdag"));
+            Files.createDirectories(Paths.get(home).resolve(".config").resolve("digdag"));
             a.run();
         }
         finally {
