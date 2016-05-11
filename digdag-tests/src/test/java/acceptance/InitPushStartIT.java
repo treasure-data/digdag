@@ -82,7 +82,7 @@ public class InitPushStartIT
                 "-f", projectDir.resolve("digdag.yml").toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
-        assertThat(pushStatus.code(), is(0));
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Verify that the project is there
         RestProject project = client.getProject("foobar");

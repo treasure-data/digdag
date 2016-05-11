@@ -29,7 +29,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.LocalSite;
 
-public class RevisionAutoReloader
+class RevisionAutoReloader
 {
     private static Logger logger = LoggerFactory.getLogger(RevisionAutoReloader.class);
 
@@ -57,7 +57,7 @@ public class RevisionAutoReloader
         }
     }
 
-    public void watch(Path dagfilePath, Config overwriteParams)
+    void watch(Path dagfilePath, Config overwriteParams)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         ReloadTarget target = new ReloadTarget(dagfilePath, overwriteParams);
@@ -102,14 +102,14 @@ public class RevisionAutoReloader
         private int lastRevId;
         private ArchiveMetadata lastMetadata;
 
-        public ReloadTarget(Path dagfilePath, Config overwriteParams)
+        private ReloadTarget(Path dagfilePath, Config overwriteParams)
         {
             this.dagfilePath = dagfilePath;
             this.overwriteParams = overwriteParams;
             this.lastMetadata = null;
         }
 
-        public void load()
+        private void load()
             throws IOException, ResourceConflictException, ResourceNotFoundException
         {
             ProjectArchive project = readProject();
@@ -120,7 +120,7 @@ public class RevisionAutoReloader
                     Instant.now());
         }
 
-        public void tryReload()
+        private void tryReload()
         {
             try {
                 ProjectArchive project = readProject();  // TODO optimize this code

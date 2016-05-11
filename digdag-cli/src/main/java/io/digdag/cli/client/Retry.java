@@ -8,11 +8,11 @@ import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestSessionAttemptRequest;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import static java.util.Locale.ENGLISH;
@@ -104,7 +104,7 @@ public class Retry
         return systemExit(error);
     }
 
-    public void retry(long attemptId)
+    private void retry(long attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();
@@ -147,10 +147,10 @@ public class Retry
         ln("  uuid: %s", newAttempt.getSessionUuid());
         ln("  project: %s", newAttempt.getProject().getName());
         ln("  workflow: %s", newAttempt.getWorkflow().getName());
-        ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
+        ln("  session time: %s", TimeUtil.formatTime(newAttempt.getSessionTime()));
         ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
         ln("  params: %s", newAttempt.getParams());
-        ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
+        ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
         ln("");
 
         err.println("* Use `digdag attempts` to list attempts.");

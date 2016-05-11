@@ -46,7 +46,7 @@ public class Upload
         return systemExit(error);
     }
 
-    public void upload(String path, String projName)
+    private void upload(String path, String projName)
         throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();

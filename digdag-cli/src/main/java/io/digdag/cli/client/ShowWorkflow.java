@@ -46,7 +46,7 @@ public class ShowWorkflow
         return systemExit(error);
     }
 
-    public void showWorkflows(String projName)
+    private void showWorkflows(String projName)
         throws Exception
     {
         DigdagClient client = buildClient();
@@ -75,7 +75,7 @@ public class ShowWorkflow
         err.println("Use `digdag workflows <project-name> <name>` to show details.");
     }
 
-    public void showWorkflowDetails(String projName, String defName)
+    private void showWorkflowDetails(String projName, String defName)
         throws Exception
     {
         DigdagClient client = buildClient();

@@ -4,6 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.core.Version;
@@ -78,7 +79,7 @@ public class ShowSession
         return systemExit(error);
     }
 
-    public void showSessions(String projName, String workflowName)
+    private void showSessions(String projName, String workflowName)
         throws Exception
     {
         DigdagClient client = buildClient();
@@ -127,10 +128,10 @@ public class ShowSession
         ln("  uuid: %s", attempt.getSessionUuid());
         ln("  project: %s", attempt.getProject().getName());
         ln("  workflow: %s", attempt.getWorkflow().getName());
-        ln("  session time: %s", formatTime(attempt.getSessionTime()));
+        ln("  session time: %s", TimeUtil.formatTime(attempt.getSessionTime()));
         ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
         ln("  params: %s", attempt.getParams());
-        ln("  created at: %s", formatTime(attempt.getCreatedAt()));
+        ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
         ln("  kill requested: %s", attempt.getCancelRequested());
         ln("  status: %s", status);
         ln("");

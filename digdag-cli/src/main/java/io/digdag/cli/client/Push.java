@@ -1,18 +1,31 @@
 package io.digdag.cli.client;
 
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.File;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import io.digdag.cli.Run;
+import io.digdag.cli.StdErr;
+import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Version;
+import io.digdag.core.config.ConfigLoaderManager;
 
+import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Push
@@ -61,15 +74,35 @@ public class Push
         return systemExit(error);
     }
 
-    public void push(String projName)
+    private void push(String projName)
         throws Exception
     {
-        String path = "digdag.archive.tar.gz";
-        new File(path).deleteOnExit();
-        new Archive(out, err).archive(dagfilePath, params, paramsFile, configPath, path);
+        Path archivePath = Files.createTempFile("digdag.archive", ".tar.gz");
+        archivePath.toFile().deleteOnExit();
+
+        Injector injector = new DigdagEmbed.Bootstrap()
+                .withWorkflowExecutor(false)
+                .withScheduleExecutor(false)
+                .withLocalAgent(false)
+                .addModules(binder -> {
+                    binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
+                    binder.bind(Archiver.class).in(Scopes.SINGLETON);
+                    binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
+                    binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
+                })
+                .initialize()
+                .getInjector();
+
+        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+
+        // read parameters
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+
+        injector.getInstance(Archiver.class).createArchive(Paths.get(dagfilePath), archivePath, overwriteParams);
 
         DigdagClient client = buildClient();
-        RestProject proj = client.putProjectRevision(projName, revision, new File(path));
+        RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
         new Upload(localVersion, out, err).showUploadedProject(proj);
     }
 }

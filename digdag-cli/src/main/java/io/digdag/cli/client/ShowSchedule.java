@@ -3,9 +3,9 @@ package io.digdag.cli.client;
 import java.io.PrintStream;
 import java.time.Instant;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -39,7 +39,7 @@ public class ShowSchedule
         return systemExit(error);
     }
 
-    public void showSchedules()
+    private void showSchedules()
         throws Exception
     {
         Instant now = Instant.now();
@@ -51,8 +51,8 @@ public class ShowSchedule
             ln("  id: %d", sched.getId());
             ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());
-            ln("  next session time: %s", formatTime(sched.getNextScheduleTime()));
-            ln("  next runs at: %s (%s later)", formatTime(sched.getNextRunTime()), formatTimeDiff(now, sched.getNextRunTime()));
+            ln("  next session time: %s", TimeUtil.formatTime(sched.getNextScheduleTime()));
+            ln("  next runs at: %s (%s later)", TimeUtil.formatTime(sched.getNextRunTime()), TimeUtil.formatTimeDiff(now, sched.getNextRunTime()));
             ln("");
             count++;
         }

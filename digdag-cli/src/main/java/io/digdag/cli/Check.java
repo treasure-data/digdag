@@ -32,8 +32,8 @@ import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import static io.digdag.cli.client.ClientCommand.formatTime;
-import static io.digdag.cli.client.ClientCommand.formatTimeDiff;
+import static io.digdag.cli.TimeUtil.formatTime;
+import static io.digdag.cli.TimeUtil.formatTimeDiff;
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.cli.Run.DEFAULT_DAGFILE;
@@ -108,14 +108,14 @@ public class Check
         showProject(injector, project);
     }
 
-    public void showSystemDefaults()
+    private void showSystemDefaults()
     {
         ln("  System default timezone: %s",
                 ZoneId.systemDefault());
         ln("");
     }
 
-    public void showProject(Injector injector, ProjectArchive project)
+    private void showProject(Injector injector, ProjectArchive project)
     {
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
@@ -186,8 +186,8 @@ public class Check
         f.ln("%s:", def.getName());
         f.indent = "      ";
         f.ln(yamlMapper.toYaml(schedConfig));
-        f.ln("first session time: %s", formatTime(firstTime.getTime()));
-        f.ln("first runs at: %s (%s later)", formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime()));
+        f.ln("first session time: %s", TimeUtil.formatTime(firstTime.getTime()));
+        f.ln("first runs at: %s (%s later)", TimeUtil.formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime()));
         f.indent = "    ";
     }
 

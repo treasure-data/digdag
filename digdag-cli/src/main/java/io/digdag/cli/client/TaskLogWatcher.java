@@ -24,7 +24,7 @@ import io.digdag.core.log.LogLevel;
 import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class TaskLogWatcher
+class TaskLogWatcher
 {
     // 2016-04-06 17:07:16 -0700 [INFO] ...
     private static final Pattern LEVEL_PATTERN = Pattern.compile("^[0-9\\:\\ \\-\\+\\.]*\\[([A-Za-z]+)\\]");
@@ -35,7 +35,7 @@ public class TaskLogWatcher
     private final LogLevel levelFilter;
     private final PrintStream out;
 
-    public TaskLogWatcher(DigdagClient client, long attemptId, LogLevel levelFilterOrNull, PrintStream out)
+    TaskLogWatcher(DigdagClient client, long attemptId, LogLevel levelFilterOrNull, PrintStream out)
     {
         this.client = client;
         this.attemptId = attemptId;
@@ -44,7 +44,7 @@ public class TaskLogWatcher
         this.stateMap = new HashMap<>();
     }
 
-    public boolean update(List<RestLogFileHandle> handles)
+    boolean update(List<RestLogFileHandle> handles)
         throws IOException
     {
         boolean updatedAtLeastOne = false;
@@ -71,7 +71,7 @@ public class TaskLogWatcher
         private int lastLineCount = 0;
         private boolean lastLineFiltered = false;
 
-        public boolean update(List<RestLogFileHandle> sortedHandles)
+        boolean update(List<RestLogFileHandle> sortedHandles)
             throws IOException
         {
             int i = 0;

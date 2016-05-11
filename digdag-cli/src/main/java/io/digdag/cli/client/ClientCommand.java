@@ -172,7 +172,7 @@ public abstract class ClientCommand
         Main.showCommonOptions(err);
     }
 
-    public long parseLongOrUsage(String arg)
+    protected long parseLongOrUsage(String arg)
             throws SystemExitException
     {
         try {
@@ -183,7 +183,7 @@ public abstract class ClientCommand
         }
     }
 
-    public int parseIntOrUsage(String arg)
+    protected int parseIntOrUsage(String arg)
             throws SystemExitException
     {
         try {
@@ -197,80 +197,6 @@ public abstract class ClientCommand
     protected void ln(String format, Object... args)
     {
         out.println(String.format(format, args));
-    }
-
-    private static final DateTimeFormatter formatter =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
-
-    public static String formatTime(Instant instant)
-    {
-        return formatter.withZone(ZoneId.systemDefault()).format(instant);
-    }
-
-    public static String formatTime(OffsetDateTime time)
-    {
-        return formatter.format(time);
-    }
-
-    public static String formatTimeDiff(Instant now, Instant from)
-    {
-        long seconds = now.until(from, ChronoUnit.SECONDS);
-        long hours = seconds / 3600;
-        seconds %= 3600;
-        long minutes = seconds / 60;
-        seconds %= 60;
-        if (hours > 0) {
-            return String.format("%2dh %2dm %2ds", hours, minutes, seconds);
-        }
-        else if (minutes > 0) {
-            return String.format("    %2dm %2ds", minutes, seconds);
-        }
-        else {
-            return String.format("        %2ds", seconds);
-        }
-    }
-
-    private final DateTimeFormatter INSTANT_PARSER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
-                    .withZone(ZoneId.systemDefault());
-
-    private static final DateTimeFormatter LOCAL_TIME_PARSER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);
-
-    protected Instant parseTime(String s, String errorMessage)
-            throws SystemExitException
-    {
-        try {
-            Instant i = Instant.ofEpochSecond(Long.parseLong(s));
-            return i;
-        }
-        catch (NumberFormatException notUnixTime) {
-            try {
-                return Instant.from(INSTANT_PARSER.parse(s));
-            }
-            catch (DateTimeException ex) {
-                throw systemExit(errorMessage + ": " + s);
-            }
-        }
-    }
-
-    protected LocalDateTime parseLocalTime(String s, String errorMessage)
-            throws SystemExitException
-    {
-        TemporalAccessor parsed;
-        try {
-            parsed = LOCAL_TIME_PARSER.parse(s);
-        }
-        catch (DateTimeParseException ex) {
-            throw systemExit(errorMessage + ": " + s);
-        }
-        LocalDateTime local;
-        try {
-            return LocalDateTime.from(parsed);
-        }
-        catch (DateTimeException ex) {
-            return LocalDateTime.of(LocalDate.from(parsed), LocalTime.of(0, 0, 0));
-        }
     }
 
     protected static YamlMapper yamlMapper()

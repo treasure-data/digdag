@@ -113,24 +113,24 @@ public class GraphvizWorkflowVisualizer
         private final List<NodeBuilder> children;
         private final List<NodeBuilder> upstreams;
 
-        public NodeBuilder(WorkflowVisualizerNode node)
+        private NodeBuilder(WorkflowVisualizerNode node)
         {
             this.node = node;
             this.children = new ArrayList<>();
             this.upstreams = new ArrayList<>();
         }
 
-        public long getId()
+        private long getId()
         {
             return node.getId();
         }
 
-        public void addChild(NodeBuilder child)
+        private void addChild(NodeBuilder child)
         {
             children.add(child);
         }
 
-        public void addUpstream(Map<Long, NodeBuilder> idMap)
+        private void addUpstream(Map<Long, NodeBuilder> idMap)
         {
             for (long upstreamId : node.getUpstreamIds()) {
                 NodeBuilder upstream = idMap.get(upstreamId);
@@ -141,17 +141,17 @@ public class GraphvizWorkflowVisualizer
             }
         }
 
-        public boolean isRoot()
+        private boolean isRoot()
         {
             return !node.getParentId().isPresent();
         }
 
-        public long getParentId()
+        private long getParentId()
         {
             return node.getParentId().get();
         }
 
-        public void buildTo(PrintWriter out)
+        private void buildTo(PrintWriter out)
         {
             if (children.isEmpty()) {
                 out.println(String.format("\"%s\" [label=\"%s\" style=filled fillcolor=%s]",
