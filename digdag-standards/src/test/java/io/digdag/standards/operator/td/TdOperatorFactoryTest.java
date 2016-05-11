@@ -28,15 +28,15 @@ public class TdOperatorFactoryTest
                 insertCommandStatement("INSERT",
                     "with a as (select 1)\n--DIGDAG_INSERT_LINE\n-- comment\nselect 1"));
 
-        assertEquals("-- comment\nINSERT\nselect 1",
+        assertEquals("INSERT\n-- comment\nselect 1",
                 insertCommandStatement("INSERT",
                     "-- comment\nselect 1"));
 
-        assertEquals("-- comment\nINSERT\r\nselect 1",
+        assertEquals("INSERT\n-- comment\r\nselect 1",
                 insertCommandStatement("INSERT",
                     "-- comment\r\nselect 1"));
 
-        assertEquals("-- comment1\n--comment2\nINSERT\nselect 1",
+        assertEquals("INSERT\n-- comment1\n--comment2\nselect 1",
                 insertCommandStatement("INSERT",
                     "-- comment1\n--comment2\nselect 1"));
 
