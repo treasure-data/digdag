@@ -1,9 +1,11 @@
 package io.digdag.standards.operator.td;
 
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.*;
+
 import static io.digdag.standards.operator.td.TdOperatorFactory.insertCommandStatement;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class TdOperatorFactoryTest
 {
@@ -37,5 +39,15 @@ public class TdOperatorFactoryTest
         assertEquals("-- comment1\n--comment2\nINSERT\nselect 1",
                 insertCommandStatement("INSERT",
                     "-- comment1\n--comment2\nselect 1"));
+
+        {
+            String command = "INSERT";
+            String query = "SELECT\n" +
+                    "-- comment1\n" +
+                    "1;\n" +
+                    "-- comment2\n";
+            String expected = command + "\n" + query;
+            assertThat(insertCommandStatement(command, query), is(expected));
+        }
     }
 }
