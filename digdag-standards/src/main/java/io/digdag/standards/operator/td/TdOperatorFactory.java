@@ -226,8 +226,6 @@ public class TdOperatorFactory
 
     private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*");
 
-    private final static Pattern COMMENT_BLOCK_PATTERN = Pattern.compile("(?:(?:\\A|\\r?\\n)\\-\\-(?:(?!\\n|\\z).)*)+");
-
     @VisibleForTesting
     static String insertCommandStatement(String command, String original)
     {
@@ -235,14 +233,6 @@ public class TdOperatorFactory
         Matcher ml = INSERT_LINE_PATTERN.matcher(original);
         if (ml.find()) {
             return ml.replaceAll(ml.group(1) + command);
-        }
-
-        // try to insert command after comments
-        Matcher mc = COMMENT_BLOCK_PATTERN.matcher(original);
-        if (mc.find()) {
-            return mc.group() +
-                "\n" +
-                command + original.substring(mc.group().length());
         }
 
         // add command at the head
