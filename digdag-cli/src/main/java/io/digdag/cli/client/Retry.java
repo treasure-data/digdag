@@ -91,7 +91,7 @@ public class Retry
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag restart <attempt-id>");
+        err.println("Usage: digdag retry <attempt-id>");
         err.println("  Options:");
         err.println("        --name <name>                unique identifier of this retry attempt");
         err.println("        --latest-revision            use the latest revision");
