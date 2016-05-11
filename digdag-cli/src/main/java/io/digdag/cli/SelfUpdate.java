@@ -63,7 +63,7 @@ public class SelfUpdate
         return systemExit(error);
     }
 
-    public void selfUpdate(String version)
+    private void selfUpdate(String version)
         throws IOException, SystemExitException, URISyntaxException, InterruptedException
     {
         Path dest = Paths.get(Command.class.getProtectionDomain().getCodeSource().getLocation().toURI());

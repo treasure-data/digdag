@@ -10,6 +10,7 @@ import com.google.inject.Scopes;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.*;
@@ -88,7 +89,7 @@ public class Start
         return systemExit(error);
     }
 
-    public void start(String projName, String workflowName)
+    private void start(String projName, String workflowName)
         throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
@@ -127,7 +128,7 @@ public class Start
 
         default:
             time = LocalTimeOrInstant.of(
-                    parseLocalTime(sessionString,
+                    TimeUtil.parseLocalTime(sessionString,
                         "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
             mode = null;
         }
@@ -159,7 +160,7 @@ public class Start
             ln("  uuid: (dry run)");
             ln("  project: %s", def.getProject().getName());
             ln("  workflow: %s", def.getName());
-            ln("  session time: %s", formatTime(request.getSessionTime()));
+            ln("  session time: %s", TimeUtil.formatTime(request.getSessionTime()));
             ln("  retry attempt name: %s", request.getRetryAttemptName().or(""));
             ln("  params: %s", request.getParams());
             //ln("  created at: (dry run)");
@@ -175,10 +176,10 @@ public class Start
             ln("  uuid: %s", newAttempt.getSessionUuid());
             ln("  project: %s", newAttempt.getProject().getName());
             ln("  workflow: %s", newAttempt.getWorkflow().getName());
-            ln("  session time: %s", formatTime(newAttempt.getSessionTime()));
+            ln("  session time: %s", TimeUtil.formatTime(newAttempt.getSessionTime()));
             ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
             ln("  params: %s", newAttempt.getParams());
-            ln("  created at: %s", formatTime(newAttempt.getCreatedAt()));
+            ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
             ln("");
 
             err.println("* Use `digdag sessions` to list session attempts.");

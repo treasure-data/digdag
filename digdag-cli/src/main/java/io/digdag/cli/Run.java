@@ -569,7 +569,7 @@ public class Run
     {
         try {
             List<Instant> times = new ArrayList<>();
-            for (Path path : Files.newDirectoryStream(sessionStatusDir, path -> Files.isDirectory(path) && taskExists(path, workflowName))) {
+            for (Path path : Files.newDirectoryStream(sessionStatusDir, p -> Files.isDirectory(p) && taskExists(p, workflowName))) {
                 try {
                     times.add(Instant.from(SESSION_STATE_TIME_DIRNAME_FORMATTER.parse(path.getFileName().toString())));
                 }
@@ -595,7 +595,7 @@ public class Run
         throws IOException
     {
         Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\^].*\\.yml|\\.yml)");
-        for (Path file : Files.newDirectoryStream(dir, file -> Files.isRegularFile(file))) {
+        for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f))) {
             if (namePattern.matcher(file.getFileName().toString()).matches()) {
                 return true;
             }
@@ -605,7 +605,7 @@ public class Run
 
     private Function<String, TaskResult> skipTaskReports = (fullName) -> null;
 
-    public static class OperatorManagerWithSkip
+    private static class OperatorManagerWithSkip
             extends OperatorManager
     {
         private final ConfigFactory cf;
@@ -613,7 +613,7 @@ public class Run
         private final YamlMapper yamlMapper;
 
         @Inject
-        public OperatorManagerWithSkip(
+        private OperatorManagerWithSkip(
                 AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
                 WorkflowCompiler compiler, ConfigFactory cf,

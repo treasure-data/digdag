@@ -87,7 +87,7 @@ public class InitPushStartConfigIT
                     "-f", projectDir.resolve("digdag.yml").toString(),
                     "-e", server.endpoint(),
                     "-r", "4711");
-            assertThat(pushStatus.code(), is(0));
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
             // Start the workflow
             long attemptId;

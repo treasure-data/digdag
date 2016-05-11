@@ -10,9 +10,9 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.workflow.WorkflowTaskList;
 
-public class SubtreeExtract
+class SubtreeExtract
 {
-    public static WorkflowTaskList extractSubtree(WorkflowTaskList tasks, int targetTaskIndex)
+    static WorkflowTaskList extractSubtree(WorkflowTaskList tasks, int targetTaskIndex)
     {
         return new SubtreeExtract(tasks, targetTaskIndex).getExtracted();
     }
@@ -28,7 +28,7 @@ public class SubtreeExtract
         this.extracted = new ArrayList<>();
     }
 
-    public WorkflowTaskList getExtracted()
+    private WorkflowTaskList getExtracted()
     {
         extracted.add(tasks.get(0));  // always add the root (=workflow itself) because root must exist
 
@@ -51,7 +51,7 @@ public class SubtreeExtract
                         (task.getIndex() == targetTaskIndex) ?
                         ImmutableList.of() :
                         task.getUpstreamIndexes().stream()
-                            .map(index -> map.get(index))
+                            .map(map::get)
                             .collect(Collectors.toList()))
                 .build();
             builder.add(indexMapped);
@@ -59,7 +59,7 @@ public class SubtreeExtract
         return WorkflowTaskList.of(builder.build());
     }
 
-    public void addSubtasksRecursively(WorkflowTask task)
+    private void addSubtasksRecursively(WorkflowTask task)
     {
         if (extracted.stream().anyMatch(t -> t.getIndex() == task.getIndex())) {
             return;
@@ -68,7 +68,8 @@ public class SubtreeExtract
 
         // add child tasks recursively
         for (WorkflowTask t : tasks.subList(task.getIndex(), tasks.size())) {
-            if (t.getParentIndex().isPresent() && t.getParentIndex().get() == task.getIndex()) {
+            Optional<Integer> parentIndex = t.getParentIndex();
+            if (parentIndex.isPresent() && parentIndex.get() == task.getIndex()) {
                 addSubtasksRecursively(t);
             }
         }

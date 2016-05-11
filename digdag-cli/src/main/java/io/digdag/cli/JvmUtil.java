@@ -63,7 +63,7 @@ class JvmUtil
         return SystemExitException.systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u71 (1.8.0_71).");
     }
 
-    public static void validateJavaRuntime(PrintStream err)
+    static void validateJavaRuntime(PrintStream err)
             throws SystemExitException
     {
         validateJavaRuntime(System.getProperties(), err);

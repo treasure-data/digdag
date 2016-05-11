@@ -36,7 +36,7 @@ public class ShowTask
         return systemExit(error);
     }
 
-    public void showTasks(long attemptId)
+    private void showTasks(long attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();

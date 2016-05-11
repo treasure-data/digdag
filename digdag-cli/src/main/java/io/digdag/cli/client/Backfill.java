@@ -7,9 +7,9 @@ import java.time.Instant;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -57,14 +57,14 @@ public class Backfill
         return systemExit(error);
     }
 
-    public void backfill(int schedId)
+    private void backfill(int schedId)
         throws Exception
     {
         if (fromTime == null || attemptName == null) {
             throw new ParameterException("-f, --from option and -R, --attempt-name option are required");
         }
 
-        Instant from = parseTime(fromTime,
+        Instant from = TimeUtil.parseTime(fromTime,
             "-f, --from option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp");
 
         DigdagClient client = buildClient();
@@ -76,10 +76,10 @@ public class Backfill
             ln("  uuid: %s", attempt.getSessionUuid());
             ln("  project: %s", attempt.getProject().getName());
             ln("  workflow: %s", attempt.getWorkflow().getName());
-            ln("  session time: %s", formatTime(attempt.getSessionTime()));
+            ln("  session time: %s", TimeUtil.formatTime(attempt.getSessionTime()));
             ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
             ln("  params: %s", attempt.getParams());
-            ln("  created at: %s", formatTime(attempt.getCreatedAt()));
+            ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
             ln("");
         }
 

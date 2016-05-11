@@ -30,7 +30,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.ConfigFactory;
 
-public class ResumeStateManager
+class ResumeStateManager
 {
     private static Logger logger = LoggerFactory.getLogger(ResumeStateManager.class);
 
@@ -51,7 +51,7 @@ public class ResumeStateManager
         this.managedDirs = new CopyOnWriteArrayList<>();
     }
 
-    public TaskResult readSuccessfulTaskReport(Path dir, String fullName)
+    TaskResult readSuccessfulTaskReport(Path dir, String fullName)
     {
         TaskResumeState resumeState;
         try {
@@ -81,7 +81,7 @@ public class ResumeStateManager
         }
     }
 
-    public void startUpdate(Path dir, StoredSessionAttemptWithSession attempt)
+    void startUpdate(Path dir, StoredSessionAttemptWithSession attempt)
     {
         managedDirs.add(new ResumeStateDir(dir, attempt));
         startScheduleIfNotStarted();
@@ -122,7 +122,7 @@ public class ResumeStateManager
         private final StoredSessionAttemptWithSession attempt;
         private final Set<Long> doneTaskIdList = new HashSet<>();
 
-        public ResumeStateDir(Path dir, StoredSessionAttemptWithSession attempt)
+        private ResumeStateDir(Path dir, StoredSessionAttemptWithSession attempt)
         {
             this.dir = dir;
             this.attempt = attempt;
@@ -133,7 +133,7 @@ public class ResumeStateManager
             return attempt;
         }
 
-        public void update()
+        private void update()
         {
             List<ArchivedTask> tasks = sessionStoreManager
                 .getSessionStore(attempt.getSiteId())

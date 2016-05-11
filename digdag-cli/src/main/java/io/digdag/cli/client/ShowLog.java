@@ -55,7 +55,7 @@ public class ShowLog
         return systemExit(error);
     }
 
-    public void showLogs(long attemptId, Optional<String> taskName)
+    private void showLogs(long attemptId, Optional<String> taskName)
         throws Exception
     {
         DigdagClient client = buildClient();

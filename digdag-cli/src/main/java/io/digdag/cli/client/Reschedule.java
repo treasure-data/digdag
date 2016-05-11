@@ -6,9 +6,9 @@ import java.time.Instant;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -63,20 +63,20 @@ public class Reschedule
         return systemExit(error);
     }
 
-    public void reschedule(int schedId)
+    private void reschedule(int schedId)
         throws Exception
     {
         Instant now = Instant.now();
 
         Optional<Instant> runAt = runAtTime == null ? Optional.absent() : Optional.of(
-                parseTime(runAtTime, "-a, --run-at option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp")
+                TimeUtil.parseTime(runAtTime, "-a, --run-at option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp")
                 );
 
         DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
             updated = client.skipSchedulesToTime(schedId,
-                    parseTime(toTime,
+                    TimeUtil.parseTime(toTime,
                         "-t, --skip-to option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp"),
                     runAt,
                     dryRun);
@@ -90,8 +90,8 @@ public class Reschedule
 
         ln("  id: %d", updated.getId());
         ln("  workflow: %s", updated.getWorkflow().getName());
-        ln("  next session time: %s", formatTime(updated.getNextScheduleTime()));
-        ln("  next runs at: %s (%s later)", formatTime(updated.getNextRunTime()), formatTimeDiff(now, updated.getNextRunTime()));
+        ln("  next session time: %s", TimeUtil.formatTime(updated.getNextScheduleTime()));
+        ln("  next runs at: %s (%s later)", TimeUtil.formatTime(updated.getNextRunTime()), TimeUtil.formatTimeDiff(now, updated.getNextRunTime()));
         ln("");
 
         if (dryRun) {

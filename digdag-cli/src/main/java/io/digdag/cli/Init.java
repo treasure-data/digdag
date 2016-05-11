@@ -106,13 +106,13 @@ public class Init
         private final String sourcePrefix;
         private final File destDir;
 
-        public ResourceGenerator(String sourcePrefix, File destDir)
+        private ResourceGenerator(String sourcePrefix, File destDir)
         {
             this.sourcePrefix = sourcePrefix;
             this.destDir = destDir;
         }
 
-        public void cpAbsoluteDest(String src, File dest)
+        private void cpAbsoluteDest(String src, File dest)
             throws IOException
         {
             out.println("  Creating " + dest);
@@ -138,13 +138,13 @@ public class Init
             }
         }
 
-        public void cp(String src, String name)
+        private void cp(String src, String name)
             throws IOException
         {
             cpAbsoluteDest(src, file(name));
         }
 
-        public void cpWithReplace(String src, String name, Map<String, String> replacements)
+        private void cpWithReplace(String src, String name, Map<String, String> replacements)
             throws IOException
         {
             String data = getResource(src);
@@ -158,7 +158,7 @@ public class Init
             }
         }
 
-        public void setExecutable(String name)
+        private void setExecutable(String name)
         {
             boolean success = file(name).setExecutable(true);
             if (!success) {
@@ -166,13 +166,13 @@ public class Init
             }
         }
 
-        public boolean exists(String name)
+        private boolean exists(String name)
             throws IOException
         {
             return file(name).exists();
         }
 
-        public void mkdir(String name)
+        private void mkdir(String name)
         {
             boolean success = file(name).mkdirs();
             if (!success) {
