@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import static acceptance.TestUtils.main;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -42,6 +43,7 @@ public class TemporaryDigdagServer
     private final String endpoint;
 
     private final ExecutorService executor;
+    private final String configuration;
 
     private Path configDirectory;
     private Path config;
@@ -55,6 +57,7 @@ public class TemporaryDigdagServer
         this.host = "localhost";
         this.port = 65432;
         this.endpoint = "http://" + host + ":" + port;
+        this.configuration = Objects.requireNonNull(builder.configuration, "configuration");
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
     }
@@ -94,7 +97,7 @@ public class TemporaryDigdagServer
             this.configDirectory = temporaryFolder.newFolder().toPath();
             this.taskLog = temporaryFolder.newFolder().toPath();
             this.accessLog = temporaryFolder.newFolder().toPath();
-            this.config = Files.createFile(configDirectory.resolve("config"));
+            this.config = Files.write(configDirectory.resolve("config"), configuration.getBytes(UTF_8));
         }
         catch (IOException e) {
             throw Throwables.propagate(e);
@@ -163,15 +166,23 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
+
         private Builder()
         {
         }
 
         private Version version = Version.buildVersion();
+        private String configuration = "";
 
         public Builder version(Version version)
         {
             this.version = version;
+            return this;
+        }
+
+        public Builder configuration(String configuration)
+        {
+            this.configuration = configuration;
             return this;
         }
 

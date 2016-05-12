@@ -18,7 +18,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class MailIT
+public class LocalModeMailIT
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
