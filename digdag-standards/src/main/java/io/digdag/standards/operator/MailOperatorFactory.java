@@ -1,34 +1,36 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.io.IOException;
-import java.nio.file.Path;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import io.digdag.spi.TemplateEngine;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.mail.Authenticator;
+import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.Message.RecipientType;
-import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeBodyPart;
-import com.google.inject.Inject;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorFactory;
-import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MailOperatorFactory
@@ -37,11 +39,13 @@ public class MailOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
+    private Config systemConfig;
 
     @Inject
-    public MailOperatorFactory(TemplateEngine templateEngine)
+    public MailOperatorFactory(TemplateEngine templateEngine, Config systemConfig)
     {
         this.templateEngine = templateEngine;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -76,10 +80,22 @@ public class MailOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().mergeDefault(
+            Config bodyParams = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));
 
-            String body = templateEngine.templateCommand(workspacePath, params, "body", UTF_8);
+            // Note: Do not include system mail config params in the body template params to
+            //       ensure that they are not accessible to the user.
+            String body = templateEngine.templateCommand(workspacePath, bodyParams, "body", UTF_8);
+
+            // Load system mail config params
+            Config params = bodyParams.deepCopy();
+            String configPrefix = "config.mail.";
+            systemConfig.getKeys().stream()
+                    .filter(key -> key.startsWith(configPrefix))
+                    .forEach(key -> params.setIfNotSet(
+                            key.substring(configPrefix.length()),
+                            systemConfig.get(key, String.class)));
+
             String subject = params.get("subject", String.class);
 
             List<String> toList;
@@ -147,7 +163,7 @@ public class MailOperatorFactory
             MimeMessage msg = new MimeMessage(session);
 
             try {
-                String from = getFlatOrNested("from");
+                String from = getFlatOrNested(params, "from");
                 msg.setFrom(newAddress(from));
                 msg.setSender(newAddress(from));
 
@@ -185,23 +201,20 @@ public class MailOperatorFactory
             return TaskResult.empty(request);
         }
 
-        private String getFlatOrNested(String key)
+        private String getFlatOrNested(Config config, String key)
         {
-            Config config = request.getConfig();
             return config.getNestedOrGetEmpty("mail").getOptional(key, String.class)
                 .or(() -> config.get(key, String.class));
         }
 
-        private String getFlatOrNested(String key, String defaultValue)
+        private String getFlatOrNested(Config config, String key, String defaultValue)
         {
-            Config config = request.getConfig();
             return config.getNestedOrGetEmpty("mail").getOptional(key, String.class)
                 .or(() -> config.get(key, String.class, defaultValue));
         }
 
-        private boolean getFlatOrNested(String key, boolean defaultValue)
+        private boolean getFlatOrNested(Config config, String key, boolean defaultValue)
         {
-            Config config = request.getConfig();
             return config.getNestedOrGetEmpty("mail").getOptional(key, boolean.class)
                 .or(() -> config.get(key, boolean.class, defaultValue));
         }
