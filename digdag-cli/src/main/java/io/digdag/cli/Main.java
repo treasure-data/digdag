@@ -34,7 +34,7 @@ import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
-import static io.digdag.cli.Command.defaultConfigPath;
+import static io.digdag.cli.ConfigUtil.defaultConfigPath;
 import static io.digdag.core.Version.buildVersion;
 
 public class Main

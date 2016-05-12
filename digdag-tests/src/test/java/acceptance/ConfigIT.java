@@ -31,7 +31,8 @@ public class ConfigIT
     {
         copyResource("acceptance/params.yml", root().resolve("params.yml"));
         TestUtils.fakeHome(root().resolve("home").toString(), () -> {
-            Files.write(root().resolve("home").resolve(".digdag").resolve("config"), "params.mysql.password=secret".getBytes(UTF_8));
+            Path configFile = root().resolve("home").resolve(".config").resolve("digdag").resolve("config");
+            Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
             main("run", "-o", root().toString(), "-f", root().resolve("params.yml").toString());
         });
         assertThat(Files.readAllBytes(root().resolve("foo.out")), is("secret\n".getBytes(UTF_8)));
@@ -43,7 +44,8 @@ public class ConfigIT
     {
         copyResource("acceptance/params.yml", root().resolve("params.yml"));
         TestUtils.fakeHome(root().resolve("home").toString(), () -> {
-            Files.write(root().resolve("home").resolve(".digdag").resolve("config"), "params.mysql.password=secret".getBytes(UTF_8));
+            Path configFile = root().resolve("home").resolve(".config").resolve("digdag").resolve("config");
+            Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
             main("run",
                     "-o", root().toString(),
                     "-f", root().resolve("params.yml").toString(),

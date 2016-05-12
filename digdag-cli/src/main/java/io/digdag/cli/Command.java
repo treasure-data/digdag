@@ -2,7 +2,8 @@ package io.digdag.cli;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.file.Path;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 import java.io.FileNotFoundException;
-import java.nio.file.Paths;
+
 import io.digdag.core.config.PropertyUtils;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
@@ -52,10 +53,6 @@ public abstract class Command
 
     public abstract SystemExitException usage(String error);
 
-    protected static Path defaultConfigPath() {
-        return Paths.get(System.getProperty("user.home")).resolve(".digdag").resolve("config");
-    }
-
     protected Properties loadSystemProperties()
         throws IOException
     {
@@ -63,18 +60,19 @@ public abstract class Command
 
         // Load specific configuration file, if specified.
         if (configPath != null) {
-            props = PropertyUtils.loadFile(new File(configPath));
+            props = PropertyUtils.loadFile(Paths.get(configPath));
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(defaultConfigPath().toFile());
+                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath());
             }
-            catch (FileNotFoundException ex) {
+            catch (NoSuchFileException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);
                 props = new Properties();
             }
         }
 
+        // Override properties from config file with system properties
         props.putAll(System.getProperties());
 
         return props;

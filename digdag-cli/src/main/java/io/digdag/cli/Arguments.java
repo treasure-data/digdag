@@ -27,7 +27,7 @@ public class Arguments
     {
         Config overwriteParams = cf.create();
 
-        // ~/.digdag/config and JVM system properties
+        // ~/.config/digdag/config and JVM system properties
         for (String key : systemProps.stringPropertyNames()) {
             if (key.startsWith("params.")) {
                 setDotNestedKey(overwriteParams, key.substring("params.".length()), systemProps.getProperty(key));

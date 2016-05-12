@@ -1,5 +1,8 @@
 package io.digdag.core.config;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,11 +18,11 @@ public class PropertyUtils
     private PropertyUtils()
     { }
 
-    public static Properties loadFile(File file)
+    public static Properties loadFile(Path file)
         throws IOException
     {
         Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(file)) {
+        try (InputStream in = Files.newInputStream(file)) {
             props.load(in);
         }
         return props;
