@@ -10,10 +10,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 import static io.digdag.core.Version.buildVersion;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -30,25 +30,30 @@ class TestUtils
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ByteArrayOutputStream err = new ByteArrayOutputStream();
         final int code;
-        try {
-            code = new Main(localVersion, new PrintStream(out), new PrintStream(err)).cli(args);
+        try (
+                PrintStream outp = new PrintStream(out, true, "UTF-8");
+                PrintStream errp = new PrintStream(err, true, "UTF-8");
+        ) {
+            code = new Main(localVersion, outp, errp).cli(args);
         }
-        catch (RuntimeException e) {
+        catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();
             Assert.fail();
-            throw e;
+            throw Throwables.propagate(e);
         }
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
-    static void copyResource(String resource, Path dest) throws IOException
+    static void copyResource(String resource, Path dest)
+            throws IOException
     {
         try (InputStream input = Resources.getResource(resource).openStream()) {
             Files.copy(input, dest, REPLACE_EXISTING);
         }
     }
 
-    static void fakeHome(String home, Action a) throws Exception
+    static void fakeHome(String home, Action a)
+            throws Exception
     {
         String orig = System.setProperty("user.home", home);
         try {
