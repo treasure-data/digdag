@@ -46,8 +46,8 @@ public class ServerModeMailIT
             throws Exception
     {
         Path projectDir = folder.newFolder().toPath();
-        Path projectFile = projectDir.resolve("digdag.yml");
-        Path workflowFile = projectDir.resolve("mail_config.yml");
+        Path projectFile = projectDir.resolve("digdag.dig");
+        Path workflowFile = projectDir.resolve("mail_config.dig");
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
         Files.createFile(config);
@@ -59,8 +59,8 @@ public class ServerModeMailIT
         mailServer.setPort(port);
         mailServer.start();
 
-        copyResource("acceptance/mail_config/digdag.yml", projectFile);
-        copyResource("acceptance/mail_config/mail_config.yml", workflowFile);
+        copyResource("acceptance/mail_config/digdag.dig", projectFile);
+        copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
 
         // Push the project

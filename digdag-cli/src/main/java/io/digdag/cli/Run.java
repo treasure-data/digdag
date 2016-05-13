@@ -81,7 +81,7 @@ import static java.util.Locale.ENGLISH;
 public class Run
     extends Command
 {
-    public static final String DEFAULT_DAGFILE = "digdag.yml";
+    public static final String DEFAULT_DAGFILE = "digdag.dig";
 
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
@@ -183,7 +183,7 @@ public class Run
     {
         err.println("Usage: digdag run [workflow][+task] [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH.yml              use this file to load tasks (default: digdag.yml)");
+        err.println("    -f, --file PATH.dig              use this file to load tasks (default: digdag.dig)");
         err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
         err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at .digdag/status");
         err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at .digdag/status");
@@ -191,7 +191,7 @@ public class Run
         err.println("    -o, --save DIR                   uses this directory to read and write status files (default: .digdag/status)");
         err.println("        --no-save                    doesn't save status files at .digdag/status");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        err.println("    -P, --params-file PATH.dig       reads parameters from a YAML file");
         err.println("    -d, --dry-run                    dry-run mode doesn't execute tasks");
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
@@ -594,7 +594,7 @@ public class Run
     private static boolean taskExists(Path dir, String workflowName)
         throws IOException
     {
-        Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\^].*\\.yml|\\.yml)");
+        Pattern namePattern = Pattern.compile(Pattern.quote(workflowName) + "(?:[\\+\\^].*\\.dig|\\.dig)");
         for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f))) {
             if (namePattern.matcher(file.getFileName().toString()).matches()) {
                 return true;

@@ -41,7 +41,7 @@ public class Show
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag show <digdag.yml> [options...]");
+        err.println("Usage: digdag show <digdag.dig> [options...]");
         err.println("  Options:");
         err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
         Main.showCommonOptions(err);

@@ -25,8 +25,8 @@ public class RunIT
     public void testRun()
             throws Exception
     {
-        copyResource("acceptance/basic.yml", root().resolve("basic.yml"));
-        TestUtils.main("run", "-o", root().toString(), "-f", root().resolve("basic.yml").toString());
+        copyResource("acceptance/basic.dig", root().resolve("basic.dig"));
+        TestUtils.main("run", "-o", root().toString(), "-f", root().resolve("basic.dig").toString());
         assertThat(Files.exists(root().resolve("foo.out")), is(true));
         assertThat(Files.exists(root().resolve("bar.out")), is(true));
     }

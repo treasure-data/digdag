@@ -14,13 +14,13 @@ This operator embeds another workflow as a subtask.
 
 .. code-block:: yaml
 
-    # workflow1.yml
+    # workflow1.dig
     +step1:
       call>: +workflow1
 
 .. code-block:: yaml
 
-    # workflow1.yml
+    # workflow1.dig
     +step2:
       sh>: tasks/step2.sh
 
@@ -38,13 +38,13 @@ This operator submits a new session to digdag.
 
 .. code-block:: yaml
 
-    # workflow1.yml
+    # workflow1.dig
     +step1:
       require>: +workflow2
 
 .. code-block:: yaml
 
-    # workflow2.yml
+    # workflow2.dig
     +step2:
       sh>: tasks/step2.sh
 
@@ -384,11 +384,11 @@ TODO: add more description here
         apikey: YOUR/API_KEY
 
     +step1:
-      td_load>: config/guessed.yml
+      td_load>: config/guessed.dig
       database: prod
       table: raw
 
-:command:`td_load>: FILE.yml`
+:command:`td_load>: FILE.dig`
   Path to a YAML template file. This configuration needs to be guessed using td command.
 
   * :command:`td>: config/from_s3.sql`
@@ -714,10 +714,10 @@ embulk>: Embulk data transfer
 .. code-block:: yaml
 
     +load:
-      embulk>: data/load.yml
+      embulk>: data/load.dig
 
-:command:`embulk>: FILE.yml`
+:command:`embulk>: FILE.dig`
   Path to a configuration template file.
 
-  * :command:`embulk>: embulk/mysql_to_csv.yml`
+  * :command:`embulk>: embulk/mysql_to_csv.dig`
 

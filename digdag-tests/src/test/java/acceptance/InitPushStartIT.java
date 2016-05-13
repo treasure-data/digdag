@@ -61,13 +61,13 @@ public class InitPushStartIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
 
-        copyResource("acceptance/basic.yml", projectDir.resolve("foobar.yml"));
+        copyResource("acceptance/basic.dig", projectDir.resolve("foobar.dig"));
 
         // Push the project
         CommandStatus pushStatus = main("push",
                 "foobar",
                 "-c", config.toString(),
-                "-f", projectDir.resolve("digdag.yml").toString(),
+                "-f", projectDir.resolve("digdag.dig").toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));

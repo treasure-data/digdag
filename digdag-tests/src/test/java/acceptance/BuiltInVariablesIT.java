@@ -34,10 +34,10 @@ public class BuiltInVariablesIT
     public void testRun()
             throws Exception
     {
-        copyResource("acceptance/built_in_variables/built_in_variables.yml", root().resolve("built_in_variables.yml"));
+        copyResource("acceptance/built_in_variables/built_in_variables.dig", root().resolve("built_in_variables.dig"));
         CommandStatus status = main("run",
                 "-o", root().toString(),
-                "-f", root().resolve("built_in_variables.yml").toString(),
+                "-f", root().resolve("built_in_variables.dig").toString(),
                 "-t", "2016-01-02 03:04:05");
         assertThat(status.errUtf8(), status.code(), is(0));
         Path outputFile = root().resolve("output.yml");

@@ -55,7 +55,7 @@ class ResumeStateManager
     {
         TaskResumeState resumeState;
         try {
-            resumeState = mapper.readFile(dir.resolve(fullName + ".yml").toFile(), TaskResumeState.class);
+            resumeState = mapper.readFile(dir.resolve(fullName + ".dig").toFile(), TaskResumeState.class);
         }
         catch (FileNotFoundException ex) {
             return null;
@@ -177,7 +177,7 @@ class ResumeStateManager
                         .report(task.getReport().or(TaskReport.empty()))
                         .build());
 
-            mapper.writeFile(dir.resolve(task.getFullName() + ".yml").toFile(), state);
+            mapper.writeFile(dir.resolve(task.getFullName() + ".dig").toFile(), state);
         }
     }
 }

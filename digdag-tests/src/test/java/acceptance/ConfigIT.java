@@ -29,11 +29,11 @@ public class ConfigIT
     public void propertyByFile()
             throws Exception
     {
-        copyResource("acceptance/params.yml", root().resolve("params.yml"));
+        copyResource("acceptance/params.dig", root().resolve("params.dig"));
         TestUtils.fakeHome(root().resolve("home").toString(), () -> {
             Path configFile = root().resolve("home").resolve(".config").resolve("digdag").resolve("config");
             Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
-            main("run", "-o", root().toString(), "-f", root().resolve("params.yml").toString());
+            main("run", "-o", root().toString(), "-f", root().resolve("params.dig").toString());
         });
         assertThat(Files.readAllBytes(root().resolve("foo.out")), is("secret\n".getBytes(UTF_8)));
     }
@@ -42,13 +42,13 @@ public class ConfigIT
     public void verifyThatCommandLineParamsOverridesConfigFileParams()
             throws Exception
     {
-        copyResource("acceptance/params.yml", root().resolve("params.yml"));
+        copyResource("acceptance/params.dig", root().resolve("params.dig"));
         TestUtils.fakeHome(root().resolve("home").toString(), () -> {
             Path configFile = root().resolve("home").resolve(".config").resolve("digdag").resolve("config");
             Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
             main("run",
                     "-o", root().toString(),
-                    "-f", root().resolve("params.yml").toString(),
+                    "-f", root().resolve("params.dig").toString(),
                     "-p", "mysql.password=override");
         });
         assertThat(Files.readAllLines(root().resolve("foo.out")), contains("override"));

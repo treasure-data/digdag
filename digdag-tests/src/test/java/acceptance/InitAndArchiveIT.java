@@ -42,7 +42,7 @@ public class InitAndArchiveIT
     {
         main("init", project.toString());
         main("archive",
-                "-f", project.resolve("digdag.yml").toString(),
+                "-f", project.resolve("digdag.dig").toString(),
                 "-o", archive.toString());
 
         assertThat(Files.exists(archive), is(true));
@@ -50,8 +50,8 @@ public class InitAndArchiveIT
         Map<String, byte[]> entries = readEntries();
 
         // TODO (dano): add more exhaustive verification of archive contents
-        assertThat(entries, hasKey("digdag.yml"));
-        assertThat(entries, hasKey("foobar.yml"));
+        assertThat(entries, hasKey("digdag.dig"));
+        assertThat(entries, hasKey("foobar.dig"));
     }
 
     private Map<String, byte[]> readEntries()

@@ -28,7 +28,7 @@ public class YamlParameterizedConstructor
         {
             switch (node.getTag().getValue()) {
             case "!include":
-                // TODO use implicit resolver (Resolver.addImplicitResolver) to convert "<include: path.yml" to new Tag("!include")?
+                // TODO use implicit resolver (Resolver.addImplicitResolver) to convert "<include: path.dig" to new Tag("!include")?
                 return "!include:" + java.util.UUID.randomUUID().toString();
             }
             throw new TagException(

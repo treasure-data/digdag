@@ -78,9 +78,9 @@ public class Init
             gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
             gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cpWithReplace("workflow.yml", workflowName + ".yml",
+            gen.cpWithReplace("workflow.dig", workflowName + ".dig",
                     ImmutableMap.of("@@name@@", workflowName));
-            gen.cpWithReplace("digdag.yml", Run.DEFAULT_DAGFILE,
+            gen.cpWithReplace("digdag.dig", Run.DEFAULT_DAGFILE,
                     ImmutableMap.of("@@name@@", workflowName));
             if (path.equals(".")) {
                 out.println("Done. Type `digdag r` to run the workflow. Enjoy!");

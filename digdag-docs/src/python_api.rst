@@ -4,7 +4,7 @@ Language API - Python
 Programmable workflow in Python
 ----------------------------------
 
-workflow.yml:
+workflow.dig:
 
 .. code-block:: yaml
 

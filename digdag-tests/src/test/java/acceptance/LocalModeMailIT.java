@@ -45,7 +45,7 @@ public class LocalModeMailIT
         mailServer.start();
 
         // Add mail config to digdag configuration file
-        copyResource("acceptance/mail_config/mail_config.yml", projectDir.resolve("mail_config.yml"));
+        copyResource("acceptance/mail_config/mail_config.dig", projectDir.resolve("mail_config.dig"));
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
         String config = Joiner.on("\n").join(asList(
                 "params.mail.host=" + HOSTNAME,
@@ -62,7 +62,7 @@ public class LocalModeMailIT
         main("run",
                 "-c", configFile.toString(),
                 "-o", projectDir.toString(),
-                "-f", projectDir.resolve("mail_config.yml").toString(),
+                "-f", projectDir.resolve("mail_config.dig").toString(),
                 "--session", LOCAL_SESSION_TIME);
 
         // Wait for mail to be delivered

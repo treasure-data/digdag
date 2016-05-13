@@ -4,7 +4,7 @@ Language API - Ruby
 Programmable workflow in Ruby
 ----------------------------------
 
-workflow.yml:
+workflow.dig:
 
 .. code-block:: yaml
 

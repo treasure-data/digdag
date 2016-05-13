@@ -60,7 +60,7 @@ public class Archive
     {
         err.println("Usage: digdag archive [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
+        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions(err);
         return systemExit(error);

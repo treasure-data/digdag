@@ -4,17 +4,17 @@ Workflow definition
 .. contents::
    :local:
 
-The entry point: ``digdag.yml``
+The entry point: ``digdag.dig``
 ----------------------------------
 
-A digdag workflow project is defined in a YAML file named "digdag.yml". For example:
+A digdag workflow project is defined in a YAML file named "digdag.dig". For example:
 
 .. code-block:: yaml
 
    name: my_project
    workflows:
-     - hello_world.yml
-     - another.yml
+     - hello_world.dig
+     - another.dig
 
 This file specifies the name of the project and lists the workflow definition files in the project.
 
@@ -173,11 +173,11 @@ You can divide a YAML file into small files to organize complex workflow. ``!inc
 
     _export:
       mysql:
-        !include : 'config/mysql.yml'
+        !include : 'config/mysql.dig'
       hive:
-        !include : 'config/hive.yml'
+        !include : 'config/hive.dig'
 
-    !include : 'tasks/foo.yml'
+    !include : 'tasks/foo.dig'
 
 
 Parallel execution
