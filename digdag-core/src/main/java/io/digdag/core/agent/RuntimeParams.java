@@ -31,7 +31,7 @@ public class RuntimeParams
             String st = request.getConfig().get("last_session_time", String.class, null);
             if (st != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(st));
-                setTimeParameters(params, "last_", timeZone, instant);
+                setTimeParameters(params, "last_session_", timeZone, instant);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
@@ -44,7 +44,7 @@ public class RuntimeParams
             String st = request.getConfig().get("next_session_time", String.class, null);
             if (st != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(st));
-                setTimeParameters(params, "next_", timeZone, instant);
+                setTimeParameters(params, "next_session_", timeZone, instant);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
