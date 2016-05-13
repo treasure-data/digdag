@@ -9,7 +9,6 @@ import org.subethamail.wiser.WiserMessage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.main;
@@ -25,7 +24,8 @@ public class LocalModeMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
-    private static final int PORT = TestUtils.findFreePort();
+
+    private final int port = TestUtils.findFreePort();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -41,7 +41,7 @@ public class LocalModeMailIT
         Wiser mailServer;
         mailServer = new Wiser();
         mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(PORT);
+        mailServer.setPort(port);
         mailServer.start();
 
         // Add mail config to digdag configuration file
@@ -49,7 +49,7 @@ public class LocalModeMailIT
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
         String config = Joiner.on("\n").join(asList(
                 "params.mail.host=" + HOSTNAME,
-                "params.mail.port=" + PORT,
+                "params.mail.port=" + port,
                 "params.mail.from=" + SENDER,
                 "params.mail.username=mail-user",
                 "params.mail.password=mail-pass",

@@ -28,13 +28,14 @@ public class ServerModeHiddenMailConfigIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
-    private static final int PORT = 4711;
+
+    private final int port = TestUtils.findFreePort();
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(Joiner.on("\n").join(asList(
                     "config.mail.host=" + HOSTNAME,
-                    "config.mail.port=" + PORT,
+                    "config.mail.port=" + port,
                     "config.mail.from=" + SENDER,
                     "config.mail.username=mail-user",
                     "config.mail.password=mail-pass",
@@ -73,7 +74,7 @@ public class ServerModeHiddenMailConfigIT
         Wiser mailServer;
         mailServer = new Wiser();
         mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(PORT);
+        mailServer.setPort(port);
         mailServer.start();
 
         copyResource("acceptance/mail_config/digdag.yml", projectFile);

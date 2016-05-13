@@ -9,7 +9,6 @@ import org.subethamail.wiser.WiserMessage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Pattern;
 
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.main;
@@ -24,13 +23,14 @@ public class ServerModeMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
-    private static final int PORT = TestUtils.findFreePort();
+
+    private final int port = TestUtils.findFreePort();
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(Joiner.on("\n").join(asList(
                     "params.mail.host=" + HOSTNAME,
-                    "params.mail.port=" + PORT,
+                    "params.mail.port=" + port,
                     "params.mail.from=" + SENDER,
                     "params.mail.username=mail-user",
                     "params.mail.password=mail-pass",
@@ -56,7 +56,7 @@ public class ServerModeMailIT
         Wiser mailServer;
         mailServer = new Wiser();
         mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(PORT);
+        mailServer.setPort(port);
         mailServer.start();
 
         copyResource("acceptance/mail_config/digdag.yml", projectFile);
