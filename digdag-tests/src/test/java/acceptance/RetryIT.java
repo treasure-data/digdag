@@ -9,10 +9,9 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.getStartAttemptId;
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -20,8 +19,6 @@ import static org.junit.Assert.assertThat;
 
 public class RetryIT
 {
-    private static final Pattern START_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -74,9 +71,7 @@ public class RetryIT
                     "foobar", "foobar",
                     "--session", "now");
             assertThat(startStatus.code(), is(0));
-            Matcher startAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-            assertThat(startAttemptIdMatcher.find(), is(true));
-            originalAttemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+            originalAttemptId = getStartAttemptId(startStatus);
         }
 
         // Wait for the attempt to fail
@@ -103,10 +98,7 @@ public class RetryIT
                     "--all",
                     String.valueOf(originalAttemptId));
             assertThat(retryStatus.code(), is(0));
-            Matcher attemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(retryStatus.outUtf8());
-            assertThat(attemptIdMatcher.find(), is(true));
-            retryFailAttemptId = Long.parseLong(attemptIdMatcher.group(1));
-            assertThat(retryFailAttemptId, is(not(originalAttemptId)));
+            retryFailAttemptId = getStartAttemptId(retryStatus);
         }
 
         // Wait for the retry to fail as well
@@ -144,9 +136,7 @@ public class RetryIT
                     "--all",
                     String.valueOf(originalAttemptId));
             assertThat(retryStatus.code(), is(0));
-            Matcher attemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(retryStatus.outUtf8());
-            assertThat(attemptIdMatcher.find(), is(true));
-            retryFailAttemptId = Long.parseLong(attemptIdMatcher.group(1));
+            retryFailAttemptId = getStartAttemptId(retryStatus);
             assertThat(retryFailAttemptId, is(not(originalAttemptId)));
         }
 

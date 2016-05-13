@@ -1,25 +1,20 @@
 package acceptance;
 
-import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
+import static acceptance.TestUtils.START_ATTEMPT_ID_PATTERN;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.fakeHome;
+import static acceptance.TestUtils.getAttemptLogs;
 import static acceptance.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
@@ -29,8 +24,6 @@ import static org.junit.Assert.assertThat;
 
 public class InitPushStartConfigIT
 {
-    private static final Pattern START_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -116,22 +109,9 @@ public class InitPushStartConfigIT
                 assertThat(attempt.getSuccess(), is(true));
             }
 
-            String logs = getLogs(attemptId);
+            String logs = getAttemptLogs(client, attemptId);
             assertThat(logs, containsString("digdag params"));
             assertThat(logs, not(containsString("secret")));
         });
-    }
-
-    private String getLogs(long attemptId)
-            throws IOException
-    {
-        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
-        StringBuilder logs = new StringBuilder();
-        for (RestLogFileHandle handle : handles) {
-            try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {
-                logs.append(new String(ByteStreams.toByteArray(s), UTF_8));
-            }
-        }
-        return logs.toString();
     }
 }

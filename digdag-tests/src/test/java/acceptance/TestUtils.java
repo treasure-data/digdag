@@ -1,8 +1,11 @@
 package acceptance;
 
 import com.google.common.base.Throwables;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.cli.Main;
+import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.core.Version;
 import org.junit.Assert;
 
@@ -15,12 +18,29 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import static io.digdag.core.Version.buildVersion;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 class TestUtils
 {
+    /**
+     * attempt id pattern emitted by `digdag start`
+     */
+    static final Pattern START_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
+
+    /**
+     * attempt id pattern emitted by `digdag attempts`
+     */
+    static final Pattern ATTEMPTS_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
+
     static CommandStatus main(String... args)
     {
         return main(buildVersion(), args);
@@ -66,7 +86,7 @@ class TestUtils
         }
     }
 
-    public static int findFreePort()
+    static int findFreePort()
     {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
@@ -75,5 +95,32 @@ class TestUtils
         catch (IOException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    static long getStartAttemptId(CommandStatus startStatus)
+    {
+        Matcher matcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+        assertThat(matcher.find(), is(true));
+        return Long.parseLong(matcher.group(1));
+    }
+
+    static long getAttemptsAttemptId(CommandStatus attemptsStatus)
+    {
+        Matcher attemptsAttemptIdMatcher = ATTEMPTS_ATTEMPT_ID_PATTERN.matcher(attemptsStatus.outUtf8());
+        assertThat(attemptsAttemptIdMatcher.find(), is(true));
+        return Long.parseLong(attemptsAttemptIdMatcher.group(1));
+    }
+
+    static String getAttemptLogs(DigdagClient client, long attemptId)
+            throws IOException
+    {
+        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
+        StringBuilder logs = new StringBuilder();
+        for (RestLogFileHandle handle : handles) {
+            try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {
+                logs.append(new String(ByteStreams.toByteArray(s), UTF_8));
+            }
+        }
+        return logs.toString();
     }
 }

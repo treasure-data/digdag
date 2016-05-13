@@ -2,9 +2,7 @@ package acceptance;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
@@ -12,20 +10,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.fakeHome;
+import static acceptance.TestUtils.getStartAttemptId;
 import static acceptance.TestUtils.main;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
@@ -37,9 +28,6 @@ import static org.junit.Assert.assertThat;
 
 public class InitPushStartIT
 {
-    private static final Pattern START_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
-    private static final Pattern ATTEMPTS_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -104,9 +92,7 @@ public class InitPushStartIT
                     "foobar", "foobar",
                     "--session", "now");
             assertThat(startStatus.code(), is(0));
-            Matcher startAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-            assertThat(startAttemptIdMatcher.find(), is(true));
-            attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+            attemptId = getStartAttemptId(startStatus);
         }
 
         // Verify that the workflow is started
@@ -141,9 +127,8 @@ public class InitPushStartIT
                             "foobar", "foobar"));
             for (CommandStatus attemptsStatus : attemptsStatuses) {
                 assertThat(attemptsStatus.code(), is(0));
-                Matcher attemptsAttemptIdMatcher = ATTEMPTS_ATTEMPT_ID_PATTERN.matcher(attemptsStatus.outUtf8());
-                assertThat(attemptsAttemptIdMatcher.find(), is(true));
-                assertThat(Long.parseLong(attemptsAttemptIdMatcher.group(1)), is(attemptId));
+                long id = TestUtils.getAttemptsAttemptId(attemptsStatus);
+                assertThat(id, is(attemptId));
             }
         }
 
