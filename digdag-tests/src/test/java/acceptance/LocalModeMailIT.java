@@ -20,6 +20,13 @@ import static org.junit.Assert.assertThat;
 
 public class LocalModeMailIT
 {
+    private static final String SENDER = "alert@digdag.io";
+    private static final String RECEIVER = "test@digdag.io";
+    private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
+    private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
+    private static final String HOSTNAME = "127.0.0.1";
+    private static final int PORT = TestUtils.findFreePort();
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -30,25 +37,20 @@ public class LocalModeMailIT
         Path projectDir = folder.newFolder().toPath();
         Path configDir = folder.newFolder().toPath();
 
-        String sender = "alert@digdag.io";
-        String receiver = "test@digdag.io";
-        String localSessionTime = "2016-01-02 03:04:05";
-        String sessionTimeISO = "2016-01-02T03:04:05+00:00";
-
         // Start mail server
         Wiser mailServer;
         mailServer = new Wiser();
-        mailServer.setHostname("127.0.0.1");
-        mailServer.setPort(4711);
+        mailServer.setHostname(HOSTNAME);
+        mailServer.setPort(PORT);
         mailServer.start();
 
         // Add mail config to digdag configuration file
         copyResource("acceptance/mail_config/mail_config.yml", projectDir.resolve("mail_config.yml"));
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
         String config = Joiner.on("\n").join(asList(
-                "params.mail.host=127.0.0.1",
-                "params.mail.port=4711",
-                "params.mail.from=" + sender,
+                "params.mail.host=" + HOSTNAME,
+                "params.mail.port=" + PORT,
+                "params.mail.from=" + SENDER,
                 "params.mail.username=mail-user",
                 "params.mail.password=mail-pass",
                 "params.mail.tls=false"
@@ -61,7 +63,7 @@ public class LocalModeMailIT
                 "-c", configFile.toString(),
                 "-o", projectDir.toString(),
                 "-f", projectDir.resolve("mail_config.yml").toString(),
-                "--session", localSessionTime);
+                "--session", LOCAL_SESSION_TIME);
 
         // Wait for mail to be delivered
         for (int i = 0; i < 30; i++) {
@@ -74,8 +76,8 @@ public class LocalModeMailIT
         // Verify that the mail was correctly delivered
         assertThat(mailServer.getMessages().size(), is(1));
         WiserMessage message = mailServer.getMessages().get(0);
-        assertThat(message.getEnvelopeSender(), is(sender));
-        assertThat(message.getEnvelopeReceiver(), is(receiver));
-        assertThat(message.getMimeMessage().getContent(), is("hello world " + sessionTimeISO + "\r\n"));
+        assertThat(message.getEnvelopeSender(), is(SENDER));
+        assertThat(message.getEnvelopeReceiver(), is(RECEIVER));
+        assertThat(message.getMimeMessage().getContent(), is("hello world " + SESSION_TIME_ISO + "\r\n"));
     }
 }

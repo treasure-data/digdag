@@ -24,7 +24,7 @@ public class ServerModeMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
-    private static final int PORT = 4711;
+    private static final int PORT = TestUtils.findFreePort();
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
