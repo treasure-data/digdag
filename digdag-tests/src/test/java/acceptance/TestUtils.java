@@ -7,6 +7,8 @@ import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.core.Version;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -122,5 +125,32 @@ class TestUtils
             }
         }
         return logs.toString();
+    }
+
+    static <T> org.hamcrest.Matcher<T> validUuid()
+    {
+        return new BaseMatcher<T>() {
+            @Override
+            public boolean matches(Object o)
+            {
+                if (!(o instanceof CharSequence)) {
+                    return false;
+                }
+                String s = String.valueOf(o);
+                try {
+                    UUID uuid = UUID.fromString(s);
+                    return true;
+                }
+                catch (Exception e) {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description)
+            {
+                description.appendText("a valid uuid string");
+            }
+        };
     }
 }
