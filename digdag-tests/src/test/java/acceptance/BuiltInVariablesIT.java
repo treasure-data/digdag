@@ -36,8 +36,9 @@ public class BuiltInVariablesIT
     {
         copyResource("acceptance/built_in_variables/built_in_variables.dig", root().resolve("built_in_variables.dig"));
         CommandStatus status = main("run",
+                "--project", root().toString(),
                 "-o", root().toString(),
-                "-f", root().resolve("built_in_variables.dig").toString(),
+                "built_in_variables.dig",
                 "-t", "2016-01-02 03:04:05");
         assertThat(status.errUtf8(), status.code(), is(0));
         Path outputFile = root().resolve("output.yml");

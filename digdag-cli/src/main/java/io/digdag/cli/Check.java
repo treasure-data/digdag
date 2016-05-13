@@ -35,16 +35,17 @@ import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.TimeUtil.formatTime;
 import static io.digdag.cli.TimeUtil.formatTimeDiff;
 import static io.digdag.cli.Arguments.loadParams;
+import static io.digdag.cli.Arguments.loadProject;
+import static io.digdag.cli.Arguments.normalizeWorkflowName;
 import static io.digdag.cli.SystemExitException.systemExit;
-import static io.digdag.cli.Run.DEFAULT_DAGFILE;
 
 public class Check
     extends Command
 {
     private static final Logger logger = LoggerFactory.getLogger(Check.class);
 
-    @Parameter(names = {"-f", "--file"})
-    String dagfilePath = null;
+    @Parameter(names = {"--project"})
+    String projectDirName = null;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -64,18 +65,23 @@ public class Check
     public void main()
             throws Exception
     {
-        if (dagfilePath == null) {
-            dagfilePath = DEFAULT_DAGFILE;
+        switch (args.size()) {
+        case 0:
+            check(null);
+            break;
+        case 1:
+            check(args.get(0));
+            break;
+        default:
+            throw usage(null);
         }
-
-        check();
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag check [options...]");
+        err.println("Usage: digdag check [workflow.dig] [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.dig)");
+        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
@@ -83,7 +89,7 @@ public class Check
         return systemExit(error);
     }
 
-    public void check() throws Exception
+    public void check(String workflowNameArg) throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .withWorkflowExecutor(false)
@@ -103,9 +109,11 @@ public class Check
 
         showSystemDefaults();
 
-        ProjectArchive project = projectLoader.loadProjectOrSingleWorkflow(Paths.get(dagfilePath), overwriteParams);
+        ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
 
-        showProject(injector, project);
+        Optional<String> onlyWorkflow = Optional.fromNullable(workflowNameArg).transform(it -> normalizeWorkflowName(project, it));
+
+        showProject(injector, project, onlyWorkflow);
     }
 
     private void showSystemDefaults()
@@ -115,13 +123,13 @@ public class Check
         ln("");
     }
 
-    private void showProject(Injector injector, ProjectArchive project)
+    private void showProject(Injector injector, ProjectArchive project, Optional<String> onlyWorkflow)
     {
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
-        ArchiveMetadata meta = project.getMetadata();
+        ArchiveMetadata meta = project.getArchiveMetadata();
 
         Revision rev = Revision.builderFromArchive("check", meta)
             .archiveType("null")

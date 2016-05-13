@@ -65,9 +65,9 @@ public class InitPushStartIT
 
         // Push the project
         CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
                 "foobar",
                 "-c", config.toString(),
-                "-f", projectDir.resolve("digdag.dig").toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));

@@ -64,7 +64,6 @@ public class ServerModeHiddenMailConfigIT
             throws Exception
     {
         Path projectDir = folder.newFolder().toPath();
-        Path projectFile = projectDir.resolve("digdag.dig");
         Path workflowFile = projectDir.resolve("mail_config.dig");
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
@@ -77,7 +76,6 @@ public class ServerModeHiddenMailConfigIT
         mailServer.setPort(port);
         mailServer.start();
 
-        copyResource("acceptance/mail_config/digdag.dig", projectFile);
         copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
 
@@ -85,7 +83,7 @@ public class ServerModeHiddenMailConfigIT
         CommandStatus pushStatus = main("push",
                 "mail_config",
                 "-c", config.toString(),
-                "-f", projectFile.toString(),
+                "--project", projectDir.toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));
@@ -119,13 +117,11 @@ public class ServerModeHiddenMailConfigIT
             throws Exception
     {
         Path projectDir = folder.newFolder().toPath();
-        Path projectFile = projectDir.resolve("digdag.dig");
         Path workflowFile = projectDir.resolve("mail_config.dig");
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
         Files.createFile(config);
 
-        copyResource("acceptance/mail_config/digdag.dig", projectFile);
         copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/evil_mail_body.txt", projectDir.resolve("mail_body.txt"));
 
@@ -133,7 +129,7 @@ public class ServerModeHiddenMailConfigIT
         CommandStatus pushStatus = main("push",
                 "mail_config",
                 "-c", config.toString(),
-                "-f", projectFile.toString(),
+                "--project", projectDir.toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));

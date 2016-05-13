@@ -71,12 +71,11 @@ public class WorkflowFile
         // TODO should here validate key names of defaultParams?
     }
 
-    public static WorkflowFile fromConfig(String workflowName, ZoneId defaultTimeZone,
-            Config config)
+    public static WorkflowFile fromConfig(String workflowName, Config config)
     {
         Config copy = config.deepCopy();
 
-        ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(defaultTimeZone);
+        ZoneId timeZone = copy.getOptional("timezone", ZoneId.class).or(ZoneId.of("UTC"));
         copy.remove("timezone");
 
         Config topLevelExport = copy.getNestedOrGetEmpty("_export");
@@ -99,7 +98,7 @@ public class WorkflowFile
         }
 
         if (!copy.isEmpty()) {
-            throw new ConfigException("Workflow definition file includes unknown keys: " + copy.getKeys());
+            throw new ConfigException("Workflow '" + workflowName + "' includes unknown keys: " + copy.getKeys());
         }
 
         return new WorkflowFile(

@@ -75,18 +75,18 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.cli.Arguments.loadParams;
+import static io.digdag.cli.Arguments.loadProject;
+import static io.digdag.cli.Arguments.normalizeWorkflowName;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static java.util.Locale.ENGLISH;
 
 public class Run
     extends Command
 {
-    public static final String DEFAULT_DAGFILE = "digdag.dig";
-
     private static final Logger logger = LoggerFactory.getLogger(Run.class);
 
-    @Parameter(names = {"-f", "--file"})
-    String dagfilePath = null;
+    @Parameter(names = {"--project"})
+    String projectDirName = null;
 
     @Parameter(names = {"-a", "--rerun", "--all"})  // --all is kept here for backward compatibility but should be removed
     boolean rerunAll = false;
@@ -145,10 +145,6 @@ public class Run
             dryRun = showParams = true;
         }
 
-        if (dagfilePath == null) {
-            dagfilePath = DEFAULT_DAGFILE;
-        }
-
         if (runStart != null && runStartStop != null) {
             throw usage("-s, --start and -g, --goal don't work together");
         }
@@ -165,25 +161,23 @@ public class Run
             throw usage("-a, --rerun and -g, --goal don't work together");
         }
 
-        String matchPattern;
         switch (args.size()) {
-        case 0:
-            matchPattern = null;
-            break;
         case 1:
-            matchPattern = args.get(0);
+            run(args.get(0), null);
+            break;
+        case 2:
+            run(args.get(0), args.get(1));
             break;
         default:
             throw usage(null);
         }
-        run(matchPattern);
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag run [workflow][+task] [options...]");
+        err.println("Usage: digdag run <workflow.dig> [+task] [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH.dig              use this file to load tasks (default: digdag.dig)");
+        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
         err.println("    -s, --start +NAME                runs this task and its following tasks even if their status files are stored at .digdag/status");
         err.println("    -g, --goal +NAME                 runs this task and its children tasks even if their status files are stored at .digdag/status");
@@ -212,7 +206,7 @@ public class Run
 
     private static final List<Long> USE_ALL = null;
 
-    public void run(String matchPattern) throws Exception
+    public void run(String workflowNameArg, String matchPattern) throws Exception
     {
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
@@ -234,39 +228,21 @@ public class Run
         // read parameters
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
-        Path path = Paths.get(dagfilePath);
-        if (!path.toAbsolutePath().normalize().getParent().equals(Paths.get("").toAbsolutePath()) && !overwriteParams.has("_workdir")) {
-            // -f is set to a subdir
-            String subdir = path.getParent().toString();
-            logger.info("Setting workdir to {}", subdir);
-            overwriteParams.set("_workdir", subdir);
-        }
+        // load workflow definitions
+        ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
 
-        // read workflow definitions
-        ProjectArchive project = projectLoader.loadProjectOrSingleWorkflow(path, overwriteParams);
+        String workflowName = normalizeWorkflowName(project, workflowNameArg);
 
-        String workflowName;
         Optional<TaskMatchPattern> taskMatchPattern;
         if (matchPattern == null || matchPattern.isEmpty()) {
-            workflowName = project.getMetadata().getWorkflowList().get().get(0).getName();
             taskMatchPattern = Optional.absent();
-        }
-        else if (matchPattern.startsWith("+")) {
-            workflowName = project.getMetadata().getWorkflowList().get().get(0).getName();
-            taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
-        }
-        else if (matchPattern.contains("+")) {
-            String[] matchFragments = matchPattern.split("\\+", 2);
-            workflowName = matchFragments[0];
-            taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchFragments[1]));
         }
         else {
-            workflowName = matchPattern;
-            taskMatchPattern = Optional.absent();
+            taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
         }
 
         // store workflow definition archive
-        ArchiveMetadata archive = project.getMetadata();
+        ArchiveMetadata archive = project.getArchiveMetadata();
         StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 Instant.now().toString(),  // TODO revision name
@@ -277,6 +253,7 @@ public class Run
                 stored.getRevision(), stored.getWorkflowDefinitions(),
                 archive, overwriteParams,
                 workflowName, taskMatchPattern);
+        // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 
         // wait until it's done
         localSite.runUntilDone(attempt.getId());
@@ -361,8 +338,24 @@ public class Run
             }
         }
         if (def == null) {
-            throw new TaskMatchPattern.NoMatchException(String.format(
-                        "Workflow '%s' doesn't not exist.", workflowName));
+            if (projectDirName == null) {
+                if (workflowName.contains("/")) {
+                    Path subdir = Paths.get(workflowName).getParent();
+                    throw new ResourceNotFoundException(String.format(
+                                "Workflow '%s' doesn't not exist in current directory. You may need to type \"cd %s\" first, or set \"--project %s\" option.",
+                                workflowName, subdir, subdir));
+                }
+                else {
+                    throw new ResourceNotFoundException(String.format(
+                                "Workflow '%s' doesn't not exist in current directory. You may need to change directory first, or set --project option.",
+                                workflowName, projectDirName));
+                }
+            }
+            else {
+                throw new ResourceNotFoundException(String.format(
+                            "Workflow '%s' doesn't not exist in project directory '%s'.",
+                            workflowName, projectDirName));
+            }
         }
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
 

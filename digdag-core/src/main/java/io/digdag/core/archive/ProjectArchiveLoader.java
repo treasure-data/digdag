@@ -1,26 +1,23 @@
 package io.digdag.core.archive;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Properties;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.time.ZoneId;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.DirectoryStream;
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.core.archive.ProjectArchive.PathListing;
+import io.digdag.core.repository.ModelValidator;
+import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.archive.ProjectArchive.PathConsumer;
+import static io.digdag.core.archive.ProjectArchive.realPathToResourceName;
+import static io.digdag.core.archive.ProjectArchive.resourceNameToWorkflowName;
 
 public class ProjectArchiveLoader
 {
@@ -32,136 +29,95 @@ public class ProjectArchiveLoader
         this.configLoader = configLoader;
     }
 
-    public ProjectArchive loadProject(
-            Path dagfilePath,
+    public ProjectArchive load(
+            Path projectDirectory,
+            WorkflowResourceMatcher matcher,
             Config overwriteParams)
         throws IOException
     {
-        return load(dagfilePath, overwriteParams, false);
-    }
+        // toAbsolutePath is necessary because Paths.get("singleName").getParent() returns null instead of Paths.get("")
+        Path projectPath = projectDirectory.normalize().toAbsolutePath();
 
-    public ProjectArchive loadProjectOrSingleWorkflow(
-            Path dagfilePath,
-            Config overwriteParams)
-        throws IOException
-    {
-        return load(dagfilePath, overwriteParams, true);
-    }
-
-    private ProjectArchive load(
-            Path dagfilePath,
-            Config overwriteParams,
-            boolean singleWorkflowAllowed)
-        throws IOException
-    {
-        Path path = dagfilePath.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.dig").getParent() returns null instead of Paths.get("")
-
-        Config projectConfig = configLoader.loadParameterizedFile(path.toFile(), overwriteParams);
-
-        if (singleWorkflowAllowed && !projectConfig.has("workflows")) {
-            return loadSingleWorkflowProject(path, overwriteParams);
-        }
-
-        Path projectDir = path.getParent();
-        ProjectFile projectFile = ProjectFile.fromConfig(projectConfig);
-
-        Config projectParams = projectFile.getDefaultParams().deepCopy().setAll(overwriteParams);
-
+        // find workflow names
+        ModelValidator validator = ModelValidator.builder();
+        ImmutableList.Builder<RuntimeException> errors = ImmutableList.builder();
         ImmutableList.Builder<WorkflowDefinition> defs = ImmutableList.builder();
-        for (String relativeFileName : projectFile.getWorkflowFiles()) {
-            Path workflowFilePath = projectDir.resolve(relativeFileName).normalize();
 
-            try {
-                WorkflowFile workflowFile = loadWorkflowFile(projectDir, workflowFilePath, projectFile.getDefaultTimeZone(), projectParams);
+        listFiles(projectPath, (resourceName, path) -> {
+            if (matcher.matches(resourceName)) {
+                try {
+                    WorkflowFile workflowFile = loadWorkflowFile(resourceName, path, overwriteParams);
+                    defs.add(workflowFile.toWorkflowDefinition());
+                }
+                catch (IOException ex) {
+                    throw ex;
+                }
+                catch (RuntimeException ex) {
+                    validator.error("workflow " + path, null, ex.getMessage());
+                    errors.add(ex);
+                }
+            }
+        });
 
-                defs.add(workflowFile.toWorkflowDefinition());
+        try {
+            validator.validate("project", projectDirectory);
+        }
+        catch (ModelValidationException ex) {
+            for (Throwable error : errors.build()) {
+                ex.addSuppressed(error);
             }
-            catch (Exception ex) {
-                throw new ConfigException("Failed to load a workflow file: " + workflowFilePath, ex);
-            }
+            throw ex;
         }
 
         ArchiveMetadata metadata = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(defs.build()),
-                projectParams);
-
-        return new ProjectArchive(metadata, (baseDir, consumer) ->
-                listFiles(baseDir, projectDir, consumer));
-    }
-
-    private ProjectArchive loadSingleWorkflowProject(Path path, Config overwriteParams)
-        throws IOException
-    {
-        Path dir = path.getParent();
-        WorkflowFile workflowFile = loadWorkflowFile(dir, path, ZoneId.of("UTC"), overwriteParams);
-
-        ArchiveMetadata metadata = ArchiveMetadata.of(
-                WorkflowDefinitionList.of(ImmutableList.of(workflowFile.toWorkflowDefinition())),
                 overwriteParams);
 
-        return new ProjectArchive(metadata, (baseDir, consumer) ->
-                listFiles(baseDir, dir, consumer));
+        return new ProjectArchive(projectPath, metadata);
     }
 
-    private WorkflowFile loadWorkflowFile(Path projectDir, Path workflowFilePath,
-            ZoneId defaultTimeZone, Config projectParams)
+    private WorkflowFile loadWorkflowFile(String resourceName, Path path,
+            Config overwriteParams)
         throws IOException
     {
-        // remove last .dig and use it as workflowName
-        String fileName = workflowFilePath.getFileName().toString();
-        int lastPosDot = fileName.lastIndexOf('.');
-        String workflowName;
-        if (lastPosDot > 0) {
-            workflowName = fileName.substring(0, lastPosDot);
-        }
-        else {
-            workflowName = fileName;
-        }
+        String workflowName = resourceNameToWorkflowName(resourceName);
 
-        WorkflowFile workflowFile = WorkflowFile.fromConfig(
-                workflowName, defaultTimeZone,
-                configLoader.loadParameterizedFile(workflowFilePath.toFile(), projectParams));
+        WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
+                configLoader.loadParameterizedFile(path.toFile(), overwriteParams));
 
-        Path workflowSubdir = projectDir.relativize(workflowFilePath).getParent();
-        if (workflowSubdir != null) {
-            // workflow file is in a subdirectory. set _workdir to point the directory
-            workflowFile.setWorkdir(
-                    projectParams.getOptional("_workdir", String.class)
-                    .transform(it -> it + "/" + workflowSubdir)
-                    .or(workflowSubdir.toString()));
+        int posSlash = workflowName.lastIndexOf('/');
+        if (posSlash >= 0) {
+            // workflow is in a subdirectory. set _workdir accordingly.
+            String workdir = overwriteParams.getOptional("_workdir", String.class)  // overwriteParams has higher priority
+                .or(workflowName.substring(0, posSlash));
+            workflowFile.setWorkdir(workdir);
         }
 
         return workflowFile;
     }
 
-    private static void listFiles(Path baseDir, Path dir, PathConsumer consumer)
+    static void listFiles(Path projectPath, PathConsumer consumer)
         throws IOException
     {
-        Path absBaseDir = baseDir.toAbsolutePath().normalize();
-        Path relPath = absBaseDir.relativize(dir.toAbsolutePath().normalize());
-        listFilesRecursively(absBaseDir, absBaseDir.resolve(relPath), consumer, new HashSet<>());
+        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>());
     }
 
-    private static void listFilesRecursively(Path absBaseDir, Path targetDir, PathConsumer consumer, Set<Path> listed)
+    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed)
         throws IOException
     {
-        for (Path file : Files.newDirectoryStream(targetDir, archiveFileFilter())) {
-            Path relPath = absBaseDir.relativize(file);
-            if (listed.add(relPath)) {
-                if (Files.isDirectory(file)) {
-                    consumer.accept(relPath);
-                    listFilesRecursively(absBaseDir, file, consumer, listed);
-                }
-                else {
-                    consumer.accept(relPath);
+        for (Path path : Files.newDirectoryStream(targetDir, ProjectArchiveLoader::rejectDotFiles)) {
+            String resourceName = realPathToResourceName(projectPath, path);
+            if (listed.add(resourceName)) {
+                consumer.accept(resourceName, path);
+                if (Files.isDirectory(path)) {
+                    listFilesRecursively(projectPath, path, consumer, listed);
                 }
             }
         }
     }
 
-    private static DirectoryStream.Filter<Path> archiveFileFilter()
+    private static boolean rejectDotFiles(Path target)
     {
-        // exclude dot files
-        return (target) -> !target.getFileName().toString().startsWith(".");
+        return !target.getFileName().toString().startsWith(".");
     }
 }

@@ -74,6 +74,8 @@ public class Main
         }
         err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
 
+        boolean verbose = false;
+
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
@@ -129,7 +131,7 @@ public class Main
                 throw usage(err, null);
             }
 
-            processCommonOptions(err, command);
+            verbose = processCommonOptions(err, command);
 
             command.main();
             return 0;
@@ -146,6 +148,9 @@ public class Main
         }
         catch (Exception ex) {
             err.println("error: " + formatException(ex));
+            if (verbose) {
+                ex.printStackTrace(err);
+            }
             return 1;
         }
     }
@@ -183,19 +188,24 @@ public class Main
         return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    private static void processCommonOptions(PrintStream err, Command command)
+    private static boolean processCommonOptions(PrintStream err, Command command)
             throws SystemExitException
     {
         if (command.help) {
             throw command.usage(null);
         }
 
+        boolean verbose;
+
         switch (command.logLevel) {
         case "error":
         case "warn":
         case "info":
+            verbose = false;
+            break;
         case "debug":
         case "trace":
+            verbose = true;
             break;
         default:
             throw usage(err, "Unknown log level '"+command.logLevel+"'");
@@ -206,6 +216,8 @@ public class Main
         for (Map.Entry<String, String> pair : command.systemProperties.entrySet()) {
             System.setProperty(pair.getKey(), pair.getValue());
         }
+
+        return verbose;
     }
 
     private static void configureLogging(String level, String logPath)
@@ -243,7 +255,7 @@ public class Main
         err.println("Usage: digdag <command> [options...]");
         err.println("  Local-mode commands:");
         err.println("    new <path>                       create a new workflow project");
-        err.println("    r[un] [name]                     run a workflow");
+        err.println("    r[un] <workflow.dig>             run a workflow");
         err.println("    c[heck]                          show workflow definitions");
         err.println("    sched[uler]                      run a scheduler server");
         err.println("    selfupdate                       update digdag to the latest version");

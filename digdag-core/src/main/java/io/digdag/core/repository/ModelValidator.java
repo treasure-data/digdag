@@ -32,10 +32,16 @@ public class ModelValidator
     private ModelValidator()
     { }
 
+    public ModelValidator error(String fieldName, Object object, String errorMessage)
+    {
+        failures.add(new ModelValidationException.Failure(fieldName, object, errorMessage));
+        return this;
+    }
+
     public ModelValidator check(String fieldName, Object object, boolean expression, String errorMessage)
     {
         if (!expression) {
-            failures.add(new ModelValidationException.Failure(fieldName, object, errorMessage));
+            error(fieldName, object, errorMessage);
         }
         return this;
     }
@@ -96,7 +102,7 @@ public class ModelValidator
     public ModelValidator check(Object modelObject, String fieldName, Object object, boolean expression, String errorMessageFormat, Object... objects)
     {
         if (!expression) {
-            failures.add(new ModelValidationException.Failure(fieldName, object, String.format(ENGLISH, errorMessageFormat, objects)));
+            error(fieldName, object, String.format(ENGLISH, errorMessageFormat, objects));
         }
         return this;
     }

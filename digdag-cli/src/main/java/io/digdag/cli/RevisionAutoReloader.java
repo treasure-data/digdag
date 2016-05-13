@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
+import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
@@ -35,16 +36,16 @@ class RevisionAutoReloader
 
     private final LocalSite localSite;
     private final ConfigFactory cf;
-    private final ProjectArchiveLoader loader;
+    private final ProjectArchiveLoader projectLoader;
     private ScheduledExecutorService executor = null;
     private List<ReloadTarget> targets;
 
     @Inject
-    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ProjectArchiveLoader loader)
+    public RevisionAutoReloader(LocalSite localSite, ConfigFactory cf, ProjectArchiveLoader projectLoader)
     {
         this.localSite = localSite;
         this.cf = cf;
-        this.loader = loader;
+        this.projectLoader = projectLoader;
         this.targets = new CopyOnWriteArrayList<>();
     }
 
@@ -57,12 +58,10 @@ class RevisionAutoReloader
         }
     }
 
-    void watch(Path dagfilePath, Config overwriteParams)
-        throws IOException, ResourceConflictException, ResourceNotFoundException
+    void watch(ProjectArchive project)
+        throws ResourceConflictException, ResourceNotFoundException
     {
-        ReloadTarget target = new ReloadTarget(dagfilePath, overwriteParams);
-        target.load();
-        targets.add(target);
+        targets.add(new ReloadTarget(project));
         startAutoReload();
     }
 
@@ -97,44 +96,39 @@ class RevisionAutoReloader
 
     private class ReloadTarget
     {
-        private final Path dagfilePath;
+        private final Path projectPath;
         private final Config overwriteParams;
-        private int lastRevId;
         private ArchiveMetadata lastMetadata;
+        private int lastRevId;
 
-        private ReloadTarget(Path dagfilePath, Config overwriteParams)
+        private ReloadTarget(ProjectArchive project)
+            throws ResourceConflictException, ResourceNotFoundException
         {
-            this.dagfilePath = dagfilePath;
-            this.overwriteParams = overwriteParams;
-            this.lastMetadata = null;
+            this.projectPath = project.getProjectPath();
+            this.overwriteParams = project.getArchiveMetadata().getDefaultParams();
+            storeProject(project, 1);
         }
 
-        private void load()
-            throws IOException, ResourceConflictException, ResourceNotFoundException
+        private void storeProject(ProjectArchive project, int revId)
+            throws ResourceConflictException, ResourceNotFoundException
         {
-            ProjectArchive project = readProject();
             localSite.storeLocalWorkflows(
                     "default",
-                    makeRevisionName(),
-                    project.getMetadata(),
+                    Integer.toString(revId),
+                    project.getArchiveMetadata(),
                     Instant.now());
+            this.lastMetadata = project.getArchiveMetadata();
+            this.lastRevId = revId;
+            logger.info("Added new revision {}", lastRevId);
         }
 
         private void tryReload()
         {
             try {
                 ProjectArchive project = readProject();  // TODO optimize this code
-                ArchiveMetadata metadata = project.getMetadata();
-                if (!metadata.equals(lastMetadata)) {
-                    logger.info("Reloading {}", dagfilePath);
-                    StoredRevision rev = localSite.storeLocalWorkflows(
-                            "default",
-                            makeRevisionName(),
-                            metadata,
-                            Instant.now())
-                        .getRevision();
-                    lastMetadata = metadata;
-                    logger.info("Added new revision {}", rev.getName());
+                if (!project.getArchiveMetadata().equals(lastMetadata)) {
+                    logger.info("Reloading {}", projectPath);
+                    storeProject(project, lastRevId + 1);
                 }
             }
             catch (RuntimeException | ResourceConflictException | ResourceNotFoundException | IOException ex) {
@@ -145,15 +139,7 @@ class RevisionAutoReloader
         private ProjectArchive readProject()
             throws IOException
         {
-            return loader.loadProjectOrSingleWorkflow(dagfilePath, overwriteParams);
-        }
-
-        private String makeRevisionName()
-        {
-            DateTimeFormatter formatter =
-                DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.ENGLISH)
-                .withZone(ZoneId.systemDefault());
-            return formatter.format(Instant.now());
+            return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
         }
     }
 }

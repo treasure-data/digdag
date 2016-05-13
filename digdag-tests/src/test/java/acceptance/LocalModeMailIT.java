@@ -62,7 +62,8 @@ public class LocalModeMailIT
         main("run",
                 "-c", configFile.toString(),
                 "-o", projectDir.toString(),
-                "-f", projectDir.resolve("mail_config.dig").toString(),
+                "--project", projectDir.toString(),
+                "mail_config",
                 "--session", LOCAL_SESSION_TIME);
 
         // Wait for mail to be delivered

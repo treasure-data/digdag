@@ -53,9 +53,12 @@ public class ModelValidationException
             sb.append(failure.getFieldName());
             sb.append(' ');
             sb.append(failure.getMessage());
-            sb.append(": ");
-            sb.append(failure.getObject() == null ? "null" : ("\"" + failure.getObject().toString() + "\""));
-            sb.append('\n');
+            if (failure.getObject() != null) {
+                sb.append(": ");
+                sb.append("\"");
+                sb.append(failure.getObject().toString());
+                sb.append("\"");
+            }
         }
         return sb.toString();
     }
