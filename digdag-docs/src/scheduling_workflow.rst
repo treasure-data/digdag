@@ -55,7 +55,7 @@ Running scheduler
 
     $ ./digdag scheduler
 
-When you change workflow definition, the scheduler reloads ``digdag.yml`` file automatically so that you don't have to restart it.
+When you change workflow definition, the scheduler reloads ``digdag.dig`` file automatically so that you don't have to restart it.
 
 Checking scheduling status
 ----------------------------------

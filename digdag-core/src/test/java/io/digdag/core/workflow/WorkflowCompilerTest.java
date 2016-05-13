@@ -49,14 +49,14 @@ public class WorkflowCompilerTest
     @Test
     public void verifySingleOperatorPasses()
     {
-        Config config = loadYamlResource("/digdag/workflow/cases/single_operator.yml");
+        Config config = loadYamlResource("/digdag/workflow/cases/single_operator.dig");
         compiler.compile("single_operator", config);
     }
 
     @Test
     public void verifyMultipleOperatorsFail()
     {
-        Config config = loadYamlResource("/digdag/workflow/cases/multiple_operators.yml");
+        Config config = loadYamlResource("/digdag/workflow/cases/multiple_operators.dig");
         exception.expect(ConfigException.class);
         compiler.compile("multiple_operators", config);
     }
@@ -64,7 +64,7 @@ public class WorkflowCompilerTest
     @Test
     public void verifyUnusedKeysInGroupingTask()
     {
-        Config config = loadYamlResource("/digdag/workflow/cases/unused_keys_in_group.yml");
+        Config config = loadYamlResource("/digdag/workflow/cases/unused_keys_in_group.dig");
         exception.expect(ConfigException.class);
         compiler.compile("unused_keys_in_group", config);
     }

@@ -65,10 +65,10 @@ public class Push
     {
         err.println("Usage: digdag push <project> -r <revision>");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
+        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -r, --revision REVISION          revision name");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        err.println("    -P, --params-file PATH.dig       reads parameters from a YAML file");
         //err.println("        --time-revision              use current time as the revision name");
         showCommonOptions();
         return systemExit(error);

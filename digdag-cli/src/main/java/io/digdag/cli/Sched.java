@@ -60,13 +60,13 @@ public class Sched
     {
         err.println("Usage: digdag sched [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.dig)");
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        err.println("    -P, --params-file PATH.dig       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(err);
         return systemExit(error);

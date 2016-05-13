@@ -64,7 +64,7 @@ public class WorkflowExecutorCasesTest
     public void run()
         throws Exception
     {
-        runWorkflow("basic", loadYamlResource("/digdag/workflow/cases/basic.yml"));
+        runWorkflow("basic", loadYamlResource("/digdag/workflow/cases/basic.dig"));
     }
 
     @Test
@@ -82,7 +82,7 @@ public class WorkflowExecutorCasesTest
     public void retryOnGroupingTask()
         throws Exception
     {
-        runWorkflow("retry_on_group", loadYamlResource("/digdag/workflow/cases/retry_on_group.yml"));
+        runWorkflow("retry_on_group", loadYamlResource("/digdag/workflow/cases/retry_on_group.dig"));
         assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("trytrytrytry"));
     }
 

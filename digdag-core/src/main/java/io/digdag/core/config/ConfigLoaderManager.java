@@ -22,7 +22,7 @@ public class ConfigLoaderManager
     public Config loadParameterizedFile(File path, Config params)
         throws IOException
     {
-        // TODO check suffix .yml or .yaml. otherwise throw exception
+        // TODO check suffix .dig, .yml or .yaml. otherwise throw exception
         return yaml.loadParameterizedFile(path, params).toConfig(cf);
     }
 }

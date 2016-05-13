@@ -63,8 +63,8 @@ public class InitPushStartConfigIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
         Files.createDirectories(scriptsDir);
-        copyResource("acceptance/echo_params/digdag.yml", projectDir.resolve("digdag.yml"));
-        copyResource("acceptance/echo_params/echo_params.yml", projectDir.resolve("echo_params.yml"));
+        copyResource("acceptance/echo_params/digdag.dig", projectDir.resolve("digdag.dig"));
+        copyResource("acceptance/echo_params/echo_params.dig", projectDir.resolve("echo_params.dig"));
         copyResource("acceptance/echo_params/scripts/__init__.py", scriptsDir.resolve("__init__.py"));
         copyResource("acceptance/echo_params/scripts/echo_params.py", scriptsDir.resolve("echo_params.py"));
 
@@ -77,7 +77,7 @@ public class InitPushStartConfigIT
             CommandStatus pushStatus = main("push",
                     "echo_params",
                     "-c", config.toString(),
-                    "-f", projectDir.resolve("digdag.yml").toString(),
+                    "-f", projectDir.resolve("digdag.dig").toString(),
                     "-e", server.endpoint(),
                     "-r", "4711");
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));

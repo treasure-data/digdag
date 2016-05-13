@@ -75,9 +75,9 @@ public class Check
     {
         err.println("Usage: digdag check [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.yml)");
+        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.dig)");
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
+        err.println("    -P, --params-file PATH.dig       read parameters from a YAML file");
         //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
         Main.showCommonOptions(err);
         return systemExit(error);

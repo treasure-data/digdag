@@ -66,7 +66,7 @@ class Archiver
                 }
             });
 
-            // create .digdag.yml
+            // create .digdag.dig
             // TODO set default time zone if not set?
             byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);

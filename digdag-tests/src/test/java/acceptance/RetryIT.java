@@ -37,7 +37,7 @@ public class RetryIT
         projectDir = folder.getRoot().toPath().resolve("foobar");
         Files.createDirectory(projectDir);
 
-        copyResource("acceptance/retry/digdag.yml", projectDir.resolve("digdag.yml"));
+        copyResource("acceptance/retry/digdag.dig", projectDir.resolve("digdag.dig"));
     }
 
     @Test
@@ -49,14 +49,14 @@ public class RetryIT
                 .port(server.port())
                 .build();
 
-        copyResource("acceptance/retry/fail.yml", projectDir.resolve("foobar.yml"));
+        copyResource("acceptance/retry/fail.dig", projectDir.resolve("foobar.dig"));
 
         // Push the project
         {
             CommandStatus pushStatus = main("push",
                     "foobar",
                     "-c", config.toString(),
-                    "-f", projectDir.resolve("digdag.yml").toString(),
+                    "-f", projectDir.resolve("digdag.dig").toString(),
                     "-e", server.endpoint(),
                     "-r", "1");
             assertThat(pushStatus.code(), is(0));
@@ -116,11 +116,11 @@ public class RetryIT
 
         // "Fix" the workflow
         {
-            copyResource("acceptance/retry/succeed.yml", projectDir.resolve("foobar.yml"));
+            copyResource("acceptance/retry/succeed.dig", projectDir.resolve("foobar.dig"));
             CommandStatus pushStatus = main("push",
                     "foobar",
                     "-c", config.toString(),
-                    "-f", projectDir.resolve("digdag.yml").toString(),
+                    "-f", projectDir.resolve("digdag.dig").toString(),
                     "-e", server.endpoint(),
                     "-r", "2");
             assertThat(pushStatus.code(), is(0));

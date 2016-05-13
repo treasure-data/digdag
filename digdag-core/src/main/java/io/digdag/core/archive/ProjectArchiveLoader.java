@@ -54,7 +54,7 @@ public class ProjectArchiveLoader
             boolean singleWorkflowAllowed)
         throws IOException
     {
-        Path path = dagfilePath.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.yml").getParent() returns null instead of Paths.get("")
+        Path path = dagfilePath.normalize().toAbsolutePath();  // this is necessary because Paths.get("abc.dig").getParent() returns null instead of Paths.get("")
 
         Config projectConfig = configLoader.loadParameterizedFile(path.toFile(), overwriteParams);
 
@@ -107,7 +107,7 @@ public class ProjectArchiveLoader
             ZoneId defaultTimeZone, Config projectParams)
         throws IOException
     {
-        // remove last .yml and use it as workflowName
+        // remove last .dig and use it as workflowName
         String fileName = workflowFilePath.getFileName().toString();
         int lastPosDot = fileName.lastIndexOf('.');
         String workflowName;

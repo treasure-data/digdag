@@ -1,6 +1,6 @@
 timezone: UTC
 
-# If you haven't checked python_args.yml, please check it first.
+# If you haven't checked python_args.dig, please check it first.
 
 +builtin:
   # You can use some built-in parameters
