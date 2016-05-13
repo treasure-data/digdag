@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import static acceptance.TestUtils.findFreePort;
 import static acceptance.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.instanceOf;
@@ -54,8 +55,10 @@ public class TemporaryDigdagServer
     {
         this.version = Objects.requireNonNull(builder.version, "version");
 
-        this.host = "localhost";
-        this.port = 65432;
+        this.host = "127.0.0.1";
+        // TODO (dano): Ideally the server could use system port allocation (bind on port 0) and tell
+        //              us what port it got. That way we'd not have any spurious port collisions.
+        this.port = findFreePort();
         this.endpoint = "http://" + host + ":" + port;
         this.configuration = Objects.requireNonNull(builder.configuration, "configuration");
 
@@ -107,6 +110,8 @@ public class TemporaryDigdagServer
                 version,
                 "server",
                 "-m",
+                "--port", String.valueOf(port),
+                "--bind", host,
                 "--task-log", taskLog.toString(),
                 "--access-log", accessLog.toString(),
                 "-c", config.toString()));
