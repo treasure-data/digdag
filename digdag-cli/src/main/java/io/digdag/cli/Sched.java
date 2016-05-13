@@ -66,7 +66,7 @@ public class Sched
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.dig       reads parameters from a YAML file");
+        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(err);
         return systemExit(error);

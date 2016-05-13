@@ -78,7 +78,7 @@ public class Start
         err.println("        --retry NAME                 set retry attempt name to a new session");
         err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
         err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.dig       read session parameters from a YAML file");
+        err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
