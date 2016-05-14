@@ -224,7 +224,9 @@ public class TdOperatorFactory
         logger.info("preview of {}:\r\n{}", description, out.toString());
     }
 
-    private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*");
+    private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*", Pattern.MULTILINE);
+
+    private final static Pattern HEADER_COMMENT_BLOCK_PATTERN = Pattern.compile("\\A([\\r\\n\\t]*(?:(?:\\A|\\n)\\-\\-[^\\n]*)+)\\n?(.*)\\z", Pattern.MULTILINE);
 
     @VisibleForTesting
     static String insertCommandStatement(String command, String original)
@@ -232,7 +234,14 @@ public class TdOperatorFactory
         // try to insert command at "-- DIGDAG_INSERT_LINE" line
         Matcher ml = INSERT_LINE_PATTERN.matcher(original);
         if (ml.find()) {
-            return ml.replaceAll(ml.group(1) + command);
+            return ml.replaceFirst(ml.group(1) + command);
+        }
+
+        // try to insert command after header comments so that job list page
+        // shows comments rather than INSERT or other non-informative commands
+        Matcher mc = HEADER_COMMENT_BLOCK_PATTERN.matcher(original);
+        if (mc.find()) {
+            return mc.group(1) + "\n" + command + "\n" + mc.group(2);
         }
 
         // add command at the head
