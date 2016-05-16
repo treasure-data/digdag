@@ -3,6 +3,7 @@ package io.digdag.cli;
 import java.io.PrintStream;
 import java.util.Properties;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
@@ -17,23 +18,29 @@ import com.google.inject.Scopes;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.server.ServerBootstrap;
-import io.digdag.server.ServerConfig;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.NoopWorkspaceManager;
+import io.digdag.server.ServerBootstrap;
+import io.digdag.server.ServerConfig;
 
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.cli.Arguments.loadParams;
+import static io.digdag.cli.Arguments.loadProject;
 
 public class Sched
     extends Server
 {
     private static final Logger logger = LoggerFactory.getLogger(Sched.class);
 
-    private static final String SYSTEM_CONFIG_DAGFILE_KEY = "server.autoLoadLocalDagfile";
+    private static final String SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY = "scheduler.autoLoadLocalProject";
+    private static final String SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS = "scheduler.localOverwriteParams";
 
-    @Parameter(names = {"-f", "--file"})
-    String dagfilePath = Run.DEFAULT_DAGFILE;
+    @Parameter(names = {"--project"})
+    String projectDirName = null;
 
     // TODO no-schedule mode
 
@@ -60,7 +67,7 @@ public class Sched
     {
         err.println("Usage: digdag sched [options...]");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load tasks (default: digdag.dig)");
+        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         err.println("    -o, --database DIR               store status to this database");
@@ -80,9 +87,21 @@ public class Sched
             memoryDatabase = true;
         }
 
-        Properties props = buildServerProperties();
+        Injector injector = new DigdagEmbed.Bootstrap()
+            .withWorkflowExecutor(false)
+            .withScheduleExecutor(false)
+            .withLocalAgent(false)
+            .initialize()
+            .getInjector();
 
-        props.setProperty(SYSTEM_CONFIG_DAGFILE_KEY, dagfilePath);
+        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+
+        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+
+        Properties props = buildServerProperties();
+        props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName);
+        props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
 
         ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
     }
@@ -101,14 +120,19 @@ public class Sched
         {
             Injector injector = super.initialize(context);
 
-            Config systemConfig = injector.getInstance(Config.class);
-
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
+            ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+            ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
+
+            Config systemConfig = injector.getInstance(Config.class);
+
+            String projectDirName = systemConfig.getOptional(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class).orNull();
+            Config overwriteParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, String.class));
+
             try {
-                autoReloader.watch(
-                        Paths.get(systemConfig.get(SYSTEM_CONFIG_DAGFILE_KEY, String.class)),
-                        cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class)));
+                ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
+                autoReloader.watch(project);
             }
             catch (Exception ex) {
                 throw new RuntimeException(ex);

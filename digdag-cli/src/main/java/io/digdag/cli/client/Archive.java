@@ -1,9 +1,16 @@
 package io.digdag.cli.client;
 
+import java.nio.file.Path;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.DynamicParameter;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
 import io.digdag.cli.Run;
@@ -13,8 +20,6 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigLoaderManager;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,8 +33,8 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Archive
         extends Command
 {
-    @Parameter(names = {"-f", "--file"})
-    String dagfilePath = Run.DEFAULT_DAGFILE;
+    @Parameter(names = {"--project"})
+    String projectDirName = null;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -60,6 +65,7 @@ public class Archive
     {
         err.println("Usage: digdag archive [options...]");
         err.println("  Options:");
+        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
         Main.showCommonOptions(err);
@@ -88,14 +94,18 @@ public class Archive
         // read parameters
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
-        injector.getInstance(Archiver.class).createArchive(Paths.get(dagfilePath), Paths.get(output), overwriteParams);
+        // load project
+        Path projectPath = (projectDirName == null) ?
+            Paths.get("").toAbsolutePath() :
+            Paths.get(projectDirName).normalize().toAbsolutePath();
+        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overwriteParams);
 
         out.println("Created " + output + ".");
         out.println("Use `digdag upload <path.tar.gz> <project> <revision>` to upload it a server.");
         out.println("");
         out.println("  Examples:");
-        out.println("    $ digdag upload " + output + " $(basename $(pwd)) $(date +%Y%m%d-%H%M%S)");
-        out.println("    $ digdag upload " + output + " $(git rev-parse --abbrev-ref HEAD) $(git rev-parse HEAD)");
+        out.println("    $ digdag upload " + output + " $(basename $(pwd)) -r $(date +%Y%m%d-%H%M%S)");
+        out.println("    $ digdag upload " + output + " $(git rev-parse --abbrev-ref HEAD) -r $(git rev-parse HEAD)");
         out.println("");
     }
 }

@@ -65,6 +65,8 @@ class TestUtils
             Assert.fail();
             throw Throwables.propagate(e);
         }
+        //System.out.println(new String(out.toByteArray()));
+        //System.err.println(new String(err.toByteArray()));
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 

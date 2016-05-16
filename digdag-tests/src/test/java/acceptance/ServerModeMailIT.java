@@ -46,7 +46,6 @@ public class ServerModeMailIT
             throws Exception
     {
         Path projectDir = folder.newFolder().toPath();
-        Path projectFile = projectDir.resolve("digdag.dig");
         Path workflowFile = projectDir.resolve("mail_config.dig");
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
@@ -59,7 +58,6 @@ public class ServerModeMailIT
         mailServer.setPort(port);
         mailServer.start();
 
-        copyResource("acceptance/mail_config/digdag.dig", projectFile);
         copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));
 
@@ -67,7 +65,7 @@ public class ServerModeMailIT
         CommandStatus pushStatus = main("push",
                 "mail_config",
                 "-c", config.toString(),
-                "-f", projectFile.toString(),
+                "--project", projectDir.toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));

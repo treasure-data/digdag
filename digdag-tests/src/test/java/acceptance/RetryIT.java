@@ -36,8 +36,6 @@ public class RetryIT
 
         projectDir = folder.getRoot().toPath().resolve("foobar");
         Files.createDirectory(projectDir);
-
-        copyResource("acceptance/retry/digdag.dig", projectDir.resolve("digdag.dig"));
     }
 
     @Test
@@ -56,7 +54,7 @@ public class RetryIT
             CommandStatus pushStatus = main("push",
                     "foobar",
                     "-c", config.toString(),
-                    "-f", projectDir.resolve("digdag.dig").toString(),
+                    "--project", projectDir.toString(),
                     "-e", server.endpoint(),
                     "-r", "1");
             assertThat(pushStatus.code(), is(0));
@@ -120,7 +118,7 @@ public class RetryIT
             CommandStatus pushStatus = main("push",
                     "foobar",
                     "-c", config.toString(),
-                    "-f", projectDir.resolve("digdag.dig").toString(),
+                    "--project", projectDir.toString(),
                     "-e", server.endpoint(),
                     "-r", "2");
             assertThat(pushStatus.code(), is(0));

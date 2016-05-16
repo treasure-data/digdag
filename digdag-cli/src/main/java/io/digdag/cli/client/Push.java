@@ -32,8 +32,8 @@ import static io.digdag.cli.client.ProjectUtil.showUploadedProject;
 public class Push
     extends ClientCommand
 {
-    @Parameter(names = {"-f", "--file"})
-    String dagfilePath = Run.DEFAULT_DAGFILE;
+    @Parameter(names = {"--project"})
+    String projectDirName = null;
 
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
@@ -66,7 +66,7 @@ public class Push
     {
         err.println("Usage: digdag push <project> -r <revision>");
         err.println("  Options:");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
+        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -r, --revision REVISION          revision name");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
@@ -78,7 +78,8 @@ public class Push
     private void push(String projName)
         throws Exception
     {
-        Path archivePath = Files.createTempFile("digdag.archive", ".tar.gz");
+        Path dir = Files.createDirectories(Paths.get(".digdag/tmp"));
+        Path archivePath = Files.createTempFile(dir, "archive-", ".tar.gz");
         archivePath.toFile().deleteOnExit();
 
         Injector injector = new DigdagEmbed.Bootstrap()
@@ -100,7 +101,11 @@ public class Push
         // read parameters
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
-        injector.getInstance(Archiver.class).createArchive(Paths.get(dagfilePath), archivePath, overwriteParams);
+        // load project
+        Path projectPath = (projectDirName == null) ?
+            Paths.get("").toAbsolutePath() :
+            Paths.get(projectDirName).normalize().toAbsolutePath();
+        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overwriteParams);
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());

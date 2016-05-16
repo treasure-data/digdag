@@ -26,7 +26,7 @@ public class RunIT
             throws Exception
     {
         copyResource("acceptance/basic.dig", root().resolve("basic.dig"));
-        TestUtils.main("run", "-o", root().toString(), "-f", root().resolve("basic.dig").toString());
+        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "basic.dig");
         assertThat(Files.exists(root().resolve("foo.out")), is(true));
         assertThat(Files.exists(root().resolve("bar.out")), is(true));
     }

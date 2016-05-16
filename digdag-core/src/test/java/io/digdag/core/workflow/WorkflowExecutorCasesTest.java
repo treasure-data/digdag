@@ -106,7 +106,7 @@ public class WorkflowExecutorCasesTest
             LocalSite localSite = embed.getLocalSite();
             ArchiveMetadata meta = ArchiveMetadata.of(
                     WorkflowDefinitionList.of(ImmutableList.of(
-                            WorkflowFile.fromConfig(workflowName, ZoneId.of("UTC"), config).toWorkflowDefinition()
+                            WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
                             )),
                     config.getFactory().create().set("_workdir", folder.getRoot().toString()));
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(

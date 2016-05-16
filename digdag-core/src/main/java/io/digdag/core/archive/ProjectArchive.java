@@ -8,36 +8,65 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.WorkflowDefinitionList;
+import static java.util.Locale.ENGLISH;
 
 public class ProjectArchive
 {
-    public interface PathListing
-    {
-        public void list(Path baseDir, PathConsumer consumer) throws IOException;
-    }
+    public static final String WORKFLOW_FILE_SUFFIX = ".dig";
 
     public interface PathConsumer
     {
-        public void accept(Path path) throws IOException;
+        public void accept(String resourceName, Path path) throws IOException;
     }
 
+    private final Path projectPath;
     private final ArchiveMetadata metadata;
-    private final PathListing pathListing;
 
-    ProjectArchive(ArchiveMetadata metadata, PathListing pathListing)
+    ProjectArchive(Path projectPath, ArchiveMetadata metadata)
     {
+        this.projectPath = projectPath;
         this.metadata = metadata;
-        this.pathListing = pathListing;
     }
 
-    public ArchiveMetadata getMetadata()
+    public Path getProjectPath()
+    {
+        return projectPath;
+    }
+
+    public ArchiveMetadata getArchiveMetadata()
     {
         return metadata;
     }
 
-    public void listFiles(Path baseDir, PathConsumer consumer)
+    public void listFiles(PathConsumer consumer)
         throws IOException
     {
-        pathListing.list(baseDir, consumer);
+        ProjectArchiveLoader.listFiles(projectPath, consumer);
+    }
+
+    public String pathToResourceName(Path path)
+    {
+        return realPathToResourceName(projectPath, path.normalize().toAbsolutePath());
+    }
+
+    static String realPathToResourceName(Path projectPath, Path realPath)
+    {
+        if (!realPath.startsWith(projectPath)) {
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                        "Given path '%s' is outside of project directory '%s'",
+                        realPath, projectPath));
+        }
+        Path relative = projectPath.relativize(realPath);
+        return relative.toString();  // TODO make sure path names are separated by '/'
+    }
+
+    public static String resourceNameToWorkflowName(String resourceName)
+    {
+        if (resourceName.endsWith(WORKFLOW_FILE_SUFFIX)) {
+            return resourceName.substring(0, resourceName.length() - WORKFLOW_FILE_SUFFIX.length());
+        }
+        else {
+            return resourceName;
+        }
     }
 }

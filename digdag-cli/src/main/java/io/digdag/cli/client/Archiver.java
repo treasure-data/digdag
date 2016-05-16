@@ -8,6 +8,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
+import io.digdag.core.archive.WorkflowResourceMatcher;
 import io.digdag.core.repository.WorkflowDefinition;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -38,24 +39,20 @@ class Archiver
         this.yamlMapper = yamlMapper;
     }
 
-    void createArchive(Path dagFilePath, Path output, Config overwriteParams)
+    void createArchive(Path projectPath, Path output, Config overwriteParams)
             throws IOException
     {
         out.println("Creating " + output + "...");
 
-
-        Path absoluteProjectPath = dagFilePath.toAbsolutePath().normalize().getParent();
-
-        ProjectArchive project = projectLoader.loadProject(dagFilePath, overwriteParams);
+        ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
+        ArchiveMetadata meta = project.getArchiveMetadata();
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {
-            project.listFiles(absoluteProjectPath, relPath -> {
-                Path path = absoluteProjectPath.resolve(relPath);
+            project.listFiles((resourceName, path) -> {
                 if (!Files.isDirectory(path)) {
-                    String name = relPath.toString();
-                    out.println("  Archiving " + name);
+                    out.println("  Archiving " + resourceName);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(absoluteProjectPath, path, name);
+                    TarArchiveEntry e = buildTarArchiveEntry(project, path, resourceName);
                     tar.putArchiveEntry(e);
                     if (!e.isSymbolicLink()) {
                         try (InputStream in = Files.newInputStream(path)) {
@@ -68,7 +65,7 @@ class Archiver
 
             // create .digdag.dig
             // TODO set default time zone if not set?
-            byte[] metaBody = yamlMapper.toYaml(project.getMetadata()).getBytes(StandardCharsets.UTF_8);
+            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(metaBody.length);
             metaEntry.setModTime(new Date());
@@ -78,25 +75,26 @@ class Archiver
         }
 
         out.println("Workflows:");
-        for (WorkflowDefinition workflow : project.getMetadata().getWorkflowList().get()) {
+        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
             out.println("  " + workflow.getName());
         }
         out.println("");
     }
 
-    private TarArchiveEntry buildTarArchiveEntry(Path absoluteCurrentPath, Path path, String name)
+    private TarArchiveEntry buildTarArchiveEntry(ProjectArchive project, Path path, String name)
             throws IOException
     {
         TarArchiveEntry e;
         if (Files.isSymbolicLink(path)) {
             e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
             Path dest = Files.readSymbolicLink(path);
-            if (!dest.isAbsolute()) {
-                dest = path.getParent().resolve(dest);
+            try {
+                project.pathToResourceName(path.getParent().resolve(dest));
             }
-            String fromCurrentPath = normalizeRelativePath(absoluteCurrentPath, dest.toString());
-            Path relativeFromPath = path.getParent().toAbsolutePath().relativize(absoluteCurrentPath.resolve(fromCurrentPath).normalize());
-            e.setLinkName(relativeFromPath.toString());
+            catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Invalid symbolic link: " + ex);
+            }
+            e.setLinkName(dest.toUri().getPath());
         }
         else {
             e = new TarArchiveEntry(path.toFile(), name);
@@ -142,31 +140,5 @@ class Archiver
             }
         }
         return e;
-    }
-
-    private String normalizeRelativePath(Path absoluteCurrentPath, String rawPath)
-    {
-        Path absPath = Paths.get(rawPath).toAbsolutePath().normalize();
-        Path relPath = absoluteCurrentPath.relativize(absPath).normalize();
-
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (Path fragment : relPath) {
-            String name = fragment.toString();
-            if (name.contains("/")) {
-                throw new IllegalArgumentException("File name can't include '/': " + rawPath);
-            }
-            else if (name.equals("..") || name.equals(".")) {
-                throw new IllegalArgumentException("Relative file path from current working directory can't include . or ..: " + relPath);
-            }
-            if (first) {
-                first = false;
-            }
-            else {
-                sb.append("/");
-            }
-            sb.append(name);
-        }
-        return sb.toString();
     }
 }

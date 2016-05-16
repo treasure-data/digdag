@@ -34,18 +34,18 @@ Runs workflow.
 
     $ digdag run
     $ digdag run +step2
-    $ digdag run -f workflow/another.dig --start +step2
-    $ digdag run -f workflow/another.dig --start +step2 --end +step4
-    $ digdag run -f workflow/another.dig -g +step1 --hour
+    $ digdag run workflow/another.dig --start +step2
+    $ digdag run workflow/another.dig --start +step2 --end +step4
+    $ digdag run workflow/another.dig -g +step1 --hour
     $ digdag run -p environment=staging -p user=frsyuki
     $ digdag run --session hourly
 
 Options:
 
-:command:`-f, --file PATH.dig`
-  Use this file to load a project (default: digdag.dig).
+:command:`---project DIR`
+  Use this directory as the project directory (default: current directory).
 
-  Example: -f tasks/another.dig
+  Example: --project workflow/
 
 :command:`-o, --save DIR`
   Use this directory to read and write session status (default: .digdag/status).
@@ -126,12 +126,12 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
 
     $ digdag c
     $ digdag check
-    $ digdag check -f workflow/another.dig
+    $ digdag check workflow/another.dig
 
-:command:`-f, --file PATH`
-  Use this file to load tasks (default: digdag.dig).
+:command:`---project DIR`
+  Use this directory as the project directory (default: current directory).
 
-  Example: -f tasks/another.dig
+  Example: --project workflow/
 
 :command:`-p, --param KEY=VALUE`
   Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
@@ -159,10 +159,10 @@ Runs a workflow scheduler that runs schedules periodically. Examples:
     $ digdag scheduler -d status
     $ digdag scheduler -b 0.0.0.0
 
-:command:`-f, --file PATH`
-  Use this file to load tasks (default: digdag.dig). This file is reloaded automatically when it's changed.
+:command:`---project DIR`
+  Use this directory as the project directory (default: current directory).
 
-  Example: -f tasks/another.dig
+  Example: --project workflow/
 
 :command:`-n, --port PORT`
   Port number to listen for web interface and api clients (default: 65432).
@@ -569,10 +569,10 @@ Creates a project archive and upload it to the server. This command reads list o
 STDIN
   Names of the files to add the archive.
 
-:command:`-f, --file PATH.dig`
-  Use this file to load a project (default: digdag.dig)
+:command:`---project DIR`
+  Use this directory as the project directory (default: current directory).
 
-  Example: -f tasks/another.dig
+  Example: --project workflow/
 
 :command:`-r, --revision REVISION`
   Name of the revision (required)

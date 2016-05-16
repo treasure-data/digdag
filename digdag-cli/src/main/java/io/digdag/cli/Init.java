@@ -2,15 +2,17 @@ package io.digdag.cli;
 
 import java.io.PrintStream;
 import java.util.Map;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.core.archive.ProjectArchive.WORKFLOW_FILE_SUFFIX;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Init
@@ -42,15 +44,27 @@ public class Init
         return systemExit(error);
     }
 
-    private void init(String path)
+    private void init(String name)
         throws Exception
     {
-        File dir = new File(path);
-        String workflowName = dir.getName();
+        Path destDir = Paths.get(name);
+        boolean isCurrentDirectory;
 
-        ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", dir);
+        Path currentDirectory = Paths.get("").toAbsolutePath();
+        String workflowName;
+        if (destDir.normalize().toAbsolutePath().equals(currentDirectory)) {
+            isCurrentDirectory = true;
+            workflowName = currentDirectory.getFileName().toString();
+        }
+        else {
+            isCurrentDirectory = false;
+            workflowName = destDir.getFileName().toString();
+        }
+        String workflowFileName = workflowName + WORKFLOW_FILE_SUFFIX;
 
-        gen.mkdir(".");  // creates dir itself
+        ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", destDir);
+
+        gen.mkdir(".");  // creates destDir itself
 
         //if (!gen.exists("digdag")) {
         //    gen.cp("digdag.sh", "digdag");
@@ -64,8 +78,8 @@ public class Init
         //    gen.setExecutable(".digdag-wrapper/digdag.jar");
         //}
 
-        if (gen.exists(Run.DEFAULT_DAGFILE)) {
-            out.println("File " + gen.file(Run.DEFAULT_DAGFILE) + " already exists.");
+        if (gen.exists(workflowFileName)) {
+            out.println("File " + gen.path(workflowFileName) + " already exists.");
         }
         else {
             if (!gen.exists(".gitignore")) {
@@ -78,15 +92,13 @@ public class Init
             gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
             gen.setExecutable("tasks/repeat_hello.sh");
             gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cpWithReplace("workflow.dig", workflowName + ".dig",
+            gen.cpWithReplace("workflow.dig", workflowFileName,
                     ImmutableMap.of("@@name@@", workflowName));
-            gen.cpWithReplace("digdag.dig", Run.DEFAULT_DAGFILE,
-                    ImmutableMap.of("@@name@@", workflowName));
-            if (path.equals(".")) {
-                out.println("Done. Type `digdag r` to run the workflow. Enjoy!");
+            if (isCurrentDirectory) {
+                out.println("Done. Type `digdag run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
             else {
-                out.println("Done. Type `cd " + path + "` and then `digdag r` to run the workflow. Enjoy!");
+                out.println("Done. Type `cd " + destDir + "` and then `digdag run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
         }
     }
@@ -104,15 +116,15 @@ public class Init
     private class ResourceGenerator
     {
         private final String sourcePrefix;
-        private final File destDir;
+        private final Path destDir;
 
-        private ResourceGenerator(String sourcePrefix, File destDir)
+        private ResourceGenerator(String sourcePrefix, Path destDir)
         {
             this.sourcePrefix = sourcePrefix;
             this.destDir = destDir;
         }
 
-        private void cpAbsoluteDest(String src, File dest)
+        private void cpAbsoluteDest(String src, Path dest)
             throws IOException
         {
             out.println("  Creating " + dest);
@@ -120,19 +132,19 @@ public class Init
                 if (in == null) {
                     throw new RuntimeException("Resource not exists: " + sourcePrefix + src);
                 }
-                try (FileOutputStream out = new FileOutputStream(dest)) {
+                try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
                 }
             }
         }
 
-        public void cpAbsoluteSource(File file, String name)
+        public void cpAbsoluteSource(Path file, String name)
             throws IOException
         {
-            File dest = file(name);
+            Path dest = path(name);
             out.println("  Creating " + dest);
-            try (InputStream in = new FileInputStream(file)) {
-                try (FileOutputStream out = new FileOutputStream(dest)) {
+            try (InputStream in = Files.newInputStream(file)) {
+                try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
                 }
             }
@@ -141,7 +153,7 @@ public class Init
         private void cp(String src, String name)
             throws IOException
         {
-            cpAbsoluteDest(src, file(name));
+            cpAbsoluteDest(src, path(name));
         }
 
         private void cpWithReplace(String src, String name, Map<String, String> replacements)
@@ -151,16 +163,16 @@ public class Init
             for (Map.Entry<String, String> pair : replacements.entrySet()) {
                 data = data.replaceAll(pair.getKey(), pair.getValue());
             }
-            File dest = file(name);
+            Path dest = path(name);
             out.println("  Creating " + dest);
-            try (FileOutputStream out = new FileOutputStream(dest)) {
+            try (OutputStream out = Files.newOutputStream(dest)) {
                 out.write(data.getBytes(UTF_8));
             }
         }
 
         private void setExecutable(String name)
         {
-            boolean success = file(name).setExecutable(true);
+            boolean success = path(name).toFile().setExecutable(true);
             if (!success) {
                 // ignore
             }
@@ -169,22 +181,20 @@ public class Init
         private boolean exists(String name)
             throws IOException
         {
-            return file(name).exists();
+            return Files.exists(path(name));
         }
 
         private void mkdir(String name)
+            throws IOException
         {
-            boolean success = file(name).mkdirs();
-            if (!success) {
-                // ignore
-            }
+            Files.createDirectories(path(name));
         }
 
-        private File file(String name)
+        private Path path(String name)
         {
-            File path = destDir;
+            Path path = destDir;
             for (String f : name.split("/")) {
-                path = new File(path, f);
+                path = path.resolve(f);
             }
             return path;
         }
