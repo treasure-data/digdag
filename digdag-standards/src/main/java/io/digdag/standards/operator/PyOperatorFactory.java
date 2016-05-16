@@ -103,8 +103,8 @@ public class PyOperatorFactory
         private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
-            String inFile = archive.createTempFile("digdag-py-in-", ".tmp");
-            String outFile = archive.createTempFile("digdag-py-out-", ".tmp");
+            String inFile = workspace.createTempFile("digdag-py-in-", ".tmp");
+            String outFile = workspace.createTempFile("digdag-py-out-", ".tmp");
 
             String script;
             List<String> args;
@@ -119,7 +119,7 @@ public class PyOperatorFactory
                 args = ImmutableList.of(inFile, outFile);
             }
 
-            try (OutputStream fo = archive.newOutputStream(inFile)) {
+            try (OutputStream fo = workspace.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
@@ -145,7 +145,7 @@ public class PyOperatorFactory
                 throw new RuntimeException("Python command failed with code " + ecode);
             }
 
-            return mapper.readValue(archive.getFile(outFile), Config.class);
+            return mapper.readValue(workspace.getFile(outFile), Config.class);
         }
     }
 }

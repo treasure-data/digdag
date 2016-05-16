@@ -103,8 +103,8 @@ public class RbOperatorFactory
         private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
-            String inFile = archive.createTempFile("digdag-rb-in-", ".tmp");
-            String outFile = archive.createTempFile("digdag-rb-out-", ".tmp");
+            String inFile = workspace.createTempFile("digdag-rb-in-", ".tmp");
+            String outFile = workspace.createTempFile("digdag-rb-out-", ".tmp");
 
             String script;
             List<String> args;
@@ -121,7 +121,7 @@ public class RbOperatorFactory
 
             Optional<String> feature = params.getOptional("require", String.class);
 
-            try (OutputStream fo = archive.newOutputStream(inFile)) {
+            try (OutputStream fo = workspace.newOutputStream(inFile)) {
                 mapper.writeValue(fo, ImmutableMap.of("params", params));
             }
 
@@ -152,7 +152,7 @@ public class RbOperatorFactory
                 throw new RuntimeException("Ruby command failed with code " + ecode);
             }
 
-            return mapper.readValue(archive.getFile(outFile), Config.class);
+            return mapper.readValue(workspace.getFile(outFile), Config.class);
         }
     }
 }

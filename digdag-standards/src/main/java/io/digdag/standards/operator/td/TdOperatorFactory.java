@@ -160,7 +160,7 @@ public class TdOperatorFactory
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started {} job id={}:\n{}", j.getJobId(), engine, stmt);
 
-                TDJobSummary summary = joinJob(j, archive, downloadFile);
+                TDJobSummary summary = joinJob(j, workspace, downloadFile);
 
                 if (preview) {
                     try {
@@ -278,7 +278,7 @@ public class TdOperatorFactory
         }
     }
 
-    static TDJobSummary joinJob(TDJobOperator j, Workspace archive, Optional<String> downloadFile)
+    static TDJobSummary joinJob(TDJobOperator j, Workspace workspace, Optional<String> downloadFile)
     {
         TDJobSummary summary;
         try {
@@ -304,7 +304,7 @@ public class TdOperatorFactory
 
         if (downloadFile.isPresent()) {
             j.getResult(ite -> {
-                try (BufferedWriter out = archive.newBufferedWriter(downloadFile.get(), UTF_8)) {
+                try (BufferedWriter out = workspace.newBufferedWriter(downloadFile.get(), UTF_8)) {
                     addCsvHeader(out, j.getResultColumnNames());
 
                     while (ite.hasNext()) {

@@ -75,16 +75,16 @@ public class EmbulkOperatorFactory
 
             String tempFile;
             try {
-                tempFile = archive.createTempFile("digdag-embulk-", ".tmp.yml");
+                tempFile = workspace.createTempFile("digdag-embulk-", ".tmp.yml");
 
                 if (params.has("_command")) {
                     String command = params.get("_command", String.class);
                     String data = templateEngine.templateFile(workspacePath, command, UTF_8, params);
-                    Files.write(archive.getPath(tempFile), data.getBytes(UTF_8));
+                    Files.write(workspace.getPath(tempFile), data.getBytes(UTF_8));
                 }
                 else {
                     Config embulkConfig = params.getNested("config");
-                    try (YAMLGenerator out = yaml.createGenerator(archive.newOutputStream(tempFile), JsonEncoding.UTF8)) {
+                    try (YAMLGenerator out = yaml.createGenerator(workspace.newOutputStream(tempFile), JsonEncoding.UTF8)) {
                         mapper.writeValue(out, embulkConfig);
                     }
                 }

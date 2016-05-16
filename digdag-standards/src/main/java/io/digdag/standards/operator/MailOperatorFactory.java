@@ -185,7 +185,7 @@ public class MailOperatorFactory
 
                     for (AttachConfig attachFile : attachFiles) {
                         MimeBodyPart part = new MimeBodyPart();
-                        part.attachFile(archive.getFile(attachFile.getPath()), attachFile.getContentType(), null);
+                        part.attachFile(workspace.getFile(attachFile.getPath()), attachFile.getContentType(), null);
                         part.setFileName(attachFile.getFileName());
                         multipart.addBodyPart(part);
                     }

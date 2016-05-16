@@ -15,7 +15,7 @@ public abstract class BaseOperator
         implements Operator
 {
     protected final Path workspacePath;
-    protected final Workspace archive;
+    protected final Workspace workspace;
     protected final TaskRequest request;
 
     protected final List<Config> inputs;
@@ -24,7 +24,7 @@ public abstract class BaseOperator
     public BaseOperator(Path workspacePath, TaskRequest request)
     {
         this.workspacePath = workspacePath;
-        this.archive = new Workspace(workspacePath);
+        this.workspace = new Workspace(workspacePath);
         this.request = request;
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();
@@ -49,7 +49,7 @@ public abstract class BaseOperator
                 return runTask();
             }
             finally {
-                archive.close();
+                workspace.close();
             }
         }
         catch (RuntimeException ex) {

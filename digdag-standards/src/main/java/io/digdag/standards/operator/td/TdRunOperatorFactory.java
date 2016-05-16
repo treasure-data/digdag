@@ -73,7 +73,7 @@ public class TdRunOperatorFactory
                 TDJobOperator j = op.startSavedQuery(name, Date.from(sessionTime));
                 logger.info("Started a saved query name={} with time={}", name, sessionTime);
 
-                TDJobSummary summary = joinJob(j, archive, downloadFile);
+                TDJobSummary summary = joinJob(j, workspace, downloadFile);
 
                 if (preview) {
                     try {
