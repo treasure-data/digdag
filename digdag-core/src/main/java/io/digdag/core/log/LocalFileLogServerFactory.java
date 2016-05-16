@@ -1,41 +1,37 @@
 package io.digdag.core.log;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.zip.GZIPOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.IOException;
-import java.io.FileNotFoundException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.DirectoryStream;
-import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
 import io.digdag.core.agent.AgentId;
+import io.digdag.spi.DirectUploadHandle;
+import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
-import io.digdag.spi.LogFilePrefix;
-import io.digdag.spi.LogFileHandle;
-import io.digdag.spi.DirectDownloadHandle;
-import io.digdag.spi.DirectUploadHandle;
-import io.digdag.client.config.Config;
-import java.time.format.DateTimeFormatter;
-import static java.util.Locale.ENGLISH;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.zip.GZIPOutputStream;
+
+import static io.digdag.core.log.LogFiles.MAPPER;
+import static io.digdag.core.log.TaskLogger.Stream.LOG;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 public class LocalFileLogServerFactory
-    implements LogServerFactory
+        implements LogServerFactory
 {
-    private static final String LOG_GZ_FILE_SUFFIX = ".log.gz";
-
     private final Path logPath;
     private final AgentId agentId;
 
@@ -43,8 +39,8 @@ public class LocalFileLogServerFactory
     public LocalFileLogServerFactory(Config systemConfig, AgentId agentId)
     {
         this.logPath = FileSystems.getDefault().getPath(systemConfig.get("log-server.local.path", String.class, "digdag.log"))
-            .toAbsolutePath()
-            .normalize();
+                .toAbsolutePath()
+                .normalize();
         this.agentId = agentId;
     }
 
@@ -71,7 +67,7 @@ public class LocalFileLogServerFactory
         private final Path logPath;
 
         public LocalFileLogServer(Path logPath)
-            throws IOException
+                throws IOException
         {
             this.logPath = logPath;
         }
@@ -121,7 +117,7 @@ public class LocalFileLogServerFactory
 
         @Override
         protected byte[] getFile(String dateDir, String attemptDir, String fileName)
-            throws FileNotFoundException
+                throws FileNotFoundException
         {
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
             try (InputStream in = Files.newInputStream(path)) {
@@ -151,12 +147,12 @@ public class LocalFileLogServerFactory
         }
 
         class LocalFileDirectTaskLogger
-            implements TaskLogger
+                implements TaskLogger
         {
             private final OutputStream output;
 
             public LocalFileDirectTaskLogger(LogFilePrefix prefix, String taskName)
-                throws IOException
+                    throws IOException
             {
                 String dateDir = LogFiles.formatDataDir(prefix);
                 String attemptDir = LogFiles.formatSessionAttemptDir(prefix);
@@ -166,24 +162,17 @@ public class LocalFileLogServerFactory
                 Files.createDirectories(dir);
                 Path path = dir.resolve(fileName);
 
-                this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16*1024);
+                this.output = new GZIPOutputStream(Files.newOutputStream(path, CREATE, APPEND), 16 * 1024);
             }
 
             @Override
-            public void log(LogLevel level, long timestamp, String message)
-            {
-                byte[] data = message.getBytes(UTF_8);
-                log(data, 0, data.length);
-            }
-
-            @Override
-            public void log(byte[] data, int off, int len)
+            public void write(LogEntry entry)
             {
                 try {
-                    output.write(data, off, len);
+                    MAPPER.writeValue(output, entry);
                 }
-                catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                catch (IOException e) {
+                    throw Throwables.propagate(e);
                 }
             }
 

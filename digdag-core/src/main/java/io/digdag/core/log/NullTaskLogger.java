@@ -8,7 +8,7 @@ public class NullTaskLogger
     { }
 
     @Override
-    public void log(byte[] data, int off, int len)
+    public void log(Stream stream, byte[] data, int off, int len)
     { }
 
     @Override

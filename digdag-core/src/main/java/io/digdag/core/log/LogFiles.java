@@ -6,14 +6,20 @@ import java.util.Collections;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogFileHandle;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
+
 import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class LogFiles
 {
+    static final ObjectMapper MAPPER = new ObjectMapper(new MessagePackFactory());
+
     private LogFiles()
     { }
 

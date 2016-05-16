@@ -7,7 +7,8 @@ import java.io.OutputStream;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.CommandLogger;
-import static java.nio.charset.StandardCharsets.UTF_8;
+
+import static io.digdag.core.log.TaskLogger.Stream.OUT;
 
 public class TaskContextCommandLogger
     implements CommandLogger
@@ -29,7 +30,7 @@ public class TaskContextCommandLogger
                 break;
             }
 
-            logger.log(buffer, 0, r);
+            logger.log(OUT, buffer, 0, r);
             copy.write(buffer, 0, r);
         }
     }
