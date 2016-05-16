@@ -11,6 +11,7 @@ import io.digdag.client.api.RestProject;
 import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.cli.client.ProjectUtil.showUploadedProject;
 
 public class Upload
     extends ClientCommand
@@ -51,19 +52,6 @@ public class Upload
     {
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
-        showUploadedProject(proj);
-    }
-
-    void showUploadedProject(RestProject proj)
-    {
-        ln("Uploaded:");
-        ln("  id: %d", proj.getId());
-        ln("  name: %s", proj.getName());
-        ln("  revision: %s", proj.getRevision());
-        ln("  archive type: %s", proj.getArchiveType());
-        ln("  project created at: %s", proj.getCreatedAt());
-        ln("  revision updated at: %s", proj.getUpdatedAt());
-        ln("");
-        ln("Use `digdag workflows` to show all workflows.");
+        showUploadedProject(out, proj);
     }
 }
