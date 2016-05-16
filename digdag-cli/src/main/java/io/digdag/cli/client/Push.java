@@ -27,6 +27,7 @@ import io.digdag.core.config.ConfigLoaderManager;
 
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.cli.client.ProjectUtil.showUploadedProject;
 
 public class Push
     extends ClientCommand
@@ -103,6 +104,6 @@ public class Push
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
-        new Upload(localVersion, out, err).showUploadedProject(proj);
+        showUploadedProject(out, proj);
     }
 }
