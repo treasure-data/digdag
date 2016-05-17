@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getStartAttemptId;
 import static acceptance.TestUtils.main;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
@@ -51,7 +50,6 @@ public class ErrorServerMailIT
     private Path projectDir;
 
     private Wiser mailServer;
-    private Path projectFile;
 
     @Before
     public void setUp()
@@ -62,10 +60,7 @@ public class ErrorServerMailIT
         projectDir = folder.getRoot().toPath().resolve("error");
         Files.createDirectory(projectDir);
 
-        projectFile = projectDir.resolve("digdag.yml");
-
-        copyResource("acceptance/error_server_mail/digdag.yml", projectFile);
-        copyResource("acceptance/error_server_mail/error.yml", projectDir.resolve("error.yml"));
+        copyResource("acceptance/error_server_mail/error.dig", projectDir.resolve("error.dig"));
         copyResource("acceptance/error_server_mail/fail.sql", projectDir.resolve("fail.sql"));
         copyResource("acceptance/error_server_mail/alert.txt", projectDir.resolve("alert.txt"));
 
@@ -97,7 +92,7 @@ public class ErrorServerMailIT
         CommandStatus pushStatus = main("push",
                 "error",
                 "-c", config.toString(),
-                "-f", projectFile.toString(),
+                "--project", projectDir.toString(),
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));
