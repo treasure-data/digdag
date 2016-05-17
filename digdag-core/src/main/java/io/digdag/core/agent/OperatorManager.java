@@ -94,9 +94,6 @@ public class OperatorManager
 
     public void run(TaskRequest request)
     {
-        // nextState is mutable
-        Config nextState = request.getLastStateParams();
-
         long taskId = request.getTaskId();
 
         // set task name to thread name so that logger shows it
@@ -106,7 +103,7 @@ public class OperatorManager
                 try {
                     runningTaskMap.put(taskId, request);
                     try {
-                        runWithHeartbeat(request, nextState);
+                        runWithHeartbeat(request);
                     }
                     finally {
                         runningTaskMap.remove(taskId);
@@ -119,11 +116,11 @@ public class OperatorManager
         }
     }
 
-    private void runWithHeartbeat(TaskRequest request, Config nextState)
+    private void runWithHeartbeat(TaskRequest request)
     {
         try {
             workspaceManager.withExtractedArchive(request, (workspacePath) -> {
-                runWithWorkspace(workspacePath, request, nextState);
+                runWithWorkspace(workspacePath, request);
                 return true;
             });
         }
@@ -136,7 +133,7 @@ public class OperatorManager
         }
     }
 
-    private void runWithWorkspace(Path workspacePath, TaskRequest request, Config nextState)
+    private void runWithWorkspace(Path workspacePath, TaskRequest request)
     {
         long taskId = request.getTaskId();
 
