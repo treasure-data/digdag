@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
@@ -562,11 +563,13 @@ public class Run
     {
         try {
             List<Instant> times = new ArrayList<>();
-            for (Path path : Files.newDirectoryStream(sessionStatusDir, p -> Files.isDirectory(p) && taskExists(p, workflowName))) {
-                try {
-                    times.add(Instant.from(SESSION_STATE_TIME_DIRNAME_FORMATTER.parse(path.getFileName().toString())));
-                }
-                catch (DateTimeException ex) {
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(sessionStatusDir, p -> Files.isDirectory(p) && taskExists(p, workflowName))) {
+                for (Path path : ds) {
+                    try {
+                        times.add(Instant.from(SESSION_STATE_TIME_DIRNAME_FORMATTER.parse(path.getFileName().toString())));
+                    }
+                    catch (DateTimeException ex) {
+                    }
                 }
             }
             if (times.isEmpty()) {
@@ -588,9 +591,11 @@ public class Run
         throws IOException
     {
         Pattern namePattern = Pattern.compile(Pattern.quote("+" + workflowName) + "[\\+\\^].*\\.yml");
-        for (Path file : Files.newDirectoryStream(dir, f -> Files.isRegularFile(f))) {
-            if (namePattern.matcher(file.getFileName().toString()).matches()) {
-                return true;
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, f -> Files.isRegularFile(f))) {
+            for (Path file : ds) {
+                if (namePattern.matcher(file.getFileName().toString()).matches()) {
+                    return true;
+                }
             }
         }
         return false;

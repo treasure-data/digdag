@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.HashSet;
 import java.util.Set;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -105,12 +106,14 @@ public class ProjectArchiveLoader
     private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed)
         throws IOException
     {
-        for (Path path : Files.newDirectoryStream(targetDir, ProjectArchiveLoader::rejectDotFiles)) {
-            String resourceName = realPathToResourceName(projectPath, path);
-            if (listed.add(resourceName)) {
-                consumer.accept(resourceName, path);
-                if (Files.isDirectory(path)) {
-                    listFilesRecursively(projectPath, path, consumer, listed);
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, ProjectArchiveLoader::rejectDotFiles)) {
+            for (Path path : ds) {
+                String resourceName = realPathToResourceName(projectPath, path);
+                if (listed.add(resourceName)) {
+                    consumer.accept(resourceName, path);
+                    if (Files.isDirectory(path)) {
+                        listFilesRecursively(projectPath, path, consumer, listed);
+                    }
                 }
             }
         }

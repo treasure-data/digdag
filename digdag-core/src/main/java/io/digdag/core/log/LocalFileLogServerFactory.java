@@ -106,8 +106,8 @@ public class LocalFileLogServerFactory
                 return;
             }
 
-            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir)) {
-                for (Path path : dirStream) {
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                for (Path path : ds) {
                     consumer.accept(
                             path.getFileName().toString(),
                             Files.size(path),
