@@ -158,7 +158,7 @@ public class TdOperatorFactory
                     .createTDJobRequest();
 
                 TDJobOperator j = op.submitNewJob(req);
-                logger.info("Started {} job id={}:\n{}", j.getJobId(), engine, stmt);
+                logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
 
                 TDJobSummary summary = joinJob(j, workspace, downloadFile);
 
