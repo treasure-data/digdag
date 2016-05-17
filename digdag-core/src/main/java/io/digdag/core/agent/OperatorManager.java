@@ -37,7 +37,7 @@ public class OperatorManager
 {
     private static Logger logger = LoggerFactory.getLogger(OperatorManager.class);
 
-    protected final AgentConfig config;
+    protected final AgentConfig agentConfig;
     protected final AgentId agentId;
     protected final TaskCallbackApi callback;
     private final WorkspaceManager workspaceManager;
@@ -50,12 +50,12 @@ public class OperatorManager
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
 
     @Inject
-    public OperatorManager(AgentConfig config, AgentId agentId,
+    public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
             ConfigEvalEngine evalEngine, Set<OperatorFactory> factories)
     {
-        this.config = config;
+        this.agentConfig = agentConfig;
         this.agentId = agentId;
         this.callback = callback;
         this.workspaceManager = workspaceManager;
@@ -81,7 +81,7 @@ public class OperatorManager
     public void start()
     {
         heartbeatScheduler.scheduleAtFixedRate(() -> heartbeat(),
-                config.getHeartbeatInterval(), config.getHeartbeatInterval(),
+                agentConfig.getHeartbeatInterval(), agentConfig.getHeartbeatInterval(),
                 TimeUnit.SECONDS);
     }
 
@@ -97,19 +97,20 @@ public class OperatorManager
         // nextState is mutable
         Config nextState = request.getLastStateParams();
 
+        long taskId = request.getTaskId();
+
         // set task name to thread name so that logger shows it
         try (SetThreadName threadName = new SetThreadName(request.getTaskName())) {
             try (TaskLogger taskLogger = callback.newTaskLogger(request)) {
                 TaskContextLogging.enter(LogLevel.DEBUG, taskLogger);
                 try {
-                    runWithHeartbeat(request, nextState);
-                }
-                catch (RuntimeException | IOException ex) {
-                    logger.error("Task failed", ex);
-                    Config error = makeExceptionError(cf, ex);
-                    callback.taskFailed(request.getSiteId(),
-                            request.getTaskId(), request.getLockId(), agentId,
-                            error);  // no retry
+                    runningTaskMap.put(taskId, request);
+                    try {
+                        runWithHeartbeat(request, nextState);
+                    }
+                    finally {
+                        runningTaskMap.remove(taskId);
+                    }
                 }
                 finally {
                     TaskContextLogging.leave();
@@ -119,19 +120,19 @@ public class OperatorManager
     }
 
     private void runWithHeartbeat(TaskRequest request, Config nextState)
-        throws IOException
     {
-        long taskId = request.getTaskId();
-
-        runningTaskMap.put(taskId, request);
         try {
             workspaceManager.withExtractedArchive(request, (workspacePath) -> {
                 runWithWorkspace(workspacePath, request, nextState);
                 return true;
             });
         }
-        finally {
-            runningTaskMap.remove(taskId);
+        catch (RuntimeException | IOException ex) {
+            logger.error("Task failed", ex);
+            Config error = makeExceptionError(cf, ex);
+            callback.taskFailed(request.getSiteId(),
+                    request.getTaskId(), request.getLockId(), agentId,
+                    error);  // no retry
         }
     }
 
@@ -269,18 +270,15 @@ public class OperatorManager
     private void heartbeat()
     {
         try {
-            List<TaskRequest> runningTasks = ImmutableList.copyOf(runningTaskMap.values());
-            if (!runningTasks.isEmpty()) {
-                Map<Integer, List<String>> sites = runningTasks.stream()
-                    .collect(Collectors.groupingBy(
-                                TaskRequest::getSiteId,
-                                Collectors.mapping(TaskRequest::getLockId, Collectors.toList())
-                                ));
-                for (Map.Entry<Integer, List<String>> pair : sites.entrySet()) {
-                    int siteId = pair.getKey();
-                    List<String> lockIds = pair.getValue();
-                    callback.taskHeartbeat(siteId, lockIds, agentId, config.getLockRetentionTime());
-                }
+            Map<Integer, List<String>> sites = runningTaskMap.values().stream()
+                .collect(Collectors.groupingBy(
+                            TaskRequest::getSiteId,
+                            Collectors.mapping(TaskRequest::getLockId, Collectors.toList())
+                            ));
+            for (Map.Entry<Integer, List<String>> pair : sites.entrySet()) {
+                int siteId = pair.getKey();
+                List<String> lockIds = pair.getValue();
+                callback.taskHeartbeat(siteId, lockIds, agentId, agentConfig.getLockRetentionTime());
             }
         }
         catch (Throwable t) {
