@@ -21,6 +21,7 @@ import com.treasuredata.client.model.TDExportJobRequest;
 import com.treasuredata.client.model.TDExportFileFormatType;
 import org.msgpack.value.Value;
 import static java.util.Locale.ENGLISH;
+import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 
 public class TdTableExportOperatorFactory
         implements OperatorFactory
@@ -84,15 +85,7 @@ public class TdTableExportOperatorFactory
                 TDJobOperator j = op.submitExportJob(req);
                 logger.info("Started table export job id={}", j.getJobId());
 
-                try {
-                    j.ensureSucceeded();
-                }
-                catch (InterruptedException ex) {
-                    Throwables.propagate(ex);
-                }
-                finally {
-                    j.ensureFinishedOrKill();
-                }
+                joinJob(j);
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()

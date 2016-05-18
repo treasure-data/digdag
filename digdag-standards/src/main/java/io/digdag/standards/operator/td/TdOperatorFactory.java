@@ -23,6 +23,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ import org.msgpack.value.MapValue;
 import org.msgpack.value.RawValue;
 import org.msgpack.value.ValueFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
 import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 
@@ -161,7 +163,8 @@ public class TdOperatorFactory
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
 
-                TDJobSummary summary = joinJob(j, workspace, downloadFile);
+                TDJobSummary summary = joinJob(j);
+                downloadJobResult(j, workspace, downloadFile);
 
                 if (preview) {
                     try {
@@ -279,22 +282,21 @@ public class TdOperatorFactory
         }
     }
 
-    static TDJobSummary joinJob(TDJobOperator j, Workspace workspace, Optional<String> downloadFile)
+    static TDJobSummary joinJob(TDJobOperator j)
     {
-        TDJobSummary summary;
         try {
-            summary = j.ensureSucceeded();
+            return j.ensureSucceeded();
         }
-        catch (RuntimeException ex) {
+        catch (TDJobException ex) {
             try {
                 TDJob job = j.getJobInfo();
                 String message = job.getCmdOut() + "\n" + job.getStdErr();
-                logger.warn("Job {}:\n===\n{}\n===", j.getJobId(), message);
+                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
             }
-            catch (Throwable fail) {
-                ex.addSuppressed(fail);
+            catch (Exception getJobInfoFailed) {
+                getJobInfoFailed.addSuppressed(ex);
+                throw Throwables.propagate(getJobInfoFailed);
             }
-            throw ex;
         }
         catch (InterruptedException ex) {
             throw Throwables.propagate(ex);
@@ -302,7 +304,10 @@ public class TdOperatorFactory
         finally {
             j.ensureFinishedOrKill();
         }
+    }
 
+    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile)
+    {
         if (downloadFile.isPresent()) {
             j.getResult(ite -> {
                 try (BufferedWriter out = workspace.newBufferedWriter(downloadFile.get(), UTF_8)) {
@@ -318,8 +323,6 @@ public class TdOperatorFactory
                 }
             });
         }
-
-        return summary;
     }
 
     private static void addCsvHeader(Writer out, List<String> columnNames)
