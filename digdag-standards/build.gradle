@@ -9,7 +9,7 @@ dependencies {
     compile 'com.sun.mail:javax.mail:1.5.5'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
 
     // td
-    compile 'com.treasuredata.client:td-client:0.7.12'
+    compile 'com.treasuredata.client:td-client:0.7.15'
     compile 'org.msgpack:msgpack-core:0.8.2'
     compile 'org.yaml:snakeyaml:1.14'
 }
