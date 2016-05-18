@@ -21,8 +21,10 @@ import io.digdag.core.agent.RetryControl;
 import io.digdag.core.session.SessionStateFlags;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public class RequireOperatorFactory
         implements OperatorFactory
@@ -71,12 +73,12 @@ public class RequireOperatorFactory
                 isDone = runTask();
             }
             catch (RuntimeException ex) {
-                Config error = OperatorManager.makeExceptionError(request.getConfig().getFactory(), ex);
                 boolean doRetry = retry.evaluate();
                 if (doRetry) {
-                    throw new TaskExecutionException(ex, error,
+                    throw new TaskExecutionException(ex,
+                            buildExceptionErrorConfig(ex),
                             retry.getNextRetryInterval(),
-                            retry.getNextRetryStateParams());
+                            ConfigElement.copyOf(retry.getNextRetryStateParams()));
                 }
                 else {
                     throw ex;
@@ -88,7 +90,7 @@ public class RequireOperatorFactory
             }
             else {
                 // TODO use exponential-backoff to calculate retry interval
-                throw new TaskExecutionException(1, request.getLastStateParams());
+                throw TaskExecutionException.ofNextPolling(1, ConfigElement.copyOf(request.getLastStateParams()));
             }
         }
 

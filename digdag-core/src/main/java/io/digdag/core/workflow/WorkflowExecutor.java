@@ -24,7 +24,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.agent.RetryControl;
-import io.digdag.core.agent.OperatorManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
@@ -42,6 +41,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static java.util.Locale.ENGLISH;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 
 /**
@@ -829,7 +829,7 @@ public class WorkflowExecutor
                 logger.error("Enqueue error, making this task failed: {}", task, ex);
                 // TODO retry here?
                 return taskFailed(lockedTask,
-                        OperatorManager.makeExceptionError(cf, ex));
+                        buildExceptionErrorConfig(ex).toConfig(cf));
             }
         }).or(false);
     }

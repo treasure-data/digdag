@@ -29,6 +29,15 @@ public class ConfigElement
         return new ConfigElement(JsonNodeFactory.instance.objectNode());
     }
 
+    public static ConfigElement ofMap(Map<String, String> map)
+    {
+        ObjectNode js = JsonNodeFactory.instance.objectNode();
+        for (Map.Entry<String, String> pair : map.entrySet()) {
+            js.put(pair.getKey(), pair.getValue());
+        }
+        return new ConfigElement(js);
+    }
+
     //public static ConfigElement fromProperties(Properties props)
     //{
     //    Config builder = new Config(new ObjectMapper());
