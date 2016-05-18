@@ -301,7 +301,7 @@ public class Run
             sb.append(String.format("%n"));
             if (!noSave) {
                 sb.append(String.format(ENGLISH, "Task state is saved at %s directory.%n", resumeStatePath));
-                sb.append(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time."));
+                sb.append(String.format(ENGLISH, "  * Use --session <daily | hourly | \"yyyy-MM-dd[ HH:mm:ss]\"> to not reuse the last session time.%n"));
                 sb.append(String.format(ENGLISH, "  * Use --rerun, --start +NAME, or --goal +NAME argument to rerun skipped tasks."));
             }
             throw systemExit(sb.toString());
