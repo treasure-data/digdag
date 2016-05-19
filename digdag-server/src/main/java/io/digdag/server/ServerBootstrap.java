@@ -175,7 +175,7 @@ public class ServerBootstrap
                 .build()
                 );
 
-        AccessLogReceiver logReceiver = new DefaultAccessLogReceiver(logWriterExecutor, path.toFile(), "access-", "log");
+        AccessLogReceiver logReceiver = new DefaultAccessLogReceiver(logWriterExecutor, path.toFile(), "access.", "log");
 
         if (JsonLogFormatter.isJsonPattern(config.getAccessLogPattern())) {
             return new AccessLogHandler(nextHandler, logReceiver,
