@@ -10,8 +10,6 @@ schedule:
   _parallel: true
   +timezone:
     sh>: "echo timezone: \\'${timezone}\\' >> output.yml"
-  +session_id:
-    sh>: "echo session_id: \\'${session_id}\\' >> output.yml"
   +session_uuid:
     sh>: "echo session_uuid: \\'${session_uuid}\\' >> output.yml"
   +session_time:

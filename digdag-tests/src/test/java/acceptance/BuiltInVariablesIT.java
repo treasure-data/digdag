@@ -59,7 +59,6 @@ public class BuiltInVariablesIT
                 .put("last_session_date", is("2016-01-02"))
                 .put("session_date_compact", is("20160102"))
                 .put("last_session_time", is("2016-01-02T00:00:00+00:00"))
-                .put("session_id", is("1"))
                 .put("session_unixtime", is("1451703845"))
                 .put("last_session_date_compact", is("20160102"))
                 .put("session_date", is("2016-01-02"))

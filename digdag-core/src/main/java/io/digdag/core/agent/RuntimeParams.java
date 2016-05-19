@@ -20,7 +20,6 @@ public class RuntimeParams
         params.set("timezone", timeZone);
 
         // session_*
-        params.set("session_id", request.getSessionId());
         params.set("session_uuid", request.getSessionUuid().toString());
         params.set("session_time", formatSessionTime(request.getSessionTime(), timeZone));
         setTimeParameters(params, "session_", timeZone, request.getSessionTime());
