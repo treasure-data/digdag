@@ -1,32 +1,26 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.LinkedHashMap;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.net.URLEncoder;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.file.Path;
-import com.google.inject.Inject;
-import com.google.common.base.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.TemplateEngine;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import org.immutables.value.Value;
-import com.fasterxml.jackson.databind.JsonNode;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigException;
-import static java.util.Locale.ENGLISH;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ForEachOperatorFactory
         implements OperatorFactory
@@ -69,6 +63,8 @@ public class ForEachOperatorFactory
             for (String key : map.getKeys()) {
                 entries.put(key, map.getList(key, JsonNode.class));
             }
+
+            enforceTaskCountLimit(entries);
 
             List<Config> combinations = buildCombinations(request.getConfig().getFactory(), entries);
 
@@ -113,6 +109,17 @@ public class ForEachOperatorFactory
                 current = next;
             }
             return current;
+        }
+
+        private static void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
+        {
+            int count = 1;
+            for (List<JsonNode> nodes : entries.values()) {
+                count *= nodes.size();
+                if (count > Limits.maxWorkflowTasks()) {
+                    throw new ConfigException("Too many for_each subtasks. Limit: " + Limits.maxWorkflowTasks());
+                }
+            }
         }
 
         private static String buildTaskName(Config combination)

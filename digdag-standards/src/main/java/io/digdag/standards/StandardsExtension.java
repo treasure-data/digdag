@@ -10,6 +10,8 @@ import io.digdag.core.Extension;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.standards.operator.EchoOperatorFactory;
+import io.digdag.standards.operator.NopOperatorFactory;
 import io.digdag.standards.scheduler.CronSchedulerFactory;
 import io.digdag.standards.scheduler.MonthlySchedulerFactory;
 import io.digdag.standards.scheduler.WeeklySchedulerFactory;
@@ -63,6 +65,7 @@ public class StandardsExtension
             operatorFactoryBinder.addBinding().to(TdLoadOperatorFactory.class).in(Scopes.SINGLETON);
             operatorFactoryBinder.addBinding().to(TdDdlOperatorFactory.class).in(Scopes.SINGLETON);
             operatorFactoryBinder.addBinding().to(TdTableExportOperatorFactory.class).in(Scopes.SINGLETON);
+            operatorFactoryBinder.addBinding().to(EchoOperatorFactory.class).in(Scopes.SINGLETON);
 
             Multibinder<SchedulerFactory> schedulerBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
             schedulerBinder.addBinding().to(CronSchedulerFactory.class).in(Scopes.SINGLETON);

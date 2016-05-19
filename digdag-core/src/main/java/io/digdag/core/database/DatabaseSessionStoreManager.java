@@ -1,37 +1,69 @@
 package io.digdag.core.database;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Stream;
-import java.util.stream.Collectors;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.core.session.*;
-import io.digdag.core.workflow.TaskControl;
-import io.digdag.spi.TaskReport;
-import io.digdag.spi.TaskResult;
-import io.digdag.core.workflow.TaskConfig;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.ImmutableArchivedTask;
+import io.digdag.core.session.ImmutableSession;
+import io.digdag.core.session.ImmutableSessionAttemptSummary;
+import io.digdag.core.session.ImmutableStoredSession;
+import io.digdag.core.session.ImmutableStoredSessionAttempt;
+import io.digdag.core.session.ImmutableStoredSessionAttemptWithSession;
+import io.digdag.core.session.ImmutableStoredSessionMonitor;
+import io.digdag.core.session.ImmutableStoredTask;
+import io.digdag.core.session.ImmutableTaskAttemptSummary;
+import io.digdag.core.session.ImmutableTaskRelation;
+import io.digdag.core.session.ImmutableTaskStateSummary;
+import io.digdag.core.session.Session;
+import io.digdag.core.session.SessionAttempt;
+import io.digdag.core.session.SessionAttemptControlStore;
+import io.digdag.core.session.SessionAttemptSummary;
+import io.digdag.core.session.SessionControlStore;
+import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.session.SessionStore;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSession;
+import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.StoredSessionMonitor;
+import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.Task;
+import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskControlStore;
+import io.digdag.core.session.TaskRelation;
+import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.session.TaskStateFlags;
+import io.digdag.core.session.TaskStateSummary;
+import io.digdag.core.session.TaskType;
+import io.digdag.core.workflow.TaskConfig;
+import io.digdag.spi.TaskReport;
+import io.digdag.spi.TaskResult;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.sqlobject.Bind;
+import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
+import org.skife.jdbi.v2.sqlobject.SqlQuery;
+import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager<DatabaseSessionStoreManager.Dao>
@@ -546,6 +578,20 @@ public class DatabaseSessionStoreManager
         {
             this.handle = handle;
             this.dao = handle.attach(Dao.class);
+        }
+
+        @Override
+        public long getTaskCount(long attemptId)
+        {
+            long count = handle.createQuery(
+                    "select count(*) from tasks t" +
+                            " where t.attempt_id = :attemptId"
+            )
+                    .bind("attemptId", attemptId)
+                    .mapTo(long.class)
+                    .first();
+
+            return count;
         }
 
         @Override

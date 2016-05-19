@@ -1,0 +1,10 @@
+timezone: UTC
+
+_export:
+  n: 1001
+
++bomb:
+  loop>: ${n}
+  _parallel: true
+  _do:
+    echo>: fail

@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import io.digdag.core.Limits;
+import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -57,6 +59,10 @@ public class LoopOperatorFactory
 
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
+
+            if (count > Limits.maxWorkflowTasks()) {
+                throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
+            }
 
             boolean parallel = params.get("_parallel", boolean.class, false);
 
