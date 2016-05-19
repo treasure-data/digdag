@@ -357,6 +357,14 @@ public class Config
         return new Config(mapper, (ObjectNode) value);
     }
 
+    public Optional<Config> getOptionalNested(String key)
+    {
+        if (!has(key)) {
+            return Optional.absent();
+        }
+        return Optional.of(getNested(key));
+    }
+
     private ObjectNode newObjectNode()
     {
         return object.objectNode();
