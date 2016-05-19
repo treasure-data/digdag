@@ -23,6 +23,7 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import org.msgpack.value.Value;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 
 public class TdLoadOperatorFactory
         implements OperatorFactory
@@ -94,15 +95,7 @@ public class TdLoadOperatorFactory
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started bulk load job id={}", j.getJobId());
 
-                try {
-                    j.ensureSucceeded();
-                }
-                catch (InterruptedException ex) {
-                    Throwables.propagate(ex);
-                }
-                finally {
-                    j.ensureFinishedOrKill();
-                }
+                joinJob(j);
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()

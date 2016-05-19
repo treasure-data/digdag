@@ -158,7 +158,8 @@ public class ServerModeHiddenMailConfigIT
         System.out.println(logs);
 
         // XXX (dano): very hacky but good enough for now
-        assertThat(logs, containsString("io.digdag.spi.TemplateException: Failed to evaluate JavaScript code: ${config.mail.password}"));
+        assertThat(logs, containsString("Configuration error at task +mail_config+foo"));
+        assertThat(logs, containsString("Failed to evaluate JavaScript code: ${config.mail.password}"));
         assertThat(logs, containsString("\"config\" is not defined"));
     }
 }

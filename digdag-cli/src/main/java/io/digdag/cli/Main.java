@@ -35,6 +35,7 @@ import java.util.Set;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
+import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 import static io.digdag.core.Version.buildVersion;
 
 public class Main
@@ -147,34 +148,11 @@ public class Main
             return ex.getCode();
         }
         catch (Exception ex) {
-            err.println("error: " + formatException(ex));
+            err.println("error: " + formatExceptionMessage(ex));
             if (verbose) {
                 ex.printStackTrace(err);
             }
             return 1;
-        }
-    }
-
-    private static String formatException(Exception ex)
-    {
-        StringBuilder sb = new StringBuilder();
-        collectExceptionMessage(sb, ex, new HashSet<>());
-        return sb.toString();
-    }
-
-    private static void collectExceptionMessage(StringBuilder sb, Throwable ex, Set<String> used)
-    {
-        if (ex.getMessage() != null && used.add(ex.getMessage())) {
-            if (sb.length() > 0) {
-                sb.append("\n> ");
-            }
-            sb.append(ex.getMessage());
-        }
-        if (ex.getCause() != null) {
-            collectExceptionMessage(sb, ex.getCause(), used);
-        }
-        for (Throwable t : ex.getSuppressed()) {
-            collectExceptionMessage(sb, t, used);
         }
     }
 

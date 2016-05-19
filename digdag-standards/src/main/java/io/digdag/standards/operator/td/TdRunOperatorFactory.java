@@ -27,6 +27,7 @@ import org.msgpack.value.Value;
 import org.msgpack.value.ArrayValue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
+import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 
 public class TdRunOperatorFactory
@@ -73,7 +74,8 @@ public class TdRunOperatorFactory
                 TDJobOperator j = op.startSavedQuery(name, Date.from(sessionTime));
                 logger.info("Started a saved query name={} with time={}", name, sessionTime);
 
-                TDJobSummary summary = joinJob(j, workspace, downloadFile);
+                TDJobSummary summary = joinJob(j);
+                downloadJobResult(j, workspace, downloadFile);
 
                 if (preview) {
                     try {

@@ -6,10 +6,11 @@ import java.nio.file.Path;
 import com.google.common.collect.*;
 import com.google.common.base.*;
 import io.digdag.core.agent.RetryControl;
-import io.digdag.core.agent.OperatorManager;
 import io.digdag.spi.*;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.Operator;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public abstract class BaseOperator
         implements Operator
@@ -53,12 +54,12 @@ public abstract class BaseOperator
             }
         }
         catch (RuntimeException ex) {
-            Config error = OperatorManager.makeExceptionError(request.getConfig().getFactory(), ex);
             boolean doRetry = retry.evaluate();
             if (doRetry) {
-                throw new TaskExecutionException(ex, error,
+                throw new TaskExecutionException(ex,
+                        buildExceptionErrorConfig(ex),
                         retry.getNextRetryInterval(),
-                        retry.getNextRetryStateParams());
+                        ConfigElement.copyOf(retry.getNextRetryStateParams()));
             }
             else {
                 throw ex;
