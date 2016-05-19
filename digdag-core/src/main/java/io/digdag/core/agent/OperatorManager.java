@@ -137,7 +137,7 @@ public class OperatorManager
                                 ex.getError(cf));
                     }
                     else {
-                        logger.error("Task {} failed.\n{}", request.getTaskName(), ex.getMessage());
+                        logger.error("Task {} failed.\n{}", request.getTaskName(), formatExceptionMessage(ex));
                         logger.debug("", ex);
                         // TODO use debug to log stacktrace here
                         callback.taskFailed(request.getSiteId(),
@@ -147,7 +147,7 @@ public class OperatorManager
                 }
                 catch (RuntimeException ex) {
                     if (ex instanceof ConfigException) {
-                        logger.error("Configuration error at task {}: {}", request.getTaskName(), ex.getMessage());
+                        logger.error("Configuration error at task {}: {}", request.getTaskName(), formatExceptionMessage(ex));
                     }
                     else {
                         logger.error("Task failed with unexpected error: {}", ex.getMessage(), ex);
@@ -281,6 +281,30 @@ public class OperatorManager
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Heartbeat thread will be retried.", t);
+        }
+    }
+
+    public static String formatExceptionMessage(Throwable ex)
+    {
+        StringBuilder sb = new StringBuilder();
+        collectExceptionMessage(sb, ex, new StringBuffer());
+        return sb.toString();
+    }
+
+    public static void collectExceptionMessage(StringBuilder sb, Throwable ex, StringBuffer used)
+    {
+        if (ex.getMessage() != null && used.indexOf(ex.getMessage()) == -1) {
+            used.append("\n").append(ex.getMessage());
+            if (sb.length() > 0) {
+                sb.append("\n> ");
+            }
+            sb.append(ex.getMessage());
+        }
+        if (ex.getCause() != null) {
+            collectExceptionMessage(sb, ex.getCause(), used);
+        }
+        for (Throwable t : ex.getSuppressed()) {
+            collectExceptionMessage(sb, t, used);
         }
     }
 }
