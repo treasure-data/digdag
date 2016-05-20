@@ -11,14 +11,3 @@ schedule:
 
 +nasdaq:
   td>: queries/nasdaq.sql
-
-+www_access:
-  _parallel: true
-  +today:
-    td>: queries/www_access.sql
-    from_days_ago: 1
-    to_days_ago: 0
-  +yesterday:
-    td>: queries/www_access.sql
-    from_days_ago: 2
-    to_days_ago: 1
