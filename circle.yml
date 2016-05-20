@@ -18,7 +18,7 @@ deployment:
     branch: ci-poc
     commands:
       - >
-        digdag push digdag-ci-poc
+        digdag push $(basename $(git rev-parse --show-toplevel))
         -e api-workflow.treasuredata.com
         -p td.apikey=$TD_API_KEY
         -X client.http.headers.authorization="TD1 $TD_API_KEY"
