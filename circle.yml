@@ -18,7 +18,7 @@ deployment:
     branch: master
     commands:
       - >
-      digdag push <WORKFLOW PROJECT NAME>
+      digdag push digdag-ci-poc
       -e api-workflow.treasuredata.com
       -p td.apikey=$TD_API_KEY
       -X client.http.headers.authorization="TD1 $TD_API_KEY"
