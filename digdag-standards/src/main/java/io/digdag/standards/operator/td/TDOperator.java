@@ -3,13 +3,11 @@ package io.digdag.standards.operator.td;
 import java.util.Date;
 import java.io.Closeable;
 
-import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
-import io.digdag.standards.operator.BaseOperator;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
@@ -29,17 +27,7 @@ public class TDOperator
             throw new ConfigException("Parameter 'database' is empty");
         }
 
-        String apikey = config.get("apikey", String.class).trim();
-        if (apikey.isEmpty()) {
-            throw new ConfigException("Parameter 'apikey' is empty");
-        }
-
-        TDClient client = TDClient.newBuilder(false)
-            .setEndpoint(config.get("endpoint", String.class, "api.treasuredata.com"))
-            .setUseSSL(config.get("use_ssl", boolean.class, true))
-            .setApiKey(apikey)
-            .setRetryLimit(0)  // disable td-client's retry mechanism
-            .build();
+        TDClient client = TDClientFactory.clientFromConfig(config);
 
         return new TDOperator(client, database);
     }
