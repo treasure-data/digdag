@@ -5,18 +5,14 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 import com.google.common.base.*;
 import com.google.common.collect.*;
+import io.digdag.core.Limits;
 import io.digdag.core.session.StoredTask;
-import io.digdag.core.session.TaskStateSummary;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.spi.TaskResult;
 import io.digdag.client.config.Config;
-import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.workflow.TaskConfig;
-import io.digdag.core.workflow.WorkflowTask;
-import io.digdag.core.workflow.WorkflowTaskList;
 
 public class TaskControl
 {
@@ -80,6 +76,13 @@ public class TaskControl
 
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
+
+            // Limit the total number of tasks in a session. Do this for each task being added so that parallel task addition cannot circumvent it.
+            long taskCount = store.getTaskCount(attemptId);
+            if (taskCount >= Limits.maxWorkflowTasks()) {
+                throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount);
+            }
+
             if (firstTask && firstTaskIsRootStoredParentTask) {
                 indexToId.add(rootTaskId);
                 firstTask = false;
