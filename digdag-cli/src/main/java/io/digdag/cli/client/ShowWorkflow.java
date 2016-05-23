@@ -9,6 +9,8 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestProject;
 import io.digdag.core.Version;
+import org.hjson.JsonValue;
+import org.hjson.Stringify;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -83,15 +85,15 @@ public class ShowWorkflow
         if (projName != null) {
             RestProject proj = client.getProject(projName);
             RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
-            String yaml = yamlMapper().toYaml(def.getConfig());
-            ln("%s", yaml);
+            String dig = JsonValue.readJSON(def.getConfig().toString()).toString(Stringify.HJSON);
+            ln("%s", dig);
         }
         else {
             for (RestProject proj : client.getProjects()) {
                 try {
                     RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
-                    String yaml = yamlMapper().toYaml(def.getConfig());
-                    ln("%s", yaml);
+                    String dig = JsonValue.readJSON(def.getConfig().toString()).toString(Stringify.HJSON);
+                    ln("%s", dig);
                     return;
                 }
                 catch (NotFoundException ex) {

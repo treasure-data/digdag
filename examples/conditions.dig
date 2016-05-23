@@ -1,17 +1,22 @@
 timezone: UTC
 
-+algorithms:
-  +try:
++algorithms: {
+  +try: {
     _parallel: true
-    +zlib:
+    +zlib: {
       py>: examples.conditions.Algorithm.zlib
-    +gzip:
+    }
+    +gzip: {
       py>: examples.conditions.Algorithm.deflate
-    +bzip2:
+    }
+    +bzip2: {
       py>: examples.conditions.Algorithm.bzip2
-  +decide:
+    }
+  +decide: {
     py>: examples.conditions.Algorithm.decide_algorithm
+  }
 
-+show:
++show: {
   py>: examples.conditions.show_algorithm
+}
 

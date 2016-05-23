@@ -1,2 +1,3 @@
-+step:
++step: {
   sh>: "exit 1"
+}

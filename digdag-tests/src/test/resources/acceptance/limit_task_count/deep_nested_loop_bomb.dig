@@ -1,59 +1,78 @@
 timezone: UTC
 
-+bomb:
++bomb: {
   loop>: 2
   _parallel: true
-  _do:
+  _do: {
     loop>: 2
     _parallel: true
-    _do:
+    _do: {
       loop>: 2
       _parallel: true
-      _do:
+      _do: {
         loop>: 2
         _parallel: true
-        _do:
+        _do: {
           loop>: 2
           _parallel: true
-          _do:
+          _do: {
             loop>: 2
             _parallel: true
-            _do:
+            _do: {
               loop>: 2
               _parallel: true
-              _do:
+              _do: {
                 loop>: 2
                 _parallel: true
-                _do:
+                _do: {
                   loop>: 2
                   _parallel: true
-                  _do:
+                  _do: {
                     loop>: 2
                     _parallel: true
-                    _do:
+                    _do: {
                       loop>: 2
                       _parallel: true
-                      _do:
+                      _do: {
                         loop>: 2
                         _parallel: true
-                        _do:
+                        _do: {
                           loop>: 2
                           _parallel: true
-                          _do:
+                          _do: {
                             loop>: 2
                             _parallel: true
-                            _do:
+                            _do: {
                               loop>: 2
                               _parallel: true
-                              _do:
+                              _do: {
                                 loop>: 2
                                 _parallel: true
-                                _do:
+                                _do: {
                                   loop>: 2
                                   _parallel: true
-                                  _do:
+                                  _do: {
                                     loop>: 2
                                     _parallel: true
-                                    _do:
+                                    _do: {
                                       echo>: boom
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 

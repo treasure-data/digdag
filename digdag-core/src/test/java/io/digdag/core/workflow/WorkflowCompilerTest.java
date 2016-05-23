@@ -6,7 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.config.DigConfigLoader;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class WorkflowCompilerTest
     {
         try {
             String content = Resources.toString(getClass().getResource(name), UTF_8);
-            return embed.getInjector().getInstance(YamlConfigLoader.class)
+            return embed.getInjector().getInstance(DigConfigLoader.class)
                     .loadString(content)
                     .toConfig(embed.getInjector().getInstance(ConfigFactory.class));
         }

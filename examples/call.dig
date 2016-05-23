@@ -1,8 +1,10 @@
 timezone: UTC
 
-+step1:
++step1: {
   sh>: echo calling basic...
+}
 
-+call_another:
++call_another: {
   call>: basic
+}
 

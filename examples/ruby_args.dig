@@ -1,12 +1,15 @@
 timezone: UTC
 
-_export:
+_export: {
   require: "examples/ruby_args"
+}
 
-+task1:
++task1: {
   rb>: Test.task1
   arg1: this is arg1
+}
 
-+task2:
++task2: {
   rb>: Test.task2
   arg2: this is arg2
+}

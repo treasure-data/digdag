@@ -1,9 +1,9 @@
 package io.digdag.cli.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.cli.StdOut;
-import io.digdag.cli.YamlMapper;
 import io.digdag.client.config.Config;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
@@ -21,7 +21,6 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Date;
 
@@ -29,14 +28,14 @@ class Archiver
 {
     private final PrintStream out;
     private final ProjectArchiveLoader projectLoader;
-    private final YamlMapper yamlMapper;
+    private final ObjectMapper mapper;
 
     @Inject
-    Archiver(@StdOut PrintStream out, ProjectArchiveLoader projectLoader, YamlMapper yamlMapper)
+    Archiver(@StdOut PrintStream out, ProjectArchiveLoader projectLoader, ObjectMapper mapper)
     {
         this.out = out;
         this.projectLoader = projectLoader;
-        this.yamlMapper = yamlMapper;
+        this.mapper = mapper;
     }
 
     void createArchive(Path projectPath, Path output, Config overwriteParams)
@@ -65,7 +64,7 @@ class Archiver
 
             // create .digdag.dig
             // TODO set default time zone if not set?
-            byte[] metaBody = yamlMapper.toYaml(meta).getBytes(StandardCharsets.UTF_8);
+            byte[] metaBody = mapper.writeValueAsBytes(meta);
             TarArchiveEntry metaEntry = new TarArchiveEntry(ArchiveMetadata.FILE_NAME);
             metaEntry.setSize(metaBody.length);
             metaEntry.setModTime(new Date());

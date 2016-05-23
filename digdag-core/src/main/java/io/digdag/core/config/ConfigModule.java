@@ -1,6 +1,5 @@
 package io.digdag.core.config;
 
-import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
@@ -14,6 +13,6 @@ public class ConfigModule
     {
         binder.bind(ConfigFactory.class).in(Scopes.SINGLETON);
         binder.bind(ConfigLoaderManager.class).in(Scopes.SINGLETON);
-        binder.bind(YamlConfigLoader.class).in(Scopes.SINGLETON);
+        binder.bind(DigConfigLoader.class).in(Scopes.SINGLETON);
     }
 }

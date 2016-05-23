@@ -1,8 +1,10 @@
 timezone: UTC
 
-+split:
++split: {
   py>: examples.generate_subtasks.ParallelProcess.split
+}
 
-+parallel_process:
++parallel_process: {
   py>: examples.generate_subtasks.ParallelProcess.run
+}
 

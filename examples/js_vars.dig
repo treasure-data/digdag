@@ -1,16 +1,20 @@
 timezone: UTC
 
-+task1:
++task1: {
   val: 1
   sh>: echo ${val}
+}
 
-+task2:
++task2: {
   val: ${1 + 1}
   sh>: echo ${val}
+}
 
-+task3:
-  +run_command:
++task3: {
+  +run_command: {
     val: ${2 + 3}
     command: echo ${val}
     sh>: ${command}
+  }
+}
 

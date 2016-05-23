@@ -1,6 +1,9 @@
-+group:
++group: {
   parallel: true  # _parallel is correct
-  +step1:
+  +step1: {
     echo>: ok
-  +step2:
+  }
+  +step2: {
     echo>: ok
+  }
+}

@@ -1,6 +1,8 @@
 timezone: UTC
 
-+basic:
++basic: {
   !include : basic.dig
-+conditions:
+}
++conditions: {
   !include : conditions.dig
+}

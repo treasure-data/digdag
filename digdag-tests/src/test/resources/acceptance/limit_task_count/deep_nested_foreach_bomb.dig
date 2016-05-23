@@ -1,44 +1,65 @@
 timezone: UTC
 
-+bomb:
-  for_each>:
++bomb: {
+  for_each>: {
     a: [0, 1]
+  }
   _parallel: true
-  _do:
-    for_each>:
+  _do: {
+    for_each>: {
       a: [0, 1]
+    }
     _parallel: true
-    _do:
-      for_each>:
+    _do: {
+      for_each>: {
         a: [0, 1]
+      }
       _parallel: true
-      _do:
-        for_each>:
+      _do: {
+        for_each>: {
           a: [0, 1]
+        }
         _parallel: true
-        _do:
-          for_each>:
+        _do: {
+          for_each>: {
             a: [0, 1]
+          }
           _parallel: true
-          _do:
-            for_each>:
+          _do: {
+            for_each>: {
               a: [0, 1]
+            }
             _parallel: true
-            _do:
-              for_each>:
+            _do: {
+              for_each>: {
                 a: [0, 1]
+              }
               _parallel: true
-              _do:
-                for_each>:
+              _do: {
+                for_each>: {
                   a: [0, 1]
+                }
                 _parallel: true
-                _do:
-                  for_each>:
+                _do: {
+                  for_each>: {
                     a: [0, 1]
+                  }
                   _parallel: true
-                  _do:
-                    for_each>:
+                  _do: {
+                    for_each>: {
                       a: [0, 1]
+                    }
                     _parallel: true
-                    _do:
+                    _do: {
                       echo>: boom
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

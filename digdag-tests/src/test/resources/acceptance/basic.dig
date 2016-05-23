@@ -1,5 +1,7 @@
-+foo:
++foo: {
   sh>: "touch foo.out"
+}
 
-+bar:
++bar: {
   sh>: "touch bar.out"
+}

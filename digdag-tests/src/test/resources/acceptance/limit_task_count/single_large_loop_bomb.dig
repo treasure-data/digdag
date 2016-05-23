@@ -1,7 +1,9 @@
 timezone: UTC
 
-+bomb:
++bomb: {
   loop>: 1000000
   _parallel: true
-  _do:
+  _do: {
     echo>: fail
+  }
+}
