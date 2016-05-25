@@ -20,6 +20,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -29,6 +30,7 @@ import java.util.zip.GZIPInputStream;
 import static io.digdag.core.Version.buildVersion;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -49,7 +51,11 @@ class TestUtils
         return main(buildVersion(), args);
     }
 
-    static CommandStatus main(Version localVersion, String... args)
+    static CommandStatus main(Version localVersion, String... args) {
+        return main(localVersion, asList(args));
+    }
+
+    static CommandStatus main(Version localVersion, Collection<String> args)
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -58,7 +64,7 @@ class TestUtils
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            code = new Main(localVersion, outp, errp).cli(args);
+            code = new Main(localVersion, outp, errp).cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();

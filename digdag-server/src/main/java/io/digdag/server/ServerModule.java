@@ -1,29 +1,28 @@
 package io.digdag.server;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.inject.Inject;
+import io.digdag.client.config.ConfigException;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.guice.rs.GuiceRsModule;
+import io.digdag.server.rs.AttemptResource;
+import io.digdag.server.rs.LogResource;
+import io.digdag.server.rs.ProjectResource;
+import io.digdag.server.rs.ScheduleResource;
+import io.digdag.server.rs.VersionResource;
+import io.digdag.server.rs.WorkflowResource;
+
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
-import javax.ws.rs.NotSupportedException;
-import com.google.inject.Inject;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.OptionalBinder;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import io.digdag.core.Version;
-import io.digdag.guice.rs.GuiceRsModule;
-import io.digdag.guice.rs.GuiceRsModule.ApplicationBindingBuilder;
-import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.client.config.ConfigException;
-import io.digdag.server.rs.ProjectResource;
-import io.digdag.server.rs.WorkflowResource;
-import io.digdag.server.rs.ScheduleResource;
-import io.digdag.server.rs.AttemptResource;
-import io.digdag.server.rs.LogResource;
-import io.digdag.server.rs.VersionResource;
+
+import java.io.IOException;
+import java.util.Map;
 
 public class ServerModule
         extends GuiceRsModule
@@ -35,6 +34,7 @@ public class ServerModule
             .matches("/api/*")
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .addProvider(AuthRequestFilter.class)
+            .addProvider(CustomHeaderFilter.class)
             ;
         bindResources(builder);
         bindAuthenticator();
@@ -88,7 +88,6 @@ public class ServerModule
         }
     }
 
-    // TODO to debug web ui
     @Provider
     public static class CorsFilter implements ContainerResponseFilter
     {
@@ -102,6 +101,26 @@ public class ServerModule
             response.getHeaders().add("Access-Control-Allow-Credentials", "true");
             response.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
             response.getHeaders().add("Access-Control-Max-Age", "1209600");
+        }
+    }
+
+    @Provider
+    public static class CustomHeaderFilter implements ContainerResponseFilter
+    {
+        private final Map<String, String> headers;
+
+        @Inject
+        public CustomHeaderFilter(ServerConfig config)
+        {
+            this.headers = config.getHeaders();
+        }
+
+        @Override
+        public void filter(
+                ContainerRequestContext request,
+                ContainerResponseContext response)
+        {
+            headers.forEach(response.getHeaders()::add);
         }
     }
 }

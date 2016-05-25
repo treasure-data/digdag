@@ -47,6 +47,9 @@ public class Server
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
 
+    @DynamicParameter(names = {"-H", "--header"})
+    Map<String, String> headers = new HashMap<>();
+
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
@@ -90,6 +93,7 @@ public class Server
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -A, --access-log DIR             store access logs files to this path");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
         Main.showCommonOptions(err);
@@ -133,6 +137,8 @@ public class Server
         if (accessLogPath != null) {
             props.setProperty("server.access-log.path", accessLogPath);
         }
+
+        headers.forEach((key, value) -> props.setProperty("server.http.headers." + key, value));
 
         // Load default parameters
         ConfigFactory cf = new ConfigFactory(objectMapper());

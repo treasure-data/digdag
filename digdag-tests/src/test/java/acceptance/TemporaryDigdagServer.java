@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
@@ -18,14 +19,20 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Stream;
 
 import static acceptance.TestUtils.findFreePort;
 import static acceptance.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -42,6 +49,7 @@ public class TemporaryDigdagServer
     private final String host;
     private final int port;
     private final String endpoint;
+    private final List<String> extraArgs;
 
     private final ExecutorService executor;
     private final String configuration;
@@ -61,6 +69,7 @@ public class TemporaryDigdagServer
         this.port = findFreePort();
         this.endpoint = "http://" + host + ":" + port;
         this.configuration = Objects.requireNonNull(builder.configuration, "configuration");
+        this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
     }
@@ -106,15 +115,18 @@ public class TemporaryDigdagServer
             throw Throwables.propagate(e);
         }
 
-        executor.execute(() -> main(
-                version,
+        List<String> args = Stream.concat(Stream.of(
                 "server",
                 "-m",
                 "--port", String.valueOf(port),
                 "--bind", host,
                 "--task-log", taskLog.toString(),
                 "--access-log", accessLog.toString(),
-                "-c", config.toString()));
+                "-c", config.toString()),
+                extraArgs.stream())
+                .collect(toList());
+
+        executor.execute(() -> main(version, args));
 
         // Poll and wait for server to come up
         for (int i = 0; i < 30; i++) {
@@ -172,6 +184,8 @@ public class TemporaryDigdagServer
     public static class Builder
     {
 
+        private List<String> args = new ArrayList<>();
+
         private Builder()
         {
         }
@@ -188,6 +202,17 @@ public class TemporaryDigdagServer
         public Builder configuration(String configuration)
         {
             this.configuration = configuration;
+            return this;
+        }
+
+        public Builder addArgs(String... args)
+        {
+            return addArgs(asList(args));
+        }
+
+        private Builder addArgs(Collection<String> args)
+        {
+            this.args.addAll(args);
             return this;
         }
 

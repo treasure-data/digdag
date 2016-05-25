@@ -1,17 +1,18 @@
 package io.digdag.server;
 
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.api.RestApiKey;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import org.immutables.value.Value;
+
+import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableServerConfig.class)
@@ -22,6 +23,8 @@ public interface ServerConfig
     public static final String DEFAULT_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
+    String HEADER_KEY_PREFIX = "server.http.headers.";
+
     public int getPort();
 
     public String getBind();
@@ -29,6 +32,8 @@ public interface ServerConfig
     public Optional<String> getAccessLogPath();
 
     public String getAccessLogPattern();
+
+    public Map<String, String> getHeaders();
 
     public ConfigElement getSystemConfig();
 
@@ -46,11 +51,17 @@ public interface ServerConfig
 
     public static ServerConfig convertFrom(Config config)
     {
+        Map<String, String> headers = config.getKeys().stream()
+                .filter(key -> key.startsWith(HEADER_KEY_PREFIX))
+                .collect(toMap(key -> key.substring(HEADER_KEY_PREFIX.length()),
+                        key -> config.get(key, String.class)));
+
         return defaultBuilder()
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
+            .headers(headers)
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
             .build();
     }

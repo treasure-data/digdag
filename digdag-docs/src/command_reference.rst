@@ -274,6 +274,7 @@ In the config file, following parameters are available
 * server.port (integer)
 * server.access-log.path (string. same with --access-log)
 * server.access-log.pattern (string, "json", "combined" or "common")
+* server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
 * database.password (string)
