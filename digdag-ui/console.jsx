@@ -104,7 +104,7 @@ class Model {
 
   fetchProjectArchiveLatest(projectId, callbacks) {
     fetch(this.url + `projects/${projectId}/archive`, {
-      headers: DIGDAG_CONFIG.headers(this.apikey),
+      headers: this.headers(),
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText);
@@ -120,7 +120,7 @@ class Model {
 
   fetchProjectArchiveWithRevision(projectId, revisionName, callbacks) {
     fetch(this.url + `projects/${projectId}/archive?revision=${encodeURIComponent(revisionName)}`, {
-      headers: DIGDAG_CONFIG.headers(this.apikey),
+      headers: this.headers(),
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText);
@@ -146,7 +146,7 @@ class Model {
       dataType,
       type,
       beforeSend: (xhr, settings) => {
-        const headers = DIGDAG_CONFIG.headers({apikey: this.apikey});
+        const headers = this.headers();
         for (var key in headers) {
           if(headers.hasOwnProperty(key)) {
             xhr.setRequestHeader(key, headers[key]);
@@ -165,6 +165,10 @@ class Model {
       }
     };
     $.ajax(req);
+  }
+
+  headers() {
+    return DIGDAG_CONFIG.headers({apikey: this.apikey});
   }
 }
 
