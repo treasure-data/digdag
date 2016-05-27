@@ -58,7 +58,7 @@ public class SelfUpdate
         err.println("");
         err.println("  Examples:");
         err.println("    $ digdag selfupdate");
-        err.println("    $ digdag selfupdate 0.8.0");
+        err.println("    $ digdag selfupdate 0.8.1-SNAPSHOT");
         err.println("");
         return systemExit(error);
     }
