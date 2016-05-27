@@ -255,7 +255,7 @@ class AttemptList extends React.Component {
     if (this.props.showProject) {
       return <td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td>;
     } else {
-      return '';
+      return null;
     }
   }
 
@@ -263,7 +263,7 @@ class AttemptList extends React.Component {
     if (this.props.showProject) {
       return <th>Project</th>;
     } else {
-      return '';
+      return null;
     }
   }
 
@@ -592,9 +592,9 @@ class TaskList extends React.Component {
     const rows = this.props.tasks.map(task => {
       return (
         <tr key={task.id}>
-          <td><Link to={`/tasks/${task.id}`}>{task.id}</Link></td>
+          <td>{task.id}</td>
           <td>{task.fullName}</td>
-          <td><Link to={`/tasks/${task.parentId}`}>{task.parentId}</Link></td>
+          <td>{task.parentId}</td>
           <td>{formatSessionTime(task.sessionTime)}</td>
           <td>{formatTimestamp(task.updatedAt)}</td>
           <td>{task.state}</td>
@@ -821,7 +821,7 @@ class ProjectsPage extends React.Component {
   }
   render() {
     return (
-      <div>
+      <div className="container-fluid">
         <Navbar />
         <Projects />
         <Attempts />
@@ -833,7 +833,7 @@ class ProjectsPage extends React.Component {
 class ProjectPage extends React.Component {
   render() {
     return (
-      <div>
+      <div className="container-fluid">
         <Navbar />
         <Project projectId={this.props.params.projectId} />
       </div>
@@ -844,7 +844,7 @@ class ProjectPage extends React.Component {
 class WorkflowPage extends React.Component {
   render() {
     return (
-      <div>
+      <div className="container-fluid">
         <Navbar />
         <Workflow workflowId={this.props.params.workflowId} />
       </div>
@@ -855,23 +855,11 @@ class WorkflowPage extends React.Component {
 class AttemptPage extends React.Component {
   render() {
     return (
-      <div>
+      <div className="container-fluid">
         <Navbar />
         <Attempt attemptId={this.props.params.attemptId} />
         <AttemptTasks attemptId={this.props.params.attemptId} />
         <AttemptLogs attemptId={this.props.params.attemptId} />
-      </div>
-    );
-  }
-}
-
-class TaskPage extends React.Component {
-  render() {
-    return (
-      <div>
-        <Navbar />
-        <Task taskId={this.props.params.attemptId} />
-        <TaskLogs taskId={this.props.params.attemptId} />
       </div>
     );
   }
@@ -935,7 +923,6 @@ class ConsolePage extends React.Component {
           <Route path="/projects/:projectId" component={ProjectPage} />
           <Route path="/workflows/:workflowId" component={WorkflowPage} />
           <Route path="/attempts/:attemptId" component={AttemptPage} />
-          <Route path="/tasks/:taskId" component={TaskPage} />
         </Router>
       </div>
     );

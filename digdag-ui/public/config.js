@@ -1,5 +1,7 @@
 var DIGDAG_CONFIG = {
 	url: 'https://localhost:65432/api/',
 	brand: '',
-	headers: {}
+	headers: function(args) {
+		return {};
+	}
 }
