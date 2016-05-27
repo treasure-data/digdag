@@ -4,21 +4,12 @@ Workflow definition
 .. contents::
    :local:
 
-The entry point: ``digdag.dig``
+Workflow definition: *.dig files
 ----------------------------------
 
-A digdag workflow project is defined in a YAML file named "digdag.dig". For example:
+A digdag workflow is defined in a file named with ``.dig`` suffix. Name of the file is name of the workflow.
 
-.. code-block:: yaml
-
-   name: my_project
-   workflows:
-     - hello_world.dig
-     - another.dig
-
-This file specifies the name of the project and lists the workflow definition files in the project.
-
-A workflow definition file looks like this:
+For example, if you create ``hello_world`` workflow, you will create ``hello_world.dig`` file. Contents of the file looks like this:
 
 .. code-block:: yaml
 

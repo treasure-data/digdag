@@ -26,19 +26,19 @@ run
 
 .. code-block:: console
 
-    $ digdag run [workflow][+task] [options...]
+    $ digdag run <workflow.dig> [+task] [options...]
 
 Runs workflow.
 
 .. code-block:: console
 
-    $ digdag run
-    $ digdag run +step2
-    $ digdag run workflow/another.dig --start +step2
-    $ digdag run workflow/another.dig --start +step2 --end +step4
-    $ digdag run workflow/another.dig -g +step1 --hour
-    $ digdag run -p environment=staging -p user=frsyuki
-    $ digdag run --session hourly
+    $ digdag run workflow.dig
+    $ digdag run workflow.dig +step2
+    $ digdag run another.dig --start +step2
+    $ digdag run another.dig --start +step2 --end +step4
+    $ digdag run another.dig -g +step1 --hour
+    $ digdag run workflow.dig -p environment=staging -p user=frsyuki
+    $ digdag run workflow.dig --session hourly
 
 Options:
 
@@ -118,7 +118,7 @@ check
 
 .. code-block:: console
 
-    $ digdag check [options...]
+    $ digdag check [workflow.dig] [options...]
 
 Shows workflow definitions and schedules. "c" is alias of check command. Examples:
 
@@ -126,7 +126,7 @@ Shows workflow definitions and schedules. "c" is alias of check command. Example
 
     $ digdag c
     $ digdag check
-    $ digdag check workflow/another.dig
+    $ digdag check another.dig
 
 :command:`---project DIR`
   Use this directory as the project directory (default: current directory).
@@ -151,7 +151,7 @@ scheduler
 
     $ digdag scheduler [options...]
 
-Runs a workflow scheduler that runs schedules periodically. Examples:
+Runs a workflow scheduler that runs schedules periodically. This picks up all workflow definition files named with ``.dig`` suffix at the current directory. Examples:
 
 .. code-block:: console
 
