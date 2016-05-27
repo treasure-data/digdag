@@ -1,13 +1,18 @@
 timezone: UTC
 
-+bomb:
- +a:
++bomb: {
+  +a: {
     loop>: 2
     _parallel: true
-    _do:
+    _do: {
       echo>: ok
- +b:
+    }
+  }
+  +b: {
     loop>: 999
     _parallel: true
-    _do:
+    _do: {
       echo>: boom
+    }
+  }
+}

@@ -5,10 +5,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import org.hjson.JsonValue;
+import org.hjson.Stringify;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -95,9 +96,6 @@ public class Check
             .withWorkflowExecutor(false)
             .withScheduleExecutor(false)
             .withLocalAgent(false)
-            .addModules(binder -> {
-                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
-            })
             .initialize()
             .getInjector();
 
@@ -125,7 +123,6 @@ public class Check
 
     private void showProject(Injector injector, ProjectArchive project, Optional<String> onlyWorkflow)
     {
-        final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
 
@@ -160,7 +157,7 @@ public class Check
         {
             ln("  Parameters:");
             Formatter f = new Formatter("    ");
-            f.ln(yamlMapper.toYaml(rev.getDefaultParams()));
+            f.ln(JsonValue.readJSON(rev.getDefaultParams().toString()).toString(Stringify.HJSON));
             f.print();
             ln("");
         }
@@ -171,7 +168,7 @@ public class Check
             for (WorkflowDefinition def : defs.get()) {
                 Optional<Scheduler> sr = schedulerManager.tryGetScheduler(rev, def);
                 if (sr.isPresent()) {
-                    showSchedule(yamlMapper, f, rev, sr.get(), def);
+                    showSchedule(f, rev, sr.get(), def);
                     count++;
                 }
             }
@@ -182,7 +179,6 @@ public class Check
     }
 
     private static void showSchedule(
-            YamlMapper yamlMapper,
             Formatter f, Revision rev,
             Scheduler sr, WorkflowDefinition def)
     {
@@ -193,7 +189,7 @@ public class Check
 
         f.ln("%s:", def.getName());
         f.indent = "      ";
-        f.ln(yamlMapper.toYaml(schedConfig));
+        f.ln(JsonValue.readJSON(schedConfig.toString()).toString(Stringify.HJSON));
         f.ln("first session time: %s", TimeUtil.formatTime(firstTime.getTime()));
         f.ln("first runs at: %s (%s later)", TimeUtil.formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime()));
         f.indent = "    ";

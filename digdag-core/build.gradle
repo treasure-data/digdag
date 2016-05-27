@@ -15,4 +15,5 @@ dependencies {
     compile 'org.postgresql:postgresql:9.4.1208'
     compile 'org.yaml:snakeyaml:1.14'
     compile 'com.google.code.findbugs:annotations:3.0.1'
+    compile 'org.hjson:hjson:1.1.4'
 }

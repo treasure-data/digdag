@@ -1,20 +1,25 @@
 timezone: UTC
 
-+simple:
++simple: {
   sh>: ./examples/shell_envvar.sh
   param1: "this is param1"
+}
 
-+export_to_child_tasks:
++export_to_child_tasks: {
   _export:
     exported_var: "this is exported by +export_to_child_tasks task"
 
-  +child_task_1:
+  +child_task_1: {
     sh>: ./examples/shell_envvar.sh
+  }
 
-  +child_task_2:
+  +child_task_2: {
     sh>: ./examples/shell_envvar.sh
+  }
+}
 
-+simple2:
++simple2: {
   sh>: ./examples/shell_envvar.sh
   param2: "this is param2"
+}
 

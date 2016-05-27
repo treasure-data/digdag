@@ -1,25 +1,34 @@
 timezone: UTC
 
-+my_task_1:
++my_task_1: {
   sh>: "echo this task runs first."
+}
 
-+my_task_2:
++my_task_2: {
   sh>: "echo this task runs next."
+}
 
-+any_task_name_here:
-  +nested_task:
++any_task_name_here: {
+  +nested_task: {
     sh>: "echo tasks can be nested like this."
+  }
 
-  +nested_task_2:
+  +nested_task_2: {
     sh>: "echo nesting is useful for grouping"
+  }
+}
 
-+parallel_task_foo:
++parallel_task_foo: {
   _parallel: true
-  +bar:
+  +bar: {
     sh>: "echo if 'parallel: true' is set, child tasks run in parallel"
+  }
 
-  +baz:
+  +baz: {
     sh>: "echo bar and baz run in parallel"
+  }
+}
 
-+abc:
++abc: {
   sh>: "echo please check other examples in examples/ directory for more features."
+}

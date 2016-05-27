@@ -1,12 +1,14 @@
 timezone: UTC
 
-_error:
+_error: {
   mail>: alert.txt
   subject: mail test
   to: test@digdag.io
+}
 
 
-+fail:
++fail: {
   td>: fail.sql
   database: foo
   apikey: 17/bar
+}

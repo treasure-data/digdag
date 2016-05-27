@@ -1,5 +1,6 @@
 package io.digdag.cli;
 
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +14,8 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -36,14 +39,13 @@ class ResumeStateManager
 
     private final ConfigFactory cf;
     private final SessionStoreManager sessionStoreManager;
-    private final YamlMapper mapper;
+    private final ObjectMapper mapper;
     private final List<ResumeStateDir> managedDirs;
-    private final YAMLFactory yaml = new YAMLFactory();
 
     private ScheduledExecutorService executor = null;
 
     @Inject
-    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, YamlMapper mapper)
+    private ResumeStateManager(ConfigFactory cf, SessionStoreManager sessionStoreManager, ObjectMapper mapper)
     {
         this.cf = cf;
         this.sessionStoreManager = sessionStoreManager;
@@ -55,7 +57,7 @@ class ResumeStateManager
     {
         TaskResumeState resumeState;
         try {
-            resumeState = mapper.readFile(dir.resolve(fullName + ".yml").toFile(), TaskResumeState.class);
+            resumeState = mapper.readValue(dir.resolve(fullName + ".json").toFile(), TaskResumeState.class);
         }
         catch (FileNotFoundException ex) {
             return null;
@@ -177,7 +179,7 @@ class ResumeStateManager
                         .report(task.getReport().or(TaskReport.empty()))
                         .build());
 
-            mapper.writeFile(dir.resolve(task.getFullName() + ".yml").toFile(), state);
+            Files.write(dir.resolve(task.getFullName() + ".json"), mapper.writeValueAsBytes(state));
         }
     }
 }

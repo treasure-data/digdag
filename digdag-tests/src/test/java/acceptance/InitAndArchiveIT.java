@@ -40,10 +40,10 @@ public class InitAndArchiveIT
     public void archive()
             throws Exception
     {
-        main("init", project.toString());
+        main("init", project.toString()).assertSuccess();
         main("archive",
                 "--project", project.toString(),
-                "-o", archive.toString());
+                "-o", archive.toString()).assertSuccess();
 
         assertThat(Files.exists(archive), is(true));
 

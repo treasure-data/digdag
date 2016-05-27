@@ -1,21 +1,25 @@
 timezone: UTC
 
-+a:
++a: {
   py>: examples.python_args.required_arguments
   required1: "1"
   required2: 2
+}
 
-+b:
++b: {
   py>: examples.python_args.optional_arguments
+}
 
-+c:
++c: {
   py>: examples.python_args.mixed_arguments
   arg1: "a"
   arg2: {b: "c"}
+}
 
-+d:
++d: {
   py>: examples.python_args.keyword_arguments
   arg1: "a"
   key1: "a"
   key2: "val2"
+}
 

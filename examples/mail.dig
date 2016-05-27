@@ -1,7 +1,7 @@
 timezone: UTC
 
-_export:
-  mail:
+_export: {
+  mail: {
     # To use Gmail SMTP server, you need to do either of:
     #   a) Generate a new app password at
     #      https://security.google.com/settings/security/apppasswords
@@ -15,9 +15,12 @@ _export:
     username: "you@gmail.com"
     password: "...password..."
     debug: true
+  }
+}
 
-+step:
++step: {
   mail>: examples/mail.txt
   subject: this is a smtp test mail
   to: [to1@example.com, to2@example.com]
+}
 

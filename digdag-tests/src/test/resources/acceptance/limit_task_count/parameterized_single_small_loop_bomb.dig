@@ -1,10 +1,13 @@
 timezone: UTC
 
-_export:
+_export: {
   n: 1001
+}
 
-+bomb:
++bomb: {
   loop>: ${n}
   _parallel: true
-  _do:
+  _do: {
     echo>: fail
+  }
+}

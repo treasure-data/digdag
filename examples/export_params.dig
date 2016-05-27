@@ -1,8 +1,10 @@
 timezone: UTC
 
-+set:
++set: {
   py>: examples.export_params.set_my_param
+}
 
-+get:
++get: {
   py>: examples.export_params.show_my_param
+}
 

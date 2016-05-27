@@ -12,6 +12,8 @@ import org.yaml.snakeyaml.error.YAMLException;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
 
+// TODO (dano): figure out hjson replacement for functionality in this class (if necessary)
+
 public class YamlParameterizedConstructor
     extends StrictSafeConstructor
 {

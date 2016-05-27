@@ -14,7 +14,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
 import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.config.DigConfigLoader;
 import io.digdag.server.ServerBootstrap;
 
 import static io.digdag.cli.Arguments.loadParams;
@@ -143,7 +143,7 @@ public class Server
         // Load default parameters
         ConfigFactory cf = new ConfigFactory(objectMapper());
         Config defaultParams = loadParams(
-                cf, new ConfigLoaderManager(cf, new YamlConfigLoader()),
+                cf, new ConfigLoaderManager(cf, new DigConfigLoader()),
                 props, paramsFile, params);
 
         props.setProperty("digdag.defaultParams", defaultParams.toString());

@@ -1,13 +1,17 @@
 timezone: America/Los_Angeles   # this considers daylight saving time
 
-schedule:
+schedule: {
   daily>: 02:00:00  # runs at 02:00 midnight
+}
 
-sla:
+sla: {
   time: "02:02"
-  +notice:
+  +notice: {
     # this task runs if this workflow is not finished at 02:02
     sh>: echo "Workflow session $session_time is not finished yet!"
+  }
+}
 
-+sleep:
++sleep: {
   sh>: "sleep 180"
+}

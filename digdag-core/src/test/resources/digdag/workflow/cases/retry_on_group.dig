@@ -1,11 +1,15 @@
-+first:
++first: {
   echo>: ""
   append_file: out
-+doit:
+}
++doit: {
   _retry: 3
-  +task1:
+  +task1: {
     echo>: "try"
     append_file: out
-  +task2:
+  }
+  +task2: {
     fail>: task failed expectedly
+  }
+}
 

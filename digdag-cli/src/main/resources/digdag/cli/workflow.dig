@@ -1,21 +1,27 @@
 timezone: UTC
 
-_export:
+_export: {
   hello: "Hello, world!"
+}
 
-+step1:
++step1: {
   sh>: tasks/shell_sample.sh
+}
 
-+step2:
++step2: {
   _parallel: true
 
-  +worker1:
+  +worker1: {
     sh>: tasks/repeat_hello.sh
+  }
 
-  +worker2:
+  +worker2: {
     sh>: tasks/repeat_hello.sh
+  }
+}
 
-+step3:
++step3: {
   # defined at tasks/__init__.py
   py>: tasks.MyWorkflow.step3
+}
 

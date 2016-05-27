@@ -24,6 +24,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+
+import org.hjson.JsonValue;
+import org.hjson.Stringify;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -212,7 +215,6 @@ public class Run
         Injector injector = new DigdagEmbed.Bootstrap()
             .addModules(binder -> {
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
-                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                 binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
             })
             .overrideModulesWith((binder) -> {
@@ -608,7 +610,6 @@ public class Run
     {
         private final ConfigFactory cf;
         private final Run cmd;
-        private final YamlMapper yamlMapper;
 
         @Inject
         private OperatorManagerWithSkip(
@@ -616,12 +617,11 @@ public class Run
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
                 WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, Set<OperatorFactory> factories,
-                Run cmd, YamlMapper yamlMapper)
+                Run cmd)
         {
             super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, factories);
             this.cf = cf;
             this.cmd = cmd;
-            this.yamlMapper = yamlMapper;
         }
 
         @Override
@@ -647,7 +647,7 @@ public class Run
         {
             if (cmd.showParams) {
                 StringBuilder sb = new StringBuilder();
-                for (String line : yamlMapper.toYaml(mergedRequest.getConfig()).split("\n")) {
+                for (String line : JsonValue.readJSON(mergedRequest.getConfig().toString()).toString(Stringify.HJSON).split("\n")) {
                     sb.append("  ").append(line).append("\n");
                 }
                 logger.warn("\n{}", sb.toString());

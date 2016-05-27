@@ -1,10 +1,17 @@
 package acceptance;
 
+import com.google.common.base.Objects;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.immutables.value.Value;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 @Value.Immutable
 public abstract class CommandStatus
@@ -43,4 +50,39 @@ public abstract class CommandStatus
                 .err(err)
                 .build();
     }
+
+    public static Matcher<CommandStatus> success()
+    {
+        return new BaseMatcher<CommandStatus>()
+        {
+            @Override
+            public boolean matches(Object item)
+            {
+                return item instanceof CommandStatus &&
+                        ((CommandStatus) item).code() == 0;
+            }
+
+            @Override
+            public void describeTo(Description description)
+            {
+                description.appendText("command status with code 0");
+            }
+        };
+    }
+
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                .add("err", errUtf8())
+                .add("out", outUtf8())
+                .add("code", code())
+                .toString();
+    }
+
+    public CommandStatus assertSuccess() {
+        assertThat(errUtf8() + '\n' + outUtf8(), this, is(success()));
+        return this;
+    }
+
 }

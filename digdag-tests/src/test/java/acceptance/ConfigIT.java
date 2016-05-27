@@ -33,7 +33,7 @@ public class ConfigIT
         TestUtils.fakeHome(root().resolve("home").toString(), () -> {
             Path configFile = root().resolve("home").resolve(".config").resolve("digdag").resolve("config");
             Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
-            main("run", "-o", root().toString(), "--project", root().toString(), "params.dig");
+            main("run", "-o", root().toString(), "--project", root().toString(), "params.dig").assertSuccess();
         });
         assertThat(Files.readAllBytes(root().resolve("foo.out")), is("secret\n".getBytes(UTF_8)));
     }
@@ -50,7 +50,8 @@ public class ConfigIT
                     "-o", root().toString(),
                     "--project", root().toString(),
                     "params.dig",
-                    "-p", "mysql.password=override");
+                    "-p", "mysql.password=override")
+                    .assertSuccess();
         });
         assertThat(Files.readAllLines(root().resolve("foo.out")), contains("override"));
     }

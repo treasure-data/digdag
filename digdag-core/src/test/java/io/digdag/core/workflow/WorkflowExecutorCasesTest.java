@@ -4,9 +4,7 @@ import java.util.*;
 import java.nio.file.Files;
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.util.concurrent.atomic.AtomicReference;
-import org.skife.jdbi.v2.IDBI;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
@@ -14,10 +12,8 @@ import com.google.common.io.Resources;
 import io.digdag.core.LocalSite;
 import io.digdag.core.archive.*;
 import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
-import io.digdag.core.workflow.*;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.config.DigConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -90,7 +86,7 @@ public class WorkflowExecutorCasesTest
     {
         try {
             String content = Resources.toString(getClass().getResource(name), UTF_8);
-            return embed.getInjector().getInstance(YamlConfigLoader.class)
+            return embed.getInjector().getInstance(DigConfigLoader.class)
                 .loadString(content)
                 .toConfig(cf);
         }

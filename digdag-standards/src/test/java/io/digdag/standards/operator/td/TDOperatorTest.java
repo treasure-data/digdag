@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.config.DigConfigLoader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -18,7 +18,7 @@ public class TDOperatorTest
     public final ExpectedException exception = ExpectedException.none();
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final YamlConfigLoader loader = new YamlConfigLoader();
+    private final DigConfigLoader loader = new DigConfigLoader();
     private final ConfigFactory configFactory = new ConfigFactory(mapper);
 
     @Test

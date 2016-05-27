@@ -1,10 +1,8 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.time.Instant;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,7 +16,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
@@ -29,13 +26,12 @@ import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.config.DigConfigLoader;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -67,7 +63,7 @@ public class ProjectResource
     private static final long ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
 
     private final ConfigFactory cf;
-    private final YamlConfigLoader rawLoader;
+    private final DigConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
@@ -77,7 +73,7 @@ public class ProjectResource
     @Inject
     public ProjectResource(
             ConfigFactory cf,
-            YamlConfigLoader rawLoader,
+            DigConfigLoader rawLoader,
             WorkflowCompiler compiler,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,

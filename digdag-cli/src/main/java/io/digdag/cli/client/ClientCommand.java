@@ -5,7 +5,6 @@ import com.beust.jcommander.Parameter;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
-import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
 
@@ -14,24 +13,12 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
-import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
         extends Command
@@ -197,10 +184,5 @@ public abstract class ClientCommand
     protected void ln(String format, Object... args)
     {
         out.println(String.format(format, args));
-    }
-
-    protected static YamlMapper yamlMapper()
-    {
-        return new YamlMapper(DigdagClient.objectMapper());
     }
 }

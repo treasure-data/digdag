@@ -10,6 +10,7 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static acceptance.CommandStatus.success;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getStartAttemptId;
 import static acceptance.TestUtils.main;
@@ -51,25 +52,25 @@ public class RetryIT
 
         // Push the project
         {
-            CommandStatus pushStatus = main("push",
+            CommandStatus status = main("push",
                     "foobar",
                     "-c", config.toString(),
                     "--project", projectDir.toString(),
                     "-e", server.endpoint(),
                     "-r", "1");
-            assertThat(pushStatus.code(), is(0));
+            assertThat(status, is(success()));
         }
 
         // Start the workflow
         long originalAttemptId;
         {
-            CommandStatus startStatus = main("start",
+            CommandStatus status = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     "foobar", "foobar",
                     "--session", "now");
-            assertThat(startStatus.code(), is(0));
-            originalAttemptId = getStartAttemptId(startStatus);
+            assertThat(status, is(success()));
+            originalAttemptId = getStartAttemptId(status);
         }
 
         // Wait for the attempt to fail
@@ -88,15 +89,15 @@ public class RetryIT
         // Start a retry of the failing workflow
         long retryFailAttemptId;
         {
-            CommandStatus retryStatus = main("retry",
+            CommandStatus status = main("retry",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     "--name", "retry-not-fixed",
                     "--latest-revision",
                     "--all",
                     String.valueOf(originalAttemptId));
-            assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getStartAttemptId(retryStatus);
+            assertThat(status, is(success()));
+            retryFailAttemptId = getStartAttemptId(status);
         }
 
         // Wait for the retry to fail as well
@@ -115,26 +116,26 @@ public class RetryIT
         // "Fix" the workflow
         {
             copyResource("acceptance/retry/succeed.dig", projectDir.resolve("foobar.dig"));
-            CommandStatus pushStatus = main("push",
+            CommandStatus status = main("push",
                     "foobar",
                     "-c", config.toString(),
                     "--project", projectDir.toString(),
                     "-e", server.endpoint(),
                     "-r", "2");
-            assertThat(pushStatus.code(), is(0));
+            assertThat(status, is(success()));
         }
 
         // Start a retry of the fixed workflow
         {
-            CommandStatus retryStatus = main("retry",
+            CommandStatus status = main("retry",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
                     "--name", "retry-fixed",
                     "--latest-revision",
                     "--all",
                     String.valueOf(originalAttemptId));
-            assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getStartAttemptId(retryStatus);
+            assertThat(status, is(success()));
+            retryFailAttemptId = getStartAttemptId(status);
             assertThat(retryFailAttemptId, is(not(originalAttemptId)));
         }
 

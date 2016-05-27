@@ -1,37 +1,32 @@
 package io.digdag.core.config;
 
-import java.util.Map;
-import java.util.ArrayDeque;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.FileNotFoundException;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.charset.StandardCharsets;
-import com.google.common.base.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
-import io.digdag.client.config.ConfigException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.client.config.ConfigFactory;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
-import org.yaml.snakeyaml.representer.Representer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.RuntimeJsonMappingException;
+import org.hjson.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class YamlConfigLoader
+public class DigConfigLoader
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,7 +35,7 @@ public class YamlConfigLoader
     // TODO set charset and timezone
 
     @Inject
-    public YamlConfigLoader()
+    public DigConfigLoader()
     { }
 
     public ConfigElement loadFile(File file)
@@ -55,10 +50,12 @@ public class YamlConfigLoader
     public ConfigElement loadString(String content)
         throws IOException
     {
+        String json = JsonValue.readHjson(content).toString();
+        JsonNode jsonNode = treeObjectMapper.readTree(json);
+
         // here doesn't use jackson-dataformat-yaml so that snakeyaml calls Resolver
         // and Composer. See also YamlTagResolver.
-        Yaml yaml = new Yaml(new StrictSafeConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
+        ObjectNode object = normalizeValidateObjectNode(jsonNode);
         return ConfigElement.of(object);
     }
 
@@ -76,8 +73,9 @@ public class YamlConfigLoader
             content = CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8));
         }
 
-        Yaml yaml = new Yaml(new YamlParameterizedConstructor(), new Representer(), new DumperOptions(), new YamlTagResolver());
-        ObjectNode object = normalizeValidateObjectNode(yaml.load(content));
+        String json = JsonValue.readHjson(content).toString();
+        JsonNode jsonNode = treeObjectMapper.readTree(json);
+        ObjectNode object = normalizeValidateObjectNode(jsonNode);
 
         Path includeDir = path.toAbsolutePath().getParent();
         if (includeDir == null) {
