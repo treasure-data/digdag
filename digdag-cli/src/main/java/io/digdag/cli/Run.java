@@ -225,6 +225,7 @@ public class Run
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
+        final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         // read parameters
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
@@ -258,6 +259,7 @@ public class Run
 
         // wait until it's done
         localSite.runUntilDone(attempt.getId());
+        rsm.sync();
 
         // show results
         ArrayList<ArchivedTask> failedTasks = new ArrayList<>();
@@ -398,15 +400,14 @@ public class Run
             resumeStateFileEnabledTaskIndexList = new ArrayList<>(
                     taskTree.getRecursiveParentsUpstreamChildrenIdList(taskIndex)
                     );
-            resumeStateFileEnabledTaskIndexList.remove(taskIndex);
             // tasks before this: run
             // children tasks: run
             // this task: run
             // the others (tasks after this): skip
-            runTaskIndexList = ImmutableList.copyOf(Iterables.concat(
-                    taskTree.getRecursiveParentsUpstreamChildrenIdList(taskIndex),
-                    taskTree.getRecursiveChildrenIdList(taskIndex)
-                    ));
+            runTaskIndexList = new ArrayList<>();
+            runTaskIndexList.addAll(taskTree.getRecursiveParentsUpstreamChildrenIdList(taskIndex));
+            runTaskIndexList.addAll(taskTree.getRecursiveChildrenIdList(taskIndex));
+            runTaskIndexList.add(taskIndex);
         }
         if (runStart != null) {
             long startIndex = TaskMatchPattern.compile(runStart).findIndex(tasks);
@@ -416,7 +417,6 @@ public class Run
             resumeStateFileEnabledTaskIndexList = new ArrayList<>(
                     taskTree.getRecursiveParentsUpstreamChildrenIdList(startIndex)
                     );
-            resumeStateFileEnabledTaskIndexList.remove(startIndex);
         }
         if (rerunAll) {
             // all tasks: force run
@@ -430,7 +430,6 @@ public class Run
             runTaskIndexList = new ArrayList<>(
                     taskTree.getRecursiveParentsUpstreamChildrenIdList(endIndex)
                     );
-            runTaskIndexList.remove(endIndex);
         }
 
         Set<String> resumeStateFileEnabledTaskNames =

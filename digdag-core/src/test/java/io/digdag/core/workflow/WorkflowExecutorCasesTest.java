@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.core.workflow.WorkflowTestingUtils.*;
+import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 
