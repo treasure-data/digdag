@@ -81,6 +81,11 @@ class ResumeStateManager
         }
     }
 
+    public void sync()
+    {
+        backgroundUpdateAll();
+    }
+
     void startUpdate(Path dir, StoredSessionAttemptWithSession attempt)
     {
         managedDirs.add(new ResumeStateDir(dir, attempt));

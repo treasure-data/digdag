@@ -258,6 +258,7 @@ public class Run
 
         // wait until it's done
         localSite.runUntilDone(attempt.getId());
+        rsm.sync();
 
         // show results
         ArrayList<ArchivedTask> failedTasks = new ArrayList<>();
