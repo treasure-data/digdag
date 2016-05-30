@@ -1,7 +1,7 @@
 import './style.less';
 
 import React from 'react';
-import { Router, DefaultRoute, Link, Route, RouteHandler, browserHistory } from 'react-router';
+import {Router, DefaultRoute, Link, Route, RouteHandler, browserHistory} from 'react-router';
 import moment from 'moment';
 import jsyaml from 'js-yaml';
 
@@ -13,7 +13,7 @@ import untar from 'js-untar';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/themes/prism.css';
-import { PrismCode } from "react-prism";
+import {PrismCode} from "react-prism";
 
 function ab2str(buf) {
   return new TextDecoder().decode(buf);
@@ -42,9 +42,9 @@ class ProjectArchive {
 }
 
 class Model {
-  constructor(url, apikey) {
+  constructor(url, credentials) {
     this.url = url;
-    this.apikey = apikey;
+    this.credentials = credentials;
   }
 
   fetchProjects(callbacks) {
@@ -135,46 +135,32 @@ class Model {
   }
 
   get(url, callbacks) {
-    console.log('get', url);
     this.fetch('GET', url, 'json', callbacks);
   }
 
   fetch(type, url, dataType, callbacks) {
-    console.log('fetch', type, url, dataType);
-    const req = {
-      url: this.url + url,
-      dataType,
-      type,
-      beforeSend: (xhr, settings) => {
-        const headers = this.headers();
-        for (var key in headers) {
-          if(headers.hasOwnProperty(key)) {
-            xhr.setRequestHeader(key, headers[key]);
-          }
-        }
-      },
-      success: (res) => {
-        if (callbacks.success) {
-          callbacks.success(res);
-        }
-      },
-      error: (xhr, status, err) => {
-        if (callbacks.error) {
-          callbacks.error(status, err);
-        }
+    fetch(this.url + url, {
+      headers: this.headers(),
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
       }
-    };
-    $.ajax(req);
+      return response.json();
+    }).then(value => {
+      if (callbacks.success) {
+        callbacks.success(value);
+      }
+    });
   }
 
   headers() {
-    return DIGDAG_CONFIG.headers({apikey: this.apikey});
+    return DIGDAG_CONFIG.headers({credentials: this.credentials});
   }
 }
 
 // TODO: figure out how to have this not be a singleton
-function setupModel(apikey) {
-  Model.INSTANCE = new Model(DIGDAG_CONFIG.url, apikey);
+function setupModel(credentials) {
+  Model.INSTANCE = new Model(DIGDAG_CONFIG.url, credentials);
 }
 
 function model() {
@@ -195,15 +181,15 @@ class ProjectList extends React.Component {
       <div className="table-responsive">
         <table className="table table-striped table-hover table-condensed">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Revision</th>
-              <th>Updated</th>
-            </tr>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Revision</th>
+            <th>Updated</th>
+          </tr>
           </thead>
           <tbody>
-            {projectRows}
+          {projectRows}
           </tbody>
         </table>
       </div>
@@ -223,13 +209,13 @@ class WorkflowList extends React.Component {
       <div className="table-responsive">
         <table className="table table-striped table-hover table-condensed">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-            </tr>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+          </tr>
           </thead>
           <tbody>
-            {rows}
+          {rows}
           </tbody>
         </table>
       </div>
@@ -289,17 +275,17 @@ class AttemptList extends React.Component {
       <div className="table-responsive">
         <table className="table table-striped table-hover table-condensed">
           <thead>
-            <tr>
-              <th>ID</th>
-              {this.projectHead()}
-              <th>Workflow</th>
-              <th>Created</th>
-              <th>Session Time</th>
-              <th>Status</th>
-            </tr>
+          <tr>
+            <th>ID</th>
+            {this.projectHead()}
+            <th>Workflow</th>
+            <th>Created</th>
+            <th>Session Time</th>
+            <th>Status</th>
+          </tr>
           </thead>
           <tbody>
-            {rows}
+          {rows}
           </tbody>
         </table>
       </div>
@@ -311,7 +297,7 @@ class Projects extends React.Component {
 
   state = {
     projects: [],
-  }
+  };
 
   componentDidMount() {
     model().fetchProjects({
@@ -325,7 +311,7 @@ class Projects extends React.Component {
     return (
       <div className="projects">
         <h2>Projects</h2>
-        <ProjectList projects={this.state.projects} />
+        <ProjectList projects={this.state.projects}/>
       </div>
     );
   }
@@ -335,7 +321,7 @@ class Attempts extends React.Component {
 
   state = {
     attempts: [],
-  }
+  };
 
   componentDidMount() {
     model().fetchAttempts({
@@ -362,7 +348,7 @@ class Project extends React.Component {
     workflows: [],
     attempts: [],
     archive: null,
-  }
+  };
 
   componentDidMount() {
     this.fetchProject();
@@ -373,30 +359,36 @@ class Project extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.projectId
-    const newId = this.props.projectId
+    const oldId = prevProps.projectId;
+    const newId = this.props.projectId;
     if (newId !== oldId) {
       this.fetchProject()
     }
   }
 
   fetchProject() {
-    model().fetchProject(this.props.projectId, {success: project => {
-      if (!this.ignoreLastFetch) {
-        this.setState({project: project});
-        // TODO: make this fetchable by project ID
-        model().fetchProjectAttempts(this.state.project.name, {success: attempts => {
-          if (!this.ignoreLastFetch) {
-            this.setState({attempts: attempts});
-          }
-        }});
+    model().fetchProject(this.props.projectId, {
+      success: project => {
+        if (!this.ignoreLastFetch) {
+          this.setState({project: project});
+          // TODO: make this fetchable by project ID
+          model().fetchProjectAttempts(this.state.project.name, {
+            success: attempts => {
+              if (!this.ignoreLastFetch) {
+                this.setState({attempts: attempts});
+              }
+            }
+          });
+        }
       }
-    }});
-    model().fetchProjectWorkflows(this.props.projectId, {success: workflows => {
-      if (!this.ignoreLastFetch) {
-        this.setState({workflows: workflows});
+    });
+    model().fetchProjectWorkflows(this.props.projectId, {
+      success: workflows => {
+        if (!this.ignoreLastFetch) {
+          this.setState({workflows: workflows});
+        }
       }
-    }});
+    });
   }
 
   render() {
@@ -407,21 +399,36 @@ class Project extends React.Component {
           <h2>Project</h2>
           <table className="table table-condensed">
             <tbody>
-              <tr><td>ID</td><td>{project.id}</td></tr>
-              <tr><td>Name</td><td>{project.name}</td></tr>
-              <tr><td>Revision</td><td>{project.revision}</td></tr>
-              <tr><td>Created</td><td>{formatTimestamp(project.createdAt)}</td></tr>
-              <tr><td>Updated</td><td>{formatTimestamp(project.updatedAt)}</td></tr>
+            <tr>
+              <td>ID</td>
+              <td>{project.id}</td>
+            </tr>
+            <tr>
+              <td>Name</td>
+              <td>{project.name}</td>
+            </tr>
+            <tr>
+              <td>Revision</td>
+              <td>{project.revision}</td>
+            </tr>
+            <tr>
+              <td>Created</td>
+              <td>{formatTimestamp(project.createdAt)}</td>
+            </tr>
+            <tr>
+              <td>Updated</td>
+              <td>{formatTimestamp(project.updatedAt)}</td>
+            </tr>
             </tbody>
           </table>
         </div>
         <div className="row">
           <h2>Workflows</h2>
-          <WorkflowList workflows={this.state.workflows} />
+          <WorkflowList workflows={this.state.workflows}/>
         </div>
         <div className="row">
           <h2>Attempts</h2>
-          <AttemptList attempts={this.state.attempts} />
+          <AttemptList attempts={this.state.attempts}/>
         </div>
       </div>
     );
@@ -435,7 +442,7 @@ class Workflow extends React.Component {
     workflow: null,
     attempts: [],
     projectArchive: null,
-  }
+  };
 
   componentDidMount() {
     this.fetchWorkflow();
@@ -446,29 +453,35 @@ class Workflow extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.workflowId
-    const newId = this.props.workflowId
+    const oldId = prevProps.workflowId;
+    const newId = this.props.workflowId;
     if (newId !== oldId) {
       this.fetchWorkflow()
     }
   }
 
   fetchWorkflow() {
-    model().fetchWorkflow(this.props.workflowId, {success: workflow => {
-      if (!this.ignoreLastFetch) {
-        this.setState({workflow: workflow});
-        model().fetchProjectWorkflowAttempts(this.state.workflow.project.name, this.state.workflow.name, {success: attempts => {
-          if (!this.ignoreLastFetch) {
-            this.setState({attempts});
-          }
-        }});
-        model().fetchProjectArchiveWithRevision(this.state.workflow.project.id, this.state.workflow.revision, {success: projectArchive => {
-          if (!this.ignoreLastFetch) {
-            this.setState({projectArchive});
-          }
-        }});
+    model().fetchWorkflow(this.props.workflowId, {
+      success: workflow => {
+        if (!this.ignoreLastFetch) {
+          this.setState({workflow: workflow});
+          model().fetchProjectWorkflowAttempts(this.state.workflow.project.name, this.state.workflow.name, {
+            success: attempts => {
+              if (!this.ignoreLastFetch) {
+                this.setState({attempts});
+              }
+            }
+          });
+          model().fetchProjectArchiveWithRevision(this.state.workflow.project.id, this.state.workflow.revision, {
+            success: projectArchive => {
+              if (!this.ignoreLastFetch) {
+                this.setState({projectArchive});
+              }
+            }
+          });
+        }
       }
-    }});
+    });
   }
 
   definition() {
@@ -495,10 +508,22 @@ class Workflow extends React.Component {
           <h2>Workflow</h2>
           <table className="table table-condensed">
             <tbody>
-              <tr><td>ID</td><td>{workflow.id}</td></tr>
-              <tr><td>Name</td><td>{workflow.name}</td></tr>
-              <tr><td>Project</td><td><Link to={`/projects/${workflow.project.id}`}>{workflow.project.name}</Link></td></tr>
-              <tr><td>Revision</td><td>{workflow.revision}</td></tr>
+            <tr>
+              <td>ID</td>
+              <td>{workflow.id}</td>
+            </tr>
+            <tr>
+              <td>Name</td>
+              <td>{workflow.name}</td>
+            </tr>
+            <tr>
+              <td>Project</td>
+              <td><Link to={`/projects/${workflow.project.id}`}>{workflow.project.name}</Link></td>
+            </tr>
+            <tr>
+              <td>Revision</td>
+              <td>{workflow.revision}</td>
+            </tr>
             </tbody>
           </table>
         </div>
@@ -519,7 +544,7 @@ class Attempt extends React.Component {
 
   state = {
     attempt: null,
-  }
+  };
 
   componentDidMount() {
     this.fetchAttempt();
@@ -530,24 +555,28 @@ class Attempt extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId
-    const newId = this.props.attemptId
+    const oldId = prevProps.attemptId;
+    const newId = this.props.attemptId;
     if (newId !== oldId) {
       this.fetchAttempt()
     }
   }
 
   fetchAttempt() {
-    model().fetchAttempt(this.props.attemptId, {success: attempt => {
-      if (!this.ignoreLastFetch) {
-        this.setState({attempt: attempt});
+    model().fetchAttempt(this.props.attemptId, {
+      success: attempt => {
+        if (!this.ignoreLastFetch) {
+          this.setState({attempt: attempt});
+        }
       }
-    }});
-    model().fetchAttemptTasks(this.props.attemptId, {success: tasks => {
-      if (!this.ignoreLastFetch) {
-        this.setState({tasks: tasks});
+    });
+    model().fetchAttemptTasks(this.props.attemptId, {
+      success: tasks => {
+        if (!this.ignoreLastFetch) {
+          this.setState({tasks: tasks});
+        }
       }
-    }});
+    });
   }
 
   render() {
@@ -562,12 +591,30 @@ class Attempt extends React.Component {
         <h2>Attempt</h2>
         <table className="table table-condensed">
           <tbody>
-            <tr><td>ID</td><td>{attempt.id}</td></tr>
-            <tr><td>Project</td><td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td></tr>
-            <tr><td>Workflow</td><td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td></tr>
-            <tr><td>Session Time</td><td>{formatSessionTime(attempt.sessionTime)}</td></tr>
-            <tr><td>Created</td><td>{formatTimestamp(attempt.createdAt)}</td></tr>
-            <tr><td>Status</td><td>{attemptStatus(attempt)}</td></tr>
+          <tr>
+            <td>ID</td>
+            <td>{attempt.id}</td>
+          </tr>
+          <tr>
+            <td>Project</td>
+            <td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td>
+          </tr>
+          <tr>
+            <td>Workflow</td>
+            <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
+          </tr>
+          <tr>
+            <td>Session Time</td>
+            <td>{formatSessionTime(attempt.sessionTime)}</td>
+          </tr>
+          <tr>
+            <td>Created</td>
+            <td>{formatTimestamp(attempt.createdAt)}</td>
+          </tr>
+          <tr>
+            <td>Status</td>
+            <td>{attemptStatus(attempt)}</td>
+          </tr>
           </tbody>
         </table>
       </div>
@@ -611,18 +658,18 @@ class TaskList extends React.Component {
       <div className="table-responsive">
         <table className="table table-striped table-hover table-condensed">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Parent ID</th>
-              <th>Session Time</th>
-              <th>Updated</th>
-              <th>State</th>
-              <th>Retry</th>
-            </tr>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Parent ID</th>
+            <th>Session Time</th>
+            <th>Updated</th>
+            <th>State</th>
+            <th>Retry</th>
+          </tr>
           </thead>
           <tbody>
-            {rows}
+          {rows}
           </tbody>
         </table>
       </div>
@@ -635,7 +682,7 @@ class AttemptTasks extends React.Component {
 
   state = {
     tasks: [],
-  }
+  };
 
   componentDidMount() {
     this.fetchTasks();
@@ -646,19 +693,21 @@ class AttemptTasks extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId
-    const newId = this.props.attemptId
+    const oldId = prevProps.attemptId;
+    const newId = this.props.attemptId;
     if (newId !== oldId) {
       this.fetchTasks()
     }
   }
 
   fetchTasks() {
-    model().fetchAttemptTasks(this.props.attemptId, {success: tasks => {
-      if (!this.ignoreLastFetch) {
-        this.setState({tasks});
+    model().fetchAttemptTasks(this.props.attemptId, {
+      success: tasks => {
+        if (!this.ignoreLastFetch) {
+          this.setState({tasks});
+        }
       }
-    }});
+    });
   }
 
   render() {
@@ -666,7 +715,7 @@ class AttemptTasks extends React.Component {
     return (
       <div className="row">
         <h2>Tasks</h2>
-        <TaskList tasks={this.state.tasks} />
+        <TaskList tasks={this.state.tasks}/>
       </div>
     );
   }
@@ -676,7 +725,7 @@ class LogFile extends React.Component {
 
   state = {
     data: '',
-  }
+  };
 
   componentDidMount() {
     this.fetchFile();
@@ -687,19 +736,21 @@ class LogFile extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldFileName = prevProps.file.fileName
-    const newFileName = this.props.file.fileName
+    const oldFileName = prevProps.file.fileName;
+    const newFileName = this.props.file.fileName;
     if (newFileName !== oldFileName) {
       this.fetchFile()
     }
   }
 
   fetchFile() {
-    model().fetchLogFile(this.props.file, {success: data => {
-      if (!this.ignoreLastFetch) {
-        this.setState({data});
+    model().fetchLogFile(this.props.file, {
+      success: data => {
+        if (!this.ignoreLastFetch) {
+          this.setState({data});
+        }
       }
-    }});
+    });
   }
 
   render() {
@@ -715,7 +766,7 @@ class AttemptLogs extends React.Component {
 
   state = {
     files: [],
-  }
+  };
 
   componentDidMount() {
     this.fetchLogs();
@@ -726,24 +777,26 @@ class AttemptLogs extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId
-    const newId = this.props.attemptId
+    const oldId = prevProps.attemptId;
+    const newId = this.props.attemptId;
     if (newId !== oldId) {
       this.fetchLogs()
     }
   }
 
   fetchLogs() {
-    model().fetchAttemptLogFileHandles(this.props.attemptId, {success: files => {
-      if (!this.ignoreLastFetch) {
-        this.setState({files});
+    model().fetchAttemptLogFileHandles(this.props.attemptId, {
+      success: files => {
+        if (!this.ignoreLastFetch) {
+          this.setState({files});
+        }
       }
-    }});
+    });
   }
 
   logFiles() {
     return this.state.files.map(file => {
-      return <LogFile key={file.fileName} file={file} />;
+      return <LogFile key={file.fileName} file={file}/>;
     });
   }
 
@@ -760,26 +813,23 @@ class AttemptLogs extends React.Component {
 class Version extends React.Component {
   state = {
     version: '',
-  }
+  };
 
   componentDidMount() {
     const url = DIGDAG_CONFIG.url + 'version';
-    $.ajax({
-      url,
-      dataType: 'json',
-      type: 'GET',
-      success: function(version) {
-        this.setState({version: version});
-      }.bind(this),
-      error: function(xhr, status, err) {
-        console.error(url, status, err.toString());
-      }.bind(this)
+    fetch(url).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.json();
+    }).then(version => {
+      this.setState(version);
     });
   }
 
   render() {
     return (
-      <span>{this.state.version.version}</span>
+      <span>{this.state.version}</span>
     );
   }
 }
@@ -787,7 +837,7 @@ class Version extends React.Component {
 class Navbar extends React.Component {
   logout(e) {
     e.preventDefault();
-    window.localStorage.setItem("digdag.apikey", '');
+    window.localStorage.removeItem("digdag.credentials");
     window.location = '/';
   }
 
@@ -796,7 +846,8 @@ class Navbar extends React.Component {
       <nav className="navbar navbar-inverse navbar-fixed-top">
         <div className="container-fluid">
           <div className="navbar-header">
-            <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
               <span className="sr-only">Toggle navigation</span>
               <span className="icon-bar"></span>
               <span className="icon-bar"></span>
@@ -809,7 +860,8 @@ class Navbar extends React.Component {
               <li className="active"><a href="/">Projects</a></li>
             </ul>
             <ul className="nav navbar-nav navbar-right">
-              <li><a href="/" onClick={this.logout}><span className="glyphicon glyphicon-log-out" aria-hidden="true"></span> Logout</a></li>
+              <li><a href="/" onClick={this.logout}><span className="glyphicon glyphicon-log-out"
+                                                          aria-hidden="true"></span> Logout</a></li>
             </ul>
             <p className="navbar-text navbar-right"><Version /></p>
           </div>
@@ -821,8 +873,9 @@ class Navbar extends React.Component {
 
 class ProjectsPage extends React.Component {
   constructor(props) {
-      super(props);
+    super(props);
   }
+
   render() {
     return (
       <div className="container-fluid">
@@ -839,7 +892,7 @@ class ProjectPage extends React.Component {
     return (
       <div className="container-fluid">
         <Navbar />
-        <Project projectId={this.props.params.projectId} />
+        <Project projectId={this.props.params.projectId}/>
       </div>
     );
   }
@@ -850,7 +903,7 @@ class WorkflowPage extends React.Component {
     return (
       <div className="container-fluid">
         <Navbar />
-        <Workflow workflowId={this.props.params.workflowId} />
+        <Workflow workflowId={this.props.params.workflowId}/>
       </div>
     );
   }
@@ -861,56 +914,82 @@ class AttemptPage extends React.Component {
     return (
       <div className="container-fluid">
         <Navbar />
-        <Attempt attemptId={this.props.params.attemptId} />
-        <AttemptTasks attemptId={this.props.params.attemptId} />
-        <AttemptLogs attemptId={this.props.params.attemptId} />
+        <Attempt attemptId={this.props.params.attemptId}/>
+        <AttemptTasks attemptId={this.props.params.attemptId}/>
+        <AttemptLogs attemptId={this.props.params.attemptId}/>
       </div>
     );
   }
 }
 
 class LoginPage extends React.Component {
-  state = {
-    apikey: '',
-  }
-
   constructor(props) {
     super(props);
-    this.onChange = this.onChange.bind(this)
+    this.state = {};
+    DIGDAG_CONFIG.auth.items.forEach(item => {
+      this.state[item.key] = '';
+    });
+    this.onChange = this.onChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
-  onChange(e) {
-    this.setState({apikey: e.target.value});
+  onChange(key) {
+    return e => {
+      e.preventDefault();
+      const state = {};
+      state[key] = e.target.value;
+      this.setState(state);
+    };
+  }
+
+  valid(values, key, value) {
+    return (key) => {
+      values[key] = value;
+      if (DIGDAG_CONFIG.auth.items.length == Object.keys(values).length) {
+        this.props.onSubmit(values);
+      }
+    }
+  }
+
+  invalid(values, key, value, message) {
+    return (key) => {
+      console.log(`${key} is invalid: message=${message})`);
+    };
   }
 
   handleSubmit(e) {
     e.preventDefault();
-    const apikey = this.state.apikey.trim();
-    if (!apikey) {
-      return;
+    const values = {};
+    for (let item of DIGDAG_CONFIG.auth.items) {
+      const key = item.key;
+      const scrub = item.scrub ? item.scrub : (value) => value;
+      const value = scrub({key, value: this.state[key]});
+      item.validate({key, value, valid: this.valid(values, key, value), invalid: this.invalid(values, key, key)});
     }
-    this.props.onSubmit({apikey: apikey});
   }
 
   render() {
+    const authItems = DIGDAG_CONFIG.auth.items.map(item => {
+      return (
+        <div className="form-group" key={item.key}>
+          <label for={item.key}>{item.name}</label>
+          <input
+            type={item.type}
+            className="form-control"
+            onChange={this.onChange(item.key)}
+            value={this.state[item.key]}
+          />
+        </div>
+      );
+    });
+    
     return (
-      <div className="container-fluid">
+      <div className="container">
         <Navbar />
-        <h1>API Key</h1>
-        <p>Please provide an API key.</p>
+        <h1>{DIGDAG_CONFIG.auth.title}</h1>
         <form onSubmit={this.handleSubmit}>
-          <div className="form-group">
-            <label for="apikey">API Key:</label>
-            <input
-              type="text"
-              className="form-control"
-              id="apikey"
-              onChange={this.onChange}
-              value={this.state.apikey}
-            />
-            <button type="submit" className="btn btn-default">Submit</button>
-          </div>
+          {authItems}
+          <button type="submit" className="btn btn-default">Submit</button>
         </form>
       </div>
     );
@@ -922,11 +1001,11 @@ class ConsolePage extends React.Component {
   render() {
     return (
       <div className="container-fluid">
-        <Router history={browserHistory} >
-          <Route path="/" component={ProjectsPage} />
-          <Route path="/projects/:projectId" component={ProjectPage} />
-          <Route path="/workflows/:workflowId" component={WorkflowPage} />
-          <Route path="/attempts/:attemptId" component={AttemptPage} />
+        <Router history={browserHistory}>
+          <Route path="/" component={ProjectsPage}/>
+          <Route path="/projects/:projectId" component={ProjectPage}/>
+          <Route path="/workflows/:workflowId" component={WorkflowPage}/>
+          <Route path="/attempts/:attemptId" component={AttemptPage}/>
         </Router>
       </div>
     );
@@ -936,22 +1015,21 @@ class ConsolePage extends React.Component {
 export default class Console extends React.Component {
   state = {
     authenticated: false,
-  }
+  };
 
   constructor(props) {
     super(props);
-    this.handleCredentialsSubmit = this.handleCredentialsSubmit.bind(this)
-    const apikey = window.localStorage.getItem("digdag.apikey")
-    if (apikey) {
-      setupModel(apikey);
+    this.handleCredentialsSubmit = this.handleCredentialsSubmit.bind(this);
+    const credentials = window.localStorage.getItem("digdag.credentials");
+    if (credentials) {
+      setupModel(JSON.parse(credentials));
       this.state.authenticated = true;
     }
   }
 
   handleCredentialsSubmit(credentials) {
-    const apikey = credentials.apikey;
-    window.localStorage.setItem("digdag.apikey", apikey);
-    setupModel(apikey);
+    window.localStorage.setItem("digdag.credentials", JSON.stringify(credentials));
+    setupModel(credentials);
     this.setState({authenticated: true});
   }
 
@@ -959,7 +1037,7 @@ export default class Console extends React.Component {
     if (this.state.authenticated) {
       return <ConsolePage />;
     } else {
-      return <LoginPage onSubmit={this.handleCredentialsSubmit} />;
+      return <LoginPage onSubmit={this.handleCredentialsSubmit}/>;
     }
   }
 }
