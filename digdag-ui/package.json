@@ -29,13 +29,18 @@
     "whatwg-fetch": "1.0.0"
   },
   "devDependencies": {
+    "babel-eslint": "6.0.4",
     "babel-loader": "6.2.4",
+    "babel-plugin-react-transform": "2.0.2",
     "babel-plugin-transform-class-properties": "6.9.0",
+    "babel-plugin-typecheck": "3.9.0",
     "babel-preset-es2016": "6.0.11",
     "babel-preset-react": "6.5.0",
     "bootstrap-loader": "1.0.10",
     "bootstrap-sass": "3.3.6",
     "css-loader": "0.23.1",
+    "eslint": "2.11.0",
+    "eslint-plugin-react": "5.1.1",
     "file-loader": "0.8.5",
     "less": "2.7.1",
     "less-loader": "2.2.3",

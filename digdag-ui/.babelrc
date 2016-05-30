@@ -1,4 +1,17 @@
 {
-  "presets" : ["es2016", "react"],
-  "plugins": ["transform-class-properties"]
+  "presets": [
+    "es2016",
+    "react"
+  ],
+  "plugins": [
+    "transform-class-properties",
+    [
+      "typecheck",
+      {
+        "disable": {
+          "production": true
+        }
+      }
+    ]
+  ]
 }
