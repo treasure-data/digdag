@@ -198,6 +198,46 @@ for_each>: Repeat tasks
   Tasks to run.
 
 
+if>: Conditional execution
+----------------------------------
+
+**if>:** operator runs subtasks if ``true`` is given.
+
+(This operator is EXPERIMENTAL. Parameters may change in a future release)
+
+.. code-block:: yaml
+
+    +run_if_param_is_true:
+      if>: ${param}
+      _do:
+        sh>: echo ${param}} == true
+
+:command:`if>: BOOLEAN`
+  ``true`` or ``false``.
+
+:command:`_do: TASKS`
+  Tasks to run if ``true`` is given.
+
+fail>: make the workflow failed
+----------------------------------
+
+**fails>:** always fails and makes the workflow failed.
+
+(This operator is EXPERIMENTAL. Parameters may change in a future release)
+
+This operator is useful used with **if>** operator to validate resuls of a previous task with ``_check`` directive so that a workflow fails when the validation doesn't pass.
+
+.. code-block:: yaml
+
+    +fail_if_too_few:
+      if>: ${count < 10}
+      _do:
+        fail>: count is less than 10!
+
+:command:`fail>: STRING`
+  Message so that ``_error`` task can refer the message using ``${error.message}`` syntax.
+
+
 td>: Treasure Data queries
 ----------------------------------
 
