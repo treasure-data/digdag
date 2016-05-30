@@ -338,5 +338,12 @@ task pom << {
 task runServer(type: JavaExec) {
     classpath = project(":digdag-cli").sourceSets.main.runtimeClasspath
     main = 'io.digdag.cli.Main'
-    args 'server', '-m'
+    args 'server',
+            '-c', '/dev/null',
+            '-m',
+            '-H', 'Access-Control-Allow-Origin=http://localhost:8080',
+            '-H', 'Access-Control-Allow-Headers=origin, content-type, accept, authorization',
+            '-H', 'Access-Control-Allow-Credentials=true',
+            '-H', 'Access-Control-Allow-Methods=GET, POST, PUT, DELETE, OPTIONS, HEAD',
+            '-H', 'Access-Control-Max-Age=1209600'
 }
