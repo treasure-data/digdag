@@ -2,13 +2,15 @@ package io.digdag.core.workflow;
 
 import java.util.Objects;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import io.digdag.core.session.TaskRelation;
 
 public class TaskTree
@@ -76,12 +78,15 @@ public class TaskTree
                 getRecursiveParentIdList(id)))
             .stream()
             .forEach(parentId -> {
-                builder.add(parentId);
-                walkUpstreamSiblings(id,
+                if (parentId != id) {
+                    builder.add(parentId);
+                }
+                walkUpstreamSiblings(parentId,
                         builder,
                         (sameBuilder1, sib) -> {
+                            walkChildrenRecursively(sib.getId(), sameBuilder1, (sameBuilder2, child) -> sameBuilder2.add(child.getId()), true);
                             sameBuilder1.add(sib.getId());
-                            return walkChildrenRecursively(sib.getId(), sameBuilder1, (sameBuilder2, child) -> sameBuilder2.add(child.getId()));
+                            return builder;
                         });
             });
         return builder.build();
@@ -89,11 +94,23 @@ public class TaskTree
 
     public <T> T walkChildrenRecursively(long id, T value, Walker<T> walker)
     {
+        return walkChildrenRecursively(id, value, walker, false);
+    }
+
+    public <T> T walkChildrenRecursively(long id, T value, Walker<T> walker, boolean childFirstParentLater)
+    {
+        Iterable<TaskRelation> children = map.values();
         for (TaskRelation rel : map.values()) {
             if (rel.getParentId().isPresent() && rel.getParentId().get() == id) {
                 TaskRelation child = rel;
-                value = walker.walk(value, child);
-                value = walkChildrenRecursively(child.getId(), value, walker);
+                if (childFirstParentLater) {
+                    value = walkChildrenRecursively(child.getId(), value, walker);
+                    value = walker.walk(value, child);
+                }
+                else {
+                    value = walker.walk(value, child);
+                    value = walkChildrenRecursively(child.getId(), value, walker);
+                }
             }
         }
         return value;
