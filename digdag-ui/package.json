@@ -11,6 +11,7 @@
   "license": "",
   "dependencies": {
     "babel-polyfill": "6.9.0",
+    "babel-plugin-typecheck": "3.9.0",
     "bootstrap": "3.3.6",
     "jquery": "2.2.4",
     "js-untar": "0.1.4",
@@ -33,7 +34,6 @@
     "babel-loader": "6.2.4",
     "babel-plugin-react-transform": "2.0.2",
     "babel-plugin-transform-class-properties": "6.9.0",
-    "babel-plugin-typecheck": "3.9.0",
     "babel-preset-es2016": "6.0.11",
     "babel-preset-react": "6.5.0",
     "bootstrap-loader": "1.0.10",
