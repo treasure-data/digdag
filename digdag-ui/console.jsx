@@ -23,16 +23,18 @@ class ProjectArchive {
   constructor(files) {
     this.files = files;
     this.fileMap = new Map();
+    this.legacy = false;
     for (let file of files) {
       if (file.name == 'digdag.yml') {
-        this.definition = jsyaml.safeLoad(ab2str(file.buffer));
+        this.legacy = true;
       }
       this.fileMap.set(file.name, file);
     }
   }
 
   getWorkflow(name) {
-    const filename = `${name}.yml`;
+    const suffix = this.legacy ? 'yml' : 'dig';
+    const filename = `${name}.${suffix}`;
     const file = this.fileMap.get(filename);
     if (!file) {
       return null;
