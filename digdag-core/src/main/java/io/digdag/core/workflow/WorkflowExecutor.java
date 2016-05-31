@@ -770,7 +770,7 @@ public class WorkflowExecutor
             try {
                 // merge order is:
                 //   revision default < attempt < task < runtime
-                Config params = attempt.getParams().getFactory().create();
+                Config params = cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class, "{}"));
                 if (rev.isPresent()) {
                     params.merge(rev.get().getDefaultParams());
                 }
@@ -985,8 +985,8 @@ public class WorkflowExecutor
         List<Long> parentsUpstreamChildrenFromFar;
         {
             TaskTree tree = new TaskTree(sm.getTaskRelations(attempt.getId()));
-            parentsFromRoot = Lists.reverse(tree.getRecursiveParentIdList(task.getId()));
-            parentsUpstreamChildrenFromFar = Lists.reverse(tree.getRecursiveParentsUpstreamChildrenIdList(task.getId()));
+            parentsFromRoot = tree.getRecursiveParentIdListFromRoot(task.getId());
+            parentsUpstreamChildrenFromFar = tree.getRecursiveParentsUpstreamChildrenIdListFromFar(task.getId());
         }
 
         // task merge order is:
@@ -994,19 +994,17 @@ public class WorkflowExecutor
         List<Config> exports = sm.getExportParams(parentsFromRoot);
         List<Config> stores = sm.getStoreParams(parentsUpstreamChildrenFromFar);
         for (int si=0; si < parentsUpstreamChildrenFromFar.size(); si++) {
-            Config s = stores.get(si);
+            Config stored = stores.get(si);
             long taskId = parentsUpstreamChildrenFromFar.get(si);
             int ei = parentsFromRoot.indexOf(taskId);
             if (ei >= 0) {
                 // this is a parent task of the task
-                Config e = exports.get(ei);
-                params.merge(e);
+                Config exported = exports.get(ei);
+                params.merge(exported);
             }
-            params.merge(s);
+            params.merge(stored);
         }
         params.merge(task.getConfig().getExport());
-        Config defaultParams = cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class, "{}"));
-        params.merge(defaultParams);
     }
 
     private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)

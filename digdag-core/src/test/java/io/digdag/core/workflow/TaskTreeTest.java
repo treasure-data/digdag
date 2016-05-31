@@ -35,7 +35,7 @@ public class TaskTreeTest
                     relation(2, 4),
                     relation(2, 5),
                     relation(2, 6, 5),
-                    relation(2, 7, 6),
+                    relation(2, 7, 6, 5),
 
                     relation(3, 8),
                     relation(3, 9),
@@ -69,17 +69,17 @@ public class TaskTreeTest
             throws Exception
     {
         assertThat(
-                tree.getRecursiveParentIdList(12),
-                is(list(4, 2, 1)));
+                tree.getRecursiveParentIdListFromRoot(12),
+                is(list(1, 2, 4)));
         assertThat(
-                tree.getRecursiveParentIdList(13),
-                is(list(5, 2, 1)));
+                tree.getRecursiveParentIdListFromRoot(13),
+                is(list(1, 2, 5)));
         assertThat(
-                tree.getRecursiveParentIdList(14),
-                is(list(6, 2, 1)));
+                tree.getRecursiveParentIdListFromRoot(14),
+                is(list(1, 2, 6)));
         assertThat(
-                tree.getRecursiveParentIdList(15),
-                is(list(7, 2, 1)));
+                tree.getRecursiveParentIdListFromRoot(15),
+                is(list(1, 2, 7)));
     }
 
     @Test
@@ -108,38 +108,38 @@ public class TaskTreeTest
             throws Exception
     {
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(1),
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(1),
                 is(list()));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(2),
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(2),
                 is(list(1)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(3),
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(3),
                 is(list(1)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(4),
-                is(list(2, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(4),
+                is(list(1, 2)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(5),
-                is(list(2, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(5),
+                is(list(1, 2)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(6),
-                is(list(13, 5, 2, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(6),
+                is(list(1, 2, 5, 13)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(7),
-                is(list(14, 6, 13, 5, 2, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(7),
+                is(list(1, 2, 5, 13, 6, 14)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(14),
-                is(list(6, 13, 5, 2, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(14),
+                is(list(1, 2, 5, 13, 6)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(18),
-                is(list(10, 16, 20, 17, 9, 3, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(18),
+                is(list(1, 3, 9, 16, 17, 20, 10)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(19),
-                is(list(18, 10, 16, 20, 17, 9, 3, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(19),
+                is(list(1, 3, 9, 16, 17, 20, 10, 18)));
         assertThat(
-                tree.getRecursiveParentsUpstreamChildrenIdList(11),
-                is(list(18, 19, 10, 16, 20, 17, 9, 3, 1)));
+                tree.getRecursiveParentsUpstreamChildrenIdListFromFar(11),
+                is(list(1, 3, 9, 16, 17, 20, 10, 18, 19)));
     }
 
     private static TaskRelation root(long id)

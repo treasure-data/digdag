@@ -1,0 +1,63 @@
+
++exports:
+  _export:
+    v: simple_export
+
+  +simple_export:
+    sh>: echo ${v} > simple_export.out
+
+  +export_overwrite:
+    _export:
+      v: export_overwrite
+    sh>: echo ${v} > export_overwrite.out
+
++stores:
+  +store:
+    py>: helper.store_v
+    value: simple_store
+
+  +simple_store:
+    sh>: echo ${v} > simple_store.out
+
+  +overwrite:
+    py>: helper.store_v
+    value: store_overwrite
+
+  +store_overwrite:
+    sh>: echo ${v} > store_overwrite.out
+
++parallel_store:
+  +store:
+    _parallel: true
+
+    +a:
+      py>: helper.store_v
+      value: a
+
+    +b:
+      py>: helper.store_v
+      value: b
+
+  +dump:
+    sh>: echo ${v} > parallel_store.out
+
++dag_store:
+  +store:
+    _parallel: true
+
+    +a:
+      py>: helper.store_v
+      value: a
+
+    +b:
+      py>: helper.store_v
+      value: b
+      _after: [+a]
+
+    +c:
+      py>: helper.store_v
+      value: c
+
+  +dump:
+    sh>: echo ${v} > dag_store.out
+

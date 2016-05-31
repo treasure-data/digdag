@@ -398,14 +398,14 @@ public class Run
             // tasks before this: resume
             // the others (tasks after this and this task): force run
             resumeStateFileEnabledTaskIndexList = new ArrayList<>(
-                    taskTree.getRecursiveParentsUpstreamChildrenIdList(taskIndex)
+                    taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(taskIndex)
                     );
             // tasks before this: run
             // children tasks: run
             // this task: run
             // the others (tasks after this): skip
             runTaskIndexList = new ArrayList<>();
-            runTaskIndexList.addAll(taskTree.getRecursiveParentsUpstreamChildrenIdList(taskIndex));
+            runTaskIndexList.addAll(taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(taskIndex));
             runTaskIndexList.addAll(taskTree.getRecursiveChildrenIdList(taskIndex));
             runTaskIndexList.add(taskIndex);
         }
@@ -415,7 +415,7 @@ public class Run
             // tasks before this: resume
             // the others (tasks after this and this tasks): force run
             resumeStateFileEnabledTaskIndexList = new ArrayList<>(
-                    taskTree.getRecursiveParentsUpstreamChildrenIdList(startIndex)
+                    taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(startIndex)
                     );
         }
         if (rerunAll) {
@@ -428,7 +428,7 @@ public class Run
             // tasks before this: run
             // the others (tasks after this and this task): skip
             runTaskIndexList = new ArrayList<>(
-                    taskTree.getRecursiveParentsUpstreamChildrenIdList(endIndex)
+                    taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(endIndex)
                     );
         }
 
