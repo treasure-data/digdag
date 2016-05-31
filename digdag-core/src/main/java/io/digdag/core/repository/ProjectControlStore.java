@@ -17,7 +17,7 @@ public interface ProjectControlStore
         throws ResourceConflictException;
 
     void updateSchedules(int projId, List<Schedule> schedules)
-            throws ResourceConflictException;
+        throws ResourceConflictException;
 
-    //void deleteProject(int projId);  // set deleted_at to project, and delete schedules
+    void deleteSchedules(int projId);
 }

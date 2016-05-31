@@ -16,6 +16,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
@@ -277,6 +279,18 @@ public class ProjectResource
             rev = rs.getRevisionByName(proj.getId(), revName);
         }
         return rs.getRevisionArchiveData(rev.getId());
+    }
+
+    @DELETE
+    @Path("/api/projects/{id}")
+    public RestProject deleteProject(@PathParam("id") int projId)
+        throws ResourceNotFoundException
+    {
+        ProjectStore rs = rm.getProjectStore(getSiteId());
+        return ProjectControl.deleteProject(rs, projId, (control, proj) -> {
+            StoredRevision rev = rs.getLatestRevision(proj.getId());
+            return RestModels.project(proj, rev);
+        });
     }
 
     @PUT

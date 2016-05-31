@@ -202,6 +202,13 @@ public class DigdagClient
                 .resolveTemplate("id", projId));
     }
 
+    public void deleteProject(int projId)
+    {
+        doDelete(RestProject.class,
+                target("/api/projects/{id}")
+                .resolveTemplate("id", projId));
+    }
+
     public List<RestRevision> getRevisions(int projId, Optional<Integer> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
@@ -558,5 +565,12 @@ public class DigdagClient
         return target.request("application/json")
             .headers(headers.get())
             .post(Entity.entity(body, "application/json"), type);
+    }
+
+    private <T> T doDelete(Class<T> type, WebTarget target)
+    {
+        return target.request("application/json")
+            .headers(headers.get())
+            .get(type);
     }
 }

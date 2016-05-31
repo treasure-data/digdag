@@ -26,6 +26,15 @@ public interface ProjectStore
     <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
         throws ResourceConflictException;
 
+    interface ProjectObsoleteAction <T>
+    {
+        T call(ProjectControlStore store, StoredProject storedProject)
+            throws ResourceNotFoundException;
+    }
+
+    <T> T obsoleteProject(int projId, ProjectObsoleteAction<T> func)
+        throws ResourceNotFoundException;
+
 
     StoredRevision getRevisionById(int revId)
         throws ResourceNotFoundException;

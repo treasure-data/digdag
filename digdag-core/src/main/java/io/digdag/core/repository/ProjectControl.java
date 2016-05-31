@@ -17,6 +17,23 @@ import java.util.stream.Collectors;
 
 public class ProjectControl
 {
+    public static interface DeleteProjectAction <T>
+    {
+        public T call(ProjectControl control, StoredProject project)
+            throws ResourceNotFoundException;
+    }
+
+    public static <T> T deleteProject(ProjectStore rs, int projId, DeleteProjectAction<T> callback)
+        throws ResourceNotFoundException
+    {
+        return rs.obsoleteProject(projId, (store, proj) -> {
+            ProjectControl control = new ProjectControl(store, proj);
+            T res = callback.call(control, proj);
+            control.deleteSchedules();
+            return res;
+        });
+    }
+
     private final ProjectControlStore store;
     private final StoredProject project;
 
@@ -95,5 +112,10 @@ public class ProjectControl
         //   * validate SubtaskMatchPattern
 
         store.updateSchedules(project.getId(), schedules.build());
+    }
+
+    public void deleteSchedules()
+    {
+        store.deleteSchedules(project.getId());
     }
 }
