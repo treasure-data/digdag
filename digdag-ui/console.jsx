@@ -173,10 +173,9 @@ class ProjectList extends React.Component {
   render() {
     const projectRows = this.props.projects.map(project =>
       <tr key={project.id}>
-        <td><Link to={`/projects/${project.id}`}>{project.id}</Link></td>
         <td><Link to={`/projects/${project.id}`}>{project.name}</Link></td>
-        <td>{project.revision}</td>
         <td>{formatTimestamp(project.updatedAt)}</td>
+        <td>{project.revision}</td>
       </tr>
     );
     return (
@@ -184,10 +183,9 @@ class ProjectList extends React.Component {
         <table className="table table-striped table-hover table-condensed">
           <thead>
           <tr>
-            <th>ID</th>
             <th>Name</th>
-            <th>Revision</th>
             <th>Updated</th>
+            <th>Revision</th>
           </tr>
           </thead>
           <tbody>
@@ -203,8 +201,8 @@ class WorkflowList extends React.Component {
   render() {
     const rows = this.props.workflows.map(workflow =>
       <tr key={workflow.id}>
-        <td><Link to={`/workflows/${workflow.id}`}>{workflow.id}</Link></td>
         <td><Link to={`/workflows/${workflow.id}`}>{workflow.name}</Link></td>
+        <td>{workflow.revision}</td>
       </tr>
     );
     return (
@@ -212,8 +210,8 @@ class WorkflowList extends React.Component {
         <table className="table table-striped table-hover table-condensed">
           <thead>
           <tr>
-            <th>ID</th>
             <th>Name</th>
+            <th>Revision</th>
           </tr>
           </thead>
           <tbody>
@@ -415,11 +413,11 @@ class Project extends React.Component {
             </tr>
             <tr>
               <td>Created</td>
-              <td>{formatTimestamp(project.createdAt)}</td>
+              <td>{formatFullTimestamp(project.createdAt)}</td>
             </tr>
             <tr>
               <td>Updated</td>
-              <td>{formatTimestamp(project.updatedAt)}</td>
+              <td>{formatFullTimestamp(project.updatedAt)}</td>
             </tr>
             </tbody>
           </table>
@@ -624,20 +622,27 @@ class Attempt extends React.Component {
   }
 }
 
-function formatSessionTime(dt) {
-  if (!dt) {
+function formatSessionTime(t) {
+  if (!t) {
     return '';
   }
-  const m = moment(dt);
-  return <span>{dt} ({m.fromNow()})</span>;
+  return <span>{t}</span>;
 }
 
-function formatTimestamp(ts) {
-  if (!ts) {
+function formatTimestamp(t) {
+  if (!t) {
     return '';
   }
-  const m = moment(ts);
-  return <span>{ts} ({m.fromNow()})</span>;
+  const m = moment(t);
+  return <span>{m.fromNow()}</span>;
+}
+
+function formatFullTimestamp(t) {
+  if (!t) {
+    return '';
+  }
+  const m = moment(t);
+  return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
 }
 
 class TaskList extends React.Component {
