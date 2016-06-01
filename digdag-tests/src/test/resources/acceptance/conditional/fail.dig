@@ -1,0 +1,9 @@
+
++if:
+  if>: ${cond == "fail"}
+  _do:
+    fail>: testtest
+
++touch:
+  sh>: touch ${cond}.out
+

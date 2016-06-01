@@ -5,6 +5,8 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.standards.operator.IfOperatorFactory;
+import io.digdag.standards.operator.FailOperatorFactory;
 import io.digdag.standards.operator.EchoOperatorFactory;
 import io.digdag.standards.operator.NopOperatorFactory;
 import io.digdag.standards.operator.PyOperatorFactory;
@@ -39,6 +41,8 @@ public class OperatorModule
         addStandardOperatorFactory(binder, TdDdlOperatorFactory.class);
         addStandardOperatorFactory(binder, TdTableExportOperatorFactory.class);
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
+        addStandardOperatorFactory(binder, IfOperatorFactory.class);
+        addStandardOperatorFactory(binder, FailOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)
