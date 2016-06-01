@@ -37,7 +37,6 @@ var DIGDAG_CONFIG = {
     ],
   },
   headers: function (args) {
-    console.log('headers, args', args);
     return {};
   }
 }

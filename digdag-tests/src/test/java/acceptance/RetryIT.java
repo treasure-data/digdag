@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getStartAttemptId;
+import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -69,7 +69,7 @@ public class RetryIT
                     "foobar", "foobar",
                     "--session", "now");
             assertThat(startStatus.code(), is(0));
-            originalAttemptId = getStartAttemptId(startStatus);
+            originalAttemptId = getAttemptId(startStatus);
         }
 
         // Wait for the attempt to fail
@@ -96,7 +96,7 @@ public class RetryIT
                     "--all",
                     String.valueOf(originalAttemptId));
             assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getStartAttemptId(retryStatus);
+            retryFailAttemptId = getAttemptId(retryStatus);
         }
 
         // Wait for the retry to fail as well
@@ -134,7 +134,7 @@ public class RetryIT
                     "--all",
                     String.valueOf(originalAttemptId));
             assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getStartAttemptId(retryStatus);
+            retryFailAttemptId = getAttemptId(retryStatus);
             assertThat(retryFailAttemptId, is(not(originalAttemptId)));
         }
 

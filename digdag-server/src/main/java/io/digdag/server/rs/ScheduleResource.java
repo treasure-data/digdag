@@ -1,37 +1,22 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.time.Instant;
 import java.time.ZoneId;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ByteArrayInputStream;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
-import com.google.common.collect.*;
-import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
-import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.client.api.*;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Path("/")
 @Produces("application/json")
@@ -149,6 +134,6 @@ public class ScheduleResource
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getDryRun());
 
-        return AttemptResource.attemptModels(rm, getSiteId(), attempts);
+        return RestModels.attemptModels(rm, getSiteId(), attempts);
     }
 }

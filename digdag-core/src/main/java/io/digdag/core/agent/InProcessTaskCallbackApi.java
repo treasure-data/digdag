@@ -6,7 +6,6 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskResult;
-import io.digdag.core.session.Session;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ProjectStore;
@@ -16,10 +15,8 @@ import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.SessionAttemptConflictException;
-import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.SessionStateFlags;
-import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
@@ -73,7 +70,7 @@ public class InProcessTaskCallbackApi
         try {
             StoredSessionAttemptWithSession attempt =
                 sm.getSessionStore(request.getSiteId())
-                .getSessionAttemptById(attemptId);
+                .getAttemptById(attemptId);
             prefix = logFilePrefixFromSessionAttempt(attempt);
         }
         catch (ResourceNotFoundException ex) {

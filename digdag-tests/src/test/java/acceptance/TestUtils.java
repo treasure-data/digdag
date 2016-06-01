@@ -36,22 +36,17 @@ import static org.junit.Assert.assertThat;
 
 class TestUtils
 {
-    /**
-     * attempt id pattern emitted by `digdag start`
-     */
-    static final Pattern START_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
+    static final Pattern SESSION_ID_PATTERN = Pattern.compile("\\s*session id:\\s*(\\d+)\\s*");
 
-    /**
-     * attempt id pattern emitted by `digdag attempts`
-     */
-    static final Pattern ATTEMPTS_ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
+    static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
     static CommandStatus main(String... args)
     {
         return main(buildVersion(), args);
     }
 
-    static CommandStatus main(Version localVersion, String... args) {
+    static CommandStatus main(Version localVersion, String... args)
+    {
         return main(localVersion, asList(args));
     }
 
@@ -108,18 +103,18 @@ class TestUtils
         }
     }
 
-    static long getStartAttemptId(CommandStatus startStatus)
+    static long getSessionId(CommandStatus startStatus)
     {
-        Matcher matcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+        Matcher matcher = SESSION_ID_PATTERN.matcher(startStatus.outUtf8());
         assertThat(matcher.find(), is(true));
         return Long.parseLong(matcher.group(1));
     }
 
-    static long getAttemptsAttemptId(CommandStatus attemptsStatus)
+    static long getAttemptId(CommandStatus startStatus)
     {
-        Matcher attemptsAttemptIdMatcher = ATTEMPTS_ATTEMPT_ID_PATTERN.matcher(attemptsStatus.outUtf8());
-        assertThat(attemptsAttemptIdMatcher.find(), is(true));
-        return Long.parseLong(attemptsAttemptIdMatcher.group(1));
+        Matcher matcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+        assertThat(matcher.find(), is(true));
+        return Long.parseLong(matcher.group(1));
     }
 
     static String getAttemptLogs(DigdagClient client, long attemptId)
@@ -137,7 +132,8 @@ class TestUtils
 
     static <T> org.hamcrest.Matcher<T> validUuid()
     {
-        return new BaseMatcher<T>() {
+        return new BaseMatcher<T>()
+        {
             @Override
             public boolean matches(Object o)
             {

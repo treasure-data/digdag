@@ -1,9 +1,9 @@
 package acceptance;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
@@ -15,15 +15,16 @@ import java.time.Instant;
 import java.util.List;
 
 import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getStartAttemptId;
+import static acceptance.TestUtils.getAttemptId;
+import static acceptance.TestUtils.getSessionId;
 import static acceptance.TestUtils.main;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class InitPushStartIT
@@ -84,6 +85,7 @@ public class InitPushStartIT
                 .and(lessThan(now + error))));
 
         // Start the workflow
+        long sessionId;
         long attemptId;
         {
             CommandStatus startStatus = main("start",
@@ -92,10 +94,30 @@ public class InitPushStartIT
                     "foobar", "foobar",
                     "--session", "now");
             assertThat(startStatus.code(), is(0));
-            attemptId = getStartAttemptId(startStatus);
+            sessionId = getSessionId(startStatus);
+            attemptId = getAttemptId(startStatus);
         }
 
         // Verify that the workflow is started
+        List<RestSession> sessions = client.getSessions();
+        assertThat(sessions.size(), is(1));
+        RestSession session = sessions.get(0);
+        assertThat(session.getProject().getName(), is("foobar"));
+        assertThat(session.getId(), is(sessionId));
+        assertThat(session.getLastAttempt().isPresent(), is(true));
+        assertThat(session.getLastAttempt().get().getId(), is(attemptId));
+
+        // Fetch session using client
+        {
+            RestSession sessionById = client.getSession(sessionId);
+            assertThat(sessionById, is(session));
+            List<RestSession> sessionsByProject = client.getSessions(project.getId());
+            assertThat(sessionsByProject, contains(session));
+            List<RestSession> sessionsByWorkflowName = client.getSessions(project.getId(), "foobar");
+            assertThat(sessionsByWorkflowName, contains(session));
+        }
+
+        // Fetch attempt using client
         {
             List<RestSessionAttempt> attempts = client.getSessionAttempts(true, Optional.absent());
             assertThat(attempts.size(), is(1));
@@ -108,27 +130,76 @@ public class InitPushStartIT
             assertThat(attemptById.getProject().getName(), is("foobar"));
             assertThat(attemptById.getId(), is(attemptId));
         }
+
+        // Fetch session using cli
         {
-            List<CommandStatus> attemptsStatuses = ImmutableList.of(
-                    // By attempt id
-                    main("attempts",
-                            "-c", config.toString(),
-                            "-e", server.endpoint(),
-                            String.valueOf(attemptId)),
-                    // By project name
-                    main("attempts",
-                            "-c", config.toString(),
-                            "-e", server.endpoint(),
-                            "foobar"),
-                    // By project and workflow name
-                    main("attempts",
-                            "-c", config.toString(),
-                            "-e", server.endpoint(),
-                            "foobar", "foobar"));
-            for (CommandStatus attemptsStatus : attemptsStatuses) {
-                assertThat(attemptsStatus.code(), is(0));
-                long id = TestUtils.getAttemptsAttemptId(attemptsStatus);
-                assertThat(id, is(attemptId));
+            // Listing all
+            {
+                CommandStatus status = main("sessions",
+                        "-c", config.toString(),
+                        "-e", server.endpoint());
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
+            }
+
+            // By project name
+            {
+                CommandStatus status = main("sessions",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        project.getName());
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
+            }
+
+            // By project and workflow name
+            {
+                CommandStatus status = main("sessions",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        project.getName(),
+                        "foobar");
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
+            }
+
+            // By session id
+            {
+                CommandStatus status = main("sessions",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        String.valueOf(sessionId));
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
+            }
+        }
+
+        // Fetch attempt using cli
+        {
+            // By attempt id
+            {
+                CommandStatus status = main("attempt",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        String.valueOf(attemptId));
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
+            }
+
+            // By session id
+            {
+                CommandStatus status = main("attempts",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        String.valueOf(sessionId));
+                assertThat(status.code(), is(0));
+                assertThat(getSessionId(status), is(sessionId));
+                assertThat(getAttemptId(status), is(attemptId));
             }
         }
 
@@ -145,13 +216,25 @@ public class InitPushStartIT
             assertThat(attempt.getSuccess(), is(true));
         }
 
-        // Verify that the attempt success is reflected in the cli
+        // Verify that the success is reflected in the cli
         {
-            CommandStatus attemptsStatus = main("attempts",
-                    "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    String.valueOf(attemptId));
-            assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
+            // For the attempt
+            {
+                CommandStatus attemptsStatus = main("attempts",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        String.valueOf(attemptId));
+                assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
+            }
+
+            // For the session
+            {
+                CommandStatus attemptsStatus = main("sessions",
+                        "-c", config.toString(),
+                        "-e", server.endpoint(),
+                        String.valueOf(sessionId));
+                assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
+            }
         }
     }
 }

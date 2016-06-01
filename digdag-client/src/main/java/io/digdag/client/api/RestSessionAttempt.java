@@ -22,6 +22,8 @@ public abstract class RestSessionAttempt
 
     public abstract NameOptionalId getWorkflow();
 
+    public abstract long getSessionId();
+
     public abstract UUID getSessionUuid();
 
     public abstract OffsetDateTime getSessionTime();

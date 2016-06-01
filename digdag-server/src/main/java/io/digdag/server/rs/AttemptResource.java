@@ -1,16 +1,6 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.DateTimeException;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.util.function.Supplier;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -21,29 +11,18 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
-import com.fasterxml.jackson.annotation.JsonCreator;
+
 import com.google.inject.Inject;
-import com.google.common.collect.*;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSession;
 import io.digdag.core.workflow.*;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.schedule.ScheduleExecutor;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
-import io.digdag.spi.Scheduler;
 import io.digdag.spi.ScheduleTime;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 @Path("/")
 @Produces("application/json")
@@ -102,19 +81,19 @@ public class AttemptResource
             if (wfName != null) {
                 // of workflow
                 StoredWorkflowDefinition wf = rs.getLatestWorkflowDefinitionByName(proj.getId(), wfName);
-                attempts = ss.getSessionsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
+                attempts = ss.getAttemptsOfWorkflow(includeRetried, wf.getId(), 100, Optional.fromNullable(lastId));
             }
             else {
                 // of project
-                attempts = ss.getSessionsOfProject(includeRetried, proj.getId(), 100, Optional.fromNullable(lastId));
+                attempts = ss.getAttemptsOfProject(includeRetried, proj.getId(), 100, Optional.fromNullable(lastId));
             }
         }
         else {
             // of site
-            attempts = ss.getSessions(includeRetried, 100, Optional.fromNullable(lastId));
+            attempts = ss.getAttempts(includeRetried, 100, Optional.fromNullable(lastId));
         }
 
-        return attemptModels(rm, getSiteId(), attempts);
+        return RestModels.attemptModels(rm, getSiteId(), attempts);
     }
 
     @GET
@@ -123,7 +102,7 @@ public class AttemptResource
         throws ResourceNotFoundException
     {
         StoredSessionAttemptWithSession attempt = sm.getSessionStore(getSiteId())
-            .getSessionAttemptById(id);
+            .getAttemptById(id);
         StoredProject proj = rm.getProjectStore(getSiteId())
                 .getProjectById(attempt.getSession().getProjectId());
 
@@ -138,32 +117,7 @@ public class AttemptResource
         List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
             .getOtherAttempts(id);
 
-        return attemptModels(rm, getSiteId(), attempts);
-    }
-
-    // used by ScheduleResource.backfillSchedule
-    static List<RestSessionAttempt> attemptModels(
-            ProjectStoreManager rm, int siteId,
-            List<StoredSessionAttemptWithSession> attempts)
-    {
-        ProjectMap projs = rm.getProjectStore(siteId)
-            .getProjectsByIdList(
-                    attempts.stream()
-                    .map(attempt -> attempt.getSession().getProjectId())
-                    .collect(Collectors.toList()));
-
-        return attempts.stream()
-            .map(attempt -> {
-                try {
-                    return RestModels.attempt(attempt, projs.get(attempt.getSession().getProjectId()).getName());
-                }
-                catch (ResourceNotFoundException ex) {
-                    // must not happen
-                    return null;
-                }
-            })
-            .filter(a -> a != null)
-            .collect(Collectors.toList());
+        return RestModels.attemptModels(rm, getSiteId(), attempts);
     }
 
     @GET

@@ -16,4 +16,8 @@ public abstract class StoredSessionAttempt
     public abstract long getSessionId();
 
     public abstract Instant getCreatedAt();
+
+    public static StoredSessionAttempt copyOf(StoredSessionAttempt o) {
+        return ImmutableStoredSessionAttempt.builder().from(o).build();
+    }
 }

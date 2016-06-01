@@ -11,6 +11,7 @@ import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
 import io.digdag.server.rs.ScheduleResource;
+import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
 
@@ -47,6 +48,7 @@ public class ServerModule
                 ProjectResource.class,
                 WorkflowResource.class,
                 ScheduleResource.class,
+                SessionResource.class,
                 AttemptResource.class,
                 LogResource.class,
                 VersionResource.class

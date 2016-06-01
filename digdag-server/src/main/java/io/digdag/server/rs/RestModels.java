@@ -1,39 +1,44 @@
 package io.digdag.server.rs;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import com.google.common.base.Optional;
+import io.digdag.client.api.IdName;
+import io.digdag.client.api.NameLongId;
+import io.digdag.client.api.NameOptionalId;
+import io.digdag.client.api.RestDirectDownloadHandle;
+import io.digdag.client.api.RestDirectUploadHandle;
+import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
-import io.digdag.client.api.RestTask;
-import io.digdag.client.api.RestLogFileHandle;
-import io.digdag.client.api.RestDirectDownloadHandle;
-import io.digdag.client.api.RestDirectUploadHandle;
-import io.digdag.client.api.IdName;
-import io.digdag.client.api.NameOptionalId;
-import io.digdag.client.api.NameLongId;
-import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.LogFileHandle;
-import io.digdag.spi.DirectDownloadHandle;
-import io.digdag.spi.DirectUploadHandle;
+import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
-import io.digdag.core.session.Session;
-import io.digdag.core.session.StoredTask;
+import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.schedule.StoredSchedule;
-import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.session.StoredSessionWithLastAttempt;
+import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.spi.DirectUploadHandle;
+import io.digdag.spi.LogFileHandle;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public final class RestModels
 {
@@ -123,12 +128,35 @@ public final class RestModels
             .build();
     }
 
+
+    public static RestSession session(StoredSessionWithLastAttempt session, String projectName)
+    {
+        StoredSessionAttempt attempt = session.getLastAttempt();
+        return RestSession.builder()
+                .id(session.getId())
+                .project(IdName.of(session.getProjectId(), projectName))
+                .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId()))
+                .sessionUuid(session.getUuid())
+                .sessionTime(OffsetDateTime.ofInstant(session.getSessionTime(), attempt.getTimeZone()))
+                .lastAttempt(RestSession.Attempt.builder()
+                        .id(attempt.getId())
+                        .retryAttemptName(attempt.getRetryAttemptName())
+                        .done(attempt.getStateFlags().isDone())
+                        .success(attempt.getStateFlags().isSuccess())
+                        .cancelRequested(attempt.getStateFlags().isCancelRequested())
+                        .params(attempt.getParams())
+                        .createdAt(attempt.getCreatedAt())
+                        .build())
+                .build();
+    }
+
     public static RestSessionAttempt attempt(StoredSessionAttemptWithSession attempt, String projectName)
     {
         return RestSessionAttempt.builder()
             .id(attempt.getId())
             .project(IdName.of(attempt.getSession().getProjectId(), projectName))
             .workflow(NameOptionalId.of(attempt.getSession().getWorkflowName(), attempt.getWorkflowDefinitionId()))
+            .sessionId(attempt.getSessionId())
             .sessionUuid(attempt.getSessionUuid())
             .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
             .retryAttemptName(attempt.getRetryAttemptName())
@@ -184,5 +212,52 @@ public final class RestModels
             .type(handle.getType())
             .url(handle.getUrl())
             .build();
+    }
+
+    static List<RestSession> sessionModels(
+            ProjectStore ps,
+            List<StoredSessionWithLastAttempt> sessions)
+    {
+        ProjectMap projs = ps.getProjectsByIdList(
+                sessions.stream()
+                        .map(Session::getProjectId)
+                        .collect(Collectors.toList()));
+
+        return sessions.stream()
+                .map(session -> {
+                    try {
+                        return session(session, projs.get(session.getProjectId()).getName());
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        // must not happen
+                        return null;
+                    }
+                })
+                .filter(a -> a != null)
+                .collect(Collectors.toList());
+    }
+
+    static List<RestSessionAttempt> attemptModels(
+            ProjectStoreManager rm, int siteId,
+            List<StoredSessionAttemptWithSession> attempts)
+    {
+        ProjectMap projs = rm.getProjectStore(siteId)
+            .getProjectsByIdList(
+                    attempts.stream()
+                    .map(attempt -> attempt.getSession().getProjectId())
+                    .collect(Collectors.toList()));
+
+        return attempts.stream()
+            .map(attempt -> {
+                try {
+                    return attempt(attempt, projs.get(attempt.getSession().getProjectId()).getName());
+                }
+                catch (ResourceNotFoundException ex) {
+                    // must not happen
+                    return null;
+                }
+            })
+            .filter(a -> a != null)
+            .collect(Collectors.toList());
     }
 }

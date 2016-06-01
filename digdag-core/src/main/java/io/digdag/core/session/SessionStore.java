@@ -8,19 +8,30 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionStore
 {
-    List<StoredSessionAttemptWithSession> getSessions(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
+    List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId);
 
-    List<StoredSessionAttemptWithSession> getSessionsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId);
-
-    List<StoredSessionAttemptWithSession> getSessionsOfWorkflow(boolean withRetriedAttempts, long workflowDefinitionId, int pageSize, Optional<Long> lastId);
-
-    StoredSessionAttemptWithSession getSessionAttemptById(long attemptId)
+    StoredSessionWithLastAttempt getSessionById(long sessionId)
         throws ResourceNotFoundException;
 
-    StoredSessionAttemptWithSession getLastSessionAttemptByNames(int projectId, String workflowName, Instant instant)
+    List<StoredSessionWithLastAttempt> getSessionsOfProject(int projectId, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionWithLastAttempt> getSessionsOfWorkflowByName(int projectId, String workflowName, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionAttemptWithSession> getAttempts(boolean withRetriedAttempts, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionAttemptWithSession> getAttemptsOfProject(boolean withRetriedAttempts, int projectId, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, long workflowDefinitionId, int pageSize, Optional<Long> lastId);
+
+    List<StoredSessionAttemptWithSession> getAttemptsOfSession(boolean withRetriedAttempts, long sessionId, int pageSize, Optional<Long> lastId);
+
+    StoredSessionAttemptWithSession getAttemptById(long attemptId)
         throws ResourceNotFoundException;
 
-    StoredSessionAttemptWithSession getSessionAttemptByNames(int projectId, String workflowName, Instant instant, String retryAttemptName)
+    StoredSessionAttemptWithSession getLastAttemptByName(int projectId, String workflowName, Instant instant)
+        throws ResourceNotFoundException;
+
+    StoredSessionAttemptWithSession getAttemptByName(int projectId, String workflowName, Instant instant, String retryAttemptName)
         throws ResourceNotFoundException;
 
     List<StoredSessionAttemptWithSession> getOtherAttempts(long attemptId)
