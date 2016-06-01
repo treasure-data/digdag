@@ -576,9 +576,9 @@ STDIN
   Example: --project workflow/
 
 :command:`-r, --revision REVISION`
-  Name of the revision (required)
+  Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git's SHA1 hash (``git show --pretty=format:'%T' | head -n 1``) or timestamp (``TZ=UTC date +%Y-%m-%dT%H:%M:%S``).
 
-  Example: -r 2016-03-02T13:41:39-0800
+  Example: -r f40172ebc58f58087b6132085982147efa9e81fb
 
 
 Common options

@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.UUID;
 
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
@@ -31,9 +32,6 @@ public class Upload
         if (args.size() != 2) {
             throw usage(null);
         }
-        if (revision == null) {
-            throw usage("-r, --revision option is required");
-        }
         upload(args.get(0), args.get(1));
     }
 
@@ -41,7 +39,7 @@ public class Upload
     {
         err.println("Usage: digdag upload <path.tar.gz> <project>");
         err.println("  Options:");
-        err.println("    -r, --revision REVISION          revision name");
+        err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
         //err.println("        --time-revision              use current time as the revision name");
         showCommonOptions();
         return systemExit(error);
@@ -51,7 +49,15 @@ public class Upload
         throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
+        if (revision == null) {
+            revision = generateDefaultRevisionName();
+        }
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
         showUploadedProject(out, proj);
+    }
+
+    public static String generateDefaultRevisionName()
+    {
+        return UUID.randomUUID().toString();
     }
 }
