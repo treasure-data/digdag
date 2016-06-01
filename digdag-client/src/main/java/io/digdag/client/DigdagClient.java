@@ -1,5 +1,6 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -104,6 +105,7 @@ public class DigdagClient
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new GuavaModule());
         mapper.registerModule(new JacksonTimeModule());
+        mapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
         return mapper;
     }
 
