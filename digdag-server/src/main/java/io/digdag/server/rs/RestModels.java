@@ -55,6 +55,7 @@ public final class RestModels
             .revision(lastRevision.getName())
             .createdAt(proj.getCreatedAt())
             .updatedAt(lastRevision.getCreatedAt())
+            .deletedAt(proj.getDeletedAt())
             .archiveType(lastRevision.getArchiveType())
             .archiveMd5(lastRevision.getArchiveMd5())
             .build();
