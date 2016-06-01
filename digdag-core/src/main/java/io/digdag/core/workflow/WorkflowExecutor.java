@@ -777,6 +777,16 @@ public class WorkflowExecutor
                 params.merge(attempt.getParams());
                 collectParams(params, task, attempt);
 
+                // remove conditional subtasks that may cause JavaScript evaluation error if they include reference to a nested field such as
+                // this_will_be_set_at_this_task.this_is_null.this_access_causes_error.
+                // _do is another conditional subtsaks but they are kept remained and removed later at ConfigEvalEngine because
+                // operator factory needs _do while _check and _error are used only by WorkflowExecutor.
+                Config localConfig = task.getConfig().getLocal().deepCopy();
+                params.remove("_check");
+                params.remove("_error");
+                localConfig.remove("_check");
+                localConfig.remove("_error");
+
                 // create TaskRequest for OperatorManager.
                 // OperatorManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
                 // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
@@ -799,7 +809,7 @@ public class WorkflowExecutor
                     .sessionUuid(attempt.getSessionUuid())
                     .sessionTime(attempt.getSession().getSessionTime())
                     .createdAt(Instant.now())
-                    .localConfig(task.getConfig().getLocal())
+                    .localConfig(localConfig)
                     .config(params)
                     .lastStateParams(task.getStateParams())
                     .build();

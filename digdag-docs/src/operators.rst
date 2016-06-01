@@ -221,7 +221,7 @@ if>: Conditional execution
 fail>: make the workflow failed
 ----------------------------------
 
-**fails>:** always fails and makes the workflow failed.
+**fail>:** always fails and makes the workflow failed.
 
 (This operator is EXPERIMENTAL. Parameters may change in a future release)
 
