@@ -29,12 +29,8 @@ public class ShowAttempt
     {
         switch (args.size()) {
             case 1:
-                try {
-                    long attemptId = Long.parseUnsignedLong(args.get(0));
-                    showSessionAttempt(attemptId);
-                } catch (NumberFormatException ignore) {
-                    throw usage("Invalid attempt id: " + args.get(0));
-                }
+                long attemptId = parseLongOrUsage(args.get(0));
+                showSessionAttempt(attemptId);
                 break;
             default:
                 throw usage(null);
