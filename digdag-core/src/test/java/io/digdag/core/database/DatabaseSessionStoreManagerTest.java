@@ -243,8 +243,12 @@ public class DatabaseSessionStoreManagerTest
                 Optional.absent());
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
         StoredSessionWithLastAttempt session1 = store.getSessionById(attempt1.getSessionId());
+
         assertSessionAndLastAttemptEquals(session1, attempt1);
         assertEquals(ImmutableList.of(session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         // session + different session time
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
@@ -255,8 +259,12 @@ public class DatabaseSessionStoreManagerTest
                 Optional.absent());
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
         StoredSessionWithLastAttempt session2 = store.getSessionById(attempt2.getSessionId());
+
         assertSessionAndLastAttemptEquals(session2, attempt2);
         assertEquals(ImmutableList.of(session2, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2, session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2, session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         // session + different retry attempt name
         String retryAttemptName = "attempt3";
@@ -267,10 +275,14 @@ public class DatabaseSessionStoreManagerTest
                 ScheduleTime.runNow(sessionTime2),
                 Optional.of(retryAttemptName));
         StoredSessionAttemptWithSession attempt3 = exec.submitWorkflow(0, ar3, def1);
-        assertSessionAndLastAttemptEquals(session2, attempt2);
         StoredSessionWithLastAttempt session2AfterRetry = store.getSessionById(attempt2.getSessionId());
+
+        assertSessionAndLastAttemptEquals(session2AfterRetry, attempt3);
         assertThat(session2AfterRetry.getLastAttempt().getRetryAttemptName(), is(Optional.of(retryAttemptName)));
         assertEquals(ImmutableList.of(session2AfterRetry, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         SessionStore anotherSite = manager.getSessionStore(1);
 
