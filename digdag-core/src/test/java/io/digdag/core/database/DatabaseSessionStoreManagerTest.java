@@ -35,6 +35,13 @@ public class DatabaseSessionStoreManagerTest
     private StoredWorkflowDefinition wf1;
     private StoredWorkflowDefinition wf2;
 
+    private StoredProject otherProj;
+    private StoredRevision otherProjRev;
+    private StoredWorkflowDefinition otherProjWf1;
+    private StoredWorkflowDefinition otherProjWf2;
+    private StoredSessionAttemptWithSession otherProjAttempt1;
+    private StoredSessionWithLastAttempt otherProjSession1;
+
     @Before
     public void setUp()
         throws Exception
@@ -68,6 +75,33 @@ public class DatabaseSessionStoreManagerTest
                     wf2 = storedWfs.get(1);
                     return lock.get();
                 });
+
+        Project otherSrcProj = Project.of("otherRepo1");
+        Revision otherSrcRev = createRevision("otherRev1");
+        WorkflowDefinition otherSrcWf1 = createWorkflow("otherProjWf1");
+        WorkflowDefinition otherSrcWf2 = createWorkflow("otherProjWf2");
+
+        otherProj = projectStore.putAndLockProject(
+                otherSrcProj,
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+
+                    otherProjRev = lock.insertRevision(otherSrcRev);
+
+                    List<StoredWorkflowDefinition> storedWfs = lock.insertWorkflowDefinitionsWithoutSchedules(otherProjRev, ImmutableList.of(otherSrcWf1, otherSrcWf2));
+                    otherProjWf1 = storedWfs.get(0);
+                    otherProjWf2 = storedWfs.get(1);
+                    return lock.get();
+                });
+
+        AttemptRequest otherProjAr1 = attemptBuilder.buildFromStoredWorkflow(
+                otherProjRev,
+                otherProjWf1,
+                cf.create(),
+                ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())),
+                Optional.absent());
+        otherProjAttempt1 = exec.submitWorkflow(0, otherProjAr1, otherSrcWf1);
+        otherProjSession1 = store.getSessionById(otherProjAttempt1.getSessionId());
     }
 
     @After
@@ -210,7 +244,7 @@ public class DatabaseSessionStoreManagerTest
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
         StoredSessionWithLastAttempt session1 = store.getSessionById(attempt1.getSessionId());
         assertSessionAndLastAttemptEquals(session1, attempt1);
-        assertEquals(ImmutableList.of(session1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session1, otherProjSession1), store.getSessions(100, Optional.absent()));
 
         // session + different session time
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
@@ -222,7 +256,7 @@ public class DatabaseSessionStoreManagerTest
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
         StoredSessionWithLastAttempt session2 = store.getSessionById(attempt2.getSessionId());
         assertSessionAndLastAttemptEquals(session2, attempt2);
-        assertEquals(ImmutableList.of(session2, session1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
 
         // session + different retry attempt name
         String retryAttemptName = "attempt3";
@@ -236,7 +270,7 @@ public class DatabaseSessionStoreManagerTest
         assertSessionAndLastAttemptEquals(session2, attempt2);
         StoredSessionWithLastAttempt session2AfterRetry = store.getSessionById(attempt2.getSessionId());
         assertThat(session2AfterRetry.getLastAttempt().getRetryAttemptName(), is(Optional.of(retryAttemptName)));
-        assertEquals(ImmutableList.of(session2AfterRetry, session1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
 
         SessionStore anotherSite = manager.getSessionStore(1);
 
@@ -251,31 +285,39 @@ public class DatabaseSessionStoreManagerTest
         ////
         // public sessions listings
         //
-        assertEquals(ImmutableList.of(session2AfterRetry, session1),
+        assertEquals(ImmutableList.of(session2AfterRetry, session1, otherProjSession1),
                 store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1),
+                store.getSessions(2, Optional.absent()));
         assertEquals(ImmutableList.of(session2AfterRetry),
                 store.getSessions(1, Optional.absent()));
-        assertEquals(ImmutableList.of(session1),
+        assertEquals(ImmutableList.of(session1, otherProjSession1),
                 store.getSessions(100, Optional.of(session2AfterRetry.getId())));
+        assertEquals(ImmutableList.of(otherProjSession1),
+                store.getSessions(100, Optional.of(session1.getId())));
+        assertEmpty(store.getSessions(100, Optional.of(otherProjSession1.getId())));
         assertEmpty(anotherSite.getSessions(100, Optional.absent()));
-
 
         ////
         // public attempt listings
         //
-        assertEquals(ImmutableList.of(attempt3, attempt1),
+        assertEquals(ImmutableList.of(attempt3, attempt1, otherProjAttempt1),
                 store.getAttempts(false, 100, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt3, attempt1),
+                store.getAttempts(false, 2, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3),
                 store.getAttempts(false, 1, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt1),
+        assertEquals(ImmutableList.of(attempt1, otherProjAttempt1),
                 store.getAttempts(false, 100, Optional.of(attempt3.getId())));
         assertEmpty(anotherSite.getAttempts(false, 100, Optional.absent()));
 
-        assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
+        assertEquals(ImmutableList.of(attempt3, attempt2, attempt1, otherProjAttempt1),
                 store.getAttempts(true, 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3, attempt2),
                 store.getAttempts(true, 2, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt2, attempt1),
+        assertEquals(ImmutableList.of(attempt3),
+                store.getAttempts(true, 1, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt2, attempt1, otherProjAttempt1),
                 store.getAttempts(true, 100, Optional.of(attempt3.getId())));
         assertEmpty(anotherSite.getAttempts(true, 100, Optional.absent()));
 
@@ -304,6 +346,7 @@ public class DatabaseSessionStoreManagerTest
         assertEquals(ImmutableList.of(attempt1),
                 store.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.of(attempt3.getId())));
         assertEmpty(anotherSite.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
+        assertEmpty(store.getAttemptsOfWorkflow(false, wf2.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
         assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
@@ -313,6 +356,7 @@ public class DatabaseSessionStoreManagerTest
         assertEquals(ImmutableList.of(attempt2, attempt1),
                 store.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.of(attempt3.getId())));
         assertEmpty(anotherSite.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
+        assertEmpty(store.getAttemptsOfWorkflow(true, wf2.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
         StoredSessionAttempt rawAttempt1 = StoredSessionAttempt.copyOf(attempt1);
@@ -325,7 +369,6 @@ public class DatabaseSessionStoreManagerTest
                 store.getAttemptsOfSession(session1.getId(), 1, Optional.absent()));
         assertEmpty(store.getAttemptsOfSession(session1.getId(), 100, Optional.of(attempt1.getId())));
         assertEmpty(anotherSite.getAttemptsOfSession(session1.getId(), 100, Optional.absent()));
-        // TODO test with another workflow
 
         assertEquals(ImmutableList.of(rawAttempt3, rawAttempt2),
                 store.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
@@ -334,7 +377,6 @@ public class DatabaseSessionStoreManagerTest
         assertEquals(ImmutableList.of(rawAttempt2),
                 store.getAttemptsOfSession(session2.getId(), 100, Optional.of(rawAttempt3.getId())));
         assertEmpty(anotherSite.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
-        // TODO test with another workflow
 
         ////
         // public getters
