@@ -1,5 +1,7 @@
 package acceptance;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -18,6 +20,20 @@ public class LimitTaskCountIT
 {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+
+    @Before
+    public void setUp()
+            throws Exception
+    {
+        System.setProperty("io.digdag.limits.maxWorkflowTasks", "10");
+    }
+
+    @After
+    public void tearDown()
+            throws Exception
+    {
+        System.getProperties().remove("io.digdag.limits.maxWorkflowTasks");
+    }
 
     @Test
     public void verifyLoopBombsFail()

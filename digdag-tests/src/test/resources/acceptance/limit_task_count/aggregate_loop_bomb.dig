@@ -7,7 +7,7 @@ timezone: UTC
     _do:
       echo>: ok
  +b:
-    loop>: 999
+    loop>: 9
     _parallel: true
     _do:
       echo>: boom

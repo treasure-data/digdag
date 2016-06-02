@@ -1,7 +1,7 @@
 timezone: UTC
 
 _export:
-  n: 1001
+  n: 11
 
 +bomb:
   loop>: ${n}

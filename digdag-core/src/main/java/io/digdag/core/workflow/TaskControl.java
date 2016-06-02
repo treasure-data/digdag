@@ -77,7 +77,9 @@ public class TaskControl
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
 
-            // Limit the total number of tasks in a session. Do this for each task being added so that parallel task addition cannot circumvent it.
+            // Limit the total number of tasks in a session.
+            // Note: This is racy, so perform this check for each task being added to make it less likely that
+            //       concurrent task addition will result in the limit being greatly exceeded.
             long taskCount = store.getTaskCount(attemptId);
             if (taskCount >= Limits.maxWorkflowTasks()) {
                 throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount);
