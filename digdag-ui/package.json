@@ -5,14 +5,17 @@
   "main": "console.jsx",
   "scripts": {
     "dev": "webpack-dev-server --progress --profile --colors --hot",
-    "build": "NODE_ENV=production webpack -p --config webpack.production.config.js --progress --profile --colors"
+    "build": "NODE_ENV=production webpack -p --config webpack.production.config.js --progress --profile --colors",
+    "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },
   "author": "",
   "license": "",
   "dependencies": {
+    "babel-plugin-transform-flow-strip-types": "6.8.0",
     "babel-plugin-typecheck": "3.9.0",
     "babel-polyfill": "6.9.0",
     "bootstrap": "3.3.6",
+    "buffer": "4.6.0",
     "jquery": "2.2.4",
     "js-untar": "0.1.4",
     "js-yaml": "3.6.1",
@@ -27,7 +30,6 @@
     "react-json-pretty": "1.2.0",
     "react-prism": "3.2.0",
     "react-router": "2.4.1",
-    "text-encoding": "0.6.0",
     "urijs": "1.18.1",
     "whatwg-fetch": "1.0.0"
   },
@@ -36,6 +38,7 @@
     "babel-loader": "6.2.4",
     "babel-plugin-react-transform": "2.0.2",
     "babel-plugin-transform-class-properties": "6.9.0",
+    "babel-plugin-typecheck": "3.9.0",
     "babel-preset-es2016": "6.0.11",
     "babel-preset-react": "6.5.0",
     "bootstrap-loader": "1.0.10",
@@ -44,6 +47,8 @@
     "eslint": "2.11.0",
     "eslint-plugin-react": "5.1.1",
     "file-loader": "0.8.5",
+    "flow-bin": "0.26.0",
+    "flow-status-webpack-plugin": "0.1.4",
     "less": "2.7.1",
     "less-loader": "2.2.3",
     "node-sass": "3.7.0",

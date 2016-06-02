@@ -2,6 +2,8 @@ var webpack = require('webpack');
 var path = require('path');
 var loaders = require('./webpack.loaders');
 
+var FlowStatusWebpackPlugin = require('flow-status-webpack-plugin');
+
 module.exports = {
   entry: [
     'babel-polyfill',
@@ -36,6 +38,7 @@ module.exports = {
       $: "jquery",
       jQuery: "jquery",
       "window.jQuery": "jquery"
-    })
+    }),
+    new FlowStatusWebpackPlugin()
   ]
 };

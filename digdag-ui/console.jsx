@@ -1,3 +1,5 @@
+// @flow
+
 import './style.less';
 
 import React from 'react';
@@ -17,13 +19,141 @@ import {PrismCode} from "react-prism";
 
 import _ from 'lodash-fp';
 
-function ab2str(buf) {
-  return new TextDecoder().decode(buf);
+import {Buffer} from 'buffer/';
+
+type Scrubber = (args: {key: string, value: string}) => string;
+
+type AuthItem = {
+  key: string;
+  name: string;
+  type: string;
+  validate: (args: {
+    key: string;
+    value: string;
+    valid: (key: string) => void;
+    invalid: (key: string) => void;
+  }) => void;
+  scrub: Scrubber;
 }
 
+type Credentials = {[key: string]: string};
+type Headers = {[key: string]: string};
+
+type ConsoleConfig = {
+  url: string;
+  brand: string;
+  auth: {
+    title: string;
+    items: Array<AuthItem>;
+  };
+  headers: (args: {credentials: Credentials}) => Headers;
+}
+
+declare var DIGDAG_CONFIG: ConsoleConfig;
+
+type DirectDownloadHandle = {
+  type: string;
+  url: string;
+}
+
+type LogFile = {
+  fileName: string;
+  fileSize: number;
+  taskName: string;
+  fileTime: string;
+  agentId: string;
+  direct: ?DirectDownloadHandle;
+}
+
+type TarEntry = {
+  name: string;
+  buffer: ArrayBuffer;
+}
+
+type IdName = {
+  id: number;
+  name: string;
+}
+
+type NameOptionalId = {
+  name: string;
+  id: ?number;
+};
+
+type UUID = string;
+
+type Workflow = {
+  id: number;
+  name: string;
+  project: IdName;
+  revision: string;
+  config: Object;
+};
+
+type Project = {
+  id: number;
+  name: string;
+  revision: string;
+  createdAt: string;
+  updatedAt: string;
+  archiveType: string;
+  archiveMd5: string;
+}
+
+type Task = {
+  id: number;
+  fullName: string;
+  parentId: ?number;
+  config: Object;
+  upstreams: Array<number>;
+  isGroup: boolean;
+  state: string;
+  exportParams: Object;
+  storeParams: Object;
+  stateParams: Object;
+  updatedAt: string;
+  retryAt: ?string;
+};
+
+type Attempt = {
+  id: number;
+  project: IdName;
+  workflow: NameOptionalId;
+  sessionId: number;
+  sessionUuid: UUID;
+  sessionTime: string;
+  retryAttemptName: ?string;
+  done: boolean;
+  success: boolean;
+  cancelRequested: boolean;
+  params: Object;
+  createdAt: string;
+};
+
+type Session = {
+  id: number;
+  project: IdName;
+  workflow: NameOptionalId;
+  sessionUuid: UUID;
+  sessionTime: string;
+  lastAttempt: ?{
+    id: number;
+    retryAttemptName: ?string;
+    done: boolean;
+    success: boolean;
+    cancelRequested: boolean;
+    params: Object;
+    createdAt: string;
+  };
+};
+
+declare function escape(buf: Uint8Array): string;
+
 class ProjectArchive {
-  constructor(files) {
-    console.log('archive', files);
+  files: Array<TarEntry>;
+  fileMap: Map<string, TarEntry>;
+  legacy: boolean;
+  constructor(files: Array<TarEntry>) {
     this.files = files;
     this.fileMap = new Map();
     this.legacy = false;
@@ -33,23 +163,25 @@ class ProjectArchive {
       }
       this.fileMap.set(file.name, file);
     }
-    console.log('archive', 'legacy', this.legacy, 'fileMap', this.fileMap);
   }
 
   getWorkflow(name) {
     const suffix = this.legacy ? 'yml' : 'dig';
     const filename = `${name}.${suffix}`;
     const file = this.fileMap.get(filename);
-    console.log('workflow', name, 'filename', filename, 'file', file);
     if (!file) {
       return null;
     }
-    return ab2str(file.buffer);
+    return new Buffer(file.buffer).toString();
   }
 }
 
 class Model {
-  constructor(url, credentials) {
+  static INSTANCE: Model;
+  url: string;
+  credentials: any;
+
+  constructor(url: string, credentials: any) {
     this.url = url;
     this.credentials = credentials;
   }
@@ -144,8 +276,8 @@ class Model {
         throw new Error(response.statusText);
       }
       response.arrayBuffer().then(data => {
-        untar(pako.inflate(tgz)).then(files => {
-          const archive = new ProjectArchive(files);
+        untar(pako.inflate(data)).then(files => {
+          const archive = new ProjectArchive((files: Array<TarEntry>));
           callbacks['success'](archive);
         });
       });
@@ -201,7 +333,11 @@ function model() {
   return Model.INSTANCE;
 }
 
-class ProjectList extends React.Component {
+class ProjectListView extends React.Component {
+  props: {
+    projects: Array<Project>;
+  };
+
   render() {
     const projectRows = this.props.projects.map(project =>
       <tr key={project.id}>
@@ -229,7 +365,11 @@ class ProjectList extends React.Component {
   }
 }
 
-class WorkflowList extends React.Component {
+class WorkflowListView extends React.Component {
+  props: {
+    workflows: Array<Workflow>;
+  };
+
   render() {
     const rows = this.props.workflows.map(workflow =>
       <tr key={workflow.id}>
@@ -271,18 +411,22 @@ function attemptStatus(attempt) {
   }
 }
 
-const SessionStatus = (props) =>
-  props.session.lastAttempt
-    ? <Link to={`/attempts/${props.session.lastAttempt.id}`}>{attemptStatus(props.session.lastAttempt)}</Link>
+const SessionStatusView = (props: {session: Session}) => {
+  const attempt = props.session.lastAttempt;
+  return attempt
+    ? <Link to={`/attempts/${attempt.id}`}>{attemptStatus(attempt)}</Link>
     : <span><span className="glyphicon glyphicon-refresh text-info"></span> Pending</span>;
+};
 
-SessionStatus.propTypes = {
+SessionStatusView.propTypes = {
   session: React.PropTypes.object.isRequired,
 };
 
-class SessionRevision extends React.Component {
-  static propTypes = {
-    session: React.PropTypes.object.isRequired,
+class SessionRevisionView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    session: Session;
   };
 
   state = {
@@ -321,30 +465,17 @@ class SessionRevision extends React.Component {
   }
 }
 
-class AttemptList extends React.Component {
+class AttemptListView extends React.Component {
 
-  projectData(attempt) {
-    if (this.props.showProject) {
-      return <td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td>;
-    } else {
-      return null;
-    }
-  }
-
-  projectHead() {
-    if (this.props.showProject) {
-      return <th>Project</th>;
-    } else {
-      return null;
-    }
-  }
+  props: {
+    attempts: Array<Attempt>;
+  };
 
   render() {
     const rows = this.props.attempts.map(attempt => {
       return (
         <tr key={attempt.id}>
           <td><Link to={`/attempts/${attempt.id}`}>{attempt.id}</Link></td>
-          {this.projectData(attempt)}
           <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
           <td>{formatTimestamp(attempt.createdAt)}</td>
           <td>{formatSessionTime(attempt.sessionTime)}</td>
@@ -361,7 +492,6 @@ class AttemptList extends React.Component {
             <thead>
             <tr>
               <th>ID</th>
-              {this.projectHead()}
               <th>Workflow</th>
               <th>Created</th>
               <th>Session Time</th>
@@ -378,10 +508,10 @@ class AttemptList extends React.Component {
   }
 }
 
-class SessionList extends React.Component {
+class SessionListView extends React.Component {
 
-  static propTypes = {
-    sessions: React.PropTypes.array.isRequired,
+  props: {
+    sessions: Array<Session>;
   };
 
   render() {
@@ -391,10 +521,10 @@ class SessionList extends React.Component {
           <td><Link to={`/sessions/${session.id}`}>{session.id}</Link></td>
           <td><Link to={`/projects/${session.project.id}`}>{session.project.name}</Link></td>
           <td><Link to={`/workflows/${session.workflow.id}`}>{session.workflow.name}</Link></td>
-          <td><SessionRevision session={session}/></td>
+          <td><SessionRevisionView session={session}/></td>
           <td>{formatSessionTime(session.sessionTime)}</td>
           <td>{session.lastAttempt ? formatTimestamp(session.lastAttempt.createdAt) : null}</td>
-          <td><SessionStatus session={session}/></td>
+          <td><SessionStatusView session={session}/></td>
         </tr>
       );
     });
@@ -422,7 +552,7 @@ class SessionList extends React.Component {
   }
 }
 
-class Projects extends React.Component {
+class ProjectsView extends React.Component {
 
   state = {
     projects: [],
@@ -431,7 +561,7 @@ class Projects extends React.Component {
   componentDidMount() {
     model().fetchProjects({
       success: projects => {
-        this.setState({projects: projects});
+        this.setState({projects});
       }
     });
   }
@@ -440,13 +570,13 @@ class Projects extends React.Component {
     return (
       <div className="projects">
         <h2>Projects</h2>
-        <ProjectList projects={this.state.projects}/>
+        <ProjectListView projects={this.state.projects}/>
       </div>
     );
   }
 }
 
-class Sessions extends React.Component {
+class SessionsView extends React.Component {
 
   state = {
     sessions: [],
@@ -464,13 +594,18 @@ class Sessions extends React.Component {
     return (
       <div>
         <h2>Sessions</h2>
-        <SessionList sessions={this.state.sessions}/>
+        <SessionListView sessions={this.state.sessions}/>
       </div>
     );
   }
 }
 
-class Project extends React.Component {
+class ProjectView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    projectId: string;
+  };
 
   state = {
     project: {},
@@ -552,11 +687,11 @@ class Project extends React.Component {
         </div>
         <div className="row">
           <h2>Workflows</h2>
-          <WorkflowList workflows={this.state.workflows}/>
+          <WorkflowListView workflows={this.state.workflows}/>
         </div>
         <div className="row">
           <h2>Sessions</h2>
-          <SessionList sessions={this.state.sessions}/>
+          <SessionListView sessions={this.state.sessions}/>
         </div>
       </div>
     );
@@ -564,10 +699,11 @@ class Project extends React.Component {
   }
 }
 
-class Workflow extends React.Component {
+class WorkflowView extends React.Component {
+  ignoreLastFetch: boolean;
 
-  static propTypes = {
-    workflow: React.PropTypes.object.isRequired,
+  props: {
+    workflow: Workflow;
   };
 
   state = {
@@ -651,14 +787,19 @@ class Workflow extends React.Component {
         </div>
         <div className="row">
           <h2>Sessions</h2>
-          <SessionList sessions={this.state.sessions}/>
+          <SessionListView sessions={this.state.sessions}/>
         </div>
       </div>
     );
   }
 }
 
-class Attempt extends React.Component {
+class AttemptView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    attemptId: number;
+  };
 
   state = {
     attempt: null,
@@ -748,7 +889,7 @@ class Attempt extends React.Component {
   }
 }
 
-const Session = (props) =>
+const SessionView = (props: {session: Session}) =>
   <div className="row">
     <h2>Session</h2>
     <table className="table table-condensed">
@@ -767,7 +908,7 @@ const Session = (props) =>
       </tr>
       <tr>
         <td>Revision</td>
-        <td><SessionRevision session={props.session}/></td>
+        <td><SessionRevisionView session={props.session}/></td>
       </tr>
       <tr>
         <td>Session UUID</td>
@@ -779,7 +920,7 @@ const Session = (props) =>
       </tr>
       <tr>
         <td>Status</td>
-        <td><SessionStatus session={props.session}/></td>
+        <td><SessionStatusView session={props.session}/></td>
       </tr>
       <tr>
         <td>Last Attempt</td>
@@ -788,10 +929,6 @@ const Session = (props) =>
       </tbody>
     </table>
   </div>;
-
-Session.propTypes = {
-  session: React.PropTypes.object.isRequired,
-};
 
 function formatSessionTime(t) {
   if (!t) {
@@ -816,57 +953,43 @@ function formatFullTimestamp(t) {
   return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
 }
 
-class TaskList extends React.Component {
-  retryHead() {
-    return this.props.showRetry
-      ? <th>Retry</th>
-      : null;
-  }
-
-  retryData(task) {
-    return this.props.showRetry
-      ? <td>{formatTimestamp(task.retryAt)}</td>
-      : null;
-  }
-
-  render() {
-    const rows = this.props.tasks.map(task => {
-      return (
-        <tr key={task.id}>
-          <td>{task.id}</td>
-          <td>{task.fullName}</td>
-          <td>{task.parentId}</td>
-          <td>{formatTimestamp(task.updatedAt)}</td>
-          <td>{task.state}</td>
-          {this.retryData(task)}
-        </tr>
-      );
-    });
-
-    return (
-      <div className="table-responsive">
-        <table className="table table-striped table-hover table-condensed">
-          <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Parent ID</th>
-            <th>Updated</th>
-            <th>State</th>
-            {this.retryHead()}
+const TaskListView = (props: {tasks: Array<Task>}) =>
+  <div className="table-responsive">
+    <table className="table table-striped table-hover table-condensed">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Parent ID</th>
+        <th>Updated</th>
+        <th>State</th>
+        <th>Retry</th>
+      </tr>
+      </thead>
+      <tbody>
+      {
+        props.tasks.map(task =>
+          <tr key={task.id}>
+            <td>{task.id}</td>
+            <td>{task.fullName}</td>
+            <td>{task.parentId}</td>
+            <td>{formatTimestamp(task.updatedAt)}</td>
+            <td>{task.state}</td>
+            <td>{formatTimestamp(task.retryAt)}</td>
           </tr>
-          </thead>
-          <tbody>
-          {rows}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-}
+        )
+      }
+      </tbody>
+    </table>
+  </div>;
 
 
-class AttemptTasks extends React.Component {
+class AttemptTasksView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    attemptId: number;
+  };
 
   state = {
     tasks: [],
@@ -902,13 +1025,18 @@ class AttemptTasks extends React.Component {
     return (
       <div className="row">
         <h2>Tasks</h2>
-        <TaskList tasks={this.state.tasks} showRetry={this.props.showRetry}/>
+        <TaskListView tasks={this.state.tasks}/>
       </div>
     );
   }
 }
 
-class LogFile extends React.Component {
+class LogFileView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    file: LogFile;
+  };
 
   state = {
     data: '',
@@ -922,7 +1050,7 @@ class LogFile extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: {file: LogFile}) {
     const oldFileName = prevProps.file.fileName;
     const newFileName = this.props.file.fileName;
     if (newFileName !== oldFileName) {
@@ -948,7 +1076,12 @@ class LogFile extends React.Component {
 }
 
 
-class AttemptLogs extends React.Component {
+class AttemptLogsView extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    attemptId: number;
+  };
 
   state = {
     files: [],
@@ -985,7 +1118,7 @@ class AttemptLogs extends React.Component {
       return <pre></pre>;
     }
     return this.state.files.map(file => {
-      return <LogFile key={file.fileName} file={file}/>;
+      return <LogFileView key={file.fileName} file={file}/>;
     });
   }
 
@@ -999,7 +1132,7 @@ class AttemptLogs extends React.Component {
   }
 }
 
-class Version extends React.Component {
+class VersionView extends React.Component {
   state = {
     version: '',
   };
@@ -1052,7 +1185,7 @@ class Navbar extends React.Component {
               <li><a href="/" onClick={this.logout}><span className="glyphicon glyphicon-log-out"
                                                           aria-hidden="true"></span> Logout</a></li>
             </ul>
-            <p className="navbar-text navbar-right"><Version /></p>
+            <p className="navbar-text navbar-right"><VersionView /></p>
           </div>
         </div>
       </nav>
@@ -1060,40 +1193,27 @@ class Navbar extends React.Component {
   }
 }
 
-class ProjectsPage extends React.Component {
-  constructor(props) {
-    super(props);
-  }
+const ProjectsPage = (props: {}) =>
+  <div className="container-fluid">
+    <Navbar />
+    <ProjectsView />
+    <SessionsView />
+  </div>;
 
-  render() {
-    return (
-      <div className="container-fluid">
-        <Navbar />
-        <Projects />
-        <Sessions />
-      </div>
-    );
-  }
-}
-
-class ProjectPage extends React.Component {
-  render() {
-    return (
-      <div className="container-fluid">
-        <Navbar />
-        <Project projectId={this.props.params.projectId}/>
-      </div>
-    );
-  }
-}
+const ProjectPage = (props: {params: {projectId: string}}) =>
+  <div className="container-fluid">
+    <Navbar />
+    <ProjectView projectId={props.params.projectId}/>
+  </div>;
 
 class WorkflowPage extends React.Component {
+  ignoreLastFetch: boolean;
 
-  static propTypes = {
-    params: React.PropTypes.shape({
-      projectId: React.PropTypes.string.isRequired,
-      workflowName: React.PropTypes.string.isRequired,
-    }),
+  props: {
+    params: {
+      projectId: string;
+      workflowName: string;
+    }
   };
 
   state = {
@@ -1126,7 +1246,7 @@ class WorkflowPage extends React.Component {
   }
 
   workflow() {
-    return this.state.workflow ? <Workflow workflow={this.state.workflow}/> : null;
+    return this.state.workflow ? <WorkflowView workflow={this.state.workflow}/> : null;
   }
 
   render() {
@@ -1140,11 +1260,12 @@ class WorkflowPage extends React.Component {
 }
 
 class WorkflowRevisionPage extends React.Component {
+  ignoreLastFetch: boolean;
 
-  static propTypes = {
-    params: React.PropTypes.shape({
-      workflowId: React.PropTypes.string.isRequired,
-    }),
+  props: {
+    params: {
+      workflowId: string;
+    };
   };
 
   state = {
@@ -1177,7 +1298,7 @@ class WorkflowRevisionPage extends React.Component {
   }
 
   workflow() {
-    return this.state.workflow ? <Workflow workflow={this.state.workflow}/> : null;
+    return this.state.workflow ? <WorkflowView workflow={this.state.workflow}/> : null;
   }
 
   render() {
@@ -1190,26 +1311,27 @@ class WorkflowRevisionPage extends React.Component {
   }
 }
 
-class AttemptPage extends React.Component {
-  render() {
-    return (
-      <div className="container-fluid">
-        <Navbar />
-        <Attempt attemptId={this.props.params.attemptId}/>
-        <AttemptTasks attemptId={this.props.params.attemptId}/>
-        <AttemptLogs attemptId={this.props.params.attemptId}/>
-      </div>
-    );
-  }
-}
+const AttemptPage = (props: {params: {attemptId: string}}) =>
+  <div className="container-fluid">
+    <Navbar />
+    <AttemptView attemptId={parseInt(props.params.attemptId)}/>
+    <AttemptTasksView attemptId={parseInt(props.params.attemptId)}/>
+    <AttemptLogsView attemptId={parseInt(props.params.attemptId)}/>
+  </div>;
 
 class SessionPage extends React.Component {
+  ignoreLastFetch: boolean;
+
+  props: {
+    params: {
+      sessionId: string;
+    }
+  };
 
   state = {
     session: null,
-    attempt: null,
-    tasks: null,
-    attempts: null,
+    tasks: [],
+    attempts: [],
   };
 
   componentDidMount() {
@@ -1220,7 +1342,7 @@ class SessionPage extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: {params: {sessionId: string}}) {
     const oldId = prevProps.params.sessionId;
     const newId = this.props.params.sessionId;
     if (newId !== oldId) {
@@ -1233,9 +1355,6 @@ class SessionPage extends React.Component {
       success: session => {
         if (!this.ignoreLastFetch) {
           this.setState({session});
-          if (session.lastAttempt) {
-            this.setState({attempt: session.lastAttempt});
-          }
         }
       }
     });
@@ -1250,25 +1369,25 @@ class SessionPage extends React.Component {
 
   session() {
     return this.state.session
-      ? <Session session={this.state.session}/>
+      ? <SessionView session={this.state.session}/>
       : null;
   }
 
   tasks() {
-    return this.state.attempt
-      ? <AttemptTasks attemptId={this.state.attempt.id} showRetry={false}/>
+    return this.state.session && this.state.session.lastAttempt
+      ? <AttemptTasksView attemptId={this.state.session.lastAttempt.id}/>
       : null;
   }
 
   logs() {
-    return this.state.attempt
-      ? <AttemptLogs attemptId={this.state.attempt.id}/>
+    return this.state.session && this.state.session.lastAttempt
+      ? <AttemptLogsView attemptId={this.state.session.lastAttempt.id}/>
       : <pre></pre>;
   }
 
   attempts() {
     return this.state.attempts
-      ? <AttemptList attempts={this.state.attempts}/>
+      ? <AttemptListView attempts={this.state.attempts}/>
       : null;
   }
 
@@ -1286,18 +1405,19 @@ class SessionPage extends React.Component {
 }
 
 class LoginPage extends React.Component {
+
+  state: Credentials;
+
   constructor(props) {
     super(props);
     this.state = {};
     DIGDAG_CONFIG.auth.items.forEach(item => {
       this.state[item.key] = '';
     });
-    this.onChange = this.onChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this)
   }
 
   onChange(key) {
-    return e => {
+    return (e) => {
       e.preventDefault();
       const state = {};
       state[key] = e.target.value;
@@ -1305,11 +1425,11 @@ class LoginPage extends React.Component {
     };
   }
 
-  valid(values, key, value) {
-    return (key) => {
-      values[key] = value;
-      if (DIGDAG_CONFIG.auth.items.length == Object.keys(values).length) {
-        this.props.onSubmit(values);
+  valid(credentials: Credentials, key: string, value: string) {
+    return (key: string) => {
+      credentials[key] = value;
+      if (DIGDAG_CONFIG.auth.items.length == Object.keys(credentials).length) {
+        this.props.onSubmit(credentials);
       }
     }
   }
@@ -1320,16 +1440,16 @@ class LoginPage extends React.Component {
     };
   }
 
-  handleSubmit(e) {
+  handleSubmit = (e) => {
     e.preventDefault();
-    const values = {};
+    const credentials: Credentials = {};
     for (let item of DIGDAG_CONFIG.auth.items) {
       const key = item.key;
-      const scrub = item.scrub ? item.scrub : (value) => value;
-      const value = scrub({key, value: this.state[key]});
-      item.validate({key, value, valid: this.valid(values, key, value), invalid: this.invalid(values, key, key)});
+      const scrub: Scrubber = item.scrub ? item.scrub : (args: {key: string, value: string}) => value;
+      const value: string = scrub({key, value: this.state[key]});
+      item.validate({key, value, valid: this.valid(credentials, key, value), invalid: this.invalid(credentials, key, key)});
     }
-  }
+  };
 
   render() {
     const authItems = DIGDAG_CONFIG.auth.items.map(item => {
@@ -1378,25 +1498,26 @@ class ConsolePage extends React.Component {
 }
 
 export default class Console extends React.Component {
-  state = {
-    authenticated: false,
-  };
 
-  constructor(props) {
+  state: { authenticated: bool };
+
+  constructor(props: any) {
     super(props);
-    this.handleCredentialsSubmit = this.handleCredentialsSubmit.bind(this);
+    // this.handleCredentialsSubmit = this.handleCredentialsSubmit.bind(this);
     const credentials = window.localStorage.getItem("digdag.credentials");
     if (credentials) {
       setupModel(JSON.parse(credentials));
-      this.state.authenticated = true;
+      this.state = {authenticated: true};
+    } else {
+      this.state = {authenticated: false};
     }
   }
 
-  handleCredentialsSubmit(credentials) {
+  handleCredentialsSubmit: (credentials: Credentials) => void = (credentials: Credentials) => {
     window.localStorage.setItem("digdag.credentials", JSON.stringify(credentials));
     setupModel(credentials);
     this.setState({authenticated: true});
-  }
+  };
 
   render() {
     if (this.state.authenticated) {

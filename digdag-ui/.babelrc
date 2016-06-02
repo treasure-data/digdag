@@ -4,7 +4,6 @@
     "react"
   ],
   "plugins": [
-    "transform-class-properties",
     [
       "typecheck",
       {
@@ -12,6 +11,9 @@
           "production": true
         }
       }
-    ]
+    ],
+    "syntax-flow",
+    "transform-flow-strip-types",
+    "transform-class-properties"
   ]
 }
