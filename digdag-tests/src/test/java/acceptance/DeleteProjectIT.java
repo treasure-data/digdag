@@ -40,7 +40,7 @@ public class DeleteProjectIT
     }
 
     @Test
-    public void initPushStart()
+    public void deleteProject()
             throws Exception
     {
         // Create new project
@@ -76,7 +76,7 @@ public class DeleteProjectIT
                     "-e", server.endpoint(),
                     "foobar", "foobar",
                     "--session", "now");
-            assertThat(startStatus.code(), is(not(1)));
+            assertThat(startStatus.code(), is(not(0)));
         }
     }
 }

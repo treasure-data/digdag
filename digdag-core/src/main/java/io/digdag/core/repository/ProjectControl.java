@@ -26,7 +26,7 @@ public class ProjectControl
     public static <T> T deleteProject(ProjectStore rs, int projId, DeleteProjectAction<T> callback)
         throws ResourceNotFoundException
     {
-        return rs.obsoleteProject(projId, (store, proj) -> {
+        return rs.deleteProject(projId, (store, proj) -> {
             ProjectControl control = new ProjectControl(store, proj);
             T res = callback.call(control, proj);
             control.deleteSchedules();

@@ -193,17 +193,17 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public <T> T obsoleteProject(int projId, ProjectObsoleteAction<T> func)
+        public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
             throws ResourceNotFoundException
         {
             return transaction((handle, dao, ts) -> {
                 StoredProject proj = requiredResource(
-                        dao.getProjectByIdWithLock(siteId, projId),
+                        dao.getProjectByIdWithLockForDelete(siteId, projId),
                         "project id=%d", projId);
 
                 T res = func.call(new DatabaseProjectControlStore(handle, siteId), proj);
 
-                dao.obsoleteProject(proj.getId());
+                dao.deleteProject(proj.getId());
 
                 return res;
             }, ResourceNotFoundException.class);
@@ -499,8 +499,9 @@ public class DatabaseProjectStoreManager
 
         @SqlUpdate("update projects" +
                 " set deleted_name = name, deleted_at = now(), name = NULL" +
-                " where name is not null")
-        int obsoleteProject(@Bind("projId") int projId);
+                " where id = :projId "+
+                " and name is not null")
+        int deleteProject(@Bind("projId") int projId);
 
         @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
@@ -510,8 +511,9 @@ public class DatabaseProjectStoreManager
         @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
                 " and id = :id" +
+                " and name is not null" +
                 " for update")
-        StoredProject getProjectByIdWithLock(@Bind("siteId") int siteId, @Bind("id") int id);
+        StoredProject getProjectByIdWithLockForDelete(@Bind("siteId") int siteId, @Bind("id") int id);
 
         @SqlQuery("select * from projects" +
                 " where id = :id")

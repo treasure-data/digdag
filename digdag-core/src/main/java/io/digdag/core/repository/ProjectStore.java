@@ -32,7 +32,7 @@ public interface ProjectStore
             throws ResourceNotFoundException;
     }
 
-    <T> T obsoleteProject(int projId, ProjectObsoleteAction<T> func)
+    <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
         throws ResourceNotFoundException;
 
 
