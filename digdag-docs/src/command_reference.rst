@@ -617,7 +617,7 @@ delete
 
     $ digdag delete <project> [options...]
 
-Deletes a project. Sessinos of the deleted project are kept remained so that we can review status of past executions later.
+Deletes a project. Sessions of the deleted project are kept retained so that we can review status of past executions later.
 
 .. code-block:: console
 
