@@ -204,8 +204,7 @@ public class DigdagClient
 
     public void deleteProject(int projId)
     {
-        doDelete(RestProject.class,
-                target("/api/projects/{id}")
+        doDelete(target("/api/projects/{id}")
                 .resolveTemplate("id", projId));
     }
 
@@ -567,10 +566,17 @@ public class DigdagClient
             .post(Entity.entity(body, "application/json"), type);
     }
 
+    private void doDelete(WebTarget target)
+    {
+        target.request("application/json")
+            .headers(headers.get())
+            .delete();
+    }
+
     private <T> T doDelete(Class<T> type, WebTarget target)
     {
         return target.request("application/json")
             .headers(headers.get())
-            .get(type);
+            .delete(type);
     }
 }
