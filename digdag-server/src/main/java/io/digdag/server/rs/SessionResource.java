@@ -8,9 +8,10 @@ import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
-import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSession;
+import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
 
@@ -21,6 +22,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.digdag.server.rs.RestModels.attemptModels;
 
@@ -83,8 +85,12 @@ public class SessionResource
         ProjectStore rs = rm.getProjectStore(getSiteId());
         SessionStore ss = sm.getSessionStore(getSiteId());
 
-        List<StoredSessionAttemptWithSession> attempts = ss.getAttemptsOfSession(true, id, 100, Optional.fromNullable(lastId));
+        StoredSession session = ss.getSessionById(id);
+        StoredProject project = rs.getProjectById(session.getProjectId());
+        List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, 100, Optional.fromNullable(lastId));
 
-        return attemptModels(rm, getSiteId(), attempts);
+        return attempts.stream()
+                .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
+                .collect(Collectors.toList());
     }
 }

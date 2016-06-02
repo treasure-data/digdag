@@ -315,31 +315,25 @@ public class DatabaseSessionStoreManagerTest
         assertEmpty(anotherSite.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
-        assertEquals(ImmutableList.of(attempt1),
-                store.getAttemptsOfSession(false, session1.getId(), 100, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt1),
-                store.getAttemptsOfSession(false, session1.getId(), 1, Optional.absent()));
-        assertEquals(ImmutableList.of(),
-                store.getAttemptsOfSession(false, session1.getId(), 100, Optional.of(attempt1.getId())));
-        assertEmpty(anotherSite.getAttemptsOfSession(false, session1.getId(), 100, Optional.absent()));
+        StoredSessionAttempt rawAttempt1 = StoredSessionAttempt.copyOf(attempt1);
+        StoredSessionAttempt rawAttempt2 = StoredSessionAttempt.copyOf(attempt2);
+        StoredSessionAttempt rawAttempt3 = StoredSessionAttempt.copyOf(attempt3);
+
+        assertEquals(ImmutableList.of(rawAttempt1),
+                store.getAttemptsOfSession(session1.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt1),
+                store.getAttemptsOfSession(session1.getId(), 1, Optional.absent()));
+        assertEmpty(store.getAttemptsOfSession(session1.getId(), 100, Optional.of(attempt1.getId())));
+        assertEmpty(anotherSite.getAttemptsOfSession(session1.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
-        assertEquals(ImmutableList.of(attempt3, attempt2),
-                store.getAttemptsOfSession(true, session2.getId(), 100, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt3),
-                store.getAttemptsOfSession(true, session2.getId(), 1, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt2),
-                store.getAttemptsOfSession(true, session2.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getAttemptsOfSession(true, session2.getId(), 100, Optional.absent()));
-        // TODO test with another workflow
-
-        assertEquals(ImmutableList.of(attempt3),
-                store.getAttemptsOfSession(false, session2.getId(), 100, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt3),
-                store.getAttemptsOfSession(false, session2.getId(), 1, Optional.absent()));
-        assertEquals(ImmutableList.of(),
-                store.getAttemptsOfSession(false, session2.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getAttemptsOfSession(false, session2.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt3, rawAttempt2),
+                store.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt3),
+                store.getAttemptsOfSession(session2.getId(), 1, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt2),
+                store.getAttemptsOfSession(session2.getId(), 100, Optional.of(rawAttempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
         ////

@@ -27,6 +27,7 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.Session;
+import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
@@ -38,6 +39,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class RestModels
@@ -152,13 +154,23 @@ public final class RestModels
 
     public static RestSessionAttempt attempt(StoredSessionAttemptWithSession attempt, String projectName)
     {
+        return attempt(attempt.getSessionUuid(), attempt.getSession(), attempt, projectName);
+    }
+
+    public static RestSessionAttempt attempt(StoredSession session, StoredSessionAttempt attempt, String projectName)
+    {
+        return attempt(session.getUuid(), session, attempt, projectName);
+    }
+
+    public static RestSessionAttempt attempt(UUID sessionUuid, Session session, StoredSessionAttempt attempt, String projectName)
+    {
         return RestSessionAttempt.builder()
             .id(attempt.getId())
-            .project(IdName.of(attempt.getSession().getProjectId(), projectName))
-            .workflow(NameOptionalId.of(attempt.getSession().getWorkflowName(), attempt.getWorkflowDefinitionId()))
+            .project(IdName.of(session.getProjectId(), projectName))
+            .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId()))
             .sessionId(attempt.getSessionId())
-            .sessionUuid(attempt.getSessionUuid())
-            .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
+            .sessionUuid(sessionUuid)
+            .sessionTime(OffsetDateTime.ofInstant(session.getSessionTime(), attempt.getTimeZone()))
             .retryAttemptName(attempt.getRetryAttemptName())
             .done(attempt.getStateFlags().isDone())
             .success(attempt.getStateFlags().isSuccess())

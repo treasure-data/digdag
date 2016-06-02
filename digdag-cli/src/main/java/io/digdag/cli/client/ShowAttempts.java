@@ -63,9 +63,9 @@ public class ShowAttempts
         List<RestSessionAttempt> attempts;
 
         if (sessionId == null) {
-            attempts = client.getSessionAttempts(true, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(Optional.fromNullable(lastId));
         } else {
-            attempts = client.getSessionAttempts(true, sessionId, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId));
         }
 
         ln("Session attempts:");
