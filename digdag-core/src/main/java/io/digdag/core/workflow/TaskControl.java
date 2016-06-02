@@ -74,16 +74,15 @@ public class TaskControl
             rootTaskId = null;
         }
 
+        // Limit the total number of tasks in a session.
+        // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
+        long taskCount = store.getTaskCount(attemptId);
+        if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
+            throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
+        }
+
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
-
-            // Limit the total number of tasks in a session.
-            // Note: This is racy, so perform this check for each task being added to make it less likely that
-            //       concurrent task addition will result in the limit being greatly exceeded.
-            long taskCount = store.getTaskCount(attemptId);
-            if (taskCount >= Limits.maxWorkflowTasks()) {
-                throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount);
-            }
 
             if (firstTask && firstTaskIsRootStoredParentTask) {
                 indexToId.add(rootTaskId);
