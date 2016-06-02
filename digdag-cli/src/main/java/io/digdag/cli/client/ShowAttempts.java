@@ -7,7 +7,6 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import java.io.PrintStream;
@@ -15,10 +14,13 @@ import java.util.List;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
-public class ShowAttempt
+public class ShowAttempts
     extends ClientCommand
 {
-    public ShowAttempt(Version version, PrintStream out, PrintStream err)
+    @Parameter(names = {"-i", "--last-id"})
+    Long lastId = null;
+
+    public ShowAttempts(Version version, PrintStream out, PrintStream err)
     {
         super(version, out, err);
     }
@@ -28,12 +30,15 @@ public class ShowAttempt
             throws Exception
     {
         switch (args.size()) {
+            case 0:
+                showAttempts(null);
+                break;
             case 1:
                 try {
-                    long attemptId = Long.parseUnsignedLong(args.get(0));
-                    showSessionAttempt(attemptId);
+                    long sessionId = Long.parseUnsignedLong(args.get(0));
+                    showAttempts(sessionId);
                 } catch (NumberFormatException ignore) {
-                    throw usage("Invalid attempt id: " + args.get(0));
+                    throw usage("Invalid session id: " + args.get(0));
                 }
                 break;
             default:
@@ -41,22 +46,37 @@ public class ShowAttempt
         }
     }
 
-    private void showSessionAttempt(long attemptId) throws Exception {
-        DigdagClient client = buildClient();
-
-        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
-        if (attempt == null) {
-            throw systemExit("Attempt with id " + attemptId + " not found.");
-        }
-
-        printAttempt(attempt);
-    }
-
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag attempt  <attempt-id>            show a single attempt");
+        err.println("Usage: digdag attempts                         show attempts for all sessions");
+        err.println("       digdag attempts <session-id>            show attempts for a session");
+        err.println("  Options:");
+        err.println("    -i, --last-id ID                 shows more session attempts from this id");
         showCommonOptions();
         return systemExit(error);
+    }
+
+    private void showAttempts(Long sessionId)
+            throws Exception
+    {
+        DigdagClient client = buildClient();
+        List<RestSessionAttempt> attempts;
+
+        if (sessionId == null) {
+            attempts = client.getSessionAttempts(Optional.fromNullable(lastId));
+        } else {
+            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId));
+        }
+
+        ln("Session attempts:");
+
+        for (RestSessionAttempt attempt : Lists.reverse(attempts)) {
+            printAttempt(attempt);
+        }
+
+        if (attempts.isEmpty()) {
+            err.println("Use `digdag start` to start a session.");
+        }
     }
 
     private void printAttempt(RestSessionAttempt attempt) {

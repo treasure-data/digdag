@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Function;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
@@ -30,15 +29,12 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.ProjectStoreManager;
-import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import static java.util.Locale.ENGLISH;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
@@ -245,11 +241,11 @@ public class WorkflowExecutor
             StoredSessionAttemptWithSession conflicted;
             if (ar.getRetryAttemptName().isPresent()) {
                 conflicted = sm.getSessionStore(siteId)
-                    .getSessionAttemptByNames(session.getProjectId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
+                    .getAttemptByName(session.getProjectId(), session.getWorkflowName(), session.getSessionTime(), ar.getRetryAttemptName().get());
             }
             else {
                 conflicted = sm.getSessionStore(siteId)
-                    .getLastSessionAttemptByNames(session.getProjectId(), session.getWorkflowName(), session.getSessionTime());
+                    .getLastAttemptByName(session.getProjectId(), session.getWorkflowName(), session.getSessionTime());
             }
             throw new SessionAttemptConflictException("Session already exists", sessionAlreadyExists, conflicted);
         }
@@ -276,7 +272,7 @@ public class WorkflowExecutor
     public boolean killAttemptById(int siteId, long attemptId)
         throws ResourceNotFoundException
     {
-        StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId).getSessionAttemptById(attemptId);
+        StoredSessionAttemptWithSession attempt = sm.getSessionStore(siteId).getAttemptById(attemptId);
         boolean updated = sm.requestCancelAttempt(attempt.getId());
 
         if (updated) {

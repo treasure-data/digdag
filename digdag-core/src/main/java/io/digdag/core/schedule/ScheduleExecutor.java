@@ -8,26 +8,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.time.Instant;
-import java.time.ZoneId;
+
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.Revision;
-import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStateFlags;
-import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -258,7 +253,7 @@ public class ScheduleExecutor
             // confirm sessions with the same attemptName doesn't exist
             for (Instant instant : instants) {
                 try {
-                    ss.getSessionAttemptByNames(def.getProject().getId(), def.getName(), instant, attemptName);
+                    ss.getAttemptByName(def.getProject().getId(), def.getName(), instant, attemptName);
                     throw new ResourceConflictException(String.format(Locale.ENGLISH,
                                 "Attempt of project id=%d workflow=%s instant=%s attempt name=%s already exists",
                                 def.getProject().getId(), def.getName(), instant, attemptName));

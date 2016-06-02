@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 
-import static acceptance.TestUtils.START_ATTEMPT_ID_PATTERN;
+import static acceptance.TestUtils.ATTEMPT_ID_PATTERN;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.fakeHome;
 import static acceptance.TestUtils.getAttemptLogs;
@@ -90,7 +90,7 @@ public class InitPushStartConfigIT
                         "echo_params", "echo_params",
                         "--session", "now");
                 assertThat(startStatus.code(), is(0));
-                Matcher startAttemptIdMatcher = START_ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+                Matcher startAttemptIdMatcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
                 assertThat(startAttemptIdMatcher.find(), is(true));
                 attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
             }

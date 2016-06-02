@@ -1,10 +1,8 @@
 package io.digdag.server.rs;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.time.Instant;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,7 +16,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
@@ -29,17 +26,21 @@ import com.google.common.base.Preconditions;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.session.SessionStore;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.client.api.*;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+
+import static io.digdag.server.rs.RestModels.sessionModels;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -54,6 +55,9 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflows                 # list workflows of the latest revision of a project
     // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
     // GET  /api/projects/{id}/workflows?name=<name>     # lookup a workflow of a project by name
+    // GET  /api/projects/{id}/workflows/<name>          # lookup a workflow of a project by name
+    // GET  /api/projects/{id}/sessions                  # list sessions for a project
+    // GET  /api/projects/{id}/sessions?workflow<name>   # list sessions for a workflow in the project
     // GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
     // GET  /api/projects/{id}/archive?revision=<name>   # download archive file of a former revision of a project
     // PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)
@@ -73,6 +77,7 @@ public class ProjectResource
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final TempFileManager tempFiles;
+    private final SessionStoreManager ssm;
 
     @Inject
     public ProjectResource(
@@ -82,7 +87,8 @@ public class ProjectResource
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
-            TempFileManager tempFiles)
+            TempFileManager tempFiles,
+            SessionStoreManager ssm)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -91,6 +97,7 @@ public class ProjectResource
         this.rm = rm;
         this.sm = sm;
         this.tempFiles = tempFiles;
+        this.ssm = ssm;
     }
 
     @GET
@@ -188,6 +195,14 @@ public class ProjectResource
     }
 
     @GET
+    @Path("/api/projects/{id}/workflows/{name}")
+    public RestWorkflowDefinition getWorkflowByName(@PathParam("id") int projId, @PathParam("name") String name, @QueryParam("revision") String revName)
+        throws ResourceNotFoundException
+    {
+        return getWorkflow(projId, name, revName);
+    }
+
+    @GET
     @Path("/api/projects/{id}/workflows")
     public List<RestWorkflowDefinition> getWorkflows(
             @PathParam("id") int projId,
@@ -223,6 +238,27 @@ public class ProjectResource
                 .map(def -> RestModels.workflowDefinition(proj, rev, def))
                 .collect(Collectors.toList());
         }
+    }
+
+    @GET
+    @Path("/api/projects/{id}/sessions")
+    public List<RestSession> getSessions(
+            @PathParam("id") int projectId,
+            @QueryParam("workflow") String workflowName,
+            @QueryParam("last_id") Long lastId)
+        throws ResourceNotFoundException
+    {
+        SessionStore ss = ssm.getSessionStore(getSiteId());
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+
+        List<StoredSessionWithLastAttempt> sessions;
+        if (workflowName != null) {
+            sessions = ss.getSessionsOfWorkflowByName(projectId, workflowName, 100, Optional.fromNullable(lastId));
+        } else {
+            sessions = ss.getSessionsOfProject(projectId, 100, Optional.fromNullable(lastId));
+        }
+
+        return sessionModels(ps, sessions);
     }
 
     @GET

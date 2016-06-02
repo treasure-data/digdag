@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
-@Value.Immutable
 @JsonSerialize(as = ImmutableStoredSession.class)
 @JsonDeserialize(as = ImmutableStoredSession.class)
 public abstract class StoredSession

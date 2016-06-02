@@ -143,7 +143,8 @@ public class Retry
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 
         ln("Started a session attempt:");
-        ln("  id: %d", newAttempt.getId());
+        ln("  session id: %d", newAttempt.getSessionId());
+        ln("  attempt id: %d", newAttempt.getId());
         ln("  uuid: %s", newAttempt.getSessionUuid());
         ln("  project: %s", newAttempt.getProject().getName());
         ln("  workflow: %s", newAttempt.getWorkflow().getName());
@@ -153,9 +154,9 @@ public class Retry
         ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        err.println("* Use `digdag attempts` to list attempts.");
+        err.printf("* Use `digdag session %d` to show session status.%n", newAttempt.getSessionId());
         err.println(String.format(ENGLISH,
-                    "* Use `digdag task %d` and `digdag log %d` to show status.",
-                    newAttempt.getId(), newAttempt.getId()));
+                "* Use `digdag task %d` and `digdag log %d` to show task status and logs.",
+                newAttempt.getId(), newAttempt.getId()));
     }
 }

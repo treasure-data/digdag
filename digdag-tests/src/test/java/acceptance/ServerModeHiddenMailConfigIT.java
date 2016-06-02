@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getStartAttemptId;
+import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
@@ -142,7 +142,7 @@ public class ServerModeHiddenMailConfigIT
                 "--session", LOCAL_SESSION_TIME);
         assertThat(startStatus.code(), is(0));
 
-        long attemptId = getStartAttemptId(startStatus);
+        long attemptId = getAttemptId(startStatus);
 
         // Wait for the attempt to fail
         RestSessionAttempt attempt = null;

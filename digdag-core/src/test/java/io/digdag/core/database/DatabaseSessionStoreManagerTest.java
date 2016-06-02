@@ -3,8 +3,7 @@ package io.digdag.core.database;
 import java.util.*;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.concurrent.atomic.AtomicReference;
-import org.skife.jdbi.v2.IDBI;
+
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -13,9 +12,9 @@ import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class DatabaseSessionStoreManagerTest
@@ -35,6 +34,13 @@ public class DatabaseSessionStoreManagerTest
     private StoredRevision rev;
     private StoredWorkflowDefinition wf1;
     private StoredWorkflowDefinition wf2;
+
+    private StoredProject otherProj;
+    private StoredRevision otherProjRev;
+    private StoredWorkflowDefinition otherProjWf1;
+    private StoredWorkflowDefinition otherProjWf2;
+    private StoredSessionAttemptWithSession otherProjAttempt1;
+    private StoredSessionWithLastAttempt otherProjSession1;
 
     @Before
     public void setUp()
@@ -69,6 +75,33 @@ public class DatabaseSessionStoreManagerTest
                     wf2 = storedWfs.get(1);
                     return lock.get();
                 });
+
+        Project otherSrcProj = Project.of("otherRepo1");
+        Revision otherSrcRev = createRevision("otherRev1");
+        WorkflowDefinition otherSrcWf1 = createWorkflow("otherProjWf1");
+        WorkflowDefinition otherSrcWf2 = createWorkflow("otherProjWf2");
+
+        otherProj = projectStore.putAndLockProject(
+                otherSrcProj,
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+
+                    otherProjRev = lock.insertRevision(otherSrcRev);
+
+                    List<StoredWorkflowDefinition> storedWfs = lock.insertWorkflowDefinitionsWithoutSchedules(otherProjRev, ImmutableList.of(otherSrcWf1, otherSrcWf2));
+                    otherProjWf1 = storedWfs.get(0);
+                    otherProjWf2 = storedWfs.get(1);
+                    return lock.get();
+                });
+
+        AttemptRequest otherProjAr1 = attemptBuilder.buildFromStoredWorkflow(
+                otherProjRev,
+                otherProjWf1,
+                cf.create(),
+                ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())),
+                Optional.absent());
+        otherProjAttempt1 = exec.submitWorkflow(0, otherProjAr1, otherSrcWf1);
+        otherProjSession1 = store.getSessionById(otherProjAttempt1.getSessionId());
     }
 
     @After
@@ -209,6 +242,13 @@ public class DatabaseSessionStoreManagerTest
                 ScheduleTime.runNow(sessionTime1),
                 Optional.absent());
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
+        StoredSessionWithLastAttempt session1 = store.getSessionById(attempt1.getSessionId());
+
+        assertSessionAndLastAttemptEquals(session1, attempt1);
+        assertEquals(ImmutableList.of(session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         // session + different session time
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
@@ -218,15 +258,31 @@ public class DatabaseSessionStoreManagerTest
                 ScheduleTime.runNow(sessionTime2),
                 Optional.absent());
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
+        StoredSessionWithLastAttempt session2 = store.getSessionById(attempt2.getSessionId());
+
+        assertSessionAndLastAttemptEquals(session2, attempt2);
+        assertEquals(ImmutableList.of(session2, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2, session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2, session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         // session + different retry attempt name
+        String retryAttemptName = "attempt3";
         AttemptRequest ar3 = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 wf1,
                 cf.create(),
                 ScheduleTime.runNow(sessionTime2),
-                Optional.of("attempt3"));
+                Optional.of(retryAttemptName));
         StoredSessionAttemptWithSession attempt3 = exec.submitWorkflow(0, ar3, def1);
+        StoredSessionWithLastAttempt session2AfterRetry = store.getSessionById(attempt2.getSessionId());
+
+        assertSessionAndLastAttemptEquals(session2AfterRetry, attempt3);
+        assertThat(session2AfterRetry.getLastAttempt().getRetryAttemptName(), is(Optional.of(retryAttemptName)));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1, otherProjSession1), store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1), store.getSessionsOfProject(proj.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1), store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent()));
+        assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
 
         SessionStore anotherSite = manager.getSessionStore(1);
 
@@ -239,77 +295,118 @@ public class DatabaseSessionStoreManagerTest
         assertNotFound(() -> manager.getAttemptWithSessionById(attempt3.getId() + 10));
 
         ////
-        // public listings
+        // public sessions listings
         //
-        assertEquals(ImmutableList.of(attempt3, attempt1),
-                store.getSessions(false, 100, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt3),
-                store.getSessions(false, 1, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt1),
-                store.getSessions(false, 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessions(false, 100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1, otherProjSession1),
+                store.getSessions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry, session1),
+                store.getSessions(2, Optional.absent()));
+        assertEquals(ImmutableList.of(session2AfterRetry),
+                store.getSessions(1, Optional.absent()));
+        assertEquals(ImmutableList.of(session1, otherProjSession1),
+                store.getSessions(100, Optional.of(session2AfterRetry.getId())));
+        assertEquals(ImmutableList.of(otherProjSession1),
+                store.getSessions(100, Optional.of(session1.getId())));
+        assertEmpty(store.getSessions(100, Optional.of(otherProjSession1.getId())));
+        assertEmpty(anotherSite.getSessions(100, Optional.absent()));
 
-        assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
-                store.getSessions(true, 100, Optional.absent()));
+        ////
+        // public attempt listings
+        //
+        assertEquals(ImmutableList.of(attempt3, attempt1, otherProjAttempt1),
+                store.getAttempts(false, 100, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt3, attempt1),
+                store.getAttempts(false, 2, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt3),
+                store.getAttempts(false, 1, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt1, otherProjAttempt1),
+                store.getAttempts(false, 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttempts(false, 100, Optional.absent()));
+
+        assertEquals(ImmutableList.of(attempt3, attempt2, attempt1, otherProjAttempt1),
+                store.getAttempts(true, 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3, attempt2),
-                store.getSessions(true, 2, Optional.absent()));
-        assertEquals(ImmutableList.of(attempt2, attempt1),
-                store.getSessions(true, 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessions(true, 100, Optional.absent()));
+                store.getAttempts(true, 2, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt3),
+                store.getAttempts(true, 1, Optional.absent()));
+        assertEquals(ImmutableList.of(attempt2, attempt1, otherProjAttempt1),
+                store.getAttempts(true, 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttempts(true, 100, Optional.absent()));
 
         assertEquals(ImmutableList.of(attempt3, attempt1),
-                store.getSessionsOfProject(false, proj.getId(), 100, Optional.absent()));
+                store.getAttemptsOfProject(false, proj.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3),
-                store.getSessionsOfProject(false, proj.getId(), 1, Optional.absent()));
+                store.getAttemptsOfProject(false, proj.getId(), 1, Optional.absent()));
         assertEquals(ImmutableList.of(attempt1),
-                store.getSessionsOfProject(false, proj.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfProject(false, proj.getId(), 100, Optional.absent()));
+                store.getAttemptsOfProject(false, proj.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfProject(false, proj.getId(), 100, Optional.absent()));
         // TODO test with another project
 
         assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
-                store.getSessionsOfProject(true, proj.getId(), 100, Optional.absent()));
+                store.getAttemptsOfProject(true, proj.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3, attempt2),
-                store.getSessionsOfProject(true, proj.getId(), 2, Optional.absent()));
+                store.getAttemptsOfProject(true, proj.getId(), 2, Optional.absent()));
         assertEquals(ImmutableList.of(attempt2, attempt1),
-                store.getSessionsOfProject(true, proj.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfProject(true, proj.getId(), 100, Optional.absent()));
+                store.getAttemptsOfProject(true, proj.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfProject(true, proj.getId(), 100, Optional.absent()));
         // TODO test with another project
 
         assertEquals(ImmutableList.of(attempt3, attempt1),
-                store.getSessionsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
+                store.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3),
-                store.getSessionsOfWorkflow(false, wf1.getId(), 1, Optional.absent()));
+                store.getAttemptsOfWorkflow(false, wf1.getId(), 1, Optional.absent()));
         assertEquals(ImmutableList.of(attempt1),
-                store.getSessionsOfWorkflow(false, wf1.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
+                store.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfWorkflow(false, wf1.getId(), 100, Optional.absent()));
+        assertEmpty(store.getAttemptsOfWorkflow(false, wf2.getId(), 100, Optional.absent()));
         // TODO test with another workflow
 
         assertEquals(ImmutableList.of(attempt3, attempt2, attempt1),
-                store.getSessionsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
+                store.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
         assertEquals(ImmutableList.of(attempt3, attempt2),
-                store.getSessionsOfWorkflow(true, wf1.getId(), 2, Optional.absent()));
+                store.getAttemptsOfWorkflow(true, wf1.getId(), 2, Optional.absent()));
         assertEquals(ImmutableList.of(attempt2, attempt1),
-                store.getSessionsOfWorkflow(true, wf1.getId(), 100, Optional.of(attempt3.getId())));
-        assertEmpty(anotherSite.getSessionsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
+                store.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.of(attempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfWorkflow(true, wf1.getId(), 100, Optional.absent()));
+        assertEmpty(store.getAttemptsOfWorkflow(true, wf2.getId(), 100, Optional.absent()));
         // TODO test with another workflow
+
+        StoredSessionAttempt rawAttempt1 = StoredSessionAttempt.copyOf(attempt1);
+        StoredSessionAttempt rawAttempt2 = StoredSessionAttempt.copyOf(attempt2);
+        StoredSessionAttempt rawAttempt3 = StoredSessionAttempt.copyOf(attempt3);
+
+        assertEquals(ImmutableList.of(rawAttempt1),
+                store.getAttemptsOfSession(session1.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt1),
+                store.getAttemptsOfSession(session1.getId(), 1, Optional.absent()));
+        assertEmpty(store.getAttemptsOfSession(session1.getId(), 100, Optional.of(attempt1.getId())));
+        assertEmpty(anotherSite.getAttemptsOfSession(session1.getId(), 100, Optional.absent()));
+
+        assertEquals(ImmutableList.of(rawAttempt3, rawAttempt2),
+                store.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt3),
+                store.getAttemptsOfSession(session2.getId(), 1, Optional.absent()));
+        assertEquals(ImmutableList.of(rawAttempt2),
+                store.getAttemptsOfSession(session2.getId(), 100, Optional.of(rawAttempt3.getId())));
+        assertEmpty(anotherSite.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
 
         ////
         // public getters
         //
-        assertEquals(attempt1, store.getSessionAttemptById(attempt1.getId()));
-        assertEquals(attempt2, store.getSessionAttemptById(attempt2.getId()));
-        assertNotFound(() ->store.getSessionAttemptById(attempt1.getId() + 10));
-        assertNotFound(() -> anotherSite.getSessionAttemptById(attempt1.getId()));
+        assertEquals(attempt1, store.getAttemptById(attempt1.getId()));
+        assertEquals(attempt2, store.getAttemptById(attempt2.getId()));
+        assertNotFound(() ->store.getAttemptById(attempt1.getId() + 10));
+        assertNotFound(() -> anotherSite.getAttemptById(attempt1.getId()));
 
-        assertEquals(attempt1, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, ""));
-        assertEquals(attempt2, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, ""));
-        assertEquals(attempt3, store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, "attempt3"));
-        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId() + 10, wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName() + " ", sessionTime1, ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
-        assertNotFound(() -> store.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, " "));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime1, ""));
-        assertNotFound(() -> anotherSite.getSessionAttemptByNames(proj.getId(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt1, store.getAttemptByName(proj.getId(), wf1.getName(), sessionTime1, ""));
+        assertEquals(attempt2, store.getAttemptByName(proj.getId(), wf1.getName(), sessionTime2, ""));
+        assertEquals(attempt3, store.getAttemptByName(proj.getId(), wf1.getName(), sessionTime2, retryAttemptName));
+        assertNotFound(() -> store.getAttemptByName(proj.getId() + 10, wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> store.getAttemptByName(proj.getId(), wf1.getName() + " ", sessionTime1, ""));
+        assertNotFound(() -> store.getAttemptByName(proj.getId(), wf1.getName(), sessionTime1.plusSeconds(10000), ""));
+        assertNotFound(() -> store.getAttemptByName(proj.getId(), wf1.getName(), sessionTime1, " "));
+        assertNotFound(() -> anotherSite.getAttemptByName(proj.getId(), wf1.getName(), sessionTime1, ""));
+        assertNotFound(() -> anotherSite.getAttemptByName(proj.getId(), wf1.getName(), sessionTime2, ""));
 
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt2.getId()));
         assertEquals(ImmutableList.of(attempt2, attempt3), store.getOtherAttempts(attempt3.getId()));
@@ -325,5 +422,14 @@ public class DatabaseSessionStoreManagerTest
                     return summary;
                 }).get();
         assertEquals(activeArchive, store.getTasksOfAttempt(attempt1.getId()));
+    }
+
+    private void assertSessionAndLastAttemptEquals(StoredSessionWithLastAttempt session, StoredSessionAttemptWithSession attempt)
+    {
+        assertThat(session.getId(), is(attempt.getSessionId()));
+        assertThat(session.getUuid(), is(attempt.getSessionUuid()));
+        assertThat(session.getLastAttemptId(), is(attempt.getId()));
+        assertThat(session.getLastAttempt(), is(StoredSessionAttempt.copyOf(attempt)));
+
     }
 }

@@ -1,5 +1,6 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -14,6 +15,7 @@ import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestTask;
@@ -104,6 +106,7 @@ public class DigdagClient
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new GuavaModule());
         mapper.registerModule(new JacksonTimeModule());
+        mapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
         return mapper;
     }
 
@@ -316,30 +319,78 @@ public class DigdagClient
                 .resolveTemplate("id", id));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(boolean includeRetried, Optional<Long> lastId)
+    public List<RestSession> getSessions() {
+        return getSessions(Optional.absent());
+    }
+
+    public List<RestSession> getSessions(Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestSession>>() {},
+                target("/api/sessions")
+                        .queryParam("last_id", lastId.orNull()));
+    }
+
+    public List<RestSession> getSessions(int projectId) {
+        return getSessions(projectId, Optional.absent());
+    }
+
+    public List<RestSession> getSessions(int projectId, Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestSession>>() {},
+                target("/api/projects/{projectId}/sessions")
+                        .resolveTemplate("projectId", projectId)
+                        .queryParam("last_id", lastId.orNull()));
+    }
+
+    public List<RestSession> getSessions(int projectId, String workflowName) {
+        return getSessions(projectId, workflowName, Optional.absent());
+    }
+
+    public List<RestSession> getSessions(int projectId, String workflowName, Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestSession>>() {},
+                target("/api/projects/{projectId}/sessions")
+                        .resolveTemplate("projectId", projectId)
+                        .queryParam("workflow", workflowName)
+                        .queryParam("last_id", lastId.orNull()));
+    }
+
+    public RestSession getSession(long sessionId)
+    {
+        return doGet(RestSession.class,
+                target("/api/sessions/{id}")
+                        .resolveTemplate("id", sessionId));
+    }
+
+    public List<RestSessionAttempt> getSessionAttempts(long sessionId, Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestSessionAttempt>>() {},
+                target("/api/sessions/{sessionId}/attempts")
+                        .resolveTemplate("sessionId", sessionId)
+                        .queryParam("last_id", lastId.orNull()));
+    }
+
+    public List<RestSessionAttempt> getSessionAttempts(Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
-                .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String projName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
                 .queryParam("project", projName)
-                .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String projName, String workflowName, boolean includeRetried, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, String workflowName, Optional<Long> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
                 .queryParam("project", projName)
                 .queryParam("workflow", workflowName)
-                .queryParam("include_retried", includeRetried)
                 .queryParam("last_id", lastId.orNull()));
     }
 

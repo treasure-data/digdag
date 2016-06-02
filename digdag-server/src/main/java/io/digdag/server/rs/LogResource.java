@@ -2,8 +2,6 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.io.InputStream;
 import java.io.IOException;
@@ -14,33 +12,19 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.PUT;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.ServerErrorException;
 import com.google.inject.Inject;
-import com.google.common.collect.*;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
-import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.StoredSession;
-import io.digdag.core.workflow.*;
 import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.log.LogServerManager;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.*;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.*;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
 
 @Path("/")
@@ -149,7 +133,7 @@ public class LogResource
     {
         StoredSessionAttemptWithSession attempt =
             sm.getSessionStore(getSiteId())
-            .getSessionAttemptById(attemptId);
+            .getAttemptById(attemptId);
         return logFilePrefixFromSessionAttempt(attempt);
     }
 }

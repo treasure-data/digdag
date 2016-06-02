@@ -104,7 +104,7 @@ public class ErrorServerMailIT
                 "error", "error",
                 "--session", LOCAL_SESSION_TIME);
         assertThat(startStatus.code(), is(0));
-        long attemptId = TestUtils.getStartAttemptId(startStatus);
+        long attemptId = TestUtils.getAttemptId(startStatus);
 
         // Wait for the attempt to fail
         RestSessionAttempt attempt = null;

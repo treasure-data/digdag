@@ -529,7 +529,23 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateSessionsOnProjectIdIndexToDesc = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160602123456";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update("create index sessions_on_project_id_desc on sessions (project_id, id desc)");
+            handle.update("drop index sessions_on_project_id");
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
+        MigrateSessionsOnProjectIdIndexToDesc
     };
 }
