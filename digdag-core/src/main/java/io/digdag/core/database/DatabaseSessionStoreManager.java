@@ -551,6 +551,7 @@ public class DatabaseSessionStoreManager
             dao.deleteTaskDependencies(attemptId);
             dao.deleteTaskStateDetails(attemptId);
             dao.deleteTaskDetails(attemptId);
+            dao.deleteResumingTasks(attemptId);
             return dao.deleteTasks(attemptId);
         }
 
@@ -1444,6 +1445,10 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from task_dependencies" +
                 " where downstream_id in (select id from tasks where attempt_id = :attemptId)")
         void deleteTaskDependencies(@Bind("attemptId") long attemptId);
+
+        @SqlUpdate("delete from resuming_tasks" +
+                " where attempt_id = :attemptId")
+        int deleteResumingTasks(@Bind("attemptId") long attemptId);
     }
 
     private static class InstantMapper

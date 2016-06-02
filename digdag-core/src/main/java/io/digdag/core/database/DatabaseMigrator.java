@@ -544,6 +544,33 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateCreateResumingTasks = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160602184025";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            // resuming_tasks
+            handle.update(
+                    new CreateTableBuilder("resuming_tasks")
+                    .addLongId("id")
+                    .addLong("attempt_id", "not null references session_attempts (id)")
+                    .addShort("task_type", "not null")   // 0=action, 1=grouping
+                    .addMediumText("full_name", "not null")
+                    // state is always SUCCESS
+                    .addMediumText("subtask_config", "")
+                    .addMediumText("export_params", "")
+                    .addMediumText("store_params", "")
+                    .addMediumText("report", "")
+                    .build());
+            handle.update("create unique index resuming_tasks_on_attempt_id_and_full_name on resuming_tasks (attempt_id, full_name)");
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc
