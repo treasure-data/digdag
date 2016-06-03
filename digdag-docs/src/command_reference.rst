@@ -184,6 +184,11 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
 
   Example: --task-log digdag.log
 
+:command:`--max-task-threads N`
+  Limit maxium number of task execution threads on this server.
+
+  Example: --max-task-threads 5
+
 :command:`-p, --param KEY=VALUE`
   Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using ``${...}`` syntax in the YAML file, or using language API.
 
@@ -261,6 +266,25 @@ Runs a digdag server. --memory or --database option is required. Examples:
   Store access logs to this directory.
 
   Example: --access-log digdag/log
+
+:command:`--disable-local-agent`
+  Disable task execution on this server.
+
+  This option is useful when there're multiple servers sharing the same underlay database and some of the servers are prepared only for REST API. See also ``--disable-executor-loop`` option.
+
+  Example: --disable-local-agent
+
+:command:`--max-task-threads N`
+  Limit maxium number of task execution threads on this server.
+
+  Example: --max-task-threads 5
+
+:command:`--disable-executor-loop`
+  Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.
+
+  This option is useful when there're multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also ``--disable-local-agent`` option.
+
+  Example: --max-task-threads 5
 
 :command:`-c, --config PATH`
   Server configuration property path. See `Digdag server <digdag_server.html>`_ for details.

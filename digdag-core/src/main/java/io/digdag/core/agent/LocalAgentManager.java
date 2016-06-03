@@ -26,25 +26,31 @@ public class LocalAgentManager
         this.agentId = agentId;
         this.queueManager = queueManager;
         this.operatorManager = operatorManager;
-        this.executor = Executors.newCachedThreadPool(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("local-agent-%d")
-                .build()
-                );
+        if (config.getEnabled()) {
+            this.executor = Executors.newCachedThreadPool(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("local-agent-%d")
+                    .build());
+        }
+        else {
+            this.executor = null;
+        }
     }
 
     // TODO stop LocalAgent at @PreDestroy
 
     public void start()
     {
-        executor.submit(
-                new LocalAgent(
-                    config,
-                    agentId,
-                    queueManager.getInProcessTaskQueueClient(),
-                    operatorManager
-                )
-            );
+        if (executor != null) {
+            executor.submit(
+                    new LocalAgent(
+                        config,
+                        agentId,
+                        queueManager.getInProcessTaskQueueClient(),
+                        operatorManager
+                    )
+                );
+        }
     }
 }

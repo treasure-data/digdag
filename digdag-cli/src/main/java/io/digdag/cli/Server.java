@@ -44,6 +44,15 @@ public class Server
     @Parameter(names = {"-A", "--access-log"})
     String accessLogPath = null;
 
+    @Parameter(names = {"--disable-local-agent"})
+    boolean disableLocalAgent = false;
+
+    @Parameter(names = {"--max-task-threads"})
+    Integer maxTaskThreads = null;
+
+    @Parameter(names = {"--disable-executor-loop"})
+    boolean disableExecutorLoop = false;
+
     @DynamicParameter(names = {"-p", "--param"})
     Map<String, String> params = new HashMap<>();
 
@@ -92,6 +101,9 @@ public class Server
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -A, --access-log DIR             store access logs files to this path");
+        err.println("        --max-task-threads N         limit maxium number of task execution threads");
+        err.println("        --disable-executor-loop      disable workflow executor loop");
+        err.println("        --disable-local-agent        disable local task execution");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
@@ -136,6 +148,18 @@ public class Server
 
         if (accessLogPath != null) {
             props.setProperty("server.access-log.path", accessLogPath);
+        }
+
+        if (disableLocalAgent) {
+            props.setProperty("agent.enabled", Boolean.toString(false));
+        }
+
+        if (maxTaskThreads != null) {
+            props.setProperty("agent.max-task-threads", Integer.toString(maxTaskThreads));
+        }
+
+        if (disableExecutorLoop) {
+            props.setProperty("server.executor.enabled", Boolean.toString(false));
         }
 
         headers.forEach((key, value) -> props.setProperty("server.http.headers." + key, value));

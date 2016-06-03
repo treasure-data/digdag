@@ -77,20 +77,22 @@ public class ServerBootstrap
             .initialize()
             .getInjector();
 
-        // TODO create global site
-        LocalSite site = injector.getInstance(LocalSite.class);
+        if (serverConfig.getExecutorEnabled()) {
+            // TODO create global site
+            LocalSite site = injector.getInstance(LocalSite.class);
 
-        Thread thread = new Thread(() -> {
-            try {
-                site.run();
-            }
-            catch (Exception ex) {
-                logger.error("Uncaught error", ex);
-                control.destroy();
-            }
-        }, "local-site");
-        thread.setDaemon(true);
-        thread.start();
+            Thread thread = new Thread(() -> {
+                try {
+                    site.run();
+                }
+                catch (Exception ex) {
+                    logger.error("Uncaught error", ex);
+                    control.destroy();
+                }
+            }, "local-site");
+            thread.setDaemon(true);
+            thread.start();
+        }
 
         return injector;
     }

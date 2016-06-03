@@ -29,12 +29,21 @@ public class LocalAgent
         this.config = config;
         this.queue = queue;
         this.runner = runner;
-        this.executor = Executors.newCachedThreadPool(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("task-thread-%d")
-                .build()
-                );
+        if (config.getMaxThreads() > 0) {
+            this.executor = Executors.newFixedThreadPool(
+                    config.getMaxThreads(),
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("task-thread-%d")
+                    .build());
+        }
+        else {
+            this.executor = Executors.newCachedThreadPool(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("task-thread-%d")
+                    .build());
+        }
     }
 
     public void stop()
