@@ -4,14 +4,6 @@
     "react"
   ],
   "plugins": [
-    [
-      "typecheck",
-      {
-        "disable": {
-          "production": true
-        }
-      }
-    ],
     "syntax-flow",
     "transform-flow-strip-types",
     "transform-class-properties"

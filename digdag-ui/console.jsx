@@ -2,42 +2,39 @@
 
 import './style.less';
 
-import React from 'react';
-import {Router, DefaultRoute, Link, Route, RouteHandler, browserHistory} from 'react-router';
-import moment from 'moment';
-import jsyaml from 'js-yaml';
-
 import "babel-polyfill";
 import 'whatwg-fetch'
-import pako from 'pako';
-import untar from 'js-untar';
 
+import _ from 'lodash-fp';
+
+import React from 'react';
+import {Router, Link, Route, browserHistory} from 'react-router';
+import moment from 'moment';
+import pako from 'pako';
+
+//noinspection ES6UnusedImports
 import Prism from 'prismjs';
 import 'prismjs/components/prism-yaml';
 import 'prismjs/themes/prism.css';
 import {PrismCode} from "react-prism";
 
-import _ from 'lodash-fp';
+import type {HeadersProvider, Project, Workflow, Session, LogFileHandle, Credentials, Attempt, Task} from "./model";
+import {model, setup as setupModel} from "./model";
 
-import {Buffer} from 'buffer/';
-
-type Scrubber = (args: {key: string, value: string}) => string;
+type Scrubber = (args:{key: string, value: string}) => string;
 
 type AuthItem = {
   key: string;
   name: string;
   type: string;
-  validate: (args: {
+  validate: (args:{
     key: string;
     value: string;
-    valid: (key: string) => void;
-    invalid: (key: string) => void;
+    valid: (key:string) => void;
+    invalid: (key:string) => void;
   }) => void;
   scrub: Scrubber;
 }
-
-type Credentials = {[key: string]: string};
-type Headers = {[key: string]: string};
 
 type ConsoleConfig = {
   url: string;
@@ -46,295 +43,13 @@ type ConsoleConfig = {
     title: string;
     items: Array<AuthItem>;
   };
-  headers: (args: {credentials: Credentials}) => Headers;
+  headers: HeadersProvider;
 }
 
-declare var DIGDAG_CONFIG: ConsoleConfig;
-
-type DirectDownloadHandle = {
-  type: string;
-  url: string;
-}
-
-type LogFile = {
-  fileName: string;
-  fileSize: number;
-  taskName: string;
-  fileTime: string;
-  agentId: string;
-  direct: ?DirectDownloadHandle;
-}
-
-type TarEntry = {
-  name: string;
-  buffer: ArrayBuffer;
-}
-
-type IdName = {
-  id: number;
-  name: string;
-}
-
-type NameOptionalId = {
-  name: string;
-  id: ?number;
-};
-
-type UUID = string;
-
-type Workflow = {
-  id: number;
-  name: string;
-  project: IdName;
-  revision: string;
-  config: Object;
-};
-
-type Project = {
-  id: number;
-  name: string;
-  revision: string;
-  createdAt: string;
-  updatedAt: string;
-  archiveType: string;
-  archiveMd5: string;
-}
-
-type Task = {
-  id: number;
-  fullName: string;
-  parentId: ?number;
-  config: Object;
-  upstreams: Array<number>;
-  isGroup: boolean;
-  state: string;
-  exportParams: Object;
-  storeParams: Object;
-  stateParams: Object;
-  updatedAt: string;
-  retryAt: ?string;
-};
-
-type Attempt = {
-  id: number;
-  project: IdName;
-  workflow: NameOptionalId;
-  sessionId: number;
-  sessionUuid: UUID;
-  sessionTime: string;
-  retryAttemptName: ?string;
-  done: boolean;
-  success: boolean;
-  cancelRequested: boolean;
-  params: Object;
-  createdAt: string;
-};
-
-type Session = {
-  id: number;
-  project: IdName;
-  workflow: NameOptionalId;
-  sessionUuid: UUID;
-  sessionTime: string;
-  lastAttempt: ?{
-    id: number;
-    retryAttemptName: ?string;
-    done: boolean;
-    success: boolean;
-    cancelRequested: boolean;
-    params: Object;
-    createdAt: string;
-  };
-};
-
-declare function escape(buf: Uint8Array): string;
-
-class ProjectArchive {
-  files: Array<TarEntry>;
-  fileMap: Map<string, TarEntry>;
-  legacy: boolean;
-  constructor(files: Array<TarEntry>) {
-    this.files = files;
-    this.fileMap = new Map();
-    this.legacy = false;
-    for (let file of files) {
-      if (file.name == 'digdag.yml') {
-        this.legacy = true;
-      }
-      this.fileMap.set(file.name, file);
-    }
-  }
-
-  getWorkflow(name) {
-    const suffix = this.legacy ? 'yml' : 'dig';
-    const filename = `${name}.${suffix}`;
-    const file = this.fileMap.get(filename);
-    if (!file) {
-      return null;
-    }
-    return new Buffer(file.buffer).toString();
-  }
-}
-
-class Model {
-  static INSTANCE: Model;
-  url: string;
-  credentials: any;
-
-  constructor(url: string, credentials: any) {
-    this.url = url;
-    this.credentials = credentials;
-  }
-
-  fetchProjects(callbacks) {
-    this.get(`projects/`, callbacks);
-  }
-
-  fetchProject(projectId, callbacks) {
-    this.get(`projects/${projectId}`, callbacks);
-  }
-
-  fetchWorkflow(workflowId, callbacks) {
-    this.get(`workflows/${workflowId}`, callbacks);
-  }
-
-  fetchProjectWorkflows(projectId, callbacks) {
-    this.get(`projects/${projectId}/workflows`, callbacks);
-  }
-
-  fetchProjectWorkflow(projectId, workflowName, callbacks) {
-    this.get(`projects/${projectId}/workflows/${encodeURIComponent(workflowName)}`, callbacks);
-  }
-
-  fetchProjectWorkflowAttempts(projectName, workflowName, callbacks) {
-    this.get(`attempts?project=${encodeURIComponent(projectName)}&workflow=${encodeURIComponent(workflowName)}`, callbacks);
-  }
-
-  fetchProjectWorkflowSessions(projectId, workflowName, callbacks) {
-    this.get(`projects/${projectId}/sessions?workflow=${encodeURIComponent(workflowName)}`, callbacks);
-  }
-
-  fetchProjectSessions(projectId, callbacks) {
-    this.get(`projects/${projectId}/sessions`, callbacks);
-  }
-
-  fetchProjectAttempts(projectName, callbacks) {
-    this.get(`attempts?project=${encodeURIComponent(projectName)}`, callbacks);
-  }
-
-  fetchAttempts(callbacks) {
-    this.get(`attempts`, callbacks);
-  }
-
-  fetchSessions(callbacks) {
-    this.get(`sessions`, callbacks);
-  }
-
-  fetchAttempt(attemptId, callbacks) {
-    this.get(`attempts/${attemptId}`, callbacks);
-  }
-
-  fetchSession(sessionId, callbacks) {
-    this.get(`sessions/${sessionId}`, callbacks);
-  }
-
-  fetchSessionAttempts(sessionId, callbacks) {
-    this.get(`sessions/${sessionId}/attempts?include_retried=true`, callbacks);
-  }
-
-  fetchAttemptTasks(attemptId, callbacks) {
-    this.get(`attempts/${attemptId}/tasks`, callbacks);
-  }
-
-  fetchAttemptLogFileHandles(attemptId, callbacks) {
-    this.get(`logs/${attemptId}/files`, callbacks);
-  }
-
-  fetchAttemptTaskLogFileHandles(attemptId, taskName, callbacks) {
-    this.get(`logs/${attemptId}/files?task=${encodeURIComponent(taskName)}`, callbacks);
-  }
-
-  fetchLogFile(file, callbacks) {
-    if (!file.direct) {
-      return;
-    }
-    fetch(file.direct.url).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      response.arrayBuffer().then(buffer => {
-        callbacks['success'](buffer);
-      });
-    });
-  }
-
-  fetchProjectArchiveLatest(projectId, callbacks) {
-    fetch(this.url + `projects/${projectId}/archive`, {
-      headers: this.headers(),
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      response.arrayBuffer().then(data => {
-        untar(pako.inflate(data)).then(files => {
-          const archive = new ProjectArchive((files: Array<TarEntry>));
-          callbacks['success'](archive);
-        });
-      });
-    });
-  }
-
-  fetchProjectArchiveWithRevision(projectId, revisionName, callbacks) {
-    fetch(this.url + `projects/${projectId}/archive?revision=${encodeURIComponent(revisionName)}`, {
-      headers: this.headers(),
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      response.arrayBuffer().then(data => {
-        untar(pako.inflate(data).buffer).then(files => {
-          const archive = new ProjectArchive(files);
-          callbacks['success'](archive);
-        });
-      });
-    });
-  }
-
-  get(url, callbacks) {
-    this.fetch('GET', url, 'json', callbacks);
-  }
-
-  fetch(type, url, dataType, callbacks) {
-    fetch(this.url + url, {
-      headers: this.headers(),
-    }).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      return response.json();
-    }).then(value => {
-      if (callbacks.success) {
-        callbacks.success(value);
-      }
-    });
-  }
-
-  headers() {
-    return DIGDAG_CONFIG.headers({credentials: this.credentials});
-  }
-}
-
-// TODO: figure out how to have this not be a singleton
-function setupModel(credentials) {
-  Model.INSTANCE = new Model(DIGDAG_CONFIG.url, credentials);
-}
-
-function model() {
-  return Model.INSTANCE;
-}
+declare var DIGDAG_CONFIG:ConsoleConfig;
 
 class ProjectListView extends React.Component {
-  props: {
+  props:{
     projects: Array<Project>;
   };
 
@@ -366,14 +81,16 @@ class ProjectListView extends React.Component {
 }
 
 class WorkflowListView extends React.Component {
-  props: {
+  props:{
     workflows: Array<Workflow>;
   };
 
   render() {
     const rows = this.props.workflows.map(workflow =>
       <tr key={workflow.id}>
-        <td><Link to={`/projects/${workflow.project.id}/workflows/${encodeURIComponent(workflow.name)}`}>{workflow.name}</Link></td>
+        <td><Link
+          to={`/projects/${workflow.project.id}/workflows/${encodeURIComponent(workflow.name)}`}>{workflow.name}</Link>
+        </td>
         <td>{workflow.revision}</td>
       </tr>
     );
@@ -411,7 +128,7 @@ function attemptStatus(attempt) {
   }
 }
 
-const SessionStatusView = (props: {session: Session}) => {
+const SessionStatusView = (props:{session: Session}) => {
   const attempt = props.session.lastAttempt;
   return attempt
     ? <Link to={`/attempts/${attempt.id}`}>{attemptStatus(attempt)}</Link>
@@ -423,9 +140,9 @@ SessionStatusView.propTypes = {
 };
 
 class SessionRevisionView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     session: Session;
   };
 
@@ -449,11 +166,13 @@ class SessionRevisionView extends React.Component {
   }
 
   fetchWorkflow() {
-    model().fetchWorkflow(this.props.session.workflow.id, {
-      success: workflow => {
-        if (!this.ignoreLastFetch) {
-          this.setState({workflow});
-        }
+    const id = this.props.session.workflow.id;
+    if (!id) {
+      return;
+    }
+    model().fetchWorkflow(id).then(workflow => {
+      if (!this.ignoreLastFetch) {
+        this.setState({workflow});
       }
     });
   }
@@ -467,7 +186,7 @@ class SessionRevisionView extends React.Component {
 
 class AttemptListView extends React.Component {
 
-  props: {
+  props:{
     attempts: Array<Attempt>;
   };
 
@@ -510,7 +229,7 @@ class AttemptListView extends React.Component {
 
 class SessionListView extends React.Component {
 
-  props: {
+  props:{
     sessions: Array<Session>;
   };
 
@@ -559,10 +278,8 @@ class ProjectsView extends React.Component {
   };
 
   componentDidMount() {
-    model().fetchProjects({
-      success: projects => {
-        this.setState({projects});
-      }
+    model().fetchProjects().then(projects => {
+      this.setState({projects});
     });
   }
 
@@ -583,10 +300,8 @@ class SessionsView extends React.Component {
   };
 
   componentDidMount() {
-    model().fetchSessions({
-      success: sessions => {
-        this.setState({sessions});
-      }
+    model().fetchSessions().then(sessions => {
+      this.setState({sessions});
     });
   }
 
@@ -601,10 +316,10 @@ class SessionsView extends React.Component {
 }
 
 class ProjectView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
-    projectId: string;
+  props:{
+    projectId: number;
   };
 
   state = {
@@ -631,25 +346,23 @@ class ProjectView extends React.Component {
   }
 
   fetchProject() {
-    model().fetchProject(this.props.projectId, {
-      success: project => {
-        if (!this.ignoreLastFetch) {
-          this.setState({project: project});
-          model().fetchProjectSessions(this.state.project.id, {
-            success: sessions => {
-              if (!this.ignoreLastFetch) {
-                this.setState({sessions});
-              }
-            }
-          });
-        }
+    model().fetchProject(this.props.projectId).then(project => {
+      if (!this.ignoreLastFetch) {
+        this.setState({project: project});
+      }
+      return project;
+    }).then(project => {
+      if (!this.ignoreLastFetch) {
+        model().fetchProjectSessions(project.id).then(sessions => {
+          if (!this.ignoreLastFetch) {
+            this.setState({sessions});
+          }
+        });
       }
     });
-    model().fetchProjectWorkflows(this.props.projectId, {
-      success: workflows => {
-        if (!this.ignoreLastFetch) {
-          this.setState({workflows: workflows});
-        }
+    model().fetchProjectWorkflows(this.props.projectId).then(workflows => {
+      if (!this.ignoreLastFetch) {
+        this.setState({workflows: workflows});
       }
     });
   }
@@ -700,9 +413,9 @@ class ProjectView extends React.Component {
 }
 
 class WorkflowView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     workflow: Workflow;
   };
 
@@ -727,18 +440,14 @@ class WorkflowView extends React.Component {
   }
 
   fetchWorkflow() {
-    model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name, {
-      success: sessions => {
-        if (!this.ignoreLastFetch) {
-          this.setState({sessions});
-        }
+    model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name).then(sessions => {
+      if (!this.ignoreLastFetch) {
+        this.setState({sessions});
       }
     });
-    model().fetchProjectArchiveWithRevision(this.props.workflow.project.id, this.props.workflow.revision, {
-      success: projectArchive => {
-        if (!this.ignoreLastFetch) {
-          this.setState({projectArchive});
-        }
+    model().fetchProjectArchiveWithRevision(this.props.workflow.project.id, this.props.workflow.revision).then(projectArchive => {
+      if (!this.ignoreLastFetch) {
+        this.setState({projectArchive});
       }
     });
   }
@@ -795,9 +504,9 @@ class WorkflowView extends React.Component {
 }
 
 class AttemptView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     attemptId: number;
   };
 
@@ -822,18 +531,14 @@ class AttemptView extends React.Component {
   }
 
   fetchAttempt() {
-    model().fetchAttempt(this.props.attemptId, {
-      success: attempt => {
-        if (!this.ignoreLastFetch) {
-          this.setState({attempt: attempt});
-        }
+    model().fetchAttempt(this.props.attemptId).then(attempt => {
+      if (!this.ignoreLastFetch) {
+        this.setState({attempt: attempt});
       }
     });
-    model().fetchAttemptTasks(this.props.attemptId, {
-      success: tasks => {
-        if (!this.ignoreLastFetch) {
-          this.setState({tasks: tasks});
-        }
+    model().fetchAttemptTasks(this.props.attemptId).then(tasks => {
+      if (!this.ignoreLastFetch) {
+        this.setState({tasks: tasks});
       }
     });
   }
@@ -889,7 +594,7 @@ class AttemptView extends React.Component {
   }
 }
 
-const SessionView = (props: {session: Session}) =>
+const SessionView = (props:{session: Session}) =>
   <div className="row">
     <h2>Session</h2>
     <table className="table table-condensed">
@@ -953,7 +658,7 @@ function formatFullTimestamp(t) {
   return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
 }
 
-const TaskListView = (props: {tasks: Array<Task>}) =>
+const TaskListView = (props:{tasks: Array<Task>}) =>
   <div className="table-responsive">
     <table className="table table-striped table-hover table-condensed">
       <thead>
@@ -985,9 +690,9 @@ const TaskListView = (props: {tasks: Array<Task>}) =>
 
 
 class AttemptTasksView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     attemptId: number;
   };
 
@@ -1012,11 +717,9 @@ class AttemptTasksView extends React.Component {
   }
 
   fetchTasks() {
-    model().fetchAttemptTasks(this.props.attemptId, {
-      success: tasks => {
-        if (!this.ignoreLastFetch) {
-          this.setState({tasks});
-        }
+    model().fetchAttemptTasks(this.props.attemptId).then(tasks => {
+      if (!this.ignoreLastFetch) {
+        this.setState({tasks});
       }
     });
   }
@@ -1032,10 +735,10 @@ class AttemptTasksView extends React.Component {
 }
 
 class LogFileView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
-    file: LogFile;
+  props:{
+    file: LogFileHandle;
   };
 
   state = {
@@ -1050,7 +753,7 @@ class LogFileView extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps: {file: LogFile}) {
+  componentDidUpdate(prevProps:{file: LogFileHandle}) {
     const oldFileName = prevProps.file.fileName;
     const newFileName = this.props.file.fileName;
     if (newFileName !== oldFileName) {
@@ -1059,13 +762,11 @@ class LogFileView extends React.Component {
   }
 
   fetchFile() {
-    model().fetchLogFile(this.props.file, {
-      success: data => {
-        if (!this.ignoreLastFetch) {
-          this.setState({data});
-        }
+    model().fetchLogFile(this.props.file).then(data => {
+      if (!this.ignoreLastFetch) {
+        this.setState({data});
       }
-    });
+    }, error => console.log(error));
   }
 
   render() {
@@ -1077,9 +778,9 @@ class LogFileView extends React.Component {
 
 
 class AttemptLogsView extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     attemptId: number;
   };
 
@@ -1104,11 +805,9 @@ class AttemptLogsView extends React.Component {
   }
 
   fetchLogs() {
-    model().fetchAttemptLogFileHandles(this.props.attemptId, {
-      success: files => {
-        if (!this.ignoreLastFetch) {
-          this.setState({files});
-        }
+    model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
+      if (!this.ignoreLastFetch) {
+        this.setState({files});
       }
     });
   }
@@ -1193,32 +892,39 @@ class Navbar extends React.Component {
   }
 }
 
-const ProjectsPage = (props: {}) =>
+const ProjectsPage = (props:{}) =>
   <div className="container-fluid">
     <Navbar />
     <ProjectsView />
     <SessionsView />
   </div>;
 
-const ProjectPage = (props: {params: {projectId: string}}) =>
+const ProjectPage = (props:{params: {projectId: string}}) =>
   <div className="container-fluid">
     <Navbar />
-    <ProjectView projectId={props.params.projectId}/>
+    <ProjectView projectId={parseInt(props.params.projectId)}/>
   </div>;
 
 class WorkflowPage extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     params: {
       projectId: string;
       workflowName: string;
     }
   };
 
-  state = {
-    workflow: null,
+  state: {
+    workflow: ?Workflow;
   };
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      workflow: null,
+    };
+  }
 
   componentDidMount() {
     this.fetchWorkflow();
@@ -1236,11 +942,9 @@ class WorkflowPage extends React.Component {
   }
 
   fetchWorkflow() {
-    model().fetchProjectWorkflow(this.props.params.projectId, this.props.params.workflowName, {
-      success: workflow => {
-        if (!this.ignoreLastFetch) {
-          this.setState({workflow});
-        }
+    model().fetchProjectWorkflow(parseInt(this.props.params.projectId), this.props.params.workflowName).then(workflow => {
+      if (!this.ignoreLastFetch) {
+        this.setState({workflow});
       }
     });
   }
@@ -1260,17 +964,24 @@ class WorkflowPage extends React.Component {
 }
 
 class WorkflowRevisionPage extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     params: {
       workflowId: string;
     };
   };
 
-  state = {
-    workflow: null,
+  state: {
+    workflow: ?Workflow;
   };
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      workflow: null,
+    };
+  }
 
   componentDidMount() {
     this.fetchWorkflow();
@@ -1288,11 +999,9 @@ class WorkflowRevisionPage extends React.Component {
   }
 
   fetchWorkflow() {
-    model().fetchWorkflow(this.props.params.workflowId, {
-      success: workflow => {
-        if (!this.ignoreLastFetch) {
-          this.setState({workflow});
-        }
+    model().fetchWorkflow(parseInt(this.props.params.workflowId)).then(workflow => {
+      if (!this.ignoreLastFetch) {
+        this.setState({workflow});
       }
     });
   }
@@ -1311,7 +1020,7 @@ class WorkflowRevisionPage extends React.Component {
   }
 }
 
-const AttemptPage = (props: {params: {attemptId: string}}) =>
+const AttemptPage = (props:{params: {attemptId: string}}) =>
   <div className="container-fluid">
     <Navbar />
     <AttemptView attemptId={parseInt(props.params.attemptId)}/>
@@ -1320,19 +1029,28 @@ const AttemptPage = (props: {params: {attemptId: string}}) =>
   </div>;
 
 class SessionPage extends React.Component {
-  ignoreLastFetch: boolean;
+  ignoreLastFetch:boolean;
 
-  props: {
+  props:{
     params: {
       sessionId: string;
     }
   };
 
-  state = {
-    session: null,
-    tasks: [],
-    attempts: [],
+  state: {
+    session: ?Session;
+    tasks: Array<Task>;
+    attempts: Array<Attempt>;
   };
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      session: null,
+      tasks: [],
+      attempts: [],
+    };
+  }
 
   componentDidMount() {
     this.fetchSession();
@@ -1342,7 +1060,7 @@ class SessionPage extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps: {params: {sessionId: string}}) {
+  componentDidUpdate(prevProps:{params: {sessionId: string}}) {
     const oldId = prevProps.params.sessionId;
     const newId = this.props.params.sessionId;
     if (newId !== oldId) {
@@ -1351,18 +1069,14 @@ class SessionPage extends React.Component {
   }
 
   fetchSession() {
-    model().fetchSession(this.props.params.sessionId, {
-      success: session => {
-        if (!this.ignoreLastFetch) {
-          this.setState({session});
-        }
+    model().fetchSession(parseInt(this.props.params.sessionId)).then(session => {
+      if (!this.ignoreLastFetch) {
+        this.setState({session});
       }
     });
-    model().fetchSessionAttempts(this.props.params.sessionId, {
-      success: attempts => {
-        if (!this.ignoreLastFetch) {
-          this.setState({attempts});
-        }
+    model().fetchSessionAttempts(parseInt(this.props.params.sessionId)).then(attempts => {
+      if (!this.ignoreLastFetch) {
+        this.setState({attempts});
       }
     });
   }
@@ -1406,6 +1120,10 @@ class SessionPage extends React.Component {
 
 class LoginPage extends React.Component {
 
+  props:{
+    onSubmit: (credentials:Credentials) => void;
+  };
+
   state: Credentials;
 
   constructor(props) {
@@ -1442,12 +1160,17 @@ class LoginPage extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    const credentials: Credentials = {};
+    const credentials:Credentials = {};
     for (let item of DIGDAG_CONFIG.auth.items) {
       const key = item.key;
-      const scrub: Scrubber = item.scrub ? item.scrub : (args: {key: string, value: string}) => value;
-      const value: string = scrub({key, value: this.state[key]});
-      item.validate({key, value, valid: this.valid(credentials, key, value), invalid: this.invalid(credentials, key, key)});
+      const scrub:Scrubber = item.scrub ? item.scrub : (args:{key: string, value: string}) => value;
+      const value:string = scrub({key, value: this.state[key]});
+      item.validate({
+        key,
+        value,
+        valid: this.valid(credentials, key, value),
+        invalid: this.invalid(credentials, key, key)
+      });
     }
   };
 
@@ -1499,23 +1222,39 @@ class ConsolePage extends React.Component {
 
 export default class Console extends React.Component {
 
-  state: { authenticated: bool };
+  state: {
+    authenticated: bool
+  };
 
-  constructor(props: any) {
+  constructor(props:any) {
     super(props);
-    // this.handleCredentialsSubmit = this.handleCredentialsSubmit.bind(this);
     const credentials = window.localStorage.getItem("digdag.credentials");
     if (credentials) {
-      setupModel(JSON.parse(credentials));
+      // setupModel({
+      //   url: DIGDAG_CONFIG.url,
+      //   credentials: JSON.parse(credentials),
+      //   headers: DIGDAG_CONFIG.headers
+      // });
+
+      this.setup(JSON.parse(credentials));
       this.state = {authenticated: true};
     } else {
       this.state = {authenticated: false};
     }
   }
 
+  setup(credentials: Credentials) {
+    // console.log(credentials);
+    setupModel({
+      url: DIGDAG_CONFIG.url,
+      credentials: credentials,
+      headers: DIGDAG_CONFIG.headers
+    });
+  }
+
   handleCredentialsSubmit: (credentials: Credentials) => void = (credentials: Credentials) => {
     window.localStorage.setItem("digdag.credentials", JSON.stringify(credentials));
-    setupModel(credentials);
+    this.setup(credentials);
     this.setState({authenticated: true});
   };
 
