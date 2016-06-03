@@ -65,7 +65,8 @@ public class DeleteProjectIT
             CommandStatus deleteStatus = main("delete",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "foobar");
+                    "foobar",
+                    "--force");
             assertThat(deleteStatus.errUtf8(), deleteStatus.code(), is(0));
         }
 
