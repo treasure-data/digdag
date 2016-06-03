@@ -15,10 +15,25 @@ import pako from 'pako';
 //noinspection ES6UnusedImports
 import Prism from 'prismjs';
 import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-ruby';
+import 'prismjs/components/prism-javascript';
 import 'prismjs/themes/prism.css';
 import {PrismCode} from "react-prism";
 
-import type {HeadersProvider, Project, Workflow, Session, LogFileHandle, Credentials, Attempt, Task} from "./model";
+import type {
+  HeadersProvider,
+  ProjectArchive,
+  Project,
+  Workflow,
+  Session,
+  LogFileHandle,
+  Credentials,
+  Attempt,
+  Task
+} from "./model";
 import {model, setup as setupModel} from "./model";
 
 type Scrubber = (args:{key: string, value: string}) => string;
@@ -498,10 +513,105 @@ class WorkflowView extends React.Component {
           <h2>Sessions</h2>
           <SessionListView sessions={this.state.sessions}/>
         </div>
+        <div className="row">
+          <h2>Files</h2>
+          <WorkflowFilesView workflow={wf} projectArchive={this.state.projectArchive}/>
+        </div>
       </div>
     );
   }
 }
+
+type TaskFile = {
+  name: string;
+  taskType: string;
+  fileType: string;
+};
+
+function task(node:Object) {
+  let command = '';
+  let taskType = node['_type'] || '';
+  console.log('task', 1, node, 'command', command, 'taskType', taskType);
+  if (taskType) {
+    command = node['_command'];
+    console.log('task', 2, node, 'command', command, 'taskType', taskType);
+  } else {
+    console.log('task', 3, node, 'command', command, 'taskType', taskType);
+    const operators = ['td', 'td_load', 'sh', 'rb', 'py'];
+    for (let operator of operators) {
+      command = node[operator + '>'] || '';
+      if (command) {
+        taskType = operator;
+        break;
+      }
+    }
+  }
+  console.log('task', 6, node, 'command', command, 'taskType', taskType);
+  return {taskType, command};
+}
+
+function resolveTaskFile(taskType:string, command:string):?TaskFile {
+  const fileTypes = {
+    'td': 'sql',
+    'td_load': 'yaml',
+    'py': 'python',
+    'rb': 'ruby'
+  };
+  const fileType = fileTypes[taskType];
+  if (!fileType) {
+    return null;
+  }
+  return {taskType, name: command, fileType};
+}
+
+function enumerateTaskFiles(node:Object, files:Array<TaskFile>) {
+  console.log('enter enumerateTaskFiles', node, files);
+  if (node.constructor == Object) {
+    console.log('enumerateTaskFiles: Object');
+    let {taskType, command} = task(node);
+    console.log('enumerateTaskFiles', 'taskType', taskType, 'command', command);
+    const taskFile = resolveTaskFile(taskType, command);
+    if (taskFile) {
+      files.push(taskFile);
+    } else {
+      for (let key of Object.keys(node)) {
+        enumerateTaskFiles(node[key], files);
+      }
+    }
+
+  }
+  console.log('exit enumerateTaskFiles', node, files);
+}
+
+function workflowFiles(workflow:Workflow):Array<TaskFile> {
+  const files = [];
+  enumerateTaskFiles(workflow.config, files);
+  return files;
+}
+
+function fileString(file:string, projectArchive:?ProjectArchive) {
+  if (!projectArchive) {
+    return '';
+  }
+  const buffer = projectArchive.getFileContents(file);
+  if (!buffer) {
+    return '';
+  }
+  return buffer.toString()
+}
+
+const FileView = (props:{file: string, fileType: string, contents: string}) =>
+  <div>
+    <h4>{props.file}</h4>
+    <pre><PrismCode className={`language-${props.fileType}`}>{props.contents}</PrismCode></pre>
+  </div>;
+
+const WorkflowFilesView = (props:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
+  <div>
+    {workflowFiles(props.workflow).map(file =>
+      <FileView key={file.name} file={file.name} fileType={file.fileType}
+                contents={fileString(file.name, props.projectArchive)}/>)}
+  </div>;
 
 class AttemptView extends React.Component {
   ignoreLastFetch:boolean;
@@ -915,7 +1025,7 @@ class WorkflowPage extends React.Component {
     }
   };
 
-  state: {
+  state:{
     workflow: ?Workflow;
   };
 
@@ -972,7 +1082,7 @@ class WorkflowRevisionPage extends React.Component {
     };
   };
 
-  state: {
+  state:{
     workflow: ?Workflow;
   };
 
@@ -1037,7 +1147,7 @@ class SessionPage extends React.Component {
     }
   };
 
-  state: {
+  state:{
     session: ?Session;
     tasks: Array<Task>;
     attempts: Array<Attempt>;
@@ -1124,7 +1234,7 @@ class LoginPage extends React.Component {
     onSubmit: (credentials:Credentials) => void;
   };
 
-  state: Credentials;
+  state:Credentials;
 
   constructor(props) {
     super(props);
@@ -1143,8 +1253,8 @@ class LoginPage extends React.Component {
     };
   }
 
-  valid(credentials: Credentials, key: string, value: string) {
-    return (key: string) => {
+  valid(credentials:Credentials, key:string, value:string) {
+    return (key:string) => {
       credentials[key] = value;
       if (DIGDAG_CONFIG.auth.items.length == Object.keys(credentials).length) {
         this.props.onSubmit(credentials);
@@ -1222,7 +1332,7 @@ class ConsolePage extends React.Component {
 
 export default class Console extends React.Component {
 
-  state: {
+  state:{
     authenticated: bool
   };
 
@@ -1243,7 +1353,7 @@ export default class Console extends React.Component {
     }
   }
 
-  setup(credentials: Credentials) {
+  setup(credentials:Credentials) {
     // console.log(credentials);
     setupModel({
       url: DIGDAG_CONFIG.url,
@@ -1252,7 +1362,7 @@ export default class Console extends React.Component {
     });
   }
 
-  handleCredentialsSubmit: (credentials: Credentials) => void = (credentials: Credentials) => {
+  handleCredentialsSubmit:(credentials:Credentials) => void = (credentials:Credentials) => {
     window.localStorage.setItem("digdag.credentials", JSON.stringify(credentials));
     this.setup(credentials);
     this.setState({authenticated: true});

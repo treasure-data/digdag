@@ -122,14 +122,20 @@ export class ProjectArchive {
     }
   }
 
-  getWorkflow(name: string) {
+  getWorkflow(name: string): ?string {
     const suffix = this.legacy ? 'yml' : 'dig';
     const filename = `${name}.${suffix}`;
-    const file = this.fileMap.get(filename);
+    const buffer = this.getFileContents(filename);
+    return buffer ? buffer.toString() : null;
+  }
+
+  getFileContents(name: string): ?Buffer {
+    console.log('getFileContents', name);
+    const file = this.fileMap.get(name);
     if (!file) {
       return null;
     }
-    return new Buffer(file.buffer).toString();
+    return new Buffer(file.buffer);
   }
 }
 
@@ -157,6 +163,7 @@ export class Model {
   }
 
   fetchWorkflow(workflowId: number): Promise<Workflow> {
+    console.log('fetch workflow: ', workflowId);
     return this.get(`workflows/${workflowId}`);
   }
 
