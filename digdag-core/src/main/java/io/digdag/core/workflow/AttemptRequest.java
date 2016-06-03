@@ -54,11 +54,15 @@ public abstract class AttemptRequest
 
     public abstract ZoneId getTimeZone();
 
-    public abstract Optional<String> getRetryAttemptName();
-
     public abstract Config getSessionParams();
 
     public abstract List<SessionMonitor> getSessionMonitors();
+
+    public abstract Optional<String> getRetryAttemptName();
+
+    public abstract Optional<Long> getResumingAttemptId();
+
+    public abstract List<Long> getResumingTasks();
 
     @Value.Check
     protected void check()
@@ -66,6 +70,9 @@ public abstract class AttemptRequest
         ModelValidator validator = ModelValidator.builder();
         if (getRetryAttemptName().isPresent()) {
             validator.checkIdentifierName("retry attempt name", getRetryAttemptName().get());
+        }
+        if (!getResumingAttemptId().isPresent()) {
+            validator.check("resuming attempt id list", getResumingTasks(), getResumingTasks().isEmpty(), "must be empty if resuming attempt id is not set");
         }
         validator.validate("attempt request", this);
     }

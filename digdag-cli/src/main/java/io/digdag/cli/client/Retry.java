@@ -39,9 +39,6 @@ public class Retry
     @Parameter(names = {"--all"})
     boolean all = false;
 
-    @Parameter(names = {"--resume"})
-    boolean resume = false;
-
     @Parameter(names = {"--from"})
     String from = null;
 
@@ -64,8 +61,8 @@ public class Retry
         if (!keepRevision && !latestRevision && revision == null) {
             error += "--keep-revision, --latest-revision, or --revision <name> option is required. ";
         }
-        if (!all && !resume && from == null) {
-            error += "--all, --resume, or --from <name> option is required. ";
+        if (!all && from == null) {
+            error += "--all or --from <name> option is required. ";
         }
         if (retryAttemptName == null) {
             error += "--name <name> option is required.";
@@ -78,12 +75,8 @@ public class Retry
             throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.");
         }
 
-        if (all && resume || resume && from != null || all && from != null) {
-            throw usage("Setting --all, --resume, or --from together is invalid.");
-        }
-
-        if (resume || from != null) {
-            throw new UnsupportedOperationException("Sorry, --resume and --from are not implemented yet");
+        if (all && from != null) {
+            throw usage("Setting --all and --from together is invalid.");
         }
 
         retry(parseLongOrUsage(args.get(0)));
@@ -98,8 +91,7 @@ public class Retry
         err.println("        --keep-revision              keep the same revision");
         err.println("        --revision <name>            use a specific revision");
         err.println("        --all                        retry all tasks");
-        err.println("        --resume                     retry failed tasks, canceled tasks and _error tasks (not implemented yet)");
-        err.println("        --from <+name>               retry tasks after a specific task (not implemented yet)");
+        err.println("        --from <+name>               resume from a specific task");
         err.println("");
         return systemExit(error);
     }
@@ -139,6 +131,13 @@ public class Retry
             .retryAttemptName(Optional.of(retryAttemptName))
             .params(attempt.getParams())
             .build();
+
+        if (from != null) {
+            request = RestSessionAttemptRequest.builder().from(request)
+                .resume(Optional.of(
+                            RestSessionAttemptRequest.Resume.ofFromTaskNamePattern(attemptId, from)))
+                .build();
+        }
 
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 

@@ -196,14 +196,28 @@ public class WorkflowExecutor
 
         TaskConfig.validateAttempt(attempt);
 
-        StoredSessionAttemptWithSession stored;
-        TaskStateCode rootTaskState;
-        try {
-            final WorkflowTask root = tasks.get(0);
-            rootTaskState = root.getTaskType().isGroupingOnly()
+        final WorkflowTask root = tasks.get(0);
+
+        Map<String, Long> resumingTaskMap;
+        if (ar.getResumingAttemptId().isPresent()) {
+            resumingTaskMap = TaskControl.buildResumingTaskMap(
+                    sm.getSessionStore(siteId),
+                    ar.getResumingAttemptId().get(),
+                    ar.getResumingTasks());
+            if (resumingTaskMap.containsKey(root.getFullName())) {
+                throw new IllegalResumeException("Resuming root task is not allowed");
+            }
+        }
+        else {
+            resumingTaskMap = ImmutableMap.of();
+        }
+
+        TaskStateCode rootTaskState = root.getTaskType().isGroupingOnly()
                 ? TaskStateCode.PLANNED
                 : TaskStateCode.READY;
 
+        StoredSessionAttemptWithSession stored;
+        try {
             stored = sm
                 .getSessionStore(siteId)
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
@@ -225,7 +239,7 @@ public class WorkflowExecutor
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                         TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                                storedTaskId, tasks);
+                                storedTaskId, tasks, resumingTaskMap);
                         return null;
                     });
                     if (!ar.getSessionMonitors().isEmpty()) {

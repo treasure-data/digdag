@@ -58,7 +58,6 @@ import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.agent.AgentConfig;
-import io.digdag.core.workflow.TaskTree;
 import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.Workflow;
@@ -66,6 +65,8 @@ import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.core.workflow.TaskTree;
+import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -470,7 +471,9 @@ public class Run
                 def,
                 overwriteParams,
                 ScheduleTime.runNow(sessionTime),
-                Optional.absent());
+                Optional.absent(),
+                Optional.absent(),
+                ImmutableList.of());
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);
         logger.debug("Submitting {}", attempt);

@@ -559,20 +559,26 @@ public class DatabaseMigrator
                     new CreateTableBuilder("resuming_tasks")
                     .addLongId("id")
                     .addLong("attempt_id", "not null references session_attempts (id)")
-                    .addShort("task_type", "not null")   // 0=action, 1=grouping
                     .addMediumText("full_name", "not null")
-                    // state is always SUCCESS
-                    .addMediumText("subtask_config", "")
-                    .addMediumText("export_params", "")
-                    .addMediumText("store_params", "")
-                    .addMediumText("report", "")
+                    .addLong("task_id", "not null references tasks (id)")
                     .build());
-            handle.update("create unique index resuming_tasks_on_attempt_id_and_full_name on resuming_tasks (attempt_id, full_name)");
+            if (isPostgres()) {
+                handle.update("create index resuming_tasks_on_attempt_id_and_full_name on resuming_tasks (attempt_id, full_name)");
+            }
+            else {
+                // h2 doesn't support index on text
+                handle.update("create index resuming_tasks_on_attempt_id on resuming_tasks (attempt_id)");
+            }
+
+            // task_details.resuming_task_id
+            handle.update("alter table task_details" +
+                    " add column resuming_task_id bigint");
         }
     };
 
     private final Migration[] migrations = {
         MigrateCreateTables,
-        MigrateSessionsOnProjectIdIndexToDesc
+        MigrateSessionsOnProjectIdIndexToDesc,
+        MigrateCreateResumingTasks,
     };
 }

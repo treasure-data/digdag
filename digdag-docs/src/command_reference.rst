@@ -394,9 +394,10 @@ Examples:
 
 .. code-block:: console
 
-    $ digdag retry 35 --latest-revision --rerun --name retry1
-    $ digdag retry 35 --keep-revision --rerun --name retry2
-    $ digdag retry 35 --revision rev29a87a9c --rerun --name retry2
+    $ digdag retry 35 --latest-revision --all --name retry1
+    $ digdag retry 35 --keep-revision --all --name retry2
+    $ digdag retry 35 --revision rev29a87a9c --all --name retry2
+    $ digdag retry 35 --latest-revision --from +step2 --name retry2
 
 :command:`--latest-revision`
   Use the latest revision to retry the session.
@@ -410,8 +411,11 @@ Examples:
 :command:`--name <name>`
   An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.
 
-:command:`--rerun`
-  Retries all tasks. Other options (``--resume``, ``--from <+name>``) are not implemented yet.
+:command:`--all`
+  Retries all tasks.
+
+:command:`--from +NAME`
+  Resume execution from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.
 
 
 log

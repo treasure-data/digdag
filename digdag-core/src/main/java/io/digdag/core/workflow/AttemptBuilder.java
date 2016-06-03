@@ -34,7 +34,9 @@ public class AttemptBuilder
             StoredWorkflowDefinition def,
             Config overwriteParams,
             ScheduleTime time,
-            Optional<String> retryAttemptName)
+            Optional<String> retryAttemptName,
+            Optional<Long> resumingAttemptId,
+            List<Long> resumingTasks)
     {
         ZoneId timeZone = def.getTimeZone();
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
@@ -46,6 +48,8 @@ public class AttemptBuilder
             .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
             .sessionTime(time.getTime())
+            .resumingAttemptId(resumingAttemptId)
+            .resumingTasks(resumingTasks)
             .build();
     }
 
@@ -53,7 +57,9 @@ public class AttemptBuilder
             StoredWorkflowDefinitionWithProject def,
             Config overwriteParams,
             ScheduleTime time,
-            Optional<String> retryAttemptName)
+            Optional<String> retryAttemptName,
+            Optional<Long> resumingAttemptId,
+            List<Long> resumingTasks)
     {
         ZoneId timeZone = def.getTimeZone();
         Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
@@ -65,6 +71,8 @@ public class AttemptBuilder
             .sessionParams(sessionParams)
             .retryAttemptName(retryAttemptName)
             .sessionTime(time.getTime())
+            .resumingAttemptId(resumingAttemptId)
+            .resumingTasks(resumingTasks)
             .build();
     }
 

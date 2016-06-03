@@ -1,5 +1,6 @@
 package io.digdag.core.database;
 
+import java.util.AbstractMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -512,7 +513,7 @@ public class DatabaseSessionStoreManager
 
             {
                 List<ArchivedTask> tasks = handle.createQuery(
-                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                        "select t.*, td.full_name, td.local_config, td.export_config, td.resuming_task_id, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
                             "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
@@ -605,6 +606,39 @@ public class DatabaseSessionStoreManager
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
             return taskId;
+        }
+
+        @Override
+        public long addResumedSubtask(long attemptId, long parentId, long resumingTaskId)
+        {
+            long taskId = dao.insertResumedTask(attemptId, parentId, resumingTaskId);
+            dao.insertResumedTaskDetails(taskId, resumingTaskId);
+            dao.insertResumedTaskStateDetails(taskId, resumingTaskId);
+            return taskId;
+        }
+
+        @Override
+        public void addResumingTaskMap(long attemptId, Map<String, Long> fullNameToTaskIdMap)
+        {
+            for (Map.Entry<String, Long> pair : fullNameToTaskIdMap.entrySet()) {
+                dao.insertResumingTask(pair.getKey(), pair.getValue());
+            }
+        }
+
+        @Override
+        public Map<String, Long> getResumingTaskMapByPrefix(long attemptId, String fullNamePrefix)
+        {
+            List<? extends Map.Entry<String, Long>> pairs = handle.createQuery(
+                    "select full_name, task_id from resuming_tasks" +
+                    " where attempt_id = :attemptId" +
+                    " and full_name like :prefix")
+                .bind("attemptId", attemptId)
+                .bind("prefix", fullNamePrefix + '%')
+                .map((index, r, ctx) -> new AbstractMap.SimpleEntry<String, Long>(r.getString("full_name"), r.getLong("task_id")))
+                .list();
+            return pairs
+                .stream()
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
         }
 
         @Override
@@ -1018,7 +1052,7 @@ public class DatabaseSessionStoreManager
         {
             List<ArchivedTask> tasks = autoCommit((handle, dao) ->
                     handle.createQuery(
-                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                        "select t.*, td.full_name, td.local_config, td.export_config, td.resuming_task_id, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
                             "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
@@ -1338,7 +1372,6 @@ public class DatabaseSessionStoreManager
                 " values (:id, :fullName, :localConfig, :exportConfig)")
         void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("localConfig") Config localConfig, @Bind("exportConfig") Config exportConfig);
 
-        // TODO this should be optimized out by using TRIGGER that runs when a task is inserted
         @SqlUpdate("insert into task_state_details (id)" +
                 " values (:id)")
         void insertEmptyTaskStateDetails(@Bind("id") long id);
@@ -1346,6 +1379,27 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("insert into task_dependencies (upstream_id, downstream_id)" +
                 " values (:upstreamId, :downstreamId)")
         void insertTaskDependency(@Bind("downstreamId") long downstreamId, @Bind("upstreamId") long upstreamId);
+
+        @SqlUpdate("insert into tasks (attempt_id, parent_id, task_type, state, state_flags, updated_at)" +
+                " select :attemptId, :parentId, task_type, state, state_flags, updated_at" +
+                " from tasks where id = :resumingTaskId")
+        @GetGeneratedKeys
+        long insertResumedTask(@Bind("attemptId") long attemptId, @Bind("parentId") long parentId, @Bind("resumingTaskId") long resumingTaskId);
+
+        @SqlUpdate("insert into task_details (id, full_name, local_config, export_config, resuming_task_id)" +
+                " select :id, full_name, local_config, export_config, :resumingTaskId" +
+                " from task_details where id = :resumingTaskId")
+        void insertResumedTaskDetails(@Bind("id") long id, @Bind("resumingTaskId") long resumingTaskId);
+
+        @SqlUpdate(" insert into task_state_details (id, subtask_config, export_params, store_params, report, error)" +
+                " select :id, subtask_config, export_params, store_params, report, error" +
+                " from task_state_details where id = :resumingTaskId")
+        void insertResumedTaskStateDetails(@Bind("id") long id, @Bind("resumingTaskId") long resumingTaskId);
+
+        @SqlUpdate("insert into resuming_tasks (full_name, task_id)" +
+                " values (:fullName, :taskId)")
+        @GetGeneratedKeys
+        long insertResumingTask(@Bind("fullName") String fullName, @Bind("taskId") long taskId);
 
         @SqlQuery("select id, attempt_id, parent_id, state, updated_at " +
                 " from tasks " +
@@ -1684,6 +1738,7 @@ public class DatabaseSessionStoreManager
                 .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
                 .report(report)
                 .error(cfm.fromResultSetOrEmpty(r, "error"))
+                .resumingTaskId(getOptionalLong(r, "resuming_task_id"))
                 .build();
         }
     }

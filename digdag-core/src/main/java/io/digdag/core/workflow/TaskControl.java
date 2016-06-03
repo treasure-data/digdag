@@ -1,12 +1,19 @@
 package io.digdag.core.workflow;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import com.google.common.base.*;
+import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import io.digdag.core.Limits;
+import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.SessionStore;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
@@ -44,11 +51,14 @@ public class TaskControl
 
     public static long addInitialTasksExceptingRootTask(
             TaskControlStore store, long attemptId, long rootTaskId,
-            WorkflowTaskList tasks)
+            WorkflowTaskList tasks, Map<String, Long> resumingTaskMap)
     {
-        return addTasks(store, attemptId, rootTaskId,
+        long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
-                false, true, true);
+                false, true, true,
+                resumingTaskMap);
+        addResumingTaskMap(store, attemptId, resumingTaskMap);
+        return taskId;
     }
 
     public long addGeneratedSubtasks(WorkflowTaskList tasks,
@@ -56,12 +66,14 @@ public class TaskControl
     {
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
-                cancelSiblings, false, false);
+                cancelSiblings, false, false,
+                collectResumingTasks(task.getAttemptId(), tasks));
     }
 
     private static long addTasks(TaskControlStore store,
             long attemptId, long parentTaskId, WorkflowTaskList tasks, List<Long> rootUpstreamIds,
-            boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask)
+            boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask,
+            Map<String, Long> resumingTaskMap)
     {
         List<Long> indexToId = new ArrayList<>();
 
@@ -94,20 +106,26 @@ public class TaskControl
                 // TODO not implemented yet
             }
 
-            Task task = Task.taskBuilder()
-                .parentId(Optional.of(
-                            wt.getParentIndex()
-                                .transform(index -> indexToId.get(index))
-                                .or(parentTaskId)
-                            ))
-                .fullName(wt.getFullName())
-                .config(TaskConfig.validate(wt.getConfig()))
-                .taskType(wt.getTaskType())
-                .state(TaskStateCode.BLOCKED)
-                .stateFlags(isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty())
-                .build();
+            long parentId = wt.getParentIndex()
+                .transform(index -> indexToId.get(index))
+                .or(parentTaskId);
+            long id;
+            if (resumingTaskMap.containsKey(wt.getFullName())) {
+                id = store.addResumedSubtask(attemptId, parentId, resumingTaskMap.get(wt.getFullName()));
+            }
+            else {
+                Task task = Task.taskBuilder()
+                    .parentId(Optional.of(parentId))
+                    .fullName(wt.getFullName())
+                    .config(TaskConfig.validate(wt.getConfig()))
+                    .taskType(wt.getTaskType())
+                    .state(TaskStateCode.BLOCKED)
+                    .stateFlags(isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty())
+                    .build();
 
-            long id = store.addSubtask(attemptId, task);
+                id = store.addSubtask(attemptId, task);
+            }
+
             indexToId.add(id);
             if (!wt.getUpstreamIndexes().isEmpty()) {
                 store.addDependencies(
@@ -128,6 +146,55 @@ public class TaskControl
         }
 
         return rootTaskId;
+    }
+
+    private static void addResumingTaskMap(TaskControlStore store, long attemptId, Map<String, Long> resumingTaskMap)
+    {
+        Map<String, Long> filtered = resumingTaskMap.entrySet()
+            .stream()
+            .filter(e -> e.getKey().contains("^"))  // store only dynamically-generated tasks
+            .collect(Collectors.toMap(
+                        e -> e.getKey(),
+                        e -> e.getValue()));
+        if (!filtered.isEmpty()) {
+            store.addResumingTaskMap(attemptId, resumingTaskMap);
+        }
+    }
+
+    private Map<String, Long> collectResumingTasks(long attemptId, WorkflowTaskList tasks)
+    {
+        if (tasks.isEmpty()) {
+            return ImmutableMap.of();
+        }
+        String commonPrefix = tasks.stream()
+            .map(t -> t.getFullName())
+            .reduce(tasks.get(0).getFullName(), (name1, name2) -> Strings.commonPrefix(name1, name2));
+        return store.getResumingTaskMapByPrefix(attemptId, commonPrefix);
+    }
+
+    static Map<String, Long> buildResumingTaskMap(SessionStore store, long attemptId, List<Long> resumingTaskIds)
+            throws ResourceNotFoundException
+    {
+        Set<Long> idSet = new HashSet<>(resumingTaskIds);
+        Map<String, Long> resumingTaskMap = store
+            .getTasksOfAttempt(attemptId)
+            .stream()
+            .filter(archived -> {
+                if (idSet.remove(archived.getId())) {
+                    if (archived.getState() != TaskStateCode.SUCCESS) {
+                        throw new IllegalResumeException("Resuming non-successful tasks is not allowed: task_id=" + archived.getId());
+                    }
+                    return true;
+                }
+                return false;
+            })
+            .collect(Collectors.toMap(
+                        ArchivedTask::getFullName,
+                        ArchivedTask::getId));
+        if (!idSet.isEmpty()) {
+            throw new ResourceNotFoundException("Resuming tasks are not the members of resuming attempt: id list=" + idSet);
+        }
+        return resumingTaskMap;
     }
 
     ////
