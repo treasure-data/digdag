@@ -21,7 +21,7 @@ public class DatabaseModule
     public void configure(Binder binder)
     {
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DataSource.class).toProvider(PooledDataSourceProvider.class).in(Scopes.SINGLETON);
+        binder.bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(AutoMigrator.class);
         binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);

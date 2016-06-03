@@ -80,7 +80,7 @@ public class DatabaseTestingUtils
     public static DatabaseFactory setupDatabase()
     {
         DatabaseConfig config = getEnvironmentDatabaseConfig();
-        PooledDataSourceProvider dsp = new PooledDataSourceProvider(config);
+        DataSourceProvider dsp = new DataSourceProvider(config);
 
         DBI dbi = new DBI(dsp.get());
         new DatabaseMigrator(dbi, config).migrate();
