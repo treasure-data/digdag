@@ -112,7 +112,6 @@ public interface DatabaseConfig
     {
         switch (config.getType()) {
         case "h2":
-            // DB should be closed by @PreDestroy otherwise DB could be closed before other @PreDestroy methods that access to the DB
             if (config.getRemoteDatabaseConfig().isPresent()) {
                 throw new IllegalArgumentException("Database type is postgresql but remoteDatabaseConfig is not set unexpectedly");
             }
@@ -125,12 +124,12 @@ public interface DatabaseConfig
                     throw new ConfigException(ex);
                 }
                 return String.format(Locale.ENGLISH,
-                        "jdbc:h2:%s;DB_CLOSE_ON_EXIT=FALSE",
+                        "jdbc:h2:%s",
                         dir.resolve("digdag").toAbsolutePath().toString());  // h2 requires absolute path
             }
             else {
                 return String.format(Locale.ENGLISH,
-                        "jdbc:h2:mem:digdag-%s;DB_CLOSE_ON_EXIT=FALSE",
+                        "jdbc:h2:mem:digdag-%s",
                         UUID.randomUUID());
             }
 
