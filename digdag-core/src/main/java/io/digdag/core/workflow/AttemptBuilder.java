@@ -33,6 +33,17 @@ public class AttemptBuilder
             StoredRevision rev,
             StoredWorkflowDefinition def,
             Config overwriteParams,
+            ScheduleTime time)
+    {
+        return buildFromStoredWorkflow(
+                rev, def, overwriteParams, time,
+                Optional.absent(), Optional.absent(), ImmutableList.of());
+    }
+
+    public AttemptRequest buildFromStoredWorkflow(
+            StoredRevision rev,
+            StoredWorkflowDefinition def,
+            Config overwriteParams,
             ScheduleTime time,
             Optional<String> retryAttemptName,
             Optional<Long> resumingAttemptId,
@@ -51,6 +62,16 @@ public class AttemptBuilder
             .resumingAttemptId(resumingAttemptId)
             .resumingTasks(resumingTasks)
             .build();
+    }
+
+    public AttemptRequest buildFromStoredWorkflow(
+            StoredWorkflowDefinitionWithProject def,
+            Config overwriteParams,
+            ScheduleTime time)
+    {
+        return buildFromStoredWorkflow(
+                def, overwriteParams, time,
+                Optional.absent(), Optional.absent(), ImmutableList.of());
     }
 
     public AttemptRequest buildFromStoredWorkflow(

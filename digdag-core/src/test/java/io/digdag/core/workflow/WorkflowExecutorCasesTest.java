@@ -119,8 +119,7 @@ public class WorkflowExecutorCasesTest
                         stored.getRevision(),
                         def,
                         config.getFactory().create(),
-                        ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())),
-                        Optional.absent());
+                        ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
             StoredSessionAttemptWithSession attempt = localSite.submitWorkflow(ar, def);
             localSite.runUntilDone(attempt.getId());
         }

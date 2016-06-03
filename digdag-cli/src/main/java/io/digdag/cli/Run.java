@@ -470,10 +470,7 @@ public class Run
                 rev,
                 def,
                 overwriteParams,
-                ScheduleTime.runNow(sessionTime),
-                Optional.absent(),
-                Optional.absent(),
-                ImmutableList.of());
+                ScheduleTime.runNow(sessionTime));
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);
         logger.debug("Submitting {}", attempt);

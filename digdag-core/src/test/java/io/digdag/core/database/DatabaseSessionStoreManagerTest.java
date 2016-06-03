@@ -98,8 +98,7 @@ public class DatabaseSessionStoreManagerTest
                 otherProjRev,
                 otherProjWf1,
                 cf.create(),
-                ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())),
-                Optional.absent());
+                ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
         otherProjAttempt1 = exec.submitWorkflow(0, otherProjAr1, otherSrcWf1);
         otherProjSession1 = store.getSessionById(otherProjAttempt1.getSessionId());
     }
@@ -120,8 +119,7 @@ public class DatabaseSessionStoreManagerTest
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime1),
-                Optional.absent());
+                ScheduleTime.runNow(sessionTime1));
 
         exec.submitWorkflow(0, ar1, wf1);
 
@@ -239,8 +237,7 @@ public class DatabaseSessionStoreManagerTest
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime1),
-                Optional.absent());
+                ScheduleTime.runNow(sessionTime1));
         StoredSessionAttemptWithSession attempt1 = exec.submitWorkflow(0, ar1, def1);
         StoredSessionWithLastAttempt session1 = store.getSessionById(attempt1.getSessionId());
 
@@ -255,8 +252,7 @@ public class DatabaseSessionStoreManagerTest
                 rev,
                 wf1,
                 cf.create(),
-                ScheduleTime.runNow(sessionTime2),
-                Optional.absent());
+                ScheduleTime.runNow(sessionTime2));
         StoredSessionAttemptWithSession attempt2 = exec.submitWorkflow(0, ar2, def1);
         StoredSessionWithLastAttempt session2 = store.getSessionById(attempt2.getSessionId());
 
@@ -273,7 +269,9 @@ public class DatabaseSessionStoreManagerTest
                 wf1,
                 cf.create(),
                 ScheduleTime.runNow(sessionTime2),
-                Optional.of(retryAttemptName));
+                Optional.of(retryAttemptName),
+                Optional.absent(),
+                ImmutableList.of());
         StoredSessionAttemptWithSession attempt3 = exec.submitWorkflow(0, ar3, def1);
         StoredSessionWithLastAttempt session2AfterRetry = store.getSessionById(attempt2.getSessionId());
 
