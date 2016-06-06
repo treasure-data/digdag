@@ -1335,12 +1335,6 @@ export default class Console extends React.Component {
     super(props);
     const credentials = window.localStorage.getItem("digdag.credentials");
     if (credentials) {
-      // setupModel({
-      //   url: DIGDAG_CONFIG.url,
-      //   credentials: JSON.parse(credentials),
-      //   headers: DIGDAG_CONFIG.headers
-      // });
-
       this.setup(JSON.parse(credentials));
       this.state = {authenticated: true};
     } else {
@@ -1349,7 +1343,6 @@ export default class Console extends React.Component {
   }
 
   setup(credentials:Credentials) {
-    // console.log(credentials);
     setupModel({
       url: DIGDAG_CONFIG.url,
       credentials: credentials,
