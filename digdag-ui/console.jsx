@@ -354,11 +354,10 @@ class ProjectView extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.projectId;
-    const newId = this.props.projectId;
-    if (newId !== oldId) {
-      this.fetchProject()
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchProject()
   }
 
   fetchProject() {
@@ -634,11 +633,10 @@ class AttemptView extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId;
-    const newId = this.props.attemptId;
-    if (newId !== oldId) {
-      this.fetchAttempt()
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchAttempt()
   }
 
   fetchAttempt() {
@@ -820,11 +818,10 @@ class AttemptTasksView extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId;
-    const newId = this.props.attemptId;
-    if (newId !== oldId) {
-      this.fetchTasks()
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchTasks()
   }
 
   fetchTasks() {
@@ -864,12 +861,11 @@ class LogFileView extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps:{file: LogFileHandle}) {
-    const oldFileName = prevProps.file.fileName;
-    const newFileName = this.props.file.fileName;
-    if (newFileName !== oldFileName) {
-      this.fetchFile()
+  componentDidUpdate(prevProps) {
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchFile()
   }
 
   fetchFile() {
@@ -908,11 +904,10 @@ class AttemptLogsView extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const oldId = prevProps.attemptId;
-    const newId = this.props.attemptId;
-    if (newId !== oldId) {
-      this.fetchLogs()
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchLogs()
   }
 
   fetchLogs() {
@@ -1171,12 +1166,11 @@ class SessionPage extends React.Component {
     this.ignoreLastFetch = true;
   }
 
-  componentDidUpdate(prevProps:{params: {sessionId: string}}) {
-    const oldId = prevProps.params.sessionId;
-    const newId = this.props.params.sessionId;
-    if (newId !== oldId) {
-      this.fetchSession()
+  componentDidUpdate(prevProps) {
+    if (_.isEqual(prevProps, this.props)) {
+      return;
     }
+    this.fetchSession()
   }
 
   fetchSession() {
