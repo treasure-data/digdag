@@ -130,12 +130,15 @@ export class ProjectArchive {
   }
 
   getFileContents(name: string): ?Buffer {
-    console.log('getFileContents', name);
     const file = this.fileMap.get(name);
     if (!file) {
       return null;
     }
     return new Buffer(file.buffer);
+  }
+
+  hasFile(name: string): boolean {
+    return this.fileMap.has(name);
   }
 }
 

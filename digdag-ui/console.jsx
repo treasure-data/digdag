@@ -11,6 +11,7 @@ import React from 'react';
 import {Router, Link, Route, browserHistory} from 'react-router';
 import moment from 'moment';
 import pako from 'pako';
+import path from 'path';
 
 //noinspection ES6UnusedImports
 import Prism from 'prismjs';
@@ -531,13 +532,10 @@ type TaskFile = {
 function task(node:Object) {
   let command = '';
   let taskType = node['_type'] || '';
-  console.log('task', 1, node, 'command', command, 'taskType', taskType);
   if (taskType) {
     command = node['_command'];
-    console.log('task', 2, node, 'command', command, 'taskType', taskType);
   } else {
-    console.log('task', 3, node, 'command', command, 'taskType', taskType);
-    const operators = ['td', 'td_load', 'sh', 'rb', 'py'];
+    const operators = ['td', 'td_load', 'sh', 'rb', 'py', 'mail'];
     for (let operator of operators) {
       command = node[operator + '>'] || '';
       if (command) {
@@ -546,46 +544,49 @@ function task(node:Object) {
       }
     }
   }
-  console.log('task', 6, node, 'command', command, 'taskType', taskType);
   return {taskType, command};
 }
 
-function resolveTaskFile(taskType:string, command:string):?TaskFile {
+function resolveTaskFile(taskType:string, command:string, task:Object, projectArchive:ProjectArchive):?TaskFile {
+  // TODO: resolve paths relative from the workflow file
+  // TODO: make operators provide information about files used in a structured way instead of this hack
+  const filename = path.normalize(command);
+  if (!projectArchive.hasFile(filename)) {
+    return null;
+  }
   const fileTypes = {
     'td': 'sql',
     'td_load': 'yaml',
+    'sh': 'bash',
     'py': 'python',
-    'rb': 'ruby'
+    'rb': 'ruby',
+    'mail': task['html'] ? 'html' : 'txt',
   };
   const fileType = fileTypes[taskType];
   if (!fileType) {
     return null;
   }
-  return {taskType, name: command, fileType};
+  return {taskType, name: filename, fileType};
 }
 
-function enumerateTaskFiles(node:Object, files:Array<TaskFile>) {
-  console.log('enter enumerateTaskFiles', node, files);
+function enumerateTaskFiles(node:Object, files:Array<TaskFile>, projectArchive:ProjectArchive) {
   if (node.constructor == Object) {
-    console.log('enumerateTaskFiles: Object');
     let {taskType, command} = task(node);
-    console.log('enumerateTaskFiles', 'taskType', taskType, 'command', command);
-    const taskFile = resolveTaskFile(taskType, command);
+    const taskFile = resolveTaskFile(taskType, command, node, projectArchive);
     if (taskFile) {
       files.push(taskFile);
     } else {
       for (let key of Object.keys(node)) {
-        enumerateTaskFiles(node[key], files);
+        enumerateTaskFiles(node[key], files, projectArchive);
       }
     }
-
   }
-  console.log('exit enumerateTaskFiles', node, files);
 }
 
-function workflowFiles(workflow:Workflow):Array<TaskFile> {
+function workflowFiles(workflow:Workflow, projectArchive:ProjectArchive):Array<TaskFile> {
   const files = [];
-  enumerateTaskFiles(workflow.config, files);
+  enumerateTaskFiles(workflow.config, files, projectArchive);
+  console.log('workflowFiles', 'workflow', workflow, 'projectArchive', projectArchive, 'files', files);
   return files;
 }
 
@@ -607,11 +608,11 @@ const FileView = (props:{file: string, fileType: string, contents: string}) =>
   </div>;
 
 const WorkflowFilesView = (props:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
-  <div>
-    {workflowFiles(props.workflow).map(file =>
+  props.projectArchive ? <div>{
+    workflowFiles(props.workflow, props.projectArchive).map(file =>
       <FileView key={file.name} file={file.name} fileType={file.fileType}
-                contents={fileString(file.name, props.projectArchive)}/>)}
-  </div>;
+                contents={fileString(file.name, props.projectArchive)}/>)
+  }</div> : null;
 
 class AttemptView extends React.Component {
   ignoreLastFetch:boolean;
