@@ -19,6 +19,7 @@
     "js-yaml": "3.6.1",
     "json-loader": "0.5.4",
     "lodash-fp": "0.10.4",
+    "lru-cache": "4.0.1",
     "moment": "2.13.0",
     "pako": "1.0.1",
     "path": "0.12.7",

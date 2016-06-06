@@ -1,10 +1,9 @@
 // @flow
 
-// typecheck: ignore file
-
 import pako from 'pako';
 import untar from 'js-untar';
 import {Buffer} from 'buffer/';
+import LRU from 'lru-cache';
 
 export type Credentials = {[key: string]: string};
 export type Headers = {[key: string]: string};
@@ -152,9 +151,11 @@ export type ModelConfig = {
 
 export class Model {
   config: ModelConfig;
+  workflowCache: LRU;
 
   constructor(config: ModelConfig) {
     this.config = config;
+    this.workflowCache = LRU({ max: 10000 });
   }
 
   fetchProjects(): Promise<Array<Project>> {
@@ -166,8 +167,17 @@ export class Model {
   }
 
   fetchWorkflow(workflowId: number): Promise<Workflow> {
-    console.log('fetch workflow: ', workflowId);
-    return this.get(`workflows/${workflowId}`);
+    const id = workflowId.toString();
+    let workflow = this.workflowCache.get(id);
+    if (workflow) {
+      return workflow;
+    }
+    workflow = this.get(`workflows/${id}`);
+    this.workflowCache.set(id, workflow);
+    workflow.catch(error => {
+      this.workflowCache.delete(id);
+    });
+    return workflow;
   }
 
   fetchProjectWorkflows(projectId: number): Promise<Array<Workflow>> {
