@@ -25,13 +25,14 @@ public class OperatorRegistry
             PluginSet systemPlugins,
             DynamicPluginLoader.Builder dynamicLoaderBuilder)
     {
+        // built-in operators are built from...
         ImmutableMap.Builder<String, OperatorFactory> builder = ImmutableMap.builder();
 
-        // load operators from plugins
+        // operators loaded from system plugins,
         builder.putAll(buildTypeMap(systemPlugins.get(OperatorFactory.class)));
 
-        // get operators that are already loaded by Extension
-        // injectedOperators have higher priority
+        // and operators loaded by extensions through ServiceLoader and injector.
+        // Injected operators have higher priority.
         builder.putAll(buildTypeMap(injectedOperators));
 
         this.map = builder.build();
@@ -53,7 +54,7 @@ public class OperatorRegistry
     {
         Config params = request.getConfig()
             .mergeDefault(request.getConfig().getNestedOrGetEmpty("plugin"));
-        List<String> repositories = ImmutableList.of();
+        List<String> repositories = ImmutableList.of();  // dynamic plugin loading doesn't allow custom repositories (for now)
         List<String> dependencies = params.getList("dependencies", String.class);
         return Spec.of(repositories, dependencies);
     }
