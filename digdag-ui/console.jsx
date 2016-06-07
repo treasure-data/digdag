@@ -972,6 +972,11 @@ class Navbar extends React.Component {
     window.location = '/';
   }
 
+  brand() {
+    const navbar = DIGDAG_CONFIG.navbar;
+    return navbar ? navbar.brand : 'Digdag';
+  }
+
   logo() {
     const navbar = DIGDAG_CONFIG.navbar;
     return navbar && navbar.logo
@@ -1002,7 +1007,7 @@ class Navbar extends React.Component {
               <span className="icon-bar"></span>
             </button>
             {this.logo()}
-            <a className="navbar-brand" href="/">{DIGDAG_CONFIG.brand ? DIGDAG_CONFIG.brand : 'Digdag'}</a>
+            <a className="navbar-brand" href="/">{this.brand()}</a>
           </div>
           <div id="navbar" className="collapse navbar-collapse">
             <ul className="nav navbar-nav">
