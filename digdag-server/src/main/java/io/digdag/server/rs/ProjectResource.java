@@ -102,6 +102,17 @@ public class ProjectResource
         this.ssm = ssm;
     }
 
+    private static StoredProject ensureNotDeletedProject(StoredProject proj)
+        throws ResourceNotFoundException
+    {
+        if (proj.getDeletedAt().isPresent()) {
+            throw new ResourceNotFoundException(String.format(ENGLISH,
+                    "Project id=%d is already deleted at %s",
+                    proj.getId(), proj.getDeletedAt().get().toString()));
+        }
+        return proj;
+    }
+
     @GET
     @Path("/api/project")
     public RestProject getProject(@QueryParam("name") String name)
@@ -109,9 +120,9 @@ public class ProjectResource
     {
         Preconditions.checkArgument(name != null, "name= is required");
 
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectByName(name);
-        StoredRevision rev = rs.getLatestRevision(proj.getId());
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
+        StoredRevision rev = ps.getLatestRevision(proj.getId());
         return RestModels.project(proj, rev);
     }
 
@@ -120,12 +131,12 @@ public class ProjectResource
     public List<RestProject> getProjects(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
+        ProjectStore ps = rm.getProjectStore(getSiteId());
 
         if (name != null) {
             try {
-                StoredProject proj = rs.getProjectByName(name);
-                StoredRevision rev = rs.getLatestRevision(proj.getId());
+                StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
+                StoredRevision rev = ps.getLatestRevision(proj.getId());
                 return ImmutableList.of(RestModels.project(proj, rev));
             }
             catch (ResourceNotFoundException ex) {
@@ -134,11 +145,11 @@ public class ProjectResource
         }
         else {
             // TODO fix n-m db access
-            return rs.getProjects(100, Optional.absent())
+            return ps.getProjects(100, Optional.absent())
                 .stream()
                 .map(proj -> {
                     try {
-                        StoredRevision rev = rs.getLatestRevision(proj.getId());
+                        StoredRevision rev = ps.getLatestRevision(proj.getId());
                         return RestModels.project(proj, rev);
                     }
                     catch (ResourceNotFoundException ex) {
@@ -155,9 +166,9 @@ public class ProjectResource
     public RestProject getProject(@PathParam("id") int projId)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectById(projId);
-        StoredRevision rev = rs.getLatestRevision(proj.getId());
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+        StoredRevision rev = ps.getLatestRevision(proj.getId());
         return RestModels.project(proj, rev);
     }
 
@@ -166,9 +177,9 @@ public class ProjectResource
     public List<RestRevision> getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectById(projId);
-        List<StoredRevision> revs = rs.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
+        List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
         return revs.stream()
             .map(rev -> RestModels.revision(proj, rev))
             .collect(Collectors.toList());
@@ -181,17 +192,17 @@ public class ProjectResource
     {
         Preconditions.checkArgument(name != null, "name= is required");
 
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectById(projId);
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
 
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(proj.getId());
+            rev = ps.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(proj.getId(), revName);
+            rev = ps.getRevisionByName(proj.getId(), revName);
         }
-        StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
+        StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
 
         return RestModels.workflowDefinition(proj, rev, def);
     }
@@ -212,20 +223,20 @@ public class ProjectResource
             @QueryParam("name") String name)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectById(projId);
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
 
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(proj.getId());
+            rev = ps.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(proj.getId(), revName);
+            rev = ps.getRevisionByName(proj.getId(), revName);
         }
 
         if (name != null) {
             try {
-                StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), name);
+                StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
                 return ImmutableList.of(RestModels.workflowDefinition(proj, rev, def));
             }
             catch (ResourceNotFoundException ex) {
@@ -234,7 +245,7 @@ public class ProjectResource
         }
         else {
             // TODO should here support pagination?
-            List<StoredWorkflowDefinition> defs = rs.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
+            List<StoredWorkflowDefinition> defs = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
 
             return defs.stream()
                 .map(def -> RestModels.workflowDefinition(proj, rev, def))
@@ -250,14 +261,16 @@ public class ProjectResource
             @QueryParam("last_id") Long lastId)
         throws ResourceNotFoundException
     {
-        SessionStore ss = ssm.getSessionStore(getSiteId());
         ProjectStore ps = rm.getProjectStore(getSiteId());
+        SessionStore ss = ssm.getSessionStore(getSiteId());
+
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projectId));
 
         List<StoredSessionWithLastAttempt> sessions;
         if (workflowName != null) {
-            sessions = ss.getSessionsOfWorkflowByName(projectId, workflowName, 100, Optional.fromNullable(lastId));
+            sessions = ss.getSessionsOfWorkflowByName(proj.getId(), workflowName, 100, Optional.fromNullable(lastId));
         } else {
-            sessions = ss.getSessionsOfProject(projectId, 100, Optional.fromNullable(lastId));
+            sessions = ss.getSessionsOfProject(proj.getId(), 100, Optional.fromNullable(lastId));
         }
 
         return sessionModels(ps, sessions);
@@ -269,16 +282,16 @@ public class ProjectResource
     public byte[] getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        StoredProject proj = rs.getProjectById(projId);
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
         StoredRevision rev;
         if (revName == null) {
-            rev = rs.getLatestRevision(proj.getId());
+            rev = ps.getLatestRevision(proj.getId());
         }
         else {
-            rev = rs.getRevisionByName(proj.getId(), revName);
+            rev = ps.getRevisionByName(proj.getId(), revName);
         }
-        return rs.getRevisionArchiveData(rev.getId());
+        return ps.getRevisionArchiveData(rev.getId());
     }
 
     @DELETE
@@ -286,9 +299,9 @@ public class ProjectResource
     public RestProject deleteProject(@PathParam("id") int projId)
         throws ResourceNotFoundException
     {
-        ProjectStore rs = rm.getProjectStore(getSiteId());
-        return ProjectControl.deleteProject(rs, projId, (control, proj) -> {
-            StoredRevision rev = rs.getLatestRevision(proj.getId());
+        ProjectStore ps = rm.getProjectStore(getSiteId());
+        return ProjectControl.deleteProject(ps, projId, (control, proj) -> {
+            StoredRevision rev = ps.getLatestRevision(proj.getId());
             return RestModels.project(proj, rev);
         });
     }
