@@ -56,9 +56,6 @@ public class Push
         if (args.size() != 1) {
             throw usage(null);
         }
-        if (revision == null) {
-            throw usage("-r, --revision option is required");
-        }
         push(args.get(0));
     }
 
@@ -67,7 +64,7 @@ public class Push
         err.println("Usage: digdag push <project> -r <revision>");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -r, --revision REVISION          revision name");
+        err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         //err.println("        --time-revision              use current time as the revision name");
@@ -108,6 +105,9 @@ public class Push
         injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overwriteParams);
 
         DigdagClient client = buildClient();
+        if (revision == null) {
+            revision = Upload.generateDefaultRevisionName();
+        }
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
         showUploadedProject(out, proj);
     }

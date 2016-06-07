@@ -584,15 +584,12 @@ push
 
     $ digdag push <project> [options...]
 
-Creates a project archive and upload it to the server. This command reads list of files to add this archive from STDIN. Examples:
+Creates a project archive and upload it to the server. This command uploads workflow definition files (files with .dig suffix) at the current directory, and all other files from the current directory recursively. Examples:
 
 .. code-block:: console
 
-    $ git ls-files | digdag push myproj -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
-    $ find . | digdag push default -r "$(git show --pretty=format:'%T' | head -n 1)"
-
-STDIN
-  Names of the files to add the archive.
+    $ digdag push myproj -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
+    $ digdag push default -r "$(git show --pretty=format:'%T' | head -n 1)"
 
 :command:`---project DIR`
   Use this directory as the project directory (default: current directory).
@@ -600,9 +597,9 @@ STDIN
   Example: --project workflow/
 
 :command:`-r, --revision REVISION`
-  Name of the revision (required)
+  Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git's SHA1 hash (``git show --pretty=format:'%T' | head -n 1``) or timestamp (``date +%Y-%m-%dT%H:%M:%S%z``).
 
-  Example: -r 2016-03-02T13:41:39-0800
+  Example: -r f40172ebc58f58087b6132085982147efa9e81fb
 
 
 Common options

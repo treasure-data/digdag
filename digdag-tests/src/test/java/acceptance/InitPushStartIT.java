@@ -62,16 +62,30 @@ public class InitPushStartIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
 
+        copyResource("acceptance/basic.dig", projectDir.resolve("dummy.dig"));
+
+        // Push should work without -r
+        {
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
         copyResource("acceptance/basic.dig", projectDir.resolve("foobar.dig"));
 
-        // Push the project
-        CommandStatus pushStatus = main("push",
-                "--project", projectDir.toString(),
-                "foobar",
-                "-c", config.toString(),
-                "-e", server.endpoint(),
-                "-r", "4711");
-        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        // Push the project and the later push should be the latest revision
+        {
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "-r", "4711");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
 
         // Verify that the project is there
         RestProject project = client.getProject("foobar");
