@@ -19,7 +19,7 @@ public class PluginSetProvider
 
     @Inject
     public PluginSetProvider(
-            PluginFactorySet factories,
+            PluginSetFactory factory,
             CommandExecutor commandExecutor,
             TemplateEngine templateEngine,
             ConfigFactory cf,
@@ -34,7 +34,7 @@ public class PluginSetProvider
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,
                 ImmutableList.of(mod));
-        this.plugins = factories.create(injector);
+        this.plugins = factory.create(injector);
     }
 
     @Override

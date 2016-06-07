@@ -7,16 +7,16 @@ import com.google.inject.Injector;
 import io.digdag.spi.Plugin;
 import io.digdag.spi.PluginFactory;
 
-public class PluginFactorySet
+public class PluginSetFactory
 {
-    public static PluginFactorySet empty()
+    public static PluginSetFactory empty()
     {
-        return new PluginFactorySet(ImmutableList.of());
+        return new PluginSetFactory(ImmutableList.of());
     }
 
     private final List<PluginFactory> plugins;
 
-    public PluginFactorySet(Collection<? extends PluginFactory> plugins)
+    public PluginSetFactory(Collection<? extends PluginFactory> plugins)
     {
         this.plugins = ImmutableList.copyOf(plugins);
     }

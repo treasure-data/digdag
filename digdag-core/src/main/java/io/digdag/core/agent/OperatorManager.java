@@ -252,7 +252,7 @@ public class OperatorManager
 
     protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
     {
-        OperatorFactory factory = registry.get(type);
+        OperatorFactory factory = registry.get(mergedRequest ,type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }

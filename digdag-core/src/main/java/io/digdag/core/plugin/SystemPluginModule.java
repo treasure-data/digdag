@@ -1,6 +1,5 @@
 package io.digdag.core.plugin;
 
-import java.util.List;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import io.digdag.spi.Plugin;
@@ -8,17 +7,17 @@ import io.digdag.spi.Plugin;
 public class SystemPluginModule
         implements Module
 {
-    private final PluginFactorySet factories;
+    private final PluginSetFactory factory;
 
-    public SystemPluginModule(PluginFactorySet factories)
+    public SystemPluginModule(PluginSetFactory factory)
     {
-        this.factories = factories;
+        this.factory = factory;
     }
 
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(PluginFactorySet.class).toInstance(factories);
+        binder.bind(PluginSetFactory.class).toInstance(factory);
         binder.bind(PluginSet.class).toProvider(PluginSetProvider.class);
     }
 }

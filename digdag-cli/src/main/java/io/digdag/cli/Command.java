@@ -16,8 +16,8 @@ import java.io.FileNotFoundException;
 import com.google.common.collect.ImmutableList;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.plugin.Spec;
-import io.digdag.core.plugin.PluginFactorySet;
-import io.digdag.core.plugin.PluginLoader;
+import io.digdag.core.plugin.PluginSetFactory;
+import io.digdag.core.plugin.RemotePluginLoader;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import org.slf4j.Logger;
@@ -83,12 +83,12 @@ public abstract class Command
         return props;
     }
 
-    protected PluginFactorySet loadSystemPlugins(Properties systemProps)
+    protected PluginSetFactory loadSystemPlugins(Properties systemProps)
     {
         Spec spec = Spec.of(
-                ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "plugin.repositories").values()),
-                ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "plugin.dependencies").values()));
-        String localPath = systemProps.getProperty("plugin.local-path", "");
+                ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "system-plugin.repositories").values()),
+                ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "system-plugin.dependencies").values()));
+        String localPath = systemProps.getProperty("system-plugin.local-path", "");
         Path localRepositoryPath;
         if (localPath.equals("")) {
             localRepositoryPath = ConfigUtil.defaultLocalPluginPath();
@@ -96,6 +96,6 @@ public abstract class Command
         else {
             localRepositoryPath = Paths.get(localPath);
         }
-        return new PluginLoader(localRepositoryPath).load(spec);
+        return new RemotePluginLoader(localRepositoryPath).load(spec);
     }
 }

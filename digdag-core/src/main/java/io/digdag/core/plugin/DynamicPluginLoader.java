@@ -6,11 +6,31 @@ import java.util.concurrent.ExecutionException;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import io.digdag.spi.Plugin;
 
 public class DynamicPluginLoader<R>
 {
+    public static class Builder
+    {
+        private final PluginLoader pluginLoader;
+        private final Injector injector;
+
+        @Inject
+        public Builder(PluginLoader pluginLoader, Injector injector)
+        {
+            this.pluginLoader = pluginLoader;
+            this.injector = injector;
+        }
+
+        public <R> DynamicPluginLoader<R> build(int maxCacheSize, Function<PluginSet, R> cacheBuilder)
+        {
+            return new DynamicPluginLoader<R>(pluginLoader, injector,
+                    maxCacheSize, cacheBuilder);
+        }
+    }
+
     private final PluginLoader loader;
     private final Injector injector;
     private final Function<PluginSet, R> cacheBuilder;
@@ -28,7 +48,7 @@ public class DynamicPluginLoader<R>
             .build();
     }
 
-    public R get(Spec spec)
+    public R load(Spec spec)
     {
         try {
             return cache.get(spec, () -> loadCache(spec));
