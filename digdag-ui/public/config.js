@@ -1,6 +1,13 @@
 var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
-  brand: '',
+  navbar: {
+    logo: 'logo.png',
+    brand: 'Digdag',
+    className: 'navbar-inverse',
+    style: {
+      backgroundColor: '#2B353F',
+    },
+  },
   auth: {
     title: 'Authentication',
     items: [

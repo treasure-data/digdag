@@ -54,7 +54,11 @@ type AuthItem = {
 
 type ConsoleConfig = {
   url: string;
-  brand: string;
+  navbar: ?{
+    brand: ?string;
+    logo: ?string;
+    style: ?Object;
+  };
   auth: {
     title: string;
     items: Array<AuthItem>;
@@ -968,9 +972,26 @@ class Navbar extends React.Component {
     window.location = '/';
   }
 
+  logo() {
+    const navbar = DIGDAG_CONFIG.navbar;
+    return navbar && navbar.logo
+      ? <a className="navbar-brand" href="/" style={{marginTop: '-7px'}}><img src={navbar.logo} width="36" height="36"></img></a>
+      : null;
+  }
+
+  className() {
+    const navbar = DIGDAG_CONFIG.navbar;
+    return navbar && navbar.className ? navbar.className : 'navbar-inverse';
+  }
+
+  style() {
+    const navbar = DIGDAG_CONFIG.navbar;
+    return navbar && navbar.style ? navbar.style : {};
+  }
+
   render() {
     return (
-      <nav className="navbar navbar-inverse navbar-fixed-top">
+      <nav className={`navbar ${this.className()} navbar-fixed-top`} style={this.style()}>
         <div className="container-fluid">
           <div className="navbar-header">
             <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
@@ -980,6 +1001,7 @@ class Navbar extends React.Component {
               <span className="icon-bar"></span>
               <span className="icon-bar"></span>
             </button>
+            {this.logo()}
             <a className="navbar-brand" href="/">{DIGDAG_CONFIG.brand ? DIGDAG_CONFIG.brand : 'Digdag'}</a>
           </div>
           <div id="navbar" className="collapse navbar-collapse">
@@ -994,7 +1016,7 @@ class Navbar extends React.Component {
           </div>
         </div>
       </nav>
-    )
+    );
   }
 }
 
