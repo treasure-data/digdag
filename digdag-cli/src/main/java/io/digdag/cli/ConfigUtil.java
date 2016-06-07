@@ -10,6 +10,11 @@ class ConfigUtil
         return configHome().resolve("digdag").resolve("config");
     }
 
+    static Path defaultLocalPluginPath()
+    {
+        return configHome().resolve("digdag").resolve("plugins");
+    }
+
     private static Path configHome()
     {
         String configHome = System.getenv("XDG_CONFIG_HOME");

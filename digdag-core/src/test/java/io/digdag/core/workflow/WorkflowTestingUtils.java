@@ -1,7 +1,9 @@
 package io.digdag.core.workflow;
 
+import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
+import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.core.DigdagEmbed;
@@ -18,6 +20,8 @@ public class WorkflowTestingUtils
         DigdagEmbed embed = new DigdagEmbed.Bootstrap()
             .withExtensionLoader(false)
             .addModules((binder) -> {
+                binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
+
                 Multibinder<SchedulerFactory> schedulerFactoryBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);
 
                 Multibinder<OperatorFactory> operatorFactoryBinder = Multibinder.newSetBinder(binder, OperatorFactory.class);

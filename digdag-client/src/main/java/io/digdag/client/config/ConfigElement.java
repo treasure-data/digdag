@@ -86,30 +86,22 @@ public class ConfigElement
         return new Config(factory.objectMapper, object.deepCopy());
     }
 
-    //public Properties toProperties()
-    //{
-    //    Properties props = new Properties();
-    //    setToPropertiesRecursive(props, "", object);
-    //    return props;
-    //}
-
-    //private static void setToPropertiesRecursive(Properties props, String keyPrefix, ObjectNode object)
-    //{
-    //    Iterator<Map.Entry<String, JsonNode>> ite = object.fields();
-    //    while (ite.hasNext()) {
-    //        Map.Entry<String, JsonNode> pair = ite.next();
-    //        JsonNode value = pair.getValue();
-    //        if (value.isObject()) {
-    //            setToPropertiesRecursive(props, keyPrefix + pair.getKey() + ".", (ObjectNode) value);
-    //        }
-    //        else if (value.isTextual()) {
-    //            props.put(keyPrefix + pair.getKey(), value.asText());
-    //        }
-    //        else {
-    //            props.put(keyPrefix + pair.getKey(), value.toString());
-    //        }
-    //    }
-    //}
+    public Properties toProperties()
+    {
+        Properties props = new Properties();
+        Iterator<Map.Entry<String, JsonNode>> ite = object.fields();
+        while (ite.hasNext()) {
+            Map.Entry<String, JsonNode> pair = ite.next();
+            JsonNode value = pair.getValue();
+            if (value.isTextual()) {
+                props.put(pair.getKey(), value.asText());
+            }
+            else {
+                props.put(pair.getKey(), value.toString());
+            }
+        }
+        return props;
+    }
 
     @JsonValue
     @Deprecated  // this method is only for ObjectMapper

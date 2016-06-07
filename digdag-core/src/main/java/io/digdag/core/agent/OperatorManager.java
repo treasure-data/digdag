@@ -44,7 +44,7 @@ public class OperatorManager
     private final WorkflowCompiler compiler;
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
-    private final Map<String, OperatorFactory> executorTypes;
+    private final OperatorRegistry registry;
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
@@ -53,7 +53,7 @@ public class OperatorManager
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
-            ConfigEvalEngine evalEngine, Set<OperatorFactory> factories)
+            ConfigEvalEngine evalEngine, OperatorRegistry registry)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -63,11 +63,7 @@ public class OperatorManager
         this.cf = cf;
         this.evalEngine = evalEngine;
 
-        ImmutableMap.Builder<String, OperatorFactory> builder = ImmutableMap.builder();
-        for (OperatorFactory factory : factories) {
-            builder.put(factory.getType(), factory);
-        }
-        this.executorTypes = builder.build();
+        this.registry = registry;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -256,13 +252,13 @@ public class OperatorManager
 
     protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
     {
-        OperatorFactory factory = executorTypes.get(type);
+        OperatorFactory factory = registry.get(type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
-        Operator executor = factory.newTaskExecutor(workspacePath, mergedRequest);
+        Operator operator = factory.newTaskExecutor(workspacePath, mergedRequest);
 
-        return executor.run();
+        return operator.run();
     }
 
     private void heartbeat()
