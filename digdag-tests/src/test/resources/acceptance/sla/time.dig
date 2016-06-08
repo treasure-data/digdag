@@ -1,0 +1,9 @@
+timezone: UTC
+
+sla:
+  time: $TIME
+  +notice:
+    sh>: echo "Workflow timed out!"
+
++sleep:
+  sh>: "sleep 30"
