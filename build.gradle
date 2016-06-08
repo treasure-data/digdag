@@ -150,7 +150,7 @@ project(':digdag-cli') {
                        'Specification-Version': project.version,
                        'Main-Class': 'io.digdag.cli.Main'
         }
-        //include "${rootProject.projectDir}/COPYING"
+        include "${rootProject.projectDir}/LICENSE"
         exclude 'io/digdag/**/*.java'
         dependencies {
             exclude(dependency("org.immutables:value"))
