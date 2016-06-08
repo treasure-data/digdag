@@ -1074,6 +1074,7 @@ public class WorkflowExecutor
         switch (type) {
             case "sla":
                 taskConfig.remove("time");
+                taskConfig.remove("duration");
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported monitor task type: " + type);

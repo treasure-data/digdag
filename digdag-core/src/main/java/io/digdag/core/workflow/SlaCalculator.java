@@ -1,5 +1,6 @@
 package io.digdag.core.workflow;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Date;
 import java.util.TimeZone;
@@ -7,6 +8,8 @@ import java.util.Calendar;
 import java.time.ZoneId;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -20,14 +23,23 @@ public class SlaCalculator
 
     public Instant getTriggerTime(Config slaConfig, Instant currentTime, ZoneId timeZone)
     {
-        TimeCalculator calc = getCalculator(slaConfig);
+        TriggerCalculator calc = getCalculator(slaConfig);
         return calc.calculateTime(currentTime, timeZone);
     }
 
-    private TimeCalculator getCalculator(Config slaConfig)
+    private TriggerCalculator getCalculator(Config slaConfig)
     {
-        String time = slaConfig.get("time", String.class);
-        String[] fragments = time.split(":");
+        Optional<String> time = slaConfig.getOptional("time", String.class);
+        Optional<String> duration = slaConfig.getOptional("duration", String.class);
+
+        if (time.isPresent() == duration.isPresent()) {
+            throw new ConfigException("SLA must be specified using either the 'time' or 'duration' option");
+        }
+
+        String option = time.isPresent() ? "time" : "duration";
+        String value = time.isPresent() ? time.get() : duration.get();
+
+        String[] fragments = value.split(":");
 
         Integer hour;
         Integer minute;
@@ -45,17 +57,25 @@ public class SlaCalculator
                 second = 0;
                 break;
             default:
-                throw new ConfigException("SLA time option needs to be HH:MM or HH:MM:SS format: " + time);
+                throw new ConfigException("SLA " + option + " option needs to be HH:MM or HH:MM:SS format: " + time);
             }
         }
         catch (NumberFormatException ex) {
-            throw new ConfigException("SLA time option needs to be HH:MM or HH:MM:SS format: " + time);
+            throw new ConfigException("SLA " + option + " option needs to be HH:MM or HH:MM:SS format: " + time);
         }
 
-        return new TimeCalculator(hour, minute, second);
+        if (time.isPresent()) {
+            return new TimeCalculator(hour, minute, second);
+        } else {
+            return new DurationCalculator(hour, minute, second);
+        }
     }
 
-    static class TimeCalculator
+    private interface TriggerCalculator {
+        Instant calculateTime(Instant time, ZoneId timeZone);
+    }
+
+    private static class TimeCalculator implements TriggerCalculator
     {
         private final Integer hour;
         private final Integer minute;
@@ -68,6 +88,7 @@ public class SlaCalculator
             this.second = second;
         }
 
+        @Override
         public Instant calculateTime(Instant time, ZoneId timeZone)
         {
             Calendar cal = Calendar.getInstance(TimeZone.getTimeZone(timeZone), ENGLISH);
@@ -91,6 +112,29 @@ public class SlaCalculator
             }
 
             return result;
+        }
+    }
+
+    private static class DurationCalculator implements TriggerCalculator
+    {
+
+        private final Integer hour;
+        private final Integer minute;
+        private final Integer second;
+
+        private DurationCalculator(Integer hour, Integer minute, Integer second)
+        {
+            this.hour = hour;
+            this.minute = minute;
+            this.second = second;
+        }
+
+        @Override
+        public Instant calculateTime(Instant time, ZoneId timeZone)
+        {
+            Duration duration = Duration.ofHours(hour).plusMinutes(minute).plusSeconds(second);
+            Instant deadline = time.plus(duration);
+            return deadline;
         }
     }
 }
