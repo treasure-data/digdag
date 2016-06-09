@@ -1,0 +1,4 @@
+timezone: UTC
+
++fail:
+  sh>: exit 1

@@ -1,44 +1,66 @@
 package io.digdag.core.workflow;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.function.Function;
-import java.time.format.DateTimeFormatter;
-import java.util.stream.Collectors;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
-import java.util.function.BooleanSupplier;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
-import io.digdag.core.session.*;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.session.ResumingTask;
+import io.digdag.core.session.Session;
+import io.digdag.core.session.SessionAttempt;
+import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionAttempt;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.StoredTask;
+import io.digdag.core.session.Task;
+import io.digdag.core.session.TaskAttemptSummary;
+import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.session.TaskStateFlags;
+import io.digdag.core.session.TaskStateSummary;
+import io.digdag.spi.Notification;
+import io.digdag.spi.NotificationException;
+import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.RetryControl;
-import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.repository.ProjectStoreManager;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.core.repository.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import static java.util.Locale.ENGLISH;
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static java.util.Locale.ENGLISH;
 
 /**
  * State transitions.
@@ -131,6 +153,7 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
+    private Notifier notifier;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -144,7 +167,8 @@ public class WorkflowExecutor
             WorkflowCompiler compiler,
             ConfigFactory cf,
             ObjectMapper archiveMapper,
-            Config systemConfig)
+            Config systemConfig,
+            Notifier notifier)
     {
         this.rm = rm;
         this.sm = sm;
@@ -153,6 +177,7 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
+        this.notifier = notifier;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -587,6 +612,17 @@ public class WorkflowExecutor
                 tasks
                 .stream()
                 .map(task -> {
+                    if (task.getState().isError()) {
+                        try {
+                            notifySessionAttemptError(task);
+                        }
+                        catch (NotificationException e) {
+                            // Skip this session. It will be retried later;
+                            logger.error("Failed to send session attempt error notification. Retrying later.", e);
+                            // TODO: return true or false here? Nobody seems to be using this return value so it is unclear what the semantics are. Maybe it should be removed.
+                            return false;
+                        }
+                    }
                     return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
                         SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
                         control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
@@ -597,6 +633,37 @@ public class WorkflowExecutor
             lastTaskId = tasks.get(tasks.size() - 1).getId();
         }
         return anyChanged;
+    }
+
+    private void notifySessionAttemptError(TaskAttemptSummary task)
+            throws NotificationException
+    {
+        StoredSessionAttemptWithSession attempt;
+        StoredWorkflowDefinitionWithProject workflow;
+
+        try {
+            attempt = sm.getAttemptWithSessionById(task.getAttemptId());
+            workflow = rm.getWorkflowDetailsById(attempt.getWorkflowDefinitionId().get());
+        }
+        catch (ResourceNotFoundException e) {
+            // This is unexpected. It should not be possible for an attempt or workflow to not exist while the task attempt exists.
+            throw new IllegalStateException(e);
+        }
+
+        Notification notification = Notification.builder(Instant.now(), "Workflow session attempt failed")
+                .siteId(attempt.getSiteId())
+                .projectName(workflow.getProject().getName())
+                .projectId(workflow.getProject().getId())
+                .workflowName(workflow.getName())
+                .revision(workflow.getRevisionName())
+                .attemptId(attempt.getId())
+                .sessionId(attempt.getSessionId())
+                .timeZone(attempt.getTimeZone())
+                .sessionUuid(attempt.getSessionUuid())
+                .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
+                .build();
+
+        notifier.sendNotification(notification);
     }
 
     private class IncrementalStatusPropagator
@@ -725,7 +792,7 @@ public class WorkflowExecutor
         //            enqueueTask(dispatcher, taskId);
         //        }
         //        catch (Throwable t) {
-        //            logger.error("Uncaught exception during enquing a task request. This enqueue attempt will be retried", t);
+        //            logger.error("Uncaught exception during enqueuing a task request. This enqueue attempt will be retried", t);
         //        }
         //        finally {
         //            waiting.remove(taskId);
@@ -763,7 +830,7 @@ public class WorkflowExecutor
             }
             catch (ResourceNotFoundException ex) {
                 Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
-                logger.error("Database state error enquing task.", error);
+                logger.error("Database state error enqueuing task.", error);
                 return false;
             }
 
@@ -774,9 +841,19 @@ public class WorkflowExecutor
                 }
                 catch (ResourceNotFoundException ex) {
                     Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated workflow definition does not exist.", ex);
-                    logger.error("Database state error enquing task.", error);
+                    logger.error("Database state error enqueuing task.", error);
                     return false;
                 }
+            }
+
+            StoredProject project;
+            try {
+                project = rm.getProjectByIdInternal(attempt.getSession().getProjectId());
+            }
+            catch (ResourceNotFoundException ex) {
+                Exception error = new IllegalStateException("Task id=" + taskId + " is ready to run but associated project does not exist.", ex);
+                logger.error("Database state error enqueuing task.", error);
+                return false;
             }
 
             try {
@@ -806,6 +883,7 @@ public class WorkflowExecutor
                 TaskRequest request = TaskRequest.builder()
                     .siteId(attempt.getSiteId())
                     .projectId(attempt.getSession().getProjectId())
+                    .projectName(project.getName())
                     .workflowName(attempt.getSession().getWorkflowName())
                     .revision(rev.transform(it -> it.getName()))
                     .taskId(task.getId())
@@ -1091,6 +1169,7 @@ public class WorkflowExecutor
             case "sla":
                 taskConfig.remove("time");
                 taskConfig.remove("duration");
+                addSlaMonitorTasks(lockedTask, type, taskConfig);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported monitor task type: " + type);
@@ -1104,5 +1183,47 @@ public class WorkflowExecutor
         logger.trace("Adding {} tasks: {}", type, tasks);
         long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
         return Optional.of(rootTaskId);
+    }
+
+    private void addSlaMonitorTasks(TaskControl lockedTask, String type, Config taskConfig)
+    {
+        // TODO: validate sla configuration parameters ahead of time instead of potentially failing at runtime
+
+        // Send an alert?
+        boolean alert = true;
+        try {
+            alert = taskConfig.get("alert", boolean.class, true);
+        }
+        catch (ConfigException e) {
+            logger.warn("sla configuration error: ", e);
+        }
+        taskConfig.remove("alert");
+        if (alert) {
+            Config config = cf.create();
+            config.set("_type", "notify");
+            config.set("_command", "SLA violation");
+            WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^alert", config);
+            logger.trace("Adding {} tasks: {}", type, tasks);
+            // TODO: attempt should not fail if the alert notification task fails
+            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        }
+
+        // Fail the attempt?
+        boolean fail = false;
+        try {
+            fail = taskConfig.get("fail", boolean.class, false);
+        }
+        catch (ConfigException e) {
+            logger.warn("sla configuration error: ", e);
+        }
+        taskConfig.remove("fail");
+        if (fail) {
+            Config config = cf.create();
+            config.set("_type", "fail");
+            config.set("_command", "SLA violation");
+            WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^fail", config);
+            logger.trace("Adding {} tasks: {}", type, tasks);
+            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        }
     }
 }

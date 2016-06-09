@@ -1,18 +1,21 @@
 package io.digdag.core.database;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
-import org.skife.jdbi.v2.DBI;
+import io.digdag.core.agent.AgentId;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.agent.AgentId;
+import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskRequest;
-import static io.digdag.core.database.DatabaseTestingUtils.*;
+import org.skife.jdbi.v2.DBI;
+
 import static io.digdag.client.DigdagClient.objectMapper;
+import static io.digdag.core.database.DatabaseTestingUtils.createConfigFactory;
+import static io.digdag.core.database.DatabaseTestingUtils.createConfigMapper;
+import static org.mockito.Mockito.mock;
 
 public class DatabaseFactory
         implements AutoCloseable, Provider<DBI>
@@ -58,7 +61,8 @@ public class DatabaseFactory
                 new WorkflowCompiler(),
                 configFactory,
                 objectMapper(),
-                configFactory.create());
+                configFactory.create(),
+                mock(Notifier.class));
     }
 
     public static class NullTaskQueueDispatcher

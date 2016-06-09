@@ -15,8 +15,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.ProcessingException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +39,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class TemporaryDigdagServer
         implements TestRule
@@ -53,6 +58,9 @@ public class TemporaryDigdagServer
 
     private final ExecutorService executor;
     private final String configuration;
+
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
 
     private Path configDirectory;
     private Path config;
@@ -126,9 +134,10 @@ public class TemporaryDigdagServer
                 extraArgs.stream())
                 .collect(toList());
 
-        executor.execute(() -> main(version, args));
+        executor.execute(() -> main(version, args, out, err));
 
         // Poll and wait for server to come up
+        boolean up = false;
         for (int i = 0; i < 30; i++) {
             DigdagClient client = DigdagClient.builder()
                     .host(host)
@@ -136,6 +145,7 @@ public class TemporaryDigdagServer
                     .build();
             try {
                 client.getProjects();
+                up = true;
                 break;
             }
             catch (ProcessingException e) {
@@ -144,6 +154,11 @@ public class TemporaryDigdagServer
             }
             Thread.sleep(1000);
         }
+
+        if (!up) {
+            fail("Server failed to come up.\nout:\n" + out.toString("UTF-8") + "\nerr:\n" + err.toString("UTF-8"));
+        }
+
     }
 
     private void after()
@@ -169,6 +184,26 @@ public class TemporaryDigdagServer
     public int port()
     {
         return port;
+    }
+
+    public String out(Charset charset)
+    {
+        return charset.decode(ByteBuffer.wrap(out.toByteArray())).toString();
+    }
+
+    public String err(Charset charset)
+    {
+        return charset.decode(ByteBuffer.wrap(err.toByteArray())).toString();
+    }
+
+    public String outUtf8()
+    {
+        return out(StandardCharsets.UTF_8);
+    }
+
+    public String errUtf8()
+    {
+        return err(StandardCharsets.UTF_8);
     }
 
     public static TemporaryDigdagServer of()

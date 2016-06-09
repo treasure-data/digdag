@@ -18,6 +18,8 @@ public abstract class TaskRequest
 
     public abstract int getProjectId();
 
+    public abstract Optional<String> getProjectName();
+
     public abstract String getWorkflowName();
 
     public abstract Optional<String> getRevision();

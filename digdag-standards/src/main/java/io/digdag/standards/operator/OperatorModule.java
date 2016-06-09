@@ -43,6 +43,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);
+        addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)

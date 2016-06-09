@@ -3,6 +3,8 @@ package io.digdag.core.session;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.util.stream.Stream;
+
 public enum TaskStateCode
 {
     BLOCKED(0),
@@ -26,6 +28,7 @@ public enum TaskStateCode
     public static final short SUCCESS_CODE = (short) 7;
     public static final short ERROR_CODE = (short) 8;
     public static final short CANCELED_CODE = (short) 9;
+    private boolean error;
 
     // state:
     //   retry_blocked -> blocked: every time full search
@@ -113,6 +116,14 @@ public enum TaskStateCode
         };
     }
 
+
+    public static TaskStateCode[] errorStates()
+    {
+        return new TaskStateCode[] {
+            ERROR, GROUP_ERROR
+        };
+    }
+
     @JsonCreator
     public static TaskStateCode fromString(String name)
     {
@@ -186,5 +197,10 @@ public enum TaskStateCode
     public String toString()
     {
         return name().toLowerCase();
+    }
+
+    public boolean isError()
+    {
+        return Stream.of(errorStates()).anyMatch(errorState -> errorState == this);
     }
 }

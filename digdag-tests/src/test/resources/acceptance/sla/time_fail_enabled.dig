@@ -1,0 +1,8 @@
+timezone: UTC
+
+sla:
+  time: ${TIME}
+  fail: true
+
++sleep:
+  sh>: "sleep 10"

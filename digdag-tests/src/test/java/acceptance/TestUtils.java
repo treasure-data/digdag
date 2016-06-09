@@ -20,9 +20,12 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.temporal.TemporalAmount;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -33,6 +36,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 class TestUtils
 {
@@ -54,6 +58,11 @@ class TestUtils
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ByteArrayOutputStream err = new ByteArrayOutputStream();
+        return main(localVersion, args, out, err);
+    }
+
+    static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
+    {
         final int code;
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
@@ -66,8 +75,6 @@ class TestUtils
             Assert.fail();
             throw Throwables.propagate(e);
         }
-        //System.out.println(new String(out.toByteArray()));
-        //System.err.println(new String(err.toByteArray()));
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
@@ -155,6 +162,42 @@ class TestUtils
             {
                 description.appendText("a valid uuid string");
             }
+        };
+    }
+
+    static void expect(TemporalAmount timeout, Callable<Boolean> condition)
+            throws Exception
+    {
+        Instant deadline = Instant.now().plus(timeout);
+        while (Instant.now().toEpochMilli() < deadline.toEpochMilli()) {
+            if (condition.call()) {
+                return;
+            }
+            Thread.sleep(1000);
+        }
+
+        fail("Timeout after: " + timeout);
+    }
+
+    static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
+    {
+        return () -> {
+            CommandStatus attemptsStatus = main("attempts",
+                    "-c", "/dev/null",
+                    "-e", endpoint,
+                    String.valueOf(attemptId));
+            return attemptsStatus.outUtf8().contains("status: error");
+        };
+    }
+
+    static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
+    {
+        return () -> {
+            CommandStatus attemptsStatus = main("attempts",
+                    "-c", "/dev/null",
+                    "-e", endpoint,
+                    String.valueOf(attemptId));
+            return attemptsStatus.outUtf8().contains("status: success");
         };
     }
 }
