@@ -1071,6 +1071,14 @@ public class WorkflowExecutor
 
     public Optional<Long> addMonitorTask(TaskControl lockedTask, String type, Config taskConfig)
     {
+        switch (type) {
+            case "sla":
+                taskConfig.remove("time");
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported monitor task type: " + type);
+        }
+
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type, taskConfig);
         if (tasks.isEmpty()) {
             return Optional.absent();

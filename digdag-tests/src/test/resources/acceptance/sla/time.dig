@@ -1,9 +1,12 @@
 timezone: UTC
 
 sla:
-  time: $TIME
-  +notice:
-    sh>: echo "Workflow timed out!"
+  time: ${TIME}
+  +notify:
+    +file:
+      sh>: "touch '${TIMEOUT_FILE}'"
+    +echo:
+      sh>: "echo timeout"
 
 +sleep:
-  sh>: "sleep 30"
+  sh>: "sleep 10"
