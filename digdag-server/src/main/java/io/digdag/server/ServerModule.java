@@ -2,6 +2,7 @@ package io.digdag.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ResourceConflictException;
@@ -80,7 +81,8 @@ public class ServerModule
         @Inject
         public JsonProviderProvider(ObjectMapper mapper)
         {
-            this.mapper = mapper;
+            this.mapper = mapper.copy();
+            this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         }
 
         @Override
