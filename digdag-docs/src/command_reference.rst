@@ -388,16 +388,17 @@ retry
 
     $ digdag retry <attempt-id>
 
-Retry a session. Either of ``--latest-revision``, ``--keep-revision``, or ``--revision <name>`` is required.
+Retry a session. One of revision options (``--latest-revision``, ``--keep-revision``, or ``--revision <name>``) and one of resume options (``--all``, ``--resume``, or ``--resume-from <+name>``) are required.
 
 Examples:
 
 .. code-block:: console
 
-    $ digdag retry 35 --latest-revision --all --name retry1
-    $ digdag retry 35 --keep-revision --all --name retry2
-    $ digdag retry 35 --revision rev29a87a9c --all --name retry2
-    $ digdag retry 35 --latest-revision --from +step2 --name retry2
+    $ digdag retry 35 --latest-revision --all
+    $ digdag retry 35 --latest-revision --resume
+    $ digdag retry 35 --latest-revision --resume-from +step2
+    $ digdag retry 35 --keep-revision --resume
+    $ digdag retry 35 --revision rev29a87a9c --resume
 
 :command:`--latest-revision`
   Use the latest revision to retry the session.
@@ -408,14 +409,17 @@ Examples:
 :command:`--revision <name>`
   Use a specific revision to retry the session.
 
-:command:`--name <name>`
-  An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.
-
 :command:`--all`
   Retries all tasks.
 
-:command:`--from +NAME`
-  Resume execution from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.
+:command:`--resume +NAME`
+  Retry only failed tasks. Successfully finished tasks are skipped.
+
+:command:`--resume-from +NAME`
+  Retry from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.
+
+:command:`--name <name>`
+  An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.
 
 
 log
