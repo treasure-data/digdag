@@ -13,11 +13,13 @@ public interface TaskControlStore
 
     long addSubtask(long attemptId, Task task);
 
-    long addResumedSubtask(long attemptId, long parentId, long resumingTaskId);
+    long addResumedSubtask(long attemptId, long parentId,
+            TaskType taskType, TaskStateCode state, TaskStateFlags flags,
+            ResumingTask resumingTask);
 
-    void addResumingTaskMap(long attemptId, Map<String, Long> fullNameToTaskIdMap);
+    void addResumingTasks(long attemptId, List<ResumingTask> fullNameToTasks);
 
-    Map<String, Long> getResumingTaskMapByPrefix(long attemptId, String fullNamePrefix);
+    List<ResumingTask> getResumingTasksByNamePrefix(long attemptId, String fullNamePrefix);
 
     boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
 

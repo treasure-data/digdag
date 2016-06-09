@@ -14,6 +14,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
 import io.digdag.core.session.TaskStateCode;
@@ -51,13 +52,13 @@ public class TaskControl
 
     public static long addInitialTasksExceptingRootTask(
             TaskControlStore store, long attemptId, long rootTaskId,
-            WorkflowTaskList tasks, Map<String, Long> resumingTaskMap)
+            WorkflowTaskList tasks, List<ResumingTask> resumingTasks)
     {
         long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
                 false, true, true,
-                resumingTaskMap);
-        addResumingTaskMap(store, attemptId, resumingTaskMap);
+                resumingTasks);
+        addResumingTasks(store, attemptId, resumingTasks);
         return taskId;
     }
 
@@ -73,7 +74,7 @@ public class TaskControl
     private static long addTasks(TaskControlStore store,
             long attemptId, long parentTaskId, WorkflowTaskList tasks, List<Long> rootUpstreamIds,
             boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask,
-            Map<String, Long> resumingTaskMap)
+            List<ResumingTask> resumingTasks)
     {
         List<Long> indexToId = new ArrayList<>();
 
@@ -85,6 +86,10 @@ public class TaskControl
         else {
             rootTaskId = null;
         }
+
+        Map<String, ResumingTask> resumingTaskMap = resumingTasks
+            .stream()
+            .collect(Collectors.toMap(t -> t.getFullName(), t -> t));
 
         // Limit the total number of tasks in a session.
         // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
@@ -111,7 +116,11 @@ public class TaskControl
                 .or(parentTaskId);
             long id;
             if (resumingTaskMap.containsKey(wt.getFullName())) {
-                id = store.addResumedSubtask(attemptId, parentId, resumingTaskMap.get(wt.getFullName()));
+                id = store.addResumedSubtask(attemptId, parentId,
+                        wt.getTaskType(),
+                        TaskStateCode.SUCCESS,
+                        (isInitialTask ? TaskStateFlags.empty().withInitialTask() : TaskStateFlags.empty()),
+                        resumingTaskMap.get(wt.getFullName()));
             }
             else {
                 Task task = Task.taskBuilder()
@@ -148,35 +157,33 @@ public class TaskControl
         return rootTaskId;
     }
 
-    private static void addResumingTaskMap(TaskControlStore store, long attemptId, Map<String, Long> resumingTaskMap)
+    private static void addResumingTasks(TaskControlStore store, long attemptId, List<ResumingTask> resumingTasks)
     {
-        Map<String, Long> filtered = resumingTaskMap.entrySet()
-            .stream()
-            .filter(e -> e.getKey().contains("^"))  // store only dynamically-generated tasks
-            .collect(Collectors.toMap(
-                        e -> e.getKey(),
-                        e -> e.getValue()));
+        // store only dynamically-generated tasks
+        List<ResumingTask> filtered = resumingTasks.stream()
+            .filter(task -> task.getFullName().contains("^"))
+            .collect(Collectors.toList());
         if (!filtered.isEmpty()) {
-            store.addResumingTaskMap(attemptId, resumingTaskMap);
+            store.addResumingTasks(attemptId, resumingTasks);
         }
     }
 
-    private Map<String, Long> collectResumingTasks(long attemptId, WorkflowTaskList tasks)
+    private List<ResumingTask> collectResumingTasks(long attemptId, WorkflowTaskList tasks)
     {
         if (tasks.isEmpty()) {
-            return ImmutableMap.of();
+            return ImmutableList.of();
         }
         String commonPrefix = tasks.stream()
             .map(t -> t.getFullName())
             .reduce(tasks.get(0).getFullName(), (name1, name2) -> Strings.commonPrefix(name1, name2));
-        return store.getResumingTaskMapByPrefix(attemptId, commonPrefix);
+        return store.getResumingTasksByNamePrefix(attemptId, commonPrefix);
     }
 
-    static Map<String, Long> buildResumingTaskMap(SessionStore store, long attemptId, List<Long> resumingTaskIds)
+    static List<ResumingTask> buildResumingTaskMap(SessionStore store, long attemptId, List<Long> resumingTaskIds)
             throws ResourceNotFoundException
     {
         Set<Long> idSet = new HashSet<>(resumingTaskIds);
-        Map<String, Long> resumingTaskMap = store
+        List<ResumingTask> resumingTasks = store
             .getTasksOfAttempt(attemptId)
             .stream()
             .filter(archived -> {
@@ -188,13 +195,12 @@ public class TaskControl
                 }
                 return false;
             })
-            .collect(Collectors.toMap(
-                        ArchivedTask::getFullName,
-                        ArchivedTask::getId));
+            .map(archived -> ResumingTask.of(archived))
+            .collect(Collectors.toList());
         if (!idSet.isEmpty()) {
             throw new ResourceNotFoundException("Resuming tasks are not the members of resuming attempt: id list=" + idSet);
         }
-        return resumingTaskMap;
+        return resumingTasks;
     }
 
     ////

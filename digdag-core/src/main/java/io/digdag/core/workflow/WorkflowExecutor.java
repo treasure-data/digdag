@@ -198,18 +198,20 @@ public class WorkflowExecutor
 
         final WorkflowTask root = tasks.get(0);
 
-        Map<String, Long> resumingTaskMap;
+        List<ResumingTask> resumingTasks;
         if (ar.getResumingAttemptId().isPresent()) {
-            resumingTaskMap = TaskControl.buildResumingTaskMap(
+            resumingTasks = TaskControl.buildResumingTaskMap(
                     sm.getSessionStore(siteId),
                     ar.getResumingAttemptId().get(),
                     ar.getResumingTasks());
-            if (resumingTaskMap.containsKey(root.getFullName())) {
-                throw new IllegalResumeException("Resuming root task is not allowed");
+            for (ResumingTask resumingTask : resumingTasks) {
+                if (resumingTask.getFullName().equals(root.getFullName())) {
+                    throw new IllegalResumeException("Resuming root task is not allowed");
+                }
             }
         }
         else {
-            resumingTaskMap = ImmutableMap.of();
+            resumingTasks = ImmutableList.of();
         }
 
         TaskStateCode rootTaskState = root.getTaskType().isGroupingOnly()
@@ -239,7 +241,7 @@ public class WorkflowExecutor
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                         TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                                storedTaskId, tasks, resumingTaskMap);
+                                storedTaskId, tasks, resumingTasks);
                         return null;
                     });
                     if (!ar.getSessionMonitors().isEmpty()) {

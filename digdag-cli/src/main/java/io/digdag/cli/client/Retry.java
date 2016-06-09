@@ -39,8 +39,11 @@ public class Retry
     @Parameter(names = {"--all"})
     boolean all = false;
 
-    @Parameter(names = {"--from"})
-    String from = null;
+    @Parameter(names = {"--resume"})
+    boolean resume = false;
+
+    @Parameter(names = {"--resume-from"})
+    String resumeFrom = null;
 
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
@@ -61,8 +64,8 @@ public class Retry
         if (!keepRevision && !latestRevision && revision == null) {
             error += "--keep-revision, --latest-revision, or --revision <name> option is required. ";
         }
-        if (!all && from == null) {
-            error += "--all or --from <name> option is required. ";
+        if (!all && !resume && resumeFrom == null) {
+            error += "--all, --resume, or --resume-from <name> option is required. ";
         }
         if (retryAttemptName == null) {
             error += "--name <name> option is required.";
@@ -75,8 +78,8 @@ public class Retry
             throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.");
         }
 
-        if (all && from != null) {
-            throw usage("Setting --all and --from together is invalid.");
+        if (all && resume || resume && resumeFrom != null || all && resumeFrom != null) {
+            throw usage("Setting --all, --resume, or --resume-from together is invalid.");
         }
 
         retry(parseLongOrUsage(args.get(0)));
@@ -86,12 +89,13 @@ public class Retry
     {
         err.println("Usage: digdag retry <attempt-id>");
         err.println("  Options:");
-        err.println("        --name <name>                unique identifier of this retry attempt");
+        err.println("        --name <name>                specific unique identifier of this retry attempt");
         err.println("        --latest-revision            use the latest revision");
         err.println("        --keep-revision              keep the same revision");
         err.println("        --revision <name>            use a specific revision");
         err.println("        --all                        retry all tasks");
-        err.println("        --from <+name>               resume from a specific task");
+        err.println("        --resume                     resume non-success tasks");
+        err.println("        --resume-from <+name>        resume from a specific task");
         err.println("");
         return systemExit(error);
     }
@@ -132,11 +136,13 @@ public class Retry
             .params(attempt.getParams())
             .build();
 
-        if (from != null) {
-            request = RestSessionAttemptRequest.builder().from(request)
-                .resume(Optional.of(
-                            RestSessionAttemptRequest.Resume.ofFromTaskNamePattern(attemptId, from)))
-                .build();
+        if (resumeFrom != null) {
+            request = request.withResume(
+                    RestSessionAttemptRequest.ResumeFrom.of(attemptId, resumeFrom));
+        }
+        else if (resume) {
+            request = request.withResume(
+                    RestSessionAttemptRequest.ResumeFailed.of(attemptId));
         }
 
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
