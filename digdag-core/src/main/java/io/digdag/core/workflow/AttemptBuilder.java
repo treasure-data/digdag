@@ -72,8 +72,8 @@ public class AttemptBuilder
     {
         // TODO move this to WorkflowExecutor?
         ImmutableList.Builder<SessionMonitor> monitors = ImmutableList.builder();
-        if (def.getConfig().has("_sla")) {
-            Config slaConfig = def.getConfig().getNestedOrGetEmpty("_sla");
+        if (def.getConfig().has("sla")) {
+            Config slaConfig = def.getConfig().getNestedOrGetEmpty("sla");
             // TODO support multiple SLAs
             Instant triggerTime = slaCalculator.getTriggerTime(slaConfig, runTime, timeZone);
             monitors.add(SessionMonitor.of("sla", slaConfig, triggerTime));

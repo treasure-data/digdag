@@ -79,6 +79,9 @@ public class SlaCalculator
             if (minute != null) {
                 cal.set(Calendar.MINUTE, minute);
             }
+            if (second != null) {
+                cal.set(Calendar.SECOND, second);
+            }
 
             // if the time is already passed, subtract 1 day
             // TODO this assumes daily SLA
