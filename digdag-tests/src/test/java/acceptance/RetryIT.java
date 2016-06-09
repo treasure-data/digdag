@@ -167,8 +167,7 @@ public class RetryIT
                 "-c", config.toString(),
                 "--project", projectDir.toString(),
                 "-e", server.endpoint(),
-                "-p", "outdir=" + root(),
-                "-r", UUID.randomUUID().toString());
+                "-p", "outdir=" + root());
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
     }
 
