@@ -48,7 +48,8 @@ test:
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
-      for dir in digdag-*/build/reports; do
+      for dir in build/reports digdag-*/build/reports; do
+        mkdir -p $CIRCLE_ARTIFACTS/reports/${dir%%/*}
         cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
       done
 

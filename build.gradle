@@ -12,20 +12,20 @@ allprojects {
     group = 'io.digdag'
     version = '0.8.1-SNAPSHOT'
 
-    apply plugin: 'java'
     apply plugin: 'idea'
-}
-
-subprojects {
-    apply plugin: 'maven'
-    apply plugin: 'maven-publish'
-    apply plugin: 'findbugs'
+    apply plugin: 'java'
     apply plugin: 'jacoco'
 
     repositories {
         mavenCentral()
         jcenter()
     }
+}
+
+subprojects {
+    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+    apply plugin: 'findbugs'
 
     publishing {
         publications {
@@ -133,6 +133,28 @@ subprojects {
         }.writeTo("${delegate.project.projectDir}/pom.xml")
     }
 }
+
+jacocoTestReport {
+    dependsOn = subprojects.test
+    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs)
+    classDirectories =  files(subprojects.sourceSets.main.output)
+    executionData = files(subprojects.jacocoTestReport.executionData)
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+    onlyIf = { true }
+    doFirst {
+        executionData = files(executionData.findAll { it.exists() })
+    }
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: ['**/Immutable*'])
+        })
+    }
+}
+check.dependsOn('jacocoTestReport')
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.11'
