@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
@@ -67,9 +68,6 @@ public class Retry
         if (!all && !resume && resumeFrom == null) {
             error += "--all, --resume, or --resume-from <name> option is required. ";
         }
-        if (retryAttemptName == null) {
-            error += "--name <name> option is required.";
-        }
         if (!error.isEmpty()) {
             throw usage(error);
         }
@@ -89,13 +87,13 @@ public class Retry
     {
         err.println("Usage: digdag retry <attempt-id>");
         err.println("  Options:");
-        err.println("        --name <name>                specific unique identifier of this retry attempt");
+        err.println("        --name <name>                unique identifier of this retry attempt instead of auto-generated UUID");
         err.println("        --latest-revision            use the latest revision");
         err.println("        --keep-revision              keep the same revision");
         err.println("        --revision <name>            use a specific revision");
         err.println("        --all                        retry all tasks");
-        err.println("        --resume                     resume non-success tasks");
-        err.println("        --resume-from <+name>        resume from a specific task");
+        err.println("        --resume                     retry only non-successful tasks");
+        err.println("        --resume-from <+name>        retry from a specific task");
         err.println("");
         return systemExit(error);
     }
@@ -127,6 +125,10 @@ public class Retry
             RestWorkflowDefinition def = client.getWorkflowDefinition(
                     attempt.getProject().getId(), attempt.getWorkflow().getName(), revision);
             workflowId = def.getId();
+        }
+
+        if (retryAttemptName == null) {
+            retryAttemptName = UUID.randomUUID().toString();
         }
 
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
