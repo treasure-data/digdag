@@ -127,10 +127,10 @@ public class ConfigElement
     @Override
     public boolean equals(Object other)
     {
-        if (!(other instanceof Config)) {
+        if (!(other instanceof ConfigElement)) {
             return false;
         }
-        return object.equals(((Config) other).object);
+        return object.equals(((ConfigElement) other).object);
     }
 
     @Override
