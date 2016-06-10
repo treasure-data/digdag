@@ -1,11 +1,13 @@
-package io.digdag.cli;
+package io.digdag.core.workflow;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
@@ -33,15 +35,15 @@ public class TaskMatchPattern
     public static class MultipleTaskMatchException
             extends MatchException
     {
-        private final Map<Integer, String> matches;
+        private final List<String> matches;
 
-        public MultipleTaskMatchException(String message, Map<Integer, String> matches)
+        public MultipleTaskMatchException(String message, List<String> matches)
         {
             super(message);
             this.matches = matches;
         }
 
-        public Map<Integer, String> getMatches()
+        public List<String> getMatches()
         {
             return matches;
         }
@@ -96,30 +98,46 @@ public class TaskMatchPattern
     public int findIndex(List<WorkflowTask> tasks)
         throws MultipleTaskMatchException, NoMatchException
     {
-        Map<Integer, String> all = findAll(tasks);
-        if (all.size() == 1) {
-            return all.keySet().iterator().next();
+        Map<String, WorkflowTask> all = filter(new TaskFullNameResolver(tasks).resolve());
+        ensureMatchOne(all.keySet());
+        return all.values().iterator().next().getIndex();
+    }
+
+    public <T> T find(Map<String, T> tasks)
+        throws MultipleTaskMatchException, NoMatchException
+    {
+        Map<String, T> all = filter(tasks);
+        ensureMatchOne(all.keySet());
+        return all.values().iterator().next();
+    }
+
+    private <T> Map<String, T> filter(Map<String, T> fullNames)
+    {
+        Map<String, T> map = new LinkedHashMap<>();
+        for (Map.Entry<String, T> pair : fullNames.entrySet()) {
+            if (regex.matcher(pair.getKey()).matches()) {
+                map.put(pair.getKey(), pair.getValue());
+            }
         }
-        else if (all.isEmpty()) {
+        return map;
+    }
+
+    private void ensureMatchOne(Collection<String> matchedNames)
+        throws MultipleTaskMatchException, NoMatchException
+    {
+        if (matchedNames.size() == 1) {
+            return;
+        }
+        else if (matchedNames.isEmpty()) {
             throw new NoMatchException(String.format(
                         "Task pattern '%s' doesn't match with any tasks.", pattern));
         }
         else {
-            throw new MultipleTaskMatchException(String.format(
-                        "Task pattern '%s' is ambiguous. Matching candidates are %s", pattern, all.values()), all);
+            throw new MultipleTaskMatchException(
+                    String.format(
+                        "Task pattern '%s' is ambiguous. Matching candidates are %s", pattern, matchedNames),
+                    ImmutableList.copyOf(matchedNames));
         }
-    }
-
-    private Map<Integer, String> findAll(List<WorkflowTask> tasks)
-    {
-        Map<String, WorkflowTask> fullNames = new TaskFullNameResolver(tasks).resolve();
-        Map<Integer, String> map = new LinkedHashMap<>();
-        for (Map.Entry<String, WorkflowTask> pair : fullNames.entrySet()) {
-            if (regex.matcher(pair.getKey()).matches()) {
-                map.put(pair.getValue().getIndex(), pair.getKey());
-            }
-        }
-        return map;
     }
 
     private static class TaskFullNameResolver

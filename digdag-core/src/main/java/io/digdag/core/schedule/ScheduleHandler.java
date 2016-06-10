@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.text.SimpleDateFormat;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -51,7 +52,9 @@ public class ScheduleHandler
                 def,
                 cf.create(),  // TODO add schedules.params and copy it here
                 time,
-                retryAttemptName);
+                retryAttemptName,
+                Optional.absent(),
+                ImmutableList.of());
 
         return exec.submitWorkflow(def.getProject().getSiteId(),
                 ar, def);

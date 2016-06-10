@@ -7,8 +7,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.UUID;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getAttemptId;
@@ -34,7 +37,7 @@ public class RetryIT
     {
         config = folder.newFile().toPath();
 
-        projectDir = folder.getRoot().toPath().resolve("foobar");
+        projectDir = folder.getRoot().toPath().resolve("retry");
         Files.createDirectory(projectDir);
     }
 
@@ -47,18 +50,8 @@ public class RetryIT
                 .port(server.port())
                 .build();
 
-        copyResource("acceptance/retry/fail.dig", projectDir.resolve("foobar.dig"));
-
         // Push the project
-        {
-            CommandStatus pushStatus = main("push",
-                    "foobar",
-                    "-c", config.toString(),
-                    "--project", projectDir.toString(),
-                    "-e", server.endpoint(),
-                    "-r", "1");
-            assertThat(pushStatus.code(), is(0));
-        }
+        pushRevision("acceptance/retry/retry-1.dig", "retry");
 
         // Start the workflow
         long originalAttemptId;
@@ -66,89 +59,139 @@ public class RetryIT
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "foobar", "foobar",
+                    "retry", "retry",
                     "--session", "now");
-            assertThat(startStatus.code(), is(0));
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
             originalAttemptId = getAttemptId(startStatus);
         }
 
         // Wait for the attempt to fail
-        {
-            RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
-                attempt = client.getSessionAttempt(originalAttemptId);
-                if (attempt.getDone()) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            assertThat(attempt.getSuccess(), is(false));
-        }
+        assertThat(joinAttempt(client, originalAttemptId).getSuccess(), is(false));
 
-        // Start a retry of the failing workflow
-        long retryFailAttemptId;
+        assertOutputExists("1-1", true);
+        assertOutputExists("1-2a", true);
+
+        // Push a new revision
+        pushRevision("acceptance/retry/retry-2.dig", "retry");
+
+        // Retry without updating the revision: --keep-revision
+        long retry1;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "--name", "retry-not-fixed",
-                    "--latest-revision",
+                    "--keep-revision",
                     "--all",
                     String.valueOf(originalAttemptId));
-            assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getAttemptId(retryStatus);
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry1 = getAttemptId(retryStatus);
         }
 
-        // Wait for the retry to fail as well
-        {
-            RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
-                attempt = client.getSessionAttempt(retryFailAttemptId);
-                if (attempt.getDone()) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            assertThat(attempt.getSuccess(), is(false));
-        }
+        // Wait for the attempt to fail again
+        assertThat(joinAttempt(client, retry1).getSuccess(), is(false));
 
-        // "Fix" the workflow
-        {
-            copyResource("acceptance/retry/succeed.dig", projectDir.resolve("foobar.dig"));
-            CommandStatus pushStatus = main("push",
-                    "foobar",
-                    "-c", config.toString(),
-                    "--project", projectDir.toString(),
-                    "-e", server.endpoint(),
-                    "-r", "2");
-            assertThat(pushStatus.code(), is(0));
-        }
+        assertOutputExists("2-1", false);
+        assertOutputExists("2-2a", false);
+        assertOutputExists("2-2b", false);
 
-        // Start a retry of the fixed workflow
+        // Retry with the latest fixed revision & resume failed
+        long retry2;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "--name", "retry-fixed",
+                    "--latest-revision",
+                    "--resume",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry2 = getAttemptId(retryStatus);
+        }
+
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry2).getSuccess(), is(true));
+
+        assertOutputExists("2-1", false);  // skipped
+        assertOutputExists("2-2a", false);  // skipped
+        assertOutputExists("2-2b", true);
+
+        // Retry with the latest fixed revision & resume all
+        long retry3;
+        {
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
                     "--latest-revision",
                     "--all",
                     String.valueOf(originalAttemptId));
             assertThat(retryStatus.code(), is(0));
-            retryFailAttemptId = getAttemptId(retryStatus);
-            assertThat(retryFailAttemptId, is(not(originalAttemptId)));
+            retry3 = getAttemptId(retryStatus);
         }
 
-        // Wait for the retry of the fixed workflow to succeed
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry3).getSuccess(), is(true));
+
+        assertOutputExists("2-1", true);
+        assertOutputExists("2-2a", true);
+        assertOutputExists("2-2b", true);
+
+        // Push another new revision
+        pushRevision("acceptance/retry/retry-3.dig", "retry");
+
+        // Retry with the latest fixed revision & resume from
+        long retry4;
         {
-            RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
-                attempt = client.getSessionAttempt(retryFailAttemptId);
-                if (attempt.getDone()) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            assertThat(attempt.getSuccess(), is(true));
+            CommandStatus retryStatus = main("retry",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--latest-revision",
+                    "--resume-from", "+step2+a",
+                    String.valueOf(originalAttemptId));
+            assertThat(retryStatus.errUtf8(), retryStatus.code(), is(0));
+            retry4 = getAttemptId(retryStatus);
         }
+
+        // Wait for the attempt to success
+        assertThat(joinAttempt(client, retry4).getSuccess(), is(true));
+
+        assertOutputExists("3-1", false);  // skipped
+        assertOutputExists("3-2a", true);
+        assertOutputExists("3-2b", true);
+    }
+
+    private void pushRevision(String resourceName, String workflowName)
+            throws IOException
+    {
+        copyResource(resourceName, projectDir.resolve(workflowName + ".dig"));
+        CommandStatus pushStatus = main("push",
+                "retry",
+                "-c", config.toString(),
+                "--project", projectDir.toString(),
+                "-e", server.endpoint(),
+                "-p", "outdir=" + root());
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+    }
+
+    private RestSessionAttempt joinAttempt(DigdagClient client, long attemptId)
+            throws InterruptedException
+    {
+        RestSessionAttempt attempt = null;
+        for (int i = 0; i < 30; i++) {
+            attempt = client.getSessionAttempt(attemptId);
+            if (attempt.getDone()) {
+                break;
+            }
+            Thread.sleep(1000);
+        }
+        return attempt;
+    }
+
+    private void assertOutputExists(String name, boolean exists)
+    {
+        assertThat(Files.exists(root().resolve(name + ".out")), is(exists));
+    }
+
+    private Path root()
+    {
+        return folder.getRoot().toPath().toAbsolutePath();
     }
 }

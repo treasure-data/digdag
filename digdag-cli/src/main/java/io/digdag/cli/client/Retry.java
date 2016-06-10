@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
@@ -42,8 +43,8 @@ public class Retry
     @Parameter(names = {"--resume"})
     boolean resume = false;
 
-    @Parameter(names = {"--from"})
-    String from = null;
+    @Parameter(names = {"--resume-from"})
+    String resumeFrom = null;
 
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
@@ -64,11 +65,8 @@ public class Retry
         if (!keepRevision && !latestRevision && revision == null) {
             error += "--keep-revision, --latest-revision, or --revision <name> option is required. ";
         }
-        if (!all && !resume && from == null) {
-            error += "--all, --resume, or --from <name> option is required. ";
-        }
-        if (retryAttemptName == null) {
-            error += "--name <name> option is required.";
+        if (!all && !resume && resumeFrom == null) {
+            error += "--all, --resume, or --resume-from <name> option is required. ";
         }
         if (!error.isEmpty()) {
             throw usage(error);
@@ -78,12 +76,8 @@ public class Retry
             throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.");
         }
 
-        if (all && resume || resume && from != null || all && from != null) {
-            throw usage("Setting --all, --resume, or --from together is invalid.");
-        }
-
-        if (resume || from != null) {
-            throw new UnsupportedOperationException("Sorry, --resume and --from are not implemented yet");
+        if (all && resume || resume && resumeFrom != null || all && resumeFrom != null) {
+            throw usage("Setting --all, --resume, or --resume-from together is invalid.");
         }
 
         retry(parseLongOrUsage(args.get(0)));
@@ -93,13 +87,13 @@ public class Retry
     {
         err.println("Usage: digdag retry <attempt-id>");
         err.println("  Options:");
-        err.println("        --name <name>                unique identifier of this retry attempt");
+        err.println("        --name <name>                unique identifier of this retry attempt instead of auto-generated UUID");
         err.println("        --latest-revision            use the latest revision");
         err.println("        --keep-revision              keep the same revision");
         err.println("        --revision <name>            use a specific revision");
         err.println("        --all                        retry all tasks");
-        err.println("        --resume                     retry failed tasks, canceled tasks and _error tasks (not implemented yet)");
-        err.println("        --from <+name>               retry tasks after a specific task (not implemented yet)");
+        err.println("        --resume                     retry only non-successful tasks");
+        err.println("        --resume-from <+name>        retry from a specific task");
         err.println("");
         return systemExit(error);
     }
@@ -133,12 +127,25 @@ public class Retry
             workflowId = def.getId();
         }
 
+        if (retryAttemptName == null) {
+            retryAttemptName = UUID.randomUUID().toString();
+        }
+
         RestSessionAttemptRequest request = RestSessionAttemptRequest.builder()
             .workflowId(workflowId)
             .sessionTime(attempt.getSessionTime().toInstant())
             .retryAttemptName(Optional.of(retryAttemptName))
             .params(attempt.getParams())
             .build();
+
+        if (resumeFrom != null) {
+            request = request.withResume(
+                    RestSessionAttemptRequest.ResumeFrom.of(attemptId, resumeFrom));
+        }
+        else if (resume) {
+            request = request.withResume(
+                    RestSessionAttemptRequest.ResumeFailed.of(attemptId));
+        }
 
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 

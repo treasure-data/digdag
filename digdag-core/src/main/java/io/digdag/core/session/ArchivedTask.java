@@ -27,6 +27,8 @@ public abstract class ArchivedTask
 
     public abstract Config getError();
 
+    public abstract Optional<Long> getResumingTaskId();
+
     @Value.Check
     protected void check()
     {

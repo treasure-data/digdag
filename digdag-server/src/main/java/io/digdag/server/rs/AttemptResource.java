@@ -1,6 +1,8 @@
 package io.digdag.server.rs;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -14,10 +16,14 @@ import javax.ws.rs.core.Response;
 
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.TaskRelation;
+import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.workflow.*;
-import io.digdag.core.session.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.client.config.ConfigFactory;
@@ -141,12 +147,20 @@ public class AttemptResource
 
         StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(request.getWorkflowId());
 
+        Optional<Long> resumingAttemptId = request.getResume()
+            .transform(r -> r.getAttemptId());
+        List<Long> resumingTasks = request.getResume()
+            .transform(r -> collectResumingTasks(r))
+            .or(ImmutableList.of());
+
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                 def,
                 request.getParams(),
                 ScheduleTime.runNow(request.getSessionTime()),
-                request.getRetryAttemptName());
+                request.getRetryAttemptName(),
+                resumingAttemptId,
+                resumingTasks);
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);
@@ -157,6 +171,77 @@ public class AttemptResource
             StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
             RestSessionAttempt res = RestModels.attempt(conflicted, def.getProject().getName());
             return Response.status(Response.Status.CONFLICT).entity(res).build();
+        }
+    }
+
+    private List<Long> collectResumingTasks(RestSessionAttemptRequest.Resume resume)
+    {
+        switch (resume.getMode()) {
+        case FAILED:
+            return collectResumingTasksForResumeFailedMode(
+                    ((RestSessionAttemptRequest.ResumeFailed) resume).getAttemptId());
+        case FROM:
+            return collectResumingTasksForResumeFromMode(
+                    ((RestSessionAttemptRequest.ResumeFrom) resume).getAttemptId(),
+                    ((RestSessionAttemptRequest.ResumeFrom) resume).getFromTaskNamePattern());
+        default:
+            throw new IllegalArgumentException("Unknown resuming mode: " + resume.getMode());
+        }
+    }
+
+    private List<Long> collectResumingTasksForResumeFailedMode(long attemptId)
+    {
+        List<ArchivedTask> tasks = sm
+            .getSessionStore(getSiteId())
+            .getTasksOfAttempt(attemptId);
+
+        List<Long> successTasks = tasks.stream()
+            .filter(task -> task.getState() == TaskStateCode.SUCCESS)
+            .map(task -> {
+                if (!task.getParentId().isPresent()) {
+                    throw new IllegalArgumentException("Resuming successfully completed attempts is not supported");
+                }
+                return task.getId();
+            })
+            .collect(Collectors.toList());
+
+        return ImmutableList.copyOf(successTasks);
+    }
+
+    private List<Long> collectResumingTasksForResumeFromMode(long attemptId, String fromTaskPattern)
+    {
+        List<ArchivedTask> tasks = sm
+            .getSessionStore(getSiteId())
+            .getTasksOfAttempt(attemptId);
+
+        ArchivedTask fromTask = matchTaskPattern(fromTaskPattern, tasks);
+
+        List<TaskRelation> relations = tasks.stream()
+            .map(t -> TaskRelation.of(t.getId(), t.getParentId(), t.getUpstreams()))
+            .collect(Collectors.toList());
+        TaskTree taskTree = new TaskTree(relations);
+
+        List<Long> before = taskTree.getRecursiveParentsUpstreamChildrenIdListFromFar(fromTask.getId());
+        List<Long> parents = taskTree.getRecursiveParentIdListFromRoot(fromTask.getId());
+
+        Set<Long> results = new HashSet<>(before);
+        results.removeAll(parents);
+
+        return ImmutableList.copyOf(results);
+    }
+
+    private ArchivedTask matchTaskPattern(String pattern, List<ArchivedTask> tasks)
+    {
+        try {
+            return TaskMatchPattern.compile(pattern).find(
+                    tasks
+                    .stream()
+                    .collect(
+                        Collectors.toMap(t -> t.getFullName(), t -> t)
+                    ));
+        }
+        catch (TaskMatchPattern.MultipleTaskMatchException | TaskMatchPattern.NoMatchException ex) {
+            throw new IllegalArgumentException(ex);
         }
     }
 

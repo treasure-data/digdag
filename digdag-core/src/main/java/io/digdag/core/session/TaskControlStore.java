@@ -1,6 +1,7 @@
 package io.digdag.core.session;
 
 import java.util.List;
+import java.util.Map;
 import com.google.common.base.Optional;
 import io.digdag.spi.TaskResult;
 import io.digdag.client.config.Config;
@@ -11,6 +12,14 @@ public interface TaskControlStore
     long getTaskCount(long attemptId);
 
     long addSubtask(long attemptId, Task task);
+
+    long addResumedSubtask(long attemptId, long parentId,
+            TaskType taskType, TaskStateCode state, TaskStateFlags flags,
+            ResumingTask resumingTask);
+
+    void addResumingTasks(long attemptId, List<ResumingTask> fullNameToTasks);
+
+    List<ResumingTask> getResumingTasksByNamePrefix(long attemptId, String fullNamePrefix);
 
     boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
 

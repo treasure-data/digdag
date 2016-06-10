@@ -4,6 +4,7 @@ import java.util.List;
 import java.time.Instant;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskResult;
 import io.digdag.core.repository.StoredProject;
@@ -134,7 +135,9 @@ public class InProcessTaskCallbackApi
                 def,
                 overwriteParams,
                 ScheduleTime.runNow(instant),
-                retryAttemptName);
+                retryAttemptName,
+                Optional.absent(),
+                ImmutableList.of());
 
         // TODO FIXME SessionMonitor monitors is not set
         try {

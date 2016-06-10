@@ -45,7 +45,7 @@ public class FailOperatorFactory
         {
             Config params = request.getConfig();
 
-            String message = params.get("_command", String.class);
+            String message = params.get("_command", String.class, "");
 
             Config errorParams = params.getFactory().create();
             errorParams.set("message", message);

@@ -1,5 +1,6 @@
 package io.digdag.core.database;
 
+import java.util.AbstractMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -9,7 +10,9 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.ImmutableArchivedTask;
+import io.digdag.core.session.ImmutableResumingTask;
 import io.digdag.core.session.ImmutableSession;
 import io.digdag.core.session.ImmutableSessionAttemptSummary;
 import io.digdag.core.session.ImmutableStoredSession;
@@ -87,6 +90,7 @@ public class DatabaseSessionStoreManager
 
         dbi.registerMapper(new StoredTaskMapper(cfm));
         dbi.registerMapper(new ArchivedTaskMapper(cfm));
+        dbi.registerMapper(new ResumingTaskMapper(cfm));
         dbi.registerMapper(new StoredSessionMapper(cfm));
         dbi.registerMapper(new StoredSessionWithLastAttemptMapper(cfm));
         dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
@@ -512,7 +516,7 @@ public class DatabaseSessionStoreManager
 
             {
                 List<ArchivedTask> tasks = handle.createQuery(
-                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                        "select t.*, td.full_name, td.local_config, td.export_config, td.resuming_task_id, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
                             "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
@@ -551,6 +555,7 @@ public class DatabaseSessionStoreManager
             dao.deleteTaskDependencies(attemptId);
             dao.deleteTaskStateDetails(attemptId);
             dao.deleteTaskDetails(attemptId);
+            dao.deleteResumingTasks(attemptId);
             return dao.deleteTasks(attemptId);
         }
 
@@ -604,6 +609,62 @@ public class DatabaseSessionStoreManager
             dao.insertTaskDetails(taskId, task.getFullName(), task.getConfig().getLocal(), task.getConfig().getExport());
             dao.insertEmptyTaskStateDetails(taskId);
             return taskId;
+        }
+
+        @Override
+        public long addResumedSubtask(long attemptId, long parentId,
+                TaskType taskType, TaskStateCode state, TaskStateFlags flags,
+                ResumingTask resumingTask)
+        {
+            long taskId = dao.insertResumedTask(attemptId, parentId,
+                    taskType.get(),
+                    state.get(),
+                    flags.get(),
+                    sqlTimestampOf(resumingTask.getUpdatedAt()));
+            dao.insertResumedTaskDetails(taskId,
+                    resumingTask.getFullName(),
+                    resumingTask.getConfig().getLocal(),
+                    resumingTask.getConfig().getExport(),
+                    resumingTask.getSourceTaskId());
+            dao.insertResumedTaskStateDetails(taskId,
+                    resumingTask.getSubtaskConfig(),
+                    resumingTask.getExportParams(),
+                    resumingTask.getStoreParams(),
+                    null,
+                    resumingTask.getError());
+            return taskId;
+        }
+
+        private java.sql.Timestamp sqlTimestampOf(Instant instant)
+        {
+            java.sql.Timestamp t = new java.sql.Timestamp(instant.getEpochSecond() * 1000);
+            t.setNanos(instant.getNano());
+            return t;
+        }
+
+        @Override
+        public void addResumingTasks(long attemptId, List<ResumingTask> tasks)
+        {
+            for (ResumingTask task : tasks) {
+                dao.insertResumingTask(attemptId,
+                        task.getSourceTaskId(),
+                        task.getFullName(),
+                        sqlTimestampOf(task.getUpdatedAt()),
+                        task.getConfig().getLocal(),
+                        task.getConfig().getExport(),
+                        task.getSubtaskConfig(),
+                        task.getExportParams(),
+                        task.getStoreParams(),
+                        taskReportToConfig(cf, task.getReport()),
+                        task.getError());
+            }
+        }
+
+        @Override
+        public List<ResumingTask> getResumingTasksByNamePrefix(long attemptId, String fullNamePrefix)
+        {
+            // TODO pattern for LIKE query needs escaping of _ and % characters
+            return dao.findResumingTasksByNamePrefix(attemptId, fullNamePrefix + '%');
         }
 
         @Override
@@ -1017,7 +1078,7 @@ public class DatabaseSessionStoreManager
         {
             List<ArchivedTask> tasks = autoCommit((handle, dao) ->
                     handle.createQuery(
-                        "select t.*, td.full_name, td.local_config, td.export_config, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
+                        "select t.*, td.full_name, td.local_config, td.export_config, td.resuming_task_id, ts.subtask_config, ts.export_params, ts.store_params, ts.error, ts.report, " +
                             "(select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
                         " from tasks t" +
                         " join session_attempts sa on sa.id = t.attempt_id" +
@@ -1337,7 +1398,6 @@ public class DatabaseSessionStoreManager
                 " values (:id, :fullName, :localConfig, :exportConfig)")
         void insertTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("localConfig") Config localConfig, @Bind("exportConfig") Config exportConfig);
 
-        // TODO this should be optimized out by using TRIGGER that runs when a task is inserted
         @SqlUpdate("insert into task_state_details (id)" +
                 " values (:id)")
         void insertEmptyTaskStateDetails(@Bind("id") long id);
@@ -1345,6 +1405,40 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("insert into task_dependencies (upstream_id, downstream_id)" +
                 " values (:upstreamId, :downstreamId)")
         void insertTaskDependency(@Bind("downstreamId") long downstreamId, @Bind("upstreamId") long upstreamId);
+
+        @SqlUpdate("insert into tasks (attempt_id, parent_id, task_type, state, state_flags, updated_at)" +
+                " values (:attemptId, :parentId, :taskType, :state, :stateFlags, :updatedAt)")
+        @GetGeneratedKeys
+        long insertResumedTask(@Bind("attemptId") long attemptId, @Bind("parentId") long parentId, @Bind("taskType") int taskType, @Bind("state") int state, @Bind("stateFlags") int stateFlags, @Bind("updatedAt") java.sql.Timestamp updatedAt);
+
+        @SqlUpdate("insert into task_details (id, full_name, local_config, export_config, resuming_task_id)" +
+                " values (:id, :fullName, :localConfig, :exportConfig, :resumingTaskId)")
+        void insertResumedTaskDetails(@Bind("id") long id, @Bind("fullName") String fullName, @Bind("localConfig") Config localConfig, @Bind("exportConfig") Config exportConfig, @Bind("resumingTaskId") long resumingTaskId);
+
+        @SqlUpdate("insert into task_state_details (id, subtask_config, export_params, store_params, report, error)" +
+                " values (:id, :subtaskConfig, :exportParams, :storeParams, :report, :error)")
+        void insertResumedTaskStateDetails(@Bind("id") long id, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report, @Bind("error") Config error);
+
+        @SqlUpdate("insert into resuming_tasks (attempt_id, source_task_id, full_name, updated_at, local_config, export_config, subtask_config, export_params, store_params, report, error)" +
+                " values (:attemptId, :sourceTaskId, :fullName, :updatedAt, :localConfig, :exportConfig, :subtaskConfig, :exportParams, :storeParams, :report, :error)")
+        @GetGeneratedKeys
+        long insertResumingTask(
+                @Bind("attemptId") long attemptId,
+                @Bind("sourceTaskId") long sourceTaskId,
+                @Bind("fullName") String fullName,
+                @Bind("updatedAt") java.sql.Timestamp updatedAt,
+                @Bind("localConfig") Config localConfig,
+                @Bind("exportConfig") Config exportConfig,
+                @Bind("subtaskConfig") Config subtaskConfig,
+                @Bind("exportParams") Config exportParams,
+                @Bind("storeParams") Config storeParams,
+                @Bind("report") Config report,
+                @Bind("error") Config error);
+
+        @SqlQuery("select * from resuming_tasks" +
+                " where attempt_id = :attemptId" +
+                " and full_name like :fullNamePattern")
+        List<ResumingTask> findResumingTasksByNamePrefix(@Bind("attemptId") long attemptId, @Bind("fullNamePattern") String fullNamePattern);
 
         @SqlQuery("select id, attempt_id, parent_id, state, updated_at " +
                 " from tasks " +
@@ -1444,6 +1538,10 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from task_dependencies" +
                 " where downstream_id in (select id from tasks where attempt_id = :attemptId)")
         void deleteTaskDependencies(@Bind("attemptId") long attemptId);
+
+        @SqlUpdate("delete from resuming_tasks" +
+                " where attempt_id = :attemptId")
+        int deleteResumingTasks(@Bind("attemptId") long attemptId);
     }
 
     private static class InstantMapper
@@ -1652,11 +1750,7 @@ public class DatabaseSessionStoreManager
         public ArchivedTask map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            Config reportConfig = cfm.fromResultSetOrEmpty(r, "report");
-            TaskReport report = TaskReport.builder()
-                .inputs(reportConfig.getListOrEmpty("in", Config.class))
-                .outputs(reportConfig.getListOrEmpty("out", Config.class))
-                .build();
+            TaskReport report = taskReportFromConfig(cfm.fromResultSetOrEmpty(r, "report"));
 
             return ImmutableArchivedTask.builder()
                 .id(r.getLong("id"))
@@ -1674,6 +1768,40 @@ public class DatabaseSessionStoreManager
                 .taskType(TaskType.of(r.getInt("task_type")))
                 .state(TaskStateCode.of(r.getInt("state")))
                 .stateFlags(TaskStateFlags.of(r.getInt("state_flags")))
+                .subtaskConfig(cfm.fromResultSetOrEmpty(r, "subtask_config"))
+                .exportParams(cfm.fromResultSetOrEmpty(r, "export_params"))
+                .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
+                .report(report)
+                .error(cfm.fromResultSetOrEmpty(r, "error"))
+                .resumingTaskId(getOptionalLong(r, "resuming_task_id"))
+                .build();
+        }
+    }
+
+    private static class ResumingTaskMapper
+            implements ResultSetMapper<ResumingTask>
+    {
+        private final ConfigMapper cfm;
+
+        public ResumingTaskMapper(ConfigMapper cfm)
+        {
+            this.cfm = cfm;
+        }
+
+        @Override
+        public ResumingTask map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            TaskReport report = taskReportFromConfig(cfm.fromResultSetOrEmpty(r, "report"));
+
+            return ImmutableResumingTask.builder()
+                .sourceTaskId(r.getLong("source_task_id"))
+                .fullName(r.getString("full_name"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
+                .config(
+                        TaskConfig.assumeValidated(
+                                cfm.fromResultSetOrEmpty(r, "local_config"),
+                                cfm.fromResultSetOrEmpty(r, "export_config")))
                 .subtaskConfig(cfm.fromResultSetOrEmpty(r, "subtask_config"))
                 .exportParams(cfm.fromResultSetOrEmpty(r, "export_params"))
                 .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
@@ -1816,5 +1944,21 @@ public class DatabaseSessionStoreManager
         {
             return cfm.fromResultSetOrEmpty(r, column);
         }
+    }
+
+    static TaskReport taskReportFromConfig(Config config)
+    {
+        return TaskReport.builder()
+            .inputs(config.getListOrEmpty("in", Config.class))
+            .outputs(config.getListOrEmpty("out", Config.class))
+            .build();
+    }
+
+    static Config taskReportToConfig(ConfigFactory cf, TaskReport report)
+    {
+        return cf.create()
+            .set("in", report.getInputs())
+            .set("out", report.getOutputs())
+            ;
     }
 }
