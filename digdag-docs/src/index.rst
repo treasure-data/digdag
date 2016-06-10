@@ -50,3 +50,11 @@ Table of Contents
    ruby_api.rst
    releases.rst
 
+
+License
+----------------------------------
+
+Digdag is open-source software licensed under `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+
+See `NOTICE <https://github.com/treasure-data/digdag/blob/master/NOTICE>`_ for details.
+
