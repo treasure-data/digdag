@@ -1,18 +1,13 @@
-package io.digdag.core.agent;
+package io.digdag.util;
 
 import io.digdag.client.config.Config;
-import io.digdag.core.workflow.TaskConfig;
+//import io.digdag.core.workflow.TaskConfig;
 
 public class RetryControl
 {
     public static RetryControl prepare(Config config, Config stateParams, boolean enableByDefault)
     {
         return new RetryControl(config, stateParams, enableByDefault);
-    }
-
-    public static RetryControl prepare(TaskConfig config, Config stateParams, boolean enableByDefault)
-    {
-        return new RetryControl(config.getMerged(), stateParams, enableByDefault);
     }
 
     private final Config stateParams;

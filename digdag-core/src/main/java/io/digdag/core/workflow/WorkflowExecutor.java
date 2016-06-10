@@ -22,11 +22,11 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.core.agent.RetryControl;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.session.*;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.util.RetryControl;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.StoredRevision;
@@ -506,7 +506,7 @@ public class WorkflowExecutor
         }
         else if (lockedTask.isAnyErrorChild()) {
             // group error
-            RetryControl retryControl = RetryControl.prepare(task.getConfig(), task.getStateParams(), false);  // don't retry by default
+            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
 
             boolean willRetry = retryControl.evaluate();
             Optional<Long> errorTaskId;

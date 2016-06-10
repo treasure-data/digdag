@@ -1,8 +1,13 @@
 
 dependencies {
-    compile project(':digdag-core')
+    compile project(':digdag-spi')
     compile project(':digdag-plugin-utils')
+
+    // schedules
     compile 'it.sauronsoftware.cron4j:cron4j:2.2.5'
+
+    // meta operator plugins
+    compile project(':digdag-core')
 
     // mail
     compile 'javax.mail:javax.mail-api:1.5.5'

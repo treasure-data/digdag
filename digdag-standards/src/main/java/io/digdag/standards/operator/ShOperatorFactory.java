@@ -9,8 +9,9 @@ import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
@@ -21,6 +22,7 @@ import io.digdag.spi.OperatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
+import io.digdag.util.BaseOperator;
 
 public class ShOperatorFactory
         implements OperatorFactory

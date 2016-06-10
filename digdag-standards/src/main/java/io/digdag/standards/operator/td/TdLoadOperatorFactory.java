@@ -17,7 +17,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
-import io.digdag.standards.operator.BaseOperator;
+import io.digdag.util.BaseOperator;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import com.treasuredata.client.model.TDJobRequest;

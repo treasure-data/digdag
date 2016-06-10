@@ -11,6 +11,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

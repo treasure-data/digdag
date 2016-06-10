@@ -12,8 +12,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +29,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
+import io.digdag.util.BaseOperator;
 
 public class RbOperatorFactory
         implements OperatorFactory

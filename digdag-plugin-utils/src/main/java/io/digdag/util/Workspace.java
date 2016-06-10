@@ -1,4 +1,4 @@
-package io.digdag.standards.operator;
+package io.digdag.util;
 
 import java.util.List;
 import java.util.ArrayList;
