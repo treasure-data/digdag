@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static acceptance.TestUtils.copyResource;
@@ -88,5 +88,17 @@ public class BackfillIT
                     "--count", "2");
             assertThat(cmd.errUtf8(), cmd.code(), is(0));
         }
+
+        // Verify that 2 sessions are started
+        List<RestSession> sessions = client.getSessions();
+        assertThat(sessions.size(), is(2));
+
+        // sessions API return results in reversed order
+
+        RestSession session1 = sessions.get(1);
+        assertThat(session1.getSessionTime(), is(OffsetDateTime.parse("2016-01-01T00:00:00+09:00")));
+
+        RestSession session2 = sessions.get(0);
+        assertThat(session2.getSessionTime(), is(OffsetDateTime.parse("2016-01-02T00:00:00+09:00")));
     }
 }

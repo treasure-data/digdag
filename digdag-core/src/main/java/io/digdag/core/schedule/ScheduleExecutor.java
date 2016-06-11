@@ -258,7 +258,6 @@ public class ScheduleExecutor
                 instants.add(time);
                 time = sr.nextScheduleTime(time).getTime();
             }
-            Collections.reverse(instants);  // submit from recent to old
 
             if (useCount && remaining > 0) {
                 throw new IllegalArgumentException(String.format(ENGLISH,

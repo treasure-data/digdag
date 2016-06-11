@@ -37,9 +37,9 @@ public class CronScheduler
         // truncate to seconds
         Instant truncated = Instant.ofEpochSecond(currentTime.getEpochSecond());
         if (truncated.equals(currentTime)) {
-            // in this particular case, plus 1 second to include this currentTime
+            // in this particular case, minus 1 second to include this currentTime
             // because Predictor doesn't include this time at "next"MatchingTime() method
-            truncated = truncated.plusSeconds(1);
+            truncated = truncated.minusSeconds(1);
         }
 
         return nextScheduleTime(truncated);
