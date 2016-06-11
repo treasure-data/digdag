@@ -502,7 +502,7 @@ public class DigdagClient
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Instant fromTime, String attemptName, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Instant fromTime, String attemptName, Optional<Integer> count, boolean dryRun)
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()

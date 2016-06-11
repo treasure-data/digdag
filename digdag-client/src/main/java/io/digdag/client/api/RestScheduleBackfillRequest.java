@@ -19,6 +19,8 @@ public abstract class RestScheduleBackfillRequest
 
     public abstract String getAttemptName();
 
+    public abstract Optional<Integer> getCount();
+
     public static ImmutableRestScheduleBackfillRequest.Builder builder()
     {
         return ImmutableRestScheduleBackfillRequest.builder();

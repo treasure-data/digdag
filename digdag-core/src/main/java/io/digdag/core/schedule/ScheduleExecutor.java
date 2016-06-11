@@ -29,6 +29,7 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static java.util.Locale.ENGLISH;
 
 public class ScheduleExecutor
 {
@@ -229,7 +230,7 @@ public class ScheduleExecutor
         return srm.getScheduler(def);
     }
 
-    public List<StoredSessionAttemptWithSession> backfill(int siteId, int schedId, Instant fromTime, String attemptName, boolean dryRun)
+    public List<StoredSessionAttemptWithSession> backfill(int siteId, int schedId, Instant fromTime, String attemptName, Optional<Integer> count, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
         sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
@@ -242,13 +243,28 @@ public class ScheduleExecutor
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
             Scheduler sr = srm.getScheduler(def);
 
+            boolean useCount = count.isPresent();
+            int remaining = count.or(0);
+
             List<Instant> instants = new ArrayList<>();
             Instant time = sr.getFirstScheduleTime(fromTime).getTime();
             while (time.isBefore(sched.getNextScheduleTime())) {
+                if (useCount) {
+                    if (remaining <= 0) {
+                        break;
+                    }
+                    remaining--;
+                }
                 instants.add(time);
                 time = sr.nextScheduleTime(time).getTime();
             }
             Collections.reverse(instants);  // submit from recent to old
+
+            if (useCount && remaining > 0) {
+                throw new IllegalArgumentException(String.format(ENGLISH,
+                        "count is set to %d but there are only %d attempts until the next schedule time",
+                        count.get(), count.get() - remaining));
+            }
 
             // confirm sessions with the same attemptName doesn't exist
             for (Instant instant : instants) {

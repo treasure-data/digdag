@@ -7,6 +7,7 @@ import java.time.Instant;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -28,6 +29,9 @@ public class Backfill
 
     @Parameter(names = {"--name"})
     String retryAttemptName;
+
+    @Parameter(names = {"-c", "--count"})
+    Integer count;
 
     // TODO -n for count
     // TODO -t for to-time
@@ -62,6 +66,7 @@ public class Backfill
         err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
         err.println("        --name NAME                  retry attempt name");
         err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
+        err.println("    -c, --count N                    number of sessions to run from the time (default: all sessions until the next schedule time)");
         showCommonOptions();
         return systemExit(error);
     }
@@ -94,6 +99,7 @@ public class Backfill
                 sched.getId(),
                 truncatedTime.getSessionTime().toInstant(),
                 retryAttemptName,
+                Optional.fromNullable(count),
                 dryRun);
 
         ln("Session attempts:");
