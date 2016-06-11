@@ -509,6 +509,7 @@ public class DigdagClient
                     .fromTime(fromTime)
                     .dryRun(dryRun)
                     .attemptName(attemptName)
+                    .count(count)
                     .build(),
                 target("/api/schedules/{id}/backfill")
                 .resolveTemplate("id", scheduleId));

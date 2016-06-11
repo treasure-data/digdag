@@ -30,7 +30,7 @@ public class Backfill
     @Parameter(names = {"--name"})
     String retryAttemptName;
 
-    @Parameter(names = {"-c", "--count"})
+    @Parameter(names = {"--count"})
     Integer count;
 
     // TODO -n for count
@@ -52,8 +52,8 @@ public class Backfill
             throw usage(null);
         }
 
-        if (fromTimeString == null || retryAttemptName == null) {
-            throw new ParameterException("-f, --from option and -R, --attempt-name option are required");
+        if (fromTimeString == null) {
+            throw new ParameterException("--from option is required");
         }
 
         backfill(args.get(0), args.get(1));
@@ -66,7 +66,7 @@ public class Backfill
         err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
         err.println("        --name NAME                  retry attempt name");
         err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
-        err.println("    -c, --count N                    number of sessions to run from the time (default: all sessions until the next schedule time)");
+        err.println("        --count N                    number of sessions to run from the time (default: all sessions until the next schedule time)");
         showCommonOptions();
         return systemExit(error);
     }
