@@ -16,6 +16,7 @@ import sys
 import os
 import shlex
 from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -45,6 +46,14 @@ source_suffix = ['.rst', '.md']
 source_parsers = {
   '.md': CommonMarkParser,
 }
+
+# http://recommonmark.readthedocs.io/en/latest/auto_structify.html
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+            #'url_resolver': lambda url: url,
+            'auto_toc_tree_section': 'Contents',
+            }, True)
+    app.add_transform(AutoStructify)
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'

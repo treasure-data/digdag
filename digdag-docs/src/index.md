@@ -3,13 +3,11 @@ Digdag is a simple tool that helps you to build, run, schedule, and monitor comp
 
 Digdag fits simple replacement of cron, IT operations automation, data analytics batch jobs, machine learning pipelines, and many more by using Directed Acyclic Graphs (DAG) as the infrastructure.
 
-`Getting started <getting_started.html>`_
-==================================
+# [Getting started](getting_started.html)
 
-`> Starting Digdag in 5 minutes. <getting_started.html>`_
+[> Starting Digdag in 5 minutes.](getting_started.html)
 
-Concepts of Digdag
-==================================
+# Concepts of Digdag
 
 * **Easy to use**
 
@@ -17,24 +15,20 @@ Digdag is a single executable command. Creating new workflow is as easy as writi
 
 * **Workflow definition as code**
 
-  .. figure:: _static/workflow-as-code.png
-     :alt: Grouping tasks
-     :align: left
+![Workflow as code](_static/workflow-as-code.png)
 
 Digdag workflow is defined as code. This brings best practice of software development to your pipeline. Defined workflow is dynamically programmable but still reproducible at any time.
 
 * **Grouping tasks**
 
-  .. figure:: _static/grouping-tasks.png
-     :alt: Grouping tasks
-     :align: left
+![Grouping tasks](_static/grouping-tasks.png)
 
 Workflow definition gets complicated quickly. Digdag lets you organize tasks by creating nested groups so that you can see from a bird's view, then dive in to details. Well-organized pipelines make it easy to review your achievement as well as preventing mistakes.
 
 
-Table of Contents
-----------------------------------
+## Table of Contents
 
+```eval_rst
 .. toctree::
    :maxdepth: 2
 
@@ -49,12 +43,12 @@ Table of Contents
    python_api.rst
    ruby_api.rst
    releases.rst
+```
 
 
-License
-----------------------------------
+## License
 
-Digdag is open-source software licensed under `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+Digdag is open-source software licensed under [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-See `NOTICE <https://github.com/treasure-data/digdag/blob/master/NOTICE>`_ for details.
+See [NOTICE](https://github.com/treasure-data/digdag/blob/master/NOTICE) for details.
 
