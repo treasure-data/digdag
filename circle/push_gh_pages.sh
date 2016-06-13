@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 GH_PAGES_GIT_URL="https://github.com/treasure-data/digdag-docs.git"
 GH_PAGES_BRANCH="gh-pages"
@@ -8,9 +8,7 @@ REVISION="$(git rev-parse HEAD)"
 GIT_USER_NAME="Circle CI"
 GIT_USER_NAME="circleci@digdag.io"
 
-set -xe
-
-./gradlew site
+./gradlew site --info
 
 git fetch --unshallow || echo "Already unshallowed"
 

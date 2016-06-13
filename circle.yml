@@ -35,7 +35,7 @@ test:
 
 deployment:
   docs:
-    branch: master
+    branch: docs-test
     commands:
-      - digdag-docs/push-gh-pages.sh
+      - circle/run_deployment.sh
 
