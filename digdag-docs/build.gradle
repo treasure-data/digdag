@@ -4,18 +4,19 @@ task sphinxHtml(type: Exec) {
     args 'html'
 }
 
-task javadocHtml(type: Copy, dependsOn: [':digdag-core:javadoc', ':digdag-client:javadoc', ':digdag-spi:javadoc']) {
+task javadocHtml(type: Copy, dependsOn: [':digdag-core:javadoc', ':digdag-client:javadoc', ':digdag-cli:javadoc', ':digdag-server:javadoc', ':digdag-standards:javadoc', ':digdag-plugin-utils:javadoc', ':digdag-spi:javadoc']) {
     doFirst { file('build/html/javadoc').mkdirs() }
     from project(':digdag-core').javadoc.destinationDir
     from project(':digdag-client').javadoc.destinationDir
+    from project(':digdag-cli').javadoc.destinationDir
+    from project(':digdag-server').javadoc.destinationDir
+    from project(':digdag-standards').javadoc.destinationDir
+    from project(':digdag-plugin-utils').javadoc.destinationDir
     from project(':digdag-spi').javadoc.destinationDir
     into 'build/html/javadoc'
 }
 
 task docsUpload(type: Exec, dependsOn: ['javadocHtml', 'sphinxHtml']) {
-    doFirst {
-        file("build/html/robots.txt").write("User-agent: *\nDisallow: /\n")
-    }
     commandLine 'aws', 's3', 'sync', '--acl', 'public-read', 'build/html', 's3://digdag-beta-docs'
 }
 

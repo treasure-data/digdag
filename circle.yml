@@ -34,3 +34,9 @@ test:
         cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
       done
 
+deployment:
+  docs:
+    branch: master
+    commands:
+      - digdag-docs/push-gh-pages.sh
+
