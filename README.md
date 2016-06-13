@@ -31,30 +31,24 @@ $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 2. add `releases/release-<version>` line to [digdag-docs/src/releases.rst](digdag-docs/src/releases.rst) (setVersion should do this automatically but not implemented yet).
 3. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
 4. run `./gradlew clean cli check releaseCheck`.
-5. if it succeeded, run `./gradlew release docsUpload`.
+5. if it succeeded, run `./gradlew release`.
 
-If major version is incremented, update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py) and run `./gradlew :digdag-docs:clean docsUpload`.
+If major version is incremented, update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
 
 
 ### Updating documents
 
-Documents are in digdag-docs/src. They're built using Sphinx.
+Documents are in digdag-docs/src directory. They're built using Sphinx.
 
-Website is hosted on [digdag.io](http://digdag.io) using Amazon S3.
+Website is hosted on [www.digdag.io](http://www.digdag.io) using Github Pages. Pages are built using deployment step of circle.yml and automatically pushed to [gh-pages branch of digdag-docs repository](https://github.com/treasure-data/digdag-docs/tree/gh-pages).
 
-To build the documents and check HTML locally, run following command:
-
-```
-$ ./gradlew sphinxHtml
-```
-
-It buids index.html at digdag-docs/build/html/index.html.
-
-If it's good, upload the documents to the website using following command:
+To build the pages and check them locally, run following command:
 
 ```
-$ ./gradlew docsUpload
+$ ./gradlew site
 ```
 
 This might not always update all necessary files (Sphinx doesn't manage update dependencies well). In this case, run `./gradlew clean` first.
+
+It buids index.html at digdag-docs/build/html/index.html.
 

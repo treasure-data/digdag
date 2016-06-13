@@ -16,9 +16,5 @@ task javadocHtml(type: Copy, dependsOn: [':digdag-core:javadoc', ':digdag-client
     into 'build/html/javadoc'
 }
 
-task docsUpload(type: Exec, dependsOn: ['javadocHtml', 'sphinxHtml']) {
-    commandLine 'aws', 's3', 'sync', '--acl', 'public-read', 'build/html', 's3://digdag-beta-docs'
-}
-
 task site(type: Copy, dependsOn: ['sphinxHtml', 'javadocHtml']) {
 }
