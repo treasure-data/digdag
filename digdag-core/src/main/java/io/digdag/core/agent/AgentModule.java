@@ -19,6 +19,7 @@ public class AgentModule
         binder.bind(TemplateEngine.class).to(ConfigEvalEngine.class).in(Scopes.SINGLETON);
         binder.bind(HttpNotificationSender.class);
         binder.bind(MailNotificationSender.class);
+        binder.bind(ShellNotificationSender.class);
         binder.bind(Notifier.class).to(DefaultNotifier.class).in(Scopes.SINGLETON);
 
         // log

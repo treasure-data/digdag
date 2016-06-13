@@ -29,6 +29,7 @@ public class DefaultNotifier
     private static final String NOTIFICATION_TYPE = "notification.type";
     private static final String NOTIFICATION_TYPE_MAIL = "mail";
     private static final String NOTIFICATION_TYPE_HTTP = "http";
+    private static final String NOTIFICATION_TYPE_SHELL = "shell";
 
     private static final String NOTIFICATION_RETRIES = "notification.retries";
     private static final String NOTIFICATION_MIN_RETRY_WAIT_MS = "notification.min_retry_wait_ms";
@@ -39,7 +40,6 @@ public class DefaultNotifier
 
     private static Logger logger = LoggerFactory.getLogger(DefaultNotifier.class);
 
-    private final ProjectStoreManager projectStoreManager;
     private Injector injector;
     private final NotificationSender sender;
     private final int retries;
@@ -47,9 +47,8 @@ public class DefaultNotifier
     private final int maxRetryWaitMs;
 
     @Inject
-    public DefaultNotifier(Config systemConfig, ProjectStoreManager projectStoreManager, Injector injector)
+    public DefaultNotifier(Config systemConfig, Injector injector)
     {
-        this.projectStoreManager = projectStoreManager;
         this.injector = injector;
         Optional<String> type = systemConfig.getOptional(NOTIFICATION_TYPE, String.class);
         this.sender = type.isPresent() ? sender(type.get()) : null;
@@ -66,6 +65,8 @@ public class DefaultNotifier
                 return injector.getInstance(MailNotificationSender.class);
             case NOTIFICATION_TYPE_HTTP:
                 return injector.getInstance(HttpNotificationSender.class);
+            case NOTIFICATION_TYPE_SHELL:
+                return injector.getInstance(ShellNotificationSender.class);
             default:
                 throw new IllegalArgumentException("Unknown notification type: " + type);
         }

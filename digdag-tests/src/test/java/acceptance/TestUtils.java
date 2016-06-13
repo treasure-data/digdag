@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
@@ -177,6 +178,25 @@ class TestUtils
         }
 
         fail("Timeout after: " + timeout);
+    }
+
+    static <T> T expectValue(TemporalAmount timeout, Callable<T> condition)
+            throws Exception
+    {
+        Instant deadline = Instant.now().plus(timeout);
+        while (Instant.now().toEpochMilli() < deadline.toEpochMilli()) {
+            try {
+                T value = condition.call();
+                if (value != null) {
+                    return value;
+                }
+            }
+            catch (Exception ignore) {
+            }
+            Thread.sleep(1000);
+        }
+
+        throw new AssertionError("Timeout after: " + timeout);
     }
 
     static Callable<Boolean> attemptFailure(String endpoint, long attemptId)

@@ -32,8 +32,8 @@ import static org.junit.Assert.assertThat;
 
 public class MailNotificationIT
 {
-    private static final String PROJECT_NAME = "sla";
-    private static final String WORKFLOW_NAME = "sla-test-wf";
+    private static final String PROJECT_NAME = "notification";
+    private static final String WORKFLOW_NAME = "notification-test-wf";
     private static final String HOSTNAME = "127.0.0.1";
     private static final String SENDER = "digdag@foo.bar";
     private static final String RECEIVER = "alert@foo.bar";
