@@ -1,7 +1,0 @@
-+step1:
-  sh>: touch ${outdir}/1-1.out
-+step2:
-  +a:
-    sh>: touch ${outdir}/1-2a.out
-  +b:
-    fail>: step2b fail

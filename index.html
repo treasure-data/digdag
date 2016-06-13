@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting started &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="#"/>
+        <link rel="next" title="Getting started" href="getting_started.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="#">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="#">Docs</a> &raquo;</li>
+      
+    <li>Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <p>Digdag is a simple tool that helps you to build, run, schedule, and monitor complex pipelines of tasks. It handles dependency resolution so that tasks run in order or in parallel.</p>
+<p>Digdag fits simple replacement of cron, IT operations automation, data analytics batch jobs, machine learning pipelines, and many more by using Directed Acyclic Graphs (DAG) as the infrastructure.</p>
+<div class="section" id="id1">
+<h1><a class="reference external" href="getting_started.html">Getting started</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="getting_started.html">&gt; Starting Digdag in 5 minutes.</a></p>
+</div>
+<div class="section" id="concepts-of-digdag">
+<h1>Concepts of Digdag<a class="headerlink" href="#concepts-of-digdag" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><strong>Easy to use</strong></li>
+</ul>
+<p>Digdag is a single executable command. Creating new workflow is as easy as writing Makefile. It will come with web-based management UI backed by H2 database or PostgreSQL in the small package.</p>
+<ul>
+<li><p class="first"><strong>Workflow definition as code</strong></p>
+<div class="figure align-left">
+<img alt="Grouping tasks" src="_images/workflow-as-code.png" />
+</div>
+</li>
+</ul>
+<p>Digdag workflow is defined as code. This brings best practice of software development to your pipeline. Defined workflow is dynamically programmable but still reproducible at any time.</p>
+<ul>
+<li><p class="first"><strong>Grouping tasks</strong></p>
+<div class="figure align-left">
+<img alt="Grouping tasks" src="_images/grouping-tasks.png" />
+</div>
+</li>
+</ul>
+<p>Workflow definition gets complicated quickly. Digdag lets you organize tasks by creating nested groups so that you can see from a bird&#8217;s view, then dive in to details. Well-organized pipelines make it easy to review your achievement as well as preventing mistakes.</p>
+<div class="section" id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#downloading-the-latest-version">1. Downloading the latest version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-sample-workflow">2. Running sample workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#adding-a-data-loding-task-from-mysql-to-csv-files">3. (Adding a data loding task from MySQL to CSV files...)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#adding-a-python-task-with-variables">4. (Adding a Python task with variables ...)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#sending-an-email-if-a-task-fails">5. (Sending an email if a task fails)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#resuming-a-failed-session-from-the-middle">6. (Resuming a failed session from the middle)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/bigdata_analytics_using_treasure_data.html">BigData analytics using Treasure Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#workflow-definition-dig-files">Workflow definition: *.dig files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#is-a-task">&#8220;+&#8221; is a task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#operators">operators&gt;</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#using-variables">Using ${variables}</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#defining-variables">Defining variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#include-another-file">!include another file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#parallel-execution">Parallel execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow_definition.html#sending-error-notification">Sending error notification</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scheduling_workflow.html#satting-up-a-schedule">Satting up a schedule:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scheduling_workflow.html#running-scheduler">Running scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scheduling_workflow.html#checking-scheduling-status">Checking scheduling status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scheduling_workflow.html#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time">Setting an alert if a workflow doesn&#8217;t finish within expected time</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="running_tasks_on_docker.html#running-build-commands">Running build commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#call-calls-another-workflow">call&gt;: Calls another workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#require-depends-on-another-workflow">require&gt;: Depends on another workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#py-python-scripts">py&gt;: Python scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#rb-ruby-scripts">rb&gt;: Ruby scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#sh-shell-scripts">sh&gt;: Shell scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#loop-repeat-tasks">loop&gt;: Repeat tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#for-each-repeat-tasks">for_each&gt;: Repeat tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#if-conditional-execution">if&gt;: Conditional execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#fail-make-the-workflow-failed">fail&gt;: make the workflow failed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#td-treasure-data-queries">td&gt;: Treasure Data queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#td-run-treasure-data-saved-queries">td_run&gt;: Treasure Data saved queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#td-load-treasure-data-bulk-loading">td_load&gt;: Treasure Data bulk loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#td-ddl-treasure-data-operations">td_ddl&gt;: Treasure Data operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#td-table-export-treasure-data-table-export-to-s3">td_table_export&gt;: Treasure Data table export to S3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#mail-sending-email">mail&gt;: Sending email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operators.html#embulk-embulk-data-transfer">embulk&gt;: Embulk data transfer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#local-mode-commands">Local-mode commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#server-mode-commands">Server-mode commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#client-mode-commands">Client-mode commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#common-options">Common options</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#programmable-workflow-in-python">Programmable workflow in Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#defining-variables">Defining variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#method-argument-mapping">Method argument mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#generating-child-tasks">Generating child tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ruby_api.html#programmable-workflow-in-ruby">Programmable workflow in Ruby</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ruby_api.html#defining-variables">Defining variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ruby_api.html#method-argument-mapping">Method argument mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ruby_api.html#generating-child-tasks">Generating child tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.8.0.html">Release 0.8.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.7.1.html">Release 0.7.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.7.0.html">Release 0.7.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.6.1.html">Release 0.6.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.6.0.html">Release 0.6.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.9.html">Release 0.5.9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.8.html">Release 0.5.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.7.html">Release 0.5.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.6.html">Release 0.5.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.5.html">Release 0.5.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.4.html">Release 0.5.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.3.html">Release 0.5.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.2.html">Release 0.5.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.1.html">Release 0.5.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.5.0.html">Release 0.5.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.4.3.html">Release 0.4.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.4.2.html">Release 0.4.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.4.1.html">Release 0.4.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.4.0.html">Release 0.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.6.html">Release 0.3.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.5.html">Release 0.3.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.4.html">Release 0.3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.3.html">Release 0.3.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.2.html">Release 0.3.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.1.html">Release 0.3.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.3.0.html">Release 0.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.8.html">Release 0.2.8</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.7.html">Release 0.2.7</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.6.html">Release 0.2.6</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.5.html">Release 0.2.5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.4.html">Release 0.2.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.3.html">Release 0.2.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.2.html">Release 0.2.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.1.html">Release 0.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="releases/release-0.2.0.html">Release 0.2.0</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>Digdag is open-source software licensed under <a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+<p>See <a class="reference external" href="https://github.com/treasure-data/digdag/blob/master/NOTICE">NOTICE</a> for details.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="getting_started.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

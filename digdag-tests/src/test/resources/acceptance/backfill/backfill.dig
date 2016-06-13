@@ -1,8 +1,0 @@
-timezone: +09:00
-
-schedule:
-  daily>: 09:00:00
-
-+say_ok:
-  echo>: ok
-

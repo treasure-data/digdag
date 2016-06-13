@@ -1,9 +1,0 @@
-timezone: America/Los_Angeles   # this considers daylight saving time
-
-schedule:
-  weekly>: Sun, 10:00:00   # Every Sunday at 10 AM
-
-+task1:
-  sh>: echo "This schedule is for ${session_time}"
-
-# See also sla.dig

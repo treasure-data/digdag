@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Scheduling workflow &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Running tasks on Docker" href="running_tasks_on_docker.html"/>
+        <link rel="prev" title="Workflow definition" href="workflow_definition.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Scheduling workflow</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#satting-up-a-schedule">Satting up a schedule:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-scheduler">Running scheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#checking-scheduling-status">Checking scheduling status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time">Setting an alert if a workflow doesn&#8217;t finish within expected time</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Scheduling workflow</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/scheduling_workflow.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="scheduling-workflow">
+<h1>Scheduling workflow<a class="headerlink" href="#scheduling-workflow" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#satting-up-a-schedule" id="id1">Satting up a schedule:</a></li>
+<li><a class="reference internal" href="#running-scheduler" id="id2">Running scheduler</a></li>
+<li><a class="reference internal" href="#checking-scheduling-status" id="id3">Checking scheduling status</a></li>
+<li><a class="reference internal" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time" id="id4">Setting an alert if a workflow doesn&#8217;t finish within expected time</a></li>
+</ul>
+</div>
+<div class="section" id="satting-up-a-schedule">
+<h2><a class="toc-backref" href="#id1">Satting up a schedule:</a><a class="headerlink" href="#satting-up-a-schedule" title="Permalink to this headline">¶</a></h2>
+<p>To run a workflow periodically, add a <code class="docutils literal"><span class="pre">schedule:</span></code> option to top-level workflow definitions.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">daily_job</span>
+<span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
+
+<span class="l l-Scalar l-Scalar-Plain">schedule</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">daily&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">07:00:00</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/shell_sample.sh</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal"><span class="pre">schedule:</span></code> directive, you can choose one of following options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="43%" />
+<col width="26%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Syntax</th>
+<th class="head">Description</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>daily&gt;: <code class="docutils literal"><span class="pre">HH:MM:SS</span></code></td>
+<td>Run this job every day at HH:MM:SS</td>
+<td>daily&gt;: 07:00:00</td>
+</tr>
+<tr class="row-odd"><td>hourly&gt;: <code class="docutils literal"><span class="pre">MM:SS</span></code></td>
+<td>Run this job every hour at MM:SS</td>
+<td>hourly&gt;: 30:00</td>
+</tr>
+<tr class="row-even"><td>weekly&gt;: <code class="docutils literal"><span class="pre">DDD,HH:MM:SS</span></code></td>
+<td>Run this job every week on DDD at HH:MM:SS</td>
+<td>weekly&gt;: Sun,09:00:00</td>
+</tr>
+<tr class="row-odd"><td>monthly&gt;: <code class="docutils literal"><span class="pre">D,HH:MM:SS</span></code></td>
+<td>Run this job every month on D at HH:MM:SS</td>
+<td>monthly&gt;: 1,09:00:00</td>
+</tr>
+<tr class="row-even"><td>minutes_interval&gt;: <code class="docutils literal"><span class="pre">M</span></code></td>
+<td>Run this job every this number of minutes</td>
+<td>minutes_interval&gt;: 30</td>
+</tr>
+<tr class="row-odd"><td>cron&gt;: <code class="docutils literal"><span class="pre">CRON</span></code></td>
+<td>Use cron format for complex scheduling</td>
+<td>cron&gt;: 42 4 1 * *</td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">check</span></code> command shows when the first schedule will start:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ./digdag check
+<span class="go">  ...</span>
+
+<span class="go">  Schedules (1 entries):</span>
+<span class="go">    daily_job:</span>
+<span class="go">      daily&gt;: &quot;07:00:00&quot;</span>
+<span class="go">      first session time: 2016-02-10 16:00:00 -0800</span>
+<span class="go">      first runs at: 2016-02-10 23:00:00 -0800 (11h 16m 32s later)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-scheduler">
+<h2><a class="toc-backref" href="#id2">Running scheduler</a><a class="headerlink" href="#running-scheduler" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">scheduler</span></code> command runs the schedules:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ./digdag scheduler
+</pre></div>
+</div>
+<p>When you change workflow definition, the scheduler reloads <code class="docutils literal"><span class="pre">digdag.dig</span></code> file automatically so that you don&#8217;t have to restart it.</p>
+</div>
+<div class="section" id="checking-scheduling-status">
+<h2><a class="toc-backref" href="#id3">Checking scheduling status</a><a class="headerlink" href="#checking-scheduling-status" title="Permalink to this headline">¶</a></h2>
+<p>You can use <a class="reference external" href="command_reference.html#client-mode-commands">Client-mode commands</a> to manage the schedules.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The scheduler command listens on <code class="docutils literal"><span class="pre">http://127.0.0.1:65432</span></code> by default. It accepts connection only from 127.0.0.1 (localhost). This is for a security reason so that it doesn&#8217;t open the port to the public network. To change the listen address, please use <code class="docutils literal"><span class="pre">--bind</span> <span class="pre">ADDRESS</span></code> option.</p>
+</div>
+</div>
+<div class="section" id="setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time">
+<h2><a class="toc-backref" href="#id4">Setting an alert if a workflow doesn&#8217;t finish within expected time</a><a class="headerlink" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+main</span>
+<span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
+
+<span class="l l-Scalar l-Scalar-Plain">schedule</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">daily&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">07:00:00</span>
+
+<span class="l l-Scalar l-Scalar-Plain">sla</span><span class="p p-Indicator">:</span>
+  <span class="c1"># triggers this task at 02:00</span>
+  <span class="l l-Scalar l-Scalar-Plain">time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">02:00</span>
+  <span class="l l-Scalar l-Scalar-Plain">+notice</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">notice.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+long_running_job</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">long_running_job.sh</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="running_tasks_on_docker.html" class="btn btn-neutral float-right" title="Running tasks on Docker" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="workflow_definition.html" class="btn btn-neutral" title="Workflow definition" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

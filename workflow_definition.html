@@ -1,0 +1,519 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Workflow definition &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Scheduling workflow" href="scheduling_workflow.html"/>
+        <link rel="prev" title="BigData analytics using Treasure Data" href="tutorials/bigdata_analytics_using_treasure_data.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Workflow definition</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#workflow-definition-dig-files">Workflow definition: *.dig files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#is-a-task">&#8220;+&#8221; is a task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operators">operators&gt;</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-variables">Using ${variables}</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#defining-variables">Defining variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-export-parameter">Using _export: parameter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-api">Using API</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-a-session-with-variables">Starting a session with variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#include-another-file">!include another file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-execution">Parallel execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sending-error-notification">Sending error notification</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Workflow definition</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/workflow_definition.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="workflow-definition">
+<h1>Workflow definition<a class="headerlink" href="#workflow-definition" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#workflow-definition-dig-files" id="id4">Workflow definition: *.dig files</a></li>
+<li><a class="reference internal" href="#is-a-task" id="id5">&#8220;+&#8221; is a task</a></li>
+<li><a class="reference internal" href="#operators" id="id6">operators&gt;</a></li>
+<li><a class="reference internal" href="#using-variables" id="id7">Using ${variables}</a></li>
+<li><a class="reference internal" href="#defining-variables" id="id8">Defining variables</a><ul>
+<li><a class="reference internal" href="#using-export-parameter" id="id9">Using _export: parameter</a></li>
+<li><a class="reference internal" href="#using-api" id="id10">Using API</a></li>
+<li><a class="reference internal" href="#starting-a-session-with-variables" id="id11">Starting a session with variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#include-another-file" id="id12">!include another file</a></li>
+<li><a class="reference internal" href="#parallel-execution" id="id13">Parallel execution</a></li>
+<li><a class="reference internal" href="#sending-error-notification" id="id14">Sending error notification</a></li>
+</ul>
+</div>
+<div class="section" id="workflow-definition-dig-files">
+<h2><a class="toc-backref" href="#id4">Workflow definition: <a href="#id1"><span class="problematic" id="id2">*</span></a>.dig files</a><a class="headerlink" href="#workflow-definition-dig-files" title="Permalink to this headline">¶</a></h2>
+<p>A digdag workflow is defined in a file named with <code class="docutils literal"><span class="pre">.dig</span></code> suffix. Name of the file is name of the workflow.</p>
+<p>For example, if you create <code class="docutils literal"><span class="pre">hello_world</span></code> workflow, you will create <code class="docutils literal"><span class="pre">hello_world.dig</span></code> file. Contents of the file looks like this:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/shell_sample.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.step2</span>
+  <span class="l l-Scalar l-Scalar-Plain">param1</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this is param1</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step3</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">rb&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">MyWorkflow.step3</span>
+  <span class="l l-Scalar l-Scalar-Plain">require</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/ruby_sample.rb</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">timezone</span></code> parameter is used to configure the time zone of the workflow and affects session timestamp variables and scheduling. The default time zone is <code class="docutils literal"><span class="pre">UTC</span></code>. Some examples of other valid time zones are <code class="docutils literal"><span class="pre">America/Los_Angeles</span></code>, <code class="docutils literal"><span class="pre">Europe/Berlin</span></code>, <code class="docutils literal"><span class="pre">Asia/Tokyo</span></code>, etc.</p>
+</div>
+<div class="section" id="is-a-task">
+<h2><a class="toc-backref" href="#id5">&#8220;+&#8221; is a task</a><a class="headerlink" href="#is-a-task" title="Permalink to this headline">¶</a></h2>
+<p>Key names starting with <code class="docutils literal"><span class="pre">+</span></code> sign is a task. Tasks run from the top to bottom in order. A task can be nested as a child of another task. In above example, <code class="docutils literal"><span class="pre">+step2</span></code> runs after <code class="docutils literal"><span class="pre">+step1</span></code> as a child of <code class="docutils literal"><span class="pre">+main</span></code> task.</p>
+</div>
+<div class="section" id="operators">
+<h2><a class="toc-backref" href="#id6">operators&gt;</a><a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+<p>A task with <code class="docutils literal"><span class="pre">type&gt;:</span> <span class="pre">command</span></code> or <code class="docutils literal"><span class="pre">_type:</span> <span class="pre">NAME</span></code> parameter executes an action. You can choose various kinds of operators such as <a class="reference external" href="task_types.html#sh-shell-scripts">running shell scripts</a>, <a class="reference external" href="task_types.html#py-python-scripts">Python methods</a>, <a class="reference external" href="task_types.html#mail-sending-email">sending email</a>, etc. See <a class="reference external" href="operators.html">Operators</a> page for the list of built-in operators.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Setting <code class="docutils literal"><span class="pre">foo&gt;:</span> <span class="pre">bar</span></code> parameter is equivalent to setting <code class="docutils literal"><span class="pre">_type:</span> <span class="pre">foo</span></code> and <code class="docutils literal"><span class="pre">_command:</span> <span class="pre">bar</span></code> parameters. That is a syntax sugar of setting 2 parameters in 1 line.</p>
+</div>
+</div>
+<div class="section" id="using-variables">
+<h2><a class="toc-backref" href="#id7">Using ${variables}</a><a class="headerlink" href="#using-variables" title="Permalink to this headline">¶</a></h2>
+<p>Workflow can embed variables using <code class="docutils literal"><span class="pre">${...}</span></code> syntax. You can use built-in variables or define your own variables.</p>
+<p>Here is the list of built-in variables:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="28%" />
+<col width="39%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Description</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><strong>timezone</strong></td>
+<td>Timezone of this workflow</td>
+<td>America/Los_Angeles</td>
+</tr>
+<tr class="row-odd"><td><strong>session_uuid</strong></td>
+<td>Unique UUID of this session</td>
+<td>414a8b9e-b365-4394-916a-f0ed9987bd2b</td>
+</tr>
+<tr class="row-even"><td><strong>session_time</strong></td>
+<td>Time of this session with time zone</td>
+<td>2016-01-30T00:00:00-08:00</td>
+</tr>
+<tr class="row-odd"><td><strong>session_date</strong></td>
+<td>Date part of session_time</td>
+<td>2016-01-30</td>
+</tr>
+<tr class="row-even"><td><strong>session_date_compact</strong></td>
+<td>Date part of session_time (compact)</td>
+<td>20160130</td>
+</tr>
+<tr class="row-odd"><td><strong>session_local_time</strong></td>
+<td>Local time format of session_time</td>
+<td>2016-01-30 00:00:00</td>
+</tr>
+<tr class="row-even"><td><strong>session_tz_offset</strong></td>
+<td>Time zone offset part of session_time</td>
+<td>-0800</td>
+</tr>
+<tr class="row-odd"><td><strong>session_unixtime</strong></td>
+<td>Seconds since the epoch time</td>
+<td>1454140800</td>
+</tr>
+</tbody>
+</table>
+<p>If <a class="reference external" href="scheduling_workflow.html">schedule: option is set</a>, <strong>last_session_time</strong> and <strong>next_session_time</strong> are also available as following:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="41%" />
+<col width="30%" />
+<col width="30%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Example (hourly schedule)</th>
+<th class="head">Example (daily schedule)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><strong>last_session_time</strong></td>
+<td>2016-01-29T23:00:00-08:00</td>
+<td>2016-01-29T00:00:00-08:00</td>
+</tr>
+<tr class="row-odd"><td><strong>last_session_date</strong></td>
+<td>2016-01-29</td>
+<td>2016-01-29</td>
+</tr>
+<tr class="row-even"><td><strong>last_session_date_compact</strong></td>
+<td>20160129</td>
+<td>20160129</td>
+</tr>
+<tr class="row-odd"><td><strong>last_session_local_time</strong></td>
+<td>2016-01-29 23:00:00</td>
+<td>2016-01-29 00:00:00</td>
+</tr>
+<tr class="row-even"><td><strong>last_session_tz_offset</strong></td>
+<td>-0800</td>
+<td>-0800</td>
+</tr>
+<tr class="row-odd"><td><strong>last_session_unixtime</strong></td>
+<td>1454137200</td>
+<td>1454054400</td>
+</tr>
+<tr class="row-even"><td><strong>next_session_time</strong></td>
+<td>2016-01-30T01:00:00-08:00</td>
+<td>2016-01-31T00:00:00-08:00</td>
+</tr>
+<tr class="row-odd"><td><strong>next_session_date</strong></td>
+<td>2016-01-30</td>
+<td>2016-01-31</td>
+</tr>
+<tr class="row-even"><td><strong>next_session_date_compact</strong></td>
+<td>20160130</td>
+<td>20160131</td>
+</tr>
+<tr class="row-odd"><td><strong>next_session_local_time</strong></td>
+<td>2016-01-30 01:00:00</td>
+<td>2016-01-31 00:00:00</td>
+</tr>
+<tr class="row-even"><td><strong>next_session_tz_offset</strong></td>
+<td>-0800</td>
+<td>-0800</td>
+</tr>
+<tr class="row-odd"><td><strong>next_session_unixtime</strong></td>
+<td>1454144400</td>
+<td>1454227200</td>
+</tr>
+</tbody>
+</table>
+<p>last_session_time is the timestamp of the last schedule. If the schedule is hourly, it&#8217;s the last hour. If the schedule is daily, it&#8217;s yesterday. It doesn&#8217;t matter whether the last schedule actually ran or not. It&#8217;s simply set to the last timestamp calculated from the current session time.</p>
+</div>
+<div class="section" id="defining-variables">
+<h2><a class="toc-backref" href="#id8">Defining variables</a><a class="headerlink" href="#defining-variables" title="Permalink to this headline">¶</a></h2>
+<p>You can define variables in 3 ways:</p>
+<ul class="simple">
+<li>Using <code class="docutils literal"><span class="pre">_export</span></code> parameter in YAML</li>
+<li>Setting variable programmably using API</li>
+<li>Starting a session with variables</li>
+</ul>
+<div class="section" id="using-export-parameter">
+<h3><a class="toc-backref" href="#id9">Using _export: parameter</a><a class="headerlink" href="#using-export-parameter" title="Permalink to this headline">¶</a></h3>
+<p>In a YAML file, <code class="docutils literal"><span class="pre">_export:</span></code> directive defines variables. This is useful to load static configurations such as host name of a database.</p>
+<p>If a task has <code class="docutils literal"><span class="pre">_export</span></code> directive, the task and its children can use the variables because it defines variables in a scope. With following example, all tasks can use <code class="docutils literal"><span class="pre">foo=1</span></code> but only +step1 (and +analyze) can use <code class="docutils literal"><span class="pre">bar=2</span></code>.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">foo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+prepare</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.prepare</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">bar</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.analyze_step1</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+dump</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.dump</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-api">
+<h3><a class="toc-backref" href="#id10">Using API</a><a class="headerlink" href="#using-api" title="Permalink to this headline">¶</a></h3>
+<p>You can set variables programmably using language API. For exampe, Python API provides <code class="docutils literal"><span class="pre">digdag.env.export</span></code> and <code class="docutils literal"><span class="pre">digdag.env.store</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">digdag</span>
+
+<span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">store</span><span class="p">({</span><span class="s2">&quot;my_param&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+
+  <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_var</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;my_var should be 2: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">my_var</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">digdag.env.store(dict)</span></code> stores variables so that all folling tasks (including tasks which are not children of the task) can use them.</p>
+<p><code class="docutils literal"><span class="pre">digdag.env.export(dict)</span></code> is same with &#8220;_export&#8221; directive in YAML file. It defines variables for their children.</p>
+<p>See language API documents for details:</p>
+<ul class="simple">
+<li><a class="reference external" href="python_api.html">Python API</a></li>
+<li><a class="reference external" href="ruby_api.html">Ruby API</a></li>
+<li><a class="reference external" href="shell_api.html">Shell script API</a></li>
+</ul>
+</div>
+<div class="section" id="starting-a-session-with-variables">
+<h3><a class="toc-backref" href="#id11">Starting a session with variables</a><a class="headerlink" href="#starting-a-session-with-variables" title="Permalink to this headline">¶</a></h3>
+<p>You can set variables when you start a new workflow session. To set variables, use <code class="docutils literal"><span class="pre">-p</span> <span class="pre">KEY=VALUE</span></code> multiple times:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run -p <span class="nv">my_var1</span><span class="o">=</span>foo -p <span class="nv">my_var2</span><span class="o">=</span>abc
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="include-another-file">
+<h2><a class="toc-backref" href="#id12">!include another file</a><a class="headerlink" href="#include-another-file" title="Permalink to this headline">¶</a></h2>
+<p>You can divide a YAML file into small files to organize complex workflow. <code class="docutils literal"><span class="pre">!include</span></code> directive is used to gather those files:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">mysql</span><span class="p p-Indicator">:</span>
+    <span class="kt">!include</span> <span class="p p-Indicator">:</span> <span class="s">&#39;config/mysql.dig&#39;</span>
+  <span class="l l-Scalar l-Scalar-Plain">hive</span><span class="p p-Indicator">:</span>
+    <span class="kt">!include</span> <span class="p p-Indicator">:</span> <span class="s">&#39;config/hive.dig&#39;</span>
+
+<span class="kt">!include</span> <span class="p p-Indicator">:</span> <span class="s">&#39;tasks/foo.dig&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="parallel-execution">
+<h2><a class="toc-backref" href="#id13">Parallel execution</a><a class="headerlink" href="#parallel-execution" title="Permalink to this headline">¶</a></h2>
+<p>If <code class="docutils literal"><span class="pre">_parallel:</span> <span class="pre">true</span></code> parameter is set to a group, child tasks in the group run in parallel (grandchildren are not affected):</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
+  <span class="l l-Scalar l-Scalar-Plain"># +data1, +data2, and +data3 run in parallel.</span>
+  <span class="l l-Scalar l-Scalar-Plain">_parallel</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+data1</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data1.sh</span>
+
+<span class=" -Error">  </span><span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data2.sh</span>
+
+  <span class="l l-Scalar l-Scalar-Plain">+data3</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data3.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal"><span class="pre">_background:</span> <span class="pre">true</span></code> parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
+  <span class="l l-Scalar l-Scalar-Plain">+data1</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data1.sh</span>
+
+  <span class="c1"># +data1 and +data2 run in parallel.</span>
+<span class=" -Error">  </span><span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">_background</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data2.sh</span>
+
+  <span class="c1"># +data3 runs after +data1 and +data2.</span>
+  <span class="l l-Scalar l-Scalar-Plain">+data3</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data3.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sending-error-notification">
+<h2><a class="toc-backref" href="#id14">Sending error notification</a><a class="headerlink" href="#sending-error-notification" title="Permalink to this headline">¶</a></h2>
+<p>If an operator configuration is set at <code class="docutils literal"><span class="pre">_error:</span></code> parameter, the operator runs when the workflow fails.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># this task runs when a workflow fails.</span>
+<span class="l l-Scalar l-Scalar-Plain">_error</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/runs_when_workflow_failed.sh</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
+</pre></div>
+</div>
+<p>To send mails, you can use <a class="reference external" href="operators.html#mail-sending-email">mail&gt; operator</a>.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="scheduling_workflow.html" class="btn btn-neutral float-right" title="Scheduling workflow" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorials/bigdata_analytics_using_treasure_data.html" class="btn btn-neutral" title="BigData analytics using Treasure Data" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

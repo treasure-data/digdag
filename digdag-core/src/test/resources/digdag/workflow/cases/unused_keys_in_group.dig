@@ -1,6 +1,0 @@
-+group:
-  parallel: true  # _parallel is correct
-  +step1:
-    echo>: ok
-  +step2:
-    echo>: ok

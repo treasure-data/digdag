@@ -1,6 +1,0 @@
-timezone: UTC
-
-+basic:
-  !include : basic.dig
-+conditions:
-  !include : conditions.dig

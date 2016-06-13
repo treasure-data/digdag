@@ -1,2 +1,0 @@
-+foo:
-  sh>: "echo ${mysql.password} > foo.out"

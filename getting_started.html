@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting started &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Tutorials" href="tutorials.html"/>
+        <link rel="prev" title="Getting started" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#downloading-the-latest-version">1. Downloading the latest version</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#on-windows-or-if-curl-command-doesn-t-work">On Windows, or if curl command doesn&#8217;t work</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#got-error">Got error?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-sample-workflow">2. Running sample workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-a-data-loding-task-from-mysql-to-csv-files">3. (Adding a data loding task from MySQL to CSV files...)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-a-python-task-with-variables">4. (Adding a Python task with variables ...)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sending-an-email-if-a-task-fails">5. (Sending an email if a task fails)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resuming-a-failed-session-from-the-middle">6. (Resuming a failed session from the middle)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/getting_started.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#downloading-the-latest-version" id="id1">1. Downloading the latest version</a></li>
+<li><a class="reference internal" href="#running-sample-workflow" id="id2">2. Running sample workflow</a></li>
+<li><a class="reference internal" href="#adding-a-data-loding-task-from-mysql-to-csv-files" id="id3">3. (Adding a data loding task from MySQL to CSV files...)</a></li>
+<li><a class="reference internal" href="#adding-a-python-task-with-variables" id="id4">4. (Adding a Python task with variables ...)</a></li>
+<li><a class="reference internal" href="#sending-an-email-if-a-task-fails" id="id5">5. (Sending an email if a task fails)</a></li>
+<li><a class="reference internal" href="#resuming-a-failed-session-from-the-middle" id="id6">6. (Resuming a failed session from the middle)</a></li>
+<li><a class="reference internal" href="#next-steps" id="id7">Next steps</a></li>
+</ul>
+</div>
+<div class="section" id="downloading-the-latest-version">
+<h2><a class="toc-backref" href="#id1">1. Downloading the latest version</a><a class="headerlink" href="#downloading-the-latest-version" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="index.html">Digdag</a> is a simple executable file. You can download the file to <code class="docutils literal"><span class="pre">/usr/local/bin</span></code> directory using <code class="docutils literal"><span class="pre">curl</span></code> command as following:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> curl -u beta -o /usr/local/bin/digdag --create-dirs -L <span class="s2">&quot;https://dl.digdag.io/digdag-latest&quot;</span>
+<span class="gp">$</span> chmod +x /usr/local/bin/digdag
+</pre></div>
+</div>
+<p>If <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">--help</span></code> command works, Digdag is installed successfully.</p>
+<div class="section" id="on-windows-or-if-curl-command-doesn-t-work">
+<h3>On Windows, or if curl command doesn&#8217;t work<a class="headerlink" href="#on-windows-or-if-curl-command-doesn-t-work" title="Permalink to this headline">¶</a></h3>
+<p>On Windows, you can download a file named <code class="docutils literal"><span class="pre">digdag-&lt;VERSION&gt;.jar</span></code> from <a class="reference external" href="https://dl.digdag.io/digdag-latest">https://dl.digdag.io/digdag-latest</a>. This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).</p>
+<p>Once download completed, please rename the file to <code class="docutils literal"><span class="pre">digdag.bat</span></code> (Windows) or <code class="docutils literal"><span class="pre">/usr/local/bin/digdag</span></code> (Linux/UNIX).</p>
+</div>
+<div class="section" id="got-error">
+<h3>Got error?<a class="headerlink" href="#got-error" title="Permalink to this headline">¶</a></h3>
+<p>If you got an error such as <strong>&#8216;Unsupported major.minor version 52.0&#8217;</strong>, please download and install the latest <a class="reference external" href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html">Java SE Development Kit 8</a> (must be newer than <strong>8u72</strong>).</p>
+</div>
+</div>
+<div class="section" id="running-sample-workflow">
+<h2><a class="toc-backref" href="#id2">2. Running sample workflow</a><a class="headerlink" href="#running-sample-workflow" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">init</span> <span class="pre">&lt;dir&gt;</span></code> command generates sample workflow for you:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag init mydag
+<span class="gp">$</span> <span class="nb">cd</span> mydag
+<span class="gp">$</span> digdag run
+</pre></div>
+</div>
+<p>Did it work? Next step is adding tasks to <code class="docutils literal"><span class="pre">digdag.dig</span></code> file to automate your jobs.</p>
+</div>
+<div class="section" id="adding-a-data-loding-task-from-mysql-to-csv-files">
+<h2><a class="toc-backref" href="#id3">3. (Adding a data loding task from MySQL to CSV files...)</a><a class="headerlink" href="#adding-a-data-loding-task-from-mysql-to-csv-files" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="adding-a-python-task-with-variables">
+<h2><a class="toc-backref" href="#id4">4. (Adding a Python task with variables ...)</a><a class="headerlink" href="#adding-a-python-task-with-variables" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="sending-an-email-if-a-task-fails">
+<h2><a class="toc-backref" href="#id5">5. (Sending an email if a task fails)</a><a class="headerlink" href="#sending-an-email-if-a-task-fails" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="resuming-a-failed-session-from-the-middle">
+<h2><a class="toc-backref" href="#id6">6. (Resuming a failed session from the middle)</a><a class="headerlink" href="#resuming-a-failed-session-from-the-middle" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="next-steps">
+<h2><a class="toc-backref" href="#id7">Next steps</a><a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li><a class="reference external" href="workflow_definition.html">Detailed documents about workflow definition</a></li>
+<li><a class="reference external" href="operators.html">More choices of operators</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Getting started" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,8 +1,0 @@
-timezone: UTC
-
-+step1:
-  sh>: echo calling basic...
-
-+call_another:
-  call>: basic
-

@@ -1,0 +1,1055 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Operators &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Command reference" href="command_reference.html"/>
+        <link rel="prev" title="Running tasks on Docker" href="running_tasks_on_docker.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Operators</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#call-calls-another-workflow">call&gt;: Calls another workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#require-depends-on-another-workflow">require&gt;: Depends on another workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#py-python-scripts">py&gt;: Python scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rb-ruby-scripts">rb&gt;: Ruby scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sh-shell-scripts">sh&gt;: Shell scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loop-repeat-tasks">loop&gt;: Repeat tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#for-each-repeat-tasks">for_each&gt;: Repeat tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#if-conditional-execution">if&gt;: Conditional execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fail-make-the-workflow-failed">fail&gt;: make the workflow failed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#td-treasure-data-queries">td&gt;: Treasure Data queries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-parameters">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#td-run-treasure-data-saved-queries">td_run&gt;: Treasure Data saved queries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#td-load-treasure-data-bulk-loading">td_load&gt;: Treasure Data bulk loading</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#td-ddl-treasure-data-operations">td_ddl&gt;: Treasure Data operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#td-table-export-treasure-data-table-export-to-s3">td_table_export&gt;: Treasure Data table export to S3</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Output parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mail-sending-email">mail&gt;: Sending email</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#embulk-embulk-data-transfer">embulk&gt;: Embulk data transfer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Operators</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/operators.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="operators">
+<h1>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#call-calls-another-workflow" id="id5">call&gt;: Calls another workflow</a></li>
+<li><a class="reference internal" href="#require-depends-on-another-workflow" id="id6">require&gt;: Depends on another workflow</a></li>
+<li><a class="reference internal" href="#py-python-scripts" id="id7">py&gt;: Python scripts</a></li>
+<li><a class="reference internal" href="#rb-ruby-scripts" id="id8">rb&gt;: Ruby scripts</a></li>
+<li><a class="reference internal" href="#sh-shell-scripts" id="id9">sh&gt;: Shell scripts</a></li>
+<li><a class="reference internal" href="#loop-repeat-tasks" id="id10">loop&gt;: Repeat tasks</a></li>
+<li><a class="reference internal" href="#for-each-repeat-tasks" id="id11">for_each&gt;: Repeat tasks</a></li>
+<li><a class="reference internal" href="#if-conditional-execution" id="id12">if&gt;: Conditional execution</a></li>
+<li><a class="reference internal" href="#fail-make-the-workflow-failed" id="id13">fail&gt;: make the workflow failed</a></li>
+<li><a class="reference internal" href="#td-treasure-data-queries" id="id14">td&gt;: Treasure Data queries</a><ul>
+<li><a class="reference internal" href="#parameters" id="id15">Parameters</a></li>
+<li><a class="reference internal" href="#output-parameters" id="id16">Output parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#td-run-treasure-data-saved-queries" id="id17">td_run&gt;: Treasure Data saved queries</a><ul>
+<li><a class="reference internal" href="#id1" id="id18">Parameters</a></li>
+<li><a class="reference internal" href="#id2" id="id19">Output parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#td-load-treasure-data-bulk-loading" id="id20">td_load&gt;: Treasure Data bulk loading</a><ul>
+<li><a class="reference internal" href="#id3" id="id21">Output parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#td-ddl-treasure-data-operations" id="id22">td_ddl&gt;: Treasure Data operations</a></li>
+<li><a class="reference internal" href="#td-table-export-treasure-data-table-export-to-s3" id="id23">td_table_export&gt;: Treasure Data table export to S3</a><ul>
+<li><a class="reference internal" href="#id4" id="id24">Output parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mail-sending-email" id="id25">mail&gt;: Sending email</a></li>
+<li><a class="reference internal" href="#embulk-embulk-data-transfer" id="id26">embulk&gt;: Embulk data transfer</a></li>
+</ul>
+</div>
+<div class="section" id="call-calls-another-workflow">
+<h2><a class="toc-backref" href="#id5">call&gt;: Calls another workflow</a><a class="headerlink" href="#call-calls-another-workflow" title="Permalink to this headline">¶</a></h2>
+<p><strong>call&gt;:</strong> operator calls another workflow.</p>
+<p>This operator embeds another workflow as a subtask.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">call&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow1</span>
+</pre></div>
+</div>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">call&gt;: +NAME</strong></dt>
+<dd><p class="first">Name of a workflow.</p>
+<p class="last">Example: +another_workflow</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="require-depends-on-another-workflow">
+<h2><a class="toc-backref" href="#id6">require&gt;: Depends on another workflow</a><a class="headerlink" href="#require-depends-on-another-workflow" title="Permalink to this headline">¶</a></h2>
+<p><strong>require&gt;:</strong> operator runs another workflow. Unlike <code class="docutils literal"><span class="pre">call&gt;</span></code> operator, the workflow is skipped if the workflow for the session time is already done successfully before.</p>
+<p>This operator submits a new session to digdag.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">require&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow2</span>
+</pre></div>
+</div>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow2.dig</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">require&gt;: +NAME</strong></dt>
+<dd><p class="first">Name of a workflow.</p>
+<p class="last">Example: +another_workflow</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="py-python-scripts">
+<h2><a class="toc-backref" href="#id7">py&gt;: Python scripts</a><a class="headerlink" href="#py-python-scripts" title="Permalink to this headline">¶</a></h2>
+<p><strong>py&gt;:</strong> operator runs a Python script using <code class="docutils literal"><span class="pre">python</span></code> command.
+TODO: link to <a class="reference external" href="ruby_api.html">Python API documents</a> for details including variable mappings to keyword arguments.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_step1_method</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.step2</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">py&gt;: [PACKAGE.CLASS.]METHOD</strong></dt>
+<dd><p class="first">Name of a method to run.</p>
+<ul class="last simple">
+<li><strong class="command">py&gt;: tasks.MyWorkflow.my_task</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="rb-ruby-scripts">
+<h2><a class="toc-backref" href="#id8">rb&gt;: Ruby scripts</a><a class="headerlink" href="#rb-ruby-scripts" title="Permalink to this headline">¶</a></h2>
+<p><strong>rb&gt;:</strong> operator runs a Ruby script using <code class="docutils literal"><span class="pre">ruby</span></code> command.</p>
+<p>TODO: add more description here
+TODO: link to <a class="reference external" href="python_api.html">Ruby API documents</a> for details including best practices how to configure the workflow using <code class="docutils literal"><span class="pre">export:</span> <span class="pre">require:</span></code>.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">ruby</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">require</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/my_workflow</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">rb&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_step1_method</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">rb&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Task::MyWorkflow.step2</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">rb&gt;: [MODULE::CLASS.]METHOD</strong></dt>
+<dd><p class="first">Name of a method to run.</p>
+<ul class="last simple">
+<li><strong class="command">rb&gt;: Task::MyWorkflow.my_task</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">require: FILE</strong></dt>
+<dd><p class="first">Name of a file to require.</p>
+<ul class="last simple">
+<li><strong class="command">require: task/my_workflow</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="sh-shell-scripts">
+<h2><a class="toc-backref" href="#id9">sh&gt;: Shell scripts</a><a class="headerlink" href="#sh-shell-scripts" title="Permalink to this headline">¶</a></h2>
+<p><strong>sh&gt;:</strong> operator runs a shell script.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step1.sh</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">sh&gt;: COMMAND [ARGS...]</strong></dt>
+<dd><p class="first">Name of the command to run.</p>
+<ul class="last simple">
+<li><strong class="command">sh&gt;: tasks/workflow.sh --task1</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="loop-repeat-tasks">
+<h2><a class="toc-backref" href="#id10">loop&gt;: Repeat tasks</a><a class="headerlink" href="#loop-repeat-tasks" title="Permalink to this headline">¶</a></h2>
+<p><strong>loop&gt;:</strong> operator runs subtasks multiple times.</p>
+<p>This operator exports <code class="docutils literal"><span class="pre">${i}</span></code> variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.</p>
+<p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">loop&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">7</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${new Date((session_unixtime + i * 60 * 60 * 24) * 1000).toLocaleDateString()} is ${i} days later than $session_date</span>
+    <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${</span>
+            <span class="l l-Scalar l-Scalar-Plain">new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleDateString()</span>
+            <span class="l l-Scalar l-Scalar-Plain">+ &quot; &quot;</span>
+            <span class="l l-Scalar l-Scalar-Plain">+ new Date((session_unixtime + i * 60 * 60) * 1000).toLocaleTimeString()</span>
+        <span class="l l-Scalar l-Scalar-Plain">} is ${i} hours later than ${session_local_time}</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">loop&gt;: COUNT</strong></dt>
+<dd><p class="first">Number of times to run the tasks.</p>
+<ul class="last simple">
+<li><strong class="command">loop&gt;: 7</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">_parallel: BOOLEAN</strong></dt>
+<dd><p class="first">Runs the repeating tasks in parallel.</p>
+<ul class="last simple">
+<li><strong class="command">_parallel: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">_do: TASKS</strong></dt>
+<dd>Tasks to run.</dd>
+</dl>
+</div>
+<div class="section" id="for-each-repeat-tasks">
+<h2><a class="toc-backref" href="#id11">for_each&gt;: Repeat tasks</a><a class="headerlink" href="#for-each-repeat-tasks" title="Permalink to this headline">¶</a></h2>
+<p><strong>for_each&gt;:</strong> operator runs subtasks multiple times using sets of variables.</p>
+<p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">for_each&gt;</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">fruit</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">apple</span><span class="p p-Indicator">,</span> <span class="nv">orange</span><span class="p p-Indicator">]</span>
+    <span class="l l-Scalar l-Scalar-Plain">verb</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">eat</span><span class="p p-Indicator">,</span> <span class="nv">throw</span><span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${verb} ${fruit}</span>
+    <span class="c1"># this will generate 4 tasks:</span>
+    <span class="c1">#  +for-fruit=apple&amp;verb=eat:</span>
+    <span class="c1">#    sh&gt;: echo eat apple</span>
+    <span class="c1">#  +for-fruit=apple&amp;verb=throw:</span>
+    <span class="c1">#    sh&gt;: echo throw apple</span>
+    <span class="c1">#  +for-fruit=orange&amp;verb=eat:</span>
+    <span class="c1">#    sh&gt;: echo eat orange</span>
+    <span class="c1">#  +for-fruit=orange&amp;verb=throw:</span>
+    <span class="c1">#    sh&gt;: echo throw orange</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">for_each&gt;: VARIABLES</strong></dt>
+<dd><p class="first">Variables used for the loop in <code class="docutils literal"><span class="pre">key:</span> <span class="pre">[value,</span> <span class="pre">value,</span> <span class="pre">...]</span></code> syntax.</p>
+<ul class="last simple">
+<li><strong class="command">for_each&gt;: {i: [1, 2, 3]}</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">_parallel: BOOLEAN</strong></dt>
+<dd><p class="first">Runs the repeating tasks in parallel.</p>
+<ul class="last simple">
+<li><strong class="command">_parallel: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">_do: TASKS</strong></dt>
+<dd>Tasks to run.</dd>
+</dl>
+</div>
+<div class="section" id="if-conditional-execution">
+<h2><a class="toc-backref" href="#id12">if&gt;: Conditional execution</a><a class="headerlink" href="#if-conditional-execution" title="Permalink to this headline">¶</a></h2>
+<p><strong>if&gt;:</strong> operator runs subtasks if <code class="docutils literal"><span class="pre">true</span></code> is given.</p>
+<p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+run_if_param_is_true</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${param}</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${param}} == true</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">if&gt;: BOOLEAN</strong></dt>
+<dd><code class="docutils literal"><span class="pre">true</span></code> or <code class="docutils literal"><span class="pre">false</span></code>.</dd>
+<dt><strong class="command">_do: TASKS</strong></dt>
+<dd>Tasks to run if <code class="docutils literal"><span class="pre">true</span></code> is given.</dd>
+</dl>
+</div>
+<div class="section" id="fail-make-the-workflow-failed">
+<h2><a class="toc-backref" href="#id13">fail&gt;: make the workflow failed</a><a class="headerlink" href="#fail-make-the-workflow-failed" title="Permalink to this headline">¶</a></h2>
+<p><strong>fail&gt;:</strong> always fails and makes the workflow failed.</p>
+<p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
+<p>This operator is useful used with <strong>if&gt;</strong> operator to validate resuls of a previous task with <code class="docutils literal"><span class="pre">_check</span></code> directive so that a workflow fails when the validation doesn&#8217;t pass.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+fail_if_too_few</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${count &lt; 10}</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">fail&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">count is less than 10!</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">fail&gt;: STRING</strong></dt>
+<dd>Message so that <code class="docutils literal"><span class="pre">_error</span></code> task can refer the message using <code class="docutils literal"><span class="pre">${error.message}</span></code> syntax.</dd>
+</dl>
+</div>
+<div class="section" id="td-treasure-data-queries">
+<h2><a class="toc-backref" href="#id14">td&gt;: Treasure Data queries</a><a class="headerlink" href="#td-treasure-data-queries" title="Permalink to this headline">¶</a></h2>
+<p><strong>td&gt;:</strong> operator runs a Hive or Presto query on Treasure Data.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
+    <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step1.sql</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step2.sql</span>
+  <span class="l l-Scalar l-Scalar-Plain">create_table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mytable_${session_date_compact}</span>
+<span class="l l-Scalar l-Scalar-Plain">+step3</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step2.sql</span>
+  <span class="l l-Scalar l-Scalar-Plain">insert_into</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mytable</span>
+</pre></div>
+</div>
+<div class="section" id="parameters">
+<h3><a class="toc-backref" href="#id15">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td&gt;: FILE.sql</strong></dt>
+<dd><p class="first">Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
+<ul class="last simple">
+<li><strong class="command">td&gt;: queries/step1.sql</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">create_table: NAME</strong></dt>
+<dd><p class="first">Name of a table to create from the results. This option deletes the table if it already exists.</p>
+<p>This option adds DROP TABLE IF EXISTS; CREATE TABLE AS (Presto) or INSERT OVERWRITE (Hive) commands before the SELECT statement. If the query includes a <code class="docutils literal"><span class="pre">--</span> <span class="pre">DIGDAG_INSERT_LINE</span></code> line, the commands are inserted there.</p>
+<ul class="last simple">
+<li><strong class="command">create_table: my_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">insert_into: NAME</strong></dt>
+<dd><p class="first">Name of a table to append results into. The table is created if it does not already exist.</p>
+<p>This option adds INSERT INTO (Presto) or INSERT INTO TABLE (Hive) command at the beginning of SELECT statement. If the query includes <code class="docutils literal"><span class="pre">--</span> <span class="pre">DIGDAG_INSERT_LINE</span></code> line, the command is inserted to the line.</p>
+<ul class="last simple">
+<li><strong class="command">insert_into: my_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">download_file: NAME</strong></dt>
+<dd><p class="first">Saves query result as a local CSV file.</p>
+<ul class="last simple">
+<li><strong class="command">download_file: output.csv</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">store_last_results: BOOLEAN</strong></dt>
+<dd><p class="first">Stores the first 1 row of the query results to <code class="docutils literal"><span class="pre">${td.last_results}</span></code> variable (default: false).
+td.last_results is a map of column name and a value. To access to a single value, you can use <code class="docutils literal"><span class="pre">${td.last_results.my_count}</span></code> syntax.</p>
+<ul class="last simple">
+<li><strong class="command">store_last_results: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">preview: BOOLEAN</strong></dt>
+<dd><p class="first">Tries to show some query results to confirm the results of a query.</p>
+<ul class="last simple">
+<li><strong class="command">preview: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">result_url: NAME</strong></dt>
+<dd><p class="first">Output the query results to the URL:</p>
+<ul class="last simple">
+<li><strong class="command">result_url: tableau://username:password&#64;my.tableauserver.com/?mode=replace</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">database: NAME</strong></dt>
+<dd><p class="first">Name of a database.</p>
+<ul class="last simple">
+<li><strong class="command">database: my_db</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">apikey: APIKEY</strong></dt>
+<dd><p class="first">API key. You can set this at command line using <code class="docutils literal"><span class="pre">-p</span> <span class="pre">td.apikey=$TD_APIKEY</span></code> argument.</p>
+<ul class="last simple">
+<li><strong class="command">apikey: 992314/abcdef0123456789abcdef0123456789</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">endpoint: ADDRESS</strong></dt>
+<dd>API endpoint (default: api.treasuredata.com).</dd>
+<dt><strong class="command">use_ssl: BOOLEAN</strong></dt>
+<dd>Enable SSL (https) to access to the endpoint (default: true).</dd>
+<dt><strong class="command">engine: presto</strong></dt>
+<dd><p class="first">Query engine (<code class="docutils literal"><span class="pre">presto</span></code> or <code class="docutils literal"><span class="pre">hive</span></code>).</p>
+<ul class="last simple">
+<li><strong class="command">engine: hive</strong></li>
+<li><strong class="command">engine: presto</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="output-parameters">
+<h3><a class="toc-backref" href="#id16">Output parameters</a><a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td.last_job_id</strong></dt>
+<dd><p class="first">The job id this task executed.</p>
+<ul class="last simple">
+<li><strong class="command">52036074</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">td.last_results</strong></dt>
+<dd><p class="first">The first 1 row of the query results as a map. This is available only when <code class="docutils literal"><span class="pre">store_last_results:</span> <span class="pre">true</span></code> is set.</p>
+<ul class="last simple">
+<li><strong class="command">{&quot;path&quot;:&quot;/index.html&quot;,&quot;count&quot;:1}</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="td-run-treasure-data-saved-queries">
+<h2><a class="toc-backref" href="#id17">td_run&gt;: Treasure Data saved queries</a><a class="headerlink" href="#td-run-treasure-data-saved-queries" title="Permalink to this headline">¶</a></h2>
+<p><strong>td_run&gt;:</strong> operator runs a query saved on Treasure Data.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
+    <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_run&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">myquery1</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_run&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">myquery2</span>
+  <span class="l l-Scalar l-Scalar-Plain">session_time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2016-01-01T01:01:01+0000</span>
+</pre></div>
+</div>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id18">Parameters</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td_run&gt;: NAME</strong></dt>
+<dd><p class="first">Name of a saved query.</p>
+<ul class="last simple">
+<li><strong class="command">td_run&gt;: my_query</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">download_file: NAME</strong></dt>
+<dd><p class="first">Saves query result as a local CSV file.</p>
+<ul class="last simple">
+<li><strong class="command">download_file: output.csv</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">store_last_results: BOOLEAN</strong></dt>
+<dd><p class="first">Stores the first 1 row of the query results to <code class="docutils literal"><span class="pre">${td.last_results}</span></code> variable (default: false).
+td.last_results is a map of column name and a value. To access to a single value, you can use <code class="docutils literal"><span class="pre">${td.last_results.my_count}</span></code> syntax.</p>
+<ul class="last simple">
+<li><strong class="command">store_last_results: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">preview: BOOLEAN</strong></dt>
+<dd><p class="first">Tries to show some query results to confirm the results of a query.</p>
+<ul class="last simple">
+<li><strong class="command">preview: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">apikey: APIKEY</strong></dt>
+<dd><p class="first">API key. You can set this at command line using <code class="docutils literal"><span class="pre">-p</span> <span class="pre">td.apikey=$TD_APIKEY</span></code> argument.</p>
+<ul class="last simple">
+<li><strong class="command">apikey: 992314/abcdef0123456789abcdef0123456789</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">endpoint: ADDRESS</strong></dt>
+<dd>API endpoint (default: api.treasuredata.com).</dd>
+<dt><strong class="command">use_ssl: BOOLEAN</strong></dt>
+<dd>Enable SSL (https) to access to the endpoint (default: true).</dd>
+</dl>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id19">Output parameters</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td.last_job_id</strong></dt>
+<dd><p class="first">The job id this task executed.</p>
+<ul class="last simple">
+<li><strong class="command">52036074</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">td.last_results</strong></dt>
+<dd><p class="first">The first 1 row of the query results as a map. This is available only when <code class="docutils literal"><span class="pre">store_last_results:</span> <span class="pre">true</span></code> is set.</p>
+<ul class="last simple">
+<li><strong class="command">{&quot;path&quot;:&quot;/index.html&quot;,&quot;count&quot;:1}</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="td-load-treasure-data-bulk-loading">
+<h2><a class="toc-backref" href="#id20">td_load&gt;: Treasure Data bulk loading</a><a class="headerlink" href="#td-load-treasure-data-bulk-loading" title="Permalink to this headline">¶</a></h2>
+<p><strong>td_load&gt;:</strong> operator loads data from storages, databases, or services.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_load&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">config/guessed.dig</span>
+  <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">prod</span>
+  <span class="l l-Scalar l-Scalar-Plain">table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">raw</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">td_load&gt;: FILE.dig</strong></dt>
+<dd><p class="first">Path to a YAML template file. This configuration needs to be guessed using td command.</p>
+<ul class="last simple">
+<li><strong class="command">td&gt;: config/from_s3.sql</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">database: NAME</strong></dt>
+<dd><p class="first">Name of the database load data to.</p>
+<ul class="last simple">
+<li><strong class="command">database: my_database</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">table: NAME</strong></dt>
+<dd><p class="first">Name of the table load data to.</p>
+<ul class="last simple">
+<li><strong class="command">table: my_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">apikey: APIKEY</strong></dt>
+<dd><p class="first">API key. You can set this at command line using <code class="docutils literal"><span class="pre">-p</span> <span class="pre">td.apikey=$TD_APIKEY</span></code> argument.</p>
+<ul class="last simple">
+<li><strong class="command">apikey: 992314/abcdef0123456789abcdef0123456789</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">endpoint: ADDRESS</strong></dt>
+<dd>API endpoint (default: api.treasuredata.com).</dd>
+<dt><strong class="command">use_ssl: BOOLEAN</strong></dt>
+<dd>Enable SSL (https) to access to the endpoint (default: true).</dd>
+</dl>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#id21">Output parameters</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td.last_job_id</strong></dt>
+<dd><p class="first">The job id this task executed.</p>
+<ul class="last simple">
+<li><strong class="command">52036074</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="td-ddl-treasure-data-operations">
+<h2><a class="toc-backref" href="#id22">td_ddl&gt;: Treasure Data operations</a><a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h2>
+<p><strong>_type: td_ddl</strong> operator runs an operational task on Treasure Data.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
+    <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">create_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">drop_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">empty_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">create_tables: [ARRAY OF NAMES]</strong></dt>
+<dd><p class="first">Create new tables if not exists.</p>
+<ul class="last simple">
+<li><strong class="command">create_tables: [my_table1, my_table2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">empty_tables: [ARRAY OF NAME]</strong></dt>
+<dd><p class="first">Create new tables (drop it first if it exists).</p>
+<ul class="last simple">
+<li><strong class="command">empty_tables: [my_table1, my_table2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">drop_tables: [ARRAY OF NAMES]</strong></dt>
+<dd><p class="first">Drop tables if exists.</p>
+<ul class="last simple">
+<li><strong class="command">drop_tables: [my_table1, my_table2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">create_databases: [ARRAY OF NAMES]</strong></dt>
+<dd><p class="first">Create new databases if not exists.</p>
+<ul class="last simple">
+<li><strong class="command">create_databases: [my_database1, my_database2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">empty_databases: [ARRAY OF NAME]</strong></dt>
+<dd><p class="first">Create new databases (drop it first if it exists).</p>
+<ul class="last simple">
+<li><strong class="command">empty_databases: [my_database1, my_database2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">drop_databases: [ARRAY OF NAMES]</strong></dt>
+<dd><p class="first">Drop databases if exists.</p>
+<ul class="last simple">
+<li><strong class="command">drop_databases: [my_database1, my_database2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">apikey: APIKEY</strong></dt>
+<dd><p class="first">API key. You can set this at command line using <code class="docutils literal"><span class="pre">-p</span> <span class="pre">td.apikey=$TD_APIKEY</span></code> argument.</p>
+<ul class="last simple">
+<li><strong class="command">apikey: 992314/abcdef0123456789abcdef0123456789</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">endpoint: ADDRESS</strong></dt>
+<dd>API endpoint (default: api.treasuredata.com).</dd>
+<dt><strong class="command">use_ssl: BOOLEAN</strong></dt>
+<dd>Enable SSL (https) to access to the endpoint (default: true).</dd>
+</dl>
+</div>
+<div class="section" id="td-table-export-treasure-data-table-export-to-s3">
+<h2><a class="toc-backref" href="#id23">td_table_export&gt;: Treasure Data table export to S3</a><a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h2>
+<p><strong>td_table_export&gt;:</strong> operator loads data from storages, databases, or services.</p>
+<p>TODO: add more description here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_table_export</span>
+  <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydb</span>
+  <span class="l l-Scalar l-Scalar-Plain">table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mytable</span>
+  <span class="l l-Scalar l-Scalar-Plain">file_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">jsonl.gz</span>
+  <span class="l l-Scalar l-Scalar-Plain">from</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2016-01-01 00:00:00 +0800</span>
+  <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span>   <span class="l l-Scalar l-Scalar-Plain">2016-02-01 00:00:00 +0800</span>
+  <span class="l l-Scalar l-Scalar-Plain">s3_bucket</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_backup_backet</span>
+  <span class="l l-Scalar l-Scalar-Plain">s3_path_prefix</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydb/mytable</span>
+  <span class="l l-Scalar l-Scalar-Plain">s3_access_key_id</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ABCDEFGHJKLMNOPQRSTU</span>
+  <span class="l l-Scalar l-Scalar-Plain">s3_secret_access_key</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">database: NAME</strong></dt>
+<dd><p class="first">Name of the database.</p>
+<ul class="last simple">
+<li><strong class="command">database: my_database</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">table: NAME</strong></dt>
+<dd><p class="first">Name of the table to export.</p>
+<ul class="last simple">
+<li><strong class="command">table: my_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">file_format: TYPE</strong></dt>
+<dd><p class="first">Output file format. Available formats are <code class="docutils literal"><span class="pre">tsv.gz</span></code>, <code class="docutils literal"><span class="pre">jsonl.gz</span></code>, <code class="docutils literal"><span class="pre">json.gz</span></code>, <code class="docutils literal"><span class="pre">json-line.gz</span></code>.</p>
+<ul class="last simple">
+<li><strong class="command">file_format: jsonl.gz</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">from: yyyy-MM-dd HH:mm:ss[ Z]</strong></dt>
+<dd><p class="first">Export records from this time (inclusive). Actual time range is <strong class="command">[from, to)</strong>. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.</p>
+<ul class="last simple">
+<li><strong class="command">from: 2016-01-01 00:00:00 +0800</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">to: yyyy-MM-dd HH:mm:ss[ Z]</strong></dt>
+<dd><p class="first">Export records to this time (exclusive). Actual time range is <strong class="command">[from, to)</strong>. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.</p>
+<ul class="last simple">
+<li><strong class="command">to: 2016-02-01 00:00:00 +0800</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">s3_bucket: NAME</strong></dt>
+<dd><p class="first">S3 bucket name to export records to.</p>
+<ul class="last simple">
+<li><strong class="command">s3_bucket: my_backup_backet</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">s3_path_prefix: NAME</strong></dt>
+<dd><p class="first">S3 file name prefix.</p>
+<ul class="last simple">
+<li><strong class="command">s3_path_prefix: mytable/mydb</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">s3_access_key_id: KEY</strong></dt>
+<dd><p class="first">S3 access key id.</p>
+<ul class="last simple">
+<li><strong class="command">s3_access_key_id: ABCDEFGHJKLMNOPQRSTU</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">s3_secret_access_key: KEY</strong></dt>
+<dd><p class="first">S3 secret access key.</p>
+<ul class="last simple">
+<li><strong class="command">s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">apikey: APIKEY</strong></dt>
+<dd><p class="first">API key. You can set this at command line using <code class="docutils literal"><span class="pre">-p</span> <span class="pre">td.apikey=$TD_APIKEY</span></code> argument.</p>
+<ul class="last simple">
+<li><strong class="command">apikey: 992314/abcdef0123456789abcdef0123456789</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">endpoint: ADDRESS</strong></dt>
+<dd>API endpoint (default: api.treasuredata.com).</dd>
+<dt><strong class="command">use_ssl: BOOLEAN</strong></dt>
+<dd>Enable SSL (https) to access to the endpoint (default: true).</dd>
+</dl>
+<div class="section" id="id4">
+<h3><a class="toc-backref" href="#id24">Output parameters</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">td.last_job_id</strong></dt>
+<dd><p class="first">The job id this task executed.</p>
+<ul class="last simple">
+<li><strong class="command">52036074</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="mail-sending-email">
+<h2><a class="toc-backref" href="#id25">mail&gt;: Sending email</a><a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h2>
+<p><strong>mail&gt;:</strong> operator sends an email.</p>
+<p>To use Gmail SMTP server, you need to do either of:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Generate a new app password at <a class="reference external" href="https://security.google.com/settings/security/apppasswords">App passwords</a>. This needs to enable 2-Step Verification first.</li>
+<li>Enable access for less secure apps at <a class="reference external" href="https://www.google.com/settings/security/lesssecureapps">Less secure apps</a>. This works even if 2-Step Verification is not enabled.</li>
+</ol>
+</div></blockquote>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">mail</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">smtp.gmail.com</span>
+    <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">587</span>
+    <span class="l l-Scalar l-Scalar-Plain">from</span><span class="p p-Indicator">:</span> <span class="s">&quot;you@gmail.com&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">username</span><span class="p p-Indicator">:</span> <span class="s">&quot;you@gmail.com&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="s">&quot;...password...&quot;</span>
+    <span class="l l-Scalar l-Scalar-Plain">debug</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">mail&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">body.txt</span>
+  <span class="l l-Scalar l-Scalar-Plain">subject</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow started</span>
+  <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mail</span>
+  <span class="l l-Scalar l-Scalar-Plain">body</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this is email body in string</span>
+  <span class="l l-Scalar l-Scalar-Plain">subject</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow started</span>
+  <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+step3</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this_task_might_fail.sh</span>
+  <span class="l l-Scalar l-Scalar-Plain">error</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">mail&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">body.txt</span>
+    <span class="l l-Scalar l-Scalar-Plain">subject</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this workflow failed</span>
+    <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">mail&gt;: FILE</strong></dt>
+<dd><p class="first">Path to a mail body template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
+<ul class="last simple">
+<li><strong class="command">mail&gt;: mail_body.txt</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">subject: SUBJECT</strong></dt>
+<dd><p class="first">Subject of the email.</p>
+<ul class="last simple">
+<li><strong class="command">subject: Mail From Digdag</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">body: TEXT</strong></dt>
+<dd><p class="first">Email body if tempalte file path is not set.</p>
+<ul class="last simple">
+<li><strong class="command">body: Hello, this is from Digdag</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">to: [ADDR1, ADDR2, ...]</strong></dt>
+<dd><p class="first">To addresses.</p>
+<ul class="last simple">
+<li><strong class="command">to: [analyst&#64;examile.com]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">from: ADDR</strong></dt>
+<dd><p class="first">From address.</p>
+<ul class="last simple">
+<li><strong class="command">from: admin&#64;example.com</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">host: NAME</strong></dt>
+<dd><p class="first">SMTP host name.</p>
+<ul class="last simple">
+<li><strong class="command">host: smtp.gmail.com</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">port: NAME</strong></dt>
+<dd><p class="first">SMTP port number.</p>
+<ul class="last simple">
+<li><strong class="command">port: 587</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">username: NAME</strong></dt>
+<dd><p class="first">SMTP login username if authentication is required me.</p>
+<ul class="last simple">
+<li><strong class="command">username: me</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">password: PASSWORD</strong></dt>
+<dd><p class="first">SMTP login password.</p>
+<ul class="last simple">
+<li><strong class="command">password: MyPaSsWoRd</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">tls: BOOLEAN</strong></dt>
+<dd><p class="first">Enables TLS handshake.</p>
+<ul class="last simple">
+<li><strong class="command">tls: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">ssl: BOOLEAN</strong></dt>
+<dd><p class="first">Enables legacy SSL encryption.</p>
+<ul class="last simple">
+<li><strong class="command">ssl: false</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">html: BOOLEAN</strong></dt>
+<dd><p class="first">Uses HTML mail (default: false).</p>
+<ul class="last simple">
+<li><strong class="command">html: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">debug: BOOLEAN</strong></dt>
+<dd><p class="first">Shows debug logs (default: false).</p>
+<ul class="last simple">
+<li><strong class="command">debug: false</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">attach_files: ARRAY</strong></dt>
+<dd><p class="first">Attach files. Each element is an object of:</p>
+<ul class="simple">
+<li><strong class="command">path: FILE</strong>: Path to a file to attach.</li>
+<li><strong class="command">content_type</strong>: Content-Type of this file. Default is application/octet-stream.</li>
+<li><strong class="command">filename</strong>: Name of this file. Default is base name of the path.</li>
+</ul>
+<p>Example:</p>
+<div class="last highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">attach_files</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">path</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data.csv</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">path</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">output.dat</span>
+    <span class="l l-Scalar l-Scalar-Plain">filename</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow_result_data.csv</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">path</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">images/image1.png</span>
+    <span class="l l-Scalar l-Scalar-Plain">content_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">image/png</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="embulk-embulk-data-transfer">
+<h2><a class="toc-backref" href="#id26">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
+<p><strong>embulk&gt;:</strong> operator runs <a class="reference external" href="http://www.embulk.org">Embulk</a> to transfer data across storages including local files.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">embulk&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data/load.dig</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">embulk&gt;: FILE.dig</strong></dt>
+<dd><p class="first">Path to a configuration template file.</p>
+<ul class="last simple">
+<li><strong class="command">embulk&gt;: embulk/mysql_to_csv.dig</strong></li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="command_reference.html" class="btn btn-neutral float-right" title="Command reference" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="running_tasks_on_docker.html" class="btn btn-neutral" title="Running tasks on Docker" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

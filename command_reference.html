@@ -1,0 +1,779 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Command reference &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Language API - Python" href="python_api.html"/>
+        <link rel="prev" title="Operators" href="operators.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Command reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#local-mode-commands">Local-mode commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#new">new</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run">run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#check">check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scheduler">scheduler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#selfupdate">selfupdate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#server-mode-commands">Server-mode commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#server">server</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#client-mode-commands">Client-mode commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#start">start</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#retry">retry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#log">log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kill">kill</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#workflows">workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#schedules">schedules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backfill">backfill</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reschedule">reschedule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sessions">sessions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#attempts">attempts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tasks">tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#push">push</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#common-options">Common options</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Command reference</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/command_reference.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="command-reference">
+<h1>Command reference<a class="headerlink" href="#command-reference" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#local-mode-commands" id="id2">Local-mode commands</a><ul>
+<li><a class="reference internal" href="#new" id="id3">new</a></li>
+<li><a class="reference internal" href="#run" id="id4">run</a></li>
+<li><a class="reference internal" href="#check" id="id5">check</a></li>
+<li><a class="reference internal" href="#scheduler" id="id6">scheduler</a></li>
+<li><a class="reference internal" href="#selfupdate" id="id7">selfupdate</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#server-mode-commands" id="id8">Server-mode commands</a><ul>
+<li><a class="reference internal" href="#server" id="id9">server</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#client-mode-commands" id="id10">Client-mode commands</a><ul>
+<li><a class="reference internal" href="#start" id="id11">start</a></li>
+<li><a class="reference internal" href="#retry" id="id12">retry</a></li>
+<li><a class="reference internal" href="#log" id="id13">log</a></li>
+<li><a class="reference internal" href="#kill" id="id14">kill</a></li>
+<li><a class="reference internal" href="#workflows" id="id15">workflows</a></li>
+<li><a class="reference internal" href="#schedules" id="id16">schedules</a></li>
+<li><a class="reference internal" href="#backfill" id="id17">backfill</a></li>
+<li><a class="reference internal" href="#reschedule" id="id18">reschedule</a></li>
+<li><a class="reference internal" href="#sessions" id="id19">sessions</a></li>
+<li><a class="reference internal" href="#attempts" id="id20">attempts</a></li>
+<li><a class="reference internal" href="#tasks" id="id21">tasks</a></li>
+<li><a class="reference internal" href="#push" id="id22">push</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#common-options" id="id23">Common options</a></li>
+</ul>
+</div>
+<div class="section" id="local-mode-commands">
+<h2><a class="toc-backref" href="#id2">Local-mode commands</a><a class="headerlink" href="#local-mode-commands" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="new">
+<h3><a class="toc-backref" href="#id3">new</a><a class="headerlink" href="#new" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag new &lt;dir&gt;
+</pre></div>
+</div>
+<p>Creates a new workflow project. This command generates a sample digdag.dig, executable digdag file, and .gitignore file in <strong>&lt;dir&gt;</strong> directory. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag init mydag
+</pre></div>
+</div>
+</div>
+<div class="section" id="run">
+<h3><a class="toc-backref" href="#id4">run</a><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run &lt;workflow.dig&gt; <span class="o">[</span>+task<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Runs workflow.</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run workflow.dig
+<span class="gp">$</span> digdag run workflow.dig +step2
+<span class="gp">$</span> digdag run another.dig --start +step2
+<span class="gp">$</span> digdag run another.dig --start +step2 --end +step4
+<span class="gp">$</span> digdag run another.dig -g +step1 --hour
+<span class="gp">$</span> digdag run workflow.dig -p <span class="nv">environment</span><span class="o">=</span>staging -p <span class="nv">user</span><span class="o">=</span>frsyuki
+<span class="gp">$</span> digdag run workflow.dig --session hourly
+</pre></div>
+</div>
+<p>Options:</p>
+<dl class="docutils">
+<dt><strong class="command">---project DIR</strong></dt>
+<dd><p class="first">Use this directory as the project directory (default: current directory).</p>
+<p class="last">Example: &#8211;project workflow/</p>
+</dd>
+<dt><strong class="command">-o, --save DIR</strong></dt>
+<dd><p class="first">Use this directory to read and write session status (default: .digdag/status).</p>
+<p>Digdag creates a file in this directory when a task successfully finishes. When digdag runs again, it skips tasks if this a file exists in this directory. This is useful to resume a failed workflow from the middle.</p>
+<p class="last">Example: -o .digdag/status</p>
+</dd>
+<dt><strong class="command">-a, --rerun</strong></dt>
+<dd><p class="first">Rerun all tasks even if the tasks successfully finished before. In other words, ignore files at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
+<p class="last">Example: &#8211;rerun</p>
+</dd>
+<dt><strong class="command">-s, --start +NAME</strong></dt>
+<dd><p class="first">If this option is set, Digdag runs this task and following tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
+<p class="last">Example: &#8211;start +step2</p>
+</dd>
+<dt><strong class="command">-g, --goal +NAME</strong></dt>
+<dd><p class="first">If this option is set, Digdag runs this task and its children tasks even if the tasks successfully finished before. The other tasks will be skipped if their state files are stored at <code class="docutils literal"><span class="pre">-o,</span> <span class="pre">--save</span></code> directory.</p>
+<p class="last">Example: &#8211;goal +step2</p>
+</dd>
+<dt><strong class="command">-e, --end +NAME</strong></dt>
+<dd><p class="first">Stops workflow right before this task. This task and following tasks will be skipped.</p>
+<p class="last">Example: &#8211;end +step4</p>
+</dd>
+<dt><strong class="command">--session EXPR</strong></dt>
+<dd><p class="first">Set session_time to this time. Argument is either of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>daily: uses today&#8217;s 00:00:00 as the session time (update session time every day).</li>
+<li>hourly: uses current hour&#8217;s 00:00 as the session time (update session time every hour).</li>
+<li>schedule: calculates time based on <code class="docutils literal"><span class="pre">schedule</span></code> configuration of the workflow. Error if <code class="docutils literal"><span class="pre">schedule</span></code> is not set.</li>
+<li>last: reuses the last session time of the last execution. If it&#8217;s not available, tries to calculate based on <code class="docutils literal"><span class="pre">schedule</span></code>, or uses today&#8217;s 00:00:00.</li>
+<li>timestmap in <em>yyyy-MM-dd</em> or <em>yyyy-MM-dd HH:mm:ss</em> format: uses the specified time as the session time.</li>
+</ul>
+</div></blockquote>
+<p>Default is &#8220;last&#8221;.</p>
+<p class="last">Example: &#8211;session 2016-01-01</p>
+</dd>
+<dt><strong class="command">--no-save</strong></dt>
+<dd><p class="first">Disables session state files completely.</p>
+<p class="last">Example: &#8211;no-save</p>
+</dd>
+<dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<p class="last">Example: -p environment=staging</p>
+</dd>
+<dt><strong class="command">-P, --params-file PATH</strong></dt>
+<dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
+<p class="last">Example: -P params.dig</p>
+</dd>
+<dt><strong class="command">-d, --dry-run</strong></dt>
+<dd><p class="first">Dry-run mode. This mode doesn&#8217;t run tasks.</p>
+<p class="last">Example: -d</p>
+</dd>
+<dt><strong class="command">-E, --show-params</strong></dt>
+<dd><p class="first">Show calculated parameters given to a task before running the task. Useful to use with dry-run mode.</p>
+<p class="last">Example: -dE</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="check">
+<h3><a class="toc-backref" href="#id5">check</a><a class="headerlink" href="#check" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag check <span class="o">[</span>workflow.dig<span class="o">]</span> <span class="o">[</span>options...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Shows workflow definitions and schedules. &#8220;c&#8221; is alias of check command. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag c
+<span class="gp">$</span> digdag check
+<span class="gp">$</span> digdag check another.dig
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">---project DIR</strong></dt>
+<dd><p class="first">Use this directory as the project directory (default: current directory).</p>
+<p class="last">Example: &#8211;project workflow/</p>
+</dd>
+<dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
+<dd><p class="first">Overwrite a parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<p class="last">Example: -p environment=staging</p>
+</dd>
+<dt><strong class="command">-P, --params-file PATH</strong></dt>
+<dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
+<p class="last">Example: -P params.dig</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="scheduler">
+<h3><a class="toc-backref" href="#id6">scheduler</a><a class="headerlink" href="#scheduler" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag scheduler <span class="o">[</span>options...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Runs a workflow scheduler that runs schedules periodically. This picks up all workflow definition files named with <code class="docutils literal"><span class="pre">.dig</span></code> suffix at the current directory. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag scheduler
+<span class="gp">$</span> digdag scheduler -d status
+<span class="gp">$</span> digdag scheduler -b 0.0.0.0
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">---project DIR</strong></dt>
+<dd><p class="first">Use this directory as the project directory (default: current directory).</p>
+<p class="last">Example: &#8211;project workflow/</p>
+</dd>
+<dt><strong class="command">-n, --port PORT</strong></dt>
+<dd><p class="first">Port number to listen for web interface and api clients (default: 65432).</p>
+<p class="last">Example: -p 8080</p>
+</dd>
+<dt><strong class="command">-b, --bind ADDRESS</strong></dt>
+<dd><p class="first">IP address to listen HTTP clients (default: 127.0.0.1).</p>
+<p class="last">Example: -b 0.0.0.0</p>
+</dd>
+<dt><strong class="command">-o, --database DIR</strong></dt>
+<dd><p class="first">Store status to this database. Default is memory that doesn&#8217;t save status.</p>
+<p class="last">Example: &#8211;database digdag</p>
+</dd>
+<dt><strong class="command">-O, --task-log DIR</strong></dt>
+<dd><p class="first">Store task logs to this directory. If this option is not set, <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">log</span></code> command doesn&#8217;t work.</p>
+<p class="last">Example: &#8211;task-log digdag.log</p>
+</dd>
+<dt><strong class="command">--max-task-threads N</strong></dt>
+<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
+<p class="last">Example: &#8211;max-task-threads 5</p>
+</dd>
+<dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<p class="last">Example: -p environment=staging</p>
+</dd>
+<dt><strong class="command">-P, --params-file PATH</strong></dt>
+<dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
+<p class="last">Example: -P params.dig</p>
+</dd>
+<dt><strong class="command">-c, --config PATH</strong></dt>
+<dd><p class="first">Server configuration property path. This is same with server command. See <a class="reference external" href="digdag_server.html">Digdag server</a> for details.</p>
+<p class="last">Example: -c digdag.properties</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="selfupdate">
+<h3><a class="toc-backref" href="#id7">selfupdate</a><a class="headerlink" href="#selfupdate" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag selfupdate <span class="o">[</span>version<span class="o">]</span>
+</pre></div>
+</div>
+<p>Updates the executable binary file to the latest version or specified version. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag selfupdate
+<span class="gp">$</span> digdag selfupdate 0.8.0
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="server-mode-commands">
+<h2><a class="toc-backref" href="#id8">Server-mode commands</a><a class="headerlink" href="#server-mode-commands" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="server">
+<h3><a class="toc-backref" href="#id9">server</a><a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag server <span class="o">[</span>options...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Runs a digdag server. &#8211;memory or &#8211;database option is required. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag server --memory
+<span class="gp">$</span> digdag server -o digdag-server
+<span class="gp">$</span> digdag server -o digdag-server -b 0.0.0.0
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">-n, --port PORT</strong></dt>
+<dd><p class="first">Port number to listen for web interface and api clients (default: 65432).</p>
+<p class="last">Example: -p 8080</p>
+</dd>
+<dt><strong class="command">-b, --bind ADDRESS</strong></dt>
+<dd><p class="first">IP address to listen HTTP clients (default: 127.0.0.1).</p>
+<p class="last">Example: -b 0.0.0.0</p>
+</dd>
+<dt><strong class="command">-o, --database DIR</strong></dt>
+<dd><p class="first">Store status to this database.</p>
+<p class="last">Example: &#8211;database digdag</p>
+</dd>
+<dt><strong class="command">-m, --memory</strong></dt>
+<dd><p class="first">Store status in memory. Data will be removed when the server exists.</p>
+<p class="last">Example: &#8211;memory</p>
+</dd>
+<dt><strong class="command">-O, --task-log DIR</strong></dt>
+<dd><p class="first">Store task logs to this directory. If this option is not set, <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">log</span></code> command doesn&#8217;t work.</p>
+<p class="last">Example: &#8211;task-log digdag/sessions</p>
+</dd>
+<dt><strong class="command">-A, --access-log DIR</strong></dt>
+<dd><p class="first">Store access logs to this directory.</p>
+<p class="last">Example: &#8211;access-log digdag/log</p>
+</dd>
+<dt><strong class="command">--disable-local-agent</strong></dt>
+<dd><p class="first">Disable task execution on this server.</p>
+<p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for REST API. See also <code class="docutils literal"><span class="pre">--disable-executor-loop</span></code> option.</p>
+<p class="last">Example: &#8211;disable-local-agent</p>
+</dd>
+<dt><strong class="command">--max-task-threads N</strong></dt>
+<dd><p class="first">Limit maxium number of task execution threads on this server.</p>
+<p class="last">Example: &#8211;max-task-threads 5</p>
+</dd>
+<dt><strong class="command">--disable-executor-loop</strong></dt>
+<dd><p class="first">Disable workflow executor on this server. Workflow executor loop updates state of tasks on the underlay database. At least one server that is sharing the same underlay database must enable workflow executor loop.</p>
+<p>This option is useful when there&#8217;re multiple servers sharing the same underlay database and some of the servers are prepared only for task execution or REST API. See also <code class="docutils literal"><span class="pre">--disable-local-agent</span></code> option.</p>
+<p class="last">Example: &#8211;max-task-threads 5</p>
+</dd>
+<dt><strong class="command">-c, --config PATH</strong></dt>
+<dd><p class="first">Server configuration property path. See <a class="reference external" href="digdag_server.html">Digdag server</a> for details.</p>
+<p class="last">Example: -c digdag.properties</p>
+</dd>
+</dl>
+<p>In the config file, following parameters are available</p>
+<ul class="simple">
+<li>server.bind (ip address)</li>
+<li>server.port (integer)</li>
+<li>server.access-log.path (string. same with &#8211;access-log)</li>
+<li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
+<li>server.http.headers.KEY = VALUE (HTTP header to set on API responses)</li>
+<li>database.type (enum, &#8220;h2&#8221; or &#8220;postgresql&#8221;)</li>
+<li>database.user (string)</li>
+<li>database.password (string)</li>
+<li>database.host (string)</li>
+<li>database.port (integer)</li>
+<li>database.database (string)</li>
+<li>database.loginTimeout (seconds in integer, default: 30)</li>
+<li>database.socketTimeout (seconds in integer, default: 1800)</li>
+<li>database.ssl (boolean, default: false)</li>
+<li>database.connectionTimeout (seconds in integer, default: 30)</li>
+<li>database.idleTimeout (seconds in integer, default: 600)</li>
+<li>database.validationTimeout (seconds in integer, default: 5)</li>
+<li>database.maximumPoolSize (integer, default: 10)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="client-mode-commands">
+<h2><a class="toc-backref" href="#id10">Client-mode commands</a><a class="headerlink" href="#client-mode-commands" title="Permalink to this headline">¶</a></h2>
+<p>Client-mode common options:</p>
+<dl class="docutils">
+<dt><strong class="command">-e, --endpoint HOST</strong></dt>
+<dd><p class="first">HTTP endpoint of the server (default: <a class="reference external" href="http://127.0.0.1:65432">http://127.0.0.1:65432</a>)</p>
+<p class="last">Example: digdag-server.example.com:65432</p>
+</dd>
+<dt><strong class="command">-H, --header KEY=VALUE</strong></dt>
+<dd>Add a custom HTTP header. Use multiple times to set multiple headers.</dd>
+<dt><strong class="command">-c, --config PATH</strong></dt>
+<dd><p class="first">Configuration file to load. (default: ~/.config/digdag/config)</p>
+<p class="last">Example: -c digdag-server/client.properties</p>
+</dd>
+</dl>
+<p>You can include following parameters in ~/.config/digdag/config file:</p>
+<ul class="simple">
+<li>cilent.http.endpoint = <a class="reference external" href="http://HOST:PORT">http://HOST:PORT</a> or <a class="reference external" href="https://HOST:PORT">https://HOST:PORT</a></li>
+<li>client.http.headers.KEY = VALUE (set custom HTTP header)</li>
+</ul>
+<div class="section" id="start">
+<h3><a class="toc-backref" href="#id11">start</a><a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag start &lt;project-name&gt; &lt;+name&gt; --session &lt;hourly <span class="p">|</span> daily <span class="p">|</span> now <span class="p">|</span> <span class="s2">&quot;yyyy-MM-dd[ HH:mm:ss]&quot;</span>&gt;
+</pre></div>
+</div>
+<p>Starts a new session. This command requires project name, workflow name, and session_time. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag start myproj +main --session daily
+<span class="gp">$</span> digdag start myproj +main --session hourly
+<span class="gp">$</span> digdag start myproj +main --session <span class="s2">&quot;2016-01-01 00:00:00&quot;</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">--session &lt;hourly | daily | now | &quot;yyyy-MM-dd[ HH:mm:ss]&quot;&gt;</strong></dt>
+<dd><p class="first">Use this time as session_time.</p>
+<p>If <code class="docutils literal"><span class="pre">daily</span></code> is set, today&#8217;s 00:00:00 is used.</p>
+<p>If <code class="docutils literal"><span class="pre">hourly</span></code> is set, this hour&#8217;s 00:00:00 is used.</p>
+<p>If a time is set in &#8220;yyyy-MM-dd&#8221; or &#8220;yyyy-MM-dd HH:mm:ss&#8221; format, this time is used.</p>
+<p class="last">Timezone is based on the workflow&#8217;s time zone (not your machine&#8217;s time zone). For example, if a workflow uses Europe/Moscow (+03:00), and your machine&#8217;s time zone is Asia/Tokyo (+09:00), <code class="docutils literal"><span class="pre">--session</span> <span class="pre">2016-01-01</span> <span class="pre">00:00:00</span></code> means 2016-01-01 00:00:00 +03:00 (2016-01-01 06:00:00 +09:00).</p>
+</dd>
+<dt><strong class="command">--retry &lt;name&gt;</strong></dt>
+<dd>Set retry attempt name to the new attempt. Usually, you will use <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">retry</span></code> command instead of using this option.</dd>
+<dt><strong class="command">-d, --dry-run</strong></dt>
+<dd>Tries to start a new session attempt and validates the results but does nothing.</dd>
+<dt><strong class="command">-p, --param KEY=VALUE</strong></dt>
+<dd><p class="first">Add a session parameter (use multiple times to set many parameters) in KEY=VALUE syntax. This parameter is availabe using <code class="docutils literal"><span class="pre">${...}</span></code> syntax in the YAML file, or using language API.</p>
+<p class="last">Example: -p environment=staging</p>
+</dd>
+<dt><strong class="command">-P, --params-file PATH</strong></dt>
+<dd><p class="first">Read parameters from a YAML file. Nested parameter (like {mysql: {user: me}}) are accessible using &#8221;.&#8221; syntax (like ${mysql.user}).</p>
+<p class="last">Example: -P params.dig</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="retry">
+<h3><a class="toc-backref" href="#id12">retry</a><a class="headerlink" href="#retry" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag retry &lt;attempt-id&gt;
+</pre></div>
+</div>
+<p>Retry a session. One of revision options (<code class="docutils literal"><span class="pre">--latest-revision</span></code>, <code class="docutils literal"><span class="pre">--keep-revision</span></code>, or <code class="docutils literal"><span class="pre">--revision</span> <span class="pre">&lt;name&gt;</span></code>) and one of resume options (<code class="docutils literal"><span class="pre">--all</span></code>, <code class="docutils literal"><span class="pre">--resume</span></code>, or <code class="docutils literal"><span class="pre">--resume-from</span> <span class="pre">&lt;+name&gt;</span></code>) are required.</p>
+<p>Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --all
+<span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --resume
+<span class="gp">$</span> digdag retry <span class="m">35</span> --latest-revision --resume-from +step2
+<span class="gp">$</span> digdag retry <span class="m">35</span> --keep-revision --resume
+<span class="gp">$</span> digdag retry <span class="m">35</span> --revision rev29a87a9c --resume
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">--latest-revision</strong></dt>
+<dd>Use the latest revision to retry the session.</dd>
+<dt><strong class="command">--keep-revision</strong></dt>
+<dd>Use the same revision with the specified attempt to retry the session.</dd>
+<dt><strong class="command">--revision &lt;name&gt;</strong></dt>
+<dd>Use a specific revision to retry the session.</dd>
+<dt><strong class="command">--all</strong></dt>
+<dd>Retries all tasks.</dd>
+<dt><strong class="command">--resume +NAME</strong></dt>
+<dd>Retry only failed tasks. Successfully finished tasks are skipped.</dd>
+<dt><strong class="command">--resume-from +NAME</strong></dt>
+<dd>Retry from this task. This task and all following tasks will be executed. All tasks before this task must have been successfully finished.</dd>
+<dt><strong class="command">--name &lt;name&gt;</strong></dt>
+<dd>An unique identifier of this retry attempt. If another attempt with the same name already exists within the same session, request fails with 409 Conflict.</dd>
+</dl>
+</div>
+<div class="section" id="log">
+<h3><a class="toc-backref" href="#id13">log</a><a class="headerlink" href="#log" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag log &lt;attempt-id&gt; <span class="o">[</span>+task name prefix<span class="o">]</span>
+</pre></div>
+</div>
+<p>Shows logs of a session attempt. This command works only if server (or scheduler) runs with <code class="docutils literal"><span class="pre">-O,</span> <span class="pre">--task-log</span></code> option.</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag log 32
+<span class="gp">$</span> digdag log <span class="m">32</span> -f
+<span class="gp">$</span> digdag log <span class="m">32</span> +main
+<span class="gp">$</span> digdag log <span class="m">32</span> +main+task1
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">-v, --verbose</strong></dt>
+<dd>Show all logs. By default, log level less than INFO and lines following those lines are skipped.</dd>
+<dt><strong class="command">-f, --follow</strong></dt>
+<dd><p class="first">Show new logs until attempt or task finishes. This is similar to UNIX <code class="docutils literal"><span class="pre">tail</span> <span class="pre">-f</span></code> command. Because server buffers logs, there&#8217;re some delay until logs are actually show.</p>
+<p class="last">Example: &#8211;follow</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="kill">
+<h3><a class="toc-backref" href="#id14">kill</a><a class="headerlink" href="#kill" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag <span class="nb">kill</span> &lt;attempt-id&gt;
+</pre></div>
+</div>
+<p>Kills a session attempt. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag <span class="nb">kill</span> 32
+</pre></div>
+</div>
+</div>
+<div class="section" id="workflows">
+<h3><a class="toc-backref" href="#id15">workflows</a><a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag workflows <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+</pre></div>
+</div>
+<p>Shows list of workflows or details of a workflow. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag workflows
+<span class="gp">$</span> digdag workflows myproj
+<span class="gp">$</span> digdag workflows +main
+<span class="gp">$</span> digdag workflows myproj +main
+</pre></div>
+</div>
+</div>
+<div class="section" id="schedules">
+<h3><a class="toc-backref" href="#id16">schedules</a><a class="headerlink" href="#schedules" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag schedules
+</pre></div>
+</div>
+<p>Shows list of schedules.</p>
+</div>
+<div class="section" id="backfill">
+<h3><a class="toc-backref" href="#id17">backfill</a><a class="headerlink" href="#backfill" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag backfill &lt;project-name&gt; &lt;workflow-name&gt;
+</pre></div>
+</div>
+<p>Starts sessions of a schedule for past session times.</p>
+<dl class="docutils">
+<dt><strong class="command">-f, --from 'yyyy-MM-dd[ HH:mm:ss]'</strong></dt>
+<dd><p class="first">Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.</p>
+<p class="last">Example: &#8211;from &#8216;2016-01-01&#8217;</p>
+</dd>
+<dt><strong class="command">--name NAME</strong></dt>
+<dd><p class="first">Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.</p>
+<p class="last">Example: &#8211;name backfill1</p>
+</dd>
+<dt><strong class="command">-d, --dry-run</strong></dt>
+<dd>Tries to backfill and validates the results but does nothing.</dd>
+</dl>
+</div>
+<div class="section" id="reschedule">
+<h3><a class="toc-backref" href="#id18">reschedule</a><a class="headerlink" href="#reschedule" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag reschedule &lt;schedule-id&gt;
+</pre></div>
+</div>
+<p>Skips schedule forward to a future time. To run past schedules, use backfill instead.</p>
+<dl class="docutils">
+<dt><strong class="command">-s, --skip N</strong></dt>
+<dd>Skips specified number of schedules from now. This number &#8220;N&#8221; doesn&#8217;t mean number of sessions to be skipped. &#8220;N&#8221; is the number of sessions to be skipped.</dd>
+<dt><strong class="command">-t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'</strong></dt>
+<dd>Skips schedules until the specified time (exclusive).</dd>
+<dt><strong class="command">-a, --run-at 'yyyy-MM-dd HH:mm:ss Z'</strong></dt>
+<dd>Set next run time to this time.</dd>
+<dt><strong class="command">-d, --dry-run</strong></dt>
+<dd>Tries to reschedule and validates the results but does nothing.</dd>
+</dl>
+</div>
+<div class="section" id="sessions">
+<h3><a class="toc-backref" href="#id19">sessions</a><a class="headerlink" href="#sessions" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag sessions <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+</pre></div>
+</div>
+<p>Shows list of sessions. This command shows only the latest attempts of sessions (doesn&#8217;t include attempts retried by another attempt). To show all attempts, use <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">attempts</span></code>. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag sessions
+<span class="gp">$</span> digdag sessions myproj
+<span class="gp">$</span> digdag sessions myproj +main
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">-i, --last-id ID</strong></dt>
+<dd>Shows more sessions older than this id.</dd>
+</dl>
+</div>
+<div class="section" id="attempts">
+<h3><a class="toc-backref" href="#id20">attempts</a><a class="headerlink" href="#attempts" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag attempts <span class="o">[</span>project-name<span class="o">]</span> <span class="o">[</span>+name<span class="o">]</span>
+</pre></div>
+</div>
+<p>Shows list of attempts. This command shows shows all attempts including attempts retried by another attempt. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag attempts
+<span class="gp">$</span> digdag attempts myproj
+<span class="gp">$</span> digdag attempts myproj +main
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">-i, --last-id ID</strong></dt>
+<dd>Shows more attempts older than this id.</dd>
+</dl>
+</div>
+<div class="section" id="tasks">
+<h3><a class="toc-backref" href="#id21">tasks</a><a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag tasks &lt;attempt-id&gt;
+</pre></div>
+</div>
+<p>Shows tasks of an session attempt. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag tasks 32
+</pre></div>
+</div>
+</div>
+<div class="section" id="push">
+<h3><a class="toc-backref" href="#id22">push</a><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag push &lt;project&gt; <span class="o">[</span>options...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Creates a project archive and upload it to the server. This command uploads workflow definition files (files with .dig suffix) at the current directory, and all other files from the current directory recursively. Examples:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag push myproj -r <span class="s2">&quot;</span><span class="k">$(</span>date +%Y-%m-%dT%H:%M:%S%z<span class="k">)</span><span class="s2">&quot;</span>
+<span class="gp">$</span> digdag push default -r <span class="s2">&quot;</span><span class="k">$(</span>git show --pretty<span class="o">=</span>format:<span class="s1">&#39;%T&#39;</span> <span class="p">|</span> head -n 1<span class="k">)</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">---project DIR</strong></dt>
+<dd><p class="first">Use this directory as the project directory (default: current directory).</p>
+<p class="last">Example: &#8211;project workflow/</p>
+</dd>
+<dt><strong class="command">-r, --revision REVISION</strong></dt>
+<dd><p class="first">Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git&#8217;s SHA1 hash (<code class="docutils literal"><span class="pre">git</span> <span class="pre">show</span> <span class="pre">--pretty=format:'%T'</span> <span class="pre">|</span> <span class="pre">head</span> <span class="pre">-n</span> <span class="pre">1</span></code>) or timestamp (<code class="docutils literal"><span class="pre">date</span> <span class="pre">+%Y-%m-%dT%H:%M:%S%z</span></code>).</p>
+<p class="last">Example: -r f40172ebc58f58087b6132085982147efa9e81fb</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="common-options">
+<h2><a class="toc-backref" href="#id23">Common options</a><a class="headerlink" href="#common-options" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong class="command">-L, --log PATH</strong></dt>
+<dd>Output log messages to a file (default is STDOUT). If this option is set, log files are rotated every 10MB, compresses it using gzip, and keeps at most 5 old files.</dd>
+<dt><strong class="command">-l, --log-level LEVEL</strong></dt>
+<dd>Change log level (enum: trace, debug, info, warn, or error. default is info).</dd>
+<dt><strong class="command">-X KEY=VALUE</strong></dt>
+<dd>Add a performance system configuration. This option is for experimental use.</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="python_api.html" class="btn btn-neutral float-right" title="Language API - Python" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="operators.html" class="btn btn-neutral" title="Operators" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
