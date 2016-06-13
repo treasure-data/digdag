@@ -4,7 +4,6 @@ machine:
     version: oraclejdk8
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
-    GRADLE_OPTS: -Dorg.gradle.daemon=true
   services:
     - docker
 
