@@ -9,7 +9,7 @@ GIT_USER_NAME="Circle CI"
 GIT_USER_EMAIL="circleci@digdag.io"
 
 # build the docs
-./gradlew site --info
+./gradlew site --info --no-daemon
 
 # clone complete repository to gh_pages directory
 rm -rf gh_pages

@@ -4,4 +4,4 @@ docker run \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \
 digdag-build \
-./gradlew clean test --info
+./gradlew clean test --info --no-daemon
