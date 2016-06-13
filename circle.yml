@@ -23,27 +23,8 @@ dependencies:
 
 test:
   override:
-    - |
-      docker run \
-      -w /digdag \
-      -v `pwd`/:/digdag \
-      -v ~/.gradle:/root/.gradle \
-      digdag-build \
-      ./gradlew clean test --info
-    - |
-      docker run \
-      -w /digdag \
-      -v `pwd`/:/digdag \
-      -v ~/.gradle:/root/.gradle \
-      -e DIGDAG_TEST_POSTGRESQL="
-      host = localhost
-      port = 5432
-      user = digdag_test
-      password =
-      database = digdag_test
-      " \
-      digdag-build \
-      ./gradlew cleanTest check --info
+    - circle/run.sh:
+        parallel: true
 
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
