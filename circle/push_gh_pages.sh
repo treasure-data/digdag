@@ -13,22 +13,14 @@ GIT_USER_EMAIL="circleci@digdag.io"
 
 # clone complete repository to gh_pages directory
 rm -rf gh_pages
-git fetch --unshallow || echo "Already unshallowed"
-git clone . gh_pages
-
-# associate gh_pages to the remote repository
-cd gh_pages
-git remote add ci-gh-pages "$GH_PAGES_GIT_URL"
-git fetch ci-gh-pages
-git checkout -b ci-gh-pages ci-gh-pages/$GH_PAGES_BRANCH
-cd ..
+git clone -b "$GH_PAGES_BRANCH" "$GH_PAGES_GIT_URL" gh_pages
 
 # copy the built pages to gh_pages
 rm -rf gh_pages/*
 cp -a "$DOCS_DIR"/* gh_pages/
+cd gh_pages
 
 # some top-level static files
-cd gh_pages
 touch ".nojekyll"
 if [ -n "$CNAME" ];then
     echo $CNAME > "CNAME"
