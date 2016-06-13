@@ -42,4 +42,4 @@ git config credential.helper "store --file=$HOME/.git_credentials"
 echo "https://$GITHUB_TOKEN:@github.com" > "$HOME/.git_credentials"
 trap "rm -rf $HOME/.git_credentials" EXIT
 
-git push origin-gh-pages "$GH_PAGES_BRANCH"
+git push -f origin "$GH_PAGES_BRANCH"

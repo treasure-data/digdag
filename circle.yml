@@ -22,17 +22,16 @@ dependencies:
 
 test:
   override:
-    #- circle/run.sh:
-    #    parallel: true
-    - echo skip
+    - circle/run.sh:
+        parallel: true
 
-  #post:
-  #  - mkdir -p $CIRCLE_ARTIFACTS/reports
-  #  - |
-  #    for dir in build/reports digdag-*/build/reports; do
-  #      mkdir -p $CIRCLE_ARTIFACTS/reports/${dir%%/*}
-  #      cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
-  #    done
+  post:
+    - mkdir -p $CIRCLE_ARTIFACTS/reports
+    - |
+      for dir in build/reports digdag-*/build/reports; do
+        mkdir -p $CIRCLE_ARTIFACTS/reports/${dir%%/*}
+        cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
+      done
 
 deployment:
   docs:
