@@ -639,11 +639,15 @@ public class WorkflowExecutor
             throws NotificationException
     {
         StoredSessionAttemptWithSession attempt;
-        StoredWorkflowDefinitionWithProject workflow;
+
+        Optional<StoredWorkflowDefinitionWithProject> workflow;
 
         try {
             attempt = sm.getAttemptWithSessionById(task.getAttemptId());
-            workflow = rm.getWorkflowDetailsById(attempt.getWorkflowDefinitionId().get());
+            Optional<Long> workflowDefinitionId = attempt.getWorkflowDefinitionId();
+            workflow = workflowDefinitionId.isPresent()
+                    ? Optional.of(rm.getWorkflowDetailsById(workflowDefinitionId.get()))
+                    : Optional.absent();
         }
         catch (ResourceNotFoundException e) {
             // This is unexpected. It should not be possible for an attempt or workflow to not exist while the task attempt exists.
@@ -652,10 +656,10 @@ public class WorkflowExecutor
 
         Notification notification = Notification.builder(Instant.now(), "Workflow session attempt failed")
                 .siteId(attempt.getSiteId())
-                .projectName(workflow.getProject().getName())
-                .projectId(workflow.getProject().getId())
-                .workflowName(workflow.getName())
-                .revision(workflow.getRevisionName())
+                .projectName(workflow.transform(WorkflowDefinition::getName))
+                .projectId(workflow.transform(wf -> wf.getProject().getId()))
+                .workflowName(workflow.transform(StoredWorkflowDefinitionWithProject::getName))
+                .revision(workflow.transform(StoredWorkflowDefinitionWithProject::getRevisionName))
                 .attemptId(attempt.getId())
                 .sessionId(attempt.getSessionId())
                 .timeZone(attempt.getTimeZone())
