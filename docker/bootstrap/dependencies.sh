@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 apt-get -y update
-apt-get -y install software-properties-common apt-transport-https wget
+apt-get -y install software-properties-common apt-transport-https wget git
 
 # Oracle JDK8
 add-apt-repository ppa:webupd8team/java
