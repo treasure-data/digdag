@@ -10,11 +10,10 @@ import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.BaseOperator;
+import io.digdag.util.BaseOperator;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -77,10 +76,10 @@ public class TdForEachOperatorFactory
 
             Config subtasks = doConfig.getFactory().create();
             for (int i = 0; i < rows.size(); i++) {
-                Config combination = rows.get(i);
+                Config row = rows.get(i);
                 Config subtask = params.getFactory().create();
                 subtask.setAll(doConfig);
-                subtask.getNestedOrSetEmpty("_export").setAll(combination);
+                subtask.getNestedOrSetEmpty("_export").getNestedOrSetEmpty("td").getNestedOrSetEmpty("each").setAll(row);
                 subtasks.set("+td-for-each-" + i, subtask);
             }
 
