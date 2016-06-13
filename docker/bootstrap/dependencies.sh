@@ -21,7 +21,7 @@ sudo -u postgres createuser -s digdag_test
 sudo -u postgres createdb -O digdag_test digdag_test
 
 # Python
-apt-get -y install python python-pip
+apt-get -y install python python-pip python-dev
 pip install sphinx recommonmark sphinx_rtd_theme
 
 rm -rf /var/lib/apt/lists/*

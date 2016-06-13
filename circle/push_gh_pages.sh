@@ -6,7 +6,7 @@ CNAME="www.digdag.io"
 DOCS_DIR="digdag-docs/build/html"
 REVISION="$(git rev-parse HEAD)"
 GIT_USER_NAME="Circle CI"
-GIT_USER_NAME="circleci@digdag.io"
+GIT_USER_EMAIL="circleci@digdag.io"
 
 # build the docs
 ./gradlew site --info
