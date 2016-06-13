@@ -8,30 +8,33 @@ REVISION="$(git rev-parse HEAD)"
 GIT_USER_NAME="Circle CI"
 GIT_USER_NAME="circleci@digdag.io"
 
+# build the docs
 ./gradlew site --info
 
-git fetch --unshallow || echo "Already unshallowed"
-
-# build the docs
+# clone complete repository to gh_pages directory
 rm -rf gh_pages
+git fetch --unshallow || echo "Already unshallowed"
 git clone . gh_pages
 
-# push the docs to the remote git repo
+# associate gh_pages to the remote repository
 cd gh_pages
 git remote add ci-gh-pages "$GH_PAGES_GIT_URL"
 git fetch ci-gh-pages
 git checkout -b ci-gh-pages ci-gh-pages/$GH_PAGES_BRANCH
-
 cd ..
+
+# copy the built pages to gh_pages
 rm -rf gh_pages/*
 cp -a "$DOCS_DIR"/* gh_pages/
-cd gh_pages
 
+# some top-level static files
+cd gh_pages
 touch ".nojekyll"
 if [ -n "$CNAME" ];then
     echo $CNAME > "CNAME"
 fi
 
+# push pages to the remote git repo
 git add --all .
 git config user.name "$GIT_USER_NAME"
 git config user.email "$GIT_USER_EMAIL"
