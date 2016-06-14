@@ -1,0 +1,13 @@
++wait:
+  +table:
+    td_wait_table>: ${wait_table}
+    interval: ${wait_poll_interval}
+
+  +query:
+    td_wait>:
+      data: 'select 1 from ${wait_table} limit ${wait_limit}'
+    rows: ${wait_rows}
+    interval: ${wait_poll_interval}
+
++perform:
+  sh>: touch ${outfile}

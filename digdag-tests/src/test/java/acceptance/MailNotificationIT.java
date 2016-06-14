@@ -59,11 +59,7 @@ public class MailNotificationIT
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
 
-        // Create new project
-        CommandStatus initStatus = main("init",
-                "-c", config.toString(),
-                projectDir.toString());
-        assertThat(initStatus.code(), is(0));
+        TestUtils.createProject(projectDir);
 
         mailServer = new Wiser();
         mailServer.setHostname(HOSTNAME);

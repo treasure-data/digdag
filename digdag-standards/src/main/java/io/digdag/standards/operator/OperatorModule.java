@@ -22,6 +22,8 @@ import io.digdag.standards.operator.td.TdRunOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdTableExportOperatorFactory;
+import io.digdag.standards.operator.td.TdWaitOperatorFactory;
+import io.digdag.standards.operator.td.TdWaitTableOperatorFactory;
 
 public class OperatorModule
     implements Module
@@ -42,6 +44,8 @@ public class OperatorModule
         addStandardOperatorFactory(binder, TdLoadOperatorFactory.class);
         addStandardOperatorFactory(binder, TdDdlOperatorFactory.class);
         addStandardOperatorFactory(binder, TdTableExportOperatorFactory.class);
+        addStandardOperatorFactory(binder, TdWaitOperatorFactory.class);
+        addStandardOperatorFactory(binder, TdWaitTableOperatorFactory.class);
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);

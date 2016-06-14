@@ -1,5 +1,6 @@
 package acceptance;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -234,9 +235,9 @@ public class TemporaryDigdagServer
             return this;
         }
 
-        public Builder configuration(String configuration)
+        public Builder configuration(String... configuration)
         {
-            this.configuration = configuration;
+            this.configuration = Joiner.on('\n').join(configuration);
             return this;
         }
 

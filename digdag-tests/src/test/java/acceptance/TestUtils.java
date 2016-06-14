@@ -1,13 +1,14 @@
 package acceptance;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.core.Version;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Assert;
@@ -23,8 +24,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
@@ -46,6 +49,11 @@ class TestUtils
     static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
     static CommandStatus main(String... args)
+    {
+        return main(buildVersion(), args);
+    }
+
+    static CommandStatus main(Collection<String> args)
     {
         return main(buildVersion(), args);
     }
@@ -219,5 +227,77 @@ class TestUtils
                     String.valueOf(attemptId));
             return attemptsStatus.outUtf8().contains("status: success");
         };
+    }
+
+    static void createProject(Path project)
+    {
+        CommandStatus initStatus = main("init",
+                "-c", "/dev/null",
+                project.toString());
+        assertThat(initStatus.code(), is(0));
+    }
+
+    static long pushAndStart(String endpoint, Path project, String workflow)
+            throws IOException
+    {
+        return pushAndStart(endpoint, project, workflow, ImmutableMap.of());
+    }
+
+    static long pushAndStart(String endpoint, Path project, String workflow, Map<String, String> params)
+            throws IOException
+    {
+        String projectName = project.getFileName().toString();
+
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", project.toString(),
+                projectName,
+                "-c", "/dev/null",
+                "-e", endpoint,
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+
+        List<String> startCommand = new ArrayList<>(asList("start",
+                "-c", "/dev/null",
+                "-e", endpoint,
+                projectName, workflow,
+                "--session", "now"));
+
+        params.forEach((k, v) -> startCommand.addAll(asList("-p", k + "=" + v)));
+
+        // Start the workflow
+        CommandStatus startStatus = main(startCommand);
+        assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+
+        return getAttemptId(startStatus);
+    }
+
+    static void addWorkflow(Path project, String resource)
+            throws IOException
+    {
+        Path workflow = Paths.get(resource);
+        copyResource(resource, project.resolve(workflow.getFileName()));
+    }
+
+    public static void runWorkflow(String resource, ImmutableMap<String, String> params)
+            throws IOException
+    {
+        Path workflow = Paths.get(resource);
+        Path tempdir = Files.createTempDirectory("digdag-test");
+        Path file = tempdir.resolve(workflow.getFileName());
+        List<String> runCommand = new ArrayList<>(asList("run",
+                "-c", "/dev/null",
+                "-o", tempdir.toString(),
+                "--project", tempdir.toString(),
+                workflow.getFileName().toString()));
+        params.forEach((k, v) -> runCommand.addAll(asList("-p", k + "=" + v)));
+        try {
+            copyResource(resource, file);
+            CommandStatus status = main(runCommand);
+            assertThat(status.errUtf8(), status.code(), is(0));
+        }
+        finally {
+            FileUtils.deleteQuietly(tempdir.toFile());
+        }
     }
 }
