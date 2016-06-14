@@ -4,7 +4,9 @@
 
 A workflow automates any kinds of manual operations. You'll define a sequence of tasks as workflow, then Digdag keeps running it for you. Tasks are defined using operator plugins so that you can control various kinds of systems from the central workflow engine (see also [list of built-in operator plugins](operators.html)).
 
-As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn't finish within expected amount of tiem, Digdag sends a notification. Digdag runs many tasks on distributed servers in parallel. Digdag starts workflow automatically based on scheduling options.
+As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn't finish within expected amount of tiem, Digdag sends a notification. Digdag starts workflow automatically based on scheduling options.
+
+Tasks can run on local machine, distributed servers, or in a Docker container.
 
 ## Organizing tasks by groups
 
@@ -32,7 +34,22 @@ Digdag workflow is defined as code. This brings best practice of software develo
 
 Digdag is a single-file executable command. Creating and running a new workflow is as easy as Makefile.
 
-Files with ``*.dig`` suffix are used for workflow definitions. `digdag run my_workflow.dig` command runs the workflow.
+Files with `*.dig` suffix are used for workflow definitions. `digdag run my_workflow.dig` command runs the workflow.
+
+## Running on a server
+
+Files at the same directory with `*.dig` files are called **projects**. You can push an entire project to a Digdag server so that Digdag server runs workflows in the project periodically on the server.
+
+### Running tasks on Docker
+
+You can use [Docker](https://www.docker.com/) to run tasks in a container.  If `docker` option is set, tasks run in a docker container.
+
+    _export:
+      docker:
+        image: ubuntu:14.04
+    
+    +step1:
+      py>: tasks.MyWorkflow.step1
 
 ## Next steps
 

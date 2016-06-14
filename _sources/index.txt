@@ -23,7 +23,6 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
    architecture.md
    workflow_definition.rst
    scheduling_workflow.rst
-   running_tasks_on_docker.rst
    operators.rst
    reciipes.rst
    command_reference.rst

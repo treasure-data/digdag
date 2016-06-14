@@ -93,12 +93,15 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#workflow-as-code">Workflow as code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-with-local-mode">Running with local mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-on-a-server">Running on a server</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-tasks-on-docker">Running tasks on Docker</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#next-steps">Next steps</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
-<li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
@@ -153,7 +156,8 @@
 <div class="section" id="automating-workflow-with-digdag">
 <span id="automating-workflow-with-digdag"></span><h2>Automating workflow with Digdag<a class="headerlink" href="#automating-workflow-with-digdag" title="Permalink to this headline">¶</a></h2>
 <p>A workflow automates any kinds of manual operations. You&#8217;ll define a sequence of tasks as workflow, then Digdag keeps running it for you. Tasks are defined using operator plugins so that you can control various kinds of systems from the central workflow engine (see also <a class="reference external" href="operators.html">list of built-in operator plugins</a>).</p>
-<p>As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn&#8217;t finish within expected amount of tiem, Digdag sends a notification. Digdag runs many tasks on distributed servers in parallel. Digdag starts workflow automatically based on scheduling options.</p>
+<p>As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn&#8217;t finish within expected amount of tiem, Digdag sends a notification. Digdag starts workflow automatically based on scheduling options.</p>
+<p>Tasks can run on local machine, distributed servers, or in a Docker container.</p>
 </div>
 <div class="section" id="organizing-tasks-by-groups">
 <span id="organizing-tasks-by-groups"></span><h2>Organizing tasks by groups<a class="headerlink" href="#organizing-tasks-by-groups" title="Permalink to this headline">¶</a></h2>
@@ -176,6 +180,22 @@
 <span id="running-with-local-mode"></span><h2>Running with local mode<a class="headerlink" href="#running-with-local-mode" title="Permalink to this headline">¶</a></h2>
 <p>Digdag is a single-file executable command. Creating and running a new workflow is as easy as Makefile.</p>
 <p>Files with <code class="docutils literal"><span class="pre">*.dig</span></code> suffix are used for workflow definitions. <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">run</span> <span class="pre">my_workflow.dig</span></code> command runs the workflow.</p>
+</div>
+<div class="section" id="running-on-a-server">
+<span id="running-on-a-server"></span><h2>Running on a server<a class="headerlink" href="#running-on-a-server" title="Permalink to this headline">¶</a></h2>
+<p>Files at the same directory with <code class="docutils literal"><span class="pre">*.dig</span></code> files are called <strong>projects</strong>. You can push an entire project to a Digdag server so that Digdag server runs workflows in the project periodically on the server.</p>
+<div class="section" id="running-tasks-on-docker">
+<span id="running-tasks-on-docker"></span><h3>Running tasks on Docker<a class="headerlink" href="#running-tasks-on-docker" title="Permalink to this headline">¶</a></h3>
+<p>You can use <a class="reference external" href="https://www.docker.com/">Docker</a> to run tasks in a container.  If <code class="docutils literal"><span class="pre">docker</span></code> option is set, tasks run in a docker container.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">_export</span><span class="p">:</span>
+  <span class="n">docker</span><span class="p">:</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">ubuntu</span><span class="p">:</span><span class="mf">14.04</span>
+
+<span class="o">+</span><span class="n">step1</span><span class="p">:</span>
+  <span class="n">py</span><span class="o">&gt;</span><span class="p">:</span> <span class="n">tasks</span><span class="o">.</span><span class="n">MyWorkflow</span><span class="o">.</span><span class="n">step1</span>
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="next-steps">
 <span id="next-steps"></span><h2>Next steps<a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
