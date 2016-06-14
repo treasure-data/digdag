@@ -1,8 +1,6 @@
 package acceptance;
 
 import com.google.common.base.Joiner;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Resources;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -12,17 +10,11 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAmount;
 
 import static acceptance.TestUtils.attemptSuccess;
+import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
@@ -58,7 +50,6 @@ public class MailNotificationIT
 
     private Path config;
     private Path projectDir;
-    private Path timeoutFile;
     private Wiser mailServer;
 
     @Before
@@ -73,8 +64,6 @@ public class MailNotificationIT
                 "-c", config.toString(),
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
-
-        timeoutFile = projectDir.resolve("timeout").toAbsolutePath().normalize();
 
         mailServer = new Wiser();
         mailServer.setHostname(HOSTNAME);
@@ -95,7 +84,7 @@ public class MailNotificationIT
     public void testSlaDurationAlertMail()
             throws Exception
     {
-        pushAndStart("acceptance/sla/duration_alert_default.dig", Duration.ofSeconds(5));
+        pushAndStart("acceptance/sla/duration_alert_default.dig");
 
         // Wait for mail to be delivered
         expect(Duration.ofSeconds(30), () -> mailServer.getMessages().size() > 0);
@@ -116,7 +105,7 @@ public class MailNotificationIT
     public void testSessionFailureAlertMail()
             throws Exception
     {
-        pushAndStart("acceptance/notification/fail.dig", Duration.ofSeconds(5));
+        pushAndStart("acceptance/notification/fail.dig");
 
         // Wait for mail to be delivered
         for (int i = 0; i < 30; i++) {
@@ -142,7 +131,7 @@ public class MailNotificationIT
     public void testSessionSuccess()
             throws Exception
     {
-        long attemptId = pushAndStart("acceptance/notification/success.dig", Duration.ofSeconds(5));
+        long attemptId = pushAndStart("acceptance/notification/success.dig");
         expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
         Thread.sleep(5000);
@@ -151,19 +140,10 @@ public class MailNotificationIT
         assertThat(mailServer.getMessages().size(), is(0));
     }
 
-    private long pushAndStart(String workflow, TemporalAmount timeout)
+    private long pushAndStart(String workflow)
             throws IOException
     {
-        try (InputStream input = Resources.getResource(workflow).openStream()) {
-            byte[] bytes = ByteStreams.toByteArray(input);
-            String template = new String(bytes, "UTF-8");
-            ZonedDateTime deadline = Instant.now().plus(timeout).atZone(ZoneOffset.UTC);
-            String time = deadline.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-            String definition = template
-                    .replace("${TIME}", time)
-                    .replace("${TIMEOUT_FILE}", timeoutFile.toString());
-            Files.write(projectDir.resolve(WORKFLOW_NAME + ".dig"), definition.getBytes("UTF-8"));
-        }
+        copyResource(workflow, projectDir.resolve(WORKFLOW_NAME + ".dig"));
 
         // Push the project
         CommandStatus pushStatus = main("push",
