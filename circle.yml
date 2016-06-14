@@ -35,7 +35,7 @@ test:
 
 deployment:
   docs:
-    branch: docs-test
+    branch: master
     commands:
       - circle/run_deployment.sh
 

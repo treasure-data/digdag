@@ -6,6 +6,3 @@ ENV TERM dumb
 WORKDIR /bootstrap
 COPY bootstrap /bootstrap
 RUN ./dependencies.sh
-
-COPY entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]

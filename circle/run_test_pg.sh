@@ -14,4 +14,4 @@ docker run \
 -v ~/.gradle:/root/.gradle \
 -e DIGDAG_TEST_POSTGRESQL="${DIGDAG_TEST_POSTGRESQL}" \
 digdag-build \
-./gradlew test --info
+sh -c "/etc/init.d/postgresql start && ./gradlew test --info --no-daemon"
