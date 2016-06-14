@@ -95,22 +95,11 @@ public class TdForEachOperatorFactory
         private List<Config> runQuery(TaskRequest request, Config params, String query)
         {
             String engine = params.get("engine", String.class, "presto");
+            if (!engine.equals("presto") && !engine.equals("hive")) {
+                throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
+            }
 
             try (TDOperator op = TDOperator.fromConfig(params)) {
-                String stmt;
-
-                switch (engine) {
-                    case "presto":
-                        stmt = query;
-                        break;
-
-                    case "hive":
-                        stmt = query;
-                        break;
-
-                    default:
-                        throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
-                }
 
                 int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
                 int jobRetry = params.get("job_retry", int.class, 0);
@@ -118,14 +107,14 @@ public class TdForEachOperatorFactory
                 TDJobRequest req = new TDJobRequestBuilder()
                         .setType(engine)
                         .setDatabase(op.getDatabase())
-                        .setQuery(stmt)
+                        .setQuery(query)
                         .setRetryLimit(jobRetry)
                         .setPriority(priority)
                         .setScheduledTime(request.getSessionTime().getEpochSecond())
                         .createTDJobRequest();
 
                 TDJobOperator j = op.submitNewJob(req);
-                logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
+                logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), query);
 
                 joinJob(j);
 
