@@ -1,0 +1,11 @@
+timezone: UTC
+
++task:
+  td_for_each>:
+    data: |
+      select 'a1' as a, 'b1' as b
+      UNION
+      select 'a2' as a, 'b2' as b;
+  _do:
+    sh>: touch out-${td.each.a}-${td.each.b}
+  database: sample_datasets

@@ -16,6 +16,7 @@ import io.digdag.standards.operator.MailOperatorFactory;
 import io.digdag.standards.operator.LoopOperatorFactory;
 import io.digdag.standards.operator.ForEachOperatorFactory;
 import io.digdag.standards.operator.EmbulkOperatorFactory;
+import io.digdag.standards.operator.td.TdForEachOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
 import io.digdag.standards.operator.td.TdRunOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
@@ -36,6 +37,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, ForEachOperatorFactory.class);
         addStandardOperatorFactory(binder, EmbulkOperatorFactory.class);
         addStandardOperatorFactory(binder, TdOperatorFactory.class);
+        addStandardOperatorFactory(binder, TdForEachOperatorFactory.class);
         addStandardOperatorFactory(binder, TdRunOperatorFactory.class);
         addStandardOperatorFactory(binder, TdLoadOperatorFactory.class);
         addStandardOperatorFactory(binder, TdDdlOperatorFactory.class);
