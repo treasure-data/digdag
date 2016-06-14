@@ -15,4 +15,8 @@ dependencies {
     compile 'org.postgresql:postgresql:9.4.1208'
     compile 'org.yaml:snakeyaml:1.14'
     compile 'com.google.code.findbugs:annotations:3.0.1'
+
+    // mail
+    compile 'javax.mail:javax.mail-api:1.5.5'
+    compile 'com.sun.mail:javax.mail:1.5.5'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
 }
