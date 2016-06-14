@@ -1,30 +1,24 @@
 package io.digdag.core.agent;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.nio.file.Path;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskReport;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionException;
-import io.digdag.util.RetryControl;
-import io.digdag.core.session.SessionStateFlags;
-import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.session.SessionStateFlags;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import io.digdag.util.BaseOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.time.Instant;
 
 public class RequireOperatorFactory
         implements OperatorFactory
@@ -47,54 +41,26 @@ public class RequireOperatorFactory
     @Override
     public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new RequireOperator(callback, request);
+        return new RequireOperator(workspacePath, callback, request);
     }
 
     private static class RequireOperator
-            implements Operator
+            extends BaseOperator
     {
         private final TaskCallbackApi callback;
         private final TaskRequest request;
         private ConfigFactory cf;
 
-        public RequireOperator(TaskCallbackApi callback, TaskRequest request)
+        private RequireOperator(Path workspacePath, TaskCallbackApi callback, TaskRequest request)
         {
+            super(workspacePath, request);
             this.callback = callback;
             this.request = request;
             this.cf = request.getConfig().getFactory();
         }
 
         @Override
-        public TaskResult run()
-        {
-            RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
-            boolean isDone;
-            try {
-                isDone = runTask();
-            }
-            catch (RuntimeException ex) {
-                boolean doRetry = retry.evaluate();
-                if (doRetry) {
-                    throw new TaskExecutionException(ex,
-                            buildExceptionErrorConfig(ex),
-                            retry.getNextRetryInterval(),
-                            ConfigElement.copyOf(retry.getNextRetryStateParams()));
-                }
-                else {
-                    throw ex;
-                }
-            }
-
-            if (isDone) {
-                return TaskResult.empty(cf);
-            }
-            else {
-                // TODO use exponential-backoff to calculate retry interval
-                throw TaskExecutionException.ofNextPolling(1, ConfigElement.copyOf(request.getLastStateParams()));
-            }
-        }
-
-        private boolean runTask()
+        public TaskResult runTask()
         {
             Config config = request.getConfig();
             String workflowName = config.get("_command", String.class);
@@ -111,7 +77,14 @@ public class RequireOperatorFactory
                         retryAttemptName,
                         overwriteParams);
 
-                return flags.isDone();
+                boolean isDone = flags.isDone();
+                if (isDone) {
+                    return TaskResult.empty(cf);
+                }
+                else {
+                    // TODO use exponential-backoff to calculate retry interval
+                    throw TaskExecutionException.ofNextPolling(1, ConfigElement.copyOf(request.getLastStateParams()));
+                }
             }
             catch (ResourceNotFoundException ex) {
                 throw new ConfigException(ex);
