@@ -125,7 +125,7 @@ public class OperatorManager
                 }
                 catch (TaskExecutionException ex) {
                     if (ex.getRetryInterval().isPresent()) {
-                        if (ex.getError(cf).isPresent()) {
+                        if (!ex.getError(cf).isPresent()) {
                             logger.debug("Retrying task {}", ex.toString());
                         }
                         else {
