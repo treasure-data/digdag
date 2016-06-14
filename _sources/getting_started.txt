@@ -57,7 +57,8 @@ Did it work? Next step is adding tasks to ``digdag.dig`` file to automate your j
 Next steps
 ----------------------------------
 
+* `Architecture <architecture.html>`_
 * `Scheduling workflow <scheduling_workflow.html>`_
-* `Detailed documents about workflow definition <workflow_definition.html>`_
+* `Workflow definition <workflow_definition.html>`_
 * `More choices of operators <operators.html>`_
 

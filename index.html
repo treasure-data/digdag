@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Getting started &mdash; Digdag 0.8 documentation</title>
+  <title>What’s Digdag? &mdash; Digdag 0.8 documentation</title>
   
 
   
@@ -84,7 +84,7 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
@@ -123,7 +123,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="#">Docs</a> &raquo;</li>
       
-    <li>Getting started</li>
+    <li>What&#8217;s Digdag?</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -137,28 +137,18 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <p>Digdag is a simple tool that helps you to build, run, schedule, and monitor complex pipelines of tasks. It handles dependency resolution so that tasks run in order or in parallel.</p>
+  <div class="section" id="what-s-digdag">
+<span id="what-s-digdag"></span><h1>What&#8217;s Digdag?<a class="headerlink" href="#what-s-digdag" title="Permalink to this headline">¶</a></h1>
+<p>Digdag is a simple tool that helps you to build, run, schedule, and monitor complex pipelines of tasks. It handles dependency resolution so that tasks run in order or in parallel.</p>
 <p>Digdag fits simple replacement of cron, IT operations automation, data analytics batch jobs, machine learning pipelines, and many more by using Directed Acyclic Graphs (DAG) as the infrastructure.</p>
+</div>
 <div class="section" id="getting-started">
 <span id="getting-started"></span><h1><a class="reference external" href="getting_started.html">Getting started</a><a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p><a class="reference external" href="getting_started.html">&gt; Starting Digdag in 5 minutes.</a></p>
+<p>&gt; &#8220;<a class="reference external" href="getting_started.html">Digdag in 5 minutes</a>&#8220;</p>
 </div>
-<div class="section" id="concepts-of-digdag">
-<span id="concepts-of-digdag"></span><h1>Concepts of Digdag<a class="headerlink" href="#concepts-of-digdag" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><strong>Easy to use</strong></li>
-</ul>
-<p>Digdag is a single executable command. Creating new workflow is as easy as writing Makefile. It will come with web-based management UI backed by H2 database or PostgreSQL in the small package.</p>
-<ul class="simple">
-<li><strong>Workflow definition as code</strong></li>
-</ul>
-<p><img alt="Workflow as code" src="_images/workflow-as-code.png" /></p>
-<p>Digdag workflow is defined as code. This brings best practice of software development to your pipeline. Defined workflow is dynamically programmable but still reproducible at any time.</p>
-<ul class="simple">
-<li><strong>Grouping tasks</strong></li>
-</ul>
-<p><img alt="Grouping tasks" src="_images/grouping-tasks.png" /></p>
-<p>Workflow definition gets complicated quickly. Digdag lets you organize tasks by creating nested groups so that you can see from a bird&#8217;s view, then dive in to details. Well-organized pipelines make it easy to review your achievement as well as preventing mistakes.</p>
+<div class="section" id="learn-more">
+<span id="learn-more"></span><h1><a class="reference external" href="architecture.html">Learn more</a><a class="headerlink" href="#learn-more" title="Permalink to this headline">¶</a></h1>
+<p>&gt; &#8220;<a class="reference external" href="architecture.html">Architecture</a>&#8220;</p>
 <div class="section" id="table-of-contents">
 <span id="table-of-contents"></span><h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -173,8 +163,12 @@
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#next-steps">Next steps</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/bigdata_analytics_using_treasure_data.html">BigData analytics using Treasure Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#automating-workflow-with-digdag">Automating workflow with Digdag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#organizing-tasks-by-groups">Organizing tasks by groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#workflow-as-code">Workflow as code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#running-with-local-mode">Running with local mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#next-steps">Next steps</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a><ul>
