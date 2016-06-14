@@ -15,7 +15,6 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Session;
@@ -30,8 +29,6 @@ import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
-import io.digdag.spi.Notification;
-import io.digdag.spi.NotificationException;
 import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -40,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -534,14 +531,14 @@ public class WorkflowExecutor
             RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
 
             boolean willRetry = retryControl.evaluate();
-            Optional<Long> errorTaskId;
+            List<Long> errorTaskIds;
             if (!willRetry) {
-                errorTaskId = addErrorTasksIfAny(lockedTask,
+                errorTaskIds = addErrorTasksIfAny(lockedTask,
                         true,
                         (export) -> collectErrorParams(export, lockedTask.get()));
             }
             else {
-                errorTaskId = Optional.absent();
+                errorTaskIds = ImmutableList.of();
             }
             boolean updated;
             if (willRetry) {
@@ -549,7 +546,7 @@ public class WorkflowExecutor
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
             }
-            else if (errorTaskId.isPresent()) {
+            else if (!errorTaskIds.isEmpty()) {
                 // don't set GROUP_ERROR but set DELAYED_GROUP_ERROR. Delay until next setDoneFromDoneChildren call
                 updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();  // TODO set flag
             }
@@ -612,17 +609,6 @@ public class WorkflowExecutor
                 tasks
                 .stream()
                 .map(task -> {
-                    if (task.getState().isError()) {
-                        try {
-                            notifySessionAttemptError(task);
-                        }
-                        catch (NotificationException e) {
-                            // Skip this session. It will be retried later;
-                            logger.error("Failed to send session attempt error notification. Retrying later.", e);
-                            // TODO: return true or false here? Nobody seems to be using this return value so it is unclear what the semantics are. Maybe it should be removed.
-                            return false;
-                        }
-                    }
                     return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
                         SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
                         control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
@@ -633,41 +619,6 @@ public class WorkflowExecutor
             lastTaskId = tasks.get(tasks.size() - 1).getId();
         }
         return anyChanged;
-    }
-
-    private void notifySessionAttemptError(TaskAttemptSummary task)
-            throws NotificationException
-    {
-        StoredSessionAttemptWithSession attempt;
-
-        Optional<StoredWorkflowDefinitionWithProject> workflow;
-
-        try {
-            attempt = sm.getAttemptWithSessionById(task.getAttemptId());
-            Optional<Long> workflowDefinitionId = attempt.getWorkflowDefinitionId();
-            workflow = workflowDefinitionId.isPresent()
-                    ? Optional.of(rm.getWorkflowDetailsById(workflowDefinitionId.get()))
-                    : Optional.absent();
-        }
-        catch (ResourceNotFoundException e) {
-            // This is unexpected. It should not be possible for an attempt or workflow to not exist while the task attempt exists.
-            throw new IllegalStateException(e);
-        }
-
-        Notification notification = Notification.builder(Instant.now(), "Workflow session attempt failed")
-                .siteId(attempt.getSiteId())
-                .projectName(workflow.transform(WorkflowDefinition::getName))
-                .projectId(workflow.transform(wf -> wf.getProject().getId()))
-                .workflowName(workflow.transform(StoredWorkflowDefinitionWithProject::getName))
-                .revision(workflow.transform(StoredWorkflowDefinitionWithProject::getRevisionName))
-                .attemptId(attempt.getId())
-                .sessionId(attempt.getSessionId())
-                .timeZone(attempt.getTimeZone())
-                .sessionUuid(attempt.getSessionUuid())
-                .sessionTime(OffsetDateTime.ofInstant(attempt.getSession().getSessionTime(), attempt.getTimeZone()))
-                .build();
-
-        notifier.sendNotification(notification);
     }
 
     private class IncrementalStatusPropagator
@@ -1004,9 +955,9 @@ public class WorkflowExecutor
         }
 
         // task failed. add ^error tasks
-        Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
+        List<Long> errorTaskIds = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
         boolean updated;
-        if (errorTaskId.isPresent()) {
+        if (!errorTaskIds.isEmpty()) {
             logger.trace("Added an error task");
             // transition from planned to error is delayed until setDoneFromDoneChildren
             updated = lockedTask.setRunningToPlannedWithDelayedError(error);
@@ -1127,11 +1078,18 @@ public class WorkflowExecutor
         return Optional.of(rootTaskId);
     }
 
-    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
+    private List<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
     {
+        List<Long> taskIds = new ArrayList<>();
+
+        boolean isRootTask = lockedTask.get().getParentId().isPresent();
+        if (!isRootTask) {
+            taskIds.add(addAttemptFailureAlertTask(lockedTask));
+        }
+
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
-            return Optional.absent();
+            return taskIds;
         }
 
         // modify export params
@@ -1141,12 +1099,22 @@ public class WorkflowExecutor
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^error", subtaskConfig);
         if (tasks.isEmpty()) {
-            return Optional.absent();
+            return taskIds;
         }
 
         logger.trace("Adding error tasks: {}", tasks);
         long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
-        return Optional.of(rootTaskId);
+        taskIds.add(rootTaskId);
+        return taskIds;
+    }
+
+    private long addAttemptFailureAlertTask(TaskControl rootTask)
+    {
+        Config config = cf.create();
+        config.set("_type", "notify");
+        config.set("_command", "Workflow session attempt failed");
+        WorkflowTaskList tasks = compiler.compileTasks(rootTask.get().getFullName(), "^failure-alert", config);
+        return rootTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
     }
 
     private Optional<Long> addCheckTasksIfAny(TaskControl lockedTask, Optional<Long> upstreamTaskId)
