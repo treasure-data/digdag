@@ -87,7 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Scheduling workflow</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Scheduling workflow</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#satting-up-a-schedule">Satting up a schedule:</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#running-scheduler">Running scheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checking-scheduling-status">Checking scheduling status</a></li>
@@ -122,7 +122,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -157,7 +157,7 @@
 <div class="section" id="satting-up-a-schedule">
 <h2><a class="toc-backref" href="#id1">Satting up a schedule:</a><a class="headerlink" href="#satting-up-a-schedule" title="Permalink to this headline">¶</a></h2>
 <p>To run a workflow periodically, add a <code class="docutils literal"><span class="pre">schedule:</span></code> option to top-level workflow definitions.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">daily_job</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">daily_job</span>
 <span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
 
 <span class="l l-Scalar l-Scalar-Plain">schedule</span><span class="p p-Indicator">:</span>
@@ -208,7 +208,7 @@
 </tbody>
 </table>
 <p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">check</span></code> command shows when the first schedule will start:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ./digdag check
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ./digdag check
 <span class="go">  ...</span>
 
 <span class="go">  Schedules (1 entries):</span>
@@ -222,7 +222,7 @@
 <div class="section" id="running-scheduler">
 <h2><a class="toc-backref" href="#id2">Running scheduler</a><a class="headerlink" href="#running-scheduler" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal"><span class="pre">digdag</span> <span class="pre">scheduler</span></code> command runs the schedules:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ./digdag scheduler
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ./digdag scheduler
 </pre></div>
 </div>
 <p>When you change workflow definition, the scheduler reloads <code class="docutils literal"><span class="pre">digdag.dig</span></code> file automatically so that you don&#8217;t have to restart it.</p>
@@ -237,7 +237,7 @@
 </div>
 <div class="section" id="setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time">
 <h2><a class="toc-backref" href="#id4">Setting an alert if a workflow doesn&#8217;t finish within expected time</a><a class="headerlink" href="#setting-an-alert-if-a-workflow-doesn-t-finish-within-expected-time" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+main</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+main</span>
 <span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
 
 <span class="l l-Scalar l-Scalar-Plain">schedule</span><span class="p p-Indicator">:</span>

@@ -88,7 +88,7 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Running tasks on Docker</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running tasks on Docker</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#running-build-commands">Running build commands</a></li>
 </ul>
 </li>
@@ -119,7 +119,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -144,7 +144,7 @@
   <div class="section" id="running-tasks-on-docker">
 <h1>Running tasks on Docker<a class="headerlink" href="#running-tasks-on-docker" title="Permalink to this headline">¶</a></h1>
 <p>If <code class="docutils literal"><span class="pre">docker</span></code> option is set, tasks run in a docker container.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">docker</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ubuntu:14.04</span>
 
@@ -156,7 +156,7 @@
 <h2>Running build commands<a class="headerlink" href="#running-build-commands" title="Permalink to this headline">¶</a></h2>
 <p>Using docker, you can run commands such as <code class="docutils literal"><span class="pre">apt-get</span></code>, <code class="docutils literal"><span class="pre">yum</span> <span class="pre">install</span></code>, <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span></code> or <code class="docutils literal"><span class="pre">bundle</span> <span class="pre">install</span></code> before running tasks.</p>
 <p>Built environment is cached as a new image of Docker.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">docker</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ubuntu:14.04</span>
     <span class="l l-Scalar l-Scalar-Plain">build</span><span class="p p-Indicator">:</span>

@@ -89,7 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running_tasks_on_docker.html">Running tasks on Docker</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Operators</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Operators</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#call-calls-another-workflow">call&gt;: Calls another workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#require-depends-on-another-workflow">require&gt;: Depends on another workflow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#py-python-scripts">py&gt;: Python scripts</a></li>
@@ -148,7 +148,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -210,12 +210,12 @@
 <h2><a class="toc-backref" href="#id5">call&gt;: Calls another workflow</a><a class="headerlink" href="#call-calls-another-workflow" title="Permalink to this headline">¶</a></h2>
 <p><strong>call&gt;:</strong> operator calls another workflow.</p>
 <p>This operator embeds another workflow as a subtask.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">call&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow1</span>
 </pre></div>
 </div>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
 </pre></div>
@@ -231,12 +231,12 @@
 <h2><a class="toc-backref" href="#id6">require&gt;: Depends on another workflow</a><a class="headerlink" href="#require-depends-on-another-workflow" title="Permalink to this headline">¶</a></h2>
 <p><strong>require&gt;:</strong> operator runs another workflow. Unlike <code class="docutils literal"><span class="pre">call&gt;</span></code> operator, the workflow is skipped if the workflow for the session time is already done successfully before.</p>
 <p>This operator submits a new session to digdag.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow1.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">require&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow2</span>
 </pre></div>
 </div>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># workflow2.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow2.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
 </pre></div>
@@ -252,7 +252,7 @@
 <h2><a class="toc-backref" href="#id7">py&gt;: Python scripts</a><a class="headerlink" href="#py-python-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>py&gt;:</strong> operator runs a Python script using <code class="docutils literal"><span class="pre">python</span></code> command.
 TODO: link to <a class="reference external" href="ruby_api.html">Python API documents</a> for details including variable mappings to keyword arguments.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_step1_method</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks.MyWorkflow.step2</span>
@@ -272,7 +272,7 @@ TODO: link to <a class="reference external" href="ruby_api.html">Python API docu
 <p><strong>rb&gt;:</strong> operator runs a Ruby script using <code class="docutils literal"><span class="pre">ruby</span></code> command.</p>
 <p>TODO: add more description here
 TODO: link to <a class="reference external" href="python_api.html">Ruby API documents</a> for details including best practices how to configure the workflow using <code class="docutils literal"><span class="pre">export:</span> <span class="pre">require:</span></code>.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">ruby</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">require</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/my_workflow</span>
 
@@ -301,7 +301,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <h2><a class="toc-backref" href="#id9">sh&gt;: Shell scripts</a><a class="headerlink" href="#sh-shell-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>sh&gt;:</strong> operator runs a shell script.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step1.sh</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
@@ -321,7 +321,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <p><strong>loop&gt;:</strong> operator runs subtasks multiple times.</p>
 <p>This operator exports <code class="docutils literal"><span class="pre">${i}</span></code> variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">loop&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">7</span>
   <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
@@ -355,7 +355,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <h2><a class="toc-backref" href="#id11">for_each&gt;: Repeat tasks</a><a class="headerlink" href="#for-each-repeat-tasks" title="Permalink to this headline">¶</a></h2>
 <p><strong>for_each&gt;:</strong> operator runs subtasks multiple times using sets of variables.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">for_each&gt;</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">fruit</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">apple</span><span class="p p-Indicator">,</span> <span class="nv">orange</span><span class="p p-Indicator">]</span>
     <span class="l l-Scalar l-Scalar-Plain">verb</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">eat</span><span class="p p-Indicator">,</span> <span class="nv">throw</span><span class="p p-Indicator">]</span>
@@ -393,7 +393,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <h2><a class="toc-backref" href="#id12">if&gt;: Conditional execution</a><a class="headerlink" href="#if-conditional-execution" title="Permalink to this headline">¶</a></h2>
 <p><strong>if&gt;:</strong> operator runs subtasks if <code class="docutils literal"><span class="pre">true</span></code> is given.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+run_if_param_is_true</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+run_if_param_is_true</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${param}</span>
   <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${param}} == true</span>
@@ -411,7 +411,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <p><strong>fail&gt;:</strong> always fails and makes the workflow failed.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
 <p>This operator is useful used with <strong>if&gt;</strong> operator to validate resuls of a previous task with <code class="docutils literal"><span class="pre">_check</span></code> directive so that a workflow fails when the validation doesn&#8217;t pass.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+fail_if_too_few</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+fail_if_too_few</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${count &lt; 10}</span>
   <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">fail&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">count is less than 10!</span>
@@ -426,7 +426,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <h2><a class="toc-backref" href="#id14">td&gt;: Treasure Data queries</a><a class="headerlink" href="#td-treasure-data-queries" title="Permalink to this headline">¶</a></h2>
 <p><strong>td&gt;:</strong> operator runs a Hive or Presto query on Treasure Data.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
     <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
@@ -536,7 +536,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <h2><a class="toc-backref" href="#id17">td_run&gt;: Treasure Data saved queries</a><a class="headerlink" href="#td-run-treasure-data-saved-queries" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_run&gt;:</strong> operator runs a query saved on Treasure Data.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
     <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
@@ -610,7 +610,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <h2><a class="toc-backref" href="#id20">td_load&gt;: Treasure Data bulk loading</a><a class="headerlink" href="#td-load-treasure-data-bulk-loading" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_load&gt;:</strong> operator loads data from storages, databases, or services.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
 
@@ -666,7 +666,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <h2><a class="toc-backref" href="#id22">td_ddl&gt;: Treasure Data operations</a><a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h2>
 <p><strong>_type: td_ddl</strong> operator runs an operational task on Treasure Data.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
     <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
@@ -735,7 +735,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <h2><a class="toc-backref" href="#id23">td_table_export&gt;: Treasure Data table export to S3</a><a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_table_export&gt;:</strong> operator loads data from storages, databases, or services.</p>
 <p>TODO: add more description here</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
 
@@ -840,7 +840,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <li>Enable access for less secure apps at <a class="reference external" href="https://www.google.com/settings/security/lesssecureapps">Less secure apps</a>. This works even if 2-Step Verification is not enabled.</li>
 </ol>
 </div></blockquote>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">mail</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">smtp.gmail.com</span>
     <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">587</span>
@@ -955,7 +955,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <li><strong class="command">filename</strong>: Name of this file. Default is base name of the path.</li>
 </ul>
 <p>Example:</p>
-<div class="last highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">attach_files</span><span class="p p-Indicator">:</span>
+<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">attach_files</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">path</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data.csv</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">path</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">output.dat</span>
     <span class="l l-Scalar l-Scalar-Plain">filename</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow_result_data.csv</span>
@@ -969,7 +969,7 @@ td.last_results is a map of column name and a value. To access to a single value
 <div class="section" id="embulk-embulk-data-transfer">
 <h2><a class="toc-backref" href="#id26">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
 <p><strong>embulk&gt;:</strong> operator runs <a class="reference external" href="http://www.embulk.org">Embulk</a> to transfer data across storages including local files.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">embulk&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data/load.dig</span>
 </pre></div>
 </div>

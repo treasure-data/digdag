@@ -86,7 +86,7 @@
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Workflow definition</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Workflow definition</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#workflow-definition-dig-files">Workflow definition: *.dig files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#is-a-task">&#8220;+&#8221; is a task</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#operators">operators&gt;</a></li>
@@ -131,7 +131,7 @@
         <div class="rst-content">
           
 
-
+ 
 
 
 
@@ -176,7 +176,7 @@
 <h2><a class="toc-backref" href="#id4">Workflow definition: <a href="#id1"><span class="problematic" id="id2">*</span></a>.dig files</a><a class="headerlink" href="#workflow-definition-dig-files" title="Permalink to this headline">¶</a></h2>
 <p>A digdag workflow is defined in a file named with <code class="docutils literal"><span class="pre">.dig</span></code> suffix. Name of the file is name of the workflow.</p>
 <p>For example, if you create <code class="docutils literal"><span class="pre">hello_world</span></code> workflow, you will create <code class="docutils literal"><span class="pre">hello_world.dig</span></code> file. Contents of the file looks like this:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">timezone</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">UTC</span>
 
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/shell_sample.sh</span>
@@ -333,7 +333,7 @@
 <h3><a class="toc-backref" href="#id9">Using _export: parameter</a><a class="headerlink" href="#using-export-parameter" title="Permalink to this headline">¶</a></h3>
 <p>In a YAML file, <code class="docutils literal"><span class="pre">_export:</span></code> directive defines variables. This is useful to load static configurations such as host name of a database.</p>
 <p>If a task has <code class="docutils literal"><span class="pre">_export</span></code> directive, the task and its children can use the variables because it defines variables in a scope. With following example, all tasks can use <code class="docutils literal"><span class="pre">foo=1</span></code> but only +step1 (and +analyze) can use <code class="docutils literal"><span class="pre">bar=2</span></code>.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">foo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
 
 <span class="l l-Scalar l-Scalar-Plain">+prepare</span><span class="p p-Indicator">:</span>
@@ -354,7 +354,7 @@
 <div class="section" id="using-api">
 <h3><a class="toc-backref" href="#id10">Using API</a><a class="headerlink" href="#using-api" title="Permalink to this headline">¶</a></h3>
 <p>You can set variables programmably using language API. For exampe, Python API provides <code class="docutils literal"><span class="pre">digdag.env.export</span></code> and <code class="docutils literal"><span class="pre">digdag.env.store</span></code>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">digdag</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">digdag</span>
 
 <span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -376,7 +376,7 @@
 <div class="section" id="starting-a-session-with-variables">
 <h3><a class="toc-backref" href="#id11">Starting a session with variables</a><a class="headerlink" href="#starting-a-session-with-variables" title="Permalink to this headline">¶</a></h3>
 <p>You can set variables when you start a new workflow session. To set variables, use <code class="docutils literal"><span class="pre">-p</span> <span class="pre">KEY=VALUE</span></code> multiple times:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> digdag run -p <span class="nv">my_var1</span><span class="o">=</span>foo -p <span class="nv">my_var2</span><span class="o">=</span>abc
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag run -p <span class="nv">my_var1</span><span class="o">=</span>foo -p <span class="nv">my_var2</span><span class="o">=</span>abc
 </pre></div>
 </div>
 </div>
@@ -384,7 +384,7 @@
 <div class="section" id="include-another-file">
 <h2><a class="toc-backref" href="#id12">!include another file</a><a class="headerlink" href="#include-another-file" title="Permalink to this headline">¶</a></h2>
 <p>You can divide a YAML file into small files to organize complex workflow. <code class="docutils literal"><span class="pre">!include</span></code> directive is used to gather those files:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">mysql</span><span class="p p-Indicator">:</span>
     <span class="kt">!include</span> <span class="p p-Indicator">:</span> <span class="s">&#39;config/mysql.dig&#39;</span>
   <span class="l l-Scalar l-Scalar-Plain">hive</span><span class="p p-Indicator">:</span>
@@ -397,7 +397,7 @@
 <div class="section" id="parallel-execution">
 <h2><a class="toc-backref" href="#id13">Parallel execution</a><a class="headerlink" href="#parallel-execution" title="Permalink to this headline">¶</a></h2>
 <p>If <code class="docutils literal"><span class="pre">_parallel:</span> <span class="pre">true</span></code> parameter is set to a group, child tasks in the group run in parallel (grandchildren are not affected):</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
   <span class="l l-Scalar l-Scalar-Plain"># +data1, +data2, and +data3 run in parallel.</span>
   <span class="l l-Scalar l-Scalar-Plain">_parallel</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 
@@ -415,7 +415,7 @@
 </pre></div>
 </div>
 <p>If <code class="docutils literal"><span class="pre">_background:</span> <span class="pre">true</span></code> parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
   <span class="l l-Scalar l-Scalar-Plain">+data1</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data1.sh</span>
 
@@ -436,7 +436,7 @@
 <div class="section" id="sending-error-notification">
 <h2><a class="toc-backref" href="#id14">Sending error notification</a><a class="headerlink" href="#sending-error-notification" title="Permalink to this headline">¶</a></h2>
 <p>If an operator configuration is set at <code class="docutils literal"><span class="pre">_error:</span></code> parameter, the operator runs when the workflow fails.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span class="c1"># this task runs when a workflow fails.</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># this task runs when a workflow fails.</span>
 <span class="l l-Scalar l-Scalar-Plain">_error</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/runs_when_workflow_failed.sh</span>
 
