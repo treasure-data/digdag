@@ -11,7 +11,7 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
 
 # [Learn more](architecture.html)
 
-\> "[How does Digdag work?](architecture.html)"
+\> "[Architecture](architecture.html)"
 
 ## Table of Contents
 
@@ -21,7 +21,6 @@ Digdag fits simple replacement of cron, IT operations automation, data analytics
 
    getting_started.rst
    architecture.md
-   tutorials.rst
    workflow_definition.rst
    scheduling_workflow.rst
    running_tasks_on_docker.rst
