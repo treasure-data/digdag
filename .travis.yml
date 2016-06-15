@@ -1,0 +1,29 @@
+sudo: required
+
+services:
+  - docker
+
+cache:
+  directories:
+    - $HOME/docker
+    - $HOME/.gradle
+
+env:
+  TERM: dumb
+
+before_install:
+  - sudo docker/setup.sh
+  - |
+    docker run \
+    -w /digdag \
+    -v `pwd`/:/digdag \
+    -v ~/.gradle:/root/.gradle \
+    digdag-build \
+    ./gradlew testClasses
+
+install:
+
+script:
+  - ci/run_test_h2.sh
+  - ci/run_test_pg.sh
+  - ci/run_findbugs.sh

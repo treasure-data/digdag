@@ -12,7 +12,7 @@ dependencies:
     - "~/docker"
   override:
     - docker/setup.sh
-    - | # download and cache dependencies in circleci
+    - | # download and cache dependencies
       docker run \
       -w /digdag \
       -v `pwd`/:/digdag \
@@ -22,7 +22,7 @@ dependencies:
 
 test:
   override:
-    - circle/run.sh:
+    - ci/circle_run_test.sh:
         parallel: true
 
   post:
