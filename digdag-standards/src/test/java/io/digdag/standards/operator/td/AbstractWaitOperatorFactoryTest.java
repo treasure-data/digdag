@@ -89,8 +89,8 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "5s"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(5));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "3s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "7s")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "7s")))), ConfigException.class);
         }
 
         {
@@ -100,8 +100,8 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "15s"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(10));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "3s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "30s")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3s")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "30s")))), ConfigException.class);
         }
 
         {
@@ -111,8 +111,8 @@ public class AbstractWaitOperatorFactoryTest
                     "config.td.wait.max_poll_interval", "2h"
             ));
             assertThat(f.getPollInterval(CONFIG_FACTORY.create()), is(5 * 60));
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "5s")))), ConfigException.class);
-            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("poll", "3h")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "5s")))), ConfigException.class);
+            assertThrows(() -> f.getPollInterval(CONFIG_FACTORY.create(cfg(ImmutableMap.of("interval", "3h")))), ConfigException.class);
         }
     }
 
