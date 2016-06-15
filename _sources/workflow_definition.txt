@@ -143,7 +143,6 @@ See language API documents for details:
 
 * `Python API <python_api.html>`_
 * `Ruby API <ruby_api.html>`_
-* `Shell script API <shell_api.html>`_
 
 Starting a session with variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

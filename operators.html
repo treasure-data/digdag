@@ -211,18 +211,18 @@
 <p>This operator embeds another workflow as a subtask.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">call&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow1</span>
+  <span class="l l-Scalar l-Scalar-Plain">call&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">another_workflow</span>
 </pre></div>
 </div>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># another_workflow.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
 </pre></div>
 </div>
 <dl class="docutils">
-<dt><strong class="command">call&gt;: +NAME</strong></dt>
+<dt><strong class="command">call&gt;: NAME</strong></dt>
 <dd><p class="first">Name of a workflow.</p>
-<p class="last">Example: +another_workflow</p>
+<p class="last">Example: another_workflow</p>
 </dd>
 </dl>
 </div>
@@ -232,25 +232,25 @@
 <p>This operator submits a new session to digdag.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">require&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">+workflow2</span>
+  <span class="l l-Scalar l-Scalar-Plain">require&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">another_workflow</span>
 </pre></div>
 </div>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow2.dig</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># another_workflow.dig</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step2.sh</span>
 </pre></div>
 </div>
 <dl class="docutils">
-<dt><strong class="command">require&gt;: +NAME</strong></dt>
+<dt><strong class="command">require&gt;: NAME</strong></dt>
 <dd><p class="first">Name of a workflow.</p>
-<p class="last">Example: +another_workflow</p>
+<p class="last">Example: another_workflow</p>
 </dd>
 </dl>
 </div>
 <div class="section" id="py-python-scripts">
 <h2><a class="toc-backref" href="#id7">py&gt;: Python scripts</a><a class="headerlink" href="#py-python-scripts" title="Permalink to this headline">¶</a></h2>
-<p><strong>py&gt;:</strong> operator runs a Python script using <code class="docutils literal"><span class="pre">python</span></code> command.
-TODO: link to <a class="reference external" href="ruby_api.html">Python API documents</a> for details including variable mappings to keyword arguments.</p>
+<p><strong>py&gt;:</strong> operator runs a Python script using <code class="docutils literal"><span class="pre">python</span></code> command.</p>
+<p>See <a class="reference external" href="ruby_api.html">Python API documents</a> for details including variable mappings to keyword arguments.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">py&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_step1_method</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
@@ -269,8 +269,7 @@ TODO: link to <a class="reference external" href="ruby_api.html">Python API docu
 <div class="section" id="rb-ruby-scripts">
 <h2><a class="toc-backref" href="#id8">rb&gt;: Ruby scripts</a><a class="headerlink" href="#rb-ruby-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>rb&gt;:</strong> operator runs a Ruby script using <code class="docutils literal"><span class="pre">ruby</span></code> command.</p>
-<p>TODO: add more description here
-TODO: link to <a class="reference external" href="python_api.html">Ruby API documents</a> for details including best practices how to configure the workflow using <code class="docutils literal"><span class="pre">export:</span> <span class="pre">require:</span></code>.</p>
+<p>See <a class="reference external" href="ruby_api.html">Ruby API documents</a> for details including best practices how to configure the workflow using <code class="docutils literal"><span class="pre">_export:</span> <span class="pre">require:</span></code>.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">ruby</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">require</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/my_workflow</span>
@@ -395,7 +394,7 @@ TODO: link to <a class="reference external" href="python_api.html">Ruby API docu
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+run_if_param_is_true</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">if&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${param}</span>
   <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${param}} == true</span>
+    <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo ${param} == true</span>
 </pre></div>
 </div>
 <dl class="docutils">
