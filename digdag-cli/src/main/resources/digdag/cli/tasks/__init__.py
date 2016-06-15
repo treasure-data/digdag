@@ -4,5 +4,5 @@ class MyWorkflow(object):
         pass
 
     def step3(self, session_time = None):
-        print "Step3 of session %s" % session_time
+        print("Step3 of session {0}".format(session_time))
 
