@@ -4,7 +4,7 @@ Scheduling workflow
 .. contents::
    :local:
 
-Satting up a schedule:
+Setting up a schedule:
 ----------------------------------
 
 To run a workflow periodically, add a ``schedule:`` option to top-level workflow definitions.
