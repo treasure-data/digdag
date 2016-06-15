@@ -10,6 +10,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
+import io.digdag.cli.client.Delete;
 import io.digdag.cli.client.Kill;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.Reschedule;
@@ -105,6 +106,7 @@ public class Main
         jc.addCommand("kill", new Kill(version, out, err));
         jc.addCommand("task", new ShowTask(version, out, err), "tasks");
         jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
+        jc.addCommand("delete", new Delete(version, out, err));
         jc.addCommand("version", new Version(version, out, err), "version");
 
         jc.addCommand("selfupdate", new SelfUpdate(out, err));
@@ -261,6 +263,7 @@ public class Main
         err.println("    attempts <session-id>            show attempts for a session");
         err.println("    attempt  <attempt-id>            show a single attempt");
         err.println("    tasks <attempt-id>               show tasks of a session attempt");
+        err.println("    delete <project-name>            delete a project");
         err.println("    version                          show client and server version");
         err.println("");
         err.println("  Options:");

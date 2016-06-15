@@ -610,6 +610,20 @@ Creates a project archive and upload it to the server. This command uploads work
   Example: -r f40172ebc58f58087b6132085982147efa9e81fb
 
 
+delete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag delete <project> [options...]
+
+Deletes a project. Sessions of the deleted project are kept retained so that we can review status of past executions later.
+
+.. code-block:: console
+
+    $ digdag delete myproj
+
+
 Common options
 ----------------------------------
 

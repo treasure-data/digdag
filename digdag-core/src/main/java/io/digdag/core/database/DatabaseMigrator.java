@@ -584,9 +584,39 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateMakeProjectsDeletable = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160610154832";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            if (isPostgres()) {
+                handle.update("alter table projects" +
+                        " add column deleted_at timestamp with time zone");
+                handle.update("alter table projects" +
+                        " add column deleted_name text");
+                handle.update("alter table projects" +
+                        " alter column name drop not null");
+            }
+            else {
+                handle.update("alter table projects" +
+                        " add column deleted_at timestamp");
+                handle.update("alter table projects" +
+                        " add column deleted_name varchar(255)");
+                handle.update("alter table projects" +
+                        " alter column name drop not null");
+            }
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc,
         MigrateCreateResumingTasks,
+        MigrateMakeProjectsDeletable,
     };
 }

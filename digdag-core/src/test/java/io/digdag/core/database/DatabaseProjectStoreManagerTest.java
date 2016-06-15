@@ -170,6 +170,7 @@ public class DatabaseProjectStoreManagerTest
         assertEquals(proj1, manager.getProjectByIdInternal(proj1.getId()));
         assertEquals(proj2, manager.getProjectByIdInternal(proj2.getId()));
         assertNotFound(() -> manager.getProjectByIdInternal(proj1.getId() + 10));
+        assertFalse(proj1.getDeletedAt().isPresent());
 
         assertEquals(wfDetails1, manager.getWorkflowDetailsById(wf1.getId()));
         assertEquals(wfDetails2, manager.getWorkflowDetailsById(wf2.getId()));
@@ -275,5 +276,49 @@ public class DatabaseProjectStoreManagerTest
 
         assertArrayEquals(data, store.getRevisionArchiveData(rev.getId()));
         assertNotFound(() -> store.getRevisionArchiveData(rev.getId() + 10));
+    }
+
+    @Test
+    public void testDeleteProject()
+        throws Exception
+    {
+        StoredRevision rev = store.putAndLockProject(
+                Project.of("proj1"),
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+
+                    StoredRevision storedRev = lock.insertRevision(createRevision("rev1"));
+
+                    return storedRev;
+                });
+
+        StoredProject deletingProject = ProjectControl.deleteProject(store, rev.getProjectId(), (control, proj) -> {
+            return proj;
+        });
+
+        assertEquals(deletingProject.getId(), rev.getProjectId());
+
+        // lookup by name fails
+        assertNotFound(() -> store.getProjectByName(deletingProject.getName()));
+
+        // listing doesn't include deleted projects
+        assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent()));
+
+        // lookup by id succeeds and deletedAt is set
+        StoredProject deletedProj = store.getProjectById(deletingProject.getId());
+        assertTrue(deletedProj.getDeletedAt().isPresent());
+
+        // reusing same name is allowed
+        StoredProject sameName = store.putAndLockProject(
+                Project.of("proj1"),
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+
+                    StoredRevision storedRev = lock.insertRevision(createRevision("rev1"));
+
+                    return stored;
+                });
+
+        assertNotEquals(sameName.getId(), deletingProject.getId());
     }
 }

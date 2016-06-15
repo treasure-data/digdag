@@ -1,6 +1,7 @@
 package io.digdag.core.repository;
 
 import java.time.Instant;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -17,5 +18,5 @@ public abstract class StoredProject
 
     public abstract Instant getCreatedAt();
 
-    //public abstract Optional<Instant> getDeletedAt();
+    public abstract Optional<Instant> getDeletedAt();
 }

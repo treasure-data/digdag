@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import java.nio.ByteBuffer;
 import java.time.ZoneId;
+import java.time.Instant;
 import java.sql.Timestamp;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -189,6 +190,23 @@ public class DatabaseProjectStoreManager
 
                 return func.call(new DatabaseProjectControlStore(handle, siteId), proj);
             }, ResourceConflictException.class);
+        }
+
+        @Override
+        public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
+            throws ResourceNotFoundException
+        {
+            return transaction((handle, dao, ts) -> {
+                StoredProject proj = requiredResource(
+                        dao.getProjectByIdWithLockForDelete(siteId, projId),
+                        "project id=%d", projId);
+
+                T res = func.call(new DatabaseProjectControlStore(handle, siteId), proj);
+
+                dao.deleteProject(proj.getId());
+
+                return res;
+            }, ResourceNotFoundException.class);
         }
 
         @Override
@@ -461,21 +479,41 @@ public class DatabaseProjectStoreManager
                     .execute();
             }
         }
+
+        @Override
+        public void deleteSchedules(int projId)
+        {
+            dao.deleteSchedules(projId);
+        }
     }
 
     public interface Dao
     {
         @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
+                " and name is not null" +
                 " and id > :lastId" +
                 " order by id asc" +
                 " limit :limit")
         List<StoredProject> getProjects(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") int lastId);
 
+        @SqlUpdate("update projects" +
+                " set deleted_name = name, deleted_at = now(), name = NULL" +
+                " where id = :projId "+
+                " and name is not null")
+        int deleteProject(@Bind("projId") int projId);
+
         @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +
                 " and id = :id")
         StoredProject getProjectById(@Bind("siteId") int siteId, @Bind("id") int id);
+
+        @SqlQuery("select * from projects" +
+                " where site_id = :siteId" +
+                " and id = :id" +
+                " and name is not null" +
+                " for update")
+        StoredProject getProjectByIdWithLockForDelete(@Bind("siteId") int siteId, @Bind("id") int id);
 
         @SqlQuery("select * from projects" +
                 " where id = :id")
@@ -539,7 +577,7 @@ public class DatabaseProjectStoreManager
         byte[] selectRevisionArchiveData(@Bind("revId") int revId);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
@@ -558,7 +596,7 @@ public class DatabaseProjectStoreManager
         // excepting site_id check
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
@@ -568,7 +606,7 @@ public class DatabaseProjectStoreManager
         StoredWorkflowDefinitionWithProject getWorkflowDetailsByIdInternal(@Bind("id") long id);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone," +
-                " proj.id as proj_id, proj.name as proj_name, proj.site_id, proj.created_at as proj_created_at," +
+                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
                 " rev.name as rev_name, rev.default_params as rev_default_params" +
                 " from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
@@ -639,6 +677,10 @@ public class DatabaseProjectStoreManager
                 " join workflow_definitions wd on wd.id = schedules.workflow_definition_id" +
                 " where schedules.project_id = :projId")
         List<IdName> getScheduleNames(@Bind("projId") int projId);
+
+        @SqlUpdate("delete from schedules" +
+                " where project_id = :projId")
+        int deleteSchedules(@Bind("projId") int projId);
     }
 
     @Value.Immutable
@@ -693,11 +735,18 @@ public class DatabaseProjectStoreManager
         public StoredProject map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
+            String name = r.getString("name");
+            Optional<Instant> deletedAt = Optional.absent();
+            if (r.wasNull()) {
+                name = r.getString("deleted_name");
+                deletedAt = Optional.of(getTimestampInstant(r, "deleted_at"));
+            }
             return ImmutableStoredProject.builder()
                 .id(r.getInt("id"))
-                .name(r.getString("name"))
+                .name(name)
                 .siteId(r.getInt("site_id"))
                 .createdAt(getTimestampInstant(r, "created_at"))
+                .deletedAt(deletedAt)
                 .build();
         }
     }
@@ -767,6 +816,12 @@ public class DatabaseProjectStoreManager
         public StoredWorkflowDefinitionWithProject map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
+            String projName = r.getString("proj_name");
+            Optional<Instant> projDeletedAt = Optional.absent();
+            if (r.wasNull()) {
+                projName = r.getString("proj_deleted_name");
+                projDeletedAt = Optional.of(getTimestampInstant(r, "proj_deleted_at"));
+            }
             return ImmutableStoredWorkflowDefinitionWithProject.builder()
                 .id(r.getLong("id"))
                 .revisionId(r.getInt("revision_id"))
@@ -776,9 +831,10 @@ public class DatabaseProjectStoreManager
                 .project(
                         ImmutableStoredProject.builder()
                             .id(r.getInt("proj_id"))
-                            .name(r.getString("proj_name"))
+                            .name(projName)
                             .siteId(r.getInt("site_id"))
                             .createdAt(getTimestampInstant(r, "proj_created_at"))
+                            .deletedAt(projDeletedAt)
                             .build())
                 .revisionName(r.getString("rev_name"))
                 .revisionDefaultParams(cfm.fromResultSetOrEmpty(r, "rev_default_params"))

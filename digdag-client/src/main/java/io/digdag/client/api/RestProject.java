@@ -21,6 +21,8 @@ public abstract class RestProject
 
     public abstract Instant getUpdatedAt();
 
+    public abstract Optional<Instant> getDeletedAt();
+
     public abstract String getArchiveType();
 
     public abstract Optional<byte[]> getArchiveMd5();

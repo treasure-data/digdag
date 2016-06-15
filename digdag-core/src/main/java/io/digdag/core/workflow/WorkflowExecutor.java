@@ -54,7 +54,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.util.Locale.ENGLISH;
@@ -246,8 +245,13 @@ public class WorkflowExecutor
                 .getSessionStore(siteId)
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
                 .putAndLockSession(session, (store, storedSession) -> {
-                    StoredSessionAttempt storedAttempt;
-                    storedAttempt = store.insertAttempt(storedSession.getId(), projId, attempt);  // this may throw ResourceConflictException
+                    StoredProject proj = rm.getProjectStore(siteId).getProjectById(projId);
+                    if (proj.getDeletedAt().isPresent()) {
+                        throw new ResourceNotFoundException(String.format(ENGLISH,
+                                    "Project id={} name={} is already deleted",
+                                    proj.getId(), proj.getName()));
+                    }
+                    StoredSessionAttempt storedAttempt = store.insertAttempt(storedSession.getId(), projId, attempt);  // this may throw ResourceConflictException
 
                     logger.info("Starting a new session project id={} workflow name={} session_time={}",
                             projId, ar.getWorkflowName(), SESSION_TIME_FORMATTER.withZone(ar.getTimeZone()).format(ar.getSessionTime()));
