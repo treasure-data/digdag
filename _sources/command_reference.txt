@@ -14,7 +14,7 @@ new
 
     $ digdag new <dir>
 
-Creates a new workflow project. This command generates a sample digdag.dig, executable digdag file, and .gitignore file in **<dir>** directory. Examples:
+Creates a new workflow project. This command generates a sample .dig file, scripts used in the workflow, and .gitignore file in **<dir>** directory. Examples:
 
 .. code-block:: console
 
@@ -608,6 +608,20 @@ Creates a project archive and upload it to the server. This command uploads work
   Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git's SHA1 hash (``git show --pretty=format:'%T' | head -n 1``) or timestamp (``date +%Y-%m-%dT%H:%M:%S%z``).
 
   Example: -r f40172ebc58f58087b6132085982147efa9e81fb
+
+
+delete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag delete <project> [options...]
+
+Deletes a project. Sessions of the deleted project are kept retained so that we can review status of past executions later.
+
+.. code-block:: console
+
+    $ digdag delete myproj
 
 
 Common options
