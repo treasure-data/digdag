@@ -22,7 +22,7 @@ dependencies:
 
 test:
   override:
-    - ci/circle_run_test.sh:
+    - CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true
 
   post:
