@@ -1,7 +1,11 @@
 package io.digdag.standards.operator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
@@ -66,8 +70,13 @@ public class ShOperatorFactory
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
 
+            String shell = params.get("shell", String.class, "/bin/sh -c");
             String command = params.get("_command", String.class);
-            ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
+
+            List<String> cmdline = new ArrayList<String>(Arrays.asList(shell.split(" ")));
+            cmdline = cmdline.stream().filter(cmd -> !cmd.isEmpty()).collect(Collectors.toList());
+            cmdline.add(command);
+            ProcessBuilder pb = new ProcessBuilder(cmdline);
 
             final Map<String, String> env = pb.environment();
             params.getKeys()
