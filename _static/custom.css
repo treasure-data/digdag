@@ -44,7 +44,6 @@
   font-weight: normal;
   font-family: monospace,serif;
   font-size: 90%;
-  color: #3980B9;
 }
 
 .wy-nav-side {
@@ -60,8 +59,16 @@ a.icon {
   color: #364149;
 }
 
+.wy-breadcrumbs-aside a,
+.wy-breadcrumbs-aside a:visited {
+  color: #D3D9DE;
+}
+
+.wy-breadcrumbs-aside a:hover {
+  color: #2980B9;
+}
+
 .wy-nav-content {
-  border-right: 1px solid #666;
   box-shadow: inset 2px 0px 8px 0px rgba(0,0,0,0.35);
 }
 
@@ -83,8 +90,8 @@ a.icon {
 }
 
 .wy-menu-vertical li a:hover {
-  color: #0089ff;
   background-color: #EAECEE;
+  color: #0089ff;
 }
 
 .wy-side-nav-search .version {

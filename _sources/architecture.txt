@@ -36,9 +36,11 @@ Digdag is a single-file executable command. Creating and running a new workflow 
 
 Files with `*.dig` suffix are used for workflow definitions. `digdag run my_workflow.dig` command runs the workflow.
 
+Once you developed and tested a workflow on a local machine, you will want to push it to a server so that the workflow runs periodically.
+
 ## Running on a server
 
-Files at the same directory with `*.dig` files are called **projects**. You can push an entire project to a Digdag server so that Digdag server runs workflows in the project periodically on the server.
+Files with `*.dig` suffix and other files at the same directory are called **project**. You can push an entire project to a Digdag server so that Digdag server runs workflows on the server.
 
 ### Running tasks on Docker
 

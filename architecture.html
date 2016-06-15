@@ -180,10 +180,11 @@
 <span id="running-with-local-mode"></span><h2>Running with local mode<a class="headerlink" href="#running-with-local-mode" title="Permalink to this headline">¶</a></h2>
 <p>Digdag is a single-file executable command. Creating and running a new workflow is as easy as Makefile.</p>
 <p>Files with <code class="docutils literal"><span class="pre">*.dig</span></code> suffix are used for workflow definitions. <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">run</span> <span class="pre">my_workflow.dig</span></code> command runs the workflow.</p>
+<p>Once you developed and tested a workflow on a local machine, you will want to push it to a server so that the workflow runs periodically.</p>
 </div>
 <div class="section" id="running-on-a-server">
 <span id="running-on-a-server"></span><h2>Running on a server<a class="headerlink" href="#running-on-a-server" title="Permalink to this headline">¶</a></h2>
-<p>Files at the same directory with <code class="docutils literal"><span class="pre">*.dig</span></code> files are called <strong>projects</strong>. You can push an entire project to a Digdag server so that Digdag server runs workflows in the project periodically on the server.</p>
+<p>Files with <code class="docutils literal"><span class="pre">*.dig</span></code> suffix and other files at the same directory are called <strong>project</strong>. You can push an entire project to a Digdag server so that Digdag server runs workflows on the server.</p>
 <div class="section" id="running-tasks-on-docker">
 <span id="running-tasks-on-docker"></span><h3>Running tasks on Docker<a class="headerlink" href="#running-tasks-on-docker" title="Permalink to this headline">¶</a></h3>
 <p>You can use <a class="reference external" href="https://www.docker.com/">Docker</a> to run tasks in a container.  If <code class="docutils literal"><span class="pre">docker</span></code> option is set, tasks run in a docker container.</p>
