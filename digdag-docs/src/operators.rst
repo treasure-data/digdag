@@ -16,18 +16,18 @@ This operator embeds another workflow as a subtask.
 
     # workflow1.dig
     +step1:
-      call>: +workflow1
+      call>: another_workflow
 
 .. code-block:: yaml
 
-    # workflow1.dig
+    # another_workflow.dig
     +step2:
       sh>: tasks/step2.sh
 
-:command:`call>: +NAME`
+:command:`call>: NAME`
   Name of a workflow.
 
-  Example: +another_workflow
+  Example: another_workflow
 
 require>: Depends on another workflow
 ----------------------------------
@@ -40,24 +40,25 @@ This operator submits a new session to digdag.
 
     # workflow1.dig
     +step1:
-      require>: +workflow2
+      require>: another_workflow
 
 .. code-block:: yaml
 
-    # workflow2.dig
+    # another_workflow.dig
     +step2:
       sh>: tasks/step2.sh
 
-:command:`require>: +NAME`
+:command:`require>: NAME`
   Name of a workflow.
 
-  Example: +another_workflow
+  Example: another_workflow
 
 py>: Python scripts
 ----------------------------------
 
 **py>:** operator runs a Python script using ``python`` command.
-TODO: link to `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
+
+See `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
 
 .. code-block:: yaml
 
@@ -77,8 +78,7 @@ rb>: Ruby scripts
 
 **rb>:** operator runs a Ruby script using ``ruby`` command.
 
-TODO: add more description here
-TODO: link to `Ruby API documents <python_api.html>`_ for details including best practices how to configure the workflow using ``export: require:``.
+See `Ruby API documents <ruby_api.html>`_ for details including best practices how to configure the workflow using ``_export: require:``.
 
 .. code-block:: yaml
 
@@ -210,7 +210,7 @@ if>: Conditional execution
     +run_if_param_is_true:
       if>: ${param}
       _do:
-        sh>: echo ${param}} == true
+        sh>: echo ${param} == true
 
 :command:`if>: BOOLEAN`
   ``true`` or ``false``.
