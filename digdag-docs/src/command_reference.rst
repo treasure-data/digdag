@@ -14,7 +14,7 @@ new
 
     $ digdag new <dir>
 
-Creates a new workflow project. This command generates a sample digdag.dig, executable digdag file, and .gitignore file in **<dir>** directory. Examples:
+Creates a new workflow project. This command generates a sample .dig file, scripts used in the workflow, and .gitignore file in **<dir>** directory. Examples:
 
 .. code-block:: console
 
