@@ -754,10 +754,10 @@ embulk>: Embulk data transfer
 .. code-block:: yaml
 
     +load:
-      embulk>: data/load.dig
+      embulk>: data/load.yml
 
-:command:`embulk>: FILE.dig`
+:command:`embulk>: FILE.yml`
   Path to a configuration template file.
 
-  * :command:`embulk>: embulk/mysql_to_csv.dig`
+  * :command:`embulk>: embulk/mysql_to_csv.yml`
 
