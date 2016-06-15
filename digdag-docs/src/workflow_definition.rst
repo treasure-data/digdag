@@ -37,7 +37,7 @@ Key names starting with ``+`` sign is a task. Tasks run from the top to bottom i
 operators>
 ----------------------------------
 
-A task with ``type>: command`` or ``_type: NAME`` parameter executes an action. You can choose various kinds of operators such as `running shell scripts <task_types.html#sh-shell-scripts>`_, `Python methods <task_types.html#py-python-scripts>`_, `sending email <task_types.html#mail-sending-email>`_, etc. See `Operators <operators.html>`_ page for the list of built-in operators.
+A task with ``type>: command`` or ``_type: NAME`` parameter executes an action. You can choose various kinds of operators such as `running shell scripts <operators.html#sh-shell-scripts>`_, `Python methods <operators.html#py-python-scripts>`_, `sending email <operators.html#mail-sending-email>`_, etc. See `Operators <operators.html>`_ page for the list of built-in operators.
 
 .. note::
 
