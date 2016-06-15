@@ -2,6 +2,8 @@
 
 [![Circle CI](https://circleci.com/gh/treasure-data/digdag.svg?style=svg&circle-token=8ccc5c665022ce4d1ee05cf7b829c84877387a6c)](https://circleci.com/gh/treasure-data/digdag)
 
+[![Travis CI](https://travis-ci.org/treasure-data/digdag.svg?branch=master)](https://travis-ci.org/treasure-data/digdag)
+
 ## [Documentation](http://digdag.io)
 
 Please check [digdag.io](http://digdag.io) for installation & user manual.
