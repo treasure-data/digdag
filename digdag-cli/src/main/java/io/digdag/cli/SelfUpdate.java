@@ -71,21 +71,10 @@ public class SelfUpdate
         Client client = new ResteasyClientBuilder()
             .build();
 
-        Console console = System.console();
-        if (console == null) {
-            throw new RuntimeException("Couldn't get password from stdin");
-        }
-        String password = new String(console.readPassword("Password of 'beta': "));
-        if (password.isEmpty()) {
-            throw systemExit("aborted.");
-        }
-        BasicAuthentication auth = new BasicAuthentication("beta", password);
-
         if (version == null) {
             out.println("Checking the latest version...");
             Response res = getWithRedirect(client, client
                     .target(fromUri(endpoint + "/digdag-latest-version"))
-                    .register(auth)
                     .request()
                     .buildGet());
             if (res.getStatus() != 200) {
@@ -100,7 +89,6 @@ public class SelfUpdate
 
         Response res = getWithRedirect(client, client
                 .target(fromUri(endpoint + "/digdag-" + version))
-                .register(auth)
                 .request()
                 .buildGet());
         if (res.getStatus() != 200) {
