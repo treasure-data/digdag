@@ -9,7 +9,7 @@ cache:
     - $HOME/.gradle
 
 env:
-  TERM: dumb
+  - TERM=dumb
 
 before_install:
   - sudo docker/setup.sh
