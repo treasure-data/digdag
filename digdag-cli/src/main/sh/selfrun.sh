@@ -1,3 +1,4 @@
+#!/bin/sh
 
 : <<BAT
 @echo off
