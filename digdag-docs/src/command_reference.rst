@@ -493,19 +493,19 @@ backfill
 
 .. code-block:: console
 
-    $ digdag backfill <schedule-id>
+    $ digdag backfill <project-name> <workflow-name>
 
 Starts sessions of a schedule for past session times.
 
-:command:`-f, --from 'yyyy-MM-dd HH:mm:ss Z'`
+:command:`-f, --from 'yyyy-MM-dd[ HH:mm:ss]'`
   Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.
 
-  Example: --from '2016-01-01 00:00:00 -0800'
+  Example: --from '2016-01-01'
 
-:command:`--attempt-name NAME`
-  Unique retry attempt name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.
+:command:`--name NAME`
+  Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.
 
-  Example: --attempt-name backfill1
+  Example: --name backfill1
 
 :command:`-d, --dry-run`
   Tries to backfill and validates the results but does nothing.

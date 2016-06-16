@@ -132,7 +132,7 @@ public class ScheduleResource
     public List<RestSessionAttempt> backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getDryRun());
+        List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
         return RestModels.attemptModels(rm, getSiteId(), attempts);
     }
