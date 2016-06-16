@@ -89,6 +89,18 @@ public class TdWaitIT
     }
 
     @Test
+    public void testTdWaitForTableThatAlreadyExistsWithDefaults()
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/wait/td_wait_defaults.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
+                .put("wait_table", "nasdaq")
+                .put("database", "sample_datasets")
+                .build());
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+    }
+
+    @Test
     public void testTdWaitForTableThatDoesNotYetExist()
             throws Exception
     {

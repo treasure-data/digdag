@@ -1,0 +1,7 @@
++wait:
+  +table:
+    td_wait_table>: ${wait_table}
+
+  +query:
+    td_wait>:
+      data: 'select 1 from ${wait_table} limit 1'
