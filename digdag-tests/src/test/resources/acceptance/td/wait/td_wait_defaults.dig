@@ -4,4 +4,4 @@
 
   +query:
     td_wait>:
-      data: 'select 1 from ${wait_table} limit 1'
+      data: 'select 1 from ${wait_table}'

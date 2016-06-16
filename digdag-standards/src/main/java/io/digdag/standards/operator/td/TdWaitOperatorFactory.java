@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJobRequest;
@@ -14,6 +15,11 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import org.msgpack.core.MessageTypeCastException;
+import org.msgpack.value.ArrayValue;
+import org.msgpack.value.BooleanValue;
+import org.msgpack.value.IntegerValue;
+import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,12 +85,15 @@ public class TdWaitOperatorFactory
         }
     }
 
-    private boolean runPollQuery(TaskRequest request, Config params, String query, int rows)
+    private boolean runPollQuery(TaskRequest request, Config params, String originalQuery, int rows)
     {
         String engine = params.get("engine", String.class, "presto");
         if (!engine.equals("presto") && !engine.equals("hive")) {
             throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
         }
+
+        String query = "select count(*) >= " + rows +
+                " from (select 1 from (" + originalQuery + ") raw limit " + rows + ") sub";
 
         try (TDOperator op = TDOperator.fromConfig(params)) {
 
@@ -105,27 +114,23 @@ public class TdWaitOperatorFactory
 
             joinJob(job);
 
-            // TODO: wrap query in a query using count and limit instead of storing and downloading the actual full query result?
+            Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
+            if (!firstRow.isPresent()) {
+                throw new RuntimeException("Got unexpected empty result for poll job: " + job.getJobId());
+            }
+            ArrayValue row = firstRow.get();
+            if (row.size() != 1) {
+                throw new RuntimeException("Got unexpected result row size for poll job: " + row.size());
+            }
+            Value condition = row.get(0);
             try {
-                return job.getResult(ite -> {
-                    int n = 0;
-                    while (true) {
-                        if (n >= rows) {
-                            return true;
-                        }
-                        if (!ite.hasNext()) {
-                            return false;
-                        }
-                        ite.next();
-                        n++;
-                    }
-                });
+                return condition.asBooleanValue().getBoolean();
             }
-            catch (TDClientHttpNotFoundException ex) {
-                // this happens if query is INSERT or CREATE. return empty results
-                return false;
+            catch (MessageTypeCastException e) {
+                throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
             }
+
         }
     }
 }

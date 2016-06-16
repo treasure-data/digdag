@@ -89,17 +89,19 @@ public class TdWaitTableOperatorFactory
         String engine = params.get("engine", String.class, "presto");
 
         String tableName;
+        String query;
         switch (engine) {
             case "presto":
                 tableName = TDOperator.escapePrestoTableName(table);
+                query = "select count(*) from " + tableName;
                 break;
             case "hive":
                 tableName = TDOperator.escapeHiveTableName(table);
+                query = "select count(*) from (select * from " + tableName + " limit " + expectedRows + ") sub";
                 break;
             default:
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
         }
-        String query = "select count(1) from " + tableName + " limit " + expectedRows;
 
         try (TDOperator op = TDOperator.fromConfig(params)) {
             if (!op.tableExists(table.getTable())) {

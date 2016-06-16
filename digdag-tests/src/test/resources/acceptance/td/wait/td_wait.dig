@@ -2,12 +2,14 @@
   +table:
     td_wait_table>: ${wait_table}
     interval: ${wait_poll_interval}
+    engine: ${wait_engine}
 
   +query:
     td_wait>:
-      data: 'select 1 from ${wait_table} limit ${wait_limit}'
+      data: 'select 1 from ${wait_table}'
     rows: ${wait_rows}
     interval: ${wait_poll_interval}
+    engine: ${wait_engine}
 
 +perform:
   sh>: touch ${outfile}

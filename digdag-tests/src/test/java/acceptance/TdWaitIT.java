@@ -2,11 +2,14 @@ package acceptance;
 
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +29,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
+@RunWith(JUnitParamsRunner.class)
 public class TdWaitIT
 {
     private static final String TD_API_KEY = System.getenv("TD_API_KEY");
@@ -73,22 +77,6 @@ public class TdWaitIT
     }
 
     @Test
-    public void testTdWaitForTableThatAlreadyExists()
-            throws Exception
-    {
-        addWorkflow(projectDir, "acceptance/td/wait/td_wait.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
-                .put("wait_poll_interval", "5s")
-                .put("wait_table", "nasdaq")
-                .put("wait_limit", "1")
-                .put("wait_rows", "1")
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
-    }
-
-    @Test
     public void testTdWaitForTableThatAlreadyExistsWithDefaults()
             throws Exception
     {
@@ -101,7 +89,26 @@ public class TdWaitIT
     }
 
     @Test
-    public void testTdWaitForTableThatDoesNotYetExist()
+    @Parameters({"hive", "presto"})
+    public void testTdWaitForTableThatAlreadyExists(String engine)
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/wait/td_wait.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+                .put("wait_poll_interval", "5s")
+                .put("wait_table", "nasdaq")
+                .put("wait_limit", "1")
+                .put("wait_rows", "1")
+                .put("wait_engine", engine)
+                .put("database", "sample_datasets")
+                .put("outfile", outfile.toString())
+                .build());
+        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+    }
+
+    @Test
+    @Parameters({"60, hive", "10, presto"})
+    public void testTdWaitForTableThatDoesNotYetExist(int sleep, String engine)
             throws Exception
     {
         String table = "td_wait_test";
@@ -114,12 +121,13 @@ public class TdWaitIT
                 .put("wait_table", table)
                 .put("wait_limit", "2")
                 .put("wait_rows", "2")
+                .put("wait_engine", engine)
                 .put("outfile", outfile.toString())
                 .build());
 
         // Verify that the workflow does not proceed beyond running
         {
-            Thread.sleep(10_000);
+            Thread.sleep(sleep * 1000);
             CommandStatus attemptsStatus = TestUtils.main("attempts",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
@@ -135,7 +143,7 @@ public class TdWaitIT
 
         // Verify that the workflow still does not proceed beyond running
         {
-            Thread.sleep(10_000);
+            Thread.sleep(sleep * 1000);
             CommandStatus attemptsStatus = TestUtils.main("attempts",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
@@ -152,7 +160,7 @@ public class TdWaitIT
 
         // Verify that the workflow still does not proceed beyond running
         {
-            Thread.sleep(10_000);
+            Thread.sleep(sleep * 1000);
             CommandStatus attemptsStatus = TestUtils.main("attempts",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
@@ -171,7 +179,7 @@ public class TdWaitIT
                 "query", "select 1"));
 
         // Verify that the workflow completes
-        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
 
         // Check that the task after the td_wait executed and the output file exists
         assertThat(Files.exists(outfile), is(true));
