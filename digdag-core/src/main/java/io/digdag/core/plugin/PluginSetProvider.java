@@ -30,6 +30,7 @@ public class PluginSetProvider
             binder.bind(TemplateEngine.class).toInstance(templateEngine);
             binder.bind(ConfigFactory.class).toInstance(cf);
             binder.bind(Config.class).toInstance(systemConfig);
+            binder.disableCircularProxies();
         };
         Injector injector = Guice.createInjector(
                 Stage.PRODUCTION,

@@ -3,6 +3,7 @@ package io.digdag.core.plugin;
 import java.util.function.Function;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -52,6 +53,9 @@ public class DynamicPluginLoader<R>
     {
         try {
             return cache.get(spec, () -> loadCache(spec));
+        }
+        catch (UncheckedExecutionException ex) {
+            throw Throwables.propagate(ex.getCause());
         }
         catch (ExecutionException ex) {
             throw Throwables.propagate(ex.getCause());

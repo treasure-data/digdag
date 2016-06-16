@@ -54,7 +54,7 @@ public class OperatorRegistry
     {
         Config params = request.getConfig()
             .mergeDefault(request.getConfig().getNestedOrGetEmpty("plugin"));
-        List<String> repositories = ImmutableList.of();  // dynamic plugin loading doesn't allow custom repositories (for now)
+        List<String> repositories = params.getList("repositories", String.class);
         List<String> dependencies = params.getList("dependencies", String.class);
         return Spec.of(repositories, dependencies);
     }

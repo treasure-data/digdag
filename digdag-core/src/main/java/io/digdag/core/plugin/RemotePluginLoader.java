@@ -3,11 +3,11 @@ package io.digdag.core.plugin;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
+import java.util.ServiceConfigurationError;
 import java.io.File;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import com.google.inject.Injector;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
@@ -118,9 +118,14 @@ public class RemotePluginLoader
                     .collect(Collectors.joining(File.pathSeparator)));
 
             ClassLoader pluginClassLoader = buildPluginClassLoader(artifactResults);
-            ServiceLoader<PluginFactory> serviceLoader = ServiceLoader.load(PluginFactory.class, pluginClassLoader);
-            for (PluginFactory factory : serviceLoader) {
-                builder.add(factory);
+            try {
+                ServiceLoader<PluginFactory> serviceLoader = ServiceLoader.load(PluginFactory.class, pluginClassLoader);
+                for (PluginFactory factory : serviceLoader) {
+                    builder.add(factory);
+                }
+            }
+            catch (ServiceConfigurationError ex) {
+                throw new RuntimeException("Failed to lookup io.digdag.spi.PluginFactory service from a dependency '" + dep + "'", ex);
             }
         }
 

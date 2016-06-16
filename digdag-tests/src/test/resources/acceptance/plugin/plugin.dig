@@ -1,0 +1,11 @@
+_export:
+  plugin:
+    repositories:
+      - file://${repository_path}
+    dependencies:
+      - io.digdag.plugin:digdag-plugin-example:0.1.0
+
++step1:
+  example>: template.txt
+  message: yes
+  path: example.out
