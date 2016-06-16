@@ -1,0 +1,32 @@
+sudo: required
+
+services:
+  - docker
+
+cache:
+  directories:
+    - $HOME/docker
+    - $HOME/.gradle
+
+env:
+  global:
+    - TERM=dumb
+  matrix:
+    - CI_NODE_INDEX=0
+    - CI_NODE_INDEX=1
+    - CI_NODE_INDEX=2
+
+before_install:
+  - sudo docker/setup.sh
+  - |
+    docker run \
+    -w /digdag \
+    -v `pwd`/:/digdag \
+    -v ~/.gradle:/root/.gradle \
+    digdag-build \
+    ./gradlew testClasses
+
+install:
+
+script:
+  - ci/run_test.sh
