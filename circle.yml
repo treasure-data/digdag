@@ -37,5 +37,5 @@ deployment:
   docs:
     branch: master
     commands:
-      - circle/run_deployment.sh
+      - ci/run_deployment.sh
 
