@@ -66,8 +66,7 @@ public class TdWaitOperatorFactory
 
             String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
 
-            int defaultRows = query.trim().isEmpty() ? 0 : 1;
-            int rows = params.get("rows", int.class, defaultRows);
+            int rows = params.get("rows", int.class, 1);
 
             boolean done = runPollQuery(request, params, query, rows);
 
