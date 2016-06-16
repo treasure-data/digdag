@@ -1,0 +1,10 @@
+timezone: UTC
+
++run:
+  td>:
+    data: |
+      select 1;
+  database: sample_datasets
+
++post:
+  sh>: touch ${outfile}

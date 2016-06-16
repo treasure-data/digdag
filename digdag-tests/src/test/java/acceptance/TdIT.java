@@ -1,7 +1,6 @@
 package acceptance;
 
 import com.treasuredata.client.TDClient;
-import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDSaveQueryRequest;
 import com.treasuredata.client.model.TDSavedQuery;
 import org.junit.After;
@@ -10,7 +9,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,7 +22,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-public class TdRunIT
+public class TdIT
 {
     private static final String TD_API_KEY = System.getenv("TD_API_KEY");
 
@@ -37,7 +35,6 @@ public class TdRunIT
     private TDClient client;
     private String database;
 
-    private final List<String> savedQueries = new ArrayList<>();
     private Path outfile;
 
     @Before
@@ -58,17 +55,6 @@ public class TdRunIT
     }
 
     @After
-    public void deleteQueries()
-            throws Exception
-    {
-        if (client != null) {
-            for (String savedQuery : savedQueries) {
-                client.deleteSavedQuery(savedQuery);
-            }
-        }
-    }
-
-    @After
     public void deleteDatabase()
             throws Exception
     {
@@ -78,47 +64,32 @@ public class TdRunIT
     }
 
     @Test
-    public void testRunSavedQuery()
+    public void testRunQuery()
             throws Exception
     {
-        testRunSavedQuery("test_" + UUID.randomUUID().toString().replace('-', '_'));
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow();
     }
 
     @Test
-    public void testRunSavedQueryWithUnicodeName()
+    public void testRunQueryInline()
             throws Exception
     {
-        testRunSavedQuery("test query with  space\tand 漢字　and räksmörgås " + UUID.randomUUID().toString().replace('-', '_'));
+        copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
+        runWorkflow();
     }
 
-    private void testRunSavedQuery(String queryName)
-            throws IOException
+    private void runWorkflow()
     {
-        TDSavedQuery savedQuery = saveQuery(TDSavedQuery.newBuilder(
-                queryName,
-                TDJob.Type.PRESTO,
-                database,
-                "select 1",
-                "Asia/Tokyo")
-                .build());
-
-        copyResource("acceptance/td/td_run/td_run.dig", projectDir.resolve("workflow.dig"));
-
         CommandStatus runStatus = main("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
-                "-p", "saved_query_name=" + savedQuery.getName(),
                 "-p", "outfile=" + outfile,
                 "workflow.dig");
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
 
         assertThat(Files.exists(outfile), is(true));
-    }
-
-    private TDSavedQuery saveQuery(TDSaveQueryRequest request)
-    {
-        savedQueries.add(request.getName());
-        return client.saveQuery(request);
     }
 }
