@@ -9,6 +9,10 @@ import static io.digdag.util.Durations.formatDuration;
 
 abstract class AbstractWaitOperatorFactory
 {
+    // TODO: exponential backoff
+    static final int JOB_STATUS_API_POLL_INTERVAL = 5;
+    static final int TABLE_EXISTENCE_API_POLL_INTERVAL = 30;
+
     private static final Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(30);
     private static final Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofDays(2);
     private static final Duration DEFAULT_POLL_INTERVAL = Duration.ofMinutes(10);

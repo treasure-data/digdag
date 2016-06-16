@@ -2,7 +2,7 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import com.treasuredata.client.TDClientHttpNotFoundException;
+import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -17,15 +17,12 @@ import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
 import org.msgpack.core.MessageTypeCastException;
 import org.msgpack.value.ArrayValue;
-import org.msgpack.value.BooleanValue;
-import org.msgpack.value.IntegerValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
@@ -33,6 +30,8 @@ public class TdWaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdWaitOperatorFactory.class);
+
+    private static final String JOB_ID = "jobId";
 
     private final TemplateEngine templateEngine;
 
@@ -70,22 +69,46 @@ public class TdWaitOperatorFactory
 
             int pollInterval = getPollInterval(params);
 
-            String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            Config state = request.getLastStateParams().deepCopy();
 
-            int rows = params.get("rows", int.class, 1);
-
-            boolean done = runPollQuery(request, params, query, rows);
-
-            if (done) {
-                return TaskResult.empty(request);
+            // Start the query job
+            Optional<String> existingJobId = state.getOptional(JOB_ID, String.class);
+            if (!existingJobId.isPresent()) {
+                String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+                int rows = params.get("rows", int.class, 1);
+                String jobId = startJob(request, params, query, rows);
+                state.set(JOB_ID, jobId);
+                throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
             }
-            else {
-                throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(request.getLastStateParams()));
+
+            // Poll for query job status
+            try (TDOperator op = TDOperator.fromConfig(params)) {
+
+                assert existingJobId.isPresent();
+
+                TDJobOperator job = op.newJobOperator(existingJobId.get());
+                TDJob jobInfo = job.getJobInfo();
+                TDJob.Status status = jobInfo.getStatus();
+                logger.debug("poll job status: {}: {}", existingJobId.get(), jobInfo);
+
+                if (!status.isFinished()) {
+                    throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
+                }
+
+                logger.debug("fetching poll job result: {}", existingJobId.get());
+                boolean done = fetchJobResult(job, status);
+
+                if (!done) {
+                    state.remove(JOB_ID);
+                    throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
+                }
+
+                return TaskResult.empty(request);
             }
         }
     }
 
-    private boolean runPollQuery(TaskRequest request, Config params, String originalQuery, int rows)
+    private String startJob(TaskRequest request, Config params, String originalQuery, int rows)
     {
         String engine = params.get("engine", String.class, "presto");
         if (!engine.equals("presto") && !engine.equals("hive")) {
@@ -112,25 +135,33 @@ public class TdWaitOperatorFactory
             TDJobOperator job = op.submitNewJob(req);
             logger.info("Started {} job id={}:\n{}", engine, job.getJobId(), query);
 
-            joinJob(job);
-
-            Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
-
-            if (!firstRow.isPresent()) {
-                throw new RuntimeException("Got unexpected empty result for poll job: " + job.getJobId());
-            }
-            ArrayValue row = firstRow.get();
-            if (row.size() != 1) {
-                throw new RuntimeException("Got unexpected result row size for poll job: " + row.size());
-            }
-            Value condition = row.get(0);
-            try {
-                return condition.asBooleanValue().getBoolean();
-            }
-            catch (MessageTypeCastException e) {
-                throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
-            }
-
+            return job.getJobId();
         }
+    }
+
+    private boolean fetchJobResult(TDJobOperator job, TDJob.Status status)
+    {
+        if (status != TDJob.Status.SUCCESS) {
+            throw new RuntimeException("Poll job failed: " + job.getJobId());
+        }
+
+        Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
+
+        if (!firstRow.isPresent()) {
+            throw new RuntimeException("Got unexpected empty result for poll job: " + job.getJobId());
+        }
+        ArrayValue row = firstRow.get();
+        if (row.size() != 1) {
+            throw new RuntimeException("Got unexpected result row size for poll job: " + row.size());
+        }
+        Value condition = row.get(0);
+        boolean done;
+        try {
+            done = condition.asBooleanValue().getBoolean();
+        }
+        catch (MessageTypeCastException e) {
+            throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
+        }
+        return done;
     }
 }
