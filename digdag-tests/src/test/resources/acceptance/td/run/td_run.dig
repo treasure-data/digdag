@@ -1,0 +1,8 @@
+timezone: UTC
+
++run:
+  td_run>: ${saved_query_name}
+  database: sample_datasets
+
++post:
+  sh>: touch ${outfile}
