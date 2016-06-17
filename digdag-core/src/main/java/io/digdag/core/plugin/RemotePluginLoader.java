@@ -51,7 +51,11 @@ public class RemotePluginLoader
     });
 
     private static final List<String> PARENT_FIRST_PACKAGES = ImmutableList.copyOf(new String[] {
-            "org.digdag.spi"
+            "io.digdag.spi",
+            "io.digdag.client",
+            "com.google.inject",
+            "com.google.common.base.Optional",
+            "com.fasterxml.jackson.databind.annotation",
     });
 
     private static final List<String> PARENT_FIRST_RESOURCES = ImmutableList.copyOf(new String[] {

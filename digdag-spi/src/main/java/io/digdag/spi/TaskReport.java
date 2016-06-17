@@ -2,8 +2,6 @@ package io.digdag.spi;
 
 import java.util.List;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
