@@ -39,7 +39,7 @@ public class TdForEachIT
     public void testTdForEach()
             throws Exception
     {
-        copyResource("acceptance/td/for_each/td_for_each.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td_for_each/td_for_each.dig", projectDir.resolve("workflow.dig"));
         CommandStatus runStatus = main("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
