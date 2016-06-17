@@ -3,45 +3,44 @@ package io.digdag.core.plugin;
 import java.util.function.Function;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
+import com.google.inject.Module;
 import com.google.inject.Injector;
+import com.google.inject.Guice;
+import com.google.inject.Stage;
 import io.digdag.spi.Plugin;
 
 public class DynamicPluginLoader<R>
 {
-    public static class Builder
+    public static <R> DynamicPluginLoader<R> build(
+            PluginLoader loader,
+            Module restrictInjectModule,
+            Function<PluginSet.WithInjector, R> cacheBuilder,
+            int maxCacheSize)
     {
-        private final PluginLoader pluginLoader;
-        private final Injector injector;
-
-        @Inject
-        public Builder(PluginLoader pluginLoader, Injector injector)
-        {
-            this.pluginLoader = pluginLoader;
-            this.injector = injector;
-        }
-
-        public <R> DynamicPluginLoader<R> build(int maxCacheSize, Function<PluginSet, R> cacheBuilder)
-        {
-            return new DynamicPluginLoader<R>(pluginLoader, injector,
-                    maxCacheSize, cacheBuilder);
-        }
+        return new DynamicPluginLoader<>(
+                loader, restrictInjectModule,
+                cacheBuilder, maxCacheSize);
     }
 
     private final PluginLoader loader;
     private final Injector injector;
-    private final Function<PluginSet, R> cacheBuilder;
+    private final Function<PluginSet.WithInjector, R> cacheBuilder;
     private final Cache<Spec, R> cache;
 
-    public DynamicPluginLoader(PluginLoader loader, Injector injector,
-            int maxCacheSize, Function<PluginSet, R> cacheBuilder)
+    private DynamicPluginLoader(
+            PluginLoader loader,
+            Module restrictInjectModule,
+            Function<PluginSet.WithInjector, R> cacheBuilder,
+            int maxCacheSize)
     {
         this.loader = loader;
-        this.injector = injector;
+        this.injector = buildRestrictedInjector(restrictInjectModule);
         this.cacheBuilder = cacheBuilder;
         this.cache = CacheBuilder.newBuilder()
             .maximumSize(maxCacheSize)
@@ -64,7 +63,16 @@ public class DynamicPluginLoader<R>
 
     private R loadCache(Spec spec)
     {
-        PluginSet plugins = loader.load(spec).create(injector);
-        return cacheBuilder.apply(plugins);
+        PluginSet plugins = loader.load(spec);
+        return cacheBuilder.apply(plugins.withInjector(injector));
+    }
+
+    private static Injector buildRestrictedInjector(Module module)
+    {
+        return Guice.createInjector(
+                Stage.PRODUCTION,
+                ImmutableList.of(module, (binder) -> {
+                    binder.disableCircularProxies();
+                }));
     }
 }

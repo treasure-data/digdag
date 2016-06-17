@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface Plugin
 {
-    <T> List<T> get(Class<T> iface);
+    <T> Class<? extends T> getServiceProvider(Class<T> type);
 }

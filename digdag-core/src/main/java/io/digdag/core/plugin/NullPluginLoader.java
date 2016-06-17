@@ -3,8 +3,8 @@ package io.digdag.core.plugin;
 public class NullPluginLoader
         implements PluginLoader
 {
-    public PluginSetFactory load(Spec spec)
+    public PluginSet load(Spec spec)
     {
-        return PluginSetFactory.empty();
+        return PluginSet.empty();
     }
 }

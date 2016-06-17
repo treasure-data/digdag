@@ -16,7 +16,6 @@ public class DynamicPluginModule
     public void configure(Binder binder)
     {
         binder.bind(PluginLoader.class).toProvider(PluginLoaderProvider.class).in(Scopes.SINGLETON);
-        binder.bind(DynamicPluginLoader.Builder.class);
     }
 
     public static class PluginLoaderProvider

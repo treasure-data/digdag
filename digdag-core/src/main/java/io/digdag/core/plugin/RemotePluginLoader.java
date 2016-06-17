@@ -35,7 +35,6 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 
 import io.digdag.spi.Plugin;
-import io.digdag.spi.PluginFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,8 @@ public class RemotePluginLoader
     private static final List<String> PARENT_FIRST_PACKAGES = ImmutableList.copyOf(new String[] {
             "io.digdag.spi",
             "io.digdag.client",
-            "com.google.inject",
+            "org.slf4j",
+            "javax.inject",
             "com.google.common",
             "com.fasterxml.jackson.databind.annotation",
     });
@@ -102,13 +102,13 @@ public class RemotePluginLoader
     }
 
     @Override
-    public PluginSetFactory load(Spec spec)
+    public PluginSet load(Spec spec)
     {
         if (spec.getDependencies().isEmpty()) {
-            return PluginSetFactory.empty();
+            return PluginSet.empty();
         }
 
-        ImmutableList.Builder<PluginFactory> builder = ImmutableList.builder();
+        ImmutableList.Builder<Plugin> builder = ImmutableList.builder();
 
         List<RemoteRepository> repositories = getRepositories(spec);
 
@@ -123,17 +123,21 @@ public class RemotePluginLoader
 
             ClassLoader pluginClassLoader = buildPluginClassLoader(artifactResults);
             try {
-                ServiceLoader<PluginFactory> serviceLoader = ServiceLoader.load(PluginFactory.class, pluginClassLoader);
-                for (PluginFactory factory : serviceLoader) {
-                    builder.add(factory);
+                ServiceLoader<Plugin> serviceLoader = ServiceLoader.load(Plugin.class, pluginClassLoader);
+                List<Plugin> plugins = ImmutableList.copyOf(serviceLoader);
+                if (plugins.isEmpty()) {
+                    logger.warn("No plugins found from a dependency '" + dep + "'");
+                }
+                else {
+                    builder.addAll(plugins);
                 }
             }
             catch (ServiceConfigurationError ex) {
-                throw new RuntimeException("Failed to lookup io.digdag.spi.PluginFactory service from a dependency '" + dep + "'", ex);
+                throw new RuntimeException("Failed to lookup io.digdag.spi.Plugin service from a dependency '" + dep + "'", ex);
             }
         }
 
-        return new PluginSetFactory(builder.build());
+        return new PluginSet(builder.build());
     }
 
     private ClassLoader buildPluginClassLoader(List<ArtifactResult> artifactResults)

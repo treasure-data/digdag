@@ -16,7 +16,7 @@ import java.io.FileNotFoundException;
 import com.google.common.collect.ImmutableList;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.plugin.Spec;
-import io.digdag.core.plugin.PluginSetFactory;
+import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.RemotePluginLoader;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
@@ -83,7 +83,7 @@ public abstract class Command
         return props;
     }
 
-    protected PluginSetFactory loadSystemPlugins(Properties systemProps)
+    protected PluginSet loadSystemPlugins(Properties systemProps)
     {
         Spec spec = Spec.of(
                 ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "system-plugin.repositories").values()),
