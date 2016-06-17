@@ -80,7 +80,7 @@ public class TdWaitIT
     public void testTdWaitForTableThatAlreadyExistsWithDefaults()
             throws Exception
     {
-        addWorkflow(projectDir, "acceptance/td/wait/td_wait_defaults.dig");
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_defaults.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
                 .put("wait_table", "nasdaq")
                 .put("database", "sample_datasets")
@@ -93,7 +93,7 @@ public class TdWaitIT
     public void testTdWaitForTableThatAlreadyExists(String engine)
             throws Exception
     {
-        addWorkflow(projectDir, "acceptance/td/wait/td_wait.dig");
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                 .put("wait_poll_interval", "5s")
                 .put("wait_table", "nasdaq")
@@ -113,7 +113,7 @@ public class TdWaitIT
     {
         String table = "td_wait_test";
 
-        addWorkflow(projectDir, "acceptance/td/wait/td_wait.dig");
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                 .put("td.apikey", TD_API_KEY)
                 .put("database", tempDatabase)
@@ -136,7 +136,7 @@ public class TdWaitIT
         }
 
         // Create the table (empty)
-        runWorkflow("acceptance/td/wait/create_table.dig", ImmutableMap.of(
+        runWorkflow("acceptance/td/td_wait/create_table.dig", ImmutableMap.of(
                 "td.apikey", TD_API_KEY,
                 "database", tempDatabase,
                 "table", table));
@@ -152,7 +152,7 @@ public class TdWaitIT
         }
 
         // Insert a row
-        runWorkflow("acceptance/td/wait/insert_into.dig", ImmutableMap.of(
+        runWorkflow("acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
                 "td.apikey", TD_API_KEY,
                 "database", tempDatabase,
                 "table", table,
@@ -172,7 +172,7 @@ public class TdWaitIT
         assertThat(Files.exists(outfile), is(false));
 
         // Insert another row to trigger the workflow to complete
-        runWorkflow("acceptance/td/wait/insert_into.dig", ImmutableMap.of(
+        runWorkflow("acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
                 "td.apikey", TD_API_KEY,
                 "database", tempDatabase,
                 "table", table,
@@ -189,7 +189,7 @@ public class TdWaitIT
     public void verifyThatTooSmallPollIntervalFails()
             throws Exception
     {
-        addWorkflow(projectDir, "acceptance/td/wait/td_wait.dig");
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                 .put("wait_poll_interval", "1s")
                 .put("wait_table", "nasdaq")
