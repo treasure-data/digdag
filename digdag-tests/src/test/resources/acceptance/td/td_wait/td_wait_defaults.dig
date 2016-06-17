@@ -4,4 +4,4 @@
 
   +query:
     td_wait>:
-      data: 'select 1 from ${wait_table}'
+      data: 'select count(*) >= ${wait_rows} from ${wait_table}'

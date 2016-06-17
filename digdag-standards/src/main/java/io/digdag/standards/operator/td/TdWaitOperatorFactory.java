@@ -60,7 +60,6 @@ public class TdWaitOperatorFactory
         private final Config params;
         private final String query;
         private final int pollInterval;
-        private final int rows;
         private final String engine;
         private final int priority;
         private final int jobRetry;
@@ -75,7 +74,6 @@ public class TdWaitOperatorFactory
                     request.getConfig().getNestedOrGetEmpty("td"));
             this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
             this.pollInterval = getPollInterval(params);
-            this.rows = params.get("rows", int.class, 1);
             this.engine = params.get("engine", String.class, "presto");
             if (!engine.equals("presto") && !engine.equals("hive")) {
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
@@ -134,20 +132,17 @@ public class TdWaitOperatorFactory
 
         private String startJob(TDOperator op)
         {
-            String wrappedQuery = "select count(*) >= " + rows +
-                    " from (select 1 from (" + query + ") raw limit " + rows + ") sub";
-
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
-                    .setQuery(wrappedQuery)
+                    .setQuery(query)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
             TDJobOperator job = op.submitNewJob(req);
-            logger.info("Started {} job id={}:\n{}", engine, job.getJobId(), wrappedQuery);
+            logger.info("Started {} job id={}:\n{}", engine, job.getJobId(), query);
 
             return job.getJobId();
         }
@@ -156,22 +151,20 @@ public class TdWaitOperatorFactory
         {
             Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
+            // There must be at least one row in the result for the wait condition to be fulfilled.
             if (!firstRow.isPresent()) {
-                throw new TaskExecutionException("Got unexpected empty result for poll job: " + job.getJobId(), ConfigElement.empty());
+                return false;
             }
+
             ArrayValue row = firstRow.get();
-            if (row.size() != 1) {
-                throw new TaskExecutionException("Got unexpected result row size for poll job: " + row.size(), ConfigElement.empty());
+            if (row.size() < 1) {
+                throw new TaskExecutionException("Got empty row in result of query", ConfigElement.empty());
             }
-            Value condition = row.get(0);
-            boolean done;
-            try {
-                done = condition.asBooleanValue().getBoolean();
-            }
-            catch (MessageTypeCastException e) {
-                throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
-            }
-            return done;
+
+            // Wait condition is fulfilled if the first column is not NULL and not FALSE.
+            Value firstCol = row.get(0);
+            return !firstCol.isNilValue() &&
+                    !(firstCol.isBooleanValue() && !firstCol.asBooleanValue().getBoolean());
         }
     }
 }

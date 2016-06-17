@@ -276,7 +276,13 @@ class TestUtils
             throws IOException
     {
         Path workflow = Paths.get(resource);
-        copyResource(resource, project.resolve(workflow.getFileName()));
+        addWorkflow(project, resource, workflow.getFileName().toString());
+    }
+
+    static void addWorkflow(Path project, String resource, String workflowName)
+            throws IOException
+    {
+        copyResource(resource, project.resolve(workflowName));
     }
 
     public static void runWorkflow(String resource, ImmutableMap<String, String> params)

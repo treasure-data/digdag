@@ -21,6 +21,7 @@ import static acceptance.TestUtils.attemptFailure;
 import static acceptance.TestUtils.attemptSuccess;
 import static acceptance.TestUtils.createProject;
 import static acceptance.TestUtils.expect;
+import static acceptance.TestUtils.main;
 import static acceptance.TestUtils.pushAndStart;
 import static acceptance.TestUtils.runWorkflow;
 import static org.hamcrest.Matchers.containsString;
@@ -96,7 +97,23 @@ public class TdWaitIT
         addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_defaults.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
                 .put("wait_table", "nasdaq")
+                .put("wait_rows", "1")
                 .put("database", "sample_datasets")
+                .build());
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+    }
+
+    @Test
+    @Parameters({"td_wait_query_with_comments.dig", "td_wait_query_with_semicolon.dig"})
+    public void testTdWaitWithQuirkyQueries(String workflow)
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/td_wait/" + workflow, "workflow.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.<String, String>builder()
+                .put("wait_table", "nasdaq")
+                .put("wait_rows", "1")
+                .put("database", "sample_datasets")
+                .put("outfile", outfile.toString())
                 .build());
         expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
     }
@@ -111,7 +128,8 @@ public class TdWaitIT
                 .put("wait_poll_interval", "5s")
                 .put("wait_table", "nasdaq")
                 .put("wait_limit", "1")
-                .put("wait_rows", "1")
+                .put("table_wait_rows", "1")
+                .put("query_wait_rows", "1")
                 .put("wait_engine", engine)
                 .put("database", "sample_datasets")
                 .put("outfile", outfile.toString())
@@ -120,8 +138,13 @@ public class TdWaitIT
     }
 
     @Test
-    @Parameters({"60, hive", "10, presto"})
-    public void testTdWaitForTableThatDoesNotYetExist(int sleep, String engine)
+    @Parameters({
+            "false, 60, hive",
+            "true, 60, hive",
+            "false, 10, presto",
+            "true, 10, presto"
+    })
+    public void testTdWaitForTableThatDoesNotYetExist(boolean tableWaitRows, int sleep, String engine)
             throws Exception
     {
         String table = "td_wait_test";
@@ -133,7 +156,8 @@ public class TdWaitIT
                 .put("wait_poll_interval", "5s")
                 .put("wait_table", table)
                 .put("wait_limit", "2")
-                .put("wait_rows", "2")
+                .put("table_wait_rows", tableWaitRows ? "2" : "0")
+                .put("query_wait_rows", "2")
                 .put("wait_engine", engine)
                 .put("outfile", outfile.toString())
                 .build());
@@ -204,13 +228,21 @@ public class TdWaitIT
     {
         addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+                .put("wait_engine", "presto")
                 .put("wait_poll_interval", "1s")
                 .put("wait_table", "nasdaq")
                 .put("wait_limit", "1")
-                .put("wait_rows", "1")
+                .put("table_wait_rows", "1")
+                .put("query_wait_rows", "1")
                 .put("database", "sample_datasets")
                 .put("outfile", outfile.toString())
                 .build());
         expect(Duration.ofSeconds(30), attemptFailure(server.endpoint(), attemptId));
+        CommandStatus logStatus = main("log",
+                "-c", "/dev/null",
+                "-e", server.endpoint(),
+                Long.toString(attemptId));
+        assertThat(logStatus.errUtf8(), logStatus.code(), is(0));
+        assertThat(logStatus.outUtf8(), containsString("poll interval must be at least"));
     }
 }

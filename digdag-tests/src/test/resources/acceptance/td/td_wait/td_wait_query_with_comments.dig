@@ -1,0 +1,7 @@
++wait:
+  +query:
+    td_wait>:
+      data: "-- foo\nselect count(*) >= ${wait_rows} from ${wait_table}\n-- bar"
+
++perform:
+  sh>: touch ${outfile}
