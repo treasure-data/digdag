@@ -5,32 +5,31 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskResult.class)
 @JsonDeserialize(as = ImmutableTaskResult.class)
-public abstract class TaskResult
+public interface TaskResult
 {
-    public abstract Config getSubtaskConfig();
+    Config getSubtaskConfig();
 
-    public abstract Config getExportParams();
+    Config getExportParams();
 
-    public abstract Config getStoreParams();
+    Config getStoreParams();
 
-    public abstract TaskReport getReport();
+    TaskReport getReport();
 
-    public static ImmutableTaskResult.Builder builder()
+    static ImmutableTaskResult.Builder builder()
     {
         return ImmutableTaskResult.builder();
     }
 
-    public static ImmutableTaskResult.Builder defaultBuilder(TaskRequest request)
+    static ImmutableTaskResult.Builder defaultBuilder(TaskRequest request)
     {
         return defaultBuilder(request.getConfig().getFactory());
     }
 
-    public static ImmutableTaskResult.Builder defaultBuilder(ConfigFactory cf)
+    static ImmutableTaskResult.Builder defaultBuilder(ConfigFactory cf)
     {
         return builder()
             .subtaskConfig(cf.create())
@@ -39,12 +38,12 @@ public abstract class TaskResult
             .report(TaskReport.empty());
     }
 
-    public static TaskResult empty(TaskRequest request)
+    static TaskResult empty(TaskRequest request)
     {
         return empty(request.getConfig().getFactory());
     }
 
-    public static TaskResult empty(ConfigFactory cf)
+    static TaskResult empty(ConfigFactory cf)
     {
         return defaultBuilder(cf).build();
     }

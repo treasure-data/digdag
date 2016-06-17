@@ -10,11 +10,11 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskReport.class)
 @JsonDeserialize(as = ImmutableTaskReport.class)
-public abstract class TaskReport
+public interface TaskReport
 {
-    public abstract List<Config> getInputs();
+    List<Config> getInputs();
 
-    public abstract List<Config> getOutputs();
+    List<Config> getOutputs();
 
     // TODO metrics
 
@@ -22,12 +22,12 @@ public abstract class TaskReport
 
     // TODO executedOnHost
 
-    public static ImmutableTaskReport.Builder builder()
+    static ImmutableTaskReport.Builder builder()
     {
         return ImmutableTaskReport.builder();
     }
 
-    public static TaskReport empty()
+    static TaskReport empty()
     {
         return builder()
             .build();

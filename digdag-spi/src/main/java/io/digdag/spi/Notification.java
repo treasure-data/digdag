@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
-import io.digdag.client.config.Config;
 import org.immutables.value.Value;
 
 import java.time.Instant;
@@ -16,26 +15,50 @@ import java.util.UUID;
 @Value.Immutable
 @JsonSerialize(as = ImmutableNotification.class)
 @JsonDeserialize(as = ImmutableNotification.class)
-public abstract class Notification
+public interface Notification
 {
     // A message and timestamp
-    @JsonProperty("timestamp") public abstract Instant getTimestamp();
-    @JsonProperty("message") public abstract String getMessage();
+    @JsonProperty("timestamp")
+    Instant getTimestamp();
+
+    @JsonProperty("message")
+    String getMessage();
 
     // Optional context information with further details about the origin of the notification
-    @JsonProperty("site_id") public abstract Optional<Integer> getSiteId();
-    @JsonProperty("project_id") public abstract Optional<Integer> getProjectId();
-    @JsonProperty("project_name") public abstract Optional<String> getProjectName();
-    @JsonProperty("workflow_name") public abstract Optional<String> getWorkflowName();
-    @JsonProperty("revision") public abstract Optional<String> getRevision();
-    @JsonProperty("attempt_id") public abstract Optional<Long> getAttemptId();
-    @JsonProperty("session_id") public abstract Optional<Long> getSessionId();
-    @JsonProperty("task_name") public abstract Optional<String> getTaskName();
-    @JsonProperty("timezone") public abstract Optional<ZoneId> getTimeZone();
-    @JsonProperty("session_uuid") public abstract Optional<UUID> getSessionUuid();
-    @JsonProperty("session_time") public abstract Optional<OffsetDateTime> getSessionTime();
+    @JsonProperty("site_id")
+    Optional<Integer> getSiteId();
 
-    public static ImmutableNotification.Builder builder(Instant timestamp, String message) {
+    @JsonProperty("project_id")
+    Optional<Integer> getProjectId();
+
+    @JsonProperty("project_name")
+    Optional<String> getProjectName();
+
+    @JsonProperty("workflow_name")
+    Optional<String> getWorkflowName();
+
+    @JsonProperty("revision")
+    Optional<String> getRevision();
+
+    @JsonProperty("attempt_id")
+    Optional<Long> getAttemptId();
+
+    @JsonProperty("session_id")
+    Optional<Long> getSessionId();
+
+    @JsonProperty("task_name")
+    Optional<String> getTaskName();
+
+    @JsonProperty("timezone")
+    Optional<ZoneId> getTimeZone();
+
+    @JsonProperty("session_uuid")
+    Optional<UUID> getSessionUuid();
+
+    @JsonProperty("session_time")
+    Optional<OffsetDateTime> getSessionTime();
+
+    static ImmutableNotification.Builder builder(Instant timestamp, String message) {
         return ImmutableNotification.builder()
                 .timestamp(timestamp)
                 .message(message);

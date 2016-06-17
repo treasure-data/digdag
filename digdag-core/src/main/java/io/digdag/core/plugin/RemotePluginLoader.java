@@ -54,7 +54,7 @@ public class RemotePluginLoader
             "io.digdag.spi",
             "io.digdag.client",
             "com.google.inject",
-            "com.google.common.base.Optional",
+            "com.google.common",
             "com.fasterxml.jackson.databind.annotation",
     });
 

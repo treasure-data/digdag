@@ -12,54 +12,54 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableTaskRequest.class)
 @JsonDeserialize(as = ImmutableTaskRequest.class)
-public abstract class TaskRequest
+public interface TaskRequest
 {
-    public abstract int getSiteId();
+    int getSiteId();
 
-    public abstract int getProjectId();
+    int getProjectId();
 
-    public abstract Optional<String> getProjectName();
+    Optional<String> getProjectName();
 
-    public abstract String getWorkflowName();
+    String getWorkflowName();
 
-    public abstract Optional<String> getRevision();
+    Optional<String> getRevision();
 
-    public abstract long getTaskId();
+    long getTaskId();
 
-    public abstract long getAttemptId();
+    long getAttemptId();
 
-    public abstract long getSessionId();
+    long getSessionId();
 
-    public abstract Optional<String> getRetryAttemptName();
+    Optional<String> getRetryAttemptName();
 
-    public abstract String getTaskName();
+    String getTaskName();
 
-    public abstract String getQueueName();
+    String getQueueName();
 
-    public abstract String getLockId();
+    String getLockId();
 
-    public abstract int getPriority();
+    int getPriority();
 
-    public abstract ZoneId getTimeZone();
+    ZoneId getTimeZone();
 
-    public abstract UUID getSessionUuid();
+    UUID getSessionUuid();
 
-    public abstract Instant getSessionTime();
+    Instant getSessionTime();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public abstract Config getLocalConfig();
+    Config getLocalConfig();
 
-    public abstract Config getConfig();
+    Config getConfig();
 
-    public abstract Config getLastStateParams();
+    Config getLastStateParams();
 
-    public static ImmutableTaskRequest.Builder builder()
+    static ImmutableTaskRequest.Builder builder()
     {
         return ImmutableTaskRequest.builder();
     }
 
-    public static TaskRequest withLockId(TaskRequest source, String lockId)
+    static TaskRequest withLockId(TaskRequest source, String lockId)
     {
         return ImmutableTaskRequest.builder()
             .from(source)

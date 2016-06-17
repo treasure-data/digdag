@@ -4,48 +4,34 @@ import java.time.Instant;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import static com.google.common.base.Preconditions.checkState;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableScheduleTime.class)
 @JsonDeserialize(as = ImmutableScheduleTime.class)
-public abstract class ScheduleTime
+public interface ScheduleTime
 {
-    public abstract Instant getRunTime();
+    Instant getRunTime();
 
-    public abstract Instant getTime();
+    Instant getTime();
 
-    private static ImmutableScheduleTime.Builder builder()
+    static ScheduleTime of(Instant time, Instant runTime)
     {
-        return ImmutableScheduleTime.builder();
-    }
-
-    public static ScheduleTime of(Instant time, Instant runTime)
-    {
-        return builder()
+        return ImmutableScheduleTime.builder()
             .time(time)
             .runTime(runTime)
             .build();
     }
 
-    public static ScheduleTime runNow(Instant time)
+    static ScheduleTime runNow(Instant time)
     {
-        return builder()
+        return ImmutableScheduleTime.builder()
             .time(time)
             .runTime(Instant.now())
             .build();
     }
 
-    public static Instant alignedNow()
+    static Instant alignedNow()
     {
         return Instant.ofEpochSecond(Instant.now().getEpochSecond());
-    }
-
-    @Value.Check
-    protected void check()
-    {
-        //checkState(getTime().getEpochSecond() % 60 == 0, "Schedule time must be aligned with minute");
-        checkState(getTime().getNano() == 0, "Schedule time must be aligned with second");
-        //checkState(getRunTime().getNano() == 0, "Run time must be aligned with second");
     }
 }
