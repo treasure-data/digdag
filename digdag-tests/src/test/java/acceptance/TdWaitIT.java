@@ -77,6 +77,19 @@ public class TdWaitIT
     }
 
     @Test
+    public void verifyThatBadQueryFails()
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_bad_query.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_bad_query", ImmutableMap.<String, String>builder()
+                .put("database", "sample_datasets")
+                .put("outfile", outfile.toString())
+                .build());
+        expect(Duration.ofSeconds(30), attemptFailure(server.endpoint(), attemptId));
+        assertThat(Files.exists(outfile), is(false));
+    }
+
+    @Test
     public void testTdWaitForTableThatAlreadyExistsWithDefaults()
             throws Exception
     {
