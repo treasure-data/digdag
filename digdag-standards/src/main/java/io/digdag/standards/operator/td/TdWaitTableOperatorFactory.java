@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.nio.file.Path;
 
+import static com.treasuredata.client.model.TDJob.Status.SUCCESS;
+
 public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
@@ -52,28 +54,41 @@ public class TdWaitTableOperatorFactory
     private class TdWaitTableOperator
             extends BaseOperator
     {
+        private final Config params;
+        private final TableParam table;
+        private final int pollInterval;
+        private final int tableExistencePollInterval;
+        private final int rows;
+        private final String engine;
+        private final int priority;
+        private final int jobRetry;
+        private final Config state;
+        private final Optional<String> existingJobId;
+
         private TdWaitTableOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
+
+            this.params = request.getConfig().mergeDefault(
+                    request.getConfig().getNestedOrGetEmpty("td"));
+            this.table = params.get("_command", TableParam.class);
+            this.pollInterval = getPollInterval(params);
+            this.tableExistencePollInterval = Integer.min(pollInterval, TABLE_EXISTENCE_API_POLL_INTERVAL);
+            this.rows = params.get("rows", int.class, 0);
+            this.engine = params.get("engine", String.class, "presto");
+            if (!engine.equals("presto") && !engine.equals("hive")) {
+                throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
+            }
+            this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+            this.jobRetry = params.get("job_retry", int.class, 0);
+            this.state = request.getLastStateParams().deepCopy();
+            this.existingJobId = state.getOptional(JOB_ID, String.class);
         }
 
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().mergeDefault(
-                    request.getConfig().getNestedOrGetEmpty("td"));
-
-            int pollInterval = getPollInterval(params);
-            int tableExistencePollInterval = Integer.min(pollInterval, TABLE_EXISTENCE_API_POLL_INTERVAL);
-            TableParam table = params.get("_command", TableParam.class);
-            int rows = params.get("rows", int.class, 0);
-            String engine = params.get("engine", String.class, "presto");
-
-            Config state = request.getLastStateParams().deepCopy();
-
             try (TDOperator op = TDOperator.fromConfig(params)) {
-
-                Optional<String> existingJobId = state.getOptional(JOB_ID, String.class);
 
                 // Check if table exists using rest api (if the query job has not yet been started)
                 if (!existingJobId.isPresent()) {
@@ -89,7 +104,7 @@ public class TdWaitTableOperatorFactory
 
                 // Start the query job
                 if (!existingJobId.isPresent()) {
-                    String jobId = startJob(params, table, rows, engine, op);
+                    String jobId = startJob(op);
                     state.set(JOB_ID, jobId);
                     throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
@@ -105,14 +120,23 @@ public class TdWaitTableOperatorFactory
                     throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
 
+                // Fail the task if the job failed
+                if (status != SUCCESS) {
+                    String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
+                    throw new TaskExecutionException(message, ConfigElement.empty());
+                }
+
+                // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", existingJobId.get());
                 boolean done = fetchJobResult(rows, job);
 
+                // Go back to sleep if the row count condition was not fulfilled
                 if (!done) {
                     state.remove(JOB_ID);
                     throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
                 }
 
+                // The row count condition was fulfilled. We're done.
                 return TaskResult.empty(request);
             }
         }
@@ -122,11 +146,11 @@ public class TdWaitTableOperatorFactory
             Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
             if (!firstRow.isPresent()) {
-                throw new RuntimeException("Got unexpected empty result for count job: " + job.getJobId());
+                throw new TaskExecutionException("Got unexpected empty result for count job: " + job.getJobId(), ConfigElement.empty());
             }
             ArrayValue row = firstRow.get();
             if (row.size() != 1) {
-                throw new RuntimeException("Got unexpected result row size for count job: " + row.size());
+                throw new TaskExecutionException("Got unexpected result row size for count job: " + row.size(), ConfigElement.empty());
             }
             Value count = row.get(0);
             IntegerValue actualRows;
@@ -134,18 +158,15 @@ public class TdWaitTableOperatorFactory
                 actualRows = count.asIntegerValue();
             }
             catch (MessageTypeCastException e) {
-                throw new RuntimeException("Got unexpected value type count job: " + count.getValueType());
+                throw new TaskExecutionException("Got unexpected value type count job: " + count.getValueType(), ConfigElement.empty());
             }
 
             return BigInteger.valueOf(rows).compareTo(actualRows.asBigInteger()) <= 0;
         }
 
-        private String startJob(Config params, TableParam table, int rows, String engine, TDOperator op)
+        private String startJob(TDOperator op)
         {
-            String query = createQuery(table, rows, engine);
-
-            int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-            int jobRetry = params.get("job_retry", int.class, 0);
+            String query = createQuery();
 
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
@@ -161,7 +182,7 @@ public class TdWaitTableOperatorFactory
             return jobId;
         }
 
-        private String createQuery(TableParam table, int rows, String engine)
+        private String createQuery()
         {
             String tableName;
             String query;

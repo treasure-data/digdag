@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
+import static com.treasuredata.client.model.TDJob.Status.SUCCESS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
@@ -56,34 +57,48 @@ public class TdWaitOperatorFactory
     private class TdWaitOperator
             extends BaseOperator
     {
+        private final Config params;
+        private final String query;
+        private final int pollInterval;
+        private final int rows;
+        private final String engine;
+        private final int priority;
+        private final int jobRetry;
+        private final Config state;
+        private final Optional<String> existingJobId;
+
         private TdWaitOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
+
+            this.params = request.getConfig().mergeDefault(
+                    request.getConfig().getNestedOrGetEmpty("td"));
+            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.pollInterval = getPollInterval(params);
+            this.rows = params.get("rows", int.class, 1);
+            this.engine = params.get("engine", String.class, "presto");
+            if (!engine.equals("presto") && !engine.equals("hive")) {
+                throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
+            }
+            this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+            this.jobRetry = params.get("job_retry", int.class, 0);
+            this.state = request.getLastStateParams().deepCopy();
+            this.existingJobId = state.getOptional(JOB_ID, String.class);
         }
 
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().mergeDefault(
-                    request.getConfig().getNestedOrGetEmpty("td"));
-
-            int pollInterval = getPollInterval(params);
-
-            Config state = request.getLastStateParams().deepCopy();
-
-            // Start the query job
-            Optional<String> existingJobId = state.getOptional(JOB_ID, String.class);
-            if (!existingJobId.isPresent()) {
-                String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
-                int rows = params.get("rows", int.class, 1);
-                String jobId = startJob(request, params, query, rows);
-                state.set(JOB_ID, jobId);
-                throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
-            }
-
-            // Poll for query job status
             try (TDOperator op = TDOperator.fromConfig(params)) {
 
+                // Start the query job
+                if (!existingJobId.isPresent()) {
+                    String jobId = startJob(op);
+                    state.set(JOB_ID, jobId);
+                    throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
+                }
+
+                // Poll for query job status
                 assert existingJobId.isPresent();
 
                 TDJobOperator job = op.newJobOperator(existingJobId.get());
@@ -91,77 +106,72 @@ public class TdWaitOperatorFactory
                 TDJob.Status status = jobInfo.getStatus();
                 logger.debug("poll job status: {}: {}", existingJobId.get(), jobInfo);
 
+                // Wait some more if the job is not yet finished
                 if (!status.isFinished()) {
                     throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
 
-                logger.debug("fetching poll job result: {}", existingJobId.get());
-                boolean done = fetchJobResult(job, status);
+                // Fail the task if the job failed
+                if (status != SUCCESS) {
+                    String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
+                    throw new TaskExecutionException(message, ConfigElement.empty());
+                }
 
+                // Fetch the job output to see if the query condition has been fulfilled
+                logger.debug("fetching poll job result: {}", existingJobId.get());
+                boolean done = fetchJobResult(job);
+
+                // If the query condition was not fulfilled, go back to sleep.
                 if (!done) {
                     state.remove(JOB_ID);
                     throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
                 }
 
+                // The query condition was fulfilled, we're done.
                 return TaskResult.empty(request);
             }
         }
-    }
 
-    private String startJob(TaskRequest request, Config params, String originalQuery, int rows)
-    {
-        String engine = params.get("engine", String.class, "presto");
-        if (!engine.equals("presto") && !engine.equals("hive")) {
-            throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
-        }
-
-        String query = "select count(*) >= " + rows +
-                " from (select 1 from (" + originalQuery + ") raw limit " + rows + ") sub";
-
-        try (TDOperator op = TDOperator.fromConfig(params)) {
-
-            int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-            int jobRetry = params.get("job_retry", int.class, 0);
+        private String startJob(TDOperator op)
+        {
+            String wrappedQuery = "select count(*) >= " + rows +
+                    " from (select 1 from (" + query + ") raw limit " + rows + ") sub";
 
             TDJobRequest req = new TDJobRequestBuilder()
                     .setType(engine)
                     .setDatabase(op.getDatabase())
-                    .setQuery(query)
+                    .setQuery(wrappedQuery)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
             TDJobOperator job = op.submitNewJob(req);
-            logger.info("Started {} job id={}:\n{}", engine, job.getJobId(), query);
+            logger.info("Started {} job id={}:\n{}", engine, job.getJobId(), wrappedQuery);
 
             return job.getJobId();
         }
-    }
 
-    private boolean fetchJobResult(TDJobOperator job, TDJob.Status status)
-    {
-        if (status != TDJob.Status.SUCCESS) {
-            throw new RuntimeException("Poll job failed: " + job.getJobId());
-        }
+        private boolean fetchJobResult(TDJobOperator job)
+        {
+            Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
-        Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
-
-        if (!firstRow.isPresent()) {
-            throw new RuntimeException("Got unexpected empty result for poll job: " + job.getJobId());
+            if (!firstRow.isPresent()) {
+                throw new TaskExecutionException("Got unexpected empty result for poll job: " + job.getJobId(), ConfigElement.empty());
+            }
+            ArrayValue row = firstRow.get();
+            if (row.size() != 1) {
+                throw new TaskExecutionException("Got unexpected result row size for poll job: " + row.size(), ConfigElement.empty());
+            }
+            Value condition = row.get(0);
+            boolean done;
+            try {
+                done = condition.asBooleanValue().getBoolean();
+            }
+            catch (MessageTypeCastException e) {
+                throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
+            }
+            return done;
         }
-        ArrayValue row = firstRow.get();
-        if (row.size() != 1) {
-            throw new RuntimeException("Got unexpected result row size for poll job: " + row.size());
-        }
-        Value condition = row.get(0);
-        boolean done;
-        try {
-            done = condition.asBooleanValue().getBoolean();
-        }
-        catch (MessageTypeCastException e) {
-            throw new RuntimeException("Got unexpected value type count job: " + condition.getValueType());
-        }
-        return done;
     }
 }
