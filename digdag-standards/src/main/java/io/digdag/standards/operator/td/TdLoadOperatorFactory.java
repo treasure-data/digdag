@@ -23,7 +23,6 @@ import io.digdag.client.config.ConfigException;
 import com.treasuredata.client.model.TDJobRequest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 
 public class TdLoadOperatorFactory
         implements OperatorFactory
@@ -123,7 +122,7 @@ public class TdLoadOperatorFactory
 
         private TaskResult join(TDJobOperator j)
         {
-            joinJob(j);
+            j.joinJob();
 
             Config storeParams = request.getConfig().getFactory().create()
                 .set("td", request.getConfig().getFactory().create()

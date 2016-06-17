@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.nio.file.Path;
-import java.io.File;
 import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
@@ -17,12 +16,12 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.Workspace;
@@ -52,6 +51,12 @@ import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 public class TdOperatorFactory
         implements OperatorFactory
 {
+    private static final String JOB_ID = "jobId";
+    private static final String POLL_INTERVAL = "pollInterval";
+
+    private static final Integer INITIAL_POLL_INTERVAL = 1;
+    private static final int MAX_POLL_INTERVAL = 30000;
+
     private static Logger logger = LoggerFactory.getLogger(TdOperatorFactory.class);
 
     private static final int PREVIEW_ROWS = 20;
@@ -78,46 +83,119 @@ public class TdOperatorFactory
     private class TdOperator
             extends BaseOperator
     {
+        private final Config params;
+        private final String query;
+        private final Optional<TableParam> insertInto;
+        private final Optional<TableParam> createTable;
+        private final int priority;
+        private final Optional<String> resultUrl;
+        private final int jobRetry;
+        private final String engine;
+        private final Optional<String> downloadFile;
+        private final boolean storeLastResults;
+        private final boolean preview;
+        private final Config state;
+        private final Optional<String> existingJobId;
+
         public TdOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
-        }
 
-        @Override
-        public TaskResult runTask()
-        {
-            Config params = request.getConfig().mergeDefault(
+            this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
 
-            Optional<TableParam> insertInto = params.getOptional("insert_into", TableParam.class);
-            Optional<TableParam> createTable = params.getOptional("create_table", TableParam.class);
+            this.insertInto = params.getOptional("insert_into", TableParam.class);
+            this.createTable = params.getOptional("create_table", TableParam.class);
             if (insertInto.isPresent() && createTable.isPresent()) {
                 throw new ConfigException("Setting both insert_into and create_table is invalid");
             }
 
-            int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-            Optional<String> resultUrl = params.getOptional("result_url", String.class);
+            this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+            this.resultUrl = params.getOptional("result_url", String.class);
 
-            int jobRetry = params.get("job_retry", int.class, 0);
+            this.jobRetry = params.get("job_retry", int.class, 0);
 
-            String engine = params.get("engine", String.class, "presto");
+            this.engine = params.get("engine", String.class, "presto");
 
-            Optional<String> downloadFile = params.getOptional("download_file", String.class);
+            this.downloadFile = params.getOptional("download_file", String.class);
             if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {
                 // query results become empty if INSERT INTO or CREATE TABLE query runs
                 throw new ConfigException("download_file is invalid if insert_into or create_table is set");
             }
 
-            boolean storeLastResults = params.get("store_last_results", boolean.class, false);
+            this.storeLastResults = params.get("store_last_results", boolean.class, false);
 
-            boolean preview = params.get("preview", boolean.class, false);
+            this.preview = params.get("preview", boolean.class, false);
 
+            this.state = request.getLastStateParams().deepCopy();
+
+            this.existingJobId = state.getOptional(JOB_ID, String.class);
+        }
+
+        @Override
+        public TaskResult runTask()
+        {
             try (TDOperator op = TDOperator.fromConfig(params)) {
-                String stmt;
 
-                switch(engine) {
+                // Start the job
+                if (!existingJobId.isPresent()) {
+                    String jobId = startJob(op);
+                    state.set(JOB_ID, jobId);
+                    state.set(POLL_INTERVAL, INITIAL_POLL_INTERVAL);
+                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state.deepCopy()));
+                }
+
+                // Check if the job is done
+                String jobId = existingJobId.get();
+                TDJobOperator job = op.newJobOperator(jobId);
+                TDJobSummary status = checkJobStatus(job);
+                boolean done = status.getStatus().isFinished();
+                if (!done) {
+                    int prevPollInterval = state.get(POLL_INTERVAL, int.class, INITIAL_POLL_INTERVAL);
+                    int nextPollInterval = Math.min(MAX_POLL_INTERVAL, prevPollInterval * 2);
+                    state.set(POLL_INTERVAL, nextPollInterval);
+                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state.deepCopy()));
+                }
+
+                // Get the job results
+                return processJobResult(op, job, status);
+
+
+            }
+        }
+
+        private TaskResult processJobResult(TDOperator op, TDJobOperator j, TDJobSummary summary)
+        {
+            downloadJobResult(j, workspace, downloadFile);
+
+            if (preview) {
+                try {
+                    if (insertInto.isPresent() || createTable.isPresent()) {
+                        selectPreviewRows(op, "job id " + j.getJobId(),
+                                insertInto.isPresent() ? insertInto.get() : createTable.get());
+                    }
+                    else {
+                        downloadPreviewRows(j, "job id " + j.getJobId());
+                    }
+                }
+                catch (Exception ex) {
+                    logger.info("Getting rows for preview failed. Ignoring this error.", ex);
+                }
+            }
+
+            Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
+
+            return TaskResult.defaultBuilder(request)
+                    .storeParams(storeParams)
+                    .build();
+        }
+
+        private String startJob(TDOperator op)
+        {
+            String stmt;
+            switch(engine) {
                 case "presto":
                     if (insertInto.isPresent()) {
                         ensureTableCreated(op, insertInto.get());
@@ -128,7 +206,7 @@ public class TdOperatorFactory
                         String tableName = escapePrestoTableName(createTable.get());
                         stmt = insertCommandStatement(
                                 "DROP TABLE IF EXISTS " + tableName + ";\n" +
-                                "CREATE TABLE " + tableName + " AS", query);
+                                        "CREATE TABLE " + tableName + " AS", query);
                     }
                     else {
                         stmt = query;
@@ -151,9 +229,9 @@ public class TdOperatorFactory
 
                 default:
                     throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): "+engine);
-                }
+            }
 
-                TDJobRequest req = new TDJobRequestBuilder()
+            TDJobRequest req = new TDJobRequestBuilder()
                     .setResultOutput(resultUrl.orNull())
                     .setType(engine)
                     .setDatabase(op.getDatabase())
@@ -163,32 +241,30 @@ public class TdOperatorFactory
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
-                TDJobOperator j = op.submitNewJob(req);
-                logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
+            TDJobOperator j = op.submitNewJob(req);
+            logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
 
-                TDJobSummary summary = joinJob(j);
-                downloadJobResult(j, workspace, downloadFile);
+            return j.getJobId();
+        }
 
-                if (preview) {
-                    try {
-                        if (insertInto.isPresent() || createTable.isPresent()) {
-                            selectPreviewRows(op, "job id " + j.getJobId(),
-                                    insertInto.isPresent() ? insertInto.get() : createTable.get());
-                        }
-                        else {
-                            downloadPreviewRows(j, "job id " + j.getJobId());
-                        }
-                    }
-                    catch (Exception ex) {
-                        logger.info("Getting rows for preview failed. Ignoring this error.", ex);
-                    }
+        private TDJobSummary checkJobStatus(TDJobOperator j)
+        {
+            try {
+                return j.ensureRunningOrSucceeded();
+            }
+            catch (TDJobException ex) {
+                try {
+                    TDJob job = j.getJobInfo();
+                    String message = job.getCmdOut() + "\n" + job.getStdErr();
+                    throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
                 }
-
-                Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, summary, storeLastResults);
-
-                return TaskResult.defaultBuilder(request)
-                    .storeParams(storeParams)
-                    .build();
+                catch (Exception getJobInfoFailed) {
+                    getJobInfoFailed.addSuppressed(ex);
+                    throw Throwables.propagate(getJobInfoFailed);
+                }
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
             }
         }
     }
@@ -265,27 +341,23 @@ public class TdOperatorFactory
         op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableCreated(table.getTable());
     }
 
-    static TDJobSummary joinJob(TDJobOperator j)
+    private static String escapeHiveTableName(TableParam table)
     {
-        try {
-            return j.ensureSucceeded();
+        if (table.getDatabase().isPresent()) {
+            return escapeHiveIdent(table.getDatabase().get()) + '.' + escapeHiveIdent(table.getTable());
         }
-        catch (TDJobException ex) {
-            try {
-                TDJob job = j.getJobInfo();
-                String message = job.getCmdOut() + "\n" + job.getStdErr();
-                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
-            }
-            catch (Exception getJobInfoFailed) {
-                getJobInfoFailed.addSuppressed(ex);
-                throw Throwables.propagate(getJobInfoFailed);
-            }
+        else {
+            return escapeHiveIdent(table.getTable());
         }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+    }
+
+    private static String escapePrestoTableName(TableParam table)
+    {
+        if (table.getDatabase().isPresent()) {
+            return escapePrestoIdent(table.getDatabase().get()) + '.' + escapePrestoIdent(table.getTable());
         }
-        finally {
-            j.ensureFinishedOrKill();
+        else {
+            return escapePrestoIdent(table.getTable());
         }
     }
 
