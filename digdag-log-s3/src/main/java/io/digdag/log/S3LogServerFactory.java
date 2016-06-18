@@ -130,11 +130,7 @@ public class S3LogServerFactory
 
             String url = s3.generatePresignedUrl(req).toString();
 
-            return Optional.of(
-                    DirectUploadHandle.builder()
-                    .type("http")
-                    .url(url)
-                    .build());
+            return Optional.of(DirectUploadHandle.of("http", url));
         }
 
         @Override
@@ -216,10 +212,7 @@ public class S3LogServerFactory
                         genReq.setKey(key);
                         String url = s3.generatePresignedUrl(genReq).toString();
 
-                        DirectDownloadHandle directDownload = DirectDownloadHandle.builder()
-                                .type("http")
-                                .url(url)
-                                .build();
+                        DirectDownloadHandle directDownload = DirectDownloadHandle.of("http", url);
 
                         consumer.accept(
                                 fileName,

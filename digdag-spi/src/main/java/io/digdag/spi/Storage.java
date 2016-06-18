@@ -3,15 +3,16 @@ package io.digdag.spi;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.List;
+import com.google.common.base.Optional;
 
 public interface Storage
 {
     StorageFile open(String key)
         throws StorageFileNotFoundException;
 
-    public interface UploadStreamProvider
+    interface UploadStreamProvider
     {
-        public InputStream open() throws IOException;
+        InputStream open() throws IOException;
     }
 
     String put(String key, long contentLength,
@@ -23,5 +24,15 @@ public interface Storage
         void accept(List<StorageFileMetadata> chunk);
     }
 
-    void list(String bucket, String keyPrefix, FileListing callback);
+    void list(String keyPrefix, FileListing callback);
+
+    default Optional<DirectDownloadHandle> getDirectDownloadHandle(String key)
+    {
+        return Optional.absent();
+    }
+
+    default Optional<DirectUploadHandle> getDirectUploadHandle(String key)
+    {
+        return Optional.absent();
+    }
 }
