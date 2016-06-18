@@ -152,9 +152,16 @@ public class Main
             return ex.getCode();
         }
         catch (Exception ex) {
-            err.println("error: " + formatExceptionMessage(ex));
-            if (verbose) {
+            String message = formatExceptionMessage(ex);
+            if (message.trim().isEmpty()) {
+                // prevent silent crash
                 ex.printStackTrace(err);
+            }
+            else {
+                err.println("error: " + message);
+                if (verbose) {
+                    ex.printStackTrace(err);
+                }
             }
             return 1;
         }
