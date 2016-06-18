@@ -5,13 +5,17 @@ import java.util.Map;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZoneId;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.repository.WorkflowDefinition;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.archive.ProjectArchive.WORKFLOW_FILE_SUFFIX;
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -60,6 +64,10 @@ public class Init
             isCurrentDirectory = false;
             workflowName = destDir.getFileName().toString();
         }
+
+        // validate workflow name
+        WorkflowDefinition.of(workflowName, new ConfigFactory(objectMapper()).create(), ZoneId.of("UTC"));
+
         String workflowFileName = workflowName + WORKFLOW_FILE_SUFFIX;
 
         ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", destDir);
