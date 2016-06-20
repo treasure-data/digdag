@@ -1,0 +1,10 @@
++wait:
+  _parallel: true
+  +wait_1:        { td_wait>: { data: "select 1" },         engine: "${wait_engine}" }
+  +wait_17:       { td_wait>: { data: "select 17" },        engine: "${wait_engine}" }
+  +wait_negative: { td_wait>: { data: "select -4711" },     engine: "${wait_engine}" }
+  +wait_true:     { td_wait>: { data: "select true" },      engine: "${wait_engine}" }
+  +wait_string:   { td_wait>: { data: "select 'foobar'" },  engine: "${wait_engine}" }
+
++perform:
+  sh>: touch ${outfile}

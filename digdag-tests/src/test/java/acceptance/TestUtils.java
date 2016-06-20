@@ -210,10 +210,7 @@ class TestUtils
     static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
     {
         return () -> {
-            CommandStatus attemptsStatus = main("attempts",
-                    "-c", "/dev/null",
-                    "-e", endpoint,
-                    String.valueOf(attemptId));
+            CommandStatus attemptsStatus = attempts(endpoint, attemptId);
             return attemptsStatus.outUtf8().contains("status: error");
         };
     }
@@ -221,12 +218,17 @@ class TestUtils
     static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
     {
         return () -> {
-            CommandStatus attemptsStatus = main("attempts",
-                    "-c", "/dev/null",
-                    "-e", endpoint,
-                    String.valueOf(attemptId));
+            CommandStatus attemptsStatus = attempts(endpoint, attemptId);
             return attemptsStatus.outUtf8().contains("status: success");
         };
+    }
+
+    static CommandStatus attempts(String endpoint, long attemptId)
+    {
+        return main("attempts",
+                        "-c", "/dev/null",
+                        "-e", endpoint,
+                        String.valueOf(attemptId));
     }
 
     static void createProject(Path project)

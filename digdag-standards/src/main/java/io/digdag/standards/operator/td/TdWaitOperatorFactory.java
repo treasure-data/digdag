@@ -161,10 +161,23 @@ public class TdWaitOperatorFactory
                 throw new TaskExecutionException("Got empty row in result of query", ConfigElement.empty());
             }
 
-            // Wait condition is fulfilled if the first column is not NULL and not FALSE.
             Value firstCol = row.get(0);
-            return !firstCol.isNilValue() &&
-                    !(firstCol.isBooleanValue() && !firstCol.asBooleanValue().getBoolean());
+            return isTruthy(firstCol);
+        }
+
+        private boolean isTruthy(Value firstCol)
+        {
+            // Anything that is not NULL and not FALSE or 0 is considered truthy.
+            switch (firstCol.getValueType()) {
+                case NIL:
+                    return false;
+                case BOOLEAN:
+                    return firstCol.asBooleanValue().getBoolean();
+                case INTEGER:
+                    return firstCol.asIntegerValue().asLong() != 0;
+                default:
+                    return true;
+            }
         }
     }
 }

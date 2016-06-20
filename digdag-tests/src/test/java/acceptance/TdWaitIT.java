@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import junitparams.custom.combined.CombinedParameters;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import static acceptance.TestUtils.addWorkflow;
 import static acceptance.TestUtils.attemptFailure;
 import static acceptance.TestUtils.attemptSuccess;
+import static acceptance.TestUtils.attempts;
 import static acceptance.TestUtils.createProject;
 import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.main;
@@ -135,6 +137,40 @@ public class TdWaitIT
                 .put("outfile", outfile.toString())
                 .build());
         expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+    }
+
+    @Test
+    @CombinedParameters({"hive, presto"})
+    public void testTdWaitTruthiness(String engine)
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_truthiness.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_truthiness", ImmutableMap.<String, String>builder()
+                .put("wait_engine", engine)
+                .put("database", "sample_datasets")
+                .put("outfile", outfile.toString())
+                .build());
+        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        assertThat(Files.exists(outfile), is(true));
+    }
+
+    @Test
+    @CombinedParameters({"hive, presto",
+                         "0, false, NULL"})
+    public void testTdWaitFalsiness(String engine, String selectValue)
+            throws Exception
+    {
+        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_falsiness.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_falsiness", ImmutableMap.<String, String>builder()
+                .put("select_value", selectValue)
+                .put("wait_engine", engine)
+                .put("database", "sample_datasets")
+                .put("outfile", outfile.toString())
+                .build());
+        Thread.sleep(engine.equals("hive") ? 60_000 : 10_000);
+        CommandStatus status = attempts(server.endpoint(), attemptId);
+        assertThat(status.outUtf8(), containsString("status: running"));
+        assertThat(Files.exists(outfile), is(false));
     }
 
     @Test
