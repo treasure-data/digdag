@@ -101,7 +101,7 @@ public class Sched
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         Properties props = buildServerProperties();
-        props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName);
+        props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
         props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
 
         ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
@@ -128,7 +128,7 @@ public class Sched
 
             Config systemConfig = injector.getInstance(Config.class);
 
-            String projectDirName = systemConfig.getOptional(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class).orNull();
+            String projectDirName = systemConfig.get(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class);
             Config overwriteParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, String.class));
 
             try {
