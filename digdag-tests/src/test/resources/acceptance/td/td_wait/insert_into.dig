@@ -1,0 +1,4 @@
++create:
+  td>:
+    data: "${query}"
+  insert_into: "${table}"

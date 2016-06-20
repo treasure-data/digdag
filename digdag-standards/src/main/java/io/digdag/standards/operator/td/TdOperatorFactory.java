@@ -41,6 +41,9 @@ import org.msgpack.value.ArrayValue;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.RawValue;
 import org.msgpack.value.ValueFactory;
+
+import static io.digdag.standards.operator.td.TDOperator.escapeHiveTableName;
+import static io.digdag.standards.operator.td.TDOperator.escapePrestoTableName;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
@@ -260,26 +263,6 @@ public class TdOperatorFactory
     private static void ensureTableCreated(TDOperator op, TableParam table)
     {
         op.withDatabase(table.getDatabase().or(op.getDatabase())).ensureTableCreated(table.getTable());
-    }
-
-    private static String escapeHiveTableName(TableParam table)
-    {
-        if (table.getDatabase().isPresent()) {
-            return escapeHiveIdent(table.getDatabase().get()) + '.' + escapeHiveIdent(table.getTable());
-        }
-        else {
-            return escapeHiveIdent(table.getTable());
-        }
-    }
-
-    private static String escapePrestoTableName(TableParam table)
-    {
-        if (table.getDatabase().isPresent()) {
-            return escapePrestoIdent(table.getDatabase().get()) + '.' + escapePrestoIdent(table.getTable());
-        }
-        else {
-            return escapePrestoIdent(table.getTable());
-        }
     }
 
     static TDJobSummary joinJob(TDJobOperator j)

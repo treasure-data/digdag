@@ -47,6 +47,26 @@ public class TDOperator
         return "\"" + ident + "\"";
     }
 
+    public static String escapeHiveTableName(TableParam table)
+    {
+        if (table.getDatabase().isPresent()) {
+            return escapeHiveIdent(table.getDatabase().get()) + '.' + escapeHiveIdent(table.getTable());
+        }
+        else {
+            return escapeHiveIdent(table.getTable());
+        }
+    }
+
+    public static String escapePrestoTableName(TableParam table)
+    {
+        if (table.getDatabase().isPresent()) {
+            return escapePrestoIdent(table.getDatabase().get()) + '.' + escapePrestoIdent(table.getTable());
+        }
+        else {
+            return escapePrestoIdent(table.getTable());
+        }
+    }
+
     private final TDClient client;
     private final String database;
 
@@ -126,6 +146,11 @@ public class TDOperator
             }
             throw Throwables.propagate(ex.getCause());
         }
+    }
+
+    public boolean tableExists(String table)
+    {
+        return client.existsTable(database, table);
     }
 
     public TDJobOperator submitNewJob(TDJobRequest request)

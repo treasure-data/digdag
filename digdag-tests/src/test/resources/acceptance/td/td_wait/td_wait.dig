@@ -1,0 +1,15 @@
++wait:
+  +table:
+    td_wait_table>: ${wait_table}
+    interval: ${wait_poll_interval}
+    engine: ${wait_engine}
+    rows: ${table_wait_rows}
+
+  +query:
+    td_wait>:
+      data: 'select count(*) >= ${query_wait_rows} from ${wait_table}'
+    interval: ${wait_poll_interval}
+    engine: ${wait_engine}
+
++perform:
+  sh>: touch ${outfile}

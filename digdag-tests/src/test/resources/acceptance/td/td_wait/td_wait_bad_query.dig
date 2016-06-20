@@ -1,0 +1,7 @@
++wait:
+  +query:
+    td_wait>:
+      data: 'nasdaq'
+
++perform:
+  sh>: touch ${outfile}
