@@ -1,9 +1,11 @@
-package io.digdag.core.agent;
+package io.digdag.core.notification;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
@@ -19,9 +21,6 @@ public class DefaultNotifier
         implements Notifier
 {
     private static final String NOTIFICATION_TYPE = "notification.type";
-    private static final String NOTIFICATION_TYPE_MAIL = "mail";
-    private static final String NOTIFICATION_TYPE_HTTP = "http";
-    private static final String NOTIFICATION_TYPE_SHELL = "shell";
 
     private static final String NOTIFICATION_RETRIES = "notification.retries";
     private static final String NOTIFICATION_MIN_RETRY_WAIT = "notification.min_retry_wait";
@@ -51,17 +50,7 @@ public class DefaultNotifier
 
     private NotificationSender sender(String type)
     {
-        // TODO: use key instead?
-        switch (type) {
-            case NOTIFICATION_TYPE_MAIL:
-                return injector.getInstance(MailNotificationSender.class);
-            case NOTIFICATION_TYPE_HTTP:
-                return injector.getInstance(HttpNotificationSender.class);
-            case NOTIFICATION_TYPE_SHELL:
-                return injector.getInstance(ShellNotificationSender.class);
-            default:
-                throw new IllegalArgumentException("Unknown notification type: " + type);
-        }
+        return injector.getInstance(Key.get(NotificationSender.class, Names.named(type)));
     }
 
     @Override
