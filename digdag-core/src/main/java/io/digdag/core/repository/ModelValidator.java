@@ -48,19 +48,20 @@ public class ModelValidator
 
     public ModelValidator checkNotEmpty(String fieldName, String value)
     {
-        return check(fieldName, value, !value.isEmpty(), "can't be blank");
+        return check(fieldName, value, !value.isEmpty(), "must not be blank");
     }
 
     public ModelValidator checkMaxLength(String fieldName, String value, int max)
     {
-        return check(fieldName, value, value.length() <= max, "can't be longer than " + max + " characters");
+        return check(fieldName, value, value.length() <= max, "must not be longer than " + max + " characters");
     }
 
     public ModelValidator checkProjectName(String fieldName, String value)
     {
         checkNotEmpty(fieldName, value);
-        check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "can't start with a numeric digit (0-9)");
-        check(fieldName, value, !RESTRICTED_SYMBOL_CHAR.matcher(value).find(), "can't include special symbols (+ ^ @ / \\ / : * ? \" < > |)");
+        check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "must not start with a numeric digit (0-9)");
+        check(fieldName, value, !RESTRICTED_SYMBOL_CHAR.matcher(value).find(), "must not include special symbols (+ ^ @ / \\ / : * ? \" < > |)");
+        check(fieldName, value, !value.endsWith(".dig"), "must not end with .dig");
         checkMaxLength(fieldName, value, 255);
         return this;
     }
@@ -81,7 +82,7 @@ public class ModelValidator
     public ModelValidator checkTaskName(String fieldName, String value)
     {
         check(fieldName, value, value.startsWith("+"), "must start with '+'");
-        check(fieldName, value, !value.contains("^"), "can't contain ^ character");
+        check(fieldName, value, !value.contains("^"), "must not contain ^ character");
         checkRawTaskName(fieldName, value);
         return this;
     }
@@ -89,11 +90,11 @@ public class ModelValidator
     public ModelValidator checkRawTaskName(String fieldName, String value)
     {
         checkNotEmpty(fieldName, value);
-        check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "can't start with a digit (0-9)");
+        check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "must not start with a digit (0-9)");
         check(fieldName, value, value.startsWith("+") || value.startsWith("^"), "must start with '+' or '^'");
         Matcher m = RAW_TASK_NAME_CHARS.matcher(value.substring(1));
         if (m.find()) {
-            check(fieldName, value, false, "can't contain " + m.group() + " character");
+            check(fieldName, value, false, "must not contain character '" + m.group() + "'");
         }
         checkMaxLength(fieldName, value, 255);
         return this;
