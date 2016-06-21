@@ -4,6 +4,6 @@ timezone: UTC
   td_for_each>:
     data: 'SELECT * FROM nasdaq LIMIT 10'
   _do:
-    echo>: ${time} ${symbol} ${open} ${volume} ${high} ${low} ${close}
+    echo>: ${td.each.time} ${td.each.symbol} ${td.each.open} ${td.each.volume} ${td.each.high} ${td.each.low} ${td.each.close}
   database: sample_datasets
 
