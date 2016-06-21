@@ -167,7 +167,8 @@
 </div>
 <div class="section" id="defining-variables">
 <h2>Defining variables<a class="headerlink" href="#defining-variables" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">digdag</span>
+<span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="n">digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">store</span><span class="p">({</span><span class="s1">&#39;my_value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 
@@ -178,7 +179,8 @@
 </div>
 <div class="section" id="method-argument-mapping">
 <h2>Method argument mapping<a class="headerlink" href="#method-argument-mapping" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">digdag</span>
+<span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_time</span><span class="p">):</span>
     <span class="n">digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">store</span><span class="p">({</span><span class="s1">&#39;my_value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 
@@ -190,7 +192,8 @@
 <div class="section" id="generating-child-tasks">
 <h2>Generating child tasks<a class="headerlink" href="#generating-child-tasks" title="Permalink to this headline">¶</a></h2>
 <p>Generating Python child tasks:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">digdag</span>
+<span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="n">digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">add_subtask</span><span class="p">(</span><span class="n">MyWorkflow</span><span class="o">.</span><span class="n">step3</span><span class="p">,</span> <span class="n">arg1</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -202,7 +205,8 @@
 </pre></div>
 </div>
 <p>Generating other child tasks:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">digdag</span>
+<span class="k">class</span> <span class="nc">MyWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="k">def</span> <span class="nf">step1</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="n">digdag</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">add_subtask</span><span class="p">({</span>
       <span class="s1">&#39;_type&#39;</span><span class="p">:</span> <span class="s1">&#39;mail&#39;</span><span class="p">,</span>
