@@ -30,6 +30,7 @@ Defining variables
 
 .. code-block:: python
 
+    import digdag
     class MyWorkflow(object):
       def step1(self):
         digdag.env.store({'my_value': 1})
@@ -42,6 +43,7 @@ Method argument mapping
 
 .. code-block:: python
 
+    import digdag
     class MyWorkflow(object):
       def step1(self, session_time):
         digdag.env.store({'my_value': 1})
@@ -56,6 +58,7 @@ Generating Python child tasks:
 
 .. code-block:: python
 
+    import digdag
     class MyWorkflow(object):
       def step1(self):
         digdag.env.add_subtask(MyWorkflow.step3, arg1=1)
@@ -70,6 +73,7 @@ Generating other child tasks:
 
 .. code-block:: python
 
+    import digdag
     class MyWorkflow(object):
       def step1(self):
         digdag.env.add_subtask({
