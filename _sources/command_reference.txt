@@ -18,7 +18,7 @@ Creates a new workflow project. This command generates a sample .dig file, scrip
 
 .. code-block:: console
 
-    $ digdag init mydag
+    $ digdag new mydag
 
 
 run
