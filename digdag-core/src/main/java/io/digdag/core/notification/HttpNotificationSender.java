@@ -1,4 +1,4 @@
-package io.digdag.core.agent;
+package io.digdag.core.notification;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;

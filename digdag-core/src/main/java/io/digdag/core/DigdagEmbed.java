@@ -17,6 +17,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.google.inject.multibindings.Multibinder;
+import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
 import io.digdag.core.log.NullLogServerFactory;
 import io.digdag.core.log.LocalFileLogServerFactory;
@@ -149,6 +150,7 @@ public class DigdagEmbed
                     new ConfigModule(),
                     new WorkflowModule(),
                     new QueueModule(),
+                    new NotificationModule(),
                     (binder) -> {
                         binder.bind(ProjectArchiveLoader.class);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
