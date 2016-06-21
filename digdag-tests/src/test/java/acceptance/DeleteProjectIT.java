@@ -7,9 +7,15 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
+import java.time.Duration;
 
+import static acceptance.TestUtils.attemptSuccess;
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.expect;
+import static acceptance.TestUtils.getAttemptId;
+import static acceptance.TestUtils.getSessionId;
 import static acceptance.TestUtils.main;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
@@ -60,6 +66,35 @@ public class DeleteProjectIT
                 "-r", "4711");
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
+        // Run the workflow once before deleting the project
+        long attemptId;
+        long sessionId;
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "foobar", "foobar",
+                    "--session", "now");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+            sessionId = getSessionId(startStatus);
+            attemptId = getAttemptId(startStatus);
+
+        }
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+
+        CommandStatus attempt = main("attempt",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                Long.toString(attemptId));
+        CommandStatus attempts = main("attempts",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                Long.toString(sessionId));
+        CommandStatus logs = main("logs",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                Long.toString(attemptId));
+
         // Delete the project
         {
             CommandStatus deleteStatus = main("delete",
@@ -79,6 +114,58 @@ public class DeleteProjectIT
                     "--session", "now");
             assertThat(startStatus.code(), is(not(0)));
         }
+
+        // The project should not be listed
+        {
+            CommandStatus workflows = main("workflows",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(workflows.errUtf8(), workflows.code(), is(0));
+            assertThat(workflows.outUtf8(), not(containsString("foobar")));
+        }
+        {
+            CommandStatus workflows = main("workflows",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "foobar");
+            assertThat(workflows.errUtf8(), workflows.code(), is(not(0)));
+            assertThat(workflows.errUtf8(), containsString("project not found: foobar"));
+        }
+        {
+            CommandStatus workflows = main("workflows",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "foobar", "foobar");
+            assertThat(workflows.errUtf8(), workflows.code(), is(not(0)));
+            assertThat(workflows.errUtf8(), containsString("project not found: foobar"));
+        }
+
+        // The session, attempt and logs should still be accessible
+        {
+            CommandStatus status = main("attempt",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    Long.toString(attemptId));
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.outUtf8(), is(attempt.outUtf8()));
+        }
+        {
+            CommandStatus status = main("attempts",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    Long.toString(sessionId));
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.outUtf8(), is(attempts.outUtf8()));
+        }
+        {
+            CommandStatus status = main("logs",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    Long.toString(attemptId));
+            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.outUtf8(), is(logs.outUtf8()));
+        }
+
     }
 }
 
