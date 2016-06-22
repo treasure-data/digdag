@@ -159,7 +159,7 @@ public class DatabaseTestingUtils
         return ImmutableRevision.builder()
             .name(name)
             .defaultParams(createConfig())
-            .archiveType("none")
+            .archiveType(ArchiveType.NONE)
             .build();
     }
 
