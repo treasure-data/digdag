@@ -18,6 +18,7 @@ env:
 
 before_install:
   - sudo docker/setup.sh
+  - sudo gem install fakes3
   - |
     docker run \
     -w /digdag \

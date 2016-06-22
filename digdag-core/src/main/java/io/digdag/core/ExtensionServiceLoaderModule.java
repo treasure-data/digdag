@@ -4,6 +4,7 @@ import java.util.ServiceLoader;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import io.digdag.client.config.Config;
+import io.digdag.spi.Extension;
 
 /**
  * ExtensionServiceLoaderModule loads Extensions using java.util.ServiceLoader
@@ -32,6 +33,18 @@ public class ExtensionServiceLoaderModule
     {
         ServiceLoader<Extension> serviceLoader = ServiceLoader.load(Extension.class, classLoader);
         for (Extension extension : serviceLoader) {
+            for (Module module : extension.getModules()) {
+                module.configure(binder);
+            }
+        }
+        configureDeprecatedExtension(binder);
+    }
+
+    @Deprecated
+    private void configureDeprecatedExtension(Binder binder)
+    {
+        ServiceLoader<io.digdag.core.Extension> serviceLoader = ServiceLoader.load(io.digdag.core.Extension.class, classLoader);
+        for (io.digdag.core.Extension extension : serviceLoader) {
             for (Module module : extension.getModules()) {
                 module.configure(binder);
             }

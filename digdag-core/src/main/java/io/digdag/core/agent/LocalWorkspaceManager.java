@@ -2,12 +2,10 @@ package io.digdag.core.agent;
 
 import java.util.Set;
 import java.util.HashSet;
-import java.util.EnumSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.BufferedInputStream;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
@@ -25,28 +23,19 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
-import io.digdag.core.repository.ArchiveType;
-import io.digdag.core.repository.ProjectStore;
-import io.digdag.core.repository.StoredProject;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.ProjectStoreManager;
-import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
-import static io.digdag.core.TempFileManager.deleteFilesIfExistsRecursively;
 
 public class LocalWorkspaceManager
     implements WorkspaceManager
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ProjectStoreManager rm;
     private final TempFileManager tempFiles;
 
     @Inject
-    public LocalWorkspaceManager(ProjectStoreManager rm, TempFileManager tempFiles)
+    public LocalWorkspaceManager(TempFileManager tempFiles)
     {
-        this.rm = rm;
         this.tempFiles = tempFiles;
     }
 
@@ -54,28 +43,14 @@ public class LocalWorkspaceManager
     public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
             throws IOException
     {
-        try {
-            ProjectStore rs = rm.getProjectStore(request.getSiteId());
-            StoredRevision rev;
-            if (request.getRevision().isPresent()) {
-                rev = rs.getRevisionByName(request.getProjectId(), request.getRevision().get());
-            }
-            else {
-                rev = rs.getLatestRevision(request.getProjectId());
-            }
-
-            try (TempDir workspacePath = createNewWorkspace(request)) {
-                Optional<InputStream> in = archiveProvider.open();
-                if (in.isPresent()) {
-                    try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get())))) {
-                        extractArchive(workspacePath.get(), archive);
-                    }
+        try (TempDir workspacePath = createNewWorkspace(request)) {
+            Optional<InputStream> in = archiveProvider.open();
+            if (in.isPresent()) {
+                try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get())))) {
+                    extractArchive(workspacePath.get(), archive);
                 }
-                return func.run(workspacePath.get());
             }
-        }
-        catch (ResourceNotFoundException ex) {
-            throw new RuntimeException("Failed to extract archive", ex);
+            return func.run(workspacePath.get());
         }
     }
 

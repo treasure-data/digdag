@@ -1,9 +1,8 @@
-package io.digdag.core;
+package io.digdag.spi;
 
 import java.util.List;
 import com.google.inject.Module;
 
-@Deprecated
 public interface Extension
 {
     List<Module> getModules();

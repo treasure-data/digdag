@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.Map;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
@@ -17,6 +18,7 @@ public class StorageManager
 {
     private Map<String, StorageFactory> registry;  // TODO this should be extracted to a class named StorageRegistry as like OperatorRegistry
 
+    @Inject
     public StorageManager(Set<StorageFactory> factories)
     {
         ImmutableMap.Builder<String, StorageFactory> builder = ImmutableMap.builder();
@@ -28,13 +30,13 @@ public class StorageManager
 
     public Storage create(Config systemConfig, String configKeyPrefix)
     {
-        String type = systemConfig.get(configKeyPrefix + ".type", String.class);
+        String type = systemConfig.get(configKeyPrefix + "type", String.class);
         return create(type, systemConfig, configKeyPrefix);
     }
 
     public Storage create(String type, Config systemConfig, String configKeyPrefix)
     {
-        Config config = extractKeyPrefix(systemConfig, configKeyPrefix + "." + type);
+        Config config = extractKeyPrefix(systemConfig, configKeyPrefix + type + ".");
         StorageFactory factory = registry.get(type);
         if (factory == null) {
             throw new ConfigException("Unknown storage type: " + type);
@@ -55,24 +57,17 @@ public class StorageManager
         return extracted;
     }
 
-    public static byte[] calculateMd5(byte[] data)
+    static final BaseEncoding HEX = BaseEncoding.base16()
+        .lowerCase()
+        .omitPadding();
+
+    public static String encodeHex(byte[] hexBin)
     {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            return md.digest(data);
-        }
-        catch (NoSuchAlgorithmException ex) {
-            throw Throwables.propagate(ex);
-        }
+        return HEX.encode(hexBin);
     }
 
-    public static String encodeHexMd5(byte[] hexBin)
+    public static byte[] decodeHex(String hexStr)
     {
-        return BaseEncoding.base32Hex().encode(hexBin);
-    }
-
-    public static byte[] decodeHexMd5(String hexStr)
-    {
-        return BaseEncoding.base32Hex().decode(hexStr);
+        return HEX.decode(hexStr);
     }
 }

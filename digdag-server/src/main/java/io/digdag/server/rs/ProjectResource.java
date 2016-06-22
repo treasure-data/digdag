@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -18,6 +19,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
+import javax.ws.rs.InternalServerErrorException;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
@@ -34,16 +36,17 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.core.storage.ArchiveStorage;
+import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
+import io.digdag.spi.StorageFileNotFoundException;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 import static io.digdag.server.rs.RestModels.sessionModels;
-import static io.digdag.core.storage.StorageManager.calculateMd5;
+import static io.digdag.util.Md5CountInputStream.digestMd5;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -76,7 +79,7 @@ public class ProjectResource
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
-    private final ArchiveStorage archiveStorage;
+    private final ArchiveManager archiveManager;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
@@ -88,7 +91,7 @@ public class ProjectResource
             ConfigFactory cf,
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
-            ArchiveStorage archiveStorage,
+            ArchiveManager archiveManager,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
@@ -99,7 +102,7 @@ public class ProjectResource
         this.rawLoader = rawLoader;
         this.srm = srm;
         this.compiler = compiler;
-        this.archiveStorage = archiveStorage;
+        this.archiveManager = archiveManager;
         this.rm = rm;
         this.sm = sm;
         this.tempFiles = tempFiles;
@@ -284,18 +287,26 @@ public class ProjectResource
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
     public byte[] getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
-        throws ResourceNotFoundException
+        throws ResourceNotFoundException, StorageFileNotFoundException
     {
         ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
-        StoredRevision rev;
-        if (revName == null) {
-            rev = ps.getLatestRevision(proj.getId());
+        ensureNotDeletedProject(ps.getProjectById(projId));
+
+        Optional<InputStream> in = archiveManager.openArchive(ps, projId, revName);
+        if (!in.isPresent()) {
+            // ArchiveType of this revision is NONE
+            return new byte[0];
         }
         else {
-            rev = ps.getRevisionByName(proj.getId(), revName);
+            // TODO how to return InputStream with Content-Length header so that server doesn't have to read entire contents in memory?
+            try {
+                return ByteStreams.toByteArray(in.get());
+            }
+            catch (IOException | RuntimeException ex) {
+                // this should retrun 500 Internal Server Error
+                throw new InternalServerErrorException(ex);
+            }
         }
-        return ps.getRevisionArchiveData(rev.getId());
     }
 
     @DELETE
@@ -326,14 +337,13 @@ public class ProjectResource
                         ARCHIVE_TOTAL_SIZE_LIMIT));
         }
 
-        InputStream closeThisLater = null;
+        InputStream archiveStream = null;
         try {
-            ArchiveStorage.Location uploadLocation =
-                archiveStorage.newArchiveLocation(getSiteId(), name, revision, contentLength);
+            ArchiveManager.Location uploadLocation =
+                archiveManager.newArchiveLocation(getSiteId(), name, revision, contentLength);
 
             byte[] data;
-            InputStream archiveStream;
-            ArchiveStorage.Upload upload;
+            ArchiveManager.Upload upload;
             if (uploadLocation.getArchiveType().equals(ArchiveType.DB)) {
                 data = ByteStreams.toByteArray(body);
                 archiveStream = new ByteArrayInputStream(data);
@@ -342,9 +352,8 @@ public class ProjectResource
             else {
                 data = null;
                 ReplicatedInputStream repl = ReplicatedInputStream.replicate(body);
-                closeThisLater = repl;  // primary stream of replicated inputstream must be closed. otherwise follower will be blocked forever.
-                archiveStream = repl.getFollower();
-                upload = archiveStorage.startUpload(repl, contentLength, uploadLocation);
+                archiveStream = repl;
+                upload = archiveManager.startUpload(repl.getFollower(), contentLength, uploadLocation);
             }
 
             ArchiveMetadata meta = readArchiveMetadata(archiveStream, name);
@@ -360,18 +369,25 @@ public class ProjectResource
                                     Revision.builderFromArchive(revision, meta)
                                         .archiveType(ArchiveType.DB)
                                         .archivePath(Optional.absent())
-                                        .archiveMd5(Optional.of(calculateMd5(data)))
+                                        .archiveMd5(Optional.of(digestMd5(data)))
                                         .build()
                                     );
                             lockedProj.insertRevisionArchiveData(rev.getId(), data);
                         }
                         else {
                             // store path of the uploaded file to DB
+                            byte[] md5;
+                            try {
+                                md5 = upload.get();
+                            }
+                            catch (RuntimeException | IOException | InterruptedException ex) {
+                                throw new InternalServerErrorException("Failed to upload archive to a remote storage", ex);
+                            }
                             rev = lockedProj.insertRevision(
                                     Revision.builderFromArchive(revision, meta)
                                         .archiveType(uploadLocation.getArchiveType())
                                         .archivePath(Optional.of(uploadLocation.getPath()))
-                                        .archiveMd5(Optional.of(calculateMd5(data)))
+                                        .archiveMd5(Optional.of(md5))
                                         .build()
                                     );
                         }
@@ -385,8 +401,8 @@ public class ProjectResource
             return stored;
         }
         finally {
-            if (closeThisLater != null) {
-                closeThisLater.close();
+            if (archiveStream != null) {
+                archiveStream.close();
             }
         }
     }

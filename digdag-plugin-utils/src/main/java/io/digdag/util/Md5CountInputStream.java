@@ -1,4 +1,4 @@
-package io.digdag.core.storage;
+package io.digdag.util;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -17,6 +17,17 @@ public class Md5CountInputStream
         }
         catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    public static byte[] digestMd5(byte[] data)
+    {
+        try {
+            MessageDigest md5 = (MessageDigest) MD5.clone();
+            return md5.digest(data);
+        }
+        catch (CloneNotSupportedException ex) {
+            throw new RuntimeException("Failed to initialize MD5 digest", ex);
         }
     }
 

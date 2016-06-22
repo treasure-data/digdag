@@ -24,7 +24,7 @@ import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ArchiveType;
-import io.digdag.core.storage.ArchiveStorage;
+import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.core.log.TaskLogger;
@@ -45,7 +45,7 @@ public class InProcessTaskCallbackApi
 
     private final ProjectStoreManager pm;
     private final SessionStoreManager sm;
-    private final ArchiveStorage archiveStorage;
+    private final ArchiveManager archiveManager;
     private final LogServerManager lm;
     private final AttemptBuilder attemptBuilder;
     private final AgentId agentId;
@@ -56,7 +56,7 @@ public class InProcessTaskCallbackApi
     public InProcessTaskCallbackApi(
             ProjectStoreManager pm,
             SessionStoreManager sm,
-            ArchiveStorage archiveStorage,
+            ArchiveManager archiveManager,
             TaskQueueManager qm,
             LogServerManager lm,
             AgentId agentId,
@@ -65,7 +65,7 @@ public class InProcessTaskCallbackApi
     {
         this.pm = pm;
         this.sm = sm;
-        this.archiveStorage = archiveStorage;
+        this.archiveManager = archiveManager;
         this.lm = lm;
         this.agentId = agentId;
         this.attemptBuilder = attemptBuilder;
@@ -105,17 +105,13 @@ public class InProcessTaskCallbackApi
         if (!request.getRevision().isPresent()) {
             return Optional.absent();
         }
-        ProjectStore ps = pm.getProjectStore(request.getSiteId());
-        StoredRevision rev;
+        String revision = request.getRevision().get();
+
         try {
-            rev = ps.getRevisionByName(request.getProjectId(), request.getRevision().or(""));
-            if (rev.getArchiveType().equals(ArchiveType.NONE)) {
-                return Optional.absent();
-            }
-            if (rev.getArchiveType().equals(ArchiveType.DB)) {
-                byte[] data = ps.getRevisionArchiveData(rev.getId());
-                return Optional.of(new ByteArrayInputStream(data));
-            }
+            return archiveManager.openArchive(
+                    pm.getProjectStore(request.getSiteId()),
+                    request.getProjectId(),
+                    revision);
         }
         catch (ResourceNotFoundException ex) {
             throw new IllegalStateException(String.format(ENGLISH,
@@ -124,17 +120,11 @@ public class InProcessTaskCallbackApi
                         request.getRevision().or("")
                         ), ex);
         }
-
-        try {
-            return Optional.of(archiveStorage.openArchive(rev.getArchiveType(), rev.getArchivePath().or("")));
-        }
         catch (StorageFileNotFoundException ex) {
             throw new IllegalStateException(String.format(ENGLISH,
-                        "Archive file for project id=%d revision='%s' is not found on archive type=%s path='%s'",
+                        "Archive file for project id=%d revision='%s' is not found",
                         request.getProjectId(),
-                        request.getRevision().or(""),
-                        rev.getArchiveType(),
-                        rev.getArchivePath().or("")
+                        request.getRevision().or("")
                         ), ex);
         }
     }
