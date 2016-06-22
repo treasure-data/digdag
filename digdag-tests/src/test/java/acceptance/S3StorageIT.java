@@ -123,7 +123,7 @@ public class S3StorageIT
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
         assertThat(handles.size(), is(not(0)));
 
-        // log storage is not backed by storage yet
+        // log storage is not configurable yet
         //for (RestLogFileHandle handle : handles) {
         //    // S3 log backend should support direct download
         //    assertThat(handle.getDirect().isPresent(), is(true));
