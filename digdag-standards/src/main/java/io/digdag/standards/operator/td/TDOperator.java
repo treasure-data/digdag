@@ -1,20 +1,22 @@
 package io.digdag.standards.operator.td;
 
-import java.util.Date;
-import java.io.Closeable;
-
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import io.digdag.util.RetryExecutor;
-import io.digdag.util.RetryExecutor.RetryGiveupException;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.TDClientHttpUnauthorizedException;
-import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDExportJobRequest;
+import com.treasuredata.client.model.TDJobRequest;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.util.RetryExecutor;
+import io.digdag.util.RetryExecutor.RetryGiveupException;
+
+import java.io.Closeable;
+import java.util.Date;
+
 import static io.digdag.util.RetryExecutor.retryExecutor;
 
 public class TDOperator
@@ -156,7 +158,22 @@ public class TDOperator
     public TDJobOperator submitNewJob(TDJobRequest request)
     {
         // TODO retry with an unique id and ignore conflict
-        return newJobOperator(client.submit(request));
+
+        String jobId;
+        try {
+            jobId = client.submit(request);
+        }
+        catch (TDClientHttpConflictException e) {
+            Optional<String> conflictsWith = e.getConflictsWith();
+            if (conflictsWith.isPresent()) {
+                jobId = conflictsWith.get();
+            }
+            else {
+                throw e;
+            }
+        }
+
+        return newJobOperator(jobId);
     }
 
     public TDJobOperator submitExportJob(TDExportJobRequest request)

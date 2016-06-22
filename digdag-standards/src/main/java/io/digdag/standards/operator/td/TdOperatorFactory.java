@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.nio.file.Path;
@@ -52,6 +53,7 @@ public class TdOperatorFactory
         implements OperatorFactory
 {
     private static final String JOB_ID = "jobId";
+    private static final String DOMAIN_KEY = "domainKey";
     private static final String POLL_INTERVAL = "pollInterval";
 
     private static final Integer INITIAL_POLL_INTERVAL = 1;
@@ -96,6 +98,7 @@ public class TdOperatorFactory
         private final boolean preview;
         private final Config state;
         private final Optional<String> existingJobId;
+        private final Optional<String> existingDomainKey;
 
         public TdOperator(Path workspacePath, TaskRequest request)
         {
@@ -132,12 +135,20 @@ public class TdOperatorFactory
             this.state = request.getLastStateParams().deepCopy();
 
             this.existingJobId = state.getOptional(JOB_ID, String.class);
+            this.existingDomainKey = state.getOptional(DOMAIN_KEY, String.class);
         }
 
         @Override
         public TaskResult runTask()
         {
             try (TDOperator op = TDOperator.fromConfig(params)) {
+
+                // Generate and store domain key before starting the job
+                if (!existingDomainKey.isPresent()) {
+                    String domainKey = UUID.randomUUID().toString();
+                    state.set(DOMAIN_KEY, domainKey);
+                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state.deepCopy()));
+                }
 
                 // Start the job
                 if (!existingJobId.isPresent()) {
@@ -161,8 +172,6 @@ public class TdOperatorFactory
 
                 // Get the job results
                 return processJobResult(op, job, status);
-
-
             }
         }
 
@@ -231,6 +240,7 @@ public class TdOperatorFactory
                     throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): "+engine);
             }
 
+            assert existingDomainKey.isPresent();
             TDJobRequest req = new TDJobRequestBuilder()
                     .setResultOutput(resultUrl.orNull())
                     .setType(engine)
@@ -239,6 +249,7 @@ public class TdOperatorFactory
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
+                    .setDomainKey(existingDomainKey.get())
                     .createTDJobRequest();
 
             TDJobOperator j = op.submitNewJob(req);
