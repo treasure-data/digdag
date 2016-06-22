@@ -14,7 +14,7 @@ public class NoopWorkspaceManager
     { }
 
     @Override
-    public <T> T withExtractedArchive(TaskRequest request, WithWorkspaceAction<T> func)
+    public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
     {
         Path workspacePath = FileSystems.getDefault().getPath("").toAbsolutePath();
         return func.run(workspacePath);

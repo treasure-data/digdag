@@ -69,6 +69,9 @@ http://logback.qos.ch/
 Immutables is licensed under Apache License, Version 2.0 by Immutables
 Authors and Contributors. http://immutables.github.io/
 
+Embulk is licensed under Apache License, Version 2.0.
+https://github.com/embulk/embulk
+
 MessagePack for Java is licensed under Apache License, Version 2.0.
 https://github.com/msgpack/msgpack-java
 

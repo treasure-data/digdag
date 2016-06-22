@@ -4,10 +4,11 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.EnumSet;
 import java.io.IOException;
-import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.BufferedInputStream;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -16,6 +17,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import com.google.inject.Inject;
+import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -23,6 +25,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
+import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
@@ -48,7 +51,7 @@ public class LocalWorkspaceManager
     }
 
     @Override
-    public <T> T withExtractedArchive(TaskRequest request, WithWorkspaceAction<T> func)
+    public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
             throws IOException
     {
         try {
@@ -62,9 +65,9 @@ public class LocalWorkspaceManager
             }
 
             try (TempDir workspacePath = createNewWorkspace(request)) {
-                if (rev.getArchiveType().equals("db")) {  // TODO delegate in-process archive to another class
-                    byte[] data = rs.getRevisionArchiveData(rev.getId());
-                    try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
+                Optional<InputStream> in = archiveProvider.open();
+                if (in.isPresent()) {
+                    try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get())))) {
                         extractArchive(workspacePath.get(), archive);
                     }
                 }

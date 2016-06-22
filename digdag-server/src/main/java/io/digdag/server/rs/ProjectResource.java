@@ -8,13 +8,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -35,6 +34,7 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.storage.ArchiveStorage;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
@@ -43,6 +43,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 import static io.digdag.server.rs.RestModels.sessionModels;
+import static io.digdag.core.storage.StorageManager.calculateMd5;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -75,6 +76,7 @@ public class ProjectResource
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
+    private final ArchiveStorage archiveStorage;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
@@ -86,6 +88,7 @@ public class ProjectResource
             ConfigFactory cf,
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
+            ArchiveStorage archiveStorage,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
@@ -96,6 +99,7 @@ public class ProjectResource
         this.rawLoader = rawLoader;
         this.srm = srm;
         this.compiler = compiler;
+        this.archiveStorage = archiveStorage;
         this.rm = rm;
         this.sm = sm;
         this.tempFiles = tempFiles;
@@ -310,59 +314,102 @@ public class ProjectResource
     @Consumes("application/gzip")
     @Path("/api/projects")
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
-            InputStream body)
+            InputStream body, @HeaderParam("Content-Length") long contentLength)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "project= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
 
-        byte[] data = ByteStreams.toByteArray(body);
-
-        if (data.length > ARCHIVE_TOTAL_SIZE_LIMIT) {
-            // TODO throw this exception before reading all data in memory
+        if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
             throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of the uploaded archive file exceeds limit (%d bytes)",
                         ARCHIVE_TOTAL_SIZE_LIMIT));
         }
 
-        ArchiveMetadata meta;
-        try (TempDir dir = tempFiles.createTempDir("push", name)) {
+        InputStream closeThisLater = null;
+        try {
+            ArchiveStorage.Location uploadLocation =
+                archiveStorage.newArchiveLocation(getSiteId(), name, revision, contentLength);
+
+            byte[] data;
+            InputStream archiveStream;
+            ArchiveStorage.Upload upload;
+            if (uploadLocation.getArchiveType().equals(ArchiveType.DB)) {
+                data = ByteStreams.toByteArray(body);
+                archiveStream = new ByteArrayInputStream(data);
+                upload = null;
+            }
+            else {
+                data = null;
+                ReplicatedInputStream repl = ReplicatedInputStream.replicate(body);
+                closeThisLater = repl;  // primary stream of replicated inputstream must be closed. otherwise follower will be blocked forever.
+                archiveStream = repl.getFollower();
+                upload = archiveStorage.startUpload(repl, contentLength, uploadLocation);
+            }
+
+            ArchiveMetadata meta = readArchiveMetadata(archiveStream, name);
+
+            RestProject stored = rm.getProjectStore(getSiteId()).putAndLockProject(
+                    Project.of(name),
+                    (store, storedProject) -> {
+                        ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                        StoredRevision rev;
+                        if (upload == null) {
+                            // store archive to DB
+                            rev = lockedProj.insertRevision(
+                                    Revision.builderFromArchive(revision, meta)
+                                        .archiveType(ArchiveType.DB)
+                                        .archivePath(Optional.absent())
+                                        .archiveMd5(Optional.of(calculateMd5(data)))
+                                        .build()
+                                    );
+                            lockedProj.insertRevisionArchiveData(rev.getId(), data);
+                        }
+                        else {
+                            // store path of the uploaded file to DB
+                            rev = lockedProj.insertRevision(
+                                    Revision.builderFromArchive(revision, meta)
+                                        .archiveType(uploadLocation.getArchiveType())
+                                        .archivePath(Optional.of(uploadLocation.getPath()))
+                                        .archiveMd5(Optional.of(calculateMd5(data)))
+                                        .build()
+                                    );
+                        }
+                        List<StoredWorkflowDefinition> defs =
+                            lockedProj.insertWorkflowDefinitions(rev,
+                                    meta.getWorkflowList().get(),
+                                    srm, Instant.now());
+                        return RestModels.project(storedProject, rev);
+                    });
+
+            return stored;
+        }
+        finally {
+            if (closeThisLater != null) {
+                closeThisLater.close();
+            }
+        }
+    }
+
+    private ArchiveMetadata readArchiveMetadata(InputStream archiveStream, String projectName)
+        throws IOException
+    {
+        try (TempDir dir = tempFiles.createTempDir("push", projectName)) {
             long totalSize = 0;
-            try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
+            try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(archiveStream))) {
                 totalSize = extractConfigFiles(dir.get(), archive);
             }
+
             if (totalSize > ARCHIVE_TOTAL_SIZE_LIMIT) {
                 throw new IllegalArgumentException(String.format(ENGLISH,
                             "Total size of the archive exceeds limit (%d > %d bytes)",
                             totalSize, ARCHIVE_TOTAL_SIZE_LIMIT));
             }
 
-            // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
                     dir.child(ArchiveMetadata.FILE_NAME).toFile()).toConfig(cf);
-            meta = renderedConfig.convert(ArchiveMetadata.class);
+            return renderedConfig.convert(ArchiveMetadata.class);
         }
-
-        RestProject stored = rm.getProjectStore(getSiteId()).putAndLockProject(
-                Project.of(name),
-                (store, storedProject) -> {
-                    ProjectControl lockedProj = new ProjectControl(store, storedProject);
-                    StoredRevision rev = lockedProj.insertRevision(
-                            Revision.builderFromArchive(revision, meta)
-                                .archiveType("db")
-                                .archivePath(Optional.absent())
-                                .archiveMd5(Optional.of(calculateArchiveMd5(data)))
-                                .build()
-                            );
-                    lockedProj.insertRevisionArchiveData(rev.getId(), data);
-                    List<StoredWorkflowDefinition> defs =
-                        lockedProj.insertWorkflowDefinitions(rev,
-                                meta.getWorkflowList().get(),
-                                srm, Instant.now());
-                    return RestModels.project(storedProject, rev);
-                });
-
-        return stored;
     }
 
     // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
@@ -392,17 +439,6 @@ public class ProjectResource
             }
         }
         return totalSize;
-    }
-
-    private byte[] calculateArchiveMd5(byte[] data)
-    {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            return md.digest(data);
-        }
-        catch (NoSuchAlgorithmException ex) {
-            throw Throwables.propagate(ex);
-        }
     }
 
     private void validateTarEntry(TarArchiveEntry entry)

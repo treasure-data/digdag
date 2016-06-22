@@ -115,7 +115,7 @@ public class OperatorManager
     private void runWithHeartbeat(TaskRequest request)
     {
         try {
-            workspaceManager.withExtractedArchive(request, (workspacePath) -> {
+            workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (workspacePath) -> {
                 try {
                     runWithWorkspace(workspacePath, request);
                 }

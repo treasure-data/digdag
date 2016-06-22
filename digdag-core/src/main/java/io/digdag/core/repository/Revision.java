@@ -13,7 +13,7 @@ public abstract class Revision
 
     public abstract Config getDefaultParams();
 
-    public abstract String getArchiveType();
+    public abstract ArchiveType getArchiveType();
 
     public abstract Optional<byte[]> getArchiveMd5();
 

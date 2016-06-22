@@ -60,6 +60,8 @@ public class S3Storage
                     .setNameFormat("storage-s3-upload-transfer-%d")
                     .build());
         this.transferManager = new TransferManager(client, uploadExecutor);
+        // TODO check existance of the bucket so that following
+        //      any GET or PUT don't get 404 Not Found error.
     }
 
     private RetryExecutor uploadRetryExecutor()
@@ -70,18 +72,6 @@ public class S3Storage
     private RetryExecutor getRetryExecutor()
     {
         return RetryExecutor.retryExecutor();
-    }
-
-    private InputStream overrideCloseToAbort(final S3ObjectInputStream raw)
-    {
-        return new FilterInputStream(raw)
-        {
-            @Override
-            public void close() throws IOException
-            {
-                raw.abort();
-            }
-        };
     }
 
     @Override
@@ -120,35 +110,16 @@ public class S3Storage
         return new StorageFile(resumable, actualSize);
     }
 
-    private <T> T getWithRetry(String message, Callable<T> callable)
-        throws StorageFileNotFoundException
+    private InputStream overrideCloseToAbort(final S3ObjectInputStream raw)
     {
-        try {
-            return getRetryExecutor()
-                .onRetry((exception, retryCount, retryLimit, retryWait) -> {
-                    logger.warn(String.format("Retrying %s (%d/%d): %s", message, retryCount, retryLimit, exception));
-                })
-                .retryIf((exception) -> !isNotFoundException(exception))
-                .runInterruptible(() -> callable.call());
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
-        catch (RetryGiveupException ex) {
-            Exception cause = ex.getCause();
-            if (isNotFoundException(cause)) {
-                throw new StorageFileNotFoundException("S3 file not found", cause);
+        return new FilterInputStream(raw)
+        {
+            @Override
+            public void close() throws IOException
+            {
+                raw.abort();
             }
-            throw Throwables.propagate(cause);
-        }
-    }
-
-    private static boolean isNotFoundException(Exception ex)
-    {
-        // This includes NoSuchBucket and NoSuchKey. See also:
-        // http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
-        return ex instanceof AmazonServiceException &&
-            ((AmazonServiceException) ex).getStatusCode() == 404;
+        };
     }
 
     @Override
@@ -196,13 +167,20 @@ public class S3Storage
     {
         checkArgument(keyPrefix != null, "keyPrefix is null");
 
+        String errorMessage = "listing files on bucket " + bucket + " prefix " + keyPrefix;
+
         ListObjectsRequest req = new ListObjectsRequest();
         req.setBucketName(bucket);
         req.setPrefix(keyPrefix);
 
         ObjectListing listing;
         do {
-            listing = client.listObjects(req);  // TODO implement retrying
+            try {
+                listing = getWithRetry(errorMessage, () -> client.listObjects(req));
+            }
+            catch (StorageFileNotFoundException ex) {
+                throw Throwables.propagate(ex.getCause());
+            }
             callback.accept(Lists.transform(
                         listing.getObjectSummaries(),
                         (summary) -> new StorageFileMetadata(
@@ -236,5 +214,36 @@ public class S3Storage
         String url = client.generatePresignedUrl(req).toString();
 
         return Optional.of(DirectUploadHandle.of("http", url));
+    }
+
+    private <T> T getWithRetry(String message, Callable<T> callable)
+        throws StorageFileNotFoundException
+    {
+        try {
+            return getRetryExecutor()
+                .onRetry((exception, retryCount, retryLimit, retryWait) -> {
+                    logger.warn(String.format("Retrying %s (%d/%d): %s", message, retryCount, retryLimit, exception));
+                })
+                .retryIf((exception) -> !isNotFoundException(exception))
+                .runInterruptible(() -> callable.call());
+        }
+        catch (InterruptedException ex) {
+            throw Throwables.propagate(ex);
+        }
+        catch (RetryGiveupException ex) {
+            Exception cause = ex.getCause();
+            if (isNotFoundException(cause)) {
+                throw new StorageFileNotFoundException("S3 file not found", cause);
+            }
+            throw Throwables.propagate(cause);
+        }
+    }
+
+    private static boolean isNotFoundException(Exception ex)
+    {
+        // This includes NoSuchBucket and NoSuchKey. See also:
+        // http://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
+        return ex instanceof AmazonServiceException &&
+            ((AmazonServiceException) ex).getStatusCode() == 404;
     }
 }

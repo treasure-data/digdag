@@ -115,7 +115,7 @@ public class LocalSite
         return storeLocalWorkflowsImpl(
                 projectName,
                 Revision.builderFromArchive(revisionName, archive)
-                    .archiveType("none")
+                    .archiveType(ArchiveType.NONE)
                     .build(),
                 archive.getWorkflowList(),
                 Optional.absent());
@@ -131,7 +131,7 @@ public class LocalSite
         return storeLocalWorkflowsImpl(
                 projectName,
                 Revision.builderFromArchive(revisionName, archive)
-                    .archiveType("none")
+                    .archiveType(ArchiveType.NONE)
                     .build(),
                 archive.getWorkflowList(),
                 Optional.of(currentTimeForSchedule));
