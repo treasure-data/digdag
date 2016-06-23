@@ -1,5 +1,4 @@
 package io.digdag.util;
-//package org.embulk.spi.util;
 
 import java.io.InputStream;
 import java.io.IOException;

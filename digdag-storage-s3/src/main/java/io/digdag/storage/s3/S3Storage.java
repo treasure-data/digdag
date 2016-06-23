@@ -87,7 +87,7 @@ public class S3Storage
 
         final long actualSize = obj.getObjectMetadata().getContentLength();
 
-        // overwrite close to call abort instead because close skips all remaining bytes so that
+        // override close to call abort instead because close skips all remaining bytes so that
         // s3 client can reuse the TCP connection. but close of a fully opened file is occasionally
         // used to skip remaing work (e.g. finally block when exception is thrown). Unlike openRange,
         // performance impact could be significantly large.

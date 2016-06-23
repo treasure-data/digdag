@@ -1,5 +1,4 @@
 package io.digdag.util;
-//package org.embulk.spi.util;
 
 import java.util.function.Predicate;
 import java.util.concurrent.Callable;
