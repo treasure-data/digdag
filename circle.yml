@@ -4,7 +4,6 @@ machine:
     version: oraclejdk8
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
-    FAKE_S3_ENDPOINT: http://127.0.0.1:19876
   services:
     - docker
 
@@ -12,7 +11,6 @@ dependencies:
   cache_directories:
     - "~/docker"
   override:
-    - gem install fakes3
     - docker/setup.sh
     - | # download and cache dependencies
       docker run \
@@ -24,8 +22,6 @@ dependencies:
 
 test:
   pre:
-    - fakes3 -r tmp/fakes3 -p 19876:
-        background: true
   override:
     - CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true
