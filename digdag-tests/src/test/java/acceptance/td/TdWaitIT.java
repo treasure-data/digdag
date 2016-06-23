@@ -30,9 +30,9 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
+import static utils.TestUtils.attempt;
 import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.attemptSuccess;
-import static utils.TestUtils.attempts;
 import static utils.TestUtils.createProject;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.main;
@@ -211,7 +211,7 @@ public class TdWaitIT
                     .put("outfile", outfile.toString())
                     .build());
             Thread.sleep(engine.equals("hive") ? 60_000 : 10_000);
-            CommandStatus status = attempts(server.endpoint(), attemptId);
+            CommandStatus status = attempt(server.endpoint(), attemptId);
             assertThat(status.outUtf8(), containsString("status: running"));
             assertThat(Files.exists(outfile), is(false));
         }

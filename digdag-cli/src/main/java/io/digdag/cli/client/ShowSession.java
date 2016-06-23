@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import io.digdag.cli.CollectionPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -97,11 +98,19 @@ public class ShowSession
             }
         }
 
-        ln("Sessions:");
+        CollectionPrinter<RestSession> printer = new CollectionPrinter<>();
+        printer.column("SESSION ID", s -> Long.toString(s.getId()));
+        printer.column("PROJECT", s -> s.getProject().getName());
+        printer.column("WORKFLOW", s -> s.getWorkflow().getName());
+        printer.column("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
+        printer.column("LAST ATTEMPTED", s -> s.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
+        printer.column("KILLED", s -> s.getLastAttempt().transform(a -> a.getCancelRequested()).or(false).toString());
+        printer.column("STATUS", s -> status(s).toUpperCase());
 
-        for (RestSession session : Lists.reverse(sessions)) {
-            printSession(session);
-        }
+        printer.print(format, Lists.reverse(sessions), out);
+
+        out.println();
+        out.flush();
 
         if (sessions.isEmpty()) {
             err.println("Use `digdag start` to start a session.");
@@ -110,17 +119,17 @@ public class ShowSession
 
     private void printSession(RestSession session)
     {
-        ln("  session id: %d", session.getId());
-        ln("  attempt id: %s", session.getLastAttempt().transform(a -> String.valueOf(a.getId())).or(""));
-        ln("  uuid: %s", session.getSessionUuid());
-        ln("  project: %s", session.getProject().getName());
-        ln("  workflow: %s", session.getWorkflow().getName());
-        ln("  session time: %s", TimeUtil.formatTime(session.getSessionTime()));
-        ln("  retry attempt name: %s", session.getLastAttempt().transform(a -> a.getRetryAttemptName().or("")).or(""));
-        ln("  params: %s", session.getLastAttempt().transform(a -> a.getParams().toString()).or(""));
-        ln("  created at: %s", session.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
-        ln("  kill requested: %s", session.getLastAttempt().transform(a -> a.getCancelRequested()).or(false));
-        ln("  status: %s", status(session));
+        ln("session id: %d", session.getId());
+        ln("attempt id: %s", session.getLastAttempt().transform(a -> String.valueOf(a.getId())).or(""));
+        ln("uuid: %s", session.getSessionUuid());
+        ln("project: %s", session.getProject().getName());
+        ln("workflow: %s", session.getWorkflow().getName());
+        ln("session time: %s", TimeUtil.formatTime(session.getSessionTime()));
+        ln("retry attempt name: %s", session.getLastAttempt().transform(a -> a.getRetryAttemptName().or("")).or(""));
+        ln("params: %s", session.getLastAttempt().transform(a -> a.getParams().toString()).or(""));
+        ln("created at: %s", session.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
+        ln("kill requested: %s", session.getLastAttempt().transform(a -> a.getCancelRequested()).or(false));
+        ln("status: %s", status(session));
         ln("");
     }
 

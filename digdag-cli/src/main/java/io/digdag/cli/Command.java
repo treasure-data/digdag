@@ -1,25 +1,26 @@
 package io.digdag.cli;
 
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.collect.ImmutableList;
+import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.plugin.PluginSet;
+import io.digdag.core.plugin.RemotePluginLoader;
+import io.digdag.core.plugin.Spec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Properties;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-import java.io.IOException;
-
-import com.google.common.collect.ImmutableList;
-import io.digdag.core.config.PropertyUtils;
-import io.digdag.core.plugin.Spec;
-import io.digdag.core.plugin.PluginSet;
-import io.digdag.core.plugin.RemotePluginLoader;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Stream;
 
 public abstract class Command
 {
@@ -44,6 +45,18 @@ public abstract class Command
     @DynamicParameter(names = "-X")
     protected Map<String, String> systemProperties = new HashMap<>();
 
+    @Parameter(names = {"--format"}, validateValueWith = FormatValidator.class)
+    protected OutputFormat format;
+
+    @Parameter(names = {"--json"})
+    protected boolean json;
+
+    @Parameter(names = {"--yaml"})
+    protected boolean yaml;
+
+    @Parameter(names = {"--table"})
+    protected boolean table;
+
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
@@ -52,6 +65,24 @@ public abstract class Command
         this.env = env;
         this.out = out;
         this.err = err;
+    }
+
+    protected void setupParameters()
+            throws SystemExitException
+    {
+        long flagCount = Stream.of(json, yaml, table).filter(v -> v).count();
+        if ((format != null && flagCount != 0) || flagCount > 1) {
+            throw usage("Only one of --format, --json, --yaml and --table may be specified");
+        }
+        if (json) {
+            format = OutputFormat.JSON;
+        } else if (yaml) {
+            format = OutputFormat.YAML;
+        } else if (table) {
+            format = OutputFormat.TABLE;
+        } else if (format == null) {
+            format = OutputFormat.TABLE;
+        }
     }
 
     public abstract void main() throws Exception;

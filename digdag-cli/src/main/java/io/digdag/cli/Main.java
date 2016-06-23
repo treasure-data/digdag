@@ -146,6 +146,7 @@ public class Main
 
             verbose = processCommonOptions(command);
 
+            command.setupParameters();
             command.main();
             return 0;
         }

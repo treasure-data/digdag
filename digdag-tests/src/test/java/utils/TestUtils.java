@@ -267,7 +267,7 @@ public class TestUtils
     public static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
     {
         return () -> {
-            CommandStatus attemptsStatus = attempts(endpoint, attemptId);
+            CommandStatus attemptsStatus = attempt(endpoint, attemptId);
             return attemptsStatus.outUtf8().contains("status: error");
         };
     }
@@ -275,14 +275,14 @@ public class TestUtils
     public static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
     {
         return () -> {
-            CommandStatus attemptsStatus = attempts(endpoint, attemptId);
+            CommandStatus attemptsStatus = attempt(endpoint, attemptId);
             return attemptsStatus.outUtf8().contains("status: success");
         };
     }
 
-    public static CommandStatus attempts(String endpoint, long attemptId)
+    public static CommandStatus attempt(String endpoint, long attemptId)
     {
-        return main("attempts",
+        return main("attempt",
                         "-c", "/dev/null",
                         "-e", endpoint,
                         String.valueOf(attemptId));

@@ -1,6 +1,8 @@
 package acceptance;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Optional;
+import com.google.common.collect.FluentIterable;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
@@ -12,14 +14,13 @@ import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.getAttemptId;
-import static utils.TestUtils.getSessionId;
-import static utils.TestUtils.main;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
@@ -28,6 +29,12 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.getSessionId;
+import static utils.TestUtils.main;
 
 public class InitPushStartIT
 {
@@ -115,13 +122,16 @@ public class InitPushStartIT
         }
 
         // Verify that the workflow is started
-        List<RestSession> sessions = client.getSessions();
-        assertThat(sessions.size(), is(1));
-        RestSession session = sessions.get(0);
-        assertThat(session.getProject().getName(), is("foobar"));
-        assertThat(session.getId(), is(sessionId));
-        assertThat(session.getLastAttempt().isPresent(), is(true));
-        assertThat(session.getLastAttempt().get().getId(), is(attemptId));
+        RestSession session;
+        {
+            List<RestSession> sessions = client.getSessions();
+            assertThat(sessions.size(), is(1));
+            session = sessions.get(0);
+            assertThat(session.getProject().getName(), is("foobar"));
+            assertThat(session.getId(), is(sessionId));
+            assertThat(session.getLastAttempt().isPresent(), is(true));
+            assertThat(session.getLastAttempt().get().getId(), is(attemptId));
+        }
 
         // Fetch session using client
         {
@@ -151,35 +161,26 @@ public class InitPushStartIT
         {
             // Listing all
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint());
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions();
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By project name
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        project.getName());
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions(project.getName());
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By project and workflow name
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        project.getName(),
-                        "foobar");
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions(project.getName(), "foobar");
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By session id
@@ -209,28 +210,16 @@ public class InitPushStartIT
 
             // By session id
             {
-                CommandStatus status = main("attempts",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        String.valueOf(sessionId));
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSessionAttempt> attempts = attempts(String.valueOf(sessionId));
+                assertThat(attempts.size(), is(1));
+                RestSessionAttempt attempt = attempts.get(0);
+                assertThat(attempt.getSessionId(), is(sessionId));
+                assertThat(attempt.getId(), is(attemptId));
             }
         }
 
         // Wait for the attempt to complete
-        {
-            RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
-                attempt = client.getSessionAttempt(attemptId);
-                if (attempt.getDone()) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            assertThat(attempt.getSuccess(), is(true));
-        }
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
         // Verify that the success is reflected in the cli
         {
@@ -241,6 +230,16 @@ public class InitPushStartIT
                         "-e", server.endpoint(),
                         String.valueOf(attemptId));
                 assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
+            }
+
+            // For the attempt by session id
+            {
+                List<RestSessionAttempt> attempts = attempts(String.valueOf(sessionId));
+                assertThat(attempts.size(), is(1));
+                RestSessionAttempt attempt = attempts.get(0);
+                assertThat(attempt.getSessionId(), is(sessionId));
+                assertThat(attempt.getId(), is(attemptId));
+                assertThat(attempt.getSuccess(), is(true));
             }
 
             // For the session
@@ -300,5 +299,33 @@ public class InitPushStartIT
         assertThat(startStatus.errUtf8(), startStatus.code(), is(1));
         assertThat(startStatus.errUtf8(), containsString("A session for the requested session_time already exists (session_id=" + sessionId + ", attempt_id=" + attemptId + ", session_time=2016-01-01T00:00Z)"));
         assertThat(startStatus.errUtf8(), containsString("hint: use `digdag retry " + attemptId + " --latest-revision` command to run the session again for the same session_time"));
+    }
+
+    private List<RestSession> sessions(String... args)
+            throws IOException
+    {
+        CommandStatus status = main(FluentIterable.from(asList(
+                "sessions",
+                "--json",
+                "-c", config.toString(),
+                "-e", server.endpoint()))
+                .append(args)
+                .toList());
+        assertThat(status.code(), is(0));
+        return status.outJson(new TypeReference<List<RestSession>>() {});
+    }
+
+    private List<RestSessionAttempt> attempts(String... args)
+            throws IOException
+    {
+        CommandStatus status = main(FluentIterable.from(asList(
+                "attempts",
+                "--json",
+                "-c", config.toString(),
+                "-e", server.endpoint()))
+                .append(args)
+                .toList());
+        assertThat(status.code(), is(0));
+        return status.outJson(new TypeReference<List<RestSessionAttempt>>() {});
     }
 }

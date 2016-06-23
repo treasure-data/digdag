@@ -1,6 +1,8 @@
 package acceptance;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -10,6 +12,7 @@ import utils.TemporaryDigdagServer;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
@@ -32,7 +35,6 @@ public class DeleteProjectIT
 
     private Path config;
     private Path projectDir;
-    private DigdagClient client;
 
     @Before
     public void setUp()
@@ -40,11 +42,6 @@ public class DeleteProjectIT
     {
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
-
-        client = DigdagClient.builder()
-                .host(server.host())
-                .port(server.port())
-                .build();
     }
 
     @Test
@@ -80,7 +77,6 @@ public class DeleteProjectIT
             assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
             sessionId = getSessionId(startStatus);
             attemptId = getAttemptId(startStatus);
-
         }
         expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
@@ -88,10 +84,15 @@ public class DeleteProjectIT
                 "-c", config.toString(),
                 "-e", server.endpoint(),
                 Long.toString(attemptId));
-        CommandStatus attempts = main("attempts",
+
+        List<RestSessionAttempt> attempts = main("attempts",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                Long.toString(sessionId));
+                "--json",
+                Long.toString(sessionId))
+                .assertSuccess()
+                .outJson(new TypeReference<List<RestSessionAttempt>>() {});
+
         CommandStatus logs = main("logs",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
@@ -147,17 +148,18 @@ public class DeleteProjectIT
             CommandStatus status = main("attempt",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    Long.toString(attemptId));
-            assertThat(status.errUtf8(), status.code(), is(0));
+                    Long.toString(attemptId))
+                    .assertSuccess();
             assertThat(status.outUtf8(), is(attempt.outUtf8()));
         }
         {
-            CommandStatus status = main("attempts",
+            CommandStatus status = main("attempt",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    Long.toString(sessionId));
-            assertThat(status.errUtf8(), status.code(), is(0));
-            assertThat(status.outUtf8(), is(attempts.outUtf8()));
+                    "--json",
+                    Long.toString(sessionId))
+                    .assertSuccess();
+            assertThat(status.outUtf8(), is(attempt.outUtf8()));
         }
         {
             CommandStatus status = main("logs",
@@ -167,7 +169,6 @@ public class DeleteProjectIT
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(status.outUtf8(), is(logs.outUtf8()));
         }
-
     }
 }
 
