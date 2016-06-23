@@ -19,25 +19,6 @@ public interface Storage
             UploadStreamProvider payload)
         throws IOException;
 
-    default String put(String key, long contentLength,
-            final InputStream in)
-        throws IOException
-    {
-        return put(key, contentLength, new UploadStreamProvider() {
-            private boolean done = false;
-
-            @Override
-            public InputStream open() throws IOException
-            {
-                if (done) {
-                    throw new IllegalStateException("Already opened");
-                }
-                done = true;
-                return in;
-            }
-        });
-    }
-
     interface FileListing
     {
         void accept(List<StorageObjectSummary> chunk);

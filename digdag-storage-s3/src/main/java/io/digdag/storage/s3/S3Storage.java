@@ -187,7 +187,7 @@ public class S3Storage
                             .key(summary.getKey())
                             .contentLength(summary.getSize())
                             .lastModified(summary.getLastModified().toInstant())
-                            .build();
+                            .build()
                         ));
             req.setMarker(listing.getNextMarker());
         }

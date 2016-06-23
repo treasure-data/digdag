@@ -105,9 +105,9 @@ public class S3StorageTest
         assertThat(all.get(1).getKey(), is("test/file/2"));
     }
 
-    private static ByteArrayInputStream contents(String data)
+    private static Storage.UploadStreamProvider contents(String data)
     {
-        return new ByteArrayInputStream(data.getBytes(UTF_8));
+        return () -> new ByteArrayInputStream(data.getBytes(UTF_8));
     }
 
     private static String md5hex(String data)
