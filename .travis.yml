@@ -30,5 +30,4 @@ before_install:
 install:
 
 script:
-  - fakes3 -r tmp/fakes3 -p 19876 &
-  - ci/run_test.sh
+  - ci/start_fakes3.sh -r tmp/fakes3 -p 19876 && ci/run_test.sh
