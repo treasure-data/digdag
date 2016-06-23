@@ -119,7 +119,9 @@ public class ReplicatedInputStream
 
         @Override
         public void reset() throws IOException
-        { }
+        {
+            throw new IOException("mark/reset not supported");
+        }
 
         @Override
         public void close() throws IOException
@@ -241,5 +243,7 @@ public class ReplicatedInputStream
 
     @Override
     public void reset() throws IOException
-    { }
+    {
+        throw new IOException("mark/reset not supported");
+    }
 }

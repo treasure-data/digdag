@@ -102,5 +102,7 @@ public class Md5CountInputStream
 
     @Override
     public void reset() throws IOException
-    { }
+    {
+        throw new IOException("mark/reset not supported");
+    }
 }

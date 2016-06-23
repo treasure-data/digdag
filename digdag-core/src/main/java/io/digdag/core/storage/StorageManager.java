@@ -16,7 +16,7 @@ import io.digdag.spi.StorageFactory;
 
 public class StorageManager
 {
-    private Map<String, StorageFactory> registry;  // TODO this should be extracted to a class named StorageRegistry as like OperatorRegistry
+    private final Map<String, StorageFactory> registry;  // TODO this should be extracted to a class named StorageRegistry as like OperatorRegistry to support system plugins
 
     @Inject
     public StorageManager(Set<StorageFactory> factories)
