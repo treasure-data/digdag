@@ -8,9 +8,6 @@ password =
 database = digdag_test
 "
 
-fakes3 -r tmp/fakes3 -p 19876 &
-export FAKE_S3_ENDPOINT=http://127.0.0.1:19876
-
 docker run \
 --net=host \
 -w /digdag \
