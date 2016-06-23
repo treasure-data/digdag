@@ -1,15 +1,12 @@
 package io.digdag.core.database;
 
-import java.util.List;
-import java.util.ArrayList;
 import com.google.inject.Inject;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.StatementException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseMigrator
 {
@@ -613,10 +610,27 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateAddUserInfoColumnToRevisions = new Migration()
+    {
+        @Override
+        public String getVersion()
+        {
+            return "20160623123456";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update("alter table revisions" +
+                    " add column user_info text");
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc,
         MigrateCreateResumingTasks,
         MigrateMakeProjectsDeletable,
+        MigrateAddUserInfoColumnToRevisions,
     };
 }

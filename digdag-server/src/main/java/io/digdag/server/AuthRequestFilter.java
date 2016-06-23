@@ -32,6 +32,7 @@ public class AuthRequestFilter
         Authenticator.Result result = auth.authenticate(requestContext);
         if (result.isAccepted()) {
             requestContext.setProperty("siteId", result.getSiteId());
+            requestContext.setProperty("userInfo", result.getUserInfo());
         }
         else {
             requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));

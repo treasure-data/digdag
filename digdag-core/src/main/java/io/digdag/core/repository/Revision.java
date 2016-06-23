@@ -19,6 +19,8 @@ public abstract class Revision
 
     public abstract Optional<String> getArchivePath();
 
+    public abstract Optional<Config> getUserInfo();
+
     public static Revision copyOf(Revision other)
     {
         return ImmutableRevision.builder().from(other).build();

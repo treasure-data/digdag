@@ -428,6 +428,7 @@ public class ProjectResource
                                         .archiveType(ArchiveType.DB)
                                         .archivePath(Optional.absent())
                                         .archiveMd5(Optional.of(md5))
+                                        .userInfo(getUserInfo())
                                         .build()
                                     );
                             lockedProj.insertRevisionArchiveData(rev.getId(), data);
@@ -439,6 +440,7 @@ public class ProjectResource
                                         .archiveType(location.getArchiveType())
                                         .archivePath(Optional.of(location.getPath()))
                                         .archiveMd5(Optional.of(md5))
+                                        .userInfo(getUserInfo())
                                         .build()
                                     );
                         }
