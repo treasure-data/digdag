@@ -101,6 +101,7 @@ public class ServerBootstrap
     {
         return bootstrap
             .setSystemConfig(serverConfig.getSystemConfig())
+            //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
                 binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
                 binder.bind(Version.class).toInstance(version);

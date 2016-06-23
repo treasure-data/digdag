@@ -1,0 +1,7 @@
+/.gradle
+/build/classes
+/build/dependency-cache
+/build/libs
+/build/publications
+/build/resources
+/build/tmp

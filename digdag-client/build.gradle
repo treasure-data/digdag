@@ -1,8 +1,6 @@
 
 dependencies {
     compile 'javax.inject:javax.inject:1'
-    compile 'com.google.inject:guice:4.0'
-    compile 'com.fasterxml.jackson.module:jackson-module-guice:2.6.2'
     compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.6.2'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.6.2'
     compile 'com.fasterxml.jackson.core:jackson-core:2.6.2'

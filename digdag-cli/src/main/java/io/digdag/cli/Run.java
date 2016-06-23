@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.HashMap;
 import java.util.Comparator;
 import java.util.regex.Pattern;
@@ -52,6 +53,7 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskRelation;
 import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.agent.OperatorManager;
+import io.digdag.core.agent.OperatorRegistry;
 import io.digdag.core.agent.TaskCallbackApi;
 import io.digdag.core.agent.SetThreadName;
 import io.digdag.core.agent.ConfigEvalEngine;
@@ -210,7 +212,10 @@ public class Run
 
     public void run(String workflowNameArg, String matchPattern) throws Exception
     {
+        Properties systemProps = loadSystemProperties();
+
         Injector injector = new DigdagEmbed.Bootstrap()
+            .setSystemPlugins(loadSystemPlugins(systemProps))
             .addModules(binder -> {
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                 binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
@@ -229,7 +234,7 @@ public class Run
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         // read parameters
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+        Config overwriteParams = loadParams(cf, loader, systemProps, paramsFile, params);
 
         // load workflow definitions
         ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
@@ -614,10 +619,10 @@ public class Run
                 AgentConfig config, AgentId agentId,
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
                 WorkflowCompiler compiler, ConfigFactory cf,
-                ConfigEvalEngine evalEngine, Set<OperatorFactory> factories,
+                ConfigEvalEngine evalEngine, OperatorRegistry registry,
                 Run cmd, YamlMapper yamlMapper)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, factories);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;

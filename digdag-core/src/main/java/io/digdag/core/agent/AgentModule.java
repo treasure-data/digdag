@@ -15,6 +15,8 @@ public class AgentModule
     @Override
     public void configure(Binder binder)
     {
+        binder.bind(OperatorRegistry.class).in(Scopes.SINGLETON);
+        binder.bind(OperatorRegistry.DynamicOperatorPluginInjectionModule.class).in(Scopes.SINGLETON);
         binder.bind(AgentId.class).toProvider(AgentIdProvider.class).in(Scopes.SINGLETON);
 
         binder.bind(ConfigEvalEngine.class).in(Scopes.SINGLETON);

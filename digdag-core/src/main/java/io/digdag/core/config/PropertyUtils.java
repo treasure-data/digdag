@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,5 +37,16 @@ public class PropertyUtils
             builder.set(key, props.getProperty(key));
         }
         return ConfigElement.copyOf(builder);
+    }
+
+    public static Map<String, String> toMap(Properties props, String prefix)
+    {
+        Map<String, String> map = new HashMap<>();
+        for (String key : props.stringPropertyNames()) {
+            if (key.startsWith(prefix)) {
+                map.put(key.substring(prefix.length()), props.getProperty(key));
+            }
+        }
+        return map;
     }
 }

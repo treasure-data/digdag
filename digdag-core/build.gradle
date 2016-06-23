@@ -6,7 +6,7 @@ dependencies {
 
     compile 'com.google.inject.extensions:guice-multibindings:4.0'
     compile 'org.embulk:guice-bootstrap:0.1.0'
-    //compile 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.6.2'
+    compile 'com.fasterxml.jackson.module:jackson-module-guice:2.6.2'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.2'
     compile 'org.slf4j:slf4j-api:1.7.12'
     compile 'org.jdbi:jdbi:2.72'
@@ -19,4 +19,17 @@ dependencies {
     // mail
     compile 'javax.mail:javax.mail-api:1.5.5'
     compile 'com.sun.mail:javax.mail:1.5.5'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
+
+    // plugins
+    compile 'org.eclipse.aether:aether-api:1.1.0'
+    compile 'org.eclipse.aether:aether-spi:1.1.0'
+    compile 'org.eclipse.aether:aether-util:1.1.0'
+    compile 'org.eclipse.aether:aether-impl:1.1.0'
+    compile 'org.eclipse.aether:aether-connector-basic:1.1.0'
+    compile 'org.eclipse.aether:aether-transport-file:1.1.0'
+    compile 'org.eclipse.aether:aether-transport-http:1.1.0'
+    compile('org.apache.maven:maven-aether-provider:3.1.0') {
+        // sisu dependency injector is not used
+        exclude group: 'org.eclipse.sisu'
+    }
 }

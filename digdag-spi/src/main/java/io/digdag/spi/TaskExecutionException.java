@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigElement;
 
 public class TaskExecutionException

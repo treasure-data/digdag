@@ -32,6 +32,9 @@ import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.agent.AgentModule;
 import io.digdag.core.agent.LocalAgentModule;
 import io.digdag.core.log.LogModule;
+import io.digdag.core.plugin.PluginSet;
+import io.digdag.core.plugin.DynamicPluginModule;
+import io.digdag.core.plugin.SystemPluginModule;
 import org.embulk.guice.LifeCycleInjector;
 import com.fasterxml.jackson.module.guice.ObjectMapperModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -46,6 +49,7 @@ public class DigdagEmbed
     {
         private final List<Function<? super List<Module>, ? extends Iterable<? extends Module>>> moduleOverrides = new ArrayList<>();
         private ConfigElement systemConfig = ConfigElement.empty();
+        private PluginSet systemPlugins = PluginSet.empty();
         private boolean withWorkflowExecutor = true;
         private boolean withScheduleExecutor = true;
         private boolean withLocalAgent = true;
@@ -81,6 +85,12 @@ public class DigdagEmbed
         public Bootstrap setSystemConfig(ConfigElement systemConfig)
         {
             this.systemConfig = systemConfig;
+            return this;
+        }
+
+        public Bootstrap setSystemPlugins(PluginSet systemPlugins)
+        {
+            this.systemPlugins = systemPlugins;
             return this;
         }
 
@@ -143,6 +153,8 @@ public class DigdagEmbed
                     new ObjectMapperModule()
                         .registerModule(new GuavaModule())
                         .registerModule(new JacksonTimeModule()),
+                    new DynamicPluginModule(),
+                    new SystemPluginModule(systemPlugins),
                     new DatabaseModule(),
                     new AgentModule(),
                     new LogModule(),

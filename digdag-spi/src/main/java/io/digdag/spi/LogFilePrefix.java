@@ -10,23 +10,23 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableLogFilePrefix.class)
 @JsonDeserialize(as = ImmutableLogFilePrefix.class)
-public abstract class LogFilePrefix
+public interface LogFilePrefix
 {
-    public abstract int getSiteId();
+    int getSiteId();
 
-    public abstract int getProjectId();
+    int getProjectId();
 
-    public abstract String getWorkflowName();
+    String getWorkflowName();
 
-    public abstract Instant getSessionTime();
+    Instant getSessionTime();
 
-    public abstract ZoneId getTimeZone();
+    ZoneId getTimeZone();
 
-    public abstract Optional<String> getRetryAttemptName();
+    Optional<String> getRetryAttemptName();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public static ImmutableLogFilePrefix.Builder builder()
+    static ImmutableLogFilePrefix.Builder builder()
     {
         return ImmutableLogFilePrefix.builder();
     }
