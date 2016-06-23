@@ -70,13 +70,17 @@ public class ShOperatorFactory
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
 
-            String shell = params.get("shell", String.class, "/bin/sh -c");
+            List<String> shell = params.getListOrEmpty("shell", String.class);
             String command = params.get("_command", String.class);
 
-            List<String> cmdline = new ArrayList<String>(Arrays.asList(shell.split(" ")));
-            cmdline = cmdline.stream().filter(cmd -> !cmd.isEmpty()).collect(Collectors.toList());
+            ImmutableList.Builder<String> cmdline = ImmutableList.builder();
+            if (shell.isEmpty()) {
+                cmdline.addAll(ImmutableList.of("/bin/sh", "-c"));
+            } else {
+                cmdline.addAll(shell);
+            }
             cmdline.add(command);
-            ProcessBuilder pb = new ProcessBuilder(cmdline);
+            ProcessBuilder pb = new ProcessBuilder(cmdline.build());
 
             final Map<String, String> env = pb.environment();
             params.getKeys()
