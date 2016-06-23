@@ -19,7 +19,8 @@ import io.digdag.spi.Storage.UploadStreamProvider;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.util.Md5CountInputStream.digestMd5;
@@ -36,7 +37,7 @@ public class S3StorageTest
     public void setUp()
             throws Exception
     {
-        assumeThat(FAKE_S3_ENDPOINT, is(notNullValue()));
+        assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
         ConfigFactory cf = new ConfigFactory(objectMapper());
         Config config = cf.create()
             .set("endpoint", FAKE_S3_ENDPOINT)

@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
@@ -64,7 +64,7 @@ public class S3StorageIT
     public void setUp()
             throws Exception
     {
-        assumeThat(FAKE_S3_ENDPOINT, is(notNullValue()));
+        assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
