@@ -183,10 +183,11 @@ public class S3Storage
             }
             callback.accept(Lists.transform(
                         listing.getObjectSummaries(),
-                        (summary) -> new StorageObjectSummary(
-                            summary.getKey(),
-                            summary.getSize(),
-                            summary.getLastModified().toInstant())
+                        (summary) -> StorageObjectSummary.builder()
+                            .key(summary.getKey())
+                            .contentLength(summary.getSize())
+                            .lastModified(summary.getLastModified().toInstant())
+                            .build();
                         ));
             req.setMarker(listing.getNextMarker());
         }
