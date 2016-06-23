@@ -7,7 +7,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
-import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskCallbackApi
@@ -30,7 +30,7 @@ public interface TaskCallbackApi
             int retryInterval, Config retryStateParams,
             Optional<Config> error);
 
-    SessionStateFlags startSession(
+    AttemptStateFlags startSession(
             int siteId,
             int projectId,
             String workflowName,

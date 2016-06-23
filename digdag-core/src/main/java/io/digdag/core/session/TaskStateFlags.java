@@ -104,17 +104,17 @@ public class TaskStateFlags
             else { sb.append(", "); }
             sb.append("CANCEL_REQUESTED");
         }
-        else if (isDelayedError()) {
+        if (isDelayedError()) {
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("DELAYED_ERROR");
         }
-        else if (isDelayedGroupError()) {
+        if (isDelayedGroupError()) {
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("DELAYED_GROUP_ERROR");
         }
-        else if (isInitialTask()) {
+        if (isInitialTask()) {
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("INITIAL_TASK");
