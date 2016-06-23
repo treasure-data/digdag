@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableStoredProject.class)
-@JsonDeserialize(as = ImmutableStoredProject.class)
+@JsonSerialize(as = ImmutableStoredRevision.class)
+@JsonDeserialize(as = ImmutableStoredRevision.class)
 public abstract class StoredRevision
         extends Revision
 {
