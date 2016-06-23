@@ -1,22 +1,15 @@
 package io.digdag.standards.operator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.io.File;
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
