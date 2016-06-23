@@ -1,12 +1,10 @@
 package io.digdag.core.storage;
 
-import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
-import java.util.concurrent.Future;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ExecutionException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -17,7 +15,9 @@ import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.storage.StorageManager;
 import io.digdag.client.config.Config;
+import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.Storage;
+import io.digdag.spi.StorageFile;
 import io.digdag.spi.StorageFileNotFoundException;
 import static java.util.Locale.ENGLISH;
 import static io.digdag.core.storage.StorageManager.decodeHex;
@@ -51,9 +51,17 @@ public class ArchiveManager
         }
     }
 
+    public interface StoredArchive
+    {
+        Optional<byte[]> getByteArray();
+
+        Optional<DirectDownloadHandle> getDirectDownloadHandle();
+
+        StorageFile open() throws StorageFileNotFoundException;
+    }
+
     private final StorageManager storageManager;
     private final ArchiveType uploadArchiveType;
-    private final ExecutorService executor;
     private final Config systemConfig;
 
     @Inject
@@ -62,16 +70,6 @@ public class ArchiveManager
         this.storageManager = storageManager;
         this.systemConfig = systemConfig;
         this.uploadArchiveType = systemConfig.get("archive.type", ArchiveType.class, ArchiveType.DB);
-        this.executor = Executors.newCachedThreadPool(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("archive-upload-%d")
-                .build());
-    }
-
-    private Storage getStorage(ArchiveType type)
-    {
-        return storageManager.create(type.getName(), systemConfig, "archive.");
     }
 
     public Location newArchiveLocation(
@@ -86,61 +84,101 @@ public class ArchiveManager
         }
     }
 
+    public Storage getStorage(ArchiveType type)
+    {
+        return storageManager.create(type.getName(), systemConfig, "archive.");
+    }
+
+    private static final DateTimeFormatter DATE_TIME_SUFFIX_FORMAT =
+        DateTimeFormatter.ofPattern("yyyyMM'T'ddHHmmss'Z'").withZone(ZoneId.of("UTC"));
+
     private String formatFilePath(int siteId, String projectName, String revisionName)
     {
         return String.format(ENGLISH,
-                "%d/%s/%s.tar.gz",
-                siteId, projectName, revisionName);
+                "%d/%s/%s.%s.tar.gz",
+                siteId, projectName, revisionName, DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));
     }
 
-    public Upload startUpload(InputStream in, long contentLength,
-            final Location location)
-    {
-        final Future<String> future = executor.submit(() -> {
-            try {
-                return getStorage(location.getArchiveType()).put(location.getPath(), contentLength, in);
-            }
-            finally {
-                in.close();
-            }
-        });
-        return () -> {
-                try {
-                    return decodeHex(future.get());
-                }
-                catch (ExecutionException ex) {
-                    Throwable cause = ex.getCause();
-                    Throwables.propagateIfInstanceOf(cause, IOException.class);
-                    throw Throwables.propagate(cause);
-                }
-            };
-    }
-
-    public Optional<InputStream> openArchive(ProjectStore ps, int projectId, String revisionName)
+    public Optional<StorageFile> openArchive(ProjectStore ps, int projectId, String revisionName)
         throws ResourceNotFoundException, StorageFileNotFoundException
     {
-        StoredRevision rev;
-        if (revisionName == null) {
-            rev = ps.getLatestRevision(projectId);
-        }
-        else {
-            rev = ps.getRevisionByName(projectId, revisionName);
-        }
-        return openArchive(ps, rev);
-    }
+        StoredRevision rev = findRevision(ps, projectId, revisionName);
 
-    private Optional<InputStream> openArchive(ProjectStore ps, StoredRevision rev)
-        throws ResourceNotFoundException, StorageFileNotFoundException
-    {
         ArchiveType type = rev.getArchiveType();
         if (type.equals(ArchiveType.NONE)) {
             return Optional.absent();
         }
         else if (type.equals(ArchiveType.DB)) {
-            return Optional.of(new ByteArrayInputStream(ps.getRevisionArchiveData(rev.getId())));
+            byte[] data = ps.getRevisionArchiveData(rev.getId());
+            return Optional.of(
+                    new StorageFile(
+                        new ByteArrayInputStream(data),
+                        data.length)
+                    );
         }
         else {
-            return Optional.of(getStorage(type).open(rev.getArchivePath().or("")).getContentInputStream());
+            return Optional.of(getStorage(type).open(rev.getArchivePath().or("")));
+        }
+    }
+
+    public Optional<StoredArchive> getArchive(ProjectStore ps, int projectId, String revisionName)
+        throws ResourceNotFoundException
+    {
+        StoredRevision rev = findRevision(ps, projectId, revisionName);
+
+        ArchiveType type = rev.getArchiveType();
+        if (type.equals(ArchiveType.NONE)) {
+            return Optional.absent();
+        }
+        else if (type.equals(ArchiveType.DB)) {
+            byte[] data = ps.getRevisionArchiveData(rev.getId());
+            return Optional.of(new StoredArchive() {
+                public Optional<byte[]> getByteArray()
+                {
+                    return Optional.of(data);
+                }
+
+                public Optional<DirectDownloadHandle> getDirectDownloadHandle()
+                {
+                    return Optional.absent();
+                }
+
+                public StorageFile open()
+                {
+                    return new StorageFile(new ByteArrayInputStream(data), data.length);
+                }
+            });
+        }
+        else {
+            Storage storage = getStorage(type);
+            return Optional.of(new StoredArchive() {
+                public Optional<byte[]> getByteArray()
+                {
+                    return Optional.absent();
+                }
+
+                public Optional<DirectDownloadHandle> getDirectDownloadHandle()
+                {
+                    return storage.getDirectDownloadHandle(rev.getArchivePath().or(""));
+                }
+
+                public StorageFile open()
+                    throws StorageFileNotFoundException
+                {
+                    return storage.open(rev.getArchivePath().or(""));
+                }
+            });
+        }
+    }
+
+    private StoredRevision findRevision(ProjectStore ps, int projectId, String revisionName)
+        throws ResourceNotFoundException
+    {
+        if (revisionName == null) {
+            return ps.getLatestRevision(projectId);
+        }
+        else {
+            return ps.getRevisionByName(projectId, revisionName);
         }
     }
 }

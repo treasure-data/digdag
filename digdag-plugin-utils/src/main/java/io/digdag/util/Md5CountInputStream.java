@@ -10,6 +10,7 @@ public class Md5CountInputStream
         extends FilterInputStream
 {
     private static final MessageDigest MD5;
+    private byte[] tempBuffer;
 
     static {
         try {
@@ -51,10 +52,15 @@ public class Md5CountInputStream
         return count;
     }
 
+    public byte[] getDigest()
+    {
+        return md5.digest();
+    }
+
     @Override
     public int read() throws IOException
     {
-        int c = super.read();
+        int c = in.read();
         if (c >= 0) {
             count += 1;
             md5.update((byte) c);
@@ -65,7 +71,7 @@ public class Md5CountInputStream
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        int n = super.read(b, off, len);
+        int n = in.read(b, off, len);
         if (n > 0) {
             count += n;
             md5.update(b, off, n);
@@ -81,7 +87,10 @@ public class Md5CountInputStream
     @Override
     public long skip(long n) throws IOException
     {
-        return read(new byte[(int) Math.min(n, 64*1024L)]);
+        if (tempBuffer == null) {
+            tempBuffer = new byte[32 * 1024];
+        }
+        return read(tempBuffer, 0, (int) Math.min(n, tempBuffer.length));
     }
 
     @Override

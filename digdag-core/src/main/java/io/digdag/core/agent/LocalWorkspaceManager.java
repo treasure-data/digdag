@@ -3,7 +3,6 @@ package io.digdag.core.agent;
 import java.util.Set;
 import java.util.HashSet;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.BufferedInputStream;
@@ -23,6 +22,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.StorageFile;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
 
@@ -44,9 +44,9 @@ public class LocalWorkspaceManager
             throws IOException
     {
         try (TempDir workspacePath = createNewWorkspace(request)) {
-            Optional<InputStream> in = archiveProvider.open();
+            Optional<StorageFile> in = archiveProvider.open();
             if (in.isPresent()) {
-                try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get())))) {
+                try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get().getContentInputStream())))) {
                     extractArchive(workspacePath.get(), archive);
                 }
             }

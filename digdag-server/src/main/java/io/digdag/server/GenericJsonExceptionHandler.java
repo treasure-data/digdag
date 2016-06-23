@@ -7,32 +7,20 @@ import javax.ws.rs.ext.Provider;
 import javax.ws.rs.core.MediaType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.digdag.client.DigdagClient.objectMapper;
 
 @Provider
 public abstract class GenericJsonExceptionHandler<T extends Throwable>
     implements ExceptionMapper<T>
 {
-    private final int statusCode;
-    private final ObjectMapper messageMapper;
+    private static final ObjectMapper messageMapper = objectMapper();
 
-    public GenericJsonExceptionHandler(int statusCode)
+    public static Response toResponse(Response.Status status, String message)
     {
-        this.statusCode = statusCode;
-        this.messageMapper = new ObjectMapper();
+        return toResponse(status.getStatusCode(), message);
     }
 
-    public GenericJsonExceptionHandler(Response.Status status)
-    {
-        this(status.getStatusCode());
-    }
-
-    @Override
-    public Response toResponse(T exception)
-    {
-        return toResponse(exception.getMessage());
-    }
-
-    public Response toResponse(String message)
+    public static Response toResponse(int statusCode, String message)
     {
         HashMap<String, Object> map = new HashMap<>();
         map.put("message", message);
@@ -47,5 +35,28 @@ public abstract class GenericJsonExceptionHandler<T extends Throwable>
         catch (JsonProcessingException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private final int statusCode;
+
+    public GenericJsonExceptionHandler(int statusCode)
+    {
+        this.statusCode = statusCode;
+    }
+
+    public GenericJsonExceptionHandler(Response.Status status)
+    {
+        this(status.getStatusCode());
+    }
+
+    @Override
+    public Response toResponse(T exception)
+    {
+        return toResponse(statusCode, exception.getMessage());
+    }
+
+    public Response toResponse(String message)
+    {
+        return toResponse(statusCode, message);
     }
 }

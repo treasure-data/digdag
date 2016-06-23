@@ -2,7 +2,6 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.time.Instant;
-import java.io.InputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import com.google.inject.Inject;
@@ -32,6 +31,7 @@ import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.LogFilePrefix;
+import io.digdag.spi.StorageFile;
 import io.digdag.spi.StorageFileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public Optional<InputStream> openArchive(TaskRequest request)
+    public Optional<StorageFile> openArchive(TaskRequest request)
         throws IOException
     {
         if (!request.getRevision().isPresent()) {

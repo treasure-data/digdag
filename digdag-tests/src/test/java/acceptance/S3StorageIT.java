@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.google.common.base.Optional;
+import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestLogFileHandle;
@@ -10,6 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -26,7 +28,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
@@ -123,6 +125,16 @@ public class S3StorageIT
             }
             assertThat(attempt.getSuccess(), is(true));
         }
+
+        // Fetch archive
+        RestProject proj = client.getProjects().get(0);
+        byte[] data;
+        try (InputStream in = client.getProjectArchive(proj.getId(), proj.getRevision())) {
+            data = ByteStreams.toByteArray(in);
+        }
+        assertThat(data.length, greaterThan(2));
+        assertThat(data[0], is((byte) 0x1f));  // check gzip header
+        assertThat(data[1], is((byte) 0x8b));
 
         // Fetch logs
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);

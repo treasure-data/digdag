@@ -2,13 +2,13 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.time.Instant;
-import java.io.InputStream;
 import java.io.IOException;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
+import io.digdag.spi.StorageFile;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -19,7 +19,7 @@ public interface TaskCallbackApi
     void taskHeartbeat(int siteId,
             List<String> lockedIds, AgentId agentId, int lockSeconds);
 
-    Optional<InputStream> openArchive(TaskRequest request)
+    Optional<StorageFile> openArchive(TaskRequest request)
         throws IOException;
 
     void taskSucceeded(int siteId,
