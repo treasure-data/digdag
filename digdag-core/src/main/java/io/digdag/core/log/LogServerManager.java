@@ -6,10 +6,12 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.spi.LogServer;
 import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
+import io.digdag.spi.Storage;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.storage.StorageManager;
 import io.digdag.core.log.NullLogServerFactory.NullLogServer;
 import io.digdag.core.log.LocalFileLogServerFactory.LocalFileLogServer;
 import io.digdag.core.TempFileManager;
@@ -20,11 +22,17 @@ public class LogServerManager
     private final TempFileManager tempFiles;
 
     @Inject
-    public LogServerManager(Set<LogServerFactory> factories, Config systemConfig, TempFileManager tempFiles)
+    public LogServerManager(Set<LogServerFactory> factories, Config systemConfig, TempFileManager tempFiles,
+            StorageManager storageManager)
     {
-        String logServerType = systemConfig.get("log-server.type", String.class, "null");
-        LogServerFactory factory = findLogServer(factories, logServerType);
-        this.logServer = factory.getLogServer();
+        String type = systemConfig.get("log-server.type", String.class, "null");
+        LogServerFactory factory = findLogServer(factories, type);
+        if (factory == null) {
+            this.logServer = newStorageLogServer(storageManager, type, systemConfig);
+        }
+        else {
+            this.logServer = factory.getLogServer();
+        }
         this.tempFiles = tempFiles;
     }
 
@@ -35,7 +43,23 @@ public class LogServerManager
                 return factory;
             }
         }
-        throw new ConfigException("Unknown log server type: "+type);
+        return null;
+    }
+
+    public LogServer newStorageLogServer(StorageManager storageManager,
+            String type, Config systemConfig)
+    {
+        Storage storage = storageManager.create(type, systemConfig, "log-server.");
+
+        String logPath = systemConfig.get("log-server." + type + ".path", String.class, "");
+        if (logPath.startsWith("/")) {
+            logPath = logPath.substring(1);
+        }
+        if (!logPath.endsWith("/") && !logPath.isEmpty()) {
+            logPath = logPath + "/";
+        }
+
+        return new StorageFileLogServer(storage, logPath);
     }
 
     public LogServer getLogServer()

@@ -1,6 +1,0 @@
-
-dependencies {
-    compile project(':digdag-core')
-    compile project(':digdag-storage-s3')
-    compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
-}

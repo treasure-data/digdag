@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -43,10 +42,16 @@ public class S3StorageIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
     .configuration(
             "archive.type = s3\n" +
-            "archive.s3.endpoint = " + (FAKE_S3_ENDPOINT == null ? "" : FAKE_S3_ENDPOINT) + "\n" +
+            "archive.s3.endpoint = " + FAKE_S3_ENDPOINT + "\n" +
+            "archive.s3.bucket = archive-storage-" + UUID.randomUUID() + "\n" +
             "archive.s3.credentials.access-key-id = fake-key-id\n" +
             "archive.s3.credentials.secret-access-key = fake-access-key\n" +
-            "archive.s3.bucket = fake-s3-" + UUID.randomUUID() + "\n" +
+            "log-server.type = s3\n" +
+            "log-server.s3.endpoint = " + FAKE_S3_ENDPOINT + "\n" +
+            "log-server.s3.bucket = log-storage-" + UUID.randomUUID() + "\n" +
+            "log-server.s3.path = storage-log-test\n" +
+            "log-server.s3.credentials.access-key-id = fake-key-id\n" +
+            "log-server.s3.credentials.secret-access-key = fake-access-key\n" +
             ""
     )
     .build();
@@ -123,11 +128,10 @@ public class S3StorageIT
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
         assertThat(handles.size(), is(not(0)));
 
-        // log storage is not configurable yet
-        //for (RestLogFileHandle handle : handles) {
-        //    // S3 log backend should support direct download
-        //    assertThat(handle.getDirect().isPresent(), is(true));
-        //    assertThat(handle.getDirect().transform(direct -> direct.getUrl()).or(""), startsWith("fake-s3"));
-        //}
+        for (RestLogFileHandle handle : handles) {
+            // S3 log backend should support direct download
+            assertThat(handle.getDirect().isPresent(), is(true));
+            assertThat(handle.getDirect().transform(direct -> direct.getUrl()).or("").contains("log-storage"), is(true));
+        }
     }
 }
