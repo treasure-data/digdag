@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.io.BufferedWriter;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
@@ -64,16 +67,12 @@ public class ShOperatorFactory
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
 
             List<String> shell = params.getListOrEmpty("shell", String.class);
+            if (shell.isEmpty()) {
+                shell = ImmutableList.of("/bin/sh");
+            }
             String command = params.get("_command", String.class);
 
-            ImmutableList.Builder<String> cmdline = ImmutableList.builder();
-            if (shell.isEmpty()) {
-                cmdline.addAll(ImmutableList.of("/bin/sh", "-c"));
-            } else {
-                cmdline.addAll(shell);
-            }
-            cmdline.add(command);
-            ProcessBuilder pb = new ProcessBuilder(cmdline.build());
+            ProcessBuilder pb = new ProcessBuilder(shell);
 
             final Map<String, String> env = pb.environment();
             params.getKeys()
@@ -108,7 +107,11 @@ public class ShOperatorFactory
             int ecode;
             try {
                 Process p = exec.start(workspacePath, request, pb);
-                p.getOutputStream().close();
+
+                // feed command to stdin
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+                    writer.write(command);
+                }
 
                 // copy stdout to System.out and logger
                 clog.copyStdout(p, System.out);
