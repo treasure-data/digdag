@@ -2,12 +2,12 @@ package io.digdag.spi;
 
 import java.io.InputStream;
 
-public class StorageFile
+public class StorageObject
 {
     private final InputStream inputStream;
     private final long contentLength;
 
-    public StorageFile(InputStream inputStream, long contentLength)
+    public StorageObject(InputStream inputStream, long contentLength)
     {
         this.inputStream = inputStream;
         this.contentLength = contentLength;

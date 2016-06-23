@@ -9,6 +9,7 @@ import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.repository.ResourceNotFoundException;
 
@@ -19,7 +20,7 @@ public interface TaskCallbackApi
     void taskHeartbeat(int siteId,
             List<String> lockedIds, AgentId agentId, int lockSeconds);
 
-    Optional<StorageFile> openArchive(TaskRequest request)
+    Optional<StorageObject> openArchive(TaskRequest request)
         throws IOException;
 
     void taskSucceeded(int siteId,

@@ -13,7 +13,7 @@ import com.google.common.io.ByteStreams;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.Storage;
-import io.digdag.spi.StorageFileMetadata;
+import io.digdag.spi.StorageObjectSummary;
 import io.digdag.spi.Storage.UploadStreamProvider;
 
 import static org.junit.Assert.assertThat;
@@ -78,7 +78,7 @@ public class S3StorageTest
         storage.put("key/file/2", 1, contents("1"));
         storage.put("key/file/3", 2, contents("12"));
 
-        List<StorageFileMetadata> all = new ArrayList<>();
+        List<StorageObjectSummary> all = new ArrayList<>();
         storage.list("key", (chunk) -> all.addAll(chunk));
 
         assertThat(all.size(), is(3));
@@ -98,7 +98,7 @@ public class S3StorageTest
         storage.put("test/file/1", 1, contents("1"));
         storage.put("test/file/2", 1, contents("1"));
 
-        List<StorageFileMetadata> all = new ArrayList<>();
+        List<StorageObjectSummary> all = new ArrayList<>();
         storage.list("test", (chunk) -> all.addAll(chunk));
         assertThat(all.size(), is(2));
         assertThat(all.get(0).getKey(), is("test/file/1"));

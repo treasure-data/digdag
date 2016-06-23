@@ -10,7 +10,7 @@ import com.google.common.base.Throwables;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.Storage;
-import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
 
 public class StorageFileLogServer
@@ -55,12 +55,12 @@ public class StorageFileLogServer
     {
         String path = getPrefixDir(dateDir, attemptDir) + fileName;
         try {
-            StorageFile file = storage.open(path);
-            try (InputStream in = file.getContentInputStream()) {
-                if (file.getContentLength() > 512*1024*1024) {
+            StorageObject obj = storage.open(path);
+            try (InputStream in = obj.getContentInputStream()) {
+                if (obj.getContentLength() > 512*1024*1024) {
                     throw new RuntimeException("Non-direct downloding log files larger than 512MB is not supported");
                 }
-                byte[] data = new byte[(int) file.getContentLength()];
+                byte[] data = new byte[(int) obj.getContentLength()];
                 ByteStreams.readFully(in, data);
                 return data;
             }

@@ -4,13 +4,13 @@ import java.nio.file.Path;
 import java.io.IOException;
 import com.google.common.base.Optional;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 
 public interface WorkspaceManager
 {
     public interface ArchiveProvider
     {
-        public Optional<StorageFile> open() throws IOException;
+        public Optional<StorageObject> open() throws IOException;
     }
 
     public interface WithWorkspaceAction<T>

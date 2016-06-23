@@ -47,7 +47,7 @@ import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
-import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.util.Md5CountInputStream;
@@ -332,9 +332,9 @@ public class ProjectResource
                 public void write(OutputStream out)
                     throws IOException, WebApplicationException
                 {
-                    StorageFile file;
+                    StorageObject obj;
                     try {
-                        file = archive.open();
+                        obj = archive.open();
                     }
                     catch (StorageFileNotFoundException ex) {
                         // throwing StorageFileNotFoundException should become 404 Not Found
@@ -343,7 +343,7 @@ public class ProjectResource
                                 GenericJsonExceptionHandler
                                 .toResponse(Response.Status.NOT_FOUND, "Archive file not found"));
                     }
-                    try (InputStream in = file.getContentInputStream()) {
+                    try (InputStream in = obj.getContentInputStream()) {
                         ByteStreams.copy(in, out);
                     }
                 }

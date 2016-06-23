@@ -29,8 +29,8 @@ import com.amazonaws.services.s3.transfer.model.UploadResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.Storage;
-import io.digdag.spi.StorageFile;
-import io.digdag.spi.StorageFileMetadata;
+import io.digdag.spi.StorageObject;
+import io.digdag.spi.StorageObjectSummary;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
@@ -75,7 +75,7 @@ public class S3Storage
     }
 
     @Override
-    public StorageFile open(String key)
+    public StorageObject open(String key)
         throws StorageFileNotFoundException
     {
         checkArgument(key != null, "key is null");
@@ -107,7 +107,7 @@ public class S3Storage
                 }
             });
 
-        return new StorageFile(resumable, actualSize);
+        return new StorageObject(resumable, actualSize);
     }
 
     private InputStream overrideCloseToAbort(final S3ObjectInputStream raw)
@@ -183,7 +183,7 @@ public class S3Storage
             }
             callback.accept(Lists.transform(
                         listing.getObjectSummaries(),
-                        (summary) -> new StorageFileMetadata(
+                        (summary) -> new StorageObjectSummary(
                             summary.getKey(),
                             summary.getSize(),
                             summary.getLastModified().toInstant())

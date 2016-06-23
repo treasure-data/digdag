@@ -31,7 +31,7 @@ import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.LogFilePrefix;
-import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public Optional<StorageFile> openArchive(TaskRequest request)
+    public Optional<StorageObject> openArchive(TaskRequest request)
         throws IOException
     {
         if (!request.getRevision().isPresent()) {

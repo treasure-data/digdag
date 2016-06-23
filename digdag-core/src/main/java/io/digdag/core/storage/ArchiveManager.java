@@ -17,7 +17,7 @@ import io.digdag.core.storage.StorageManager;
 import io.digdag.client.config.Config;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.Storage;
-import io.digdag.spi.StorageFile;
+import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
 import static java.util.Locale.ENGLISH;
 import static io.digdag.core.storage.StorageManager.decodeHex;
@@ -57,7 +57,7 @@ public class ArchiveManager
 
         Optional<DirectDownloadHandle> getDirectDownloadHandle();
 
-        StorageFile open() throws StorageFileNotFoundException;
+        StorageObject open() throws StorageFileNotFoundException;
     }
 
     private final StorageManager storageManager;
@@ -99,7 +99,7 @@ public class ArchiveManager
                 siteId, projectName, revisionName, DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));
     }
 
-    public Optional<StorageFile> openArchive(ProjectStore ps, int projectId, String revisionName)
+    public Optional<StorageObject> openArchive(ProjectStore ps, int projectId, String revisionName)
         throws ResourceNotFoundException, StorageFileNotFoundException
     {
         StoredRevision rev = findRevision(ps, projectId, revisionName);
@@ -111,7 +111,7 @@ public class ArchiveManager
         else if (type.equals(ArchiveType.DB)) {
             byte[] data = ps.getRevisionArchiveData(rev.getId());
             return Optional.of(
-                    new StorageFile(
+                    new StorageObject(
                         new ByteArrayInputStream(data),
                         data.length)
                     );
@@ -143,9 +143,9 @@ public class ArchiveManager
                     return Optional.absent();
                 }
 
-                public StorageFile open()
+                public StorageObject open()
                 {
-                    return new StorageFile(new ByteArrayInputStream(data), data.length);
+                    return new StorageObject(new ByteArrayInputStream(data), data.length);
                 }
             });
         }
@@ -162,7 +162,7 @@ public class ArchiveManager
                     return storage.getDirectDownloadHandle(rev.getArchivePath().or(""));
                 }
 
-                public StorageFile open()
+                public StorageObject open()
                     throws StorageFileNotFoundException
                 {
                     return storage.open(rev.getArchivePath().or(""));

@@ -7,7 +7,7 @@ import com.google.common.base.Optional;
 
 public interface Storage
 {
-    StorageFile open(String key)
+    StorageObject open(String key)
         throws StorageFileNotFoundException;
 
     interface UploadStreamProvider
@@ -40,7 +40,7 @@ public interface Storage
 
     interface FileListing
     {
-        void accept(List<StorageFileMetadata> chunk);
+        void accept(List<StorageObjectSummary> chunk);
     }
 
     void list(String keyPrefix, FileListing callback);
