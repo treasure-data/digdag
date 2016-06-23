@@ -17,7 +17,7 @@ import io.digdag.core.workflow.AttemptBuilder;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStoreManager;
-import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
@@ -116,7 +116,7 @@ public class InProcessTaskCallbackApi
     }
 
     @Override
-    public SessionStateFlags startSession(
+    public AttemptStateFlags startSession(
             int siteId,
             int projectId,
             String workflowName,

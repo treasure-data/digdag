@@ -11,7 +11,7 @@ public abstract class StoredSessionAttempt
 {
     public abstract long getId();
 
-    public abstract SessionStateFlags getStateFlags();
+    public abstract AttemptStateFlags getStateFlags();
 
     public abstract long getSessionId();
 

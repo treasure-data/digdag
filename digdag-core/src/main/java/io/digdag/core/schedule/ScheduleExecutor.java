@@ -22,7 +22,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
-import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -290,7 +290,7 @@ public class ScheduleExecutor
                                     .workflowDefinitionId(Optional.of(def.getId()))
                                     .id(0L)
                                     .params(def.getConfig().getFactory().create())
-                                    .stateFlags(SessionStateFlags.empty())
+                                    .stateFlags(AttemptStateFlags.empty())
                                     .sessionId(0L)
                                     .createdAt(Instant.now())
                                     .build()

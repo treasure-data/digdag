@@ -7,7 +7,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.session.SessionStateFlags;
+import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
@@ -69,7 +69,7 @@ public class RequireOperatorFactory
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
             Config overwriteParams = config.getNestedOrGetEmpty("params");
             try {
-                SessionStateFlags flags = callback.startSession(
+                AttemptStateFlags flags = callback.startSession(
                         request.getSiteId(),
                         projectId,
                         workflowName,

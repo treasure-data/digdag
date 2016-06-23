@@ -18,7 +18,7 @@ public interface SessionStoreManager
         throws ResourceNotFoundException;
 
     // for WorkflowExecutor.runUntilDone
-    SessionStateFlags getAttemptStateFlags(long attemptId)
+    AttemptStateFlags getAttemptStateFlags(long attemptId)
         throws ResourceNotFoundException;
 
     // for WorkflowExecutor.runUntilAny

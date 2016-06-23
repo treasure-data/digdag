@@ -4,33 +4,33 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class SessionStateFlags
+public class AttemptStateFlags
 {
     public static final int CANCEL_REQUESTED_CODE = 1;
     public static final int DONE_CODE = 2;
     public static final int SUCCESS_CODE = 4;
 
     @JsonCreator
-    public static SessionStateFlags of(int flags)
+    public static AttemptStateFlags of(int flags)
     {
-        return new SessionStateFlags(flags);
+        return new AttemptStateFlags(flags);
     }
 
-    public static SessionStateFlags empty()
+    public static AttemptStateFlags empty()
     {
         return of(0);
     }
 
     private final int flags;
 
-    private SessionStateFlags(int flags)
+    private AttemptStateFlags(int flags)
     {
-        checkArgument(flags >= 0 && flags < Short.MAX_VALUE, "SessionStateFlags must be positive 16-bit signed integer");
+        checkArgument(flags >= 0 && flags < Short.MAX_VALUE, "AttemptStateFlags must be positive 16-bit signed integer");
         int unknown = flags
             & ~CANCEL_REQUESTED_CODE
             & ~DONE_CODE
             & ~SUCCESS_CODE;
-        checkArgument(unknown == 0, "Unknown SessionStateFlags is set");
+        checkArgument(unknown == 0, "Unknown AttemptStateFlags is set");
         this.flags = flags;
     }
 
@@ -40,9 +40,9 @@ public class SessionStateFlags
         return flags;
     }
 
-    public SessionStateFlags withCancelRequested()
+    public AttemptStateFlags withCancelRequested()
     {
-        return SessionStateFlags.of(flags | CANCEL_REQUESTED_CODE);
+        return AttemptStateFlags.of(flags | CANCEL_REQUESTED_CODE);
     }
 
     public boolean isCancelRequested()
@@ -50,9 +50,9 @@ public class SessionStateFlags
         return (flags & CANCEL_REQUESTED_CODE) != 0;
     }
 
-    public SessionStateFlags withDone()
+    public AttemptStateFlags withDone()
     {
-        return SessionStateFlags.of(flags | DONE_CODE);
+        return AttemptStateFlags.of(flags | DONE_CODE);
     }
 
     public boolean isDone()
@@ -60,9 +60,9 @@ public class SessionStateFlags
         return (flags & DONE_CODE) != 0;
     }
 
-    public SessionStateFlags withSuccess()
+    public AttemptStateFlags withSuccess()
     {
-        return SessionStateFlags.of(flags | SUCCESS_CODE);
+        return AttemptStateFlags.of(flags | SUCCESS_CODE);
     }
 
     public boolean isSuccess()
@@ -79,7 +79,7 @@ public class SessionStateFlags
     public boolean equals(Object another)
     {
         return this == another ||
-            (another instanceof SessionStateFlags && ((SessionStateFlags) another).flags == flags);
+            (another instanceof AttemptStateFlags && ((AttemptStateFlags) another).flags == flags);
     }
 
     @Override
@@ -92,16 +92,16 @@ public class SessionStateFlags
             else { sb.append(", "); }
             sb.append("CANCEL_REQUESTED");
         }
-        else if (isDone()) {
+        if (isDone()) {
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("DONE");
         }
-        else if (isSuccess()) {
+        if (isSuccess()) {
             if (first) { first = false; }
             else { sb.append(", "); }
             sb.append("SUCCESS");
         }
-        return "SessionStateFlags{" + sb.toString() + "}";
+        return "AttemptStateFlags{" + sb.toString() + "}";
     }
 }
