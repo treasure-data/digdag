@@ -6,7 +6,6 @@ import java.util.zip.GZIPOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.nio.file.FileSystems;
@@ -24,6 +23,7 @@ import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.ImmutableLogFileHandle;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.client.config.Config;
 import java.time.format.DateTimeFormatter;
 import static java.util.Locale.ENGLISH;
@@ -37,7 +37,7 @@ public abstract class AbstractFileLogServer
     protected abstract void putFile(String dateDir, String attemptDir, String fileName, byte[] gzData);
 
     protected abstract byte[] getFile(String dateDir, String attemptDir, String fileName)
-            throws FileNotFoundException;
+            throws StorageFileNotFoundException;
 
     protected abstract void listFiles(String dateDir, String attemptDir, FileMetadataConsumer fileNameConsumer);
 
@@ -69,7 +69,7 @@ public abstract class AbstractFileLogServer
 
     @Override
     public byte[] getFile(LogFilePrefix prefix, String fileName)
-            throws FileNotFoundException
+            throws StorageFileNotFoundException
     {
         String dateDir = LogFiles.formatDataDir(prefix);
         String attemptDir = LogFiles.formatSessionAttemptDir(prefix);

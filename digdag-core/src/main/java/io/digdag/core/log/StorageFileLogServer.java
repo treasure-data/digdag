@@ -51,7 +51,7 @@ public class StorageFileLogServer
 
     @Override
     protected byte[] getFile(String dateDir, String attemptDir, String fileName)
-        throws FileNotFoundException
+        throws StorageFileNotFoundException
     {
         String path = getPrefixDir(dateDir, attemptDir) + fileName;
         try {
@@ -64,9 +64,6 @@ public class StorageFileLogServer
                 ByteStreams.readFully(in, data);
                 return data;
             }
-        }
-        catch (StorageFileNotFoundException ex) {
-            throw new FileNotFoundException();
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);

@@ -1,7 +1,6 @@
 package io.digdag.core.log;
 
 import java.util.List;
-import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.ZoneId;
 import com.google.inject.Inject;
@@ -12,6 +11,7 @@ import io.digdag.spi.LogServerFactory;
 import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.DirectUploadHandle;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.client.config.Config;
 
 public class NullLogServerFactory
@@ -56,9 +56,9 @@ public class NullLogServerFactory
 
         @Override
         public byte[] getFile(LogFilePrefix prefix, String fileName)
-            throws FileNotFoundException
+            throws StorageFileNotFoundException
         {
-            throw new FileNotFoundException();
+            throw new StorageFileNotFoundException("Log file not found");
         }
     }
 }
