@@ -13,8 +13,11 @@ public interface DirectDownloadHandle
 
     String getUrl();
 
-    static ImmutableDirectDownloadHandle.Builder builder()
+    static DirectDownloadHandle of(String type, String url)
     {
-        return ImmutableDirectDownloadHandle.builder();
+        return ImmutableDirectDownloadHandle.builder()
+            .type(type)
+            .url(url)
+            .build();
     }
 }

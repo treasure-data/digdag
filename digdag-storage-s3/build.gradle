@@ -1,0 +1,9 @@
+
+dependencies {
+    compile project(':digdag-spi')
+    compile project(':digdag-plugin-utils')
+    testCompile project(':digdag-core')
+
+    compile 'org.slf4j:slf4j-api:1.7.12'
+    compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
+}

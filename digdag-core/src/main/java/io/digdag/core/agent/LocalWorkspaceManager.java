@@ -2,12 +2,10 @@ package io.digdag.core.agent;
 
 import java.util.Set;
 import java.util.HashSet;
-import java.util.EnumSet;
 import java.io.IOException;
-import java.io.File;
 import java.io.OutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.BufferedInputStream;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Files;
@@ -16,6 +14,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import com.google.inject.Inject;
+import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -23,56 +22,35 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
-import io.digdag.core.repository.ProjectStore;
-import io.digdag.core.repository.StoredProject;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.ProjectStoreManager;
-import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.spi.StorageObject;
 import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempDir;
-import static io.digdag.core.TempFileManager.deleteFilesIfExistsRecursively;
 
 public class LocalWorkspaceManager
     implements WorkspaceManager
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ProjectStoreManager rm;
     private final TempFileManager tempFiles;
 
     @Inject
-    public LocalWorkspaceManager(ProjectStoreManager rm, TempFileManager tempFiles)
+    public LocalWorkspaceManager(TempFileManager tempFiles)
     {
-        this.rm = rm;
         this.tempFiles = tempFiles;
     }
 
     @Override
-    public <T> T withExtractedArchive(TaskRequest request, WithWorkspaceAction<T> func)
+    public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
             throws IOException
     {
-        try {
-            ProjectStore rs = rm.getProjectStore(request.getSiteId());
-            StoredRevision rev;
-            if (request.getRevision().isPresent()) {
-                rev = rs.getRevisionByName(request.getProjectId(), request.getRevision().get());
-            }
-            else {
-                rev = rs.getLatestRevision(request.getProjectId());
-            }
-
-            try (TempDir workspacePath = createNewWorkspace(request)) {
-                if (rev.getArchiveType().equals("db")) {  // TODO delegate in-process archive to another class
-                    byte[] data = rs.getRevisionArchiveData(rev.getId());
-                    try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
-                        extractArchive(workspacePath.get(), archive);
-                    }
+        try (TempDir workspacePath = createNewWorkspace(request)) {
+            Optional<StorageObject> in = archiveProvider.open();
+            if (in.isPresent()) {
+                try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in.get().getContentInputStream())))) {
+                    extractArchive(workspacePath.get(), archive);
                 }
-                return func.run(workspacePath.get());
             }
-        }
-        catch (ResourceNotFoundException ex) {
-            throw new RuntimeException("Failed to extract archive", ex);
+            return func.run(workspacePath.get());
         }
     }
 

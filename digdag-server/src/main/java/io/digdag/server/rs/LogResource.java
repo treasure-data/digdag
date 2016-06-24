@@ -117,15 +117,10 @@ public class LogResource
     public byte[] getFile(
             @PathParam("attempt_id") long attemptId,
             @PathParam("file_name") String fileName)
-        throws ResourceNotFoundException
+        throws StorageFileNotFoundException, ResourceNotFoundException
     {
         LogFilePrefix prefix = getPrefix(attemptId);
-        try {
-            return logServer.getFile(prefix, fileName);
-        }
-        catch (FileNotFoundException ex) {
-            throw new ResourceNotFoundException(ex);
-        }
+        return logServer.getFile(prefix, fileName);
     }
 
     private LogFilePrefix getPrefix(long attemptId)

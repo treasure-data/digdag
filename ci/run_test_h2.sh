@@ -1,4 +1,5 @@
 #!/bin/bash -xe
+
 docker run \
 -w /digdag \
 -v `pwd`/:/digdag \

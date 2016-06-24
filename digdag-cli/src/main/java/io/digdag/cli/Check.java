@@ -19,8 +19,9 @@ import com.google.inject.Scopes;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
-import io.digdag.core.repository.Revision;
 import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.repository.ArchiveType;
+import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.WorkflowCompiler;
@@ -132,7 +133,7 @@ public class Check
         ArchiveMetadata meta = project.getArchiveMetadata();
 
         Revision rev = Revision.builderFromArchive("check", meta)
-            .archiveType("null")
+            .archiveType(ArchiveType.NONE)
             .build();
 
         WorkflowDefinitionList defs = meta.getWorkflowList();

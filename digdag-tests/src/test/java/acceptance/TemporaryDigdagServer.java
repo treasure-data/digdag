@@ -124,16 +124,21 @@ public class TemporaryDigdagServer
             throw Throwables.propagate(e);
         }
 
-        List<String> args = Stream.concat(Stream.of(
-                "server",
-                "-m",
-                "--port", String.valueOf(port),
-                "--bind", host,
-                "--task-log", taskLog.toString(),
-                "--access-log", accessLog.toString(),
-                "-c", config.toString()),
-                extraArgs.stream())
-                .collect(toList());
+        ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();
+        argsBuilder.addAll(ImmutableList.of(
+                    "server",
+                    "-m",
+                    "--port", String.valueOf(port),
+                    "--bind", host,
+                    "--access-log", accessLog.toString(),
+                    "-c", config.toString()));
+        if (!configuration.contains("log-server.type")) {
+            argsBuilder.addAll(ImmutableList.of(
+                    "--task-log", taskLog.toString()));
+        }
+        argsBuilder.addAll(extraArgs);
+
+        List<String> args = argsBuilder.build();
 
         executor.execute(() -> main(version, args, out, err));
 

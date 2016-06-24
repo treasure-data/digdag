@@ -19,8 +19,6 @@ import com.google.inject.util.Modules;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.core.notification.NotificationModule;
 import io.digdag.core.queue.QueueModule;
-import io.digdag.core.log.NullLogServerFactory;
-import io.digdag.core.log.LocalFileLogServerFactory;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.database.DatabaseModule;
 import io.digdag.core.workflow.WorkflowModule;
@@ -31,6 +29,7 @@ import io.digdag.core.config.ConfigModule;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.agent.AgentModule;
 import io.digdag.core.agent.LocalAgentModule;
+import io.digdag.core.storage.StorageModule;
 import io.digdag.core.log.LogModule;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.DynamicPluginModule;
@@ -163,6 +162,7 @@ public class DigdagEmbed
                     new WorkflowModule(),
                     new QueueModule(),
                     new NotificationModule(),
+                    new StorageModule(),
                     (binder) -> {
                         binder.bind(ProjectArchiveLoader.class);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);

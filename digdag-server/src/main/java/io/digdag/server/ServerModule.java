@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
@@ -65,6 +66,7 @@ public class ServerModule
     {
         builder
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceNotFoundException>(Response.Status.NOT_FOUND) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<StorageFileNotFoundException>(Response.Status.NOT_FOUND) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceConflictException>(Response.Status.CONFLICT) { })
             .addProviderInstance(new GenericJsonExceptionHandler<NotSupportedException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<IOException>(Response.Status.BAD_REQUEST) { })  // happens if input is not gzip

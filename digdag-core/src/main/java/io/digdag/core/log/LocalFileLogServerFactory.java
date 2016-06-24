@@ -24,6 +24,7 @@ import io.digdag.spi.LogFilePrefix;
 import io.digdag.spi.LogFileHandle;
 import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.spi.DirectUploadHandle;
+import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.client.config.Config;
 import java.time.format.DateTimeFormatter;
 import static java.util.Locale.ENGLISH;
@@ -121,14 +122,14 @@ public class LocalFileLogServerFactory
 
         @Override
         protected byte[] getFile(String dateDir, String attemptDir, String fileName)
-            throws FileNotFoundException
+            throws StorageFileNotFoundException
         {
             Path path = getPrefixDir(dateDir, attemptDir).resolve(fileName);
             try (InputStream in = Files.newInputStream(path)) {
                 return ByteStreams.toByteArray(in);
             }
             catch (FileNotFoundException ex) {
-                throw ex;
+                throw new StorageFileNotFoundException(ex);
             }
             catch (IOException ex) {
                 throw Throwables.propagate(ex);

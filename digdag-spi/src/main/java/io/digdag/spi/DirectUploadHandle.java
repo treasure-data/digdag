@@ -13,8 +13,11 @@ public interface DirectUploadHandle
 
     String getUrl();
 
-    static ImmutableDirectUploadHandle.Builder builder()
+    static DirectUploadHandle of(String type, String url)
     {
-        return ImmutableDirectUploadHandle.builder();
+        return ImmutableDirectUploadHandle.builder()
+            .type(type)
+            .url(url)
+            .build();
     }
 }

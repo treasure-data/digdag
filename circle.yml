@@ -21,10 +21,10 @@ dependencies:
       ./gradlew testClasses
 
 test:
+  pre:
   override:
     - CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true
-
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |

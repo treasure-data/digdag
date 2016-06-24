@@ -2,23 +2,30 @@ package io.digdag.server.rs;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.net.URI;
 import java.time.Instant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.Response;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
@@ -35,14 +42,22 @@ import io.digdag.core.workflow.*;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.TempFileManager;
+import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
+import io.digdag.spi.StorageObject;
+import io.digdag.spi.StorageFileNotFoundException;
+import io.digdag.spi.DirectDownloadHandle;
+import io.digdag.util.Md5CountInputStream;
+import io.digdag.server.GenericJsonExceptionHandler;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 import static io.digdag.server.rs.RestModels.sessionModels;
+import static io.digdag.util.Md5CountInputStream.digestMd5;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -69,12 +84,13 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflow?name=name        # lookup a workflow of a project by name
     // GET  /api/projects/{id}/workflow?name=name&revision=name    # lookup a workflow of a past revision of a project by name
 
-    private static final long ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
-    private static final long ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
+    private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
+    private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
     private final WorkflowCompiler compiler;
+    private final ArchiveManager archiveManager;
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
@@ -86,6 +102,7 @@ public class ProjectResource
             ConfigFactory cf,
             YamlConfigLoader rawLoader,
             WorkflowCompiler compiler,
+            ArchiveManager archiveManager,
             ProjectStoreManager rm,
             ScheduleStoreManager sm,
             SchedulerManager srm,
@@ -96,6 +113,7 @@ public class ProjectResource
         this.rawLoader = rawLoader;
         this.srm = srm;
         this.compiler = compiler;
+        this.archiveManager = archiveManager;
         this.rm = rm;
         this.sm = sm;
         this.tempFiles = tempFiles;
@@ -279,19 +297,58 @@ public class ProjectResource
     @GET
     @Path("/api/projects/{id}/archive")
     @Produces("application/gzip")
-    public byte[] getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
-        throws ResourceNotFoundException
+    public Response getArchive(@PathParam("id") int projId, @QueryParam("revision") String revName)
+        throws ResourceNotFoundException, StorageFileNotFoundException
     {
         ProjectStore ps = rm.getProjectStore(getSiteId());
-        StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
-        StoredRevision rev;
-        if (revName == null) {
-            rev = ps.getLatestRevision(proj.getId());
+        ensureNotDeletedProject(ps.getProjectById(projId));
+
+        Optional<ArchiveManager.StoredArchive> archiveOrNone =
+            archiveManager.getArchive(ps, projId, revName);
+        if (!archiveOrNone.isPresent()) {
+            throw new ResourceNotFoundException("Archive is not stored");
         }
         else {
-            rev = ps.getRevisionByName(proj.getId(), revName);
+            ArchiveManager.StoredArchive archive = archiveOrNone.get();
+
+            // TODO DigdagClient doesn't follow redirection. It should be fixed.
+            //Optional<DirectDownloadHandle> direct = archive.getDirectDownloadHandle();
+            //if (direct.isPresent()) {
+            //    try {
+            //        return Response.seeOther(URI.create(direct.get().getUrl())).build();
+            //    }
+            //    catch (IllegalArgumentException ex) {
+            //        // pass-through if invalid url
+            //    }
+            //}
+
+            Optional<byte[]> bytes = archive.getByteArray();
+            if (bytes.isPresent()) {
+                return Response.ok(bytes.get()).build();
+            }
+
+            return Response.ok(new StreamingOutput() {
+                @Override
+                public void write(OutputStream out)
+                    throws IOException, WebApplicationException
+                {
+                    StorageObject obj;
+                    try {
+                        obj = archive.open();
+                    }
+                    catch (StorageFileNotFoundException ex) {
+                        // throwing StorageFileNotFoundException should become 404 Not Found
+                        // to be consistent with the case of DirectDownloadHandle
+                        throw new NotFoundException(
+                                GenericJsonExceptionHandler
+                                .toResponse(Response.Status.NOT_FOUND, "Archive file not found"));
+                    }
+                    try (InputStream in = obj.getContentInputStream()) {
+                        ByteStreams.copy(in, out);
+                    }
+                }
+            }).build();
         }
-        return ps.getRevisionArchiveData(rev.getId());
     }
 
     @DELETE
@@ -310,59 +367,110 @@ public class ProjectResource
     @Consumes("application/gzip")
     @Path("/api/projects")
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
-            InputStream body)
+            InputStream body, @HeaderParam("Content-Length") long contentLength)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "project= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
 
-        byte[] data = ByteStreams.toByteArray(body);
-
-        if (data.length > ARCHIVE_TOTAL_SIZE_LIMIT) {
-            // TODO throw this exception before reading all data in memory
+        if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
             throw new IllegalArgumentException(String.format(ENGLISH,
                         "Size of the uploaded archive file exceeds limit (%d bytes)",
                         ARCHIVE_TOTAL_SIZE_LIMIT));
         }
+        int size = (int) contentLength;
 
-        ArchiveMetadata meta;
-        try (TempDir dir = tempFiles.createTempDir("push", name)) {
+        try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
+            // Read uploaded data to the temp file and following variables
+            ArchiveMetadata meta;
+            byte[] md5;
+            try (OutputStream writeToTemp = Files.newOutputStream(tempFile.get())) {
+                Md5CountInputStream md5Count = new Md5CountInputStream(body);
+                meta = readArchiveMetadata(new DuplicateInputStream(md5Count, writeToTemp), name);
+                md5 = md5Count.getDigest();
+                if (md5Count.getCount() != contentLength) {
+                    throw new IllegalArgumentException("Content-Length header doesn't match with uploaded data size");
+                }
+            }
+
+            ArchiveManager.Location location =
+                archiveManager.newArchiveLocation(getSiteId(), name, revision, size);
+            boolean storeInDb = location.getArchiveType().equals(ArchiveType.DB);
+
+            if (!storeInDb) {
+                // upload to storage
+                try {
+                    archiveManager
+                        .getStorage(location.getArchiveType())
+                        .put(location.getPath(), size, () -> Files.newInputStream(tempFile.get()));
+                }
+                catch (RuntimeException | IOException ex) {
+                    throw new InternalServerErrorException("Failed to upload archive to a remote storage", ex);
+                }
+            }
+
+            return rm.getProjectStore(getSiteId()).putAndLockProject(
+                    Project.of(name),
+                    (store, storedProject) -> {
+                        ProjectControl lockedProj = new ProjectControl(store, storedProject);
+                        StoredRevision rev;
+                        if (storeInDb) {
+                            // store data in db
+                            byte[] data = new byte[size];
+                            try (InputStream in = Files.newInputStream(tempFile.get())) {
+                                ByteStreams.readFully(in, data);
+                            }
+                            catch (RuntimeException | IOException ex) {
+                                throw new InternalServerErrorException("Failed to load archive data in memory", ex);
+                            }
+                            rev = lockedProj.insertRevision(
+                                    Revision.builderFromArchive(revision, meta)
+                                        .archiveType(ArchiveType.DB)
+                                        .archivePath(Optional.absent())
+                                        .archiveMd5(Optional.of(md5))
+                                        .build()
+                                    );
+                            lockedProj.insertRevisionArchiveData(rev.getId(), data);
+                        }
+                        else {
+                            // store location of the uploaded file in db
+                            rev = lockedProj.insertRevision(
+                                    Revision.builderFromArchive(revision, meta)
+                                        .archiveType(location.getArchiveType())
+                                        .archivePath(Optional.of(location.getPath()))
+                                        .archiveMd5(Optional.of(md5))
+                                        .build()
+                                    );
+                        }
+
+                        List<StoredWorkflowDefinition> defs =
+                            lockedProj.insertWorkflowDefinitions(rev,
+                                    meta.getWorkflowList().get(),
+                                    srm, Instant.now());
+                        return RestModels.project(storedProject, rev);
+                    });
+        }
+    }
+
+    private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
+        throws IOException
+    {
+        try (TempDir dir = tempFiles.createTempDir("push", projectName)) {
             long totalSize = 0;
-            try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new ByteArrayInputStream(data)))) {
+            try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in, 32*1024)))) {
                 totalSize = extractConfigFiles(dir.get(), archive);
             }
+
             if (totalSize > ARCHIVE_TOTAL_SIZE_LIMIT) {
                 throw new IllegalArgumentException(String.format(ENGLISH,
                             "Total size of the archive exceeds limit (%d > %d bytes)",
                             totalSize, ARCHIVE_TOTAL_SIZE_LIMIT));
             }
 
-            // jinja is disabled here
             Config renderedConfig = rawLoader.loadFile(
                     dir.child(ArchiveMetadata.FILE_NAME).toFile()).toConfig(cf);
-            meta = renderedConfig.convert(ArchiveMetadata.class);
+            return renderedConfig.convert(ArchiveMetadata.class);
         }
-
-        RestProject stored = rm.getProjectStore(getSiteId()).putAndLockProject(
-                Project.of(name),
-                (store, storedProject) -> {
-                    ProjectControl lockedProj = new ProjectControl(store, storedProject);
-                    StoredRevision rev = lockedProj.insertRevision(
-                            Revision.builderFromArchive(revision, meta)
-                                .archiveType("db")
-                                .archivePath(Optional.absent())
-                                .archiveMd5(Optional.of(calculateArchiveMd5(data)))
-                                .build()
-                            );
-                    lockedProj.insertRevisionArchiveData(rev.getId(), data);
-                    List<StoredWorkflowDefinition> defs =
-                        lockedProj.insertWorkflowDefinitions(rev,
-                                meta.getWorkflowList().get(),
-                                srm, Instant.now());
-                    return RestModels.project(storedProject, rev);
-                });
-
-        return stored;
     }
 
     // TODO here doesn't have to extract files exception ArchiveMetadata.FILE_NAME
@@ -392,17 +500,6 @@ public class ProjectResource
             }
         }
         return totalSize;
-    }
-
-    private byte[] calculateArchiveMd5(byte[] data)
-    {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            return md.digest(data);
-        }
-        catch (NoSuchAlgorithmException ex) {
-            throw Throwables.propagate(ex);
-        }
     }
 
     private void validateTarEntry(TarArchiveEntry entry)

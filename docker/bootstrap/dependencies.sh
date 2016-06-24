@@ -24,4 +24,8 @@ sudo -u postgres createdb -O digdag_test digdag_test
 apt-get -y install python python-pip python-dev
 pip install sphinx recommonmark sphinx_rtd_theme
 
+# Fake S3
+apt-get -y install ruby
+sudo gem install fakes3
+
 rm -rf /var/lib/apt/lists/*

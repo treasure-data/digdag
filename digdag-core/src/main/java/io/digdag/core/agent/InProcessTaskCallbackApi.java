@@ -2,6 +2,8 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.time.Instant;
+import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -19,6 +21,9 @@ import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.ArchiveType;
+import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.queue.TaskQueueManager;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.core.log.TaskLogger;
@@ -26,8 +31,11 @@ import io.digdag.spi.TaskQueueClient;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.LogFilePrefix;
+import io.digdag.spi.StorageObject;
+import io.digdag.spi.StorageFileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static java.util.Locale.ENGLISH;
 import static io.digdag.core.log.LogServerManager.logFilePrefixFromSessionAttempt;
 
 public class InProcessTaskCallbackApi
@@ -35,8 +43,9 @@ public class InProcessTaskCallbackApi
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ProjectStoreManager rm;
+    private final ProjectStoreManager pm;
     private final SessionStoreManager sm;
+    private final ArchiveManager archiveManager;
     private final LogServerManager lm;
     private final AttemptBuilder attemptBuilder;
     private final AgentId agentId;
@@ -45,16 +54,18 @@ public class InProcessTaskCallbackApi
 
     @Inject
     public InProcessTaskCallbackApi(
-            ProjectStoreManager rm,
+            ProjectStoreManager pm,
             SessionStoreManager sm,
+            ArchiveManager archiveManager,
             TaskQueueManager qm,
             LogServerManager lm,
             AgentId agentId,
             AttemptBuilder attemptBuilder,
             WorkflowExecutor exec)
     {
-        this.rm = rm;
+        this.pm = pm;
         this.sm = sm;
+        this.archiveManager = archiveManager;
         this.lm = lm;
         this.agentId = agentId;
         this.attemptBuilder = attemptBuilder;
@@ -85,6 +96,37 @@ public class InProcessTaskCallbackApi
             List<String> lockedIds, AgentId agentId, int lockSeconds)
     {
         queueClient.taskHeartbeat(siteId, lockedIds, agentId.toString(), lockSeconds);
+    }
+
+    @Override
+    public Optional<StorageObject> openArchive(TaskRequest request)
+        throws IOException
+    {
+        if (!request.getRevision().isPresent()) {
+            return Optional.absent();
+        }
+        String revision = request.getRevision().get();
+
+        try {
+            return archiveManager.openArchive(
+                    pm.getProjectStore(request.getSiteId()),
+                    request.getProjectId(),
+                    revision);
+        }
+        catch (ResourceNotFoundException ex) {
+            throw new IllegalStateException(String.format(ENGLISH,
+                        "Archive data for project id=%d revision='%s' is not found in database",
+                        request.getProjectId(),
+                        request.getRevision().or("")
+                        ), ex);
+        }
+        catch (StorageFileNotFoundException ex) {
+            throw new IllegalStateException(String.format(ENGLISH,
+                        "Archive file for project id=%d revision='%s' is not found",
+                        request.getProjectId(),
+                        request.getRevision().or("")
+                        ), ex);
+        }
     }
 
     @Override
@@ -125,7 +167,7 @@ public class InProcessTaskCallbackApi
             Config overwriteParams)
         throws ResourceNotFoundException
     {
-        ProjectStore projectStore = rm.getProjectStore(siteId);
+        ProjectStore projectStore = pm.getProjectStore(siteId);
 
         StoredProject proj = projectStore.getProjectById(projectId);
         StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
@@ -156,7 +198,7 @@ public class InProcessTaskCallbackApi
             String workflowName)
         throws ResourceNotFoundException
     {
-        ProjectStore projectStore = rm.getProjectStore(siteId);
+        ProjectStore projectStore = pm.getProjectStore(siteId);
 
         StoredProject proj = projectStore.getProjectById(projectId);
         StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
