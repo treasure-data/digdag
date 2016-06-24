@@ -1,18 +1,18 @@
 package io.digdag.standards.operator;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.io.File;
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.io.BufferedWriter;
 import java.nio.file.Path;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.TaskRequest;
@@ -66,8 +66,13 @@ public class ShOperatorFactory
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
 
+            List<String> shell = params.getListOrEmpty("shell", String.class);
+            if (shell.isEmpty()) {
+                shell = ImmutableList.of("/bin/sh");
+            }
             String command = params.get("_command", String.class);
-            ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
+
+            ProcessBuilder pb = new ProcessBuilder(shell);
 
             final Map<String, String> env = pb.environment();
             params.getKeys()
@@ -102,7 +107,11 @@ public class ShOperatorFactory
             int ecode;
             try {
                 Process p = exec.start(workspacePath, request, pb);
-                p.getOutputStream().close();
+
+                // feed command to stdin
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+                    writer.write(command);
+                }
 
                 // copy stdout to System.out and logger
                 clog.copyStdout(p, System.out);
