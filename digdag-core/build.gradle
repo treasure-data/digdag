@@ -4,6 +4,7 @@ dependencies {
     compile project(':digdag-client')
     compile project(':digdag-plugin-utils')
 
+    compile 'com.google.guava:guava:19.0'
     compile 'com.google.inject.extensions:guice-multibindings:4.0'
     compile 'org.embulk:guice-bootstrap:0.1.0'
     compile 'com.fasterxml.jackson.module:jackson-module-guice:2.6.2'
