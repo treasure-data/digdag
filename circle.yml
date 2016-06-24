@@ -10,6 +10,8 @@ machine:
 dependencies:
   cache_directories:
     - "~/docker"
+    - "~/.gradle"
+    - "~/.m2"
   override:
     - docker/setup.sh
     - | # download and cache dependencies
@@ -22,6 +24,7 @@ dependencies:
 
 test:
   pre:
+    - ci/validate.sh
   override:
     - CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true

@@ -7,6 +7,7 @@ cache:
   directories:
     - $HOME/docker
     - $HOME/.gradle
+    - $HOME/.m2
 
 env:
   global:
@@ -25,6 +26,7 @@ before_install:
     -v ~/.gradle:/root/.gradle \
     digdag-build \
     ./gradlew testClasses
+  - ci/validate.sh
 
 install:
 
