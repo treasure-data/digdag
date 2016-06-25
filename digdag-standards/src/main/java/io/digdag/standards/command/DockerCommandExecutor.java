@@ -78,11 +78,11 @@ public class DockerCommandExecutor
 
             // mount
             if (buildImageName == null) {
-                // build image already includes /digdag
-            }
-            else {
                 command.add("-v").add(String.format(ENGLISH,
                             "%s:%s:rw", workspacePath.toAbsolutePath(), "/digdag"));
+            }
+            else {
+                // build image already includes /digdag
             }
 
             // workdir
