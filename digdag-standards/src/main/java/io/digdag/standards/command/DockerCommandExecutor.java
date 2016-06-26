@@ -61,11 +61,14 @@ public class DockerCommandExecutor
 
         String buildImageName = null;
         if (dockerConfig.has("build")) {
-            buildImageName = String.format(ENGLISH, "rev-%d-%s",
+            buildImageName = String.format(ENGLISH, "rev-%d/%s",
+                    request.getProjectId(),
+                    request.getRevision().or(UUID.randomUUID().toString()).replaceAll(":", "-").toLowerCase());
+            String dockerFileName = String.format(ENGLISH, "rev-%d-%s",
                     request.getProjectId(),
                     request.getRevision().or(UUID.randomUUID().toString()));
 
-            buildImage(workspacePath, dockerConfig, image, buildImageName);
+            buildImage(workspacePath, dockerConfig, image, buildImageName, dockerFileName);
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
@@ -133,7 +136,7 @@ public class DockerCommandExecutor
         }
     }
 
-    private void buildImage(Path workspacePath, Config dockerConfig, String image, String buildImageName) {
+    private void buildImage(Path workspacePath, Config dockerConfig, String image, String buildImageName, String dockerFileName) {
         try {
             Pattern pattern = Pattern.compile("\n" + Pattern.quote(buildImageName) + " ");
 
@@ -169,7 +172,7 @@ public class DockerCommandExecutor
             // create Dockerfile
             Path tmpPath = workspacePath.resolve(".digdag/tmp");  // TODO this should not be workspacePath. This should go to a configured working directory
             Files.createDirectories(tmpPath);
-            Path dockerFilePath = tmpPath.resolve("Dockerfile." + buildImageName);
+            Path dockerFilePath = tmpPath.resolve("Dockerfile." + dockerFileName);
 
             List<String> buildCommands = dockerConfig.getList("build", String.class);
             try (BufferedWriter out = Files.newBufferedWriter(dockerFilePath)) {
