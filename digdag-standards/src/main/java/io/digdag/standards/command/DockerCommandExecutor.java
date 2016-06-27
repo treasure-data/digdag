@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.hash.Hashing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import io.digdag.spi.CommandExecutor;
@@ -27,6 +28,7 @@ import io.digdag.client.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class DockerCommandExecutor
     implements CommandExecutor
@@ -57,15 +59,16 @@ public class DockerCommandExecutor
     private Process startWithDocker(Path workspacePath, TaskRequest request, ProcessBuilder pb)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
-        String image = dockerConfig.get("image", String.class);
+        String baseImageName = dockerConfig.get("image", String.class);
 
-        String buildImageName = null;
+        String imageName;
         if (dockerConfig.has("build")) {
-            buildImageName = String.format(ENGLISH, "rev-%d-%s",
-                    request.getProjectId(),
-                    request.getRevision().or(UUID.randomUUID().toString()));
-
-            buildImage(workspacePath, dockerConfig, image, buildImageName);
+            List<String> buildCommands = dockerConfig.getList("build", String.class);
+            imageName = uniqueImageName(request, baseImageName, buildCommands);
+            buildImage(imageName, workspacePath, baseImageName, buildCommands);
+        }
+        else {
+            imageName = baseImageName;
         }
 
         ImmutableList.Builder<String> command = ImmutableList.builder();
@@ -77,18 +80,13 @@ public class DockerCommandExecutor
             command.add("--rm");  // remove container when exits
 
             // mount
-            if (buildImageName == null) {
-                // build image already includes /digdag
-            }
-            else {
-                command.add("-v").add(String.format(ENGLISH,
-                            "%s:%s:rw", workspacePath.toAbsolutePath(), "/digdag"));
-            }
+            command.add("-v").add(String.format(ENGLISH,
+                        "%s:%s:rw", workspacePath.toAbsolutePath(), "/digdag"));
 
             // workdir
             command.add("-w").add("/digdag");
 
-            logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), image);
+            logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
             // env var
             // TODO deleting temp file right after start() causes "no such file or directory." error
@@ -108,13 +106,8 @@ public class DockerCommandExecutor
                 command.add("-e").add(pair.getKey() + "=" + pair.getValue());
             }
 
-            // image
-            if (buildImageName == null) {
-                command.add(image);
-            }
-            else {
-                command.add(buildImageName);
-            }
+            // image name
+            command.add(imageName);
 
             // command and args
             command.addAll(pb.command());
@@ -133,9 +126,35 @@ public class DockerCommandExecutor
         }
     }
 
-    private void buildImage(Path workspacePath, Config dockerConfig, String image, String buildImageName) {
+    private static String uniqueImageName(TaskRequest request,
+            String baseImageName, List<String> buildCommands)
+    {
+        // Name should include project "id" for security reason because
+        // conflicting SHA1 hash means that attacker can reuse an image
+        // built by someone else.
+        String name = "digdag-project-" + Integer.toString(request.getProjectId());
+
+        Config config = request.getConfig().getFactory().create();
+        config.set("image", baseImageName);
+        config.set("build", buildCommands);
+        config.set("revision", request.getRevision().or(UUID.randomUUID().toString()));
+        String tag = Hashing.sha1().hashString(config.toString(), UTF_8).toString();
+
+        return name + ':' + tag;
+    }
+
+    private void buildImage(String imageName, Path workspacePath,
+            String baseImageName, List<String> buildCommands)
+    {
         try {
-            Pattern pattern = Pattern.compile("\n" + Pattern.quote(buildImageName) + " ");
+            String[] nameTag = imageName.split(":", 2);
+            Pattern pattern;
+            if (nameTag.length > 1) {
+                pattern = Pattern.compile("\n" + Pattern.quote(nameTag[0]) + " +" + Pattern.quote(nameTag[1]));
+            }
+            else {
+                pattern = Pattern.compile("\n" + Pattern.quote(imageName) + " ");
+            }
 
             int ecode;
             String message;
@@ -156,7 +175,7 @@ public class DockerCommandExecutor
             Matcher m = pattern.matcher(message);
             if (m.find()) {
                 // image is already available
-                logger.debug("Reusing image {}", buildImageName);
+                logger.debug("Reusing docker image {}", imageName);
                 return;
             }
         }
@@ -164,22 +183,25 @@ public class DockerCommandExecutor
             throw new RuntimeException(ex);
         }
 
-        logger.debug("Building image {}", buildImageName);
+        logger.info("Building docker image {}", imageName);
         try {
             // create Dockerfile
             Path tmpPath = workspacePath.resolve(".digdag/tmp");  // TODO this should not be workspacePath. This should go to a configured working directory
             Files.createDirectories(tmpPath);
-            Path dockerFilePath = tmpPath.resolve("Dockerfile." + buildImageName);
+            Path dockerFilePath = tmpPath.resolve("Dockerfile." + imageName.replaceAll(":", "."));
 
-            List<String> buildCommands = dockerConfig.getList("build", String.class);
             try (BufferedWriter out = Files.newBufferedWriter(dockerFilePath)) {
                 out.write("FROM ");
-                out.write(image.replace("\n", ""));
+                out.write(baseImageName.replace("\n", ""));
                 out.write("\n");
 
-                out.write("ADD . /digdag\n");
+                // Disabled 'ADD' because it spoils caching. Using the same base image and
+                // same build commands should share pre-build revisions. Using revision name
+                // as the unique key is not good enough for local mode because revision name
+                // is automatically generated based on execution time.
+                //out.write("ADD . /digdag\n");
+                //out.write("WORKDIR /digdag\n");
 
-                out.write("WORKDIR /digdag\n");
                 for (String command : buildCommands) {
                     for (String line : command.split("\n")) {
                         out.write("RUN ");
@@ -193,7 +215,7 @@ public class DockerCommandExecutor
             command.add("docker").add("build");
             command.add("-f").add(dockerFilePath.toString());
             command.add("--force-rm");
-            command.add("-t").add(buildImageName);
+            command.add("-t").add(imageName);
             command.add(workspacePath.toString());
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
