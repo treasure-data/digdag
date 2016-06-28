@@ -252,7 +252,7 @@ public class TdOperatorFactory
                     .setDomainKey(existingDomainKey.get())
                     .createTDJobRequest();
 
-            TDJobOperator j = op.submitNewJob(req);
+            TDJobOperator j = op.submitNewJobWithRetry(req);
             logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
 
             return j.getJobId();

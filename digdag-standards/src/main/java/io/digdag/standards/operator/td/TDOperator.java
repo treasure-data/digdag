@@ -176,6 +176,20 @@ public class TDOperator
         return newJobOperator(jobId);
     }
 
+    public TDJobOperator submitNewJobWithRetry(TDJobRequest req)
+    {
+        if (!req.getDomainKey().isPresent()) {
+            throw new IllegalArgumentException("domain key must be set");
+        }
+
+        try {
+            return defaultRetryExecutor.run(() -> submitNewJob(req));
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
     public TDJobOperator submitExportJob(TDExportJobRequest request)
     {
         // TODO retry with an unique id and ignore conflict
