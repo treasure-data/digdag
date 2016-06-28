@@ -147,7 +147,7 @@ public class TdOperatorFactory
                 if (!existingDomainKey.isPresent()) {
                     String domainKey = UUID.randomUUID().toString();
                     state.set(DOMAIN_KEY, domainKey);
-                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state.deepCopy()));
+                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
                 }
 
                 // Start the job
@@ -155,7 +155,7 @@ public class TdOperatorFactory
                     String jobId = startJob(op);
                     state.set(JOB_ID, jobId);
                     state.set(POLL_INTERVAL, INITIAL_POLL_INTERVAL);
-                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state.deepCopy()));
+                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
 
                 // Check if the job is done
@@ -167,7 +167,7 @@ public class TdOperatorFactory
                     int prevPollInterval = state.get(POLL_INTERVAL, int.class, INITIAL_POLL_INTERVAL);
                     int nextPollInterval = Math.min(MAX_POLL_INTERVAL, prevPollInterval * 2);
                     state.set(POLL_INTERVAL, nextPollInterval);
-                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state.deepCopy()));
+                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
 
                 // Get the job results
