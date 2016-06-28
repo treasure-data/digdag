@@ -54,7 +54,7 @@ public class TdOperatorFactory
 {
     private static final String JOB_ID = "jobId";
     private static final String DOMAIN_KEY = "domainKey";
-    private static final String POLL_INTERVAL = "pollInterval";
+    private static final String POLL_ITERATION = "pollIteration";
 
     private static final Integer INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 30000;
@@ -154,7 +154,7 @@ public class TdOperatorFactory
                 if (!existingJobId.isPresent()) {
                     String jobId = startJob(op);
                     state.set(JOB_ID, jobId);
-                    state.set(POLL_INTERVAL, INITIAL_POLL_INTERVAL);
+                    state.set(POLL_ITERATION, 1);
                     throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
                 }
 
@@ -164,10 +164,10 @@ public class TdOperatorFactory
                 TDJobSummary status = checkJobStatus(job);
                 boolean done = status.getStatus().isFinished();
                 if (!done) {
-                    int prevPollInterval = state.get(POLL_INTERVAL, int.class, INITIAL_POLL_INTERVAL);
-                    int nextPollInterval = Math.min(MAX_POLL_INTERVAL, prevPollInterval * 2);
-                    state.set(POLL_INTERVAL, nextPollInterval);
-                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
+                    int pollIteration = state.get(POLL_ITERATION, int.class, 1);
+                    state.set(POLL_ITERATION, pollIteration + 1);
+                    int pollInterval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, pollIteration), MAX_POLL_INTERVAL);
+                    throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
                 }
 
                 // Get the job results
