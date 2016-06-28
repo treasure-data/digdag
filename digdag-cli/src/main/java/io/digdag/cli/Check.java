@@ -129,10 +129,11 @@ public class Check
         final YamlMapper yamlMapper = injector.getInstance(YamlMapper.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final SchedulerManager schedulerManager = injector.getInstance(SchedulerManager.class);
+        final ConfigFactory configFactory = injector.getInstance(ConfigFactory.class);
 
         ArchiveMetadata meta = project.getArchiveMetadata();
 
-        Revision rev = Revision.builderFromArchive("check", meta)
+        Revision rev = Revision.builderFromArchive("check", meta, configFactory.create())
             .archiveType(ArchiveType.NONE)
             .build();
 

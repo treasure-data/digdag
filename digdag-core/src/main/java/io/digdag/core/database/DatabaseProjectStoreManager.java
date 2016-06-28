@@ -382,7 +382,7 @@ public class DatabaseProjectStoreManager
             throws ResourceConflictException
         {
             int revId = catchConflict(() ->
-                dao.insertRevision(projId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType().getName(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getUserInfo().orNull()),
+                dao.insertRevision(projId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType().getName(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getUserInfo()),
                 "revision=%s in project id=%d", revision.getName(), projId);
             try {
                 return requiredResource(
@@ -788,7 +788,7 @@ public class DatabaseProjectStoreManager
                 .archiveType(ArchiveType.of(r.getString("archive_type")))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))
-                .userInfo(cfm.fromResultSet(r, "user_info"))
+                .userInfo(cfm.fromResultSetOrEmpty(r, "user_info"))
                 .build();
         }
     }

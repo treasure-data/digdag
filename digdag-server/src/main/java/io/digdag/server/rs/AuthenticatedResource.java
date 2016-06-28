@@ -18,8 +18,8 @@ public abstract class AuthenticatedResource
         return (int) request.getAttribute("siteId");
     }
 
-    protected Optional<Config> getUserInfo()
+    protected Config getUserInfo()
     {
-        return Optional.fromNullable((Config) request.getAttribute("userInfo"));
+        return (Config) request.getAttribute("userInfo");
     }
 }
