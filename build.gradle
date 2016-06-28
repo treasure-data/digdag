@@ -333,6 +333,13 @@ task pom << {
     pom {
         project {
             packaging 'pom'
+            properties {
+                project {
+                    build {
+                        sourceEncoding 'UTF-8'
+                    }
+                }
+            }
             repositories {
                 repository {
                     id 'jcenter'
