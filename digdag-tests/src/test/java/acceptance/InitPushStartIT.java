@@ -234,7 +234,7 @@ public class InitPushStartIT
         {
             // For the attempt
             {
-                CommandStatus attemptsStatus = main("attempts",
+                CommandStatus attemptsStatus = main("attempt",
                         "-c", config.toString(),
                         "-e", server.endpoint(),
                         String.valueOf(attemptId));
