@@ -160,6 +160,7 @@ public class DatabaseTestingUtils
             .name(name)
             .defaultParams(createConfig())
             .archiveType(ArchiveType.NONE)
+            .userInfo(createConfig())
             .build();
     }
 
