@@ -14,6 +14,5 @@ case "${CI_NODE_INDEX}" in
   "${BASEDIR}/run_findbugs.sh"
   ;;
 *)
-  echo "Invalid CI_NODE_INDEX: ${CI_NODE_INDEX}"
-  exit 1
+  echo "Extraneous CI node: ${CI_NODE_INDEX}"
 esac
