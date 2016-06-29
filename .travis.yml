@@ -12,11 +12,12 @@ cache:
 env:
   global:
     - TERM=dumb
-    - CI_NODE_TOTAL=3
+    - CI_NODE_TOTAL=4
   matrix:
     - CI_NODE_INDEX=0
     - CI_NODE_INDEX=1
     - CI_NODE_INDEX=2
+    - CI_NODE_INDEX=3
 
 before_install:
   - sudo docker/setup.sh

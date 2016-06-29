@@ -1,7 +1,7 @@
 #!/bin/bash
 BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-export MIN_CI_NODES=3
+export MIN_CI_NODES=4
 
 : "${CI_NODE_INDEX:?CI_NODE_INDEX required}"
 
@@ -19,6 +19,9 @@ case "${CI_NODE_INDEX}" in
   ;;
 2)
   "${BASEDIR}/run_findbugs.sh"
+  ;;
+3)
+  "${BASEDIR}/validate.sh"
   ;;
 *)
   echo "Extraneous CI node: ${CI_NODE_INDEX}"
