@@ -26,7 +26,7 @@ test:
   pre:
     - ci/validate.sh
   override:
-    - CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
+    - CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true
   post:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
