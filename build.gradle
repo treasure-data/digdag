@@ -294,19 +294,21 @@ task setVersion << {
     }
 
     if (!to.endsWith('-SNAPSHOT')) {
-        List<String> docs = [
+        // update docs
+        [
             'digdag-docs/src/command_reference.rst',
-        ]
-
-        docs.each() { path ->
+        ].each() { path ->
             File doc = file(path)
             doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
         }
 
+        // releases.rst
+        File releases = file("digdag-docs/src/releases.rst")
+        releases.write(releases.getText().replaceAll("# add new version here", "# add new version here\n    releases/release-${to}"))
+
+        // release-<versionr>.rst
         file("digdag-docs/src/releases/release-${to}.rst").append("")
         "git add digdag-docs/src/releases/release-${to}.rst".execute().waitFor()
-
-        println "add 'release/release-${to}' line to digdag-docs/src/releases.rst"
     }
 }
 
