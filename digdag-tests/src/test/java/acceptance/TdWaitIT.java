@@ -28,6 +28,8 @@ import static acceptance.TestUtils.pushAndStart;
 import static acceptance.TestUtils.runWorkflow;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
@@ -58,7 +60,7 @@ public class TdWaitIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, is(notNullValue()));
+        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath();
         createProject(projectDir);
 
