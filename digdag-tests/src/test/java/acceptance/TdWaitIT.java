@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
@@ -46,7 +45,8 @@ public class TdWaitIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "params.td.apikey = " + TD_API_KEY,
-                    "config.td.wait.min_poll_interval = 5s")
+                    "config.td.wait.min_poll_interval = 5s"
+            )
             .build();
 
     private Path projectDir;

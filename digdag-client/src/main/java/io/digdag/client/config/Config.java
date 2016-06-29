@@ -68,6 +68,14 @@ public class Config
         return this;
     }
 
+    public Config setOptional(String key, Optional<?> v)
+    {
+        if (v.isPresent()) {
+            set(key, v.get());
+        }
+        return this;
+    }
+
     public Config setIfNotSet(String key, Object v)
     {
         if (!has(key)) {

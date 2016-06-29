@@ -1,18 +1,20 @@
 package io.digdag.core.database;
 
-import java.util.Map;
-import java.util.Properties;
-import java.util.Locale;
-import java.util.UUID;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.FileSystems;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
+import org.immutables.value.Value;
+
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 
 @Value.Immutable
 public interface DatabaseConfig
@@ -106,6 +108,50 @@ public interface DatabaseConfig
                 config.get("database.queue.expireLockInterval", int.class, 10));
 
         return builder.build();
+    }
+
+    static Config toConfig(DatabaseConfig databaseConfig, ConfigFactory cf) {
+        Config config = cf.create();
+
+        config.set("database.type", databaseConfig.getType());
+        switch (databaseConfig.getType()) {
+            case "h2":
+                config.setOptional("database.path", databaseConfig.getPath());
+                break;
+            case "memory":
+                break;
+            case "postgresql":
+                RemoteDatabaseConfig remoteDatabaseConfig = databaseConfig.getRemoteDatabaseConfig().orNull();
+                assert remoteDatabaseConfig != null;
+                config.set("database.user", remoteDatabaseConfig.getUser());
+                config.set("database.password", remoteDatabaseConfig.getPassword());
+                config.set("database.host", remoteDatabaseConfig.getHost());
+                config.setOptional("database.port", remoteDatabaseConfig.getPort());
+                config.set("database.database", remoteDatabaseConfig.getDatabase());
+                config.set("database.loginTimeout", remoteDatabaseConfig.getLoginTimeout());
+                config.set("database.socketTimeout", remoteDatabaseConfig.getSocketTimeout());
+                config.set("database.ssl", remoteDatabaseConfig.getSsl());
+                break;
+            default:
+                throw new AssertionError("Unknown database.type: " + databaseConfig.getType());
+        }
+
+        config.set("database.connectionTimeout", databaseConfig.getConnectionTimeout());
+        config.set("database.idleTimeout", databaseConfig.getIdleTimeout());
+        config.set("database.validationTimeout", databaseConfig.getValidationTimeout());
+        config.set("database.maximumPoolSize", databaseConfig.getMaximumPoolSize());
+
+        // database.opts.*
+        Map<String, String> options = databaseConfig.getOptions();
+        for (String key : options.keySet()) {
+            config.set("database.opts." + key, options.get(key));
+        }
+
+        config.set("database.migrate", databaseConfig.getAutoMigrate());
+
+        config.set("database.queue.expireLockInterval", databaseConfig.getExpireLockInterval());
+
+        return config;
     }
 
     static String buildJdbcUrl(DatabaseConfig config)

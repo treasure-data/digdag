@@ -2,8 +2,6 @@ package acceptance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.spi.Notification;
@@ -17,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import static acceptance.TestUtils.attemptFailure;
 import static acceptance.TestUtils.expectValue;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
@@ -49,9 +46,10 @@ public class ShellNotificationIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(Joiner.on('\n').join(
+            .configuration(
                     "notification.type = shell",
-                    "notification.shell.command = cat > " + notificationFile))
+                    "notification.shell.command = cat > " + notificationFile
+            )
             .build();
 
     private Path config;
@@ -87,7 +85,6 @@ public class ShellNotificationIT
 
         assertThat(notification.getMessage(), is("Workflow session attempt failed"));
     }
-
 
     private long pushAndStart(String workflow)
             throws IOException

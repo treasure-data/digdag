@@ -1,6 +1,5 @@
 package acceptance;
 
-import com.google.common.base.Joiner;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -14,9 +13,9 @@ public class CustomServerHeadersIT
 {
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(Joiner.on('\n').join(
+            .configuration(
                     "server.http.headers.Foo-Bar-1 = Baz-1",
-                    "server.http.headers.Foo-Bar-2 = Baz-2"))
+                    "server.http.headers.Foo-Bar-2 = Baz-2")
             .addArgs("-H", "Foo-Bar-3=Baz-3")
             .addArgs("--header", "Foo-Bar-4=Baz-4")
             .build();
