@@ -10,7 +10,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.8.3-SNAPSHOT'
+    version = '0.8.3'
 
     apply plugin: 'idea'
     apply plugin: 'java'
