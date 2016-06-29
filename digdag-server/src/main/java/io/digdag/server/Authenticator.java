@@ -1,51 +1,62 @@
 package io.digdag.server;
 
-import java.util.Objects;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.Optional;
+import io.digdag.client.config.Config;
+import org.immutables.value.Value;
+
+import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;
+
+import static org.immutables.value.Value.Style.ImplementationVisibility.PACKAGE;
 
 public interface Authenticator
 {
-    public static class Result
+    @Value.Immutable
+    @Value.Style(visibility = PACKAGE)
+    @JsonSerialize(as = ImmutableResult.class)
+    @JsonDeserialize(as = ImmutableResult.class)
+    interface Result
     {
-        private final int siteId;
-        private final String errorMessage;
-
-        public static Result accept(int siteId)
+        static Result accept(int siteId)
         {
-            return new Result(siteId);
+            return ImmutableResult.builder()
+                    .siteId(siteId)
+                    .build();
         }
 
-        public static Result reject(String message)
+        static Result accept(int siteId, Config userInfo)
         {
-            return new Result(message);
+            return accept(siteId, Optional.fromNullable(userInfo));
         }
 
-        public Result(int siteId)
+        static Result accept(int siteId, Optional<Config> userInfo)
         {
-            this.siteId = siteId;
-            this.errorMessage = null;
+            return ImmutableResult.builder()
+                    .siteId(siteId)
+                    .userInfo(userInfo)
+                    .build();
         }
 
-        public Result(String errorMessage)
+        static Result reject(String message)
         {
-            this.siteId = 0;
-            this.errorMessage = Objects.requireNonNull(errorMessage);
+            return ImmutableResult.builder()
+                    .errorMessage(message)
+                    .build();
         }
 
-        public boolean isAccepted()
+        default boolean isAccepted()
         {
-            return errorMessage == null;
+            return getErrorMessage() == null;
         }
 
-        public int getSiteId()
-        {
-            return siteId;
-        }
+        int getSiteId();
 
-        public String getErrorMessage()
-        {
-            return errorMessage;
-        }
+        @Nullable
+        String getErrorMessage();
+
+        Optional<Config> getUserInfo();
     }
 
     Result authenticate(ContainerRequestContext requestContext);

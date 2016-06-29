@@ -19,16 +19,19 @@ public abstract class Revision
 
     public abstract Optional<String> getArchivePath();
 
+    public abstract Config getUserInfo();
+
     public static Revision copyOf(Revision other)
     {
         return ImmutableRevision.builder().from(other).build();
     }
 
-    public static ImmutableRevision.Builder builderFromArchive(String name, ArchiveMetadata meta)
+    public static ImmutableRevision.Builder builderFromArchive(String name, ArchiveMetadata meta, Config userInfo)
     {
         return ImmutableRevision.builder()
             .name(name)
-            .defaultParams(meta.getDefaultParams().deepCopy());
+            .defaultParams(meta.getDefaultParams().deepCopy())
+            .userInfo(userInfo);
     }
 
     @Value.Check

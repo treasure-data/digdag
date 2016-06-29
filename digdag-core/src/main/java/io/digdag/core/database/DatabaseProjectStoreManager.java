@@ -1,39 +1,53 @@
 package io.digdag.core.database;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Stream;
-import java.util.stream.Collectors;
-import java.nio.ByteBuffer;
-import java.time.ZoneId;
-import java.time.Instant;
-import java.sql.Timestamp;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import org.immutables.value.Value;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.Schedule;
 import io.digdag.client.api.IdName;
+import io.digdag.client.config.Config;
+import io.digdag.core.repository.ArchiveType;
+import io.digdag.core.repository.ImmutableStoredProject;
+import io.digdag.core.repository.ImmutableStoredRevision;
+import io.digdag.core.repository.ImmutableStoredWorkflowDefinition;
+import io.digdag.core.repository.ImmutableStoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.Project;
+import io.digdag.core.repository.ProjectControlStore;
+import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.Revision;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.TimeZoneMap;
+import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.schedule.Schedule;
+import org.immutables.value.Value;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
+import org.skife.jdbi.v2.sqlobject.SqlQuery;
+import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.client.config.Config;
-import static java.util.Locale.ENGLISH;
+
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static com.google.common.base.Preconditions.checkArgument;
 
 public class DatabaseProjectStoreManager
         extends BasicDatabaseStoreManager<DatabaseProjectStoreManager.Dao>
@@ -368,7 +382,7 @@ public class DatabaseProjectStoreManager
             throws ResourceConflictException
         {
             int revId = catchConflict(() ->
-                dao.insertRevision(projId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType().getName(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull()),
+                dao.insertRevision(projId, revision.getName(), revision.getDefaultParams(), revision.getArchiveType().getName(), revision.getArchiveMd5().orNull(), revision.getArchivePath().orNull(), revision.getUserInfo()),
                 "revision=%s in project id=%d", revision.getName(), projId);
             try {
                 return requiredResource(
@@ -646,10 +660,10 @@ public class DatabaseProjectStoreManager
         int insertWorkflowConfig(@Bind("projId") int projId, @Bind("config") String config, @Bind("timezone") String timezone, @Bind("configDigest") long configDigest);
 
         @SqlUpdate("insert into revisions" +
-                " (project_id, name, default_params, archive_type, archive_md5, archive_path, created_at)" +
-                " values (:projId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, now())")
+                " (project_id, name, default_params, archive_type, archive_md5, archive_path, user_info, created_at)" +
+                " values (:projId, :name, :defaultParams, :archiveType, :archiveMd5, :archivePath, :userInfo, now())")
         @GetGeneratedKeys
-        int insertRevision(@Bind("projId") int projId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath);
+        int insertRevision(@Bind("projId") int projId, @Bind("name") String name, @Bind("defaultParams") Config defaultParams, @Bind("archiveType") String archiveType, @Bind("archiveMd5") byte[] archiveMd5, @Bind("archivePath") String archivePath, @Bind("userInfo") Config userInfo);
 
         @SqlQuery("select wd.*, wc.config, wc.timezone from workflow_definitions wd" +
                 " join revisions rev on rev.id = wd.revision_id" +
@@ -774,6 +788,7 @@ public class DatabaseProjectStoreManager
                 .archiveType(ArchiveType.of(r.getString("archive_type")))
                 .archiveMd5(getOptionalBytes(r, "archive_md5"))
                 .archivePath(getOptionalString(r, "archive_path"))
+                .userInfo(cfm.fromResultSetOrEmpty(r, "user_info"))
                 .build();
         }
     }

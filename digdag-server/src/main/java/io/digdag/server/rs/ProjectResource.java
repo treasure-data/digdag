@@ -424,7 +424,7 @@ public class ProjectResource
                                 throw new InternalServerErrorException("Failed to load archive data in memory", ex);
                             }
                             rev = lockedProj.insertRevision(
-                                    Revision.builderFromArchive(revision, meta)
+                                    Revision.builderFromArchive(revision, meta, getUserInfo())
                                         .archiveType(ArchiveType.DB)
                                         .archivePath(Optional.absent())
                                         .archiveMd5(Optional.of(md5))
@@ -435,7 +435,7 @@ public class ProjectResource
                         else {
                             // store location of the uploaded file in db
                             rev = lockedProj.insertRevision(
-                                    Revision.builderFromArchive(revision, meta)
+                                    Revision.builderFromArchive(revision, meta, getUserInfo())
                                         .archiveType(location.getArchiveType())
                                         .archivePath(Optional.of(location.getPath()))
                                         .archiveMd5(Optional.of(md5))
