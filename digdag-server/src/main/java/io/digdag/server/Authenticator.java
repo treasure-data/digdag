@@ -21,9 +21,7 @@ public interface Authenticator
     {
         static Result accept(int siteId)
         {
-            return ImmutableResult.builder()
-                    .siteId(siteId)
-                    .build();
+            return accept(siteId, Optional.absent());
         }
 
         static Result accept(int siteId, Config userInfo)
@@ -42,7 +40,9 @@ public interface Authenticator
         static Result reject(String message)
         {
             return ImmutableResult.builder()
+                    .siteId(0)
                     .errorMessage(message)
+                    .userInfo(Optional.absent())
                     .build();
         }
 
