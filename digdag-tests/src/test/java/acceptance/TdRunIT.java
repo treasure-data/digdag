@@ -20,6 +20,8 @@ import java.util.UUID;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
@@ -44,7 +46,7 @@ public class TdRunIT
     public void setUp()
             throws Exception
     {
-        assumeThat(TD_API_KEY, is(notNullValue()));
+        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
         Files.write(config, ("params.td.apikey = " + TD_API_KEY).getBytes("UTF-8"));
