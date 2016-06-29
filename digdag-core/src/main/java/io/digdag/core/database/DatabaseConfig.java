@@ -41,6 +41,8 @@ public interface DatabaseConfig
 
     int getMaximumPoolSize();
 
+    int getMinimumPoolSize();
+
     int getValidationTimeout();  // seconds
 
     static ImmutableDatabaseConfig.Builder builder()
@@ -89,8 +91,10 @@ public interface DatabaseConfig
                 config.get("database.idleTimeout", int.class, 600));  // HikariCP default: 600
         builder.validationTimeout(
                 config.get("database.validationTimeout", int.class, 5));  // HikariCP default: 5
-        builder.maximumPoolSize(
-                config.get("database.maximumPoolSize", int.class, 10));  // HikariCP default: 10
+        int maximumPoolSize = config.get("database.maximumPoolSize", int.class, 10); // HikariCP default: 10
+        builder.maximumPoolSize(maximumPoolSize);
+        builder.minimumPoolSize(
+                 config.get("database.minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
 
         // database.opts.* to options
         ImmutableMap.Builder<String, String> options = ImmutableMap.builder();
@@ -140,6 +144,7 @@ public interface DatabaseConfig
         config.set("database.idleTimeout", databaseConfig.getIdleTimeout());
         config.set("database.validationTimeout", databaseConfig.getValidationTimeout());
         config.set("database.maximumPoolSize", databaseConfig.getMaximumPoolSize());
+        config.set("database.minimumPoolSize", databaseConfig.getMinimumPoolSize());
 
         // database.opts.*
         Map<String, String> options = databaseConfig.getOptions();
