@@ -1,6 +1,5 @@
 package acceptance;
 
-import com.google.common.base.Joiner;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
@@ -16,7 +15,6 @@ import java.nio.file.Path;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -33,14 +31,14 @@ public class ServerModeHiddenMailConfigIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(Joiner.on("\n").join(asList(
+            .configuration(
                     "config.mail.host=" + HOSTNAME,
                     "config.mail.port=" + port,
                     "config.mail.from=" + SENDER,
                     "config.mail.username=mail-user",
                     "config.mail.password=mail-pass",
                     "config.mail.tls=false"
-            )))
+            )
             .build();
 
     @Rule

@@ -58,6 +58,7 @@ public class DatabaseTestingUtils
                 .connectionTimeout(30)
                 .idleTimeout(600)
                 .validationTimeout(5)
+                .minimumPoolSize(0)
                 .maximumPoolSize(10)
                 .build();
         }
@@ -72,6 +73,7 @@ public class DatabaseTestingUtils
                 .connectionTimeout(30)
                 .idleTimeout(600)
                 .validationTimeout(5)
+                .minimumPoolSize(0)
                 .maximumPoolSize(10)
                 .build();
         }

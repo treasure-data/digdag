@@ -1,10 +1,9 @@
 package acceptance;
 
-import com.google.common.base.Optional;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
@@ -13,7 +12,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,15 +19,10 @@ import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.getSessionId;
 import static acceptance.TestUtils.main;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
@@ -42,21 +35,21 @@ public class S3StorageIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-    .configuration(
-            "archive.type = s3\n" +
-            "archive.s3.endpoint = " + FAKE_S3_ENDPOINT + "\n" +
-            "archive.s3.bucket = archive-storage-" + UUID.randomUUID() + "\n" +
-            "archive.s3.credentials.access-key-id = fake-key-id\n" +
-            "archive.s3.credentials.secret-access-key = fake-access-key\n" +
-            "log-server.type = s3\n" +
-            "log-server.s3.endpoint = " + FAKE_S3_ENDPOINT + "\n" +
-            "log-server.s3.bucket = log-storage-" + UUID.randomUUID() + "\n" +
-            "log-server.s3.path = storage-log-test\n" +
-            "log-server.s3.credentials.access-key-id = fake-key-id\n" +
-            "log-server.s3.credentials.secret-access-key = fake-access-key\n" +
-            ""
-    )
-    .build();
+            .configuration(
+                    "archive.type = s3",
+                    "archive.s3.endpoint = " + FAKE_S3_ENDPOINT,
+                    "archive.s3.bucket = archive-storage-" + UUID.randomUUID(),
+                    "archive.s3.credentials.access-key-id = fake-key-id",
+                    "archive.s3.credentials.secret-access-key = fake-access-key",
+                    "log-server.type = s3",
+                    "log-server.s3.endpoint = " + FAKE_S3_ENDPOINT,
+                    "log-server.s3.bucket = log-storage-" + UUID.randomUUID(),
+                    "log-server.s3.path = storage-log-test",
+                    "log-server.s3.credentials.access-key-id = fake-key-id",
+                    "log-server.s3.credentials.secret-access-key = fake-access-key",
+                    ""
+            )
+            .build();
 
     private Path config;
     private Path projectDir;

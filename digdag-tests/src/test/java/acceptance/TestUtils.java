@@ -1,12 +1,18 @@
 package acceptance;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
@@ -44,6 +50,16 @@ import static org.junit.Assert.fail;
 
 class TestUtils
 {
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    static {
+        OBJECT_MAPPER.registerModule(new GuavaModule());
+        OBJECT_MAPPER.registerModule(new JacksonTimeModule());
+        OBJECT_MAPPER.setInjectableValues(new InjectableValues.Std()
+                .addValue(ObjectMapper.class, OBJECT_MAPPER));
+        OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
     static final Pattern SESSION_ID_PATTERN = Pattern.compile("\\s*session id:\\s*(\\d+)\\s*");
 
     static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
@@ -307,5 +323,15 @@ class TestUtils
         finally {
             FileUtils.deleteQuietly(tempdir.toFile());
         }
+    }
+
+    static ObjectMapper objectMapper()
+    {
+        return OBJECT_MAPPER;
+    }
+
+    static ConfigFactory configFactory()
+    {
+        return new ConfigFactory(objectMapper());
     }
 }

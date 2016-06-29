@@ -2,7 +2,6 @@ package acceptance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.google.common.base.Joiner;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
@@ -32,14 +31,12 @@ import java.time.temporal.TemporalAmount;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static acceptance.TestUtils.attemptSuccess;
 import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.findFreePort;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class SlaIT
 {
@@ -58,9 +55,10 @@ public class SlaIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(Joiner.on('\n').join(
+            .configuration(
                     "notification.type = http",
-                    "notification.http.url = " + notificationUrl))
+                    "notification.http.url = " + notificationUrl
+            )
             .build();
 
     private Path config;

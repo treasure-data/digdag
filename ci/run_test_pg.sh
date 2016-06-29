@@ -6,6 +6,8 @@ port = 5432
 user = digdag_test
 password =
 database = digdag_test
+idleTimeout = 5
+minimumPoolSize = 0
 "
 
 docker run \

@@ -1,6 +1,5 @@
 package acceptance;
 
-import com.google.common.base.Joiner;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -12,7 +11,6 @@ import java.nio.file.Path;
 
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.main;
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -28,14 +26,14 @@ public class ServerModeMailIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(Joiner.on("\n").join(asList(
+            .configuration(
                     "params.mail.host=" + HOSTNAME,
                     "params.mail.port=" + port,
                     "params.mail.from=" + SENDER,
                     "params.mail.username=mail-user",
                     "params.mail.password=mail-pass",
                     "params.mail.tls=false"
-            )))
+            )
             .build();
 
     @Rule
