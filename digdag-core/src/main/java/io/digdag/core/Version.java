@@ -9,6 +9,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Version
 {
+    public static final String VERSION_PROPERTY = Version.class.getName() + ".version";
+
     private final String version;
 
     private Version(String version)
@@ -18,11 +20,18 @@ public class Version
 
     public static Version buildVersion()
     {
-        return Version.of(loadVersionString());
+        return Version.of(versionString());
     }
 
-    private static String loadVersionString()
+    private static String versionString()
     {
+        // First read version from system property
+        String propertyVersion = System.getProperty(VERSION_PROPERTY);
+        if (propertyVersion != null) {
+            return propertyVersion;
+        }
+
+        // Then read version file
         try {
             return Resources.toString(Resources.getResource(Version.class, "version.txt"), UTF_8).trim();
         }

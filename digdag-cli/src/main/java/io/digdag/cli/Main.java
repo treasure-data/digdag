@@ -30,9 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 

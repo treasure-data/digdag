@@ -2,7 +2,6 @@ package io.digdag.cli.client;
 
 import java.lang.reflect.Field;
 
-import io.digdag.core.*;
 import org.junit.Test;
 
 import io.digdag.client.DigdagClient;

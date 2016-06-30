@@ -90,7 +90,7 @@ public class TdWaitIT
                 .put("database", "sample_datasets")
                 .put("outfile", outfile.toString())
                 .build());
-        expect(Duration.ofSeconds(30), attemptFailure(server.endpoint(), attemptId));
+        expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
         assertThat(Files.exists(outfile), is(false));
     }
 
@@ -104,7 +104,7 @@ public class TdWaitIT
                 .put("wait_rows", "1")
                 .put("database", "sample_datasets")
                 .build());
-        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
     }
 
     @Test
@@ -119,7 +119,7 @@ public class TdWaitIT
                 .put("database", "sample_datasets")
                 .put("outfile", outfile.toString())
                 .build());
-        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
     }
 
     @Test
@@ -275,7 +275,7 @@ public class TdWaitIT
                 .put("database", "sample_datasets")
                 .put("outfile", outfile.toString())
                 .build());
-        expect(Duration.ofSeconds(30), attemptFailure(server.endpoint(), attemptId));
+        expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
         CommandStatus logStatus = main("log",
                 "-c", "/dev/null",
                 "-e", server.endpoint(),
