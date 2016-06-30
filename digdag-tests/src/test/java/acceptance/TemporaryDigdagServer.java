@@ -59,7 +59,7 @@ import static org.junit.Assert.fail;
 public class TemporaryDigdagServer
         implements TestRule
 {
-    private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"));
+    private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "true"));
 
     private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
 
