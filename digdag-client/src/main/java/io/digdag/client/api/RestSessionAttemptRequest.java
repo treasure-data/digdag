@@ -18,31 +18,31 @@ import io.digdag.client.config.Config;
 @Value.Enclosing
 @JsonSerialize(as = ImmutableRestSessionAttemptRequest.class)
 @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.class)
-public abstract class RestSessionAttemptRequest
+public interface RestSessionAttemptRequest
 {
-    public abstract long getWorkflowId();
+    long getWorkflowId();
 
-    public abstract Instant getSessionTime();
+    Instant getSessionTime();
 
-    public abstract Optional<String> getRetryAttemptName();
+    Optional<String> getRetryAttemptName();
 
-    public abstract Optional<Resume> getResume();
+    Optional<Resume> getResume();
 
-    public abstract Config getParams();
+    Config getParams();
 
-    public static ImmutableRestSessionAttemptRequest.Builder builder()
+    static ImmutableRestSessionAttemptRequest.Builder builder()
     {
         return ImmutableRestSessionAttemptRequest.builder();
     }
 
-    public RestSessionAttemptRequest withResume(Resume resume)
+    static RestSessionAttemptRequest copyWithResume(RestSessionAttemptRequest src, Resume resume)
     {
-        return RestSessionAttemptRequest.builder().from(this)
+        return RestSessionAttemptRequest.builder().from(src)
             .resume(Optional.of(resume))
             .build();
     }
 
-    public static enum Mode {
+    static enum Mode {
         FROM("from"),
         FAILED("failed"),
         ;
@@ -70,34 +70,31 @@ public abstract class RestSessionAttemptRequest
             @JsonSubTypes.Type(value = ImmutableRestSessionAttemptRequest.ResumeFrom.class, name = "from"),
             @JsonSubTypes.Type(value = ImmutableRestSessionAttemptRequest.ResumeFailed.class, name = "failed"),
     })
-    public static abstract class Resume
+    interface Resume
     {
         @JsonProperty("attemptId")
-        public abstract long getAttemptId();
+        public long getAttemptId();
 
         @JsonProperty("mode")
-        public abstract Mode getMode();
+        public Mode getMode();
     }
 
     @Value.Immutable
     @JsonSerialize(as = RestSessionAttemptRequest.ResumeFrom.class)
     @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.ResumeFrom.class)
-    public static abstract class ResumeFrom
+    interface ResumeFrom
             extends Resume
     {
         @Override
-        public abstract long getAttemptId();
-
-        @Override
-        public Mode getMode()
+        default Mode getMode()
         {
             return Mode.FROM;
         }
 
         @JsonProperty("from")
-        public abstract String getFromTaskNamePattern();
+        String getFromTaskNamePattern();
 
-        public static ResumeFrom of(long attemptId, String fromTaskNamePattern)
+        static ResumeFrom of(long attemptId, String fromTaskNamePattern)
         {
             return builder()
                 .attemptId(attemptId)
@@ -105,7 +102,7 @@ public abstract class RestSessionAttemptRequest
                 .build();
         }
 
-        public static ImmutableRestSessionAttemptRequest.ResumeFrom.Builder builder()
+        static ImmutableRestSessionAttemptRequest.ResumeFrom.Builder builder()
         {
             return ImmutableRestSessionAttemptRequest.ResumeFrom.builder();
         }
@@ -114,26 +111,23 @@ public abstract class RestSessionAttemptRequest
     @Value.Immutable
     @JsonSerialize(as = RestSessionAttemptRequest.ResumeFailed.class)
     @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.ResumeFailed.class)
-    public static abstract class ResumeFailed
+    interface ResumeFailed
             extends Resume
     {
         @Override
-        public Mode getMode()
+        default Mode getMode()
         {
             return Mode.FAILED;
         }
 
-        @Override
-        public abstract long getAttemptId();
-
-        public static ResumeFailed of(long attemptId)
+        static ResumeFailed of(long attemptId)
         {
             return builder()
                 .attemptId(attemptId)
                 .build();
         }
 
-        public static ImmutableRestSessionAttemptRequest.ResumeFailed.Builder builder()
+        static ImmutableRestSessionAttemptRequest.ResumeFailed.Builder builder()
         {
             return ImmutableRestSessionAttemptRequest.ResumeFailed.builder();
         }

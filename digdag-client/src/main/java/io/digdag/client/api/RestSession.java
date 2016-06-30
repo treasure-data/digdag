@@ -14,46 +14,47 @@ import java.util.UUID;
 @Value.Enclosing
 @JsonSerialize(as = ImmutableRestSession.class)
 @JsonDeserialize(as = ImmutableRestSession.class)
-public abstract class RestSession
+public interface RestSession
 {
-    public abstract long getId();
+    long getId();
 
-    public abstract IdName getProject();
+    IdName getProject();
 
-    public abstract NameOptionalId getWorkflow();
+    NameOptionalId getWorkflow();
 
-    public abstract UUID getSessionUuid();
+    UUID getSessionUuid();
 
-    public abstract OffsetDateTime getSessionTime();
+    OffsetDateTime getSessionTime();
 
-    public abstract Optional<Attempt> getLastAttempt();
+    Optional<Attempt> getLastAttempt();
 
     @Value.Immutable
     @JsonSerialize(as = ImmutableRestSession.Attempt.class)
     @JsonDeserialize(as = ImmutableRestSession.Attempt.class)
-    public static abstract class Attempt {
+    interface Attempt
+    {
 
-        public abstract long getId();
+        long getId();
 
-        public abstract Optional<String> getRetryAttemptName();
+        Optional<String> getRetryAttemptName();
 
-        public abstract boolean getDone();
+        boolean getDone();
 
-        public abstract boolean getSuccess();
+        boolean getSuccess();
 
-        public abstract boolean getCancelRequested();
+        boolean getCancelRequested();
 
-        public abstract Config getParams();
+        Config getParams();
 
-        public abstract Instant getCreatedAt();
+        Instant getCreatedAt();
 
-        public static ImmutableRestSession.Attempt.Builder builder()
+        static ImmutableRestSession.Attempt.Builder builder()
         {
             return ImmutableRestSession.Attempt.builder();
         }
     }
 
-    public static ImmutableRestSession.Builder builder()
+    static ImmutableRestSession.Builder builder()
     {
         return ImmutableRestSession.builder();
     }

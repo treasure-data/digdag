@@ -8,11 +8,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestLogFilePutResult.class)
 @JsonDeserialize(as = ImmutableRestLogFilePutResult.class)
-public abstract class RestLogFilePutResult
+public interface RestLogFilePutResult
 {
-    public abstract String getFileName();
+    String getFileName();
 
-    public static RestLogFilePutResult of(String fileName)
+    static RestLogFilePutResult of(String fileName)
     {
         return ImmutableRestLogFilePutResult.builder()
             .fileName(fileName)

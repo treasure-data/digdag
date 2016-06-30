@@ -11,23 +11,18 @@ import static com.google.common.base.Preconditions.checkState;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestScheduleBackfillRequest.class)
 @JsonDeserialize(as = ImmutableRestScheduleBackfillRequest.class)
-public abstract class RestScheduleBackfillRequest
+public interface RestScheduleBackfillRequest
 {
-    public abstract Instant getFromTime();
+    Instant getFromTime();
 
-    public abstract boolean getDryRun();
+    boolean getDryRun();
 
-    public abstract String getAttemptName();
+    String getAttemptName();
 
-    public abstract Optional<Integer> getCount();
+    Optional<Integer> getCount();
 
-    public static ImmutableRestScheduleBackfillRequest.Builder builder()
+    static ImmutableRestScheduleBackfillRequest.Builder builder()
     {
         return ImmutableRestScheduleBackfillRequest.builder();
-    }
-
-    @Value.Check
-    protected void check()
-    {
     }
 }

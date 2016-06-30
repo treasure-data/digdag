@@ -139,11 +139,13 @@ public class Retry
             .build();
 
         if (resumeFrom != null) {
-            request = request.withResume(
+            request = RestSessionAttemptRequest.copyWithResume(
+                    request,
                     RestSessionAttemptRequest.ResumeFrom.of(attemptId, resumeFrom));
         }
         else if (resume) {
-            request = request.withResume(
+            request = RestSessionAttemptRequest.copyWithResume(
+                    request,
                     RestSessionAttemptRequest.ResumeFailed.of(attemptId));
         }
 

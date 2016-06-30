@@ -13,6 +13,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -95,6 +96,8 @@ public class ScheduleResource
     public RestScheduleSummary skipSchedule(@PathParam("id") int id, RestScheduleSkipRequest request)
         throws ResourceNotFoundException, ResourceConflictException
     {
+        Preconditions.checkArgument(request.getNextTime().isPresent() || (request.getCount().isPresent() && request.getFromTime().isPresent()), "nextTime or (fromTime and count) are required");
+
         StoredSchedule sched = sm.getScheduleStore(getSiteId())
             .getScheduleById(id);
         ZoneId timeZone = getTimeZoneOfSchedule(sched);

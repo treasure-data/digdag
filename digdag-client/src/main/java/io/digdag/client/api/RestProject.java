@@ -9,25 +9,25 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestProject.class)
 @JsonDeserialize(as = ImmutableRestProject.class)
-public abstract class RestProject
+public interface RestProject
 {
-    public abstract int getId();
+    int getId();
 
-    public abstract String getName();
+    String getName();
 
-    public abstract String getRevision();
+    String getRevision();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public abstract Instant getUpdatedAt();
+    Instant getUpdatedAt();
 
-    public abstract Optional<Instant> getDeletedAt();
+    Optional<Instant> getDeletedAt();
 
-    public abstract String getArchiveType();
+    String getArchiveType();
 
-    public abstract Optional<byte[]> getArchiveMd5();
+    Optional<byte[]> getArchiveMd5();
 
-    public static ImmutableRestProject.Builder builder()
+    static ImmutableRestProject.Builder builder()
     {
         return ImmutableRestProject.builder();
     }

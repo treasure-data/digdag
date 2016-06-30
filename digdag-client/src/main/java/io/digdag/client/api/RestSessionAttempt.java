@@ -12,35 +12,35 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestSessionAttempt.class)
 @JsonDeserialize(as = ImmutableRestSessionAttempt.class)
-public abstract class RestSessionAttempt
+public interface RestSessionAttempt
 {
-    public abstract long getId();
+    long getId();
 
-    public abstract IdName getProject();
+    IdName getProject();
 
-    //public abstract Optional<String> getRevision();
+    //Optional<String> getRevision();
 
-    public abstract NameOptionalId getWorkflow();
+    NameOptionalId getWorkflow();
 
-    public abstract long getSessionId();
+    long getSessionId();
 
-    public abstract UUID getSessionUuid();
+    UUID getSessionUuid();
 
-    public abstract OffsetDateTime getSessionTime();
+    OffsetDateTime getSessionTime();
 
-    public abstract Optional<String> getRetryAttemptName();
+    Optional<String> getRetryAttemptName();
 
-    public abstract boolean getDone();
+    boolean getDone();
 
-    public abstract boolean getSuccess();
+    boolean getSuccess();
 
-    public abstract boolean getCancelRequested();
+    boolean getCancelRequested();
 
-    public abstract Config getParams();
+    Config getParams();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public static ImmutableRestSessionAttempt.Builder builder()
+    static ImmutableRestSessionAttempt.Builder builder()
     {
         return ImmutableRestSessionAttempt.builder();
     }

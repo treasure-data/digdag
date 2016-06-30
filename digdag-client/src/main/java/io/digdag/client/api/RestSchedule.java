@@ -11,19 +11,19 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestSchedule.class)
 @JsonDeserialize(as = ImmutableRestSchedule.class)
-public abstract class RestSchedule
+public interface RestSchedule
 {
-    public abstract int getId();
+    int getId();
 
-    public abstract IdName getProject();
+    IdName getProject();
 
-    public abstract NameLongId getWorkflow();
+    NameLongId getWorkflow();
 
-    public abstract Instant getNextRunTime();
+    Instant getNextRunTime();
 
-    public abstract OffsetDateTime getNextScheduleTime();
+    OffsetDateTime getNextScheduleTime();
 
-    public static ImmutableRestSchedule.Builder builder()
+    static ImmutableRestSchedule.Builder builder()
     {
         return ImmutableRestSchedule.builder();
     }

@@ -10,18 +10,18 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestWorkflowSessionTime.class)
 @JsonDeserialize(as = ImmutableRestWorkflowSessionTime.class)
-public abstract class RestWorkflowSessionTime
+public interface RestWorkflowSessionTime
 {
-    public abstract IdName getProject();
+    IdName getProject();
 
-    public abstract String getRevision();
+    String getRevision();
 
-    public abstract OffsetDateTime getSessionTime();
+    OffsetDateTime getSessionTime();
 
     @JsonProperty("timezone")
-    public abstract ZoneId getTimeZone();
+    ZoneId getTimeZone();
 
-    public static ImmutableRestWorkflowSessionTime.Builder builder()
+    static ImmutableRestWorkflowSessionTime.Builder builder()
     {
         return ImmutableRestWorkflowSessionTime.builder();
     }

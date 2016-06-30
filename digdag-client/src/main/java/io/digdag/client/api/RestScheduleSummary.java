@@ -10,21 +10,21 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestScheduleSummary.class)
 @JsonDeserialize(as = ImmutableRestScheduleSummary.class)
-public abstract class RestScheduleSummary
+public interface RestScheduleSummary
 {
-    public abstract int getId();
+    int getId();
 
-    public abstract NameLongId getWorkflow();
+    NameLongId getWorkflow();
 
-    public abstract Instant getNextRunTime();
+    Instant getNextRunTime();
 
-    public abstract OffsetDateTime getNextScheduleTime();
+    OffsetDateTime getNextScheduleTime();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public abstract Instant getUpdatedAt();
+    Instant getUpdatedAt();
 
-    public static ImmutableRestScheduleSummary.Builder builder()
+    static ImmutableRestScheduleSummary.Builder builder()
     {
         return ImmutableRestScheduleSummary.builder();
     }

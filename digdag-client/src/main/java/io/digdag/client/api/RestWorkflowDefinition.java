@@ -11,19 +11,19 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestWorkflowDefinition.class)
 @JsonDeserialize(as = ImmutableRestWorkflowDefinition.class)
-public abstract class RestWorkflowDefinition
+public interface RestWorkflowDefinition
 {
-    public abstract long getId();
+    long getId();
 
-    public abstract String getName();
+    String getName();
 
-    public abstract IdName getProject();
+    IdName getProject();
 
-    public abstract String getRevision();
+    String getRevision();
 
-    public abstract Config getConfig();
+    Config getConfig();
 
-    public static ImmutableRestWorkflowDefinition.Builder builder()
+    static ImmutableRestWorkflowDefinition.Builder builder()
     {
         return ImmutableRestWorkflowDefinition.builder();
     }

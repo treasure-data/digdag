@@ -11,35 +11,35 @@ import io.digdag.client.config.Config;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestTask.class)
 @JsonDeserialize(as = ImmutableRestTask.class)
-public abstract class RestTask
+public interface RestTask
 {
-    public abstract long getId();
+    long getId();
 
-    public abstract String getFullName();
+    String getFullName();
 
-    public abstract Optional<Long> getParentId();
+    Optional<Long> getParentId();
 
-    public abstract Config getConfig();
+    Config getConfig();
 
-    public abstract List<Long> getUpstreams();
+    List<Long> getUpstreams();
 
-    public abstract boolean isGroup();
+    boolean isGroup();
 
-    public abstract String getState();
+    String getState();
 
-    public abstract Config getExportParams();
+    Config getExportParams();
 
-    public abstract Config getStoreParams();
+    Config getStoreParams();
 
-    public abstract Config getStateParams();
+    Config getStateParams();
 
-    public abstract Instant getUpdatedAt();
+    Instant getUpdatedAt();
 
-    public abstract Optional<Instant> getRetryAt();
+    Optional<Instant> getRetryAt();
 
     // TODO in out Report
 
-    public static ImmutableRestTask.Builder builder()
+    static ImmutableRestTask.Builder builder()
     {
         return ImmutableRestTask.builder();
     }

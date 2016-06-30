@@ -9,17 +9,17 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestRevision.class)
 @JsonDeserialize(as = ImmutableRestRevision.class)
-public abstract class RestRevision
+public interface RestRevision
 {
-    public abstract String getRevision();
+    String getRevision();
 
-    public abstract Instant getCreatedAt();
+    Instant getCreatedAt();
 
-    public abstract String getArchiveType();
+    String getArchiveType();
 
-    public abstract Optional<byte[]> getArchiveMd5();
+    Optional<byte[]> getArchiveMd5();
 
-    public static ImmutableRestRevision.Builder builder()
+    static ImmutableRestRevision.Builder builder()
     {
         return ImmutableRestRevision.builder();
     }

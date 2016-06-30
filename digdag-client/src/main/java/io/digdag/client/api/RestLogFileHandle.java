@@ -9,21 +9,21 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableRestLogFileHandle.class)
 @JsonDeserialize(as = ImmutableRestLogFileHandle.class)
-public abstract class RestLogFileHandle
+public interface RestLogFileHandle
 {
-    public abstract String getFileName();
+    String getFileName();
 
-    public abstract long getFileSize();
+    long getFileSize();
 
-    public abstract String getTaskName();
+    String getTaskName();
 
-    public abstract Instant getFileTime();
+    Instant getFileTime();
 
-    public abstract String getAgentId();
+    String getAgentId();
 
-    public abstract Optional<RestDirectDownloadHandle> getDirect();
+    Optional<RestDirectDownloadHandle> getDirect();
 
-    public static ImmutableRestLogFileHandle.Builder builder()
+    static ImmutableRestLogFileHandle.Builder builder()
     {
         return ImmutableRestLogFileHandle.builder();
     }

@@ -7,13 +7,13 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableIdName.class)
 @JsonDeserialize(as = ImmutableIdName.class)
-public abstract class IdName
+public interface IdName
 {
-    public abstract int getId();
+    int getId();
 
-    public abstract String getName();
+    String getName();
 
-    public static IdName of(int id, String name)
+    static IdName of(int id, String name)
     {
         return ImmutableIdName.builder()
             .id(id)

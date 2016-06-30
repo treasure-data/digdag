@@ -8,13 +8,13 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableNameOptionalId.class)
 @JsonDeserialize(as = ImmutableNameOptionalId.class)
-public abstract class NameOptionalId
+public interface NameOptionalId
 {
-    public abstract String getName();
+    String getName();
 
-    public abstract Optional<Long> getId();
+    Optional<Long> getId();
 
-    public static NameOptionalId of(String name, Optional<Long> id)
+    static NameOptionalId of(String name, Optional<Long> id)
     {
         return ImmutableNameOptionalId.builder()
             .name(name)
