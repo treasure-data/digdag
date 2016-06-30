@@ -4,13 +4,13 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.core.Version;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
@@ -25,13 +25,16 @@ import javax.ws.rs.ProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.management.ManagementFactory;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -55,12 +58,13 @@ import static org.junit.Assert.fail;
 public class TemporaryDigdagServer
         implements TestRule
 {
+    private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"));
+
     private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
 
     private static final Logger log = LoggerFactory.getLogger(TemporaryDigdagServer.class);
 
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
-
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
     private final Version version;
@@ -75,6 +79,10 @@ public class TemporaryDigdagServer
 
     private final ByteArrayOutputStream out = new ByteArrayOutputStream();
     private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+    private final boolean inProcess;
+
+    private Process serverProcess;
 
     private Path configDirectory;
     private Path config;
@@ -95,6 +103,7 @@ public class TemporaryDigdagServer
         this.endpoint = "http://" + host + ":" + port;
         this.configuration = new ArrayList<>(Objects.requireNonNull(builder.configuration, "configuration"));
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
+        this.inProcess = builder.inProcess;
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
 
@@ -159,6 +168,65 @@ public class TemporaryDigdagServer
         testDatabaseConfig = DatabaseConfig.convertFrom(testConfig);
     }
 
+    private static class Trampoline
+    {
+        private static final String NAME = ManagementFactory.getRuntimeMXBean().getName();
+
+        private static class Watchdog
+                extends Thread
+        {
+
+            Watchdog()
+            {
+                setDaemon(false);
+            }
+
+            @Override
+            public void run()
+            {
+                // Wait for parent to exit.
+                try {
+                    while (true) {
+                        int c = System.in.read();
+                        if (c == -1) {
+                            break;
+                        }
+                    }
+                }
+                catch (IOException e) {
+                    errPrefix();
+                    e.printStackTrace(System.err);
+                    System.err.flush();
+                }
+                System.err.println();
+                err("child process exiting");
+                // Exit with non-zero status code to skip shutdown hooks
+                System.exit(-1);
+            }
+        }
+
+        public static void main(String... args)
+        {
+            err("child process started");
+            Watchdog watchdog = new Watchdog();
+            watchdog.start();
+            Main.main(args);
+            err("child process server started");
+            System.err.flush();
+        }
+
+        private static void err(String message)
+        {
+            errPrefix();
+            System.err.println(message);
+            System.err.flush();
+        }
+
+        private static void errPrefix() {
+            System.err.print(LocalTime.now() + " [" + NAME + "] " + TemporaryDigdagServer.class.getName() + ": ");
+        }
+    }
+
     private void before()
             throws Throwable
     {
@@ -189,15 +257,33 @@ public class TemporaryDigdagServer
 
         List<String> args = argsBuilder.build();
 
-        executor.execute(() -> main(version, args, out, err));
+        if (inProcess) {
+            executor.execute(() -> {
+                main(version, args, out, err);
+            });
+        }
+        else {
+            String home = System.getProperty("java.home");
+            String classPath = System.getProperty("java.class.path");
+            Path java = Paths.get(home, "bin", "java").toAbsolutePath().normalize();
+            List<String> processArgs = new ArrayList<>(asList(
+                    java.toString(),
+                    "-cp", classPath,
+                    "-Xms128m", "-Xmx128m",
+                    Trampoline.class.getName()));
+            processArgs.addAll(args);
+            ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
+            processBuilder.inheritIO();
+            serverProcess = processBuilder.start();
+        }
 
         // Poll and wait for server to come up
         boolean up = false;
+        DigdagClient client = DigdagClient.builder()
+                .host(host)
+                .port(port)
+                .build();
         for (int i = 0; i < 30; i++) {
-            DigdagClient client = DigdagClient.builder()
-                    .host(host)
-                    .port(port)
-                    .build();
             try {
                 client.getProjects();
                 up = true;
@@ -238,7 +324,10 @@ public class TemporaryDigdagServer
     {
         Optional<RemoteDatabaseConfig> remoteDatabaseConfig = testDatabaseConfig.getRemoteDatabaseConfig();
         assert remoteDatabaseConfig.isPresent();
-        executeQuery("DROP DATABASE " + remoteDatabaseConfig.get().getDatabase());
+        String database = remoteDatabaseConfig.get().getDatabase();
+        executeQuery("UPDATE pg_database SET datallowconn = 'false' WHERE datname = '" + database + "'");
+        executeQuery("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '" + database + "'");
+        executeQuery("DROP DATABASE IF EXISTS " + database);
     }
 
     private void executeQuery(String query)
@@ -257,10 +346,13 @@ public class TemporaryDigdagServer
 
     private void after()
     {
+        if (serverProcess != null) {
+            serverProcess.destroyForcibly();
+        }
+
         executor.shutdownNow();
 
-        // TODO: tear down database when it is possible to shut down the server
-        if (false && testDatabaseConfig != null) {
+        if (testDatabaseConfig != null) {
             try {
                 teardownDatabase();
             }
@@ -322,15 +414,14 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
-
-        private List<String> args = new ArrayList<>();
-
         private Builder()
         {
         }
 
+        private List<String> args = new ArrayList<>();
         private Version version = Version.buildVersion();
         private List<String> configuration = new ArrayList<>();
+        private boolean inProcess = IN_PROCESS_DEFAULT;
 
         public Builder version(Version version)
         {
@@ -343,7 +434,7 @@ public class TemporaryDigdagServer
             return configuration(asList(configuration));
         }
 
-        private Builder configuration(Collection<String> lines)
+        public Builder configuration(Collection<String> lines)
         {
             this.configuration.addAll(lines);
             return this;
@@ -354,9 +445,20 @@ public class TemporaryDigdagServer
             return addArgs(asList(args));
         }
 
-        private Builder addArgs(Collection<String> args)
+        public Builder addArgs(Collection<String> args)
         {
             this.args.addAll(args);
+            return this;
+        }
+
+        public Builder inProcess()
+        {
+            return inProcess(true);
+        }
+
+        public Builder inProcess(boolean inProcess)
+        {
+            this.inProcess = inProcess;
             return this;
         }
 
