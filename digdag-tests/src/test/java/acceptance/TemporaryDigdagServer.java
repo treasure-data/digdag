@@ -68,7 +68,7 @@ public class TemporaryDigdagServer
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-    private final Version version;
+    private final Optional<Version> version;
 
     private final String host;
     private final int port;
@@ -96,7 +96,7 @@ public class TemporaryDigdagServer
 
     public TemporaryDigdagServer(Builder builder)
     {
-        this.version = Objects.requireNonNull(builder.version, "version");
+        this.version = builder.version;
 
         this.host = "127.0.0.1";
         // TODO (dano): Ideally the server could use system port allocation (bind on port 0) and tell
@@ -266,19 +266,30 @@ public class TemporaryDigdagServer
 
         if (inProcess) {
             executor.execute(() -> {
-                main(version, args, out, err);
+                if (version.isPresent()) {
+                    main(version.get(), args, out, err);
+                }
+                else {
+                    main(Version.buildVersion(), args, out, err);
+                }
             });
         }
         else {
             String home = System.getProperty("java.home");
             String classPath = System.getProperty("java.class.path");
             Path java = Paths.get(home, "bin", "java").toAbsolutePath().normalize();
-            List<String> processArgs = new ArrayList<>(asList(
-                    java.toString(),
+
+            List<String> processArgs = new ArrayList<>();
+            processArgs.add(java.toString());
+            processArgs.addAll(asList(
                     "-cp", classPath,
-                    "-Xms128m", "-Xmx128m",
-                    Trampoline.class.getName()));
+                    "-Xms128m", "-Xmx128m"));
+            if (version.isPresent()) {
+                processArgs.add("-D" + Version.VERSION_PROPERTY + "=" + version.get());
+            }
+            processArgs.add(Trampoline.class.getName());
             processArgs.addAll(args);
+
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
             processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
             processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
@@ -464,13 +475,13 @@ public class TemporaryDigdagServer
         }
 
         private List<String> args = new ArrayList<>();
-        private Version version = Version.buildVersion();
+        private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
         private boolean inProcess = IN_PROCESS_DEFAULT;
 
         public Builder version(Version version)
         {
-            this.version = version;
+            this.version = Optional.of(version);
             return this;
         }
 
