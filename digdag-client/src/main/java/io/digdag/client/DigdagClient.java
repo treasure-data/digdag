@@ -431,7 +431,7 @@ public class DigdagClient
 
     public InputStream getLogFile(long attemptId, RestLogFileHandle handle)
     {
-        if (handle.getDirect().isPresent() && handle.getDirect().get().getType().equals("http")) {
+        if (handle.getDirect().isPresent()) {
             Response res = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
                     .request()
                     .get();

@@ -1,22 +1,31 @@
 package io.digdag.spi;
 
+import java.net.URL;
+import java.net.MalformedURLException;
 import org.immutables.value.Value;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableDirectUploadHandle.class)
-@JsonDeserialize(as = ImmutableDirectUploadHandle.class)
 public interface DirectUploadHandle
 {
-    String getType();
+    @JsonValue
+    URL getUrl();
 
-    String getUrl();
-
-    static DirectUploadHandle of(String type, String url)
+    static DirectDownloadHandle of(String url)
     {
-        return ImmutableDirectUploadHandle.builder()
-            .type(type)
+        try {
+            return of(new URL(url));
+        }
+        catch (MalformedURLException ex) {
+            throw new IllegalArgumentException(ex);
+        }
+    }
+
+    @JsonCreator
+    static DirectDownloadHandle of(URL url)
+    {
+        return ImmutableDirectDownloadHandle.builder()
             .url(url)
             .build();
     }

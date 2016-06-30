@@ -1,5 +1,6 @@
 package io.digdag.client.api;
 
+import java.net.URL;
 import java.time.Instant;
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
