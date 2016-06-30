@@ -4,6 +4,7 @@ import java.util.Map;
 import javax.servlet.ServletContext;
 import com.google.inject.Module;
 import com.google.inject.Binder;
+import com.google.inject.Provider;
 import com.google.common.base.Throwables;
 
 public class GuiceRsServerControlModule
@@ -14,22 +15,22 @@ public class GuiceRsServerControlModule
         return "io.digdag.guice.rs.servletControl";
     }
 
-    public static String buildInitParameterValue(Class<? extends GuiceRsServerControl> clazz)
+    public static String buildInitParameterValue(Class<? extends Provider<GuiceRsServerControl>> clazz)
     {
         return clazz.getName();
     }
 
-    public static void setInitParameter(Map<String, String> map, Class<? extends GuiceRsServerControl> clazz)
+    public static void setInitParameter(Map<String, String> map, Class<? extends Provider<GuiceRsServerControl>> clazz)
     {
         map.put(getInitParameterKey(), buildInitParameterValue(clazz));
     }
 
     @SuppressWarnings("unchecked")
-    public static Class<? extends GuiceRsServerControl> restoreInitParameterValue(String value)
+    public static Class<? extends Provider<GuiceRsServerControl>> restoreInitParameterValue(String value)
     {
         try {
             // TODO which class loader should here use?
-            return (Class<? extends GuiceRsServerControl>) Class.forName(value);
+            return (Class<? extends Provider<GuiceRsServerControl>>) Class.forName(value);
         }
         catch (ClassNotFoundException ex) {
             throw Throwables.propagate(ex);
@@ -57,7 +58,7 @@ public class GuiceRsServerControlModule
     private final Class<?> clazz;
 
     @SuppressWarnings("unchecked")
-    public GuiceRsServerControlModule(Class<? extends GuiceRsServerControl> clazz)
+    public GuiceRsServerControlModule(Class<? extends Provider<GuiceRsServerControl>> clazz)
     {
         this.clazz = clazz;
     }
@@ -66,6 +67,6 @@ public class GuiceRsServerControlModule
     @SuppressWarnings("unchecked")
     public void configure(Binder binder)
     {
-        binder.bind(GuiceRsServerControl.class).to((Class<? extends GuiceRsServerControl>) clazz);
+        binder.bind(GuiceRsServerControl.class).toProvider((Class<? extends Provider<GuiceRsServerControl>>) clazz);
     }
 }

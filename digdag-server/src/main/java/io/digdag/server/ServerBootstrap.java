@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
@@ -48,8 +49,6 @@ public class ServerBootstrap
 
     public static final String CONFIG_INIT_PARAMETER_KEY = "io.digdag.cli.server.config";
     public static final String VERSION_INIT_PARAMETER_KEY = "io.digdag.cli.server.version";
-
-    private GuiceRsServerControl control;
 
     @Inject
     public ServerBootstrap(GuiceRsServerControl control)
@@ -112,6 +111,55 @@ public class ServerBootstrap
             .addModules(new ServerModule());
     }
 
+    private static final InheritableThreadLocal<GuiceRsServerControl> servletServerControl = new InheritableThreadLocal<>();
+
+    private static class ServerControl
+            implements GuiceRsServerControl
+    {
+        private final DeploymentManager manager;
+        private Undertow server;
+
+        public ServerControl(DeploymentManager manager)
+        {
+            this.manager = manager;
+            this.server = server;
+        }
+
+        void serverInitialized(Undertow server)
+        {
+            this.server = server;
+        }
+
+        @Override
+        public void stop()
+        {
+            if (server == null) {
+                // server is not even initialized yet
+            }
+            else {
+                server.stop();
+            }
+        }
+
+        @Override
+        public void destroy()
+        {
+            manager.undeploy();
+        }
+    }
+
+    private static class ThreadLocalServerControlProvider
+            implements Provider<GuiceRsServerControl>
+    {
+        @Override
+        public GuiceRsServerControl get()
+        {
+            return servletServerControl.get();
+        }
+    }
+
+    private GuiceRsServerControl control;
+
     public static void startServer(Version version, Properties props, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException
     {
@@ -120,7 +168,7 @@ public class ServerBootstrap
         startServer(version, config, bootstrapClass);
     }
 
-    public static void startServer(Version version, ServerConfig config, Class<? extends ServerBootstrap> bootstrapClass)
+    public static GuiceRsServerControl startServer(Version version, ServerConfig config, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException
     {
         DeploymentInfo servletBuilder = Servlets.deployment()
@@ -131,14 +179,18 @@ public class ServerBootstrap
                     new ServletContainerInitializerInfo(
                         GuiceRsServletContainerInitializer.class,
                         ImmutableSet.of(bootstrapClass)))
-            .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ServerControl.class))
+            .addInitParameter(GuiceRsServerControlModule.getInitParameterKey(), GuiceRsServerControlModule.buildInitParameterValue(ThreadLocalServerControlProvider.class))
             .addInitParameter(CONFIG_INIT_PARAMETER_KEY, config.getSystemConfig().toString())
             .addInitParameter(VERSION_INIT_PARAMETER_KEY, version.toString())
             ;
 
         DeploymentManager manager = Servlets.defaultContainer()
             .addDeployment(servletBuilder);
-        manager.deploy();
+
+        ServerControl control = new ServerControl(manager);
+        servletServerControl.set(control);
+
+        manager.deploy();  // ServerBootstrap.initialize runs here
 
         PathHandler path = Handlers.path(Handlers.redirect("/"))
             .addPrefixPath("/", manager.start());
@@ -157,7 +209,12 @@ public class ServerBootstrap
             .setHandler(handler)
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
             .build();
-        server.start();
+
+        control.serverInitialized(server);
+
+        server.start();  // HTTP server starts here
+
+        return control;
     }
 
     private static HttpHandler buildAccessLogHandler(ServerConfig config, HttpHandler nextHandler)
@@ -191,25 +248,6 @@ public class ServerBootstrap
             return new AccessLogHandler(nextHandler, logReceiver,
                     config.getAccessLogPattern(),
                     ServerBootstrap.class.getClassLoader());
-        }
-    }
-
-    private static class ServerControl
-            implements GuiceRsServerControl
-    {
-        static Undertow server;
-        static DeploymentManager manager;
-
-        @Override
-        public void stop()
-        {
-            server.stop();
-        }
-
-        @Override
-        public void destroy()
-        {
-            manager.undeploy();
         }
     }
 }
