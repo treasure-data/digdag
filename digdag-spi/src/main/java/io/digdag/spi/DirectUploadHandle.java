@@ -12,7 +12,7 @@ public interface DirectUploadHandle
     @JsonValue
     URL getUrl();
 
-    static DirectDownloadHandle of(String url)
+    static DirectUploadHandle of(String url)
     {
         try {
             return of(new URL(url));
@@ -23,9 +23,9 @@ public interface DirectUploadHandle
     }
 
     @JsonCreator
-    static DirectDownloadHandle of(URL url)
+    static DirectUploadHandle of(URL url)
     {
-        return ImmutableDirectDownloadHandle.builder()
+        return ImmutableDirectUploadHandle.builder()
             .url(url)
             .build();
     }
