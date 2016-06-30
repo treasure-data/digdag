@@ -5,14 +5,12 @@
         </encoder>
     </appender>
 
-    <logger name="com.zaxxer.hikari" level="WARN"/>
-    <logger name="org.apache" level="WARN"/>
-    <logger name="org.jboss" level="WARN"/>
+    <logger name="io.digdag" level="DEBUG"/>
 
     <appender name="digdag-context" class="io.digdag.cli.LogbackTaskContextLoggerBridgeAppender">
     </appender>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="console"/>
         <appender-ref ref="digdag-context"/>
     </root>
