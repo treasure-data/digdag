@@ -23,6 +23,7 @@ import javax.sql.DataSource;
 import javax.ws.rs.ProcessingException;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.management.ManagementFactory;
@@ -83,6 +84,7 @@ public class TemporaryDigdagServer
 
     private final boolean inProcess;
 
+    private Path workdir;
     private Process serverProcess;
 
     private Path configDirectory;
@@ -275,6 +277,7 @@ public class TemporaryDigdagServer
             });
         }
         else {
+            File workdir = temporaryFolder.newFolder();
             String home = System.getProperty("java.home");
             String classPath = System.getProperty("java.class.path");
             Path java = Paths.get(home, "bin", "java").toAbsolutePath().normalize();
@@ -293,6 +296,7 @@ public class TemporaryDigdagServer
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
             processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
             processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            processBuilder.directory(workdir);
             serverProcess = processBuilder.start();
         }
 
