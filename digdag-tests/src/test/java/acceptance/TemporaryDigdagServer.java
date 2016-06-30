@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -91,6 +92,7 @@ public class TemporaryDigdagServer
 
     private DatabaseConfig adminDatabaseConfig;
     private DatabaseConfig testDatabaseConfig;
+    private DataSource adminDataSource;
 
     public TemporaryDigdagServer(Builder builder)
     {
@@ -152,10 +154,11 @@ public class TemporaryDigdagServer
         }
 
         config = TestUtils.configFactory().create();
-        config.set("database.type", "postgresql");
         for (String key : props.stringPropertyNames()) {
             config.set("database." + key, props.get(key));
         }
+        config.set("database.type", "postgresql");
+        config.set("database.minimumPoolSize", 0);
 
         // Connection configuration for administering the test database
         adminDatabaseConfig = DatabaseConfig.convertFrom(config);
@@ -166,6 +169,9 @@ public class TemporaryDigdagServer
         String uniqueDatabase = prefix + UUID.randomUUID().toString().replace('-', '_');
         testConfig.set("database.database", uniqueDatabase);
         testDatabaseConfig = DatabaseConfig.convertFrom(testConfig);
+
+        DataSourceProvider dsp = new DataSourceProvider(adminDatabaseConfig);
+        adminDataSource = dsp.get();
     }
 
     private static class Trampoline
@@ -222,7 +228,8 @@ public class TemporaryDigdagServer
             System.err.flush();
         }
 
-        private static void errPrefix() {
+        private static void errPrefix()
+        {
             System.err.print(LocalTime.now() + " [" + NAME + "] " + TemporaryDigdagServer.class.getName() + ": ");
         }
     }
@@ -273,7 +280,8 @@ public class TemporaryDigdagServer
                     Trampoline.class.getName()));
             processArgs.addAll(args);
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
-            processBuilder.inheritIO();
+            processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
+            processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             serverProcess = processBuilder.start();
         }
 
@@ -299,6 +307,37 @@ public class TemporaryDigdagServer
         if (!up) {
             fail("Server failed to come up.\nout:\n" + out.toString("UTF-8") + "\nerr:\n" + err.toString("UTF-8"));
         }
+    }
+
+    private static void kill(Process p)
+    {
+        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+            int pid = pid(p);
+            if (pid != -1) {
+                String[] cmd = {"kill", "-9", Integer.toString(pid)};
+                try {
+                    Runtime.getRuntime().exec(cmd);
+                }
+                catch (IOException e) {
+                    log.warn("command failed: {}", asList(cmd), e);
+                }
+            }
+            p.destroyForcibly();
+        }
+    }
+
+    private static int pid(Process p)
+    {
+        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+            try {
+                Field f = p.getClass().getDeclaredField("pid");
+                f.setAccessible(true);
+                return f.getInt(p);
+            }
+            catch (Exception ignore) {
+            }
+        }
+        return -1;
     }
 
     private void setupDatabase()
@@ -333,11 +372,8 @@ public class TemporaryDigdagServer
     private void executeQuery(String query)
             throws SQLException
     {
-        DataSourceProvider dsp = new DataSourceProvider(adminDatabaseConfig);
-        DataSource ds = dsp.get();
-
         try (
-                Connection connection = ds.getConnection();
+                Connection connection = adminDataSource.getConnection();
                 java.sql.Statement statement = connection.createStatement();
         ) {
             statement.execute(query);
@@ -347,7 +383,7 @@ public class TemporaryDigdagServer
     private void after()
     {
         if (serverProcess != null) {
-            serverProcess.destroyForcibly();
+            kill(serverProcess);
         }
 
         executor.shutdownNow();
@@ -358,6 +394,15 @@ public class TemporaryDigdagServer
             }
             catch (SQLException e) {
                 log.warn("Failed to tear down database", e);
+            }
+        }
+
+        if (adminDataSource instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) adminDataSource).close();
+            }
+            catch (Exception e) {
+                log.debug("Failed to close db conn pool", e);
             }
         }
     }
