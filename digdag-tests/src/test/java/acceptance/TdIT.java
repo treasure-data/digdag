@@ -54,8 +54,6 @@ public class TdIT
 
     private static final String TD_API_KEY = System.getenv("TD_API_KEY");
 
-    private static final String DOMAIN_KEY = "domain_key";
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -292,7 +290,7 @@ public class TdIT
         FullHttpRequest copy = request.copy();
         ReferenceCountUtil.releaseLater(copy);
         HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(copy);
-        List<InterfaceHttpData> keyDatas = decoder.getBodyHttpDatas(DOMAIN_KEY);
+        List<InterfaceHttpData> keyDatas = decoder.getBodyHttpDatas("domain_key");
         assertThat(keyDatas, is(not(nullValue())));
         assertThat(keyDatas.size(), is(1));
         InterfaceHttpData domainKeyData = keyDatas.get(0);

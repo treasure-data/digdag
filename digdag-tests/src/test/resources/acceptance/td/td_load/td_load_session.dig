@@ -1,0 +1,7 @@
+timezone: UTC
+
++run:
+  td_load>: td_load_test_session
+
++post:
+  sh>: touch ${outfile}

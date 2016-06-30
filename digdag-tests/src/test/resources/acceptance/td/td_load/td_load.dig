@@ -1,0 +1,8 @@
+timezone: UTC
+
++run:
+  td_load>: td_load_config.yml
+  table: td_load_test
+
++post:
+  sh>: touch ${outfile}
