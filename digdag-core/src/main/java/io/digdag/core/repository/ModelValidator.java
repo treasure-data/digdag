@@ -92,9 +92,11 @@ public class ModelValidator
         checkNotEmpty(fieldName, value);
         check(fieldName, value, !FIRST_NUMBER_CHAR.matcher(value).find(), "must not start with a digit (0-9)");
         check(fieldName, value, value.startsWith("+") || value.startsWith("^"), "must start with '+' or '^'");
-        Matcher m = RAW_TASK_NAME_CHARS.matcher(value.substring(1));
-        if (m.find()) {
-            check(fieldName, value, false, "must not contain character '" + m.group() + "'");
+        if (!value.isEmpty()) {
+            Matcher m = RAW_TASK_NAME_CHARS.matcher(value.substring(1));
+            if (m.find()) {
+                check(fieldName, value, false, "must not contain character '" + m.group() + "'");
+            }
         }
         checkMaxLength(fieldName, value, 255);
         return this;
