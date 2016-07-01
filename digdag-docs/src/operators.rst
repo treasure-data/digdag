@@ -431,7 +431,7 @@ TODO: add more description here
 :command:`td_load>: FILE.dig`
   Path to a YAML template file. This configuration needs to be guessed using td command.
 
-  * :command:`td>: config/from_s3.sql`
+  * :command:`td_load>: imports/load.yml`
 
 :command:`database: NAME`
   Name of the database load data to.
