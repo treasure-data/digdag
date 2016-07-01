@@ -48,8 +48,8 @@ public class ModelValidationException
     {
         StringBuilder sb = new StringBuilder();
         sb.append(message);
-        sb.append("\n");
         for (Failure failure : failures) {
+            sb.append("\n");
             sb.append(failure.getFieldName());
             sb.append(' ');
             sb.append(failure.getMessage());
