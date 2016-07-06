@@ -16,6 +16,7 @@ import io.digdag.standards.operator.MailOperatorFactory;
 import io.digdag.standards.operator.LoopOperatorFactory;
 import io.digdag.standards.operator.ForEachOperatorFactory;
 import io.digdag.standards.operator.EmbulkOperatorFactory;
+import io.digdag.standards.operator.postgresql.PostgreSQLOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
 import io.digdag.standards.operator.td.TdRunOperatorFactory;
@@ -50,6 +51,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);
         addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
+        addStandardOperatorFactory(binder, PostgreSQLOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)
