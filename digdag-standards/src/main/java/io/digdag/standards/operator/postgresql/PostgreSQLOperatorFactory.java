@@ -127,7 +127,7 @@ public class PostgreSQLOperatorFactory
             String stmt;
 
             if (insertInto.isPresent()) {
-                stmt = insertCommandStatement("INSERT INTO TABLE " + escapeIdent(insertInto.get().toString()), query);
+                stmt = insertCommandStatement("INSERT INTO " + escapeIdent(insertInto.get().toString()), query);
             }
             else if (createTable.isPresent()) {
                 stmt = insertCommandStatement("CREATE TABLE " + escapeIdent(createTable.get().toString()) + " AS ", query);
