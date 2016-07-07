@@ -60,13 +60,25 @@ public class PostgreSQLOperatorFactory
 
         private String escapeIdent(String ident)
         {
-            try {
-                return Utils.escapeIdentifier(null, ident).toString();
+            StringBuilder buf = new StringBuilder();
+            boolean isFirst = true;
+            for (String elm : ident.split("\\.")) {
+                if (isFirst) {
+                    isFirst = false;
+                }
+                else {
+                    buf.append(".");
+                }
+
+                try {
+                    Utils.escapeIdentifier(buf, elm);
+                }
+                catch (SQLException e) {
+                    logger.warn("Unexpected error occurred: ident=" + ident + ", elm=" + elm, e);
+                    return ident;
+                }
             }
-            catch (SQLException e) {
-                logger.warn("Unexpected error occurred: ident=" + ident, e);
-                return ident;
-            }
+            return buf.toString();
         }
 
         private void issueQuery(PostgreSQLQueryRequest req)
@@ -77,6 +89,9 @@ public class PostgreSQLOperatorFactory
             Class.forName("org.postgresql.Driver");
 
             Properties props = new Properties();
+            if (req.schema().isPresent()) {
+                props.setProperty("currentSchema", req.schema().get());
+            }
             // TODO: Make them configurable
             props.setProperty("loginTimeout", String.valueOf(30));
             props.setProperty("connectTimeout", String.valueOf(30));
@@ -103,7 +118,6 @@ public class PostgreSQLOperatorFactory
             boolean ssl = params.get("ssl", boolean.class, false);
 
             String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
-
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> createTable = params.getOptional("create_table", PostgreSQLTableParam.class);
             if (insertInto.isPresent() && createTable.isPresent()) {
