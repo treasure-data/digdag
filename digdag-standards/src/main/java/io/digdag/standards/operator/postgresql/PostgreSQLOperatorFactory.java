@@ -2,49 +2,28 @@ package io.digdag.standards.operator.postgresql;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import com.treasuredata.client.TDClientHttpNotFoundException;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.database.DatabaseConfig;
-import io.digdag.core.database.DatabaseMigrator;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.td.TDJobOperator;
 import io.digdag.util.BaseOperator;
-import io.digdag.util.Workspace;
-import org.msgpack.value.ArrayValue;
-import org.msgpack.value.Value;
 import org.postgresql.core.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.nio.file.Path;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
-import static io.digdag.standards.operator.td.TDOperator.escapeHiveTableName;
-import static io.digdag.standards.operator.td.TDOperator.escapePrestoTableName;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class PostgreSQLOperatorFactory
@@ -68,13 +47,13 @@ public class PostgreSQLOperatorFactory
     @Override
     public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
     {
-        return new TdOperator(workspacePath, request);
+        return new PostgreSQLOperator(workspacePath, request);
     }
 
-    private class TdOperator
+    private class PostgreSQLOperator
             extends BaseOperator
     {
-        public TdOperator(Path workspacePath, TaskRequest request)
+        public PostgreSQLOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
         }
@@ -91,33 +70,23 @@ public class PostgreSQLOperatorFactory
         }
 
         private void issueQuery(PostgreSQLQueryRequest req)
-                throws SQLException
+                throws SQLException, ClassNotFoundException
         {
 
             String url = String.format(Locale.ENGLISH, "jdbc:postgresql://%s:%d/%s", req.host(), req.port(), req.database());
+            Class.forName("org.postgresql.Driver");
 
-            HikariConfig hikari = new HikariConfig();
-            hikari.setJdbcUrl(url);
-            hikari.setDriverClassName("org.postgresql.Driver");
             Properties props = new Properties();
-
             // TODO: Make them configurable
             props.setProperty("loginTimeout", String.valueOf(30));
+            props.setProperty("connectTimeout", String.valueOf(30));
             props.setProperty("socketTimeout", String.valueOf(1800));
             props.setProperty("tcpKeepAlive", "true");
             props.setProperty("ssl", String.valueOf(req.ssl()));
-            hikari.setDataSourceProperties(props);
-            hikari.setConnectionTimeout(30 * 1000);
-            hikari.setIdleTimeout(600 * 1000);
-            hikari.setValidationTimeout(5 * 1000);
-            hikari.setMaximumPoolSize(10);
+            props.setProperty("applicationName", "digdag");
 
-            // TODO: Support `schema`
-
-            logger.debug("Using database URL {}", hikari.getJdbcUrl());
-
-            HikariDataSource ds = new HikariDataSource(hikari);
-            ds.getConnection().prepareStatement(req.query()).execute();
+            Connection conn = DriverManager.getConnection(url, props);
+            conn.prepareStatement(req.query()).execute();
         }
 
         @Override
@@ -167,7 +136,7 @@ public class PostgreSQLOperatorFactory
             try {
                 issueQuery(req);
             }
-            catch (SQLException e) {
+            catch (SQLException | ClassNotFoundException e) {
                 // TODO: Create an exception class
                 throw new RuntimeException("Failed to send a query: " + req, e);
             }

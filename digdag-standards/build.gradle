@@ -20,5 +20,4 @@ dependencies {
 
     // postgresql
     compile 'org.postgresql:postgresql:9.4.1208'
-    compile 'com.zaxxer:HikariCP:2.4.5'
 }
