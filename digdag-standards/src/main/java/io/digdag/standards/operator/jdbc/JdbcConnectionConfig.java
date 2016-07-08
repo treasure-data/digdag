@@ -1,14 +1,13 @@
-package io.digdag.standards.operator.postgresql;
+package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface PostgreSQLQueryRequest
+public interface JdbcConnectionConfig
 {
     String database();
     Optional<String> schema();
-    String query();
     boolean ssl();
     String host();
     int port();
