@@ -2,9 +2,6 @@ package io.digdag.standards.operator.jdbc;
 
 import java.sql.Types;
 
-/**
- * Created by komamitsu on 7/8/16.
- */
 public enum TypeGroup
 {
     INT,
@@ -19,7 +16,7 @@ public enum TypeGroup
     MAP,
     NULL;
 
-    public static TypeGroup getType(int sqlType)
+    public static TypeGroup fromSqlType(int sqlType)
     {
         switch (sqlType) {
             case Types.TINYINT:

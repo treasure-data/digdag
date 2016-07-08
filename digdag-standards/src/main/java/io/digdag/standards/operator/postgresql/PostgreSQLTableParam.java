@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Optional;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class PostgreSQLTableParam
 {
     private final Optional<String> schema;
@@ -11,8 +13,8 @@ public class PostgreSQLTableParam
 
     private PostgreSQLTableParam(Optional<String> schema, String table)
     {
-        this.schema = schema;
-        this.table = table;
+        this.schema = checkNotNull(schema, "schema");
+        this.table = checkNotNull(table, "table");
     }
 
     @JsonCreator

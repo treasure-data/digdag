@@ -10,15 +10,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.Set;
 
 import com.google.common.base.Throwables;
 import org.postgresql.core.Utils;
 import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSet.Builder;
 import org.slf4j.LoggerFactory;
 
 public abstract class JdbcConnection
@@ -32,7 +29,7 @@ public abstract class JdbcConnection
     protected String identifierQuoteString;
     protected int fetchSize = 10000; // TODO: Make it configurable
 
-    protected abstract String getClassName();
+    protected abstract String getDriverClassName();
 
     protected abstract String getProtocolName();
 
@@ -43,7 +40,7 @@ public abstract class JdbcConnection
 
         String url = String.format(Locale.ENGLISH, "jdbc:%s://%s:%d/%s", getProtocolName(), config.host(), config.port(), config.database());
         try {
-            Class.forName(getClassName());
+            Class.forName(getDriverClassName());
         }
         catch (ClassNotFoundException e) {
             Throwables.propagate(e);
@@ -98,6 +95,13 @@ public abstract class JdbcConnection
         }
     }
 
+    public void executeUpdate(String sql) throws SQLException
+    {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate(sql);
+        }
+    }
+
     protected JdbcSchema getSchemaOfResultMetadata(ResultSetMetaData metadata) throws SQLException
     {
         ImmutableList.Builder<JdbcColumn> columns = ImmutableList.builder();
@@ -108,7 +112,7 @@ public abstract class JdbcConnection
             int sqlType = metadata.getColumnType(index);
             int scale = metadata.getScale(index);
             int precision = metadata.getPrecision(index);
-            columns.add(new JdbcColumn(name, typeName, sqlType, TypeGroup.getType(sqlType), precision, scale));
+            columns.add(new JdbcColumn(name, typeName, sqlType, TypeGroup.fromSqlType(sqlType), precision, scale));
         }
         return new JdbcSchema(columns.build());
     }
@@ -117,18 +121,6 @@ public abstract class JdbcConnection
     public void close() throws SQLException
     {
         connection.close();
-    }
-
-    public void executeUpdate(String sql) throws SQLException
-    {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate(sql);
-        }
-    }
-
-    protected String quoteIdentifierString(String str)
-    {
-        return identifierQuoteString + str + identifierQuoteString;
     }
 
     public static String escapeIdent(String ident)
@@ -154,26 +146,10 @@ public abstract class JdbcConnection
         return buf.toString();
     }
 
-    protected String buildTableName(String tableName)
-    {
-        return quoteIdentifierString(tableName);
-    }
-
-    private boolean tableExists(String tableName) throws SQLException
+    protected boolean tableExists(String tableName) throws SQLException
     {
         try (ResultSet rs = connection.getMetaData().getTables(null, config.schema().orNull(), tableName, null)) {
             return rs.next();
-        }
-    }
-
-    private Set<String> getColumnNames(String tableName) throws SQLException
-    {
-        Builder<String> columnNamesBuilder = ImmutableSet.builder();
-        try (ResultSet rs = connection.getMetaData().getColumns(null, config.schema().orNull(), tableName, null)) {
-            while (rs.next()) {
-                columnNamesBuilder.add(rs.getString("COLUMN_NAME"));
-            }
-            return columnNamesBuilder.build();
         }
     }
 }
