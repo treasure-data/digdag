@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.postgresql;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -11,19 +10,20 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.standards.operator.jdbc.CSVWriter;
 import io.digdag.standards.operator.jdbc.ImmutableJdbcConnectionConfig;
 import io.digdag.standards.operator.jdbc.JdbcColumn;
 import io.digdag.standards.operator.jdbc.JdbcConnection;
 import io.digdag.standards.operator.jdbc.JdbcConnectionConfig;
 import io.digdag.standards.operator.jdbc.JdbcSchema;
 import io.digdag.standards.operator.jdbc.QueryResultHandler;
-import io.digdag.standards.operator.jdbc.TypeGroup;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -69,7 +69,7 @@ public class PostgreSQLOperatorFactory
         }
 
         @Override
-        protected String getClassName()
+        protected String getDriverClassName()
         {
             return "org.postgresql.Driver";
         }
@@ -146,57 +146,12 @@ public class PostgreSQLOperatorFactory
             }
             else {
                 stmt = query;
-                queryResultHandler = Optional.of(new QueryResultHandler() {
-                    private BufferedWriter out;
-                    private JdbcSchema schema;
-
-                    @Override
-                    public void before()
-                    {
-                        try {
-                            out = checkNotNull(workspace.newBufferedWriter(downloadFile.get(), UTF_8));
-                        }
-                        catch (IOException e) {
-                            Throwables.propagate(e);
-                        }
-                    }
-
-                    @Override
-                    public void schema(JdbcSchema schema)
-                    {
-                        this.schema = schema;
-                        try {
-                            addCsvHeader(out, schema.getColumns().stream().map(JdbcColumn::getName).collect(Collectors.toList()));
-                        }
-                        catch (IOException e) {
-                            Throwables.propagate(e);
-                        }
-                    }
-
-                    @Override
-                    public void handleRow(List<Object> row)
-                    {
-                        try {
-                            addCsvRow(out, schema.getColumns().stream().map(JdbcColumn::getTypeGroup).collect(Collectors.toList()), row);
-                        }
-                        catch (IOException e) {
-                            Throwables.propagate(e);
-                        }
-                    }
-
-                    @Override
-                    public void after()
-                    {
-                        if (out != null) {
-                            try {
-                                out.close();
-                            }
-                            catch (IOException e) {
-                                logger.warn("Failed to close {}", out);
-                            }
-                        }
-                    }
-                });
+                if (downloadFile.isPresent()) {
+                    queryResultHandler = Optional.of(getResultCsvDownloader(downloadFile.get()));
+                }
+                else {
+                    queryResultHandler = Optional.of(getResultCsvPrinter());
+                }
             }
 
             JdbcConnectionConfig req = ImmutableJdbcConnectionConfig.builder().
@@ -220,99 +175,73 @@ public class PostgreSQLOperatorFactory
             return TaskResult.defaultBuilder(request).build();
         }
 
-        // TODO: Move these methods to a helper class
-        private void addCsvHeader(Writer out, List<String> columnNames)
-                throws IOException
+        private QueryResultHandler getResultCsvPrinter()
         {
-            boolean first = true;
-            for (String columnName : columnNames) {
-                if (first) { first = false; }
-                else { out.write(DELIMITER_CHAR); }
-                addCsvText(out, columnName);
-            }
-            out.write("\r\n");
+            return getResultWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
         }
 
-        private void addCsvRow(Writer out, List<TypeGroup> typeGroups, List<Object> row)
-                throws IOException
+        private QueryResultHandler getResultCsvDownloader(String downloadFile)
         {
-            for (int i = 0; i < typeGroups.size(); i++) {
-                if (i > 0) {
-                    out.write(DELIMITER_CHAR);
-                }
-                Object v = row.get(i);
-                if (typeGroups.get(i) == TypeGroup.STRING) {
-                    addCsvText(out, v.toString());
-                }
-                else {
-                    addCsvText(out, v.toString());
-                }
+            BufferedWriter out = null;
+            try {
+                out = checkNotNull(workspace.newBufferedWriter(downloadFile, UTF_8));
             }
-            out.write("\r\n");
+            catch (IOException e) {
+                Throwables.propagate(e);
+            }
+            return getResultWriter(out);
         }
 
-        private void addCsvText(Writer out, String value)
-                throws IOException
+        private QueryResultHandler getResultWriter(Writer writer)
         {
-            out.write(escapeAndQuoteCsvValue(value));
-        }
+            BufferedWriter out = new BufferedWriter(writer);
+            final CSVWriter csvWriter = new CSVWriter(out);
 
-        private static final char DELIMITER_CHAR = ',';
-        private static final char ESCAPE_CHAR = '"';
-        private static final char QUOTE_CHAR = '"';
+            return new QueryResultHandler()
+            {
+                private JdbcSchema schema;
 
-        private String escapeAndQuoteCsvValue(String v)
-        {
-            if (v.isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(QUOTE_CHAR);
-                sb.append(QUOTE_CHAR);
-                return sb.toString();
-            }
-
-            StringBuilder escapedValue = new StringBuilder();
-            char previousChar = ' ';
-
-            boolean isRequireQuote = false;
-
-            for (int i = 0; i < v.length(); i++) {
-                char c = v.charAt(i);
-
-                if (c == QUOTE_CHAR) {
-                    escapedValue.append(ESCAPE_CHAR);
-                    escapedValue.append(c);
-                    isRequireQuote = true;
+                @Override
+                public void before()
+                {
                 }
-                else if (c == '\r') {
-                    escapedValue.append('\n');
-                    isRequireQuote = true;
-                }
-                else if (c == '\n') {
-                    if (previousChar != '\r') {
-                        escapedValue.append('\n');
-                        isRequireQuote = true;
+
+                @Override
+                public void schema(JdbcSchema schema)
+                {
+                    this.schema = schema;
+                    try {
+                        csvWriter.addCsvHeader(schema.getColumns().stream().map(JdbcColumn::getName).collect(Collectors.toList()));
+                    }
+                    catch (IOException e) {
+                        Throwables.propagate(e);
                     }
                 }
-                else if (c == DELIMITER_CHAR) {
-                    escapedValue.append(c);
-                    isRequireQuote = true;
-                }
-                else {
-                    escapedValue.append(c);
-                }
-                previousChar = c;
-            }
 
-            if (isRequireQuote) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(QUOTE_CHAR);
-                sb.append(escapedValue);
-                sb.append(QUOTE_CHAR);
-                return sb.toString();
-            }
-            else {
-                return escapedValue.toString();
-            }
+                @Override
+                public void handleRow(List<Object> row)
+                {
+                    try {
+                        csvWriter.addCsvRow(schema.getColumns().stream().map(JdbcColumn::getTypeGroup).collect(Collectors.toList()), row);
+                    }
+                    catch (IOException e) {
+                        Throwables.propagate(e);
+                    }
+                }
+
+                @Override
+                public void after()
+                {
+                    if (csvWriter != null) {
+                        try {
+                            csvWriter.close();
+                        }
+                        catch (Exception e) {
+                            logger.warn("Failed to close {}", csvWriter);
+                        }
+                    }
+                }
+            };
         }
 
         protected String insertCommandStatement(String command, String original)
