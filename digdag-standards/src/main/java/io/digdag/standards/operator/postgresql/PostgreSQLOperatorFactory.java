@@ -141,7 +141,8 @@ public class PostgreSQLOperatorFactory
                 queryResultHandler = Optional.absent();
             }
             else if (createTable.isPresent()) {
-                stmt = insertCommandStatement("CREATE TABLE " + JdbcConnection.escapeIdent(createTable.get().toString()) + " AS ", query);
+                String escapedTableName = JdbcConnection.escapeIdent(createTable.get().toString());
+                stmt = insertCommandStatement("DROP TABLE IF EXISTS " + escapedTableName + "; CREATE TABLE " + escapedTableName + " AS ", query);
                 queryResultHandler = Optional.absent();
             }
             else {
