@@ -3,6 +3,7 @@ package io.digdag.standards.operator.jdbc;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Optional;
 
 public class JdbcSchema
 {
@@ -33,6 +34,15 @@ public class JdbcSchema
     public String getColumnName(int i)
     {
         return columns.get(i).getName();
+    }
+
+    public Optional<JdbcColumn> findByNameIgnoreCase(String columnName) {
+        for(JdbcColumn col : columns) {
+            if(col != null && col.getName().compareToIgnoreCase(columnName) == 0) {
+                return Optional.of(col);
+            }
+        }
+        return Optional.absent();
     }
 
     @Override

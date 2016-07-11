@@ -90,21 +90,38 @@ public class PostgreSQLOperatorFactory
 
         private final static Pattern HEADER_COMMENT_BLOCK_PATTERN = Pattern.compile("\\A([\\r\\n\\t]*(?:(?:\\A|\\n)\\-\\-[^\\n]*)+)\\n?(.*)\\z", Pattern.MULTILINE);
 
+        private enum QueryType {
+            SELECT_ONLY,
+            WITH_INSERT_INTO,
+            WITH_CREATE_TABLE,
+            WITH_UPDATE_TABLE
+        }
+
         public PostgreSQLOperator(Path workspacePath, TemplateEngine templateEngine, TaskRequest request)
         {
             super(checkNotNull(workspacePath, "workspacePath"), checkNotNull(request, "request"));
             this.templateEngine = checkNotNull(templateEngine, "templateEngine");
         }
 
-        private void issueQuery(JdbcConnectionConfig config, String query, Optional<QueryResultHandler> resultHandler)
+        private void issueQuery(JdbcConnectionConfig config, QueryType queryType, String query, Optional<QueryResultHandler> resultHandler, Optional<String> destTable)
                 throws SQLException, ClassNotFoundException
         {
             PostgreSQLConnection connection = new PostgreSQLConnection(config);
-            if (resultHandler.isPresent()) {
-                connection.executeAndFetchResult(query, resultHandler.get());
-            }
-            else {
-                connection.executeUpdate(query);
+            switch (queryType) {
+                case SELECT_ONLY:
+                    connection.executeQueryAndFetchResult(query, resultHandler.get());
+                    break;
+                case WITH_INSERT_INTO:
+                    connection.executeQueryWithInsertInto(query, destTable.get());
+                    break;
+                case WITH_CREATE_TABLE:
+                    connection.executeQueryWithCreateTable(query, destTable.get());
+                    break;
+                case WITH_UPDATE_TABLE:
+                    connection.executeQueryWithUpdateTable(query, destTable.get());
+                    break;
+                default:
+                    throw new IllegalStateException("Shouldn't reach here");
             }
         }
 
@@ -114,39 +131,57 @@ public class PostgreSQLOperatorFactory
             Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty("postgresql"));
 
             String database = params.get("database", String.class);
-            Optional<String> schema = Optional.fromNullable(params.get("schema", String.class, null));
+            Optional<String> schema = params.getOptional("schema", String.class);
             String host = params.get("host", String.class, "localhost");
             int port = params.get("port", int.class, 5432);
             String user = params.get("user", String.class);
-            Optional<String> password = Optional.fromNullable(params.get("password", String.class, null));
+            Optional<String> password = params.getOptional("password", String.class);
             boolean ssl = params.get("ssl", boolean.class, false);
 
             String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> createTable = params.getOptional("create_table", PostgreSQLTableParam.class);
-            if (insertInto.isPresent() && createTable.isPresent()) {
-                throw new ConfigException("Setting both insert_into and create_table is invalid");
+            Optional<PostgreSQLTableParam> updateTable = params.getOptional("update_table", PostgreSQLTableParam.class);
+            Optional<String> keyColumn = params.getOptional("key_column", String.class);
+            int manipulateTableOperationCount = 0;
+            if (insertInto.isPresent()) {
+                manipulateTableOperationCount += 1;
+            }
+            if (createTable.isPresent()) {
+                manipulateTableOperationCount += 1;
+            }
+            if (updateTable.isPresent()) {
+                manipulateTableOperationCount += 1;
+                if (!keyColumn.isPresent()) {
+                    throw new ConfigException("key_column is required when update_table is used");
+                }
+            }
+            if (manipulateTableOperationCount > 1) {
+                throw new ConfigException("Can't use more than 2 of insert_into/create_table/update_table");
             }
             Optional<String> downloadFile = params.getOptional("download_file", String.class);
-            if (downloadFile.isPresent() && (insertInto.isPresent() || createTable.isPresent())) {
-                // query results become empty if INSERT INTO or CREATE TABLE query runs
-                throw new ConfigException("download_file is invalid if insert_into or create_table is set");
+            if (downloadFile.isPresent() && manipulateTableOperationCount > 0) {
+                throw new ConfigException("Can't use download_file with insert_into/create_table/update_table");
             }
 
-            String stmt;
-            Optional<QueryResultHandler> queryResultHandler;
+            QueryType queryType;
+            Optional<QueryResultHandler> queryResultHandler = Optional.absent();
+            Optional<String> destTable = Optional.absent();
 
             if (insertInto.isPresent()) {
-                stmt = insertCommandStatement("INSERT INTO " + JdbcConnection.escapeIdent(insertInto.get().toString()), query);
-                queryResultHandler = Optional.absent();
+                queryType = QueryType.WITH_INSERT_INTO;
+                destTable = Optional.of(insertInto.get().toString());
             }
             else if (createTable.isPresent()) {
-                String escapedTableName = JdbcConnection.escapeIdent(createTable.get().toString());
-                stmt = insertCommandStatement("DROP TABLE IF EXISTS " + escapedTableName + "; CREATE TABLE " + escapedTableName + " AS ", query);
-                queryResultHandler = Optional.absent();
+                queryType = QueryType.WITH_CREATE_TABLE;
+                destTable = Optional.of(createTable.get().toString());
+            }
+            else if (updateTable.isPresent()) {
+                queryType = QueryType.WITH_UPDATE_TABLE;
+                destTable = Optional.of(createTable.get().toString());
             }
             else {
-                stmt = query;
+                queryType = QueryType.SELECT_ONLY;
                 if (downloadFile.isPresent()) {
                     queryResultHandler = Optional.of(getResultCsvDownloader(downloadFile.get()));
                 }
@@ -166,7 +201,7 @@ public class PostgreSQLOperatorFactory
                     build();
 
             try {
-                issueQuery(req, stmt, queryResultHandler);
+                issueQuery(req, queryType, query, queryResultHandler, destTable);
             }
             catch (SQLException | ClassNotFoundException e) {
                 // TODO: Create an exception class

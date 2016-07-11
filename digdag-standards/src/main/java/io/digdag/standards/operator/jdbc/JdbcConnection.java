@@ -8,9 +8,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import org.postgresql.core.Utils;
 import org.slf4j.Logger;
@@ -71,7 +73,7 @@ public abstract class JdbcConnection
         }
     }
 
-    public void executeAndFetchResult(String query, QueryResultHandler resultHandler)
+    public void executeQueryAndFetchResult(String query, QueryResultHandler resultHandler)
             throws SQLException
     {
         resultHandler.before();
@@ -93,6 +95,62 @@ public abstract class JdbcConnection
         finally {
             resultHandler.after();
         }
+    }
+
+    public void executeQueryWithInsertInto(String query, String destTable)
+            throws SQLException
+    {
+        executeUpdate("INSERT INTO " + escapeIdent(destTable) + "\n" + query);
+    }
+
+    public void executeQueryWithCreateTable(String query, String destTable)
+            throws SQLException
+    {
+        String escapedDestName = escapeIdent(destTable);
+        executeUpdate("DROP TABLE IF EXISTS " + escapedDestName + "; CREATE TABLE " + escapedDestName + " AS \n" + query);
+    }
+
+    public void executeQueryWithUpdateTable(String query, String destTable)
+            throws SQLException
+    {
+        JdbcSchema resultSchema;
+        String emptyResultQuery = query + "\n" + "LIMIT 0";
+        try (PreparedStatement statement = connection.prepareStatement(emptyResultQuery)) {
+            ResultSet resultSet = statement.executeQuery();
+            resultSchema = getSchemaOfResultMetadata(resultSet.getMetaData());
+        }
+
+        String[] schemaAndTable = destTable.split("\\.");
+        String schemaName, tableName;
+        if (schemaAndTable.length == 1) {
+            schemaName = null;
+            tableName = schemaAndTable[0];
+        }
+        else {
+            schemaName = schemaAndTable[0];
+            tableName = schemaAndTable[1];
+        }
+        JdbcSchema destTableSchema = getFromRDB(schemaName, tableName);
+
+        ImmutableList.Builder<JdbcColumn> columns = ImmutableList.builder();
+        for(int i = 0; i < resultSchema.getCount(); i++) {
+            String columnName = resultSchema.getColumnName(i);
+            Optional<JdbcColumn> col = destTableSchema.findByNameIgnoreCase(columnName);
+            if (!col.isPresent()) {
+                logger.info("Skipping result column {} (the column name does not match any of the columns in the destination table)", columnName);
+                continue;
+            }
+            columns.add(col.get());
+        }
+
+        // FIXME: Build a query like this
+        //   UPDATE dst_tbl SET name = SRC.name, age = SRC.age, email = SRC.email
+        //   FROM (SELECT pid, uid, name, age, email from users where id > 100) SRC
+        //   WHERE pid = SRC.pid AND uid = SRC.uid
+        //
+        //   INSERT INTO dst_tbl (pid, uid, name, age, email)
+        //   (SELECT pid, uid, name, age, email from users where id > 100) SRC
+        //   WHERE NOT EXISTS (SELECT 1 FROM dst_tbl DST WHERE pid = SRC.pid AND uid = SRC.uid)
     }
 
     public void executeUpdate(String sql) throws SQLException
@@ -117,13 +175,33 @@ public abstract class JdbcConnection
         return new JdbcSchema(columns.build());
     }
 
+    public JdbcSchema getFromRDB(String schemaName, String tableName) throws SQLException {
+        String escapedSchemaName = escapeIdent(schemaName);
+        String escapedTableName = escapeIdent(tableName);
+        ResultSet rs = connection.getMetaData().getColumns(null, escapedSchemaName, escapedTableName, null);
+        ImmutableList.Builder<JdbcColumn> columns = ImmutableList.builder();
+        try {
+            while(rs.next()) {
+                String columnName = rs.getString("COLUMN_NAME");
+                String typeName = rs.getString("TYPE_NAME");
+                int sqlType = rs.getInt("DATA_TYPE");
+                int scale = rs.getInt("DECIMAL_DIGITS");
+                int precision = rs.getInt("COLUMN_SIZE");
+                columns.add(new JdbcColumn(columnName, typeName, sqlType, TypeGroup.fromSqlType(sqlType), precision, scale));
+            }
+        } finally {
+            rs.close();
+        }
+        return new JdbcSchema(columns.build());
+    }
+
     @Override
     public void close() throws SQLException
     {
         connection.close();
     }
 
-    public static String escapeIdent(String ident)
+    public String escapeIdent(String ident)
     {
         StringBuilder buf = new StringBuilder();
         boolean isFirst = true;
