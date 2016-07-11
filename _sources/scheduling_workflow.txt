@@ -11,7 +11,6 @@ To run a workflow periodically, add a ``schedule:`` option to top-level workflow
 
 .. code-block:: yaml
 
-    name: daily_job
     timezone: UTC
 
     schedule:
@@ -71,7 +70,6 @@ Setting an alert if a workflow doesn't finish within expected time
 
 .. code-block:: yaml
 
-    name: +main
     timezone: UTC
 
     schedule:
