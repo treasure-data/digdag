@@ -14,4 +14,25 @@ test {
     minHeapSize = "256m"
     maxHeapSize = "256m"
     environment "DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"
+
+    // Shard test classes over CI workers
+    if (System.env.CI_NODE_INDEX != null && System.env.CI_ACCEPTANCE_TEST != null) {
+
+        // Exclude all acceptance tests if this is not an acceptance test run
+        if (!Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
+            include { false }
+        } else {
+            def n = Integer.parseInt(System.env.CI_NODE_TOTAL)
+            def i = Integer.parseInt(System.env.CI_NODE_INDEX)
+            include {
+                // Recurse into all packages
+                if (it.file.isDirectory()) {
+                    return true
+                }
+
+                // Include test class based on worker index
+                return Math.abs(it.file.hashCode()) % n == i
+            }
+        }
+    }
 }
