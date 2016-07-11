@@ -428,7 +428,7 @@ TODO: add more description here
       database: prod
       table: raw
 
-:command:`td_load>: FILE.dig`
+:command:`td_load>: FILE.yml`
   Path to a YAML template file. This configuration needs to be guessed using td command.
 
   * :command:`td_load>: imports/load.yml`
