@@ -16,5 +16,9 @@ docker run \
 -v ~/.gradle:/root/.gradle \
 -e DIGDAG_TEST_POSTGRESQL="${DIGDAG_TEST_POSTGRESQL}" \
 -e TD_API_KEY="${TD_API_KEY}" \
+-e CI_NODE_TOTAL="${CI_NODE_TOTAL}" \
+-e CI_NODE_INDEX="${CI_NODE_INDEX}" \
+-e CI_ACCEPTANCE_TEST=true \
+-e TERM=dumb \
 digdag-build \
 sh -c "/etc/init.d/postgresql start && ./gradlew test --info --no-daemon"
