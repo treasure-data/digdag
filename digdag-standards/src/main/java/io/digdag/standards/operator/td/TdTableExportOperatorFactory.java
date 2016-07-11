@@ -4,10 +4,8 @@ import java.util.Date;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
@@ -19,9 +17,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import com.treasuredata.client.model.TDExportJobRequest;
 import com.treasuredata.client.model.TDExportFileFormatType;
-import org.msgpack.value.Value;
+
 import static java.util.Locale.ENGLISH;
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 
 public class TdTableExportOperatorFactory
         implements OperatorFactory
@@ -85,7 +82,7 @@ public class TdTableExportOperatorFactory
                 TDJobOperator j = op.submitExportJob(req);
                 logger.info("Started table export job id={}", j.getJobId());
 
-                joinJob(j);
+                j.joinJob();
 
                 Config storeParams = request.getConfig().getFactory().create()
                     .set("td", request.getConfig().getFactory().create()

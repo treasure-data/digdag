@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdForEachOperatorFactory
@@ -116,7 +115,7 @@ public class TdForEachOperatorFactory
                 TDJobOperator j = op.submitNewJob(req);
                 logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), query);
 
-                joinJob(j);
+                j.joinJob();
 
                 return fetchRows(j);
             }
