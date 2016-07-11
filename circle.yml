@@ -31,8 +31,8 @@ test:
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
       for dir in build/reports digdag-*/build/reports; do
-        mkdir -p $CIRCLE_ARTIFACTS/reports/${dir%%/*}
-        cp -a $dir $CIRCLE_ARTIFACTS/reports/${dir%%/*}
+        mkdir -p $CIRCLE_ARTIFACTS/reports/$CIRCLE_NODE_INDEX/${dir%%/*}
+        cp -a $dir $CIRCLE_ARTIFACTS/reports/$CIRCLE_NODE_INDEX/${dir%%/*}
       done
 
 deployment:
