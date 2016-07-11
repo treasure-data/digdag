@@ -28,6 +28,8 @@ test:
     - CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
         parallel: true
   post:
+    - ci/circle_gather_test_reports.sh:
+        parallel: true
     - mkdir -p $CIRCLE_ARTIFACTS/reports
     - |
       for dir in build/reports digdag-*/build/reports; do
