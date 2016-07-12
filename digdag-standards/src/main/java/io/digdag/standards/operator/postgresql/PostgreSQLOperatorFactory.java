@@ -27,6 +27,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,7 +104,7 @@ public class PostgreSQLOperatorFactory
             this.templateEngine = checkNotNull(templateEngine, "templateEngine");
         }
 
-        private void issueQuery(JdbcConnectionConfig config, QueryType queryType, String query, Optional<QueryResultHandler> resultHandler, Optional<String> destTable)
+        private void issueQuery(JdbcConnectionConfig config, QueryType queryType, String query, Optional<QueryResultHandler> resultHandler, Optional<String> destTable, Optional<List<String>> uniqKeys)
                 throws SQLException, ClassNotFoundException
         {
             PostgreSQLConnection connection = new PostgreSQLConnection(config);
@@ -118,7 +119,7 @@ public class PostgreSQLOperatorFactory
                     connection.executeQueryWithCreateTable(query, destTable.get());
                     break;
                 case WITH_UPDATE_TABLE:
-                    connection.executeQueryWithUpdateTable(query, destTable.get());
+                    connection.executeQueryWithUpdateTable(query, destTable.get(), uniqKeys.get());
                     break;
                 default:
                     throw new IllegalStateException("Shouldn't reach here");
@@ -142,7 +143,7 @@ public class PostgreSQLOperatorFactory
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> createTable = params.getOptional("create_table", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> updateTable = params.getOptional("update_table", PostgreSQLTableParam.class);
-            Optional<String> keyColumn = params.getOptional("key_column", String.class);
+            Optional<List<String>> uniqKeys = params.getOptional("uniq_keys", String.class).transform(s -> Arrays.asList(s.split("\\s+,\\s+")));
             int manipulateTableOperationCount = 0;
             if (insertInto.isPresent()) {
                 manipulateTableOperationCount += 1;
@@ -152,7 +153,7 @@ public class PostgreSQLOperatorFactory
             }
             if (updateTable.isPresent()) {
                 manipulateTableOperationCount += 1;
-                if (!keyColumn.isPresent()) {
+                if (!uniqKeys.isPresent()) {
                     throw new ConfigException("key_column is required when update_table is used");
                 }
             }
@@ -178,7 +179,7 @@ public class PostgreSQLOperatorFactory
             }
             else if (updateTable.isPresent()) {
                 queryType = QueryType.WITH_UPDATE_TABLE;
-                destTable = Optional.of(createTable.get().toString());
+                destTable = Optional.of(updateTable.get().toString());
             }
             else {
                 queryType = QueryType.SELECT_ONLY;
@@ -201,7 +202,7 @@ public class PostgreSQLOperatorFactory
                     build();
 
             try {
-                issueQuery(req, queryType, query, queryResultHandler, destTable);
+                issueQuery(req, queryType, query, queryResultHandler, destTable, uniqKeys);
             }
             catch (SQLException | ClassNotFoundException e) {
                 // TODO: Create an exception class

@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -110,7 +111,7 @@ public abstract class JdbcConnection
         executeUpdate("DROP TABLE IF EXISTS " + escapedDestName + "; CREATE TABLE " + escapedDestName + " AS \n" + query);
     }
 
-    public void executeQueryWithUpdateTable(String query, String destTable)
+    public void executeQueryWithUpdateTable(String query, String destTable, List<String> uniqKeys)
             throws SQLException
     {
         JdbcSchema resultSchema;
@@ -142,21 +143,101 @@ public abstract class JdbcConnection
             }
             columns.add(col.get());
         }
+        ImmutableList<JdbcColumn> srcColumns = columns.build();
 
-        // FIXME: Build a query like this
+        connection.setAutoCommit(false);
+
+        // In case that the query is "SELECT pid, uid, name, age, email from users where id > 100" and
+        // unique keys are [pid, uid]. The query finally constructed is like this:
+        //
         //   UPDATE dst_tbl SET name = SRC.name, age = SRC.age, email = SRC.email
         //   FROM (SELECT pid, uid, name, age, email from users where id > 100) SRC
         //   WHERE pid = SRC.pid AND uid = SRC.uid
         //
         //   INSERT INTO dst_tbl (pid, uid, name, age, email)
-        //   (SELECT pid, uid, name, age, email from users where id > 100) SRC
-        //   WHERE NOT EXISTS (SELECT 1 FROM dst_tbl DST WHERE pid = SRC.pid AND uid = SRC.uid)
+        //   SELECT * FROM (SELECT pid, uid, name, age, email from users where id > 100) SRC
+        //   WHERE NOT EXISTS (SELECT 1 FROM dst_tbl DST WHERE SRC.pid = DST.pid AND SRC.uid = DST.uid)
+
+        String escapedDstTbl = escapeIdent(destTable);
+        StringBuilder sql = new StringBuilder();
+        // Update statement for existing records
+        sql.append("UPDATE ").append(escapedDstTbl).append(" SET ");
+        {
+            boolean isFirst = true;
+            for (JdbcColumn column : srcColumns) {
+                if (isFirst) {
+                    isFirst = false;
+                }
+                else {
+                    sql.append(", ");
+                }
+                String escapedCol = escapeIdent(column.getName());
+                sql.append(escapedCol).append(" = SRC.").append(escapedCol);
+            }
+        }
+        sql.append(" FROM (").append(query).append(") SRC ").append("WHERE ");
+        {
+            boolean isFirst = true;
+            for (String uniqKey : uniqKeys) {
+                if (isFirst) {
+                    isFirst = false;
+                }
+                else {
+                    sql.append(" AND ");
+                }
+                String escapedCol = escapeIdent(uniqKey);
+                sql.append(escapedDstTbl).append(".").append(escapedCol).append(" = SRC.").append(escapedCol);
+            }
+        }
+        sql.append(";\n");
+        // Insert statement for non-existing records
+        sql.append("INSERT INTO ").append(escapedDstTbl).append(" (");
+        {
+            boolean isFirst = true;
+            for (JdbcColumn column : srcColumns) {
+                if (isFirst) {
+                    isFirst = false;
+                }
+                else {
+                    sql.append(", ");
+                }
+                String escapedCol = escapeIdent(column.getName());
+                sql.append(escapedCol);
+            }
+        }
+        sql.append(")\n");
+        sql.append("SELECT * FROM (").append(query).append(") SRC\n").
+                append("WHERE NOT EXISTS (SELECT 1 FROM ").append(escapedDstTbl).append(" DST WHERE ");
+        {
+            boolean isFirst = true;
+            for (String uniqKey : uniqKeys) {
+                if (isFirst) {
+                    isFirst = false;
+                }
+                else {
+                    sql.append(" AND ");
+                }
+                String escapedCol = escapeIdent(uniqKey);
+                sql.append("SRC.").append(escapedCol).append(" = DST.").append(escapedCol);
+            }
+        }
+        sql.append(");\n");
+
+        // Execute the SQL
+        executeUpdate(sql.toString());
+
+        // Commit the SQL
+        connection.commit();
     }
 
     public void executeUpdate(String sql) throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            logger.error("SQLException in executeUpdate(): " + sql);
+            throw e;
         }
     }
 
@@ -176,9 +257,7 @@ public abstract class JdbcConnection
     }
 
     public JdbcSchema getFromRDB(String schemaName, String tableName) throws SQLException {
-        String escapedSchemaName = escapeIdent(schemaName);
-        String escapedTableName = escapeIdent(tableName);
-        ResultSet rs = connection.getMetaData().getColumns(null, escapedSchemaName, escapedTableName, null);
+        ResultSet rs = connection.getMetaData().getColumns(null, schemaName, tableName, null);
         ImmutableList.Builder<JdbcColumn> columns = ImmutableList.builder();
         try {
             while(rs.next()) {
