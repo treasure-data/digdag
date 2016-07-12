@@ -49,12 +49,12 @@ public class TdWaitIT
             )
             .build();
 
-    private Path projectDir;
+    protected Path projectDir;
 
-    private String tempDatabase;
+    protected String tempDatabase;
 
-    private TDClient tdClient;
-    private Path outfile;
+    protected TDClient tdClient;
+    protected Path outfile;
 
     @Before
     public void setUp()
@@ -81,108 +81,175 @@ public class TdWaitIT
         }
     }
 
-    @Test
-    public void verifyThatBadQueryFails()
-            throws Exception
+    public static class BadQueryFailureIT
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_bad_query.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_bad_query", ImmutableMap.<String, String>builder()
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
-        assertThat(Files.exists(outfile), is(false));
+        @Test
+        public void test()
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_bad_query.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_bad_query", ImmutableMap.<String, String>builder()
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(false));
+        }
     }
 
-    @Test
-    public void testTdWaitForTableThatAlreadyExistsWithDefaults()
-            throws Exception
+    public static class TableThatAlreadyExistsWithDefaults
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_defaults.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
-                .put("wait_table", "nasdaq")
-                .put("wait_rows", "1")
-                .put("database", "sample_datasets")
-                .build());
-        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        @Test
+        public void test()
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_defaults.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
+                    .put("wait_table", "nasdaq")
+                    .put("wait_rows", "1")
+                    .put("database", "sample_datasets")
+                    .build());
+            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        }
     }
 
-    @Test
-    @Parameters({"td_wait_query_with_comments.dig", "td_wait_query_with_semicolon.dig"})
-    public void testTdWaitWithQuirkyQueries(String workflow)
-            throws Exception
+    public static class QuirkyQueries
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/" + workflow, "workflow.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.<String, String>builder()
-                .put("wait_table", "nasdaq")
-                .put("wait_rows", "1")
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        @Test
+        @Parameters({"td_wait_query_with_comments.dig", "td_wait_query_with_semicolon.dig"})
+        public void test(String workflow)
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/" + workflow, "workflow.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.<String, String>builder()
+                    .put("wait_table", "nasdaq")
+                    .put("wait_rows", "1")
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        }
     }
 
-    @Test
-    @Parameters({"hive", "presto"})
-    public void testTdWaitForTableThatAlreadyExists(String engine)
-            throws Exception
+    public static class TableThatAlreadyExists
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
-                .put("wait_poll_interval", "5s")
-                .put("wait_table", "nasdaq")
-                .put("wait_limit", "1")
-                .put("table_wait_rows", "1")
-                .put("query_wait_rows", "1")
-                .put("wait_engine", engine)
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+
+        @Test
+        @Parameters({"hive", "presto"})
+        public void test(String engine)
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+                    .put("wait_poll_interval", "5s")
+                    .put("wait_table", "nasdaq")
+                    .put("wait_limit", "1")
+                    .put("table_wait_rows", "1")
+                    .put("query_wait_rows", "1")
+                    .put("wait_engine", engine)
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        }
     }
 
-    @Test
-    @CombinedParameters({"hive, presto"})
-    public void testTdWaitTruthiness(String engine)
-            throws Exception
+    public static class Truthiness
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_truthiness.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_truthiness", ImmutableMap.<String, String>builder()
-                .put("wait_engine", engine)
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
-        assertThat(Files.exists(outfile), is(true));
+
+        @Test
+        @CombinedParameters({"hive, presto"})
+        public void test(String engine)
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_truthiness.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_truthiness", ImmutableMap.<String, String>builder()
+                    .put("wait_engine", engine)
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+            assertThat(Files.exists(outfile), is(true));
+        }
     }
 
-    @Test
-    @CombinedParameters({"hive, presto",
-                         "0, false, NULL"})
-    public void testTdWaitFalsiness(String engine, String selectValue)
-            throws Exception
+    public static class Falsiness
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_falsiness.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_falsiness", ImmutableMap.<String, String>builder()
-                .put("select_value", selectValue)
-                .put("wait_engine", engine)
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        Thread.sleep(engine.equals("hive") ? 60_000 : 10_000);
-        CommandStatus status = attempts(server.endpoint(), attemptId);
-        assertThat(status.outUtf8(), containsString("status: running"));
-        assertThat(Files.exists(outfile), is(false));
+        @Test
+        @CombinedParameters({"hive, presto",
+                             "0, false, NULL"})
+        public void test(String engine, String selectValue)
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_falsiness.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_falsiness", ImmutableMap.<String, String>builder()
+                    .put("select_value", selectValue)
+                    .put("wait_engine", engine)
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            Thread.sleep(engine.equals("hive") ? 60_000 : 10_000);
+            CommandStatus status = attempts(server.endpoint(), attemptId);
+            assertThat(status.outUtf8(), containsString("status: running"));
+            assertThat(Files.exists(outfile), is(false));
+        }
     }
 
-    @Test
-    @Parameters({
-            "false, 60, hive",
-            "true, 60, hive",
-            "false, 10, presto",
-            "true, 10, presto"
-    })
-    public void testTdWaitForTableThatDoesNotYetExist(boolean tableWaitRows, int sleep, String engine)
+    public static class TableThatDoesNotYetExistHiveIT
+            extends TdWaitIT
+    {
+
+        @Test
+        public void test()
+                throws Exception
+        {
+            super.testTdWaitForTableThatDoesNotYetExist(false, 60, "hive");
+        }
+    }
+
+    public static class TableWithRowsThatDoesNotYetExistHiveIT
+            extends TdWaitIT
+    {
+
+        @Test
+        public void test()
+                throws Exception
+        {
+            super.testTdWaitForTableThatDoesNotYetExist(true, 60, "hive");
+        }
+    }
+
+    public static class TableThatDoesNotYetExistPrestoIT
+            extends TdWaitIT
+    {
+
+        @Test
+        public void test()
+                throws Exception
+        {
+            super.testTdWaitForTableThatDoesNotYetExist(false, 10, "presto");
+        }
+    }
+
+    public static class TableWithRowsThatDoesNotYetExistPrestoIT
+            extends TdWaitIT
+    {
+
+        @Test
+        public void test()
+                throws Exception
+        {
+            super.testTdWaitForTableThatDoesNotYetExist(true, 10, "presto");
+        }
+    }
+
+    protected void testTdWaitForTableThatDoesNotYetExist(boolean tableWaitRows, int sleep, String engine)
             throws Exception
     {
         String table = "td_wait_test";
@@ -260,27 +327,31 @@ public class TdWaitIT
         assertThat(Files.exists(outfile), is(true));
     }
 
-    @Test
-    public void verifyThatTooSmallPollIntervalFails()
-            throws Exception
+    public static class TooSmallPollIntervalFailureIT
+            extends TdWaitIT
     {
-        addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
-                .put("wait_engine", "presto")
-                .put("wait_poll_interval", "1s")
-                .put("wait_table", "nasdaq")
-                .put("wait_limit", "1")
-                .put("table_wait_rows", "1")
-                .put("query_wait_rows", "1")
-                .put("database", "sample_datasets")
-                .put("outfile", outfile.toString())
-                .build());
-        expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
-        CommandStatus logStatus = main("log",
-                "-c", "/dev/null",
-                "-e", server.endpoint(),
-                Long.toString(attemptId));
-        assertThat(logStatus.errUtf8(), logStatus.code(), is(0));
-        assertThat(logStatus.outUtf8(), containsString("poll interval must be at least"));
+        @Test
+        public void test()
+                throws Exception
+        {
+            addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
+            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+                    .put("wait_engine", "presto")
+                    .put("wait_poll_interval", "1s")
+                    .put("wait_table", "nasdaq")
+                    .put("wait_limit", "1")
+                    .put("table_wait_rows", "1")
+                    .put("query_wait_rows", "1")
+                    .put("database", "sample_datasets")
+                    .put("outfile", outfile.toString())
+                    .build());
+            expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
+            CommandStatus logStatus = main("log",
+                    "-c", "/dev/null",
+                    "-e", server.endpoint(),
+                    Long.toString(attemptId));
+            assertThat(logStatus.errUtf8(), logStatus.code(), is(0));
+            assertThat(logStatus.outUtf8(), containsString("poll interval must be at least"));
+        }
     }
 }
