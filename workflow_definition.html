@@ -395,30 +395,30 @@
 <div class="section" id="parallel-execution">
 <h2><a class="toc-backref" href="#id13">Parallel execution</a><a class="headerlink" href="#parallel-execution" title="Permalink to this headline">¶</a></h2>
 <p>If <code class="docutils literal"><span class="pre">_parallel:</span> <span class="pre">true</span></code> parameter is set to a group, child tasks in the group run in parallel (grandchildren are not affected):</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
-  <span class="l l-Scalar l-Scalar-Plain"># +data1, +data2, and +data3 run in parallel.</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span><span class="p p-Indicator">:</span>
+  <span class="c1"># +data1, +data2, and +data3 run in parallel.</span>
   <span class="l l-Scalar l-Scalar-Plain">_parallel</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 
   <span class="l l-Scalar l-Scalar-Plain">+data1</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data1.sh</span>
 
-<span class=" -Error">  </span><span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data2.sh</span>
 
   <span class="l l-Scalar l-Scalar-Plain">+data3</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data3.sh</span>
 
-<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
 </pre></div>
 </div>
 <p>If <code class="docutils literal"><span class="pre">_background:</span> <span class="pre">true</span></code> parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+prepare</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">+data1</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data1.sh</span>
 
   <span class="c1"># +data1 and +data2 run in parallel.</span>
-<span class=" -Error">  </span><span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">+data2</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">_background</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data2.sh</span>
 
@@ -426,7 +426,7 @@
   <span class="l l-Scalar l-Scalar-Plain">+data3</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/prepare_data3.sh</span>
 
-<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
 </pre></div>
 </div>
@@ -438,7 +438,7 @@
 <span class="l l-Scalar l-Scalar-Plain">_error</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/runs_when_workflow_failed.sh</span>
 
-<span class="l l-Scalar l-Scalar-Plain">+analyze</span>
+<span class="l l-Scalar l-Scalar-Plain">+analyze</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/analyze_prepared_data_sets.sh</span>
 </pre></div>
 </div>
