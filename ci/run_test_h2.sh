@@ -12,4 +12,4 @@ docker run \
 -e CI_ACCEPTANCE_TEST=true \
 -e TERM=dumb \
 digdag-build \
-./gradlew clean test --info --no-daemon
+./gradlew clean cleanTest test --info --no-daemon
