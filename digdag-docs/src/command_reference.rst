@@ -334,7 +334,7 @@ Client-mode common options:
 
 You can include following parameters in ~/.config/digdag/config file:
 
-* cilent.http.endpoint = http://HOST:PORT or https://HOST:PORT
+* client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
 
 
