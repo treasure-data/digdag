@@ -18,7 +18,7 @@ A task starts if there're no dependent siblings, or all of them successfully com
 
 ### Parameters
 
-Grouping tasks is used aslo for passing parameters between tasks. A parent task can export variables for children tasks (as like UNIX shell's *export* command sets environment variables). A parent can generate children tasks at run time so that it can run different tasks depending on the results of previous tasks. See [defining variables](workflow_definition.html#defining-variables) section for details.
+Grouping tasks is used also for passing parameters between tasks. A parent task can export variables for children tasks (as like UNIX shell's *export* command sets environment variables). A parent can generate children tasks at run time so that it can run different tasks depending on the results of previous tasks. See [defining variables](workflow_definition.html#defining-variables) section for details.
 
 ![Exporting parameters](_static/export-params.png)
 
