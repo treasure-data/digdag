@@ -28,7 +28,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAmount;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static acceptance.TestUtils.expect;
@@ -40,15 +39,15 @@ import static org.junit.Assert.assertThat;
 
 public class SlaIT
 {
-    private static final String PROJECT_NAME = "sla";
-    private static final String WORKFLOW_NAME = "sla-test-wf";
+    protected static final String PROJECT_NAME = "sla";
+    protected static final String WORKFLOW_NAME = "sla-test-wf";
 
-    private final ObjectMapper mapper = new ObjectMapper()
+    protected final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JacksonTimeModule())
             .registerModule(new GuavaModule());
 
-    private final int notificationServerPort = findFreePort();
-    private final String notificationUrl = "http://localhost:" + notificationServerPort + "/notification";
+    protected final int notificationServerPort = findFreePort();
+    protected final String notificationUrl = "http://localhost:" + notificationServerPort + "/notification";
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -61,11 +60,11 @@ public class SlaIT
             )
             .build();
 
-    private Path config;
-    private Path projectDir;
-    private Path timeoutFile;
-    private MockWebServer mockWebServer;
-    private DigdagClient client;
+    protected Path config;
+    protected Path projectDir;
+    protected Path timeoutFile;
+    protected MockWebServer mockWebServer;
+    protected DigdagClient client;
 
     @Before
     public void setUp()
@@ -101,142 +100,150 @@ public class SlaIT
         }
     }
 
-    @Test
-    public void testTimeCustomTask()
-            throws Exception
+    public static class TimeIT
+            extends SlaIT
     {
-        pushAndStart("time_custom.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+        @Test
+        public void testTimeCustomTask()
+                throws Exception
+        {
+            pushAndStart("time_custom.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+        }
+
+        @Test
+        public void testTimeFailDefault()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_fail_default.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testTimeFailEnabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_fail_enabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptFailure(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testTimeFailDisabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_fail_disabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testTimeAlertDefault()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_alert_default.dig", Duration.ofSeconds(5));
+            expectNotification(attemptId, Duration.ofSeconds(30));
+        }
+
+        @Test
+        public void testTimeAlertEnabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_alert_enabled.dig", Duration.ofSeconds(5));
+            expectNotification(attemptId, Duration.ofSeconds(30));
+        }
+
+        @Test
+        public void testTimeAlertDisabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("time_alert_disabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            assertThat(mockWebServer.getRequestCount(), is(0));
+        }
     }
 
-    @Test
-    public void testDurationCustomTask()
-            throws Exception
+    public static class DurationIT
+            extends SlaIT
     {
-        pushAndStart("duration_custom.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+        @Test
+        public void testDurationCustomTask()
+                throws Exception
+        {
+            pushAndStart("duration_custom.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+        }
+
+        @Test
+        public void testDurationFailDefault()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_fail_default.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testDurationFailEnabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_fail_enabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptFailure(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testDurationFailDisabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_fail_disabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+        }
+
+        @Test
+        public void testDurationAlertDefault()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_alert_default.dig", Duration.ofSeconds(5));
+            expectNotification(attemptId, Duration.ofSeconds(30));
+        }
+
+        @Test
+        public void testDurationAlertEnabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
+            expectNotification(attemptId, Duration.ofSeconds(30));
+        }
+
+        @Test
+        public void testDurationAlertDisabled()
+                throws Exception
+        {
+            long attemptId = pushAndStart("duration_alert_disabled.dig", Duration.ofSeconds(5));
+            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            assertThat(mockWebServer.getRequestCount(), is(0));
+        }
+
+        @Test
+        public void verifyAlertIsRetried()
+                throws Exception
+        {
+            mockWebServer.setDispatcher(new QueueDispatcher());
+            mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("FAIL"));
+            mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+            long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
+            RecordedRequest recordedRequest1 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
+            RecordedRequest recordedRequest2 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
+            verifyNotification(attemptId, recordedRequest1);
+            verifyNotification(attemptId, recordedRequest2);
+        }
     }
 
-    @Test
-    public void testDurationFailDefault()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_fail_default.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-    }
-
-    @Test
-    public void testDurationFailEnabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_fail_enabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptFailure(attemptId));
-    }
-
-    @Test
-    public void testDurationFailDisabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_fail_disabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-    }
-
-    @Test
-    public void testDurationAlertDefault()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_alert_default.dig", Duration.ofSeconds(5));
-        expectNotification(attemptId, Duration.ofSeconds(30));
-    }
-
-    @Test
-    public void testDurationAlertEnabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
-        expectNotification(attemptId, Duration.ofSeconds(30));
-    }
-
-    @Test
-    public void testDurationAlertDisabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("duration_alert_disabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-        assertThat(mockWebServer.getRequestCount(), is(0));
-    }
-
-    @Test
-    public void testTimeFailDefault()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_fail_default.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-    }
-
-    @Test
-    public void testTimeFailEnabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_fail_enabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptFailure(attemptId));
-    }
-
-    @Test
-    public void testTimeFailDisabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_fail_disabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-    }
-
-    @Test
-    public void testTimeAlertDefault()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_alert_default.dig", Duration.ofSeconds(5));
-        expectNotification(attemptId, Duration.ofSeconds(30));
-    }
-
-    @Test
-    public void testTimeAlertEnabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_alert_enabled.dig", Duration.ofSeconds(5));
-        expectNotification(attemptId, Duration.ofSeconds(30));
-    }
-
-    @Test
-    public void testTimeAlertDisabled()
-            throws Exception
-    {
-        long attemptId = pushAndStart("time_alert_disabled.dig", Duration.ofSeconds(5));
-        expect(Duration.ofSeconds(30), attemptSuccess(attemptId));
-        assertThat(mockWebServer.getRequestCount(), is(0));
-    }
-
-    @Test
-    public void verifyAlertIsRetried()
-            throws Exception
-    {
-        mockWebServer.setDispatcher(new QueueDispatcher());
-        mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("FAIL"));
-        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-        long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
-        RecordedRequest recordedRequest1 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
-        RecordedRequest recordedRequest2 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
-        verifyNotification(attemptId, recordedRequest1);
-        verifyNotification(attemptId, recordedRequest2);
-    }
-
-    private void expectNotification(long attemptId, Duration duration)
+    protected void expectNotification(long attemptId, Duration duration)
             throws InterruptedException, IOException
     {
         RecordedRequest recordedRequest = mockWebServer.takeRequest(duration.getSeconds(), TimeUnit.SECONDS);
         verifyNotification(attemptId, recordedRequest);
     }
 
-    private void verifyNotification(long attemptId, RecordedRequest recordedRequest)
+    protected void verifyNotification(long attemptId, RecordedRequest recordedRequest)
             throws IOException
     {
         String notificationJson = recordedRequest.getBody().readUtf8();
@@ -247,17 +254,7 @@ public class SlaIT
         assertThat(notification.getProjectName().get(), is(PROJECT_NAME));
     }
 
-    private Callable<Boolean> attemptFailure(long attemptId)
-    {
-        return TestUtils.attemptFailure(server.endpoint(), attemptId);
-    }
-
-    private Callable<Boolean> attemptSuccess(long attemptId)
-    {
-        return TestUtils.attemptSuccess(server.endpoint(), attemptId);
-    }
-
-    private long pushAndStart(String workflow, TemporalAmount timeout)
+    protected long pushAndStart(String workflow, TemporalAmount timeout)
             throws IOException
     {
         try (InputStream input = Resources.getResource("acceptance/sla/" + workflow).openStream()) {
