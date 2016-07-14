@@ -58,7 +58,7 @@ py>: Python scripts
 
 **py>:** operator runs a Python script using ``python`` command.
 
-See `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
+See `Python API documents <python_api.html>`_ for details including variable mappings to keyword arguments.
 
 .. code-block:: yaml
 
