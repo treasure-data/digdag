@@ -8,7 +8,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -98,17 +97,37 @@ public abstract class JdbcConnection
         }
     }
 
+    public void executeQuery(QueryType queryType, String query)
+            throws SQLException
+    {
+        switch (queryType) {
+            case WITH_INSERT_INTO:
+                executeQueryWithInsertInto(query, config.destTable().get());
+                break;
+            case WITH_CREATE_TABLE:
+                executeQueryWithCreateTable(query, config.destTable().get());
+                break;
+            case WITH_UPDATE_TABLE:
+                executeQueryWithUpdateTable(query, config.destTable().get(), config.uniqKeys().get());
+                break;
+            default:
+                throw new IllegalStateException("Shouldn't reach here: " + queryType);
+        }
+    }
+
     public void executeQueryWithInsertInto(String query, String destTable)
             throws SQLException
     {
-        executeUpdate("INSERT INTO " + escapeIdent(destTable) + "\n" + query);
+        executeUpdateWithTransaction(
+                "INSERT INTO " + escapeIdent(destTable) + "\n" + query);
     }
 
     public void executeQueryWithCreateTable(String query, String destTable)
             throws SQLException
     {
         String escapedDestName = escapeIdent(destTable);
-        executeUpdate("DROP TABLE IF EXISTS " + escapedDestName + "; CREATE TABLE " + escapedDestName + " AS \n" + query);
+        executeUpdateWithTransaction(
+                "DROP TABLE IF EXISTS " + escapedDestName + "; CREATE TABLE " + escapedDestName + " AS \n" + query);
     }
 
     public void executeQueryWithUpdateTable(String query, String destTable, List<String> uniqKeys)
@@ -144,8 +163,6 @@ public abstract class JdbcConnection
             columns.add(col.get());
         }
         ImmutableList<JdbcColumn> srcColumns = columns.build();
-
-        connection.setAutoCommit(false);
 
         // In case that the query is "SELECT pid, uid, name, age, email from users where id > 100" and
         // unique keys are [pid, uid]. The query finally constructed is like this:
@@ -224,10 +241,27 @@ public abstract class JdbcConnection
         sql.append(");\n");
 
         // Execute the SQL
-        executeUpdate(sql.toString());
+        executeUpdateWithTransaction(sql.toString());
+    }
 
-        // Commit the SQL
-        connection.commit();
+    public void executeUpdateWithTransaction(String sql) throws SQLException {
+        try {
+            executeUpdate("BEGIN");
+            if (config.statusTable().isPresent()) {
+                updateStatusRecord(Status.RUNNING);
+            }
+            executeUpdate(sql);
+            if (config.statusTable().isPresent()) {
+                updateStatusRecord(Status.FINISHED);
+            }
+            else {
+                executeUpdate("SELECT 1");
+            }
+            executeUpdate("COMMIT");
+        }
+        catch (Exception e) {
+            executeUpdate("ROLLBACK");
+        }
     }
 
     public void executeUpdate(String sql) throws SQLException
@@ -294,8 +328,7 @@ public abstract class JdbcConnection
 
             try {
                 Utils.escapeIdentifier(buf, elm);
-            }
-            catch (SQLException e) {
+            } catch (SQLException e) {
                 logger.warn("Unexpected error occurred: ident=" + ident + ", elm=" + elm, e);
                 return ident;
             }
@@ -303,10 +336,163 @@ public abstract class JdbcConnection
         return buf.toString();
     }
 
-    protected boolean tableExists(String tableName) throws SQLException
+    private static class SchemaAndTableName
     {
-        try (ResultSet rs = connection.getMetaData().getTables(null, config.schema().orNull(), tableName, null)) {
+        String schemaName;
+        String tableName;
+
+        public SchemaAndTableName(String schemaName, String tableName)
+        {
+            this.schemaName = schemaName;
+            this.tableName = tableName;
+        }
+    }
+
+    private SchemaAndTableName parseSchemaAndTableName(String schemaAndTableName)
+    {
+        String[] schemaAndTableNames = schemaAndTableName.split("\\.");
+        SchemaAndTableName result;
+        if (schemaAndTableNames.length > 1) {
+            result = new SchemaAndTableName(schemaAndTableNames[0], schemaAndTableNames[1]);
+        }
+        else {
+            result = new SchemaAndTableName(null, schemaAndTableNames[0]);
+        }
+        return result;
+    }
+
+    public boolean tableExists(String schemaAndTableName) throws SQLException
+    {
+        SchemaAndTableName schemaAndTable = parseSchemaAndTableName(schemaAndTableName);
+        try (ResultSet rs = connection.getMetaData().getTables(null, schemaAndTable.schemaName,
+                                                                schemaAndTable.tableName, null)) {
             return rs.next();
+        }
+    }
+
+    public void dropTable(String schemaAndTableName) throws SQLException
+    {
+        executeUpdate("DROP TABLE IF EXISTS" + escapeIdent(schemaAndTableName));
+    }
+
+    // Status API
+    public enum Status {
+        INIT, RUNNING, FINISHED
+    }
+
+    public void createStatusTable() throws SQLException
+    {
+        if (!config.statusTable().isPresent()) {
+            return;
+        }
+
+        executeUpdate("CREATE TABLE IF NOT EXISTS " + escapeIdent(config.statusTable().get()) +
+                "(query_id VARCHAR(64) NOT NULL UNIQUE, time BIGINT NOT NULL, status VARCHAR(16) NOT NULL);\n");
+    }
+
+    public Status getStatusRecord() throws SQLException
+    {
+        if (!config.statusTable().isPresent()) {
+            return null;
+        }
+
+        String sql = "SELECT status FROM " + escapeIdent(config.statusTable().get()) + " WHERE query_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, config.queryId());
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return Status.valueOf(resultSet.getString(1));
+            }
+            else {
+                return null;
+            }
+        }
+        catch (SQLException e) {
+            logger.error("SQLException in executeQuery(): " + sql);
+            throw e;
+        }
+    }
+
+    public void addStatusRecord() throws SQLException
+    {
+        if (!config.statusTable().isPresent()) {
+            return;
+        }
+
+        String escapedStatusTable = escapeIdent(config.statusTable().get());
+        StringBuilder sql = new StringBuilder().append("INSERT INTO ").append(escapedStatusTable).
+                                                append(" (query_id, time, status) VALUES (?, ?, ?);\n");
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            int i = 1;
+            statement.setString(i++, config.queryId());
+            statement.setLong(i++, System.currentTimeMillis());
+            statement.setString(i++, Status.INIT.name());
+            statement.executeUpdate();
+        }
+        catch (SQLException e) {
+            logger.error("SQLException in executeUpdate(): " + sql);
+            throw e;
+        }
+    }
+
+    public void updateStatusRecord(Status status) throws SQLException
+    {
+        if (!config.statusTable().isPresent()) {
+            return;
+        }
+
+        String escapedStatusTable = escapeIdent(config.statusTable().get());
+        StringBuilder sql = new StringBuilder().append("UPDATE ").append(escapedStatusTable).
+                                                append(" SET status = ? WHERE query_id = ?;\n");
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            int i = 1;
+            statement.setString(i++, status.name());
+            statement.setString(i++, config.queryId());
+            statement.executeUpdate();
+        }
+        catch (SQLException e) {
+            logger.error("SQLException in executeUpdate(): " + sql);
+            throw e;
+        }
+    }
+
+    public void dropStatusRecord() throws SQLException
+    {
+        if (!config.statusTable().isPresent()) {
+            return;
+        }
+
+        String escapedStatusTable = escapeIdent(config.statusTable().get());
+        StringBuilder sql = new StringBuilder().append("DELETE FROM ").append(escapedStatusTable).
+                                                append(" WHERE query_id = ?");
+        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+            int i = 1;
+            statement.setString(i++, config.queryId());
+            statement.executeUpdate();
+        }
+        catch (SQLException e) {
+            logger.error("SQLException in executeUpdate(): " + sql);
+            throw e;
+        }
+    }
+
+    public static enum QueryType
+    {
+        SELECT_ONLY(false),
+        WITH_INSERT_INTO(true),
+        WITH_CREATE_TABLE(true),
+        WITH_UPDATE_TABLE(true);
+
+        private boolean isUpdate;
+
+        QueryType(boolean isUpdate)
+        {
+            this.isUpdate = isUpdate;
+        }
+
+        public boolean isUpdate()
+        {
+            return isUpdate;
         }
     }
 }

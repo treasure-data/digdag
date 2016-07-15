@@ -4,9 +4,11 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -29,8 +31,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -85,18 +86,17 @@ public class PostgreSQLOperatorFactory
     private static class PostgreSQLOperator
             extends BaseOperator
     {
+        private static final String QUERY_ID = "queryId";
+        private static final String QUERY_STATUS = "queryStatus";
+        private static final String QUERY_STATUS_RUNNING = "running";
+        private static final String QUERY_STATUS_FINISHED = "finished";
+
         private final TemplateEngine templateEngine;
-
-        private final static Pattern INSERT_LINE_PATTERN = Pattern.compile("(\\A|\\r?\\n)\\-\\-\\s*DIGDAG_INSERT_LINE(?:(?!\\n|\\z).)*", Pattern.MULTILINE);
-
-        private final static Pattern HEADER_COMMENT_BLOCK_PATTERN = Pattern.compile("\\A([\\r\\n\\t]*(?:(?:\\A|\\n)\\-\\-[^\\n]*)+)\\n?(.*)\\z", Pattern.MULTILINE);
-
-        private enum QueryType {
-            SELECT_ONLY,
-            WITH_INSERT_INTO,
-            WITH_CREATE_TABLE,
-            WITH_UPDATE_TABLE
-        }
+        private ImmutableJdbcConnectionConfig jdbcConnectionConfig;
+        private JdbcConnection.QueryType queryType;
+        private String query;
+        private Optional<String> queryStatus;
+        private Optional<QueryResultHandler> queryResultHandler;
 
         public PostgreSQLOperator(Path workspacePath, TemplateEngine templateEngine, TaskRequest request)
         {
@@ -104,30 +104,7 @@ public class PostgreSQLOperatorFactory
             this.templateEngine = checkNotNull(templateEngine, "templateEngine");
         }
 
-        private void issueQuery(JdbcConnectionConfig config, QueryType queryType, String query, Optional<QueryResultHandler> resultHandler, Optional<String> destTable, Optional<List<String>> uniqKeys)
-                throws SQLException, ClassNotFoundException
-        {
-            PostgreSQLConnection connection = new PostgreSQLConnection(config);
-            switch (queryType) {
-                case SELECT_ONLY:
-                    connection.executeQueryAndFetchResult(query, resultHandler.get());
-                    break;
-                case WITH_INSERT_INTO:
-                    connection.executeQueryWithInsertInto(query, destTable.get());
-                    break;
-                case WITH_CREATE_TABLE:
-                    connection.executeQueryWithCreateTable(query, destTable.get());
-                    break;
-                case WITH_UPDATE_TABLE:
-                    connection.executeQueryWithUpdateTable(query, destTable.get(), uniqKeys.get());
-                    break;
-                default:
-                    throw new IllegalStateException("Shouldn't reach here");
-            }
-        }
-
-        @Override
-        public TaskResult runTask()
+        private void getParamsFromRequest(TaskRequest request, Config state)
         {
             Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty("postgresql"));
 
@@ -138,8 +115,9 @@ public class PostgreSQLOperatorFactory
             String user = params.get("user", String.class);
             Optional<String> password = params.getOptional("password", String.class);
             boolean ssl = params.get("ssl", boolean.class, false);
+            Optional<String> statusTable = Optional.of(params.get("status_table", String.class, "__digdag_status"));
 
-            String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> createTable = params.getOptional("create_table", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> updateTable = params.getOptional("update_table", PostgreSQLTableParam.class);
@@ -165,24 +143,23 @@ public class PostgreSQLOperatorFactory
                 throw new ConfigException("Can't use download_file with insert_into/create_table/update_table");
             }
 
-            QueryType queryType;
-            Optional<QueryResultHandler> queryResultHandler = Optional.absent();
+            queryResultHandler = Optional.absent();
             Optional<String> destTable = Optional.absent();
 
             if (insertInto.isPresent()) {
-                queryType = QueryType.WITH_INSERT_INTO;
+                queryType = JdbcConnection.QueryType.WITH_INSERT_INTO;
                 destTable = Optional.of(insertInto.get().toString());
             }
             else if (createTable.isPresent()) {
-                queryType = QueryType.WITH_CREATE_TABLE;
+                queryType = JdbcConnection.QueryType.WITH_CREATE_TABLE;
                 destTable = Optional.of(createTable.get().toString());
             }
             else if (updateTable.isPresent()) {
-                queryType = QueryType.WITH_UPDATE_TABLE;
+                queryType = JdbcConnection.QueryType.WITH_UPDATE_TABLE;
                 destTable = Optional.of(updateTable.get().toString());
             }
             else {
-                queryType = QueryType.SELECT_ONLY;
+                queryType = JdbcConnection.QueryType.SELECT_ONLY;
                 if (downloadFile.isPresent()) {
                     queryResultHandler = Optional.of(getResultCsvDownloader(downloadFile.get()));
                 }
@@ -191,7 +168,20 @@ public class PostgreSQLOperatorFactory
                 }
             }
 
-            JdbcConnectionConfig req = ImmutableJdbcConnectionConfig.builder().
+            Optional<String> queryId = state.getOptional(QUERY_ID, String.class);
+            queryStatus = state.getOptional(QUERY_STATUS, String.class);
+
+            if (!queryId.isPresent()) {
+                logger.debug("This job hasn't created a query ID yet. Generating it...");
+
+                // Not started yet
+                String newQueryId = UUID.randomUUID().toString();
+                state.set(QUERY_STATUS, QUERY_STATUS_RUNNING);
+                state.set(QUERY_ID, newQueryId);
+                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+            }
+
+            jdbcConnectionConfig = ImmutableJdbcConnectionConfig.builder().
                     database(database).
                     schema(schema).
                     host(host).
@@ -199,14 +189,66 @@ public class PostgreSQLOperatorFactory
                     user(user).
                     password(password).
                     ssl(ssl).
+                    destTable(destTable).
+                    uniqKeys(uniqKeys).
+                    statusTable(statusTable).
+                    queryId(queryId.get()).
                     build();
+        }
+
+        @Override
+        public TaskResult runTask()
+        {
+            Config state = request.getLastStateParams().deepCopy();
+            getParamsFromRequest(request, state);
 
             try {
-                issueQuery(req, queryType, query, queryResultHandler, destTable, uniqKeys);
+                PostgreSQLConnection connection = new PostgreSQLConnection(jdbcConnectionConfig);
+                if (queryType.isUpdate()) {
+                    connection.createStatusTable();
+
+                    // query ID is already generated
+                    switch (queryStatus.get()) {
+                        case QUERY_STATUS_RUNNING:
+                            JdbcConnection.Status status = connection.getStatusRecord();
+                            if (status == null) {
+                                connection.addStatusRecord();
+                            }
+
+                            switch (connection.getStatusRecord()) {
+                                case INIT:
+                                    logger.debug("This job hasn't started the query yet. Starting it...");
+                                    connection.executeQuery(queryType, query);
+                                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+
+                                case RUNNING:
+                                    logger.debug("This job is running now.");
+                                    throw TaskExecutionException.ofNextPolling(10, ConfigElement.copyOf(state));
+
+                                case FINISHED:
+                                    logger.debug("This job has finished already");
+                                    state.set(QUERY_STATUS, QUERY_STATUS_FINISHED);
+                                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+
+                                default:
+                                    throw new IllegalStateException("Shouldn't reach here: " + connection.getStatusRecord());
+                            }
+
+                        case QUERY_STATUS_FINISHED:
+                            connection.dropStatusRecord();
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Shouldn't reach here: " + queryStatus.get());
+                    }
+                }
+                else {
+                    connection.executeQueryAndFetchResult(query, queryResultHandler.get());
+                }
             }
-            catch (SQLException | ClassNotFoundException e) {
+            catch (SQLException e) {
                 // TODO: Create an exception class
-                throw new RuntimeException("Failed to send a query: " + req, e);
+                throw new RuntimeException("Failed to send a query: " + jdbcConnectionConfig, e);
             }
 
             return TaskResult.defaultBuilder(request).build();
@@ -269,35 +311,14 @@ public class PostgreSQLOperatorFactory
                 @Override
                 public void after()
                 {
-                    if (csvWriter != null) {
-                        try {
-                            csvWriter.close();
-                        }
-                        catch (Exception e) {
-                            logger.warn("Failed to close {}", csvWriter);
-                        }
+                    try {
+                        csvWriter.close();
+                    }
+                    catch (Exception e) {
+                        logger.warn("Failed to close {}", csvWriter);
                     }
                 }
             };
-        }
-
-        protected String insertCommandStatement(String command, String original)
-        {
-            // try to insert command at "-- DIGDAG_INSERT_LINE" line
-            Matcher ml = INSERT_LINE_PATTERN.matcher(original);
-            if (ml.find()) {
-                return ml.replaceFirst(ml.group(1) + command);
-            }
-
-            // try to insert command after header comments so that job list page
-            // shows comments rather than INSERT or other non-informative commands
-            Matcher mc = HEADER_COMMENT_BLOCK_PATTERN.matcher(original);
-            if (mc.find()) {
-                return mc.group(1) + "\n" + command + "\n" + mc.group(2);
-            }
-
-            // add command at the head
-            return command + "\n" + original;
         }
     }
 }
