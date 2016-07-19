@@ -3,6 +3,7 @@ package io.digdag.standards.operator.jdbc;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
+import java.util.concurrent.Exchanger;
 
 public class CSVWriter
     implements AutoCloseable
@@ -34,6 +35,10 @@ public class CSVWriter
                 out.write(DELIMITER_CHAR);
             }
             Object v = row.get(i);
+            if (v == null) {
+                continue;
+            }
+
             if (typeGroups.get(i) == TypeGroup.STRING) {
                 addCsvText(v.toString());
             }

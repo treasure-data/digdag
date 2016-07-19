@@ -3,8 +3,6 @@ package io.digdag.standards.operator.jdbc;
 import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
-import java.util.List;
-
 @Value.Immutable
 public interface JdbcConnectionConfig
 {
@@ -15,8 +13,8 @@ public interface JdbcConnectionConfig
     int port();
     String user();
     Optional<String> password();
-    String queryId();
-    Optional<String> destTable();
-    Optional<List<String>> uniqKeys();
-    Optional<String> statusTable();
+    Optional<Integer> fetchSize();
+    Optional<Integer> loginTimeout();
+    Optional<Integer> connectionTimeout();
+    Optional<Integer> socketTimeout();
 }
