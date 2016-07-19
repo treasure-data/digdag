@@ -104,7 +104,7 @@ public class PostgreSQLOperatorFactory
             this.templateEngine = checkNotNull(templateEngine, "templateEngine");
         }
 
-        private void getParamsFromRequest(TaskRequest request, Config state)
+        private void setupParamsFromRequest(TaskRequest request, Config state)
         {
             Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty("postgresql"));
 
@@ -200,10 +200,9 @@ public class PostgreSQLOperatorFactory
         public TaskResult runTask()
         {
             Config state = request.getLastStateParams().deepCopy();
-            getParamsFromRequest(request, state);
+            setupParamsFromRequest(request, state);
 
-            try {
-                PostgreSQLConnection connection = new PostgreSQLConnection(jdbcConnectionConfig);
+            try (PostgreSQLConnection connection = new PostgreSQLConnection(jdbcConnectionConfig)) {
                 if (queryType.isUpdate()) {
                     connection.createStatusTable();
 
