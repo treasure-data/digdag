@@ -2,9 +2,12 @@ package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -42,19 +45,25 @@ public abstract class AbstractJdbcOperator <C>
         this.templateEngine = checkNotNull(templateEngine, "templateEngine");
     }
 
-    protected abstract C configure(Config params);
+    protected abstract C configure(SecretProvider secrets, Config params);
 
     protected abstract JdbcConnection connect(C connectionConfig);
 
     @Override
-    public TaskResult runTask()
+    public List<String> secretSelectors()
+    {
+        return ImmutableList.of("pg.*");
+    }
+
+    @Override
+    public TaskResult runTask(TaskExecutionContext ctx)
     {
         Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty("pg"));
         Config state = request.getLastStateParams().deepCopy();
 
         String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
 
-        C connectionConfig = configure(params);
+        C connectionConfig = configure(ctx.secrets().getSecrets("pg"), params);
 
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);

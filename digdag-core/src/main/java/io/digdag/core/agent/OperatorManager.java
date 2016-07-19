@@ -1,36 +1,44 @@
 package io.digdag.core.agent;
 
-import java.util.List;
-import java.util.Set;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.log.LogLevel;
+import io.digdag.core.log.TaskContextLogging;
+import io.digdag.core.log.TaskLogger;
+import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretAccessContext;
+import io.digdag.spi.SecretAccessPolicy;
+import io.digdag.spi.SecretSelector;
+import io.digdag.spi.SecretStore;
+import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import io.digdag.spi.TemplateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import com.google.inject.Inject;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.workflow.Workflow;
-import io.digdag.core.workflow.WorkflowCompiler;
-import io.digdag.core.workflow.WorkflowTask;
-import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.log.TaskLogger;
-import io.digdag.core.log.TaskContextLogging;
-import io.digdag.core.log.LogLevel;
-import io.digdag.spi.*;
+
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public class OperatorManager
@@ -45,6 +53,8 @@ public class OperatorManager
     private final ConfigFactory cf;
     private final ConfigEvalEngine evalEngine;
     private final OperatorRegistry registry;
+    private final SecretStoreManager secretStoreManager;
+    private final SecretAccessPolicy secretAccessPolicy;
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
@@ -53,7 +63,8 @@ public class OperatorManager
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
             TaskCallbackApi callback, WorkspaceManager workspaceManager,
             WorkflowCompiler compiler, ConfigFactory cf,
-            ConfigEvalEngine evalEngine, OperatorRegistry registry)
+            ConfigEvalEngine evalEngine, OperatorRegistry registry,
+            SecretStoreManager secretStoreManager, SecretAccessPolicy secretAccessPolicy)
     {
         this.agentConfig = agentConfig;
         this.agentId = agentId;
@@ -64,6 +75,8 @@ public class OperatorManager
         this.evalEngine = evalEngine;
 
         this.registry = registry;
+        this.secretStoreManager = secretStoreManager;
+        this.secretAccessPolicy = secretAccessPolicy;
 
         this.heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
@@ -252,13 +265,35 @@ public class OperatorManager
 
     protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
     {
-        OperatorFactory factory = registry.get(mergedRequest ,type);
+        OperatorFactory factory = registry.get(mergedRequest, type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
+
         Operator operator = factory.newTaskExecutor(workspacePath, mergedRequest);
 
-        return operator.run();
+        SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
+
+        Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
+
+        SecretFilter operatorSecretFilter = SecretFilter.of(
+                operator.secretSelectors().stream().map(SecretSelector::of).collect(Collectors.toList()));
+
+        SecretAccessContext secretContext = SecretAccessContext.builder()
+                .siteId(mergedRequest.getSiteId())
+                .projectId(mergedRequest.getProjectId())
+                .revision(mergedRequest.getRevision().get())
+                .workflowName(mergedRequest.getWorkflowName())
+                .taskName(mergedRequest.getTaskName())
+                .operatorType(type)
+                .build();
+
+        DefaultSecretProvider secretProvider = new DefaultSecretProvider(
+                secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+
+        TaskExecutionContext taskExecutionContext = new DefaultTaskExecutionContext(secretProvider);
+
+        return operator.run(taskExecutionContext);
     }
 
     private void heartbeat()

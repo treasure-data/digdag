@@ -30,7 +30,8 @@ public class WorkflowCompiler
         "_error",
         "_check",
         "_retry",
-        "_export"
+        "_export",
+        "_secrets"
     ));
 
     public WorkflowCompiler()

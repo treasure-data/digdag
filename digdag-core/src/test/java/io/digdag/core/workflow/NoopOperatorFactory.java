@@ -2,6 +2,7 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Path;
 import com.google.inject.Inject;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -36,7 +37,7 @@ public class NoopOperatorFactory
         }
 
         @Override
-        public TaskResult run()
+        public TaskResult run(TaskExecutionContext ctx)
         {
             return TaskResult.empty(request);
         }

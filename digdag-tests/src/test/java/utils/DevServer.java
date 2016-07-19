@@ -13,7 +13,7 @@ public class DevServer
             throws IOException
     {
         Path logdir = Files.createTempDirectory("digdag-task-logs");
-        Main main = new Main(Version.buildVersion(), System.out, System.err);
+        Main main = new Main(Version.buildVersion(), System.out, System.err, System.in);
         main.cli("server",
                 "-c", "/dev/null",
                 "-m",

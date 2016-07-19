@@ -3,11 +3,14 @@ package io.digdag.server;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import io.digdag.client.config.Config;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;
+
+import java.util.Map;
 
 import static org.immutables.value.Value.Style.ImplementationVisibility.PACKAGE;
 
@@ -57,6 +60,19 @@ public interface Authenticator
         String getErrorMessage();
 
         Optional<Config> getUserInfo();
+
+        Optional<Supplier<Map<String, String>>> getSecrets();
+
+        static Builder builder() {
+            return ImmutableResult.builder();
+        }
+
+        interface Builder {
+            Builder siteId(int siteId);
+            Builder userInfo(Config userInfo);
+            Builder secrets(Supplier<Map<String, String>> secrets);
+            Result build();
+        }
     }
 
     Result authenticate(ContainerRequestContext requestContext);

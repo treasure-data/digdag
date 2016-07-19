@@ -1,10 +1,12 @@
 package io.digdag.server.rs;
 
-import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import io.digdag.client.config.Config;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+
+import java.util.Map;
 
 public abstract class AuthenticatedResource
 {
@@ -21,5 +23,13 @@ public abstract class AuthenticatedResource
     protected Config getUserInfo()
     {
         return (Config) request.getAttribute("userInfo");
+    }
+
+    /**
+     * Get request context default secrets.
+     */
+    protected Supplier<Map<String, String>> getSecrets()
+    {
+        return (Supplier<Map<String, String>>) request.getAttribute("secrets");
     }
 }
