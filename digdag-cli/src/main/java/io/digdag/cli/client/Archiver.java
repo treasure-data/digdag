@@ -48,6 +48,9 @@ class Archiver
         ArchiveMetadata meta = project.getArchiveMetadata();
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {
+            // default mode for file names longer than 100 bytes is throwing an exception (LONGFILE_ERROR)
+            tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+
             project.listFiles((resourceName, path) -> {
                 if (!Files.isDirectory(path)) {
                     out.println("  Archiving " + resourceName);
