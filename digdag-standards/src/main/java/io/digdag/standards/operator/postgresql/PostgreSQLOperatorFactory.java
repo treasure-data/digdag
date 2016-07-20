@@ -114,11 +114,11 @@ public class PostgreSQLOperatorFactory
                 }
             }
             if (manipulateTableOperationCount > 1) {
-                throw new ConfigException("Can't use more than 2 of insert_into/create_table/update_table");
+                throw new ConfigException("Can't use more than 2 of update_query/insert_into/create_table/update_table");
             }
             Optional<String> downloadFile = params.getOptional("download_file", String.class);
             if (downloadFile.isPresent() && manipulateTableOperationCount > 0) {
-                throw new ConfigException("Can't use download_file with insert_into/create_table/update_table");
+                throw new ConfigException("Can't use download_file with update_query/insert_into/create_table/update_table");
             }
 
             queryResultHandler = Optional.absent();
