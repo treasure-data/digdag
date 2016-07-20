@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.postgresql.core.Utils;
 import org.slf4j.Logger;
@@ -32,23 +33,30 @@ public class JdbcQueryHelper
         }
     }
 
-    public void executeQueryAndFetchResult(String query, QueryResultHandler resultHandler)
+    public void executeQueryAndFetchResult(String query, Optional<QueryResultHandler> resultHandler)
             throws SQLException
     {
-        resultHandler.before();
+        if (resultHandler.isPresent()) {
+            resultHandler.get().before();
+        }
         try (PreparedStatement statement = jdbcConnection.getConnection().prepareStatement(query)) {
             statement.setFetchSize(jdbcConnection.config.fetchSize().or(10000));
 
-            ResultSet resultSet = statement.executeQuery();
-            JdbcSchema schema = getSchemaOfResultMetadata(resultSet.getMetaData());
-            resultHandler.schema(schema);
-
-            while (resultSet.next()) {
-                List<Object> values = new ArrayList<>(resultSet.getMetaData().getColumnCount());
-                for (int i = 0; i < resultSet.getMetaData().getColumnCount(); i++) {
-                    values.add(resultSet.getObject(i + 1));
+            try(ResultSet resultSet = statement.executeQuery()) {
+                JdbcSchema schema = getSchemaOfResultMetadata(resultSet.getMetaData());
+                if (resultHandler.isPresent()) {
+                    resultHandler.get().schema(schema);
                 }
-                resultHandler.handleRow(values);
+
+                while (resultSet.next()) {
+                    List<Object> values = new ArrayList<>(resultSet.getMetaData().getColumnCount());
+                    for (int i = 0; i < resultSet.getMetaData().getColumnCount(); i++) {
+                        values.add(resultSet.getObject(i + 1));
+                    }
+                    if (resultHandler.isPresent()) {
+                        resultHandler.get().handleRow(values);
+                    }
+                }
             }
         }
         catch (Exception e) {
@@ -56,7 +64,9 @@ public class JdbcQueryHelper
             throw e;
         }
         finally {
-            resultHandler.after();
+            if (resultHandler.isPresent()) {
+                resultHandler.get().after();
+            }
         }
     }
 
@@ -87,9 +97,8 @@ public class JdbcQueryHelper
     }
 
     public JdbcSchema getFromRDB(String schemaName, String tableName) throws SQLException {
-        ResultSet rs = jdbcConnection.getConnection().getMetaData().getColumns(null, schemaName, tableName, null);
         ImmutableList.Builder<JdbcColumn> columns = ImmutableList.builder();
-        try {
+        try (ResultSet rs = jdbcConnection.getConnection().getMetaData().getColumns(null, schemaName, tableName, null)) {
             while(rs.next()) {
                 String columnName = rs.getString("COLUMN_NAME");
                 String typeName = rs.getString("TYPE_NAME");
@@ -98,8 +107,6 @@ public class JdbcQueryHelper
                 int precision = rs.getInt("COLUMN_SIZE");
                 columns.add(new JdbcColumn(columnName, typeName, sqlType, TypeGroup.fromSqlType(sqlType), precision, scale));
             }
-        } finally {
-            rs.close();
         }
         return new JdbcSchema(columns.build());
     }
@@ -154,8 +161,8 @@ public class JdbcQueryHelper
     public boolean tableExists(String schemaAndTableName) throws SQLException
     {
         SchemaAndTableName schemaAndTable = parseSchemaAndTableName(schemaAndTableName);
-        try (ResultSet rs = jdbcConnection.getConnection().getMetaData().getTables(null, schemaAndTable.schemaName,
-                                                                schemaAndTable.tableName, null)) {
+        try (ResultSet rs = jdbcConnection.getConnection().getMetaData().
+                                getTables(null, schemaAndTable.schemaName, schemaAndTable.tableName, null)) {
             return rs.next();
         }
     }
