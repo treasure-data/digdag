@@ -6,16 +6,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
 
-import java.util.UUID;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;

@@ -5,16 +5,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
 
 import java.nio.file.Path;
 import java.time.Duration;
 
-import static acceptance.TestUtils.attemptSuccess;
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.expect;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.getSessionId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.getSessionId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;

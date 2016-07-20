@@ -6,16 +6,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 
-import static acceptance.TestUtils.ATTEMPT_ID_PATTERN;
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.fakeHome;
-import static acceptance.TestUtils.getAttemptLogs;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.ATTEMPT_ID_PATTERN;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.fakeHome;
+import static utils.TestUtils.getAttemptLogs;
+import static utils.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;

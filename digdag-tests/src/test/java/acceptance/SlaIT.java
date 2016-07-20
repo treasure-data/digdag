@@ -16,7 +16,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
 import utils.NopDispatcher;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,10 +33,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAmount;
 import java.util.concurrent.TimeUnit;
 
-import static acceptance.TestUtils.expect;
-import static acceptance.TestUtils.findFreePort;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.findFreePort;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

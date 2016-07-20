@@ -1,4 +1,4 @@
-package acceptance;
+package utils;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -47,9 +47,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import static acceptance.TestUtils.configFactory;
-import static acceptance.TestUtils.findFreePort;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.configFactory;
+import static utils.TestUtils.findFreePort;
+import static utils.TestUtils.main;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -522,7 +522,7 @@ public class TemporaryDigdagServer
             return this;
         }
 
-        TemporaryDigdagServer build()
+        public TemporaryDigdagServer build()
         {
             return new TemporaryDigdagServer(this);
         }

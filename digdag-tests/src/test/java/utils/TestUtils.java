@@ -1,4 +1,4 @@
-package acceptance;
+package utils;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
@@ -48,9 +48,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-class TestUtils
+public class TestUtils
 {
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     static {
         OBJECT_MAPPER.registerModule(new GuavaModule());
@@ -60,33 +60,33 @@ class TestUtils
         OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    static final Pattern SESSION_ID_PATTERN = Pattern.compile("\\s*session id:\\s*(\\d+)\\s*");
+    public static final Pattern SESSION_ID_PATTERN = Pattern.compile("\\s*session id:\\s*(\\d+)\\s*");
 
-    static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
+    public static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
-    static CommandStatus main(String... args)
+    public static CommandStatus main(String... args)
     {
         return main(buildVersion(), args);
     }
 
-    static CommandStatus main(Collection<String> args)
+    public static CommandStatus main(Collection<String> args)
     {
         return main(buildVersion(), args);
     }
 
-    static CommandStatus main(Version localVersion, String... args)
+    public static CommandStatus main(Version localVersion, String... args)
     {
         return main(localVersion, asList(args));
     }
 
-    static CommandStatus main(Version localVersion, Collection<String> args)
+    public static CommandStatus main(Version localVersion, Collection<String> args)
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ByteArrayOutputStream err = new ByteArrayOutputStream();
         return main(localVersion, args, out, err);
     }
 
-    static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
+    public static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
     {
         final int code;
         try (
@@ -103,7 +103,7 @@ class TestUtils
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
-    static void copyResource(String resource, Path dest)
+    public static void copyResource(String resource, Path dest)
             throws IOException
     {
         try (InputStream input = Resources.getResource(resource).openStream()) {
@@ -111,7 +111,7 @@ class TestUtils
         }
     }
 
-    static void fakeHome(String home, Action a)
+    public static void fakeHome(String home, Action a)
             throws Exception
     {
         String orig = System.setProperty("user.home", home);
@@ -124,7 +124,7 @@ class TestUtils
         }
     }
 
-    static int findFreePort()
+    public static int findFreePort()
     {
         try (ServerSocket socket = new ServerSocket(0)) {
             socket.setReuseAddress(true);
@@ -135,21 +135,21 @@ class TestUtils
         }
     }
 
-    static long getSessionId(CommandStatus startStatus)
+    public static long getSessionId(CommandStatus startStatus)
     {
         Matcher matcher = SESSION_ID_PATTERN.matcher(startStatus.outUtf8());
         assertThat(matcher.find(), is(true));
         return Long.parseLong(matcher.group(1));
     }
 
-    static long getAttemptId(CommandStatus startStatus)
+    public static long getAttemptId(CommandStatus startStatus)
     {
         Matcher matcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
         assertThat(matcher.find(), is(true));
         return Long.parseLong(matcher.group(1));
     }
 
-    static String getAttemptLogs(DigdagClient client, long attemptId)
+    public static String getAttemptLogs(DigdagClient client, long attemptId)
             throws IOException
     {
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
@@ -162,7 +162,7 @@ class TestUtils
         return logs.toString();
     }
 
-    static <T> org.hamcrest.Matcher<T> validUuid()
+    public static <T> org.hamcrest.Matcher<T> validUuid()
     {
         return new BaseMatcher<T>()
         {
@@ -190,7 +190,7 @@ class TestUtils
         };
     }
 
-    static void expect(TemporalAmount timeout, Callable<Boolean> condition)
+    public static void expect(TemporalAmount timeout, Callable<Boolean> condition)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -204,7 +204,7 @@ class TestUtils
         fail("Timeout after: " + timeout);
     }
 
-    static <T> T expectValue(TemporalAmount timeout, Callable<T> condition)
+    public static <T> T expectValue(TemporalAmount timeout, Callable<T> condition)
             throws Exception
     {
         Instant deadline = Instant.now().plus(timeout);
@@ -223,7 +223,7 @@ class TestUtils
         throw new AssertionError("Timeout after: " + timeout);
     }
 
-    static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
+    public static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
@@ -231,7 +231,7 @@ class TestUtils
         };
     }
 
-    static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
+    public static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
@@ -239,7 +239,7 @@ class TestUtils
         };
     }
 
-    static CommandStatus attempts(String endpoint, long attemptId)
+    public static CommandStatus attempts(String endpoint, long attemptId)
     {
         return main("attempts",
                         "-c", "/dev/null",
@@ -247,7 +247,7 @@ class TestUtils
                         String.valueOf(attemptId));
     }
 
-    static void createProject(Path project)
+    public static void createProject(Path project)
     {
         CommandStatus initStatus = main("init",
                 "-c", "/dev/null",
@@ -255,13 +255,13 @@ class TestUtils
         assertThat(initStatus.code(), is(0));
     }
 
-    static long pushAndStart(String endpoint, Path project, String workflow)
+    public static long pushAndStart(String endpoint, Path project, String workflow)
             throws IOException
     {
         return pushAndStart(endpoint, project, workflow, ImmutableMap.of());
     }
 
-    static long pushAndStart(String endpoint, Path project, String workflow, Map<String, String> params)
+    public static long pushAndStart(String endpoint, Path project, String workflow, Map<String, String> params)
             throws IOException
     {
         String projectName = project.getFileName().toString();
@@ -290,14 +290,14 @@ class TestUtils
         return getAttemptId(startStatus);
     }
 
-    static void addWorkflow(Path project, String resource)
+    public static void addWorkflow(Path project, String resource)
             throws IOException
     {
         Path workflow = Paths.get(resource);
         addWorkflow(project, resource, workflow.getFileName().toString());
     }
 
-    static void addWorkflow(Path project, String resource, String workflowName)
+    public static void addWorkflow(Path project, String resource, String workflowName)
             throws IOException
     {
         copyResource(resource, project.resolve(workflowName));
@@ -325,12 +325,12 @@ class TestUtils
         }
     }
 
-    static ObjectMapper objectMapper()
+    public static ObjectMapper objectMapper()
     {
         return OBJECT_MAPPER;
     }
 
-    static ConfigFactory configFactory()
+    public static ConfigFactory configFactory()
     {
         return new ConfigFactory(objectMapper());
     }
