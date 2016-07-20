@@ -54,7 +54,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.util.Locale.ENGLISH;
 
@@ -850,7 +849,7 @@ public class WorkflowExecutor
                     .sessionId(attempt.getSessionId())
                     .retryAttemptName(attempt.getRetryAttemptName())
                     .taskName(task.getFullName())
-                    .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
+                    .queueName(Optional.absent())  // TODO make this configurable
                     // TODO support queue resourceType
                     .lockId("")   // this will be overwritten by TaskQueueServer
                     .priority(0)  // TODO make this configurable

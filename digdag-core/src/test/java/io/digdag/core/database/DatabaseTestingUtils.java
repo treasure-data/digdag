@@ -106,9 +106,7 @@ public class DatabaseTestingUtils
         "task_dependencies",
         "queue_settings",
         "queues",
-        "resource_types",
         "queued_tasks",
-        "queued_shared_task_locks",
         "queued_task_locks",
     };
 

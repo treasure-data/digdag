@@ -34,7 +34,7 @@ public interface TaskRequest
 
     String getTaskName();
 
-    String getQueueName();
+    Optional<String> getQueueName();
 
     String getLockId();
 

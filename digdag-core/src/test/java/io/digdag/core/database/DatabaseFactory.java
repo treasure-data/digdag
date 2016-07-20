@@ -31,9 +31,15 @@ public class DatabaseFactory
         this.config = config;
     }
 
+    @Override
     public DBI get()
     {
         return dbi;
+    }
+
+    public DatabaseConfig getConfig()
+    {
+        return config;
     }
 
     public DatabaseProjectStoreManager getProjectStoreManager()
@@ -66,13 +72,8 @@ public class DatabaseFactory
     }
 
     public static class NullTaskQueueDispatcher
-            extends TaskQueueDispatcher
+            implements TaskQueueDispatcher
     {
-        public NullTaskQueueDispatcher()
-        {
-            super(null);
-        }
-
         @Override
         public void dispatch(TaskRequest request)
             throws ResourceConflictException
