@@ -3,8 +3,6 @@ package io.digdag.server.rs;
 import io.digdag.client.api.IdName;
 import io.digdag.client.api.NameLongId;
 import io.digdag.client.api.NameOptionalId;
-import io.digdag.client.api.RestDirectDownloadHandle;
-import io.digdag.client.api.RestDirectUploadHandle;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestRevision;
@@ -15,6 +13,7 @@ import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
+import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.core.repository.ProjectMap;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
@@ -31,8 +30,6 @@ import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
-import io.digdag.spi.DirectDownloadHandle;
-import io.digdag.spi.DirectUploadHandle;
 import io.digdag.spi.LogFileHandle;
 
 import java.time.Instant;
@@ -207,23 +204,7 @@ public final class RestModels
             .taskName(handle.getTaskName())
             .fileTime(handle.getFirstLogTime())
             .agentId(handle.getAgentId())
-            .direct(handle.getDirect().transform(it -> directDownloadHandle(it)))
-            .build();
-    }
-
-    public static RestDirectDownloadHandle directDownloadHandle(DirectDownloadHandle handle)
-    {
-        return RestDirectDownloadHandle.builder()
-            .type(handle.getType())
-            .url(handle.getUrl())
-            .build();
-    }
-
-    public static RestDirectUploadHandle directUploadHandle(DirectUploadHandle handle)
-    {
-        return RestDirectUploadHandle.builder()
-            .type(handle.getType())
-            .url(handle.getUrl())
+            .direct(handle.getDirect().transform(it -> RestDirectDownloadHandle.of(it.getUrl().toString())))
             .build();
     }
 

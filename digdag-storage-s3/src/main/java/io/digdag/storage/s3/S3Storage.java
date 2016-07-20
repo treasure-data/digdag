@@ -202,7 +202,7 @@ public class S3Storage
 
         String url = client.generatePresignedUrl(req).toString();
 
-        return Optional.of(DirectDownloadHandle.of("http", url));
+        return Optional.of(DirectDownloadHandle.of(url));
     }
 
     @Override
@@ -214,7 +214,7 @@ public class S3Storage
 
         String url = client.generatePresignedUrl(req).toString();
 
-        return Optional.of(DirectUploadHandle.of("http", url));
+        return Optional.of(DirectUploadHandle.of(url));
     }
 
     private <T> T getWithRetry(String message, Callable<T> callable)
