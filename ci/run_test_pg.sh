@@ -23,4 +23,4 @@ docker run \
 -e CI_ACCEPTANCE_TEST=true \
 -e TERM=dumb \
 digdag-build \
-sh -c "/etc/init.d/postgresql start && ./gradlew clean cleanTest test --info --no-daemon"
+sh -c "/etc/init.d/postgresql start && ./gradlew clean cleanTest test --info --no-daemon $@"
