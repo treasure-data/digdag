@@ -11,6 +11,7 @@ import io.digdag.core.Version;
 import io.digdag.core.database.DataSourceProvider;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.RemoteDatabaseConfig;
+import io.digdag.server.ServerRuntimeInfo;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
@@ -25,6 +26,8 @@ import javax.ws.rs.ProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -46,6 +49,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static utils.TestUtils.configFactory;
 import static utils.TestUtils.findFreePort;
@@ -72,8 +77,6 @@ public class TemporaryDigdagServer
     private final Optional<Version> version;
 
     private final String host;
-    private final int port;
-    private final String endpoint;
     private final List<String> extraArgs;
 
     private final ExecutorService executor;
@@ -96,20 +99,18 @@ public class TemporaryDigdagServer
     private DatabaseConfig testDatabaseConfig;
     private DataSource adminDataSource;
 
+    private int port = -1;
+
     public TemporaryDigdagServer(Builder builder)
     {
         this.version = builder.version;
 
         this.host = "127.0.0.1";
-        // TODO (dano): Ideally the server could use system port allocation (bind on port 0) and tell
-        //              us what port it got. That way we'd not have any spurious port collisions.
-        this.port = findFreePort();
-        this.endpoint = "http://" + host + ":" + port;
         this.configuration = new ArrayList<>(Objects.requireNonNull(builder.configuration, "configuration"));
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
         this.inProcess = builder.inProcess;
 
-        this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
+        this.executor = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
 
         if (!isNullOrEmpty(POSTGRESQL)) {
             preparePostgres();
@@ -241,6 +242,8 @@ public class TemporaryDigdagServer
     {
         setupDatabase();
 
+        Path runtimeInfoPath = temporaryFolder.newFolder().toPath().resolve("runtime-info");
+        configuration.add("server.runtime-info.path = " + runtimeInfoPath.toAbsolutePath().normalize());
         try {
             this.configDirectory = temporaryFolder.newFolder().toPath();
             this.taskLog = temporaryFolder.newFolder().toPath();
@@ -254,7 +257,7 @@ public class TemporaryDigdagServer
         ImmutableList.Builder<String> argsBuilder = ImmutableList.builder();
         argsBuilder.addAll(ImmutableList.of(
                 "server",
-                "--port", String.valueOf(port),
+                "--port", "0",
                 "--bind", host,
                 "--access-log", accessLog.toString(),
                 "-c", config.toString()));
@@ -294,20 +297,44 @@ public class TemporaryDigdagServer
             processArgs.addAll(args);
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
-            processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
-            processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
             processBuilder.directory(workdir);
             serverProcess = processBuilder.start();
+
+            executor.execute(() -> copy(serverProcess.getInputStream(), asList(out, System.out)));
+            executor.execute(() -> copy(serverProcess.getErrorStream(), asList(err, System.err)));
         }
 
-        // Poll and wait for server to come up
-        boolean up = false;
-        DigdagClient client = DigdagClient.builder()
-                .host(host)
-                .port(port)
-                .build();
-        for (int i = 0; i < 30; i++) {
+        // Wait for server to write the server info with the local address
+        ServerRuntimeInfo serverRuntimeInfo = null;
+        for (int i = 0; i < 300; i++) {
+            Thread.sleep(1000);
+            if (!Files.exists(runtimeInfoPath)) {
+                continue;
+            }
             try {
+                serverRuntimeInfo = objectMapper().readValue(runtimeInfoPath.toFile(), ServerRuntimeInfo.class);
+                break;
+            }
+            catch (IOException e) {
+                continue;
+            }
+        }
+
+        if (serverRuntimeInfo == null) {
+            fail("Server failed to come up.\nout:\n" + out.toString("UTF-8") + "\nerr:\n" + err.toString("UTF-8"));
+        }
+
+        assert !serverRuntimeInfo.localAddresses().isEmpty();
+        port = serverRuntimeInfo.localAddresses().get(0).port();
+
+        // Poll and wait for server to respond
+        boolean up = false;
+        for (int i = 0; i < 300; i++) {
+            try (DigdagClient client = DigdagClient.builder()
+                    .host(host)
+                    .port(port)
+                    .build()) {
                 client.getProjects();
                 up = true;
                 break;
@@ -321,6 +348,26 @@ public class TemporaryDigdagServer
 
         if (!up) {
             fail("Server failed to come up.\nout:\n" + out.toString("UTF-8") + "\nerr:\n" + err.toString("UTF-8"));
+        }
+    }
+
+    private void copy(InputStream in, List<OutputStream> outs)
+    {
+        byte[] buffer = new byte[16 * 1024];
+        try {
+            while (true) {
+                int r = in.read(buffer);
+                if (r < 0) {
+                    break;
+                }
+                for (OutputStream out : outs) {
+                    out.write(buffer, 0, r);
+                    out.flush();
+                }
+            }
+        }
+        catch (IOException e) {
+            log.error("Caught exception during byte stream copy", e);
         }
     }
 
@@ -429,7 +476,7 @@ public class TemporaryDigdagServer
 
     public String endpoint()
     {
-        return endpoint;
+        return "http://" + host + ":" + port();
     }
 
     public String host()
@@ -439,6 +486,9 @@ public class TemporaryDigdagServer
 
     public int port()
     {
+        if (port == -1) {
+            throw new IllegalStateException("server not yet up");
+        }
         return port;
     }
 

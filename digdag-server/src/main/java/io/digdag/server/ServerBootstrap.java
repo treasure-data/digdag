@@ -1,24 +1,25 @@
 package io.digdag.server;
 
-import java.util.Properties;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-import javax.servlet.ServletException;
-import javax.servlet.ServletContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableSet;
+import io.digdag.client.config.ConfigElement;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.LocalSite;
+import io.digdag.core.Version;
+import io.digdag.core.agent.LocalWorkspaceManager;
+import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.config.PropertyUtils;
+import io.digdag.guice.rs.GuiceRsBootstrap;
+import io.digdag.guice.rs.GuiceRsServerControl;
+import io.digdag.guice.rs.GuiceRsServerControlModule;
+import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
@@ -31,16 +32,27 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
-import io.digdag.guice.rs.GuiceRsServerControl;
-import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
-import io.digdag.guice.rs.GuiceRsServerControlModule;
-import io.digdag.guice.rs.GuiceRsBootstrap;
-import io.digdag.client.config.ConfigElement;
-import io.digdag.core.config.PropertyUtils;
-import io.digdag.core.agent.WorkspaceManager;
-import io.digdag.core.agent.LocalWorkspaceManager;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.LocalSite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.StreamConnection;
+import org.xnio.channels.AcceptingChannel;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class ServerBootstrap
     implements GuiceRsBootstrap
@@ -213,6 +225,40 @@ public class ServerBootstrap
         control.serverInitialized(server);
 
         server.start();  // HTTP server starts here
+
+        // XXX (dano): Hack to get the system-assigned port when starting server with port 0
+        List<InetSocketAddress> localAddresses = new ArrayList<>();
+        try {
+            Field channelsField = Undertow.class.getDeclaredField("channels");
+            channelsField.setAccessible(true);
+            @SuppressWarnings("unchecked") List<AcceptingChannel<? extends StreamConnection>> channels = (List<AcceptingChannel<? extends StreamConnection>>) channelsField.get(server);
+            for (AcceptingChannel<? extends StreamConnection> channel : channels) {
+                SocketAddress localAddress = channel.getLocalAddress();
+                logger.info("Bound on {}", localAddress);
+                if (localAddress instanceof InetSocketAddress) {
+                    localAddresses.add((InetSocketAddress) localAddress);
+                }
+            }
+        }
+        catch (ReflectiveOperationException e) {
+            logger.warn("Failed to get bind addresses", e);
+        }
+
+        Optional<String> serverInfoPath = config.getServerRuntimeInfoPath();
+        if (serverInfoPath.isPresent()) {
+            ServerRuntimeInfo serverRuntimeInfo = ServerRuntimeInfo.builder()
+                    .addAllLocalAddresses(localAddresses.stream()
+                            .map(a -> ServerRuntimeInfo.Address.of(a.getHostString(), a.getPort()))
+                            .collect(Collectors.toList()))
+                    .build();
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                Files.write(Paths.get(serverInfoPath.get()), mapper.writeValueAsBytes(serverRuntimeInfo));
+            }
+            catch (IOException e) {
+                logger.warn("Failed to write server runtime info", e);
+            }
+        }
 
         return control;
     }
