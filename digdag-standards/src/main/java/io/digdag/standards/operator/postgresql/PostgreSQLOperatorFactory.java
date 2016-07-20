@@ -83,7 +83,14 @@ public class PostgreSQLOperatorFactory
             Config state = request.getLastStateParams().deepCopy();
 
             query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
-            Optional<String> statusTable = Optional.of(params.get("status_table", String.class, "__digdag_status"));
+            boolean strictTransaction = params.get("strict_transaction", Boolean.class, true);
+            Optional<String> statusTable;
+            if (strictTransaction) {
+                statusTable = Optional.of(params.get("status_table", String.class, "__digdag_status"));
+            }
+            else {
+                statusTable = Optional.absent();
+            }
             boolean updateQuery = params.get("update_query", Boolean.class, false);
 
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
@@ -162,28 +169,47 @@ public class PostgreSQLOperatorFactory
                 // query ID is already generated
                 switch (queryStatus.get()) {
                     case QUERY_STATUS_RUNNING:
-                        JdbcQueryTxHelper.Status status = queryHelper.getStatusRecord();
-                        if (status == null) {
-                            queryHelper.addStatusRecord();
+                        if (strictTransaction) {
+                            JdbcQueryTxHelper.Status status = queryHelper.getStatusRecord();
+                            if (status == null) {
+                                queryHelper.addStatusRecord();
+                            }
+
+                            switch (queryHelper.getStatusRecord()) {
+                                // This status READY isn't needed for now.
+                                // In other word, we can start to issue a query when the status row doesn't exist.
+                                // But we left this for future use (e.g. locking).
+                                case READY:
+                                    logger.debug("This job hasn't started the query yet. Starting it...");
+                                    try {
+                                        queryHelper.executeQuery(queryType, query, destTable, uniqKeys, queryResultHandler);
+                                    }
+                                    catch (Exception e) {
+                                        queryHelper.dropStatusRecord();
+                                        throw e;
+                                    }
+                                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+
+                                case FINISHED:
+                                    logger.debug("This job has finished already");
+                                    state.set(QUERY_STATUS, QUERY_STATUS_FINISHED);
+                                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+
+                                default:
+                                    throw new IllegalStateException("Shouldn't reach here: " + queryHelper.getStatusRecord());
+                            }
                         }
-
-                        switch (queryHelper.getStatusRecord()) {
-                            case READY:
-                                logger.debug("This job hasn't started the query yet. Starting it...");
-                                queryHelper.executeQuery(queryType, query, destTable, uniqKeys, queryResultHandler);
-                                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
-
-                            case FINISHED:
-                                logger.debug("This job has finished already");
-                                state.set(QUERY_STATUS, QUERY_STATUS_FINISHED);
-                                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
-
-                            default:
-                                throw new IllegalStateException("Shouldn't reach here: " + queryHelper.getStatusRecord());
+                        else {
+                            logger.debug("Starting query...");
+                            queryHelper.executeQuery(queryType, query, destTable, uniqKeys, queryResultHandler);
+                            logger.debug("This query has finished successfully");
+                            state.set(QUERY_STATUS, QUERY_STATUS_FINISHED);
+                            throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
                         }
 
                     case QUERY_STATUS_FINISHED:
                         queryHelper.dropStatusRecord();
+                        // Completed this job here
                         break;
 
                     default:
@@ -195,7 +221,8 @@ public class PostgreSQLOperatorFactory
                 throw e;
             }
             catch (Exception e) {
-                throw new RuntimeException("Failed to issue a query: request=" + request, e);
+                logger.error("Failed to issue a query: request={}", request);
+                Throwables.propagate(e);
             }
 
             return TaskResult.defaultBuilder(request).build();
@@ -231,7 +258,7 @@ public class PostgreSQLOperatorFactory
                         csvWriter = new CSVWriter(writerGenerator.generate());
                     }
                     catch (IOException e) {
-                        throw new RuntimeException("Failed to create CSVWriter", e);
+                        Throwables.propagate(e);
                     }
                 }
 

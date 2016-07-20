@@ -40,6 +40,10 @@ public abstract class JdbcConnection
         }
 
         Properties props = new Properties();
+        props.setProperty("user", config.user());
+        if (config.password().isPresent()) {
+            props.setProperty("password", config.password().get());
+        }
         if (config.schema().isPresent()) {
             props.setProperty("currentSchema", config.schema().get());
         }

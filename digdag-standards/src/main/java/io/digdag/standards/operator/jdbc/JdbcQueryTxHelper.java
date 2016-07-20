@@ -10,6 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class JdbcQueryTxHelper
     extends JdbcQueryHelper
 {
@@ -22,8 +24,8 @@ public class JdbcQueryTxHelper
             throws SQLException
     {
         super(jdbcConnection);
-        this.queryId = queryId;
-        this.statusTable = statusTable;
+        this.queryId = checkNotNull(queryId);
+        this.statusTable = checkNotNull(statusTable);
     }
 
     public void executeQuery(
@@ -36,7 +38,7 @@ public class JdbcQueryTxHelper
     {
         switch (queryType) {
             case SELECT_ONLY:
-                executeQueryWithTransaction(() -> executeQueryAndFetchResult(query, queryResultHandler.get()));
+                executeQueryWithTransaction(() -> executeQueryAndFetchResult(query, queryResultHandler));
                 break;
             case UPDATE_QUERY:
                 executeQueryWithTransaction(() -> executeUpdate(query));
@@ -75,8 +77,8 @@ public class JdbcQueryTxHelper
     {
         JdbcSchema resultSchema;
         String emptyResultQuery = query + "\n" + "LIMIT 0";
-        try (PreparedStatement statement = jdbcConnection.getConnection().prepareStatement(emptyResultQuery)) {
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = jdbcConnection.getConnection().prepareStatement(emptyResultQuery);
+                ResultSet resultSet = statement.executeQuery()) {
             resultSchema = getSchemaOfResultMetadata(resultSet.getMetaData());
         }
 
@@ -206,7 +208,7 @@ public class JdbcQueryTxHelper
                 updateStatusRecord(Status.FINISHED);
             }
             else {
-                executeUpdate("SELECT 1");
+                executeQueryAndFetchResult("SELECT 1", Optional.absent());
             }
             executeUpdate("COMMIT");
         }
@@ -242,12 +244,13 @@ public class JdbcQueryTxHelper
         String sql = "SELECT status FROM " + escapeIdent(statusTable.get()) + " WHERE query_id = ?";
         try (PreparedStatement statement = jdbcConnection.getConnection().prepareStatement(sql)) {
             statement.setString(1, queryId);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return Status.valueOf(resultSet.getString(1));
-            }
-            else {
-                return null;
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Status.valueOf(resultSet.getString(1));
+                }
+                else {
+                    return null;
+                }
             }
         }
         catch (SQLException e) {
@@ -309,11 +312,11 @@ public class JdbcQueryTxHelper
         StringBuilder sql = new StringBuilder().append("SELECT * FROM ").append(escapedStatusTable).
                                                 append(" WHERE query_id = ? FOR UPDATE NOWAIT");
         try (PreparedStatement statement = jdbcConnection.getConnection().prepareStatement(sql.toString())) {
-            int i = 1;
-            statement.setString(i++, queryId);
-            ResultSet resultSet = statement.executeQuery();
-            if (!resultSet.next()) {
-                throw new IllegalStateException("The status row doesn't exist unexpectedly");
+            statement.setString(1, queryId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("The status row doesn't exist unexpectedly");
+                }
             }
         }
         catch (SQLException e) {
