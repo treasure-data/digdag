@@ -38,6 +38,9 @@ public class JdbcQueryTxHelper
             case SELECT_ONLY:
                 executeQueryWithTransaction(() -> executeQueryAndFetchResult(query, queryResultHandler.get()));
                 break;
+            case UPDATE_QUERY:
+                executeQueryWithTransaction(() -> executeUpdate(query));
+                break;
             case WITH_INSERT_INTO:
                 executeQueryWithInsertInto(query, destTable.get());
                 break;
@@ -192,7 +195,8 @@ public class JdbcQueryTxHelper
         try {
             executeUpdate("BEGIN");
 
-            tryLockStatusRecord();
+            // If Digdag doesn't guarantee to prepend multiple workers from running the same workflow simultaneously, we need to use this lock
+            // tryLockStatusRecord();
 
             logger.debug("Starting query");
             queryExecutor.execute();

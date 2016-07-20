@@ -84,11 +84,16 @@ public class PostgreSQLOperatorFactory
 
             query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
             Optional<String> statusTable = Optional.of(params.get("status_table", String.class, "__digdag_status"));
+            boolean updateQuery = params.get("update_query", Boolean.class, false);
+
             Optional<PostgreSQLTableParam> insertInto = params.getOptional("insert_into", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> createTable = params.getOptional("create_table", PostgreSQLTableParam.class);
             Optional<PostgreSQLTableParam> updateTable = params.getOptional("update_table", PostgreSQLTableParam.class);
             Optional<List<String>> uniqKeys = params.getOptional("uniq_keys", String.class).transform(s -> Arrays.asList(s.split("\\s+,\\s+")));
             int manipulateTableOperationCount = 0;
+            if (updateQuery) {
+                manipulateTableOperationCount += 1;
+            }
             if (insertInto.isPresent()) {
                 manipulateTableOperationCount += 1;
             }
@@ -112,7 +117,10 @@ public class PostgreSQLOperatorFactory
             queryResultHandler = Optional.absent();
             Optional<String> destTable = Optional.absent();
 
-            if (insertInto.isPresent()) {
+            if (updateQuery) {
+                queryType = JdbcQueryHelper.QueryType.UPDATE_QUERY;
+            }
+            else if (insertInto.isPresent()) {
                 queryType = JdbcQueryHelper.QueryType.WITH_INSERT_INTO;
                 destTable = Optional.of(insertInto.get().toString());
             }

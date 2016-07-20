@@ -168,6 +168,7 @@ public class JdbcQueryHelper
     public enum QueryType
     {
         SELECT_ONLY(false),
+        UPDATE_QUERY(true),
         WITH_INSERT_INTO(true),
         WITH_CREATE_TABLE(true),
         WITH_UPDATE_TABLE(true);
