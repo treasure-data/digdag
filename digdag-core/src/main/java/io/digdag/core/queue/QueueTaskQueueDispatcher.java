@@ -43,7 +43,7 @@ public class QueueTaskQueueDispatcher
                 taskQueueServer.enqueueQueueBoundTask(queueId, request);
             }
             else {
-                taskQueueServer.enqueueSharedTask(request);
+                taskQueueServer.enqueueDefaultQueueTask(request);
             }
         }
         catch (TaskStateException ex) {

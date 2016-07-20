@@ -656,6 +656,10 @@ public class DatabaseMigrator
                     " select id, site_id, NULL, priority" +
                     " from queued_tasks");
 
+            // queues
+            handle.update("alter table queues" +
+                    " add column shared_site_id int");
+
             // resource_types
             handle.update("drop table resource_types");
 

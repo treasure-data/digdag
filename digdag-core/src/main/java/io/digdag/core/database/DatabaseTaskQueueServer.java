@@ -136,7 +136,7 @@ public class DatabaseTaskQueueServer
     }
 
     @Override
-    public void enqueueSharedTask(TaskRequest request)
+    public void enqueueDefaultQueueTask(TaskRequest request)
         throws TaskStateException
     {
         try {
@@ -154,7 +154,8 @@ public class DatabaseTaskQueueServer
         throws TaskStateException
     {
         try {
-            enqueue(null, queueId,
+            Integer sharedAgentSiteId = autoCommit((handle, dao) -> dao.getSharedSiteId(queueId));
+            enqueue(sharedAgentSiteId, queueId,
                     request.getPriority(), request.getTaskId(),
                     encodeTaskObject(request));
         }
@@ -306,17 +307,17 @@ public class DatabaseTaskQueueServer
     }
 
     @Override
-    public List<TaskRequest> lockSharedTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
+    public List<TaskRequest> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
     {
         int i = 0;
         for (int siteId : autoCommit((handle, dao) -> dao.getActiveSiteIdList())) {
-            List<Long> taskLockIds = tryLockSharedTasks(siteId, count, agentId, lockSeconds);
+            List<Long> taskLockIds = tryLockSharedAgentTasks(siteId, count, agentId, lockSeconds);
             if (!taskLockIds.isEmpty()) {
                 ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
                 for (long taskLockId : taskLockIds) {
                     byte[] data = autoCommit((handle, dao) -> dao.getTaskData(taskLockId));
                     if (data == null) {
-                        // queued_task is deleted after tryLockSharedTasks call.
+                        // queued_task is deleted after tryLockSharedAgentTasks call.
                         // it is possible just because there are 2 different transactions.
                     }
                     else {
@@ -336,7 +337,7 @@ public class DatabaseTaskQueueServer
         return ImmutableList.of();
     }
 
-    private List<Long> tryLockSharedTasks(int siteId,
+    private List<Long> tryLockSharedAgentTasks(int siteId,
             int count, String agentId, int lockSeconds)
     {
         int siteMaxConcurrency = queueConfig.getSiteMaxConcurrency(siteId);
@@ -455,6 +456,9 @@ public class DatabaseTaskQueueServer
 
     public interface Dao
     {
+        @SqlQuery("select shared_site_id from queues where id = :queueId")
+        Integer getSharedSiteId(@Bind("queueId") long queueId);
+
         // optimized implementation of
         //   select distinct site_id as id from queued_task_locks
         //   where lock_expire_time is null

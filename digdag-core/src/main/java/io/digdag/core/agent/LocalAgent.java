@@ -62,8 +62,7 @@ public class LocalAgent
     {
         while (!stop) {
             try {
-                // TODO implement task heartbeat that calls queue.taskHeartbeat using a background thread
-                List<TaskRequest> reqs = queue.lockSharedTasks(3, agentId.toString(), config.getLockRetentionTime(), 1000);
+                List<TaskRequest> reqs = queue.lockSharedAgentTasks(1, agentId.toString(), config.getLockRetentionTime(), 1000);
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {

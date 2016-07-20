@@ -11,7 +11,7 @@ public interface TaskQueueServer
     //   int createOrUpdateQueue(int queueId, Config config);
     //   void deleteQueueIfExists(int queueId);
 
-    void enqueueSharedTask(TaskRequest request)
+    void enqueueDefaultQueueTask(TaskRequest request)
         throws TaskStateException;
 
     void enqueueQueueBoundTask(int queueId, TaskRequest request)
