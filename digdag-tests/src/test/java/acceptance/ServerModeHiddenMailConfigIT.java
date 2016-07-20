@@ -2,6 +2,7 @@ package acceptance;
 
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,6 +22,7 @@ import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMailServer;
 
 public class ServerModeHiddenMailConfigIT
 {
@@ -30,13 +32,13 @@ public class ServerModeHiddenMailConfigIT
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
 
-    private final int port = TestUtils.findFreePort();
+    private final Wiser mailServer = startMailServer(HOSTNAME);
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "config.mail.host=" + HOSTNAME,
-                    "config.mail.port=" + port,
+                    "config.mail.port=" + mailServer.getServer().getPort(),
                     "config.mail.from=" + SENDER,
                     "config.mail.username=mail-user",
                     "config.mail.password=mail-pass",
@@ -60,6 +62,13 @@ public class ServerModeHiddenMailConfigIT
                 .build();
     }
 
+    @After
+    public void tearDown()
+            throws Exception
+    {
+        mailServer.stop();
+    }
+
     @Test
     public void mailConfigInFile()
             throws Exception
@@ -69,13 +78,6 @@ public class ServerModeHiddenMailConfigIT
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
         Files.createFile(config);
-
-        // Start mail server
-        Wiser mailServer;
-        mailServer = new Wiser();
-        mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(port);
-        mailServer.start();
 
         copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));

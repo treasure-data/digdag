@@ -23,6 +23,7 @@ import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMailServer;
 
 public class MailNotificationIT
 {
@@ -32,7 +33,7 @@ public class MailNotificationIT
     private static final String SENDER = "digdag@foo.bar";
     private static final String RECEIVER = "alert@foo.bar";
 
-    private final int port = TestUtils.findFreePort();
+    private final Wiser mailServer = startMailServer(HOSTNAME);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -44,7 +45,7 @@ public class MailNotificationIT
                     "notification.mail.to = " + RECEIVER,
                     "notification.mail.from = " + SENDER,
                     "notification.mail.host= " + HOSTNAME,
-                    "notification.mail.port=" + port,
+                    "notification.mail.port=" + mailServer.getServer().getPort(),
                     "notification.mail.username=mail-user",
                     "notification.mail.password=mail-pass",
                     "notification.mail.tls=false")
@@ -52,7 +53,6 @@ public class MailNotificationIT
 
     private Path config;
     private Path projectDir;
-    private Wiser mailServer;
 
     @Before
     public void setUp()
@@ -62,20 +62,13 @@ public class MailNotificationIT
         config = folder.newFile().toPath();
 
         TestUtils.createProject(projectDir);
-
-        mailServer = new Wiser();
-        mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(port);
-        mailServer.start();
     }
 
     @After
     public void tearDown()
             throws Exception
     {
-        if (mailServer != null) {
-            mailServer.stop();
-        }
+        mailServer.stop();
     }
 
     @Test
