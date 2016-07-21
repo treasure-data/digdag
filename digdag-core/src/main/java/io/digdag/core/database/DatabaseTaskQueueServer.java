@@ -29,7 +29,6 @@ import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskQueueServer;
@@ -50,8 +49,6 @@ public class DatabaseTaskQueueServer
     private final LocalLockMap localLockMap = new LocalLockMap();
     private final ScheduledExecutorService expireExecutor;
 
-    private final boolean skipLockedAvailable;
-
     @Inject
     public DatabaseTaskQueueServer(DBI dbi, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
     {
@@ -65,7 +62,6 @@ public class DatabaseTaskQueueServer
                 .setNameFormat("lock-expire-%d")
                 .build()
                 );
-        this.skipLockedAvailable = checkSkipLockedAvailable(dbi);
     }
 
     private final Object localTaskNoticeHelper = new Object();
@@ -111,23 +107,6 @@ public class DatabaseTaskQueueServer
             return true;
         default:
             return false;
-        }
-    }
-
-    private boolean checkSkipLockedAvailable(DBI dbi)
-    {
-        if (isEmbededDatabase()) {
-            return false;
-        }
-        try (Handle h = dbi.open()) {
-            try {
-                // added since postgresql 9.5
-                h.createQuery("select 1 for update skip locked").list();
-                return true;
-            }
-            catch (UnableToExecuteStatementException ex) {
-                return false;
-            }
         }
     }
 
