@@ -20,6 +20,7 @@ import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMailServer;
 
 public class ErrorServerMailIT
 {
@@ -29,7 +30,7 @@ public class ErrorServerMailIT
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
 
-    private final int port = TestUtils.findFreePort();
+    private final Wiser mailServer = startMailServer(HOSTNAME);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -38,7 +39,7 @@ public class ErrorServerMailIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "config.mail.host=" + HOSTNAME,
-                    "config.mail.port=" + port,
+                    "config.mail.port=" + mailServer.getServer().getPort(),
                     "config.mail.from=" + SENDER,
                     "config.mail.username=mail-user",
                     "config.mail.password=mail-pass",
@@ -48,8 +49,6 @@ public class ErrorServerMailIT
 
     private Path config;
     private Path projectDir;
-
-    private Wiser mailServer;
 
     @Before
     public void setUp()
@@ -63,20 +62,13 @@ public class ErrorServerMailIT
         copyResource("acceptance/error_server_mail/error.dig", projectDir.resolve("error.dig"));
         copyResource("acceptance/error_server_mail/fail.sql", projectDir.resolve("fail.sql"));
         copyResource("acceptance/error_server_mail/alert.txt", projectDir.resolve("alert.txt"));
-
-        mailServer = new Wiser();
-        mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(port);
-        mailServer.start();
     }
 
     @After
     public void tearDown()
             throws Exception
     {
-        if (mailServer != null) {
-            mailServer.stop();
-        }
+        mailServer.stop();
     }
 
     @Test

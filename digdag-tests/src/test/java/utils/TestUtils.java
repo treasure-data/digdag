@@ -14,10 +14,13 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
+import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Assert;
+import org.subethamail.wiser.Wiser;
+import utils.NopDispatcher;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -333,5 +336,27 @@ public class TestUtils
     public static ConfigFactory configFactory()
     {
         return new ConfigFactory(objectMapper());
+    }
+
+    public static Wiser startMailServer(String hostname)
+    {
+        Wiser server = new Wiser();
+        server.setHostname(hostname);
+        server.setPort(0);
+        server.start();
+        return server;
+    }
+
+    public static MockWebServer startMockWebServer()
+    {
+        MockWebServer server = new MockWebServer();
+        server.setDispatcher(new NopDispatcher());
+        try {
+            server.start(0);
+        }
+        catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+        return server;
     }
 }
