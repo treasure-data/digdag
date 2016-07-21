@@ -107,6 +107,12 @@ public class DigdagClient
         mapper.registerModule(new GuavaModule());
         mapper.registerModule(new JacksonTimeModule());
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
+        InjectableValues.Std injects = new InjectableValues.Std();
+        injects.addValue(ObjectMapper.class, mapper);
+        mapper.setInjectableValues(injects);
+
         return mapper;
     }
 
@@ -157,11 +163,6 @@ public class DigdagClient
         }
 
         ObjectMapper mapper = objectMapper();
-
-        // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
-        InjectableValues.Std injects = new InjectableValues.Std();
-        injects.addValue(ObjectMapper.class, mapper);
-        mapper.setInjectableValues(injects);
 
         this.client = new ResteasyClientBuilder()
             .register(new JacksonJsonProvider(mapper))

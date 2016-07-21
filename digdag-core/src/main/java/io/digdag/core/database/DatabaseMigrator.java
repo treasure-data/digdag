@@ -672,6 +672,7 @@ public class DatabaseMigrator
                     " drop column priority");
             handle.update("alter table queued_tasks" +
                     " drop column resource_type_id");
+            handle.update("create unique index queued_tasks_on_site_id_task_id on queued_tasks (site_id, task_id)");
 
             if (isPostgres()) {
                 handle.update(
@@ -679,37 +680,41 @@ public class DatabaseMigrator
                     "BEGIN\n" +
                     "  IF pg_try_advisory_xact_lock(23300, target_site_id) THEN\n" +
                     "    RETURN QUERY\n" +
-                    "      update queued_task_locks\n" +
-                    "      set lock_expire_time = cast(extract(epoch from statement_timestamp()) as bigint) + lock_expire_seconds,\n" +
-                    "          lock_agent_id = agent_id\n" +
-                    "      where id = any(\n" +
-                    "        select queued_task_locks.id\n" +
-                    "        from queued_task_locks\n" +
-                    "        where lock_expire_time is null\n" +
-                    "        and site_id = target_site_id\n" +
-                    "        and not exists (\n" +
-                    "          select * from (\n" +
-                    "            select queue_id, count(*) as count\n" +
+                    "      with updated as (\n" +
+                    "        update queued_task_locks\n" +
+                    "        set lock_expire_time = cast(extract(epoch from statement_timestamp()) as bigint) + lock_expire_seconds,\n" +
+                    "            lock_agent_id = agent_id\n" +
+                    "        where id = any(\n" +
+                    "          select queued_task_locks.id\n" +
+                    "          from queued_task_locks\n" +
+                    "          where lock_expire_time is null\n" +
+                    "          and site_id = target_site_id\n" +
+                    "          and not exists (\n" +
+                    "            select * from (\n" +
+                    "              select queue_id, count(*) as count\n" +
+                    "              from queued_task_locks\n" +
+                    "              where lock_expire_time is not null\n" +
+                    "                and site_id = target_site_id\n" +
+                    "              group by queue_id\n" +
+                    "            ) runnings\n" +
+                    "            join queues on queues.id = runnings.queue_id\n" +
+                    "            where runnings.count >= queues.max_concurrency\n" +
+                    "              and runnings.queue_id = queued_task_locks.queue_id\n" +
+                    "          )\n" +
+                    "          and not exists (\n" +
+                    "            select count(*)\n" +
                     "            from queued_task_locks\n" +
                     "            where lock_expire_time is not null\n" +
                     "              and site_id = target_site_id\n" +
-                    "            group by queue_id\n" +
-                    "          ) runnings\n" +
-                    "          join queues on queues.id = runnings.queue_id\n" +
-                    "          where runnings.count > queues.max_concurrency\n" +
-                    "            and runnings.queue_id = queued_task_locks.queue_id\n" +
+                    "            having count(*) >= target_site_max_concurrency\n" +
+                    "          )\n" +
+                    "          order by queue_id, priority desc, id\n" +
+                    "          limit limit_count\n" +
                     "        )\n" +
-                    "        and not exists (\n" +
-                    "          select count(*)\n" +
-                    "          from queued_task_locks\n" +
-                    "          where lock_expire_time is not null\n" +
-                    "            and site_id = target_site_id\n" +
-                    "          having count(*) > target_site_max_concurrency\n" +
-                    "        )\n" +
-                    "        order by queue_id, priority desc, id\n" +
-                    "        limit limit_count\n" +
+                    "        returning queue_id, priority, id\n" +
                     "      )\n" +
-                    "      returning id;\n" +
+                    "      select id from updated\n" +
+                    "      order by queue_id, priority desc, id;\n" +
                     "  END IF;\n" +
                     "END;\n" +
                     "$$ LANGUAGE plpgsql VOLATILE\n" +

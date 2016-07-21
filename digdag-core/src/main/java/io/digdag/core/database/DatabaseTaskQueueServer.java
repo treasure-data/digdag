@@ -36,6 +36,7 @@ import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskStateException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class DatabaseTaskQueueServer
@@ -296,12 +297,13 @@ public class DatabaseTaskQueueServer
                     " set lock_expire_time = " + lockExpireTimeSql +
                     " where id = :id" +
                     " and lock_agent_id = :agentId" +
-                    " and coalesce(site_id, (select site_id from queue_settings where id = :queueId)) = :site_id"
+                    " and coalesce(site_id, (select site_id from queue_settings where id = :queueId)) = :siteId"
                 )
                 .bind("expireTime", Instant.now().getEpochSecond() + lockSeconds)
                 .bind("id", taskLockId)
                 .bind("agentId", agentId)
                 .bind("queueId", queueId)
+                .bind("siteId", siteId)
                 .execute();
         }) > 0;
     }
@@ -368,7 +370,7 @@ public class DatabaseTaskQueueServer
                                     "group by queue_id" +
                                 ") runnings " +
                                 "join queues on queues.id = runnings.queue_id " +
-                                "where runnings.count > queues.max_concurrency " +
+                                "where runnings.count >= queues.max_concurrency " +
                                 "and runnings.queue_id = queued_task_locks.queue_id" +
                             ") " +
                             "and not exists (" +
@@ -376,7 +378,7 @@ public class DatabaseTaskQueueServer
                               "from queued_task_locks " +
                               "where lock_expire_time is not null " +
                               "and site_id = :siteId " +
-                              "having count(*) > :siteMaxConcurrency" +
+                              "having count(*) >= :siteMaxConcurrency" +
                             ") " +
                             "order by queue_id, priority desc, id " +
                             "limit :limit"
@@ -421,7 +423,8 @@ public class DatabaseTaskQueueServer
         }
     }
 
-    private void expireLocks()
+    @VisibleForTesting
+    void expireLocks()
     {
         try {
             int c = autoCommit((handle, dao) -> {
