@@ -13,16 +13,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 
-import static utils.TestUtils.ATTEMPT_ID_PATTERN;
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.fakeHome;
-import static utils.TestUtils.getAttemptLogs;
-import static utils.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.ATTEMPT_ID_PATTERN;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.getAttemptLogs;
+import static utils.TestUtils.main;
 
 public class InitPushStartConfigIT
 {
@@ -52,9 +51,7 @@ public class InitPushStartConfigIT
             throws Exception
     {
         Path tempdir = folder.getRoot().toPath().toAbsolutePath();
-        Path homedir = folder.newFolder("home").toPath();
-        Path configDir = homedir.resolve(".config").resolve("digdag");
-        Files.createDirectories(configDir);
+        Path configDir = folder.getRoot().toPath().toAbsolutePath();
         Path configFile = configDir.resolve("config");
         Path projectDir = tempdir.resolve("echo_params");
         Path scriptsDir = projectDir.resolve("scripts");
@@ -72,47 +69,44 @@ public class InitPushStartConfigIT
         // Write a secret that we don't want the client to upload
         Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
 
-        fakeHome(homedir.toString(), () -> {
+        // Push the project
+        CommandStatus pushStatus = main("push",
+                "--project", projectDir.toString(),
+                "echo_params",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "-r", "4711");
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
-            // Push the project
-            CommandStatus pushStatus = main("push",
-                    "--project", projectDir.toString(),
-                    "echo_params",
+        // Start the workflow
+        long attemptId;
+        {
+            CommandStatus startStatus = main("start",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    "-r", "4711");
-            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+                    "echo_params", "echo_params",
+                    "--session", "now");
+            assertThat(startStatus.code(), is(0));
+            Matcher startAttemptIdMatcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
+            assertThat(startAttemptIdMatcher.find(), is(true));
+            attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+        }
 
-            // Start the workflow
-            long attemptId;
-            {
-                CommandStatus startStatus = main("start",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        "echo_params", "echo_params",
-                        "--session", "now");
-                assertThat(startStatus.code(), is(0));
-                Matcher startAttemptIdMatcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-                assertThat(startAttemptIdMatcher.find(), is(true));
-                attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
-            }
-
-            // Wait for the attempt to complete
-            {
-                RestSessionAttempt attempt = null;
-                for (int i = 0; i < 30; i++) {
-                    attempt = client.getSessionAttempt(attemptId);
-                    if (attempt.getDone()) {
-                        break;
-                    }
-                    Thread.sleep(1000);
+        // Wait for the attempt to complete
+        {
+            RestSessionAttempt attempt = null;
+            for (int i = 0; i < 30; i++) {
+                attempt = client.getSessionAttempt(attemptId);
+                if (attempt.getDone()) {
+                    break;
                 }
-                assertThat(attempt.getSuccess(), is(true));
+                Thread.sleep(1000);
             }
+            assertThat(attempt.getSuccess(), is(true));
+        }
 
-            String logs = getAttemptLogs(client, attemptId);
-            assertThat(logs, containsString("digdag params"));
-            assertThat(logs, not(containsString("secret")));
-        });
+        String logs = getAttemptLogs(client, attemptId);
+        assertThat(logs, containsString("digdag params"));
+        assertThat(logs, not(containsString("secret")));
     }
 }
