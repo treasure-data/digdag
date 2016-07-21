@@ -1,26 +1,19 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.io.IOException;
-import java.nio.file.Path;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import io.digdag.core.Limits;
-import io.digdag.core.workflow.TaskLimitExceededException;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorFactory;
-import io.digdag.util.BaseOperator;
-import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Limits;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import io.digdag.util.BaseOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+
 import static java.util.Locale.ENGLISH;
 
 public class LoopOperatorFactory
@@ -28,9 +21,13 @@ public class LoopOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(LoopOperatorFactory.class);
 
+    private final Limits limits;
+
     @Inject
-    public LoopOperatorFactory()
-    { }
+    public LoopOperatorFactory(Limits limits)
+    {
+        this.limits = limits;
+    }
 
     public String getType()
     {
@@ -43,7 +40,7 @@ public class LoopOperatorFactory
         return new LoopOperator(workspacePath, request);
     }
 
-    private static class LoopOperator
+    private class LoopOperator
             extends BaseOperator
     {
         public LoopOperator(Path workspacePath, TaskRequest request)
@@ -61,8 +58,8 @@ public class LoopOperatorFactory
             int count = params.get("count", int.class,
                     params.get("_command", int.class));
 
-            if (count > Limits.maxWorkflowTasks()) {
-                throw new ConfigException("Too many loop subtasks. Limit: " + Limits.maxWorkflowTasks());
+            if (count > limits.maxWorkflowTasks()) {
+                throw new ConfigException("Too many loop subtasks. Limit: " + limits.maxWorkflowTasks());
             }
 
             boolean parallel = params.get("_parallel", boolean.class, false);

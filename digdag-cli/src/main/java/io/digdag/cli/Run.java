@@ -25,6 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+
+import io.digdag.client.config.ConfigElement;
+import io.digdag.core.config.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -215,6 +218,7 @@ public class Run
         Properties systemProps = loadSystemProperties();
 
         Injector injector = new DigdagEmbed.Bootstrap()
+            .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
             .setSystemPlugins(loadSystemPlugins(systemProps))
             .addModules(binder -> {
                 binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);

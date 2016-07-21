@@ -47,12 +47,14 @@ public class TdForEachOperatorFactory
 
     private final TemplateEngine templateEngine;
     private final ConfigFactory configFactory;
+    private final Limits limits;
 
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, Config systemConfig)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, Limits limits)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
+        this.limits = limits;
     }
 
     public String getType()
@@ -215,8 +217,8 @@ public class TdForEachOperatorFactory
                 List<Config> rows = new ArrayList<>();
                 while (ite.hasNext()) {
                     rows.add(row(columnNames, ite.next().asArrayValue()));
-                    if (rows.size() > Limits.maxWorkflowTasks()) {
-                        throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                    if (rows.size() > limits.maxWorkflowTasks()) {
+                        throw new TaskLimitExceededException("Too many tasks. Limit: " + limits.maxWorkflowTasks());
                     }
                 }
                 return rows;

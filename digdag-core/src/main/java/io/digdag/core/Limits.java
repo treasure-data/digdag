@@ -1,13 +1,24 @@
 package io.digdag.core;
 
+import io.digdag.client.config.Config;
+
+import javax.inject.Inject;
+
 public class Limits
 {
-    private static final long MAX_WORKFLOW_TASKS = Long.valueOf(
-            System.getProperty("io.digdag.limits.maxWorkflowTasks", "1000"));
+    private static final long DEFAULT_MAX_WORKFLOW_TASKS = Long.valueOf(
+            System.getProperty("io.digdag.limits.defaultMaxWorkflowTasks", "1000"));
 
-    // TODO (dano): this should be configurable by config file etc and not just system property
+    private final long maxWorkflowTasks;
 
-    public static long maxWorkflowTasks() {
-        return MAX_WORKFLOW_TASKS;
+    @Inject
+    public Limits(Config systemConfig)
+    {
+        maxWorkflowTasks = systemConfig.get("limits.max-workflow-tasks", Long.class, DEFAULT_MAX_WORKFLOW_TASKS);
+    }
+
+    public long maxWorkflowTasks()
+    {
+        return maxWorkflowTasks;
     }
 }

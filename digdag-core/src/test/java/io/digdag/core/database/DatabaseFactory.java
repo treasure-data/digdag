@@ -3,6 +3,7 @@ package io.digdag.core.database;
 import com.google.common.base.Throwables;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.TaskQueueDispatcher;
@@ -62,7 +63,7 @@ public class DatabaseFactory
                 configFactory,
                 objectMapper(),
                 configFactory.create(),
-                mock(Notifier.class));
+                new Limits(configFactory.create()));
     }
 
     public static class NullTaskQueueDispatcher

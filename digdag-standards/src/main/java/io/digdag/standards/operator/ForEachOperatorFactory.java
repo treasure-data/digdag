@@ -27,10 +27,13 @@ public class ForEachOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(ForEachOperatorFactory.class);
+    private Limits limits;
 
     @Inject
-    public ForEachOperatorFactory()
-    { }
+    public ForEachOperatorFactory(Limits limits)
+    {
+        this.limits = limits;
+    }
 
     public String getType()
     {
@@ -43,7 +46,7 @@ public class ForEachOperatorFactory
         return new ForEachOperator(workspacePath, request);
     }
 
-    private static class ForEachOperator
+    private class ForEachOperator
             extends BaseOperator
     {
         public ForEachOperator(Path workspacePath, TaskRequest request)
@@ -90,7 +93,7 @@ public class ForEachOperatorFactory
                 .build();
         }
 
-        private static List<Config> buildCombinations(ConfigFactory cf, Map<String, List<JsonNode>> entries)
+        private List<Config> buildCombinations(ConfigFactory cf, Map<String, List<JsonNode>> entries)
         {
             List<Config> current = new ArrayList<>();
             for (Map.Entry<String, List<JsonNode>> pair : entries.entrySet()) {
@@ -112,18 +115,18 @@ public class ForEachOperatorFactory
             return current;
         }
 
-        private static void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
+        private void enforceTaskCountLimit(Map<String, List<JsonNode>> entries)
         {
             int count = 1;
             for (List<JsonNode> nodes : entries.values()) {
                 count *= nodes.size();
-                if (count > Limits.maxWorkflowTasks()) {
-                    throw new ConfigException("Too many for_each subtasks. Limit: " + Limits.maxWorkflowTasks());
+                if (count > limits.maxWorkflowTasks()) {
+                    throw new ConfigException("Too many for_each subtasks. Limit: " + limits.maxWorkflowTasks());
                 }
             }
         }
 
-        private static String buildTaskName(Config combination)
+        private String buildTaskName(Config combination)
         {
             StringBuilder sb = new StringBuilder();
             sb.append("+for-");
@@ -142,7 +145,7 @@ public class ForEachOperatorFactory
             return sb.toString();
         }
 
-        private static String encodeValue(Config map, String key)
+        private String encodeValue(Config map, String key)
         {
             JsonNode node = map.get(key, JsonNode.class);
             String raw;

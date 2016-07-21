@@ -1,6 +1,6 @@
 package acceptance;
 
-import org.junit.After;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static utils.TestUtils.copyResource;
@@ -22,18 +23,17 @@ public class LimitTaskCountIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    private Path configFile;
+    private Path projectDir;
+
     @Before
     public void setUp()
             throws Exception
     {
-        System.setProperty("io.digdag.limits.maxWorkflowTasks", "10");
-    }
+        configFile = folder.newFile().toPath().toAbsolutePath().normalize();
+        Files.write(configFile, ImmutableList.of("limits.max-workflow-tasks = 10"));
 
-    @After
-    public void tearDown()
-            throws Exception
-    {
-        System.getProperties().remove("io.digdag.limits.maxWorkflowTasks");
+        projectDir = folder.newFolder().toPath().toAbsolutePath();
     }
 
     @Test
@@ -68,23 +68,15 @@ public class LimitTaskCountIT
     private void verifyBombFails(String workflowFile, String needle)
             throws IOException
     {
-        Path projectDir = newProjectDir();
-
         copyResource("acceptance/limit_task_count/" + workflowFile, projectDir.resolve("bomb.dig"));
 
         CommandStatus runStatus = main("run",
-                "-c", "/dev/null",
+                "-c", configFile.toString(),
                 "-o", projectDir.toString(),
                 "--project", projectDir.toString(),
                 "bomb.dig");
 
         assertThat(runStatus.code(), is(not(0)));
         assertThat(runStatus.errUtf8(), runStatus.errUtf8(), containsString(needle));
-    }
-
-    private Path newProjectDir()
-            throws IOException
-    {
-        return folder.newFolder().toPath().toAbsolutePath();
     }
 }

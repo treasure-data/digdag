@@ -13,7 +13,6 @@ import io.digdag.core.Limits;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.StoredTask;
 import io.digdag.core.session.SessionStore;
-import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Task;
 import io.digdag.core.session.TaskControlStore;
@@ -52,29 +51,29 @@ public class TaskControl
 
     public static long addInitialTasksExceptingRootTask(
             TaskControlStore store, long attemptId, long rootTaskId,
-            WorkflowTaskList tasks, List<ResumingTask> resumingTasks)
+            WorkflowTaskList tasks, List<ResumingTask> resumingTasks, Limits limits)
     {
         long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
                 false, true, true,
-                resumingTasks);
+                resumingTasks, limits);
         addResumingTasks(store, attemptId, resumingTasks);
         return taskId;
     }
 
     public long addGeneratedSubtasks(WorkflowTaskList tasks,
-            List<Long> rootUpstreamIds, boolean cancelSiblings)
+            List<Long> rootUpstreamIds, boolean cancelSiblings, Limits limits)
     {
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
                 cancelSiblings, false, false,
-                collectResumingTasks(task.getAttemptId(), tasks));
+                collectResumingTasks(task.getAttemptId(), tasks), limits);
     }
 
     private static long addTasks(TaskControlStore store,
             long attemptId, long parentTaskId, WorkflowTaskList tasks, List<Long> rootUpstreamIds,
             boolean cancelSiblings, boolean firstTaskIsRootStoredParentTask, boolean isInitialTask,
-            List<ResumingTask> resumingTasks)
+            List<ResumingTask> resumingTasks, Limits limits)
     {
         List<Long> indexToId = new ArrayList<>();
 
@@ -94,8 +93,8 @@ public class TaskControl
         // Limit the total number of tasks in a session.
         // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
         long taskCount = store.getTaskCount(attemptId);
-        if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
-            throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
+        if (taskCount + tasks.size() > limits.maxWorkflowTasks()) {
+            throw new TaskLimitExceededException("Too many tasks. Limit: " + limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
         }
 
         boolean firstTask = true;

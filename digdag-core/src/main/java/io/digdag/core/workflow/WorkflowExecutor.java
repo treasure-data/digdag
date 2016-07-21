@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -149,7 +150,7 @@ public class WorkflowExecutor
     private final ConfigFactory cf;
     private final ObjectMapper archiveMapper;
     private final Config systemConfig;
-    private Notifier notifier;
+    private final Limits limits;
 
     private final Lock propagatorLock = new ReentrantLock();
     private final Condition propagatorCondition = propagatorLock.newCondition();
@@ -164,7 +165,7 @@ public class WorkflowExecutor
             ConfigFactory cf,
             ObjectMapper archiveMapper,
             Config systemConfig,
-            Notifier notifier)
+            Limits limits)
     {
         this.rm = rm;
         this.sm = sm;
@@ -173,7 +174,7 @@ public class WorkflowExecutor
         this.cf = cf;
         this.archiveMapper = archiveMapper;
         this.systemConfig = systemConfig;
-        this.notifier = notifier;
+        this.limits = limits;
     }
 
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
@@ -267,7 +268,7 @@ public class WorkflowExecutor
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
                         TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                                storedTaskId, tasks, resumingTasks);
+                                storedTaskId, tasks, resumingTasks, limits);
                         return null;
                     });
                     if (!ar.getSessionMonitors().isEmpty()) {
@@ -1078,7 +1079,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding sub tasks: {}", tasks);
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), true, limits);
         return Optional.of(rootTaskId);
     }
 
@@ -1107,7 +1108,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding error tasks: {}", tasks);
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false, limits);
         taskIds.add(rootTaskId);
         return taskIds;
     }
@@ -1118,7 +1119,7 @@ public class WorkflowExecutor
         config.set("_type", "notify");
         config.set("_command", "Workflow session attempt failed");
         WorkflowTaskList tasks = compiler.compileTasks(rootTask.get().getFullName(), "^failure-alert", config);
-        return rootTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        return rootTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false, limits);
     }
 
     private Optional<Long> addCheckTasksIfAny(TaskControl lockedTask, Optional<Long> upstreamTaskId)
@@ -1135,7 +1136,7 @@ public class WorkflowExecutor
 
         logger.trace("Adding check tasks: {}"+tasks);
         List<Long> upstreamTaskIdList = upstreamTaskId.transform(id -> ImmutableList.of(id)).or(ImmutableList.of());
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, upstreamTaskIdList, false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, upstreamTaskIdList, false, limits);
         return Optional.of(rootTaskId);
     }
 
@@ -1157,7 +1158,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding {} tasks: {}", type, tasks);
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false, limits);
         return Optional.of(rootTaskId);
     }
 
@@ -1181,7 +1182,7 @@ public class WorkflowExecutor
             WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^alert", config);
             logger.trace("Adding {} tasks: {}", type, tasks);
             // TODO: attempt should not fail if the alert notification task fails
-            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false, limits);
         }
 
         // Fail the attempt?
@@ -1199,7 +1200,7 @@ public class WorkflowExecutor
             config.set("_command", "SLA violation");
             WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^fail", config);
             logger.trace("Adding {} tasks: {}", type, tasks);
-            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false, limits);
         }
     }
 }

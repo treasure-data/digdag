@@ -5,6 +5,7 @@ import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 
 public class ConfigModule
         implements Module

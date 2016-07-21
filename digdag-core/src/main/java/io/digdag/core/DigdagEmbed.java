@@ -168,6 +168,7 @@ public class DigdagEmbed
                         binder.bind(ConfigElement.class).toInstance(systemConfig);
                         binder.bind(Config.class).toProvider(SystemConfigProvider.class);
                         binder.bind(TempFileManager.class).toProvider(TempFileManagerProvider.class).in(Scopes.SINGLETON);
+                        binder.bind(Limits.class).in(Scopes.SINGLETON);
                     }
                 ));
             if (withWorkflowExecutor) {
