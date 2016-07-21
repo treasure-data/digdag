@@ -1,5 +1,6 @@
-package acceptance;
+package acceptance.td;
 
+import utils.CommandStatus;
 import com.treasuredata.client.TDClient;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -34,8 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;

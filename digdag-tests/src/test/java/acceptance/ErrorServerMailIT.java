@@ -9,12 +9,15 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

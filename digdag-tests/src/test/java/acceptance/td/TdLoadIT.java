@@ -1,5 +1,6 @@
-package acceptance;
+package acceptance.td;
 
+import utils.CommandStatus;
 import com.treasuredata.client.TDClient;
 import org.junit.After;
 import org.junit.Before;
@@ -11,8 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;

@@ -3,12 +3,13 @@ package acceptance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;

@@ -1,5 +1,6 @@
-package acceptance;
+package acceptance.td;
 
+import utils.CommandStatus;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -8,8 +9,8 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;

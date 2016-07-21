@@ -9,15 +9,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
 
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.getSessionId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.getSessionId;
+import static utils.TestUtils.main;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;

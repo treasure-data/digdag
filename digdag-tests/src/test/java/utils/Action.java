@@ -1,6 +1,6 @@
-package acceptance;
+package utils;
 
-interface Action
+public interface Action
 {
     public void run()
             throws Exception;

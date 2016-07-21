@@ -5,6 +5,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.junit.Rule;
 import org.junit.Test;
+import utils.TemporaryDigdagServer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
