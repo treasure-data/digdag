@@ -2,6 +2,7 @@ package io.digdag.standards.operator.td;
 
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.util.DurationParam;
 
 import java.time.Duration;
 
