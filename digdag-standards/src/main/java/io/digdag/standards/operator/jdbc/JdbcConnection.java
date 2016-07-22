@@ -1,6 +1,5 @@
 package io.digdag.standards.operator.jdbc;
 
-import java.sql.SQLException;
 import java.util.function.Consumer;
 
 public interface JdbcConnection
@@ -10,19 +9,16 @@ public interface JdbcConnection
 
     String buildInsertStatement(String selectSql, TableReference targetTable);
 
-    void validateStatement(String sql) throws SQLException;
+    Exception validateStatement(String sql);
 
-    void executeUpdate(String sql) throws SQLException;
+    void executeScript(String sql);
 
-    void executeScript(String sql) throws SQLException;
+    void executeUpdate(String sql);
 
-    void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler) throws SQLException;
+    void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler)
+        throws NotReadOnlyException;
 
-    void beginTransaction(String sql) throws SQLException;
-
-    void commitTransaction(String sql) throws SQLException;
-
-    void dropTableIfExists(TableReference ref) throws SQLException;
+    TransactionHelper getStrictTransactionHelper(String statusTableName);
 
     default String escapeTableReference(TableReference ref)
     {
@@ -36,5 +32,5 @@ public interface JdbcConnection
 
     String escapeIdent(String ident);
 
-    void close() throws SQLException;
+    void close();
 }
