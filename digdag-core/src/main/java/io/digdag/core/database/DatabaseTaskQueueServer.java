@@ -81,6 +81,7 @@ public class DatabaseTaskQueueServer
                 localTaskNoticeHelper.wait(maxSleepMillis);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 return;
             }
         }
@@ -290,7 +291,6 @@ public class DatabaseTaskQueueServer
     @Override
     public List<TaskRequest> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
     {
-        int i = 0;
         for (int siteId : autoCommit((handle, dao) -> dao.getActiveSiteIdList())) {
             List<Long> taskLockIds = tryLockSharedAgentTasks(siteId, count, agentId, lockSeconds);
             if (!taskLockIds.isEmpty()) {
@@ -308,7 +308,6 @@ public class DatabaseTaskQueueServer
                 }
                 return builder.build();
             }
-            i++;
         }
 
         // no tasks are ready to lock. sleep.
@@ -329,6 +328,7 @@ public class DatabaseTaskQueueServer
             }
         }
         catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             return ImmutableList.of();
         }
 
