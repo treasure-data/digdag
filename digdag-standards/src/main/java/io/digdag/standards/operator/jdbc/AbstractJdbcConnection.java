@@ -17,15 +17,21 @@ import static java.util.Locale.ENGLISH;
 public abstract class AbstractJdbcConnection
     implements JdbcConnection
 {
+    private static final Logger logger = LoggerFactory.getLogger(JdbcConnection.class);
+
     protected final Connection connection;
 
     private String quoteString;
 
     public AbstractJdbcConnection(Connection connection)
-        throws SQLException
     {
         this.connection = connection;
-        connection.setAutoCommit(true);
+        try {
+            connection.setAutoCommit(true);
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to set auto-commit mode to the connection", ex);
+        }
     }
 
     @Override
@@ -47,27 +53,41 @@ public abstract class AbstractJdbcConnection
     }
 
     @Override
-    public void validateStatement(String sql)
-        throws SQLException
+    public SQLException validateStatement(String sql)
     {
         // if JDBC or DBMS does not use server-side prepared statements by default,
         // subclass needs to override this method.
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        try {
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.getMetaData();
+            }
+            return null;
+        }
+        catch (SQLException ex) {
+            if (ex.getSQLState().startsWith("42")) {
+                // SQL error class 42
+                return ex;
+            }
+            throw new DatabaseException("Failed to validate statement", ex);
         }
     }
 
     @Override
     public void executeScript(String sql)
-        throws SQLException
     {
-        try (Statement stmt = connection.createStatement()) {
-            boolean hasResults = stmt.execute(sql);
-            while (hasResults) {
-                ResultSet rs = stmt.getResultSet();
-                skipResultSet(rs);
-                rs.close();
-                hasResults = stmt.getMoreResults();
+        try {
+            try (Statement stmt = connection.createStatement()) {
+                boolean hasResults = stmt.execute(sql);
+                while (hasResults) {
+                    ResultSet rs = stmt.getResultSet();
+                    skipResultSet(rs);
+                    rs.close();
+                    hasResults = stmt.getMoreResults();
+                }
             }
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to execute given SQL script", ex);
         }
     }
 
@@ -80,32 +100,21 @@ public abstract class AbstractJdbcConnection
 
     @Override
     public void executeUpdate(String sql)
+    {
+        try {
+            execute(sql);
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to execute an update statement", ex);
+        }
+    }
+
+    protected void execute(String sql)
         throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(sql);
         }
-    }
-
-    @Override
-    public void beginTransaction(String sql)
-        throws SQLException
-    {
-        executeUpdate("begin");
-    }
-
-    @Override
-    public void commitTransaction(String sql)
-        throws SQLException
-    {
-        executeUpdate("commit");
-    }
-
-    @Override
-    public void dropTableIfExists(TableReference ref)
-        throws SQLException
-    {
-        executeUpdate("DROP TABLE IF EXISTS " + escapeTableReference(ref));
     }
 
     @Override
@@ -117,7 +126,7 @@ public abstract class AbstractJdbcConnection
                 quoteString = meta.getIdentifierQuoteString();
             }
             catch (SQLException ex) {
-                throw new RuntimeException("Failed to retrieve database metadata to quote an identifier name", ex);
+                throw new DatabaseException("Failed to retrieve database metadata to quote an identifier name", ex);
             }
         }
         return quoteString + ident.replaceAll(Pattern.quote(quoteString), quoteString + quoteString) + quoteString;
@@ -125,8 +134,12 @@ public abstract class AbstractJdbcConnection
 
     @Override
     public void close()
-        throws SQLException
     {
-        connection.close();
+        try {
+            connection.close();
+        }
+        catch (SQLException ex) {
+            logger.warn("Failed to close a database connection. Ignoring.", ex);
+        }
     }
 }

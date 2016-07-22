@@ -31,7 +31,7 @@ public abstract class AbstractJdbcResultSet
             this.columnNames = names.build();
         }
         catch (SQLException ex) {
-            throw new RuntimeException("Failed to fetch result metadata", ex);
+            throw new DatabaseException("Failed to fetch result metadata", ex);
         }
     }
 
@@ -52,7 +52,7 @@ public abstract class AbstractJdbcResultSet
             return Arrays.asList(results);
         }
         catch (SQLException ex) {
-            throw new RuntimeException("Failed to fetch next rows", ex);
+            throw new DatabaseException("Failed to fetch next rows", ex);
         }
     }
 

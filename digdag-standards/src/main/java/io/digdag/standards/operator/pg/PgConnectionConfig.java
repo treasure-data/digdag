@@ -62,7 +62,10 @@ public abstract class PgConnectionConfig
         props.setProperty("connectTimeout", String.valueOf(connectTimeout().getDuration().getSeconds()));
         props.setProperty("socketTimeout", String.valueOf(socketTimeout().getDuration().getSeconds()));
         props.setProperty("tcpKeepAlive", "true");
-        props.setProperty("ssl", String.valueOf(ssl()));
+        if (ssl()) {
+            props.setProperty("ssl", "true");
+            props.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
+        }
         props.setProperty("applicationName", "digdag");
 
         return props;

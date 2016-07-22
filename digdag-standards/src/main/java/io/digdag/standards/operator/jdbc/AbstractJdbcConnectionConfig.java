@@ -36,7 +36,6 @@ public abstract class AbstractJdbcConnectionConfig
     public abstract Properties buildProperties();
 
     public Connection openConnection()
-        throws SQLException
     {
         try {
             Class.forName(jdbcDriverName());
@@ -45,7 +44,12 @@ public abstract class AbstractJdbcConnectionConfig
             Throwables.propagate(e);
         }
 
-        String url = String.format(ENGLISH, "jdbc:%s://%s:%d/%s", jdbcProtocolName(), host(), port(), database());
-        return DriverManager.getConnection(url, buildProperties());
+        try {
+            String url = String.format(ENGLISH, "jdbc:%s://%s:%d/%s", jdbcProtocolName(), host(), port(), database());
+            return DriverManager.getConnection(url, buildProperties());
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to connect to the database", ex);
+        }
     }
 }
