@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
 import java.util.UUID;
-import com.google.common.base.Optional;
 
 public abstract class AbstractPersistentTransactionHelper
     implements TransactionHelper
@@ -14,7 +13,7 @@ public abstract class AbstractPersistentTransactionHelper
     }
 
     @Override
-    public <T> Optional<T> lockedTransaction(UUID queryId, TransactionAction<T> action)
+    public boolean lockedTransaction(UUID queryId, TransactionAction action)
     {
         boolean completed = beginTransactionAndLockStatusRow(queryId);
 
@@ -23,13 +22,13 @@ public abstract class AbstractPersistentTransactionHelper
         if (completed) {
             // query was completed successfully before. skip the action.
             abortTransaction();
-            return Optional.absent();
+            return false;
         }
         else {
             // query is not completed. run the action.
-            T result = action.run();
+            action.run();
             updateStatusRowAndCommit(queryId);
-            return Optional.of(result);
+            return true;
         }
     }
 
