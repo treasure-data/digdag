@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import com.google.common.base.Throwables;
-import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.util.DurationParam;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;

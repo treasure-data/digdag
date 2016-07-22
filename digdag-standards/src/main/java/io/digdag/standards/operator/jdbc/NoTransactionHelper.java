@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
 import java.util.UUID;
-import com.google.common.base.Optional;
 
 public class NoTransactionHelper
     implements TransactionHelper
@@ -15,8 +14,9 @@ public class NoTransactionHelper
     { }
 
     @Override
-    public <T> Optional<T> lockedTransaction(UUID queryId, TransactionAction<T> action)
+    public boolean lockedTransaction(UUID queryId, TransactionAction action)
     {
-        return Optional.of(action.run());
+        action.run();
+        return true;
     }
 }
