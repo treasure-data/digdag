@@ -1,74 +1,40 @@
 package io.digdag.standards.operator.jdbc;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.function.Consumer;
 
-import com.google.common.base.Throwables;
-import org.slf4j.Logger;
-
-import org.slf4j.LoggerFactory;
-
-public abstract class JdbcConnection
-        implements AutoCloseable
+public interface JdbcConnection
+    extends AutoCloseable
 {
-    protected static final Logger logger = LoggerFactory.getLogger(JdbcConnection.class);
+    String buildCreateTableStatement(String selectSql, TableReference targetTable);
 
-    protected final JdbcConnectionConfig config;
-    protected final Connection connection;
-    protected final DatabaseMetaData databaseMetaData;
-    protected String identifierQuoteString;
+    String buildInsertStatement(String selectSql, TableReference targetTable);
 
-    protected abstract String getDriverClassName();
+    void validateStatement(String sql) throws SQLException;
 
-    protected abstract String getProtocolName();
+    void executeUpdate(String sql) throws SQLException;
 
-    public JdbcConnection(JdbcConnectionConfig config)
-            throws SQLException
+    void executeScript(String sql) throws SQLException;
+
+    void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler) throws SQLException;
+
+    void beginTransaction(String sql) throws SQLException;
+
+    void commitTransaction(String sql) throws SQLException;
+
+    void dropTableIfExists(TableReference ref) throws SQLException;
+
+    default String escapeTableReference(TableReference ref)
     {
-        this.config = config;
-
-        String url = String.format(Locale.ENGLISH, "jdbc:%s://%s:%d/%s", getProtocolName(), config.host(), config.port(), config.database());
-        try {
-            Class.forName(getDriverClassName());
+        if (ref.getSchema().isPresent()) {
+            return escapeIdent(ref.getSchema().get()) + "." + escapeIdent(ref.getName());
         }
-        catch (ClassNotFoundException e) {
-            Throwables.propagate(e);
+        else {
+            return escapeIdent(ref.getName());
         }
-
-        Properties props = new Properties();
-        props.setProperty("user", config.user());
-        if (config.password().isPresent()) {
-            props.setProperty("password", config.password().get());
-        }
-        if (config.schema().isPresent()) {
-            props.setProperty("currentSchema", config.schema().get());
-        }
-        props.setProperty("loginTimeout", String.valueOf(config.loginTimeout().or(30)));
-        props.setProperty("connectTimeout", String.valueOf(config.loginTimeout().or(30)));
-        props.setProperty("socketTimeout", String.valueOf(config.loginTimeout().or(1800)));
-        props.setProperty("tcpKeepAlive", "true");
-        props.setProperty("ssl", String.valueOf(config.ssl()));
-        props.setProperty("applicationName", "digdag");
-
-        this.connection = DriverManager.getConnection(url, props);
-        this.databaseMetaData = connection.getMetaData();
-        this.identifierQuoteString = databaseMetaData.getIdentifierQuoteString();
-        connection.setAutoCommit(true);
     }
 
-    public Connection getConnection()
-    {
-        return connection;
-    }
+    String escapeIdent(String ident);
 
-    @Override
-    public void close() throws SQLException
-    {
-        logger.info("Closing connection");
-        connection.close();
-    }
+    void close() throws SQLException;
 }

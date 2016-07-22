@@ -1,9 +1,7 @@
-package io.digdag.standards.operator.td;
+package io.digdag.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.digdag.util.Durations;
-
 import java.time.Duration;
 
 public class DurationParam
@@ -30,7 +28,7 @@ public class DurationParam
     @JsonValue
     public String toString()
     {
-        return duration.toString();
+        return Durations.formatDuration(duration);
     }
 
     public static DurationParam of(Duration duration)
