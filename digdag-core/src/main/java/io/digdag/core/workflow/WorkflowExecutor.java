@@ -32,6 +32,8 @@ import io.digdag.core.session.TaskStateSummary;
 import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.spi.TaskConflictException;
+import io.digdag.spi.TaskNotFoundException;
 import io.digdag.util.RetryControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -867,7 +869,22 @@ public class WorkflowExecutor
                 }
 
                 logger.debug("Queuing task: "+request);
-                dispatcher.dispatch(request);
+                try {
+                    dispatcher.dispatch(request);
+                }
+                catch (TaskConflictException ex) {
+                    // TODO this code has a problem:
+                    //   1. When a thread "A" runs WorkflowExecutor.retryTask with a small retryInterval,
+                    //      another thread "B" may retry the task before "A" deletes the task from the queue
+                    //      at dispatcher.taskFinished call. If this happens, "B" will get TaskConflictException
+                    //      here at dispatcher.dispatch. In this case, dispatcher.dispatch should be retried.
+                    //   2. On the other hand, if dispatcher.dispatch throws exception but actually the task
+                    //      was enqueued to the task, dispatcher.dispatch throws TaskConflictException.
+                    //      In this case, the exception should be ignored so that task won't be enqueued twice.
+                    //   For now, here throws RuntimeException so that dispatch.dispatch is always retried because
+                    //   2. less likely happens, maybe.
+                    throw new RuntimeException(ex);
+                }
 
                 ////
                 // don't throw exceptions after here. task is already dispatched to a queue
@@ -913,7 +930,15 @@ public class WorkflowExecutor
             taskFailed(new TaskControl(store, task), error)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.debug("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }
@@ -926,7 +951,15 @@ public class WorkflowExecutor
                     result)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.debug("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }
@@ -941,7 +974,15 @@ public class WorkflowExecutor
                 error)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.debug("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }

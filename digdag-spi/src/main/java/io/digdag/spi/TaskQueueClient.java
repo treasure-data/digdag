@@ -9,6 +9,5 @@ public interface TaskQueueClient
     // TODO multi-queue is not implemented yet.
     //   List<TaskRequest> lockAgentBoundTasks(int queueId)
 
-    void taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
-        throws TaskStateException;
+    List<String> taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds);
 }

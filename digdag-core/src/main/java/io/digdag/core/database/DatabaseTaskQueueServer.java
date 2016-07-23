@@ -32,7 +32,8 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskQueueServer;
-import io.digdag.spi.TaskStateException;
+import io.digdag.spi.TaskConflictException;
+import io.digdag.spi.TaskNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import com.google.common.annotations.VisibleForTesting;
@@ -118,7 +119,7 @@ public class DatabaseTaskQueueServer
 
     @Override
     public void enqueueDefaultQueueTask(TaskRequest request)
-        throws TaskStateException
+        throws TaskConflictException
     {
         try {
             enqueue(request.getSiteId(), null,
@@ -126,13 +127,13 @@ public class DatabaseTaskQueueServer
                     encodeTaskObject(request));
         }
         catch (ResourceConflictException ex) {
-            throw new TaskStateException(ex);
+            throw new TaskConflictException(ex);
         }
     }
 
     @Override
     public void enqueueQueueBoundTask(int queueId, TaskRequest request)
-        throws TaskStateException
+        throws TaskConflictException
     {
         try {
             Integer sharedAgentSiteId = autoCommit((handle, dao) -> dao.getSharedSiteId(queueId));
@@ -141,7 +142,7 @@ public class DatabaseTaskQueueServer
                     encodeTaskObject(request));
         }
         catch (ResourceConflictException ex) {
-            throw new TaskStateException(ex);
+            throw new TaskConflictException(ex);
         }
     }
 
@@ -216,40 +217,35 @@ public class DatabaseTaskQueueServer
 
     @Override
     public void deleteTask(int siteId, String lockId, String agentId)
-        throws TaskStateException
+        throws TaskNotFoundException, TaskConflictException
     {
         long taskLockId = parseTaskLockId(lockId);
-        try {
-            deleteTask0(siteId, taskLockId, agentId);
-        }
-        catch (ResourceNotFoundException | ResourceConflictException ex) {
-            throw new TaskStateException(ex);
-        }
+        deleteTask0(siteId, taskLockId, agentId);
     }
 
     private void deleteTask0(int siteId, long taskLockId, String agentId)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws TaskNotFoundException, TaskConflictException
     {
-        this.<Boolean, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao, ts) -> {
+        this.<Boolean, TaskNotFoundException, TaskConflictException>transaction((handle, dao, ts) -> {
             int count;
 
             count = dao.deleteQueuedTask(siteId, taskLockId);
             if (count == 0) {
-                throw new ResourceNotFoundException("Deleting lock does not exist: lock id=" + taskLockId + " site id=" + siteId);
+                throw new TaskNotFoundException("Deleting lock does not exist: lock id=" + taskLockId + " site id=" + siteId);
             }
 
             count = dao.deleteQueuedTaskLock(taskLockId, agentId);
             if (count == 0) {
-                throw new ResourceConflictException("Deleting lock does not exist or preempted by another agent: lock id=" + taskLockId + " agent id=" + agentId);
+                throw new TaskConflictException("Deleting lock does not exist or preempted by another agent: lock id=" + taskLockId + " agent id=" + agentId);
             }
 
             return true;
-        }, ResourceNotFoundException.class, ResourceConflictException.class);
+        }, TaskNotFoundException.class, TaskConflictException.class);
     }
 
-    public void taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
-        throws TaskStateException
+    public List<String> taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
     {
+        ImmutableList.Builder<String> notFoundList = ImmutableList.builder();
         for (String formatted : lockedIds) {
             boolean success;
             if (isSharedTaskLockId(formatted)) {
@@ -258,8 +254,11 @@ public class DatabaseTaskQueueServer
             else {
                 success = taskHeartbeat0(siteId, parseQueueId(formatted), parseTaskLockId(formatted), agentId, lockSeconds);
             }
-            // TODO return TaskStateException if not success
+            if (!success) {
+                notFoundList.add(formatted);
+            }
         }
+        return notFoundList.build();
     }
 
     private boolean taskHeartbeat0(int siteId, Integer queueId, long taskLockId, String agentId, int lockSeconds)

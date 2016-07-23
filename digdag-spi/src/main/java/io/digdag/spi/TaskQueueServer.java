@@ -12,11 +12,11 @@ public interface TaskQueueServer
     //   void deleteQueueIfExists(int queueId);
 
     void enqueueDefaultQueueTask(TaskRequest request)
-        throws TaskStateException;
+        throws TaskConflictException;
 
     void enqueueQueueBoundTask(int queueId, TaskRequest request)
-        throws TaskStateException;
+        throws TaskConflictException;
 
     void deleteTask(int siteId, String lockId, String agentId)
-        throws TaskStateException;
+        throws TaskNotFoundException, TaskConflictException;
 }

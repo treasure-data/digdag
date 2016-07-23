@@ -9,7 +9,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.ImmutableTaskRequest;
-import io.digdag.spi.TaskStateException;
+import io.digdag.spi.TaskConflictException;
+import io.digdag.spi.TaskNotFoundException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import com.google.common.base.Optional;
 import org.junit.Rule;
@@ -58,6 +59,7 @@ public class DatabaseQueueTest
 
     @Test
     public void siteConcurrencyLimit()
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
         TaskRequest req2 = generateTaskRequest("+t2");
@@ -91,6 +93,7 @@ public class DatabaseQueueTest
 
     @Test
     public void batchPollOrder()
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
         TaskRequest req2 = generateTaskRequest("+t2");
@@ -118,6 +121,7 @@ public class DatabaseQueueTest
 
     @Test
     public void enqueueRejectedIfDuplicatedTaskId()
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
         TaskRequest req2 = generateTaskRequest("+t2");
@@ -128,12 +132,13 @@ public class DatabaseQueueTest
 
         taskQueue.enqueueDefaultQueueTask(req1);
 
-        exception.expect(TaskStateException.class);
+        exception.expect(TaskConflictException.class);
         taskQueue.enqueueDefaultQueueTask(req1Dup);
     }
 
     @Test
     public void deleteRejectedIfAgentIdMismatch()
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
 
@@ -141,12 +146,13 @@ public class DatabaseQueueTest
 
         List<TaskRequest> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskStateException.class);
+        exception.expect(TaskConflictException.class);
         taskQueue.deleteTask(0, poll1.get(0).getLockId(), "different-agent");
     }
 
     @Test
     public void deleteRejectedIfSiteIdMismatch()
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
 
@@ -154,13 +160,13 @@ public class DatabaseQueueTest
 
         List<TaskRequest> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskStateException.class);
+        exception.expect(TaskNotFoundException.class);
         taskQueue.deleteTask(19832, poll1.get(0).getLockId(), "agent1");
     }
 
     @Test
     public void expireLockAndRetry()
-        throws InterruptedException
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
         TaskRequest req2 = generateTaskRequest("+t2");
@@ -182,7 +188,7 @@ public class DatabaseQueueTest
 
     @Test
     public void heartbeatPreventsExpireLock()
-        throws InterruptedException
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
         TaskRequest req2 = generateTaskRequest("+t2");
@@ -206,10 +212,9 @@ public class DatabaseQueueTest
         assertThat(poll2.get(0).getTaskName(), is("+t2"));
     }
 
-    /* TODO taskHeartbeat should notice failure of partial heartbeat failure but it doesn't
     @Test
     public void heartbeatRejectedIfAgentIdMismatch()
-        throws InterruptedException
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
 
@@ -217,13 +222,13 @@ public class DatabaseQueueTest
 
         List<TaskRequest> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskStateException.class);
-        taskQueue.taskHeartbeat(0, Arrays.asList(poll1.get(0).getLockId()), "different-agent", 3);
+        List<String> failedLockIdList = taskQueue.taskHeartbeat(0, Arrays.asList(poll1.get(0).getLockId()), "different-agent", 3);
+        assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
     }
 
     @Test
     public void heartbeatRejectedIfSiteIdMismatch()
-        throws InterruptedException
+        throws Exception
     {
         TaskRequest req1 = generateTaskRequest("+t1");
 
@@ -231,10 +236,9 @@ public class DatabaseQueueTest
 
         List<TaskRequest> poll1 = taskQueue.lockSharedAgentTasks(1, "agent1", 300, 10);
 
-        exception.expect(TaskStateException.class);
-        taskQueue.taskHeartbeat(19832, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
+        List<String> failedLockIdList = taskQueue.taskHeartbeat(19832, Arrays.asList(poll1.get(0).getLockId()), "agent1", 3);
+        assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
     }
-    */
 
     private TaskRequest generateTaskRequest(String name)
     {

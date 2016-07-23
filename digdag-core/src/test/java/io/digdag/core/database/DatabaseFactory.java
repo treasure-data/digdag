@@ -76,7 +76,6 @@ public class DatabaseFactory
     {
         @Override
         public void dispatch(TaskRequest request)
-            throws ResourceConflictException
         { }
 
         @Override
