@@ -122,7 +122,7 @@ public class PgConnection
                         );
                 if (rs.next()) {
                     // status row exists and locked. get status of it.
-                    Timestamp completedAt = rs.getTimestamp(1);
+                    rs.getTimestamp(1);
                     if (rs.wasNull()) {
                         return StatusRow.LOCKED_NOT_COMPLETED;
                     }
