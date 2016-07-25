@@ -980,7 +980,7 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
-                logger.debug("Ignoring missing task entry error", ex);
+                logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
                 logger.warn("Ignoring preempted task entry error", ex);
@@ -1001,7 +1001,7 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
-                logger.debug("Ignoring missing task entry error", ex);
+                logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
                 logger.warn("Ignoring preempted task entry error", ex);
@@ -1024,7 +1024,7 @@ public class WorkflowExecutor
                 dispatcher.taskFinished(siteId, lockId, agentId);
             }
             catch (TaskNotFoundException ex) {
-                logger.debug("Ignoring missing task entry error", ex);
+                logger.warn("Ignoring missing task entry error", ex);
             }
             catch (TaskConflictException ex) {
                 logger.warn("Ignoring preempted task entry error", ex);

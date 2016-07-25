@@ -433,7 +433,7 @@ public class DatabaseTaskQueueServer
             }
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. Lock expireation thread will be retried.", t);
+            logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
         }
     }
 
