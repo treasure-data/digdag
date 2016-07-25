@@ -64,7 +64,11 @@ public class PgConnection
             return buf.toString();
         }
         catch (SQLException e) {
-            throw new IllegalArgumentException("Invalid identifier name (contains \\0 character): " + ident);
+            throw new IllegalArgumentException(
+                    String.format(ENGLISH,
+                        "Invalid identifier name (%s): %s",
+                        ex.getMessage(),
+                        ident);
         }
     }
 
