@@ -1,15 +1,18 @@
 package io.digdag.standards.operator.jdbc;
 
+import java.time.Duration;
 import java.util.UUID;
 
 public abstract class AbstractPersistentTransactionHelper
     implements TransactionHelper
 {
     protected final String statusTableName;
+    protected final Duration cleanupDuration;
 
-    public AbstractPersistentTransactionHelper(String statusTableName)
+    public AbstractPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
     {
         this.statusTableName = statusTableName;
+        this.cleanupDuration = cleanupDuration;
     }
 
     @Override

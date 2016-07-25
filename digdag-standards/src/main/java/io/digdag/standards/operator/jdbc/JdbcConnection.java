@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
+import java.time.Duration;
 import java.util.function.Consumer;
 
 public interface JdbcConnection
@@ -18,7 +19,7 @@ public interface JdbcConnection
     void executeReadOnlyQuery(String sql, Consumer<JdbcResultSet> resultHandler)
         throws NotReadOnlyException;
 
-    TransactionHelper getStrictTransactionHelper(String statusTableName);
+    TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration);
 
     default String escapeTableReference(TableReference ref)
     {
