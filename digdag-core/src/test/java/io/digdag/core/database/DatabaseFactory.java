@@ -9,7 +9,7 @@ import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.spi.Notifier;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskQueueRequest;
 import org.skife.jdbi.v2.DBI;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -75,12 +75,18 @@ public class DatabaseFactory
             implements TaskQueueDispatcher
     {
         @Override
-        public void dispatch(TaskRequest request)
+        public void dispatch(int siteId, TaskQueueRequest request)
         { }
 
         @Override
         public void taskFinished(int siteId, String lockId, AgentId agentId)
         { }
+
+        @Override
+        public boolean deleteInconsistentTask(String lockId)
+        {
+            return false;
+        }
     }
 
     public void close()

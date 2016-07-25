@@ -11,7 +11,7 @@ public class LocalAgentManager
 {
     private final AgentConfig config;
     private final AgentId agentId;
-    private final TaskQueueClient queueClient;
+    private final TaskServerApi taskServer;
     private final OperatorManager operatorManager;
     private final ExecutorService executor;
 
@@ -19,12 +19,12 @@ public class LocalAgentManager
     public LocalAgentManager(
             AgentConfig config,
             AgentId agentId,
-            TaskQueueServerManager queueManager,
+            TaskServerApi taskServer,
             OperatorManager operatorManager)
     {
         this.config = config;
         this.agentId = agentId;
-        this.queueClient = queueManager.getInProcessTaskQueueClient();
+        this.taskServer = taskServer;
         this.operatorManager = operatorManager;
         if (config.getEnabled()) {
             this.executor = Executors.newCachedThreadPool(
@@ -47,7 +47,7 @@ public class LocalAgentManager
                     new LocalAgent(
                         config,
                         agentId,
-                        queueClient,
+                        taskServer,
                         operatorManager
                     )
                 );

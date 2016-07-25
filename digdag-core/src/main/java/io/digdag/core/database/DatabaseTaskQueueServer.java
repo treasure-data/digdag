@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Nullable;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -30,7 +31,9 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.ImmutableTaskQueueLock;
+import io.digdag.spi.TaskQueueRequest;
+import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskQueueServer;
 import io.digdag.spi.TaskConflictException;
 import io.digdag.spi.TaskNotFoundException;
@@ -54,6 +57,9 @@ public class DatabaseTaskQueueServer
     public DatabaseTaskQueueServer(DBI dbi, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
     {
         super(config.getType(), Dao.class, dbi);
+
+        dbi.registerMapper(new ImmutableTaskQueueLockMapper());
+
         this.queueConfig = queueConfig;
         this.taskObjectMapper = taskObjectMapper;
         this.expireLockInterval = config.getExpireLockInterval();
@@ -118,13 +124,12 @@ public class DatabaseTaskQueueServer
     }
 
     @Override
-    public void enqueueDefaultQueueTask(TaskRequest request)
+    public void enqueueDefaultQueueTask(int siteId, TaskQueueRequest request)
         throws TaskConflictException
     {
         try {
-            enqueue(request.getSiteId(), null,
-                    request.getPriority(), request.getTaskId(),
-                    encodeTaskObject(request));
+            enqueue(siteId, null, request.getPriority(),
+                    request.getUniqueTaskId().orNull(), request.getData().orNull());
         }
         catch (ResourceConflictException ex) {
             throw new TaskConflictException(ex);
@@ -132,23 +137,26 @@ public class DatabaseTaskQueueServer
     }
 
     @Override
-    public void enqueueQueueBoundTask(int queueId, TaskRequest request)
+    public void enqueueQueueBoundTask(int queueId, TaskQueueRequest request)
         throws TaskConflictException
     {
         try {
+            // sharedAgentSiteId may be null if tasks in this queue should not be executed on shared agents.
+            // TODO it should be considered to throw TaskNotFoundException
+            //      if queueId doesn't exist when multi-queue is implemented
             Integer sharedAgentSiteId = autoCommit((handle, dao) -> dao.getSharedSiteId(queueId));
-            enqueue(sharedAgentSiteId, queueId,
-                    request.getPriority(), request.getTaskId(),
-                    encodeTaskObject(request));
+            enqueue(sharedAgentSiteId, queueId, request.getPriority(),
+                    request.getUniqueTaskId().orNull(), request.getData().orNull());
         }
         catch (ResourceConflictException ex) {
             throw new TaskConflictException(ex);
         }
     }
 
-    private long enqueue(Integer siteId, Integer queueId,
-            int priority, Long uniqueTaskId,
-            byte[] data)
+    private long enqueue(
+            @Nullable Integer siteId, @Nullable Integer queueId,
+            int priority, @Nullable Long uniqueTaskId,
+            @Nullable byte[] data)
         throws ResourceConflictException
     {
         long id = transaction((handle, dao, ts) -> {
@@ -162,28 +170,6 @@ public class DatabaseTaskQueueServer
         noticeEnqueue();
 
         return id;
-    }
-
-    private byte[] encodeTaskObject(TaskRequest request)
-    {
-        try {
-            return taskObjectMapper.writeValueAsBytes(request);
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
-        }
-    }
-
-    private TaskRequest decodeLockedTaskObject(byte[] data, String lockId)
-    {
-        try {
-            return TaskRequest.withLockId(
-                taskObjectMapper.readValue(data, TaskRequest.class),
-                lockId);
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
-        }
     }
 
     private static String formatSharedTaskLockId(long taskLockId)
@@ -243,6 +229,22 @@ public class DatabaseTaskQueueServer
         }, TaskNotFoundException.class, TaskConflictException.class);
     }
 
+    @Override
+    public boolean forceDeleteTask(String lockId)
+    {
+        long taskLockId = parseTaskLockId(lockId);
+        return forceDeleteTask0(taskLockId);
+    }
+
+    private boolean forceDeleteTask0(long taskLockId)
+    {
+        return this.transaction((handle, dao, ts) -> {
+            int taskCount = dao.forceDeleteQueuedTask(taskLockId);
+            int lockCount = dao.forceDeleteQueuedTaskLock(taskLockId);
+            return taskCount > 0 || lockCount > 0;
+        });
+    }
+
     public List<String> taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
     {
         ImmutableList.Builder<String> notFoundList = ImmutableList.builder();
@@ -288,21 +290,21 @@ public class DatabaseTaskQueueServer
     }
 
     @Override
-    public List<TaskRequest> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
+    public List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis)
     {
         for (int siteId : autoCommit((handle, dao) -> dao.getActiveSiteIdList())) {
             List<Long> taskLockIds = tryLockSharedAgentTasks(siteId, count, agentId, lockSeconds);
             if (!taskLockIds.isEmpty()) {
-                ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
+                ImmutableList.Builder<TaskQueueLock> builder = ImmutableList.builder();
                 for (long taskLockId : taskLockIds) {
-                    byte[] data = autoCommit((handle, dao) -> dao.getTaskData(taskLockId));
+                    ImmutableTaskQueueLock data = autoCommit((handle, dao) -> dao.getTaskData(taskLockId));
                     if (data == null) {
                         // queued_task is deleted after tryLockSharedAgentTasks call.
                         // it is possible just because there are 2 different transactions.
                     }
                     else {
                         String lockId = formatSharedTaskLockId(taskLockId);
-                        builder.add(decodeLockedTaskObject(data, lockId));
+                        builder.add(data.withLockId(lockId));
                     }
                 }
                 return builder.build();
@@ -435,6 +437,21 @@ public class DatabaseTaskQueueServer
         }
     }
 
+    private static class ImmutableTaskQueueLockMapper
+            implements ResultSetMapper<ImmutableTaskQueueLock>
+    {
+        @Override
+        public ImmutableTaskQueueLock map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableTaskQueueLock.builder()
+                .lockId("")  // should be reset later
+                .uniqueTaskId(getOptionalLong(r, "task_id"))
+                .data(getOptionalBytes(r, "data"))
+                .build();
+        }
+    }
+
     public interface Dao
     {
         @SqlQuery("select shared_site_id from queues where id = :queueId")
@@ -479,16 +496,24 @@ public class DatabaseTaskQueueServer
                 @Bind("siteId") Integer siteId, @Bind("queueId") Integer queueId,
                 @Bind("priority") int priority);
 
-        @SqlQuery("select data from queued_tasks where id = :taskLockId")
-        byte[] getTaskData(@Bind("taskLockId") long taskLockId);
+        @SqlQuery("select task_id, data from queued_tasks where id = :taskLockId")
+        ImmutableTaskQueueLock getTaskData(@Bind("taskLockId") long taskLockId);
 
         @SqlUpdate("delete from queued_task_locks" +
                 " where id = :taskLockId" +
                 " and lock_agent_id = :agentId")
         int deleteQueuedTaskLock(@Bind("taskLockId") long taskLockId, @Bind("agentId") String agentId);
 
+        @SqlUpdate("delete from queued_task_locks" +
+                " where id = :taskLockId")
+        int forceDeleteQueuedTaskLock(@Bind("taskLockId") long taskLockId);
+
         @SqlUpdate("delete from queued_tasks" +
                 " where id = :taskLockId and site_id = :siteId")
         int deleteQueuedTask(@Bind("siteId") int siteId, @Bind("taskLockId") long taskLockId);
+
+        @SqlUpdate("delete from queued_tasks" +
+                " where id = :taskLockId")
+        int forceDeleteQueuedTask(@Bind("taskLockId") long taskLockId);
     }
 }

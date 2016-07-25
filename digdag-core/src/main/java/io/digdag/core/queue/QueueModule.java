@@ -16,7 +16,6 @@ public class QueueModule
     public void configure(Binder binder)
     {
         binder.bind(TaskQueueServerManager.class).in(Scopes.SINGLETON);
-        binder.bind(TaskQueueClientManager.class).in(Scopes.SINGLETON);
         binder.bind(TaskQueueDispatcher.class).to(QueueTaskQueueDispatcher.class).in(Scopes.SINGLETON);
 
         // built-in queue

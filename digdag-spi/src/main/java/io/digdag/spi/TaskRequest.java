@@ -34,11 +34,7 @@ public interface TaskRequest
 
     String getTaskName();
 
-    Optional<String> getQueueName();
-
     String getLockId();
-
-    int getPriority();
 
     ZoneId getTimeZone();
 

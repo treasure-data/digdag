@@ -669,6 +669,8 @@ public class DatabaseMigrator
             handle.update("alter table queued_tasks" +
                     " alter column queue_id drop not null");
             handle.update("alter table queued_tasks" +
+                    " alter column data drop not null");
+            handle.update("alter table queued_tasks" +
                     " drop column priority");
             handle.update("alter table queued_tasks" +
                     " drop column resource_type_id");

@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskQueueClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,17 +16,17 @@ public class LocalAgent
 
     private final AgentConfig config;
     private final AgentId agentId;
-    private final TaskQueueClient queue;
+    private final TaskServerApi taskServer;
     private final OperatorManager runner;
     private final ExecutorService executor;
     private volatile boolean stop = false;
 
     public LocalAgent(AgentConfig config, AgentId agentId,
-            TaskQueueClient queue, OperatorManager runner)
+            TaskServerApi taskServer, OperatorManager runner)
     {
         this.agentId = agentId;
         this.config = config;
-        this.queue = queue;
+        this.taskServer = taskServer;
         this.runner = runner;
         if (config.getMaxThreads() > 0) {
             this.executor = Executors.newFixedThreadPool(
@@ -62,7 +61,7 @@ public class LocalAgent
     {
         while (!stop) {
             try {
-                List<TaskRequest> reqs = queue.lockSharedAgentTasks(1, agentId.toString(), config.getLockRetentionTime(), 1000);
+                List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(1, agentId, config.getLockRetentionTime(), 1000);
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {

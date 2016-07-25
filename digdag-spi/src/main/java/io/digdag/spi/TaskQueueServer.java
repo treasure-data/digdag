@@ -2,6 +2,7 @@ package io.digdag.spi;
 
 import java.util.List;
 import java.util.function.Function;
+import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 
 public interface TaskQueueServer
@@ -11,12 +12,14 @@ public interface TaskQueueServer
     //   int createOrUpdateQueue(int queueId, Config config);
     //   void deleteQueueIfExists(int queueId);
 
-    void enqueueDefaultQueueTask(TaskRequest request)
+    void enqueueDefaultQueueTask(int siteId, TaskQueueRequest request)
         throws TaskConflictException;
 
-    void enqueueQueueBoundTask(int queueId, TaskRequest request)
+    void enqueueQueueBoundTask(int queueId, TaskQueueRequest request)
         throws TaskConflictException;
 
     void deleteTask(int siteId, String lockId, String agentId)
         throws TaskNotFoundException, TaskConflictException;
+
+    boolean forceDeleteTask(String lockId);
 }
