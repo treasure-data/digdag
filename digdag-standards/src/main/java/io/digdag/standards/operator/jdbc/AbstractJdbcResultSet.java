@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
 import java.util.List;
-import java.util.Arrays;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -11,8 +10,6 @@ public abstract class AbstractJdbcResultSet
     implements JdbcResultSet
 {
     protected final ResultSet resultSet;
-    private final Object[] results;
-    private final List<Object> list;
     private final List<String> columnNames;
 
     public AbstractJdbcResultSet(ResultSet resultSet)
@@ -21,8 +18,6 @@ public abstract class AbstractJdbcResultSet
         try {
             ResultSetMetaData meta = resultSet.getMetaData();
             int columnCount = meta.getColumnCount();
-            this.results = new Object[columnCount];
-            this.list = Arrays.asList(results);
 
             ImmutableList.Builder<String> names = ImmutableList.builder();
             for (int i=0; i < columnCount; i++) {
@@ -48,20 +43,21 @@ public abstract class AbstractJdbcResultSet
             if (!resultSet.next()) {
                 return null;
             }
-            getObjects(results);
-            return Arrays.asList(results);
+            return getObjects();
         }
         catch (SQLException ex) {
             throw new DatabaseException("Failed to fetch next rows", ex);
         }
     }
 
-    protected void getObjects(Object[] results) throws SQLException
+    protected List<Object> getObjects() throws SQLException
     {
+        Object[] results = new Object[columnNames.size()];
         for (int i=0; i < results.length; i++) {
             Object raw = resultSet.getObject(i + 1);  // JDBC column index begins from 1
             results[i] = serializableObject(raw);
         }
+        return ImmutableList.copyOf(results);
     }
 
     protected abstract Object serializableObject(Object raw)
