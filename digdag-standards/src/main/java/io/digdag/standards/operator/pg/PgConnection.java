@@ -63,27 +63,27 @@ public class PgConnection
             escapeIdentifier(buf, ident);
             return buf.toString();
         }
-        catch (SQLException e) {
+        catch (SQLException ex) {
             throw new IllegalArgumentException(
                     String.format(ENGLISH,
                         "Invalid identifier name (%s): %s",
                         ex.getMessage(),
-                        ident);
+                        ident));
         }
     }
 
     @Override
-    public TransactionHelper getStrictTransactionHelper(String statusTableName)
+    public TransactionHelper getStrictTransactionHelper(String statusTableName, Duration cleanupDuration)
     {
-        return new PgPersistentTransactionHelper(statusTableName);
+        return new PgPersistentTransactionHelper(statusTableName, cleanupDuration);
     }
 
     private class PgPersistentTransactionHelper
             extends AbstractPersistentTransactionHelper
     {
-        PgPersistentTransactionHelper(String statusTableName)
+        PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
         {
-            super(statusTableName);
+            super(statusTableName, cleanupDuration);
         }
 
         @Override
@@ -103,10 +103,11 @@ public class PgConnection
             executeStatement("delete old query status rows from " + escapeIdent(statusTableName) + " table",
                     String.format(ENGLISH,
                         "DELETE FROM %s WHERE query_id = ANY(" +
-                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '24' hours" +
+                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d' seconds" +
                         ")",
                         escapeIdent(statusTableName),
-                        escapeIdent(statusTableName))
+                        escapeIdent(statusTableName),
+                        cleanupDuration.getSeconds())
                     );
         }
 

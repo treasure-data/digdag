@@ -11,6 +11,7 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.DurationParam;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
 import io.digdag.standards.operator.jdbc.TableReference;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -81,11 +83,15 @@ public abstract class AbstractJdbcOperator <C>
         boolean strictTransaction = params.get("strict_transaction", Boolean.class, true);
 
         String statusTableName;
+        DurationParam statusTableCleanupDuration;
         if (strictTransaction) {
             statusTableName = params.get("status_table", String.class, "__digdag_status");
+            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
+                    DurationParam.of(Duration.ofHours(24)));
         }
         else {
             statusTableName = null;
+            statusTableCleanupDuration = null;
         }
 
         UUID queryId;
@@ -145,7 +151,8 @@ public abstract class AbstractJdbcOperator <C>
 
                 TransactionHelper txHelper;
                 if (strictTransaction) {
-                    txHelper = connection.getStrictTransactionHelper(statusTableName);
+                    txHelper = connection.getStrictTransactionHelper(statusTableName,
+                            statusTableCleanupDuration.getDuration());
                 }
                 else {
                     txHelper = new NoTransactionHelper();
