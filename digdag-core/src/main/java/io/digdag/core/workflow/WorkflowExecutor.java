@@ -324,8 +324,6 @@ public class WorkflowExecutor
             noticeStatusPropagate();
         }
 
-        // TODO sync kill requests to already-running tasks in queue
-
         return updated;
     }
 
@@ -920,6 +918,10 @@ public class WorkflowExecutor
             params.remove("_error");
             localConfig.remove("_check");
             localConfig.remove("_error");
+
+            // TODO what should here do if the task is canceled? Add another flag field to TaskRequest
+            //      so that Operator can handle it? Skipping task silently is probably not good idea
+            //      because Operator may want to run cleanup process.
 
             // create TaskRequest for OperatorManager.
             // OperatorManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
