@@ -38,7 +38,7 @@ public abstract class ClientCommand
 {
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
-    protected final io.digdag.core.Version localVersion;
+    protected final Version localVersion;
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
@@ -154,12 +154,10 @@ public abstract class ClientCommand
             if (!localVersion.version().equals(remoteVersion)) {
                 throw systemExit(String.format(""
                                 + "Client and server version mismatch: Client: %s, Server: %s.%n"
+                                + "Please run following command locally to download a compatible version with the server:%n"
                                 + "%n"
-                                + "Please run: digdag selfupdate%n"
-                                + "%n"
-                                + "Before pushing workflows to the server, please run them locally to "
-                                + "verify that they are compatible with the new version of digdag.",
-                        localVersion, remoteVersion));
+                                + "    digdag selfupdate %s%n",
+                        localVersion, remoteVersion, remoteVersion));
             }
         }
 
