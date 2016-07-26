@@ -73,8 +73,9 @@ public class DatabaseTaskQueueServer
 
     private final Object localTaskNoticeHelper = new Object();
 
+    @Override
     @SuppressFBWarnings("NN_NAKED_NOTIFY")
-    private void noticeEnqueue()
+    public void interruptLocalWait()
     {
         synchronized (localTaskNoticeHelper) {
             localTaskNoticeHelper.notifyAll();
@@ -167,7 +168,7 @@ public class DatabaseTaskQueueServer
             return queuedTaskId;
         }, ResourceConflictException.class);
 
-        noticeEnqueue();
+        interruptLocalWait();
 
         return id;
     }

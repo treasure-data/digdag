@@ -2,7 +2,7 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -19,7 +19,7 @@ public class MultiThreadAgent
     private final AgentId agentId;
     private final TaskServerApi taskServer;
     private final OperatorManager runner;
-    private final ExecutorService executor;
+    private final ThreadPoolExecutor executor;
     private volatile boolean stop = false;
 
     public MultiThreadAgent(AgentConfig config, AgentId agentId,
@@ -34,10 +34,10 @@ public class MultiThreadAgent
             .setNameFormat("task-thread-%d")
             .build();
         if (config.getMaxThreads() > 0) {
-            this.executor = Executors.newFixedThreadPool(config.getMaxThreads(), threadFactory);
+            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(config.getMaxThreads(), threadFactory);
         }
         else {
-            this.executor = Executors.newCachedThreadPool(threadFactory);
+            this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(threadFactory);
         }
     }
 
@@ -53,20 +53,26 @@ public class MultiThreadAgent
     {
         while (!stop) {
             try {
-                List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(1, agentId, config.getLockRetentionTime(), 1000);
-                for (TaskRequest req : reqs) {
-                    executor.submit(() -> {
-                        try {
-                            runner.run(req);
-                        }
-                        catch (Throwable t) {
-                            logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
-                        }
-                    });
+                int max = Math.min(executor.getMaximumPoolSize() - executor.getActiveCount(), 10);
+                if (max > 0) {
+                    List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(max, agentId, config.getLockRetentionTime(), 1000);
+                    for (TaskRequest req : reqs) {
+                        executor.submit(() -> {
+                            try {
+                                runner.run(req);
+                            }
+                            catch (Throwable t) {
+                                logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
+                            }
+                        });
+                    }
+                }
+                else {
+                    Thread.sleep(500);
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception", t);
+                logger.error("Uncaught exception. Ignoring.", t);
             }
         }
     }

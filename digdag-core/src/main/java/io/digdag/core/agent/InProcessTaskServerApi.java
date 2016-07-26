@@ -1,6 +1,7 @@
 package io.digdag.core.agent;
 
 import com.google.inject.Inject;
+import com.google.common.collect.ImmutableList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskQueueClient;
@@ -29,7 +30,12 @@ public class InProcessTaskServerApi
             int lockSeconds, long maxSleepMillis)
     {
         List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis);
-        return workflowExecutor.getTaskRequests(locks);
+        if (locks.isEmpty()) {
+            return ImmutableList.of();
+        }
+        else {
+            return workflowExecutor.getTaskRequests(locks);
+        }
     }
 
     @Override
