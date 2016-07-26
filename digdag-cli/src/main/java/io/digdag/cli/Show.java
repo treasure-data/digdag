@@ -51,13 +51,18 @@ public class Show
     private void show(String workflowPath)
             throws Exception
     {
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .withWorkflowExecutor(false)
-            .withScheduleExecutor(false)
-            .withLocalAgent(false)
-            .initialize()
-            .getInjector();
+        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .withWorkflowExecutor(false)
+                .withScheduleExecutor(false)
+                .withLocalAgent(false)
+                .initialize()) {
+            show(digdag.getInjector(), workflowPath);
+        }
+    }
 
+    private void show(Injector injector, String workflowPath)
+            throws Exception
+    {
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);

@@ -43,6 +43,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.api.JacksonTimeModule;
 
 public class DigdagEmbed
+        implements AutoCloseable
 {
     public static class Bootstrap
     {
@@ -122,7 +123,7 @@ public class DigdagEmbed
             return build(true);
         }
 
-        public DigdagEmbed initializeCloseable()
+        public DigdagEmbed initializeWithoutShutdownHook()
         {
             return build(false);
         }
@@ -254,7 +255,8 @@ public class DigdagEmbed
         return getInjector().getInstance(LocalSite.class);
     }
 
-    public void destroy() throws Exception
+    @Override
+    public void close() throws Exception
     {
         injector.destroy();
     }

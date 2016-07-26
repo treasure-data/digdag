@@ -1,19 +1,19 @@
 package io.digdag.core.agent;
 
+import java.util.function.Supplier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
-import com.google.common.base.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.queue.TaskQueueManager;
 
 public class LocalAgentManager
 {
-    private final AgentConfig config;
-    private final AgentId agentId;
-    private final TaskQueueManager queueManager;
-    private final OperatorManager operatorManager;
-    private final ExecutorService executor;
+    private final Supplier<MultiThreadAgent> agentFactory;
+    private Thread thread;
+    private MultiThreadAgent agent;
 
     @Inject
     public LocalAgentManager(
@@ -22,35 +22,36 @@ public class LocalAgentManager
             TaskQueueManager queueManager,
             OperatorManager operatorManager)
     {
-        this.config = config;
-        this.agentId = agentId;
-        this.queueManager = queueManager;
-        this.operatorManager = operatorManager;
         if (config.getEnabled()) {
-            this.executor = Executors.newCachedThreadPool(
-                    new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("local-agent-%d")
-                    .build());
+            this.agentFactory = () -> new MultiThreadAgent(config, agentId, queueManager.getInProcessTaskQueueClient(), operatorManager);
         }
         else {
-            this.executor = null;
+            this.agentFactory = null;
         }
     }
 
-    // TODO stop LocalAgent at @PreDestroy
-
+    @PostConstruct
     public void start()
     {
-        if (executor != null) {
-            executor.submit(
-                    new LocalAgent(
-                        config,
-                        agentId,
-                        queueManager.getInProcessTaskQueueClient(),
-                        operatorManager
-                    )
-                );
+        if (agentFactory != null) {
+            agent = agentFactory.get();
+            Thread thread = new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("local-agent-%d")
+                .build()
+                .newThread(agent);
+            thread.start();
+            this.thread = thread;
+        }
+    }
+
+    @PreDestroy
+    public void shutdown()
+        throws InterruptedException
+    {
+        if (thread != null) {
+            agent.shutdown();
+            thread.join();
         }
     }
 }

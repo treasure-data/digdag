@@ -84,9 +84,12 @@ public class ServerBootstrap
 
         Version version = Version.of(context.getInitParameter(VERSION_INIT_PARAMETER_KEY));
 
-        Injector injector = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig, version)
-            .initialize()
-            .getInjector();
+        // GuiceRsServletContainerInitializer closes Digdag (through Injector implementing AutoCloseable)
+        // when servlet context is destroyed.
+        DigdagEmbed digdag = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig, version)
+            .initialize();
+
+        Injector injector = digdag.getInjector();
 
         if (serverConfig.getExecutorEnabled()) {
             // TODO create global site

@@ -81,7 +81,7 @@ public class DatabaseTaskQueueFactory
         }
 
         @Override
-        public List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxSleepMillis)
+        public List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxWaitMillis)
         {
             ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
             for (LockResult lock : store.lockSharedTasks(limit, agentId, lockSeconds)) {
@@ -94,17 +94,17 @@ public class DatabaseTaskQueueFactory
                 }
             }
             List<TaskRequest> result = builder.build();
-            if (result.isEmpty() && maxSleepMillis >= 0) {
-                sleepUntilEnqueue(sharedTaskSleepHelper, maxSleepMillis);
+            if (result.isEmpty() && maxWaitMillis >= 0) {
+                sleepUntilEnqueue(sharedTaskSleepHelper, maxWaitMillis);
             }
             return result;
         }
 
-        private void sleepUntilEnqueue(Object helper, long maxSleepMillis)
+        private void sleepUntilEnqueue(Object helper, long maxWaitMillis)
         {
             synchronized (helper) {
                 try {
-                    helper.wait(maxSleepMillis);
+                    helper.wait(maxWaitMillis);
                 }
                 catch (InterruptedException ex) {
                     return;
@@ -118,6 +118,13 @@ public class DatabaseTaskQueueFactory
             synchronized (helper) {
                 helper.notifyAll();
             }
+        }
+
+        @Override
+        public void interruptLocalWait()
+        {
+            noticeEnqueue(sharedTaskSleepHelper);
+            noticeEnqueue(taskSleepHelper);
         }
 
         @Override
