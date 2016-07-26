@@ -33,6 +33,13 @@ public class WorkflowCompilerTest
         compiler = new WorkflowCompiler();
     }
 
+    @After
+    public void destroy()
+        throws Exception
+    {
+        embed.close();
+    }
+
     private Config loadYamlResource(String name)
     {
         try {

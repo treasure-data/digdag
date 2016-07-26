@@ -4,7 +4,10 @@ import java.util.List;
 
 public interface TaskQueueClient
 {
-    List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxSleepMillis);
+    List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxWaitMillis);
+
+    default void interruptLocalWait()
+    { }
 
     // TODO lockTasks (of custom queue) is not implemented yet
 
