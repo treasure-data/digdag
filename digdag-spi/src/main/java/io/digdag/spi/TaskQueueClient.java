@@ -4,13 +4,13 @@ import java.util.List;
 
 public interface TaskQueueClient
 {
-    List<TaskRequest> lockSharedTasks(int limit, String agentId, int lockSeconds, long maxWaitMillis);
+    List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis);
 
     default void interruptLocalWait()
     { }
 
-    // TODO lockTasks (of custom queue) is not implemented yet
+    // TODO multi-queue is not implemented yet.
+    //   List<TaskQueueLock> lockAgentBoundTasks(int queueId)
 
-    void taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds)
-        throws TaskStateException;
+    List<String> taskHeartbeat(int siteId, List<String> lockedIds, String agentId, int lockSeconds);
 }

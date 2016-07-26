@@ -177,6 +177,15 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
+    public int getSiteIdOfTask(long taskId)
+        throws ResourceNotFoundException
+    {
+        return requiredResource(
+                (handle, dao) -> dao.getSiteIdOfTask(taskId),
+                "session attempt of task id=%d", taskId);
+    }
+
+    @Override
     public StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
         throws ResourceNotFoundException
     {
@@ -1338,6 +1347,11 @@ public class DatabaseSessionStoreManager
                 " join sessions s on s.id = sa.session_id" +
                 " where sa.id = :attemptId limit 1")
         StoredSessionAttemptWithSession getAttemptWithSessionByIdInternal(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select site_id from tasks" +
+                " join session_attempts sa on sa.id = tasks.attempt_id" +
+                " where tasks.id = :taskId")
+        Integer getSiteIdOfTask(@Bind("taskId") long taskId);
 
         @SqlQuery("select * from sessions" +
                 " where id = :sessionId" +

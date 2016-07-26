@@ -6,5 +6,7 @@ public interface TaskQueueFactory
 {
     String getType();
 
-    TaskQueue getTaskQueue(Config systemConfig);
+    TaskQueueServer newServer(Config systemConfig);
+
+    TaskQueueClient newDirectClient(Config systemConfig);
 }

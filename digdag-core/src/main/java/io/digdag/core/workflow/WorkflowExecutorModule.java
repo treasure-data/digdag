@@ -14,7 +14,6 @@ public class WorkflowExecutorModule
     public void configure(Binder binder)
     {
         binder.bind(WorkflowExecutor.class).in(Scopes.SINGLETON);
-        binder.bind(TaskQueueDispatcher.class).in(Scopes.SINGLETON);
         binder.bind(SlaCalculator.class).in(Scopes.SINGLETON);
         binder.bind(AttemptBuilder.class).in(Scopes.SINGLETON);
 

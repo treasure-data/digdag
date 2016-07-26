@@ -7,7 +7,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.core.queue.TaskQueueServerManager;
 
 public class LocalAgentManager
 {
@@ -19,11 +19,11 @@ public class LocalAgentManager
     public LocalAgentManager(
             AgentConfig config,
             AgentId agentId,
-            TaskQueueManager queueManager,
+            TaskServerApi taskServer,
             OperatorManager operatorManager)
     {
         if (config.getEnabled()) {
-            this.agentFactory = () -> new MultiThreadAgent(config, agentId, queueManager.getInProcessTaskQueueClient(), operatorManager);
+            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager);
         }
         else {
             this.agentFactory = null;

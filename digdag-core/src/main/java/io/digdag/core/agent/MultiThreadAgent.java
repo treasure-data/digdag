@@ -7,7 +7,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskQueueClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,17 +17,17 @@ public class MultiThreadAgent
 
     private final AgentConfig config;
     private final AgentId agentId;
-    private final TaskQueueClient queue;
+    private final TaskServerApi taskServer;
     private final OperatorManager runner;
     private final ExecutorService executor;
     private volatile boolean stop = false;
 
     public MultiThreadAgent(AgentConfig config, AgentId agentId,
-            TaskQueueClient queue, OperatorManager runner)
+            TaskServerApi taskServer, OperatorManager runner)
     {
         this.agentId = agentId;
         this.config = config;
-        this.queue = queue;
+        this.taskServer = taskServer;
         this.runner = runner;
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
@@ -45,7 +44,7 @@ public class MultiThreadAgent
     public void shutdown()
     {
         stop = true;
-        queue.interruptLocalWait();
+        taskServer.interruptLocalWait();
         executor.shutdown();
     }
 
@@ -54,7 +53,7 @@ public class MultiThreadAgent
     {
         while (!stop) {
             try {
-                List<TaskRequest> reqs = queue.lockSharedTasks(3, agentId.toString(), config.getLockRetentionTime(), 1000);
+                List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(1, agentId, config.getLockRetentionTime(), 1000);
                 for (TaskRequest req : reqs) {
                     executor.submit(() -> {
                         try {

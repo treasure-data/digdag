@@ -19,6 +19,7 @@ public class LocalAgentModule
         binder.bind(AgentConfig.class).toProvider(AgentConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(WorkspaceManager.class).to(NoopWorkspaceManager.class).in(Scopes.SINGLETON);
         binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
+        binder.bind(TaskServerApi.class).to(InProcessTaskServerApi.class).in(Scopes.SINGLETON);
         binder.bind(OperatorManager.class).in(Scopes.SINGLETON);
 
         // built-in operators

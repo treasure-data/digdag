@@ -9,7 +9,7 @@ import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.spi.Notifier;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskQueueRequest;
 import org.skife.jdbi.v2.DBI;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -31,9 +31,15 @@ public class DatabaseFactory
         this.config = config;
     }
 
+    @Override
     public DBI get()
     {
         return dbi;
+    }
+
+    public DatabaseConfig getConfig()
+    {
+        return config;
     }
 
     public DatabaseProjectStoreManager getProjectStoreManager()
@@ -66,21 +72,21 @@ public class DatabaseFactory
     }
 
     public static class NullTaskQueueDispatcher
-            extends TaskQueueDispatcher
+            implements TaskQueueDispatcher
     {
-        public NullTaskQueueDispatcher()
-        {
-            super(null);
-        }
-
         @Override
-        public void dispatch(TaskRequest request)
-            throws ResourceConflictException
+        public void dispatch(int siteId, TaskQueueRequest request)
         { }
 
         @Override
         public void taskFinished(int siteId, String lockId, AgentId agentId)
         { }
+
+        @Override
+        public boolean deleteInconsistentTask(String lockId)
+        {
+            return false;
+        }
     }
 
     public void close()
