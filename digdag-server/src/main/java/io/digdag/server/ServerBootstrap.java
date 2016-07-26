@@ -137,7 +137,7 @@ public class ServerBootstrap
         public ServerControl(DeploymentManager manager)
         {
             this.manager = manager;
-            this.server = server;
+            this.server = null;
         }
 
         void serverInitialized(Undertow server)
