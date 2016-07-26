@@ -103,7 +103,7 @@ public class PgConnection
             executeStatement("delete old query status rows from " + escapeIdent(statusTableName) + " table",
                     String.format(ENGLISH,
                         "DELETE FROM %s WHERE query_id = ANY(" +
-                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d' seconds" +
+                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d seconds'" +
                         ")",
                         escapeIdent(statusTableName),
                         escapeIdent(statusTableName),
