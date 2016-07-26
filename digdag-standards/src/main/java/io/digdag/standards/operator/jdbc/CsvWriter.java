@@ -2,15 +2,16 @@ package io.digdag.standards.operator.jdbc;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.Exchanger;
 
-public class CSVWriter
-    implements AutoCloseable
+public class CsvWriter
+    implements Closeable
 {
     private final Writer out;
 
-    public CSVWriter(Writer out)
+    public CsvWriter(Writer out)
     {
         this.out = out;
     }
@@ -27,24 +28,15 @@ public class CSVWriter
         out.write("\r\n");
     }
 
-    public void addCsvRow(List<TypeGroup> typeGroups, List<Object> row)
+    public void addCsvRow(List<String> row)
             throws IOException
     {
-        for (int i = 0; i < typeGroups.size(); i++) {
+        for (int i = 0; i < row.size(); i++) {
             if (i > 0) {
                 out.write(DELIMITER_CHAR);
             }
-            Object v = row.get(i);
-            if (v == null) {
-                continue;
-            }
-
-            if (typeGroups.get(i) == TypeGroup.STRING) {
-                addCsvText(v.toString());
-            }
-            else {
-                addCsvText(v.toString());
-            }
+            String v = row.get(i);
+            addCsvText(v);
         }
         out.write("\r\n");
     }
@@ -52,7 +44,9 @@ public class CSVWriter
     public void addCsvText(String value)
             throws IOException
     {
-        out.write(escapeAndQuoteCsvValue(value));
+        if (value != null) {
+            out.write(escapeAndQuoteCsvValue(value));
+        }
     }
 
     private static final char DELIMITER_CHAR = ',';
@@ -115,7 +109,7 @@ public class CSVWriter
 
     @Override
     public void close()
-            throws Exception
+            throws IOException
     {
         out.close();
     }
