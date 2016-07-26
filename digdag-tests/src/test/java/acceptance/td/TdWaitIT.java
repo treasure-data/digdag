@@ -1,5 +1,6 @@
-package acceptance;
+package acceptance.td;
 
+import utils.CommandStatus;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
 import junitparams.JUnitParamsRunner;
@@ -11,21 +12,23 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 
-import static acceptance.TestUtils.addWorkflow;
-import static acceptance.TestUtils.attemptFailure;
-import static acceptance.TestUtils.attemptSuccess;
-import static acceptance.TestUtils.attempts;
-import static acceptance.TestUtils.createProject;
-import static acceptance.TestUtils.expect;
-import static acceptance.TestUtils.main;
-import static acceptance.TestUtils.pushAndStart;
-import static acceptance.TestUtils.runWorkflow;
+import static utils.TestUtils.addWorkflow;
+import static utils.TestUtils.attemptFailure;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.attempts;
+import static utils.TestUtils.createProject;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.main;
+import static utils.TestUtils.pushAndStart;
+import static utils.TestUtils.runWorkflow;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;

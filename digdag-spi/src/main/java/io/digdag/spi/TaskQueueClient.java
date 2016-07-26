@@ -6,6 +6,9 @@ public interface TaskQueueClient
 {
     List<TaskQueueLock> lockSharedAgentTasks(int count, String agentId, int lockSeconds, long maxSleepMillis);
 
+    default void interruptLocalWait()
+    { }
+
     // TODO multi-queue is not implemented yet.
     //   List<TaskQueueLock> lockAgentBoundTasks(int queueId)
 

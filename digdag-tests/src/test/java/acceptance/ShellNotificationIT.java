@@ -9,15 +9,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import static acceptance.TestUtils.expectValue;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.expectValue;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

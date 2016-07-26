@@ -31,4 +31,10 @@ public class InProcessTaskServerApi
         List<TaskQueueLock> locks = directQueueClient.lockSharedAgentTasks(count, agentId.toString(), lockSeconds, maxSleepMillis);
         return workflowExecutor.getTaskRequests(locks);
     }
+
+    @Override
+    public void interruptLocalWait()
+    {
+        directQueueClient.interruptLocalWait();
+    }
 }

@@ -16,7 +16,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
 import utils.NopDispatcher;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,12 +33,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAmount;
 import java.util.concurrent.TimeUnit;
 
-import static acceptance.TestUtils.expect;
-import static acceptance.TestUtils.findFreePort;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.findFreePort;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMockWebServer;
 
 public class SlaIT
 {
@@ -46,8 +50,9 @@ public class SlaIT
             .registerModule(new JacksonTimeModule())
             .registerModule(new GuavaModule());
 
-    protected final int notificationServerPort = findFreePort();
-    protected final String notificationUrl = "http://localhost:" + notificationServerPort + "/notification";
+    protected final MockWebServer mockWebServer = startMockWebServer();
+
+    protected final String notificationUrl = "http://localhost:" + mockWebServer.getPort() + "/notification";
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -63,7 +68,6 @@ public class SlaIT
     protected Path config;
     protected Path projectDir;
     protected Path timeoutFile;
-    protected MockWebServer mockWebServer;
     protected DigdagClient client;
 
     @Before
@@ -80,10 +84,6 @@ public class SlaIT
         assertThat(initStatus.code(), is(0));
 
         timeoutFile = projectDir.resolve("timeout").toAbsolutePath().normalize();
-
-        mockWebServer = new MockWebServer();
-        mockWebServer.setDispatcher(new NopDispatcher());
-        mockWebServer.start(notificationServerPort);
 
         client = DigdagClient.builder()
                 .host(server.host())

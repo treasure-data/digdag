@@ -47,6 +47,7 @@ import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.TaskStateCode;
@@ -210,23 +211,29 @@ public class Run
 
     private static final List<Long> USE_ALL = null;
 
-    public void run(String workflowNameArg, String matchPattern) throws Exception
+    public void run(String workflowNameArg, String matchPattern)
+            throws Exception
     {
         Properties systemProps = loadSystemProperties();
 
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .setSystemPlugins(loadSystemPlugins(systemProps))
-            .addModules(binder -> {
-                binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
-                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
-                binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
-            })
-            .overrideModulesWith((binder) -> {
-                binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
-            })
-            .initialize()
-            .getInjector();
+        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .setSystemPlugins(loadSystemPlugins(systemProps))
+                .addModules(binder -> {
+                    binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
+                    binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
+                    binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
+                })
+                .overrideModulesWith((binder) -> {
+                    binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
+                })
+                .initializeWithoutShutdownHook()) {
+            run(systemProps, digdag.getInjector(), workflowNameArg, matchPattern);
+        }
+    }
 
+    private void run(Properties systemProps, Injector injector, String workflowNameArg, String matchPattern)
+        throws IOException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException, ResourceNotFoundException, ResourceConflictException, SystemExitException, InterruptedException
+    {
         final LocalSite localSite = injector.getInstance(LocalSite.class);
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);

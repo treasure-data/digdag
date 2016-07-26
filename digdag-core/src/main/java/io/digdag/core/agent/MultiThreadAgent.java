@@ -3,16 +3,17 @@ package io.digdag.core.agent;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import com.google.common.base.*;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.TaskRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LocalAgent
+public class MultiThreadAgent
         implements Runnable
 {
-    private static final Logger logger = LoggerFactory.getLogger(LocalAgent.class);
+    private static final Logger logger = LoggerFactory.getLogger(MultiThreadAgent.class);
 
     private final AgentConfig config;
     private final AgentId agentId;
@@ -21,39 +22,30 @@ public class LocalAgent
     private final ExecutorService executor;
     private volatile boolean stop = false;
 
-    public LocalAgent(AgentConfig config, AgentId agentId,
+    public MultiThreadAgent(AgentConfig config, AgentId agentId,
             TaskServerApi taskServer, OperatorManager runner)
     {
         this.agentId = agentId;
         this.config = config;
         this.taskServer = taskServer;
         this.runner = runner;
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
+            .setNameFormat("task-thread-%d")
+            .build();
         if (config.getMaxThreads() > 0) {
-            this.executor = Executors.newFixedThreadPool(
-                    config.getMaxThreads(),
-                    new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("task-thread-%d")
-                    .build());
+            this.executor = Executors.newFixedThreadPool(config.getMaxThreads(), threadFactory);
         }
         else {
-            this.executor = Executors.newCachedThreadPool(
-                    new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .setNameFormat("task-thread-%d")
-                    .build());
+            this.executor = Executors.newCachedThreadPool(threadFactory);
         }
-    }
-
-    public void stop()
-    {
-        stop = true;
     }
 
     public void shutdown()
     {
+        stop = true;
+        taskServer.interruptLocalWait();
         executor.shutdown();
-        // TODO wait for shutdown completion?
     }
 
     @Override

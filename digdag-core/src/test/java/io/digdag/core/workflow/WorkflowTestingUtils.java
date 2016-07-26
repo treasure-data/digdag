@@ -32,7 +32,7 @@ public class WorkflowTestingUtils
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
             })
-            .initializeCloseable();
+            .initializeWithoutShutdownHook();
         cleanDatabase(embed);
         return embed;
     }

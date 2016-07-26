@@ -8,4 +8,6 @@ public interface TaskServerApi
     List<TaskRequest> lockSharedAgentTasks(
             int count, AgentId agentId,
             int lockSeconds, long maxSleepMillis);
+
+    void interruptLocalWait();
 }

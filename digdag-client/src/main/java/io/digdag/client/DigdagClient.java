@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 
 import static java.util.Locale.ENGLISH;
 
-public class DigdagClient
+public class DigdagClient implements AutoCloseable
 {
     public static class Builder
     {
@@ -168,6 +168,12 @@ public class DigdagClient
             .register(new JacksonJsonProvider(mapper))
             .build();
         this.cf = new ConfigFactory(mapper);
+    }
+
+    @Override
+    public void close()
+    {
+        client.close();
     }
 
     public Config newConfig()
