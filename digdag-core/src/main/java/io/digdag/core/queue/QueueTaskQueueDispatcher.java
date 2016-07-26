@@ -28,11 +28,11 @@ public class QueueTaskQueueDispatcher
     }
 
     @Override
-    public void dispatch(int siteId, TaskQueueRequest request)
+    public void dispatch(int siteId, Optional<String> queueName, TaskQueueRequest request)
         throws ResourceNotFoundException, TaskConflictException
     {
-        if (request.getQueueName().isPresent()) {
-            int queueId = queueManager.getQueueIdByName(siteId, request.getQueueName().get());
+        if (queueName.isPresent()) {
+            int queueId = queueManager.getQueueIdByName(siteId, queueName.get());
             taskQueueServer.enqueueQueueBoundTask(queueId, request);
         }
         else {

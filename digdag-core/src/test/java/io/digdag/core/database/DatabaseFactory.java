@@ -1,6 +1,7 @@
 package io.digdag.core.database;
 
 import com.google.common.base.Throwables;
+import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
@@ -75,7 +76,7 @@ public class DatabaseFactory
             implements TaskQueueDispatcher
     {
         @Override
-        public void dispatch(int siteId, TaskQueueRequest request)
+        public void dispatch(int siteId, Optional<String> queueName, TaskQueueRequest request)
         { }
 
         @Override

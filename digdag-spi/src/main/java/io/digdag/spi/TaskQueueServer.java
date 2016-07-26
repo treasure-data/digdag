@@ -9,7 +9,7 @@ public interface TaskQueueServer
     extends TaskQueueClient
 {
     // TODO multi-queue is not implemented yet.
-    //   int createOrUpdateQueue(int queueId, Config config);
+    //   int createOrUpdateQueue(int queueId, Optional<Integer> sharedSiteId, int maxConcurrency);
     //   void deleteQueueIfExists(int queueId);
 
     void enqueueDefaultQueueTask(int siteId, TaskQueueRequest request)

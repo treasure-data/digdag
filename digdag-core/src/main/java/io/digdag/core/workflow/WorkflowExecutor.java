@@ -799,8 +799,11 @@ public class WorkflowExecutor
             }
 
             try {
+                // TODO make queue name configurable. note that it also needs a new REST API and/or
+                //      CLI ccommands to create/delete/manage queues.
+                Optional<String> queueName = Optional.absent();
+
                 TaskQueueRequest request = TaskQueueRequest.builder()
-                    .queueName(Optional.absent())  // TODO make this configurable
                     .priority(0)  // TODO make this configurable
                     .uniqueTaskId(Optional.of(task.getId()))
                     .data(Optional.absent())
@@ -808,7 +811,7 @@ public class WorkflowExecutor
 
                 logger.debug("Queuing task: [{}] {}", task.getId(), task.getFullName());
                 try {
-                    dispatcher.dispatch(siteId, request);
+                    dispatcher.dispatch(siteId, queueName, request);
                 }
                 catch (TaskConflictException ex) {
                     // TODO this code has a problem:

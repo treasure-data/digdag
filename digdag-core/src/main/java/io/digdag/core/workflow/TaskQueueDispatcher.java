@@ -9,7 +9,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskQueueDispatcher
 {
-    void dispatch(int siteId, TaskQueueRequest request)
+    void dispatch(int siteId, Optional<String> queueName, TaskQueueRequest request)
         throws ResourceNotFoundException, TaskConflictException;
 
     void taskFinished(int siteId, String lockId, AgentId agentId)

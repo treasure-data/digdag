@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 public interface TaskQueueRequest
     extends TaskQueueData
 {
-    Optional<String> getQueueName();
-
     int getPriority();
 
     static ImmutableTaskQueueRequest.Builder builder()
