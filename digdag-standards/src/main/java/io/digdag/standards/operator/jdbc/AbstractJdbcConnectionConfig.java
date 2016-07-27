@@ -35,6 +35,11 @@ public abstract class AbstractJdbcConnectionConfig
 
     public abstract Properties buildProperties();
 
+    public String url()
+    {
+        return String.format(ENGLISH, "jdbc:%s://%s:%d/%s", jdbcProtocolName(), host(), port(), database());
+    }
+
     public Connection openConnection()
     {
         try {
@@ -45,8 +50,7 @@ public abstract class AbstractJdbcConnectionConfig
         }
 
         try {
-            String url = String.format(ENGLISH, "jdbc:%s://%s:%d/%s", jdbcProtocolName(), host(), port(), database());
-            return DriverManager.getConnection(url, buildProperties());
+            return DriverManager.getConnection(url(), buildProperties());
         }
         catch (SQLException ex) {
             throw new DatabaseException("Failed to connect to the database", ex);
