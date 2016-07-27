@@ -110,8 +110,7 @@ public class Push
             scheduleFrom = Optional.absent();
         }
         else {
-            scheduleFrom = Optional.of(TimeUtil.parseTime(scheduleFromString,
-                        "--schedule-from option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp (hint: run `date \"+%Y-%m-%d %H:%M:%S %z\"` command to show current local time)"));
+            scheduleFrom = Optional.of(TimeUtil.parseTime(scheduleFromString, "--schedule-from"));
         }
 
         // load project
