@@ -1,11 +1,6 @@
 package io.digdag.standards.operator.pg;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.config.YamlConfigLoader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,7 +14,7 @@ import static org.junit.Assert.*;
 
 public class PgConnectionConfigTest
 {
-    private final ConfigBuilder configBuilder = new ConfigBuilder();
+    private final PgOpTestHelper pgOpTestHelper = new PgOpTestHelper();
     private PgConnectionConfig connConfigWithDefaultValue;
     private PgConnectionConfig connConfigWithCustomValue;
 
@@ -28,16 +23,16 @@ public class PgConnectionConfigTest
             throws IOException
     {
         {
-            Map<String, String> configInput = ImmutableMap.of(
+            Map<String, Object> configInput = ImmutableMap.of(
                     "host", "foobar0.org",
                     "user", "user0",
                     "database", "database0"
             );
-            this.connConfigWithDefaultValue = PgConnectionConfig.configure(configBuilder.createConfig(configInput));
+            this.connConfigWithDefaultValue = PgConnectionConfig.configure(pgOpTestHelper.createConfig(configInput));
         }
 
         {
-            Map<String, String> configInput = ImmutableMap.<String, String>builder().
+            Map<String, Object> configInput = ImmutableMap.<String, Object>builder().
                     put("host", "foobar1.org").
                     put("port", "6543").
                     put("user", "user1").
@@ -47,7 +42,7 @@ public class PgConnectionConfigTest
                     put("connect_timeout", "15s").
                     put("socket_timeout", "12 m").
                     put("schema", "myschema").build();
-            this.connConfigWithCustomValue = PgConnectionConfig.configure(configBuilder.createConfig(configInput));
+            this.connConfigWithCustomValue = PgConnectionConfig.configure(pgOpTestHelper.createConfig(configInput));
         }
     }
 
@@ -66,8 +61,8 @@ public class PgConnectionConfigTest
     @Test
     public void url()
     {
-        assertThat(connConfigWithDefaultValue.url(), is("jdbc:postgresql://foobar0.org:5432/testdb0"));
-        assertThat(connConfigWithCustomValue.url(), is("jdbc:postgresql://foobar1.org:6543/testdb1"));
+        assertThat(connConfigWithDefaultValue.url(), is("jdbc:postgresql://foobar0.org:5432/database0"));
+        assertThat(connConfigWithCustomValue.url(), is("jdbc:postgresql://foobar1.org:6543/database1"));
     }
 
     @Test
