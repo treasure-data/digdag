@@ -325,9 +325,9 @@ Parameters
 
   * :command:`engine: hive`
   * :command:`engine: presto`
-  
+
 :command:`priority: 0`
-  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , defalut: 0 (NORMAL)).
+  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , default: 0 (NORMAL)).
 
 
 Output parameters
