@@ -41,8 +41,9 @@ public class CronScheduler
             // because Predictor doesn't include this time at "next"MatchingTime() method
             truncated = truncated.minusSeconds(1);
         }
+        Instant lastTime = truncated.minusSeconds(delaySeconds);
 
-        return nextScheduleTime(truncated);
+        return nextScheduleTime(lastTime);
     }
 
     @Override

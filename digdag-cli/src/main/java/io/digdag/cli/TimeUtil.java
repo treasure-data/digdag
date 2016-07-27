@@ -21,8 +21,7 @@ public class TimeUtil
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
     private static final DateTimeFormatter INSTANT_PARSER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH)
-                    .withZone(ZoneId.systemDefault());
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z", ENGLISH);
 
     private static final DateTimeFormatter LOCAL_TIME_PARSER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd[ HH:mm:ss]", ENGLISH);

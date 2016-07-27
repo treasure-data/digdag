@@ -7,15 +7,18 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.File;
+import java.time.Instant;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.common.base.Optional;
 import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -44,6 +47,9 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
+    @Parameter(names = {"--schedule-from"})
+    String scheduleFromString = null;
+
     public Push(Version version, PrintStream out, PrintStream err)
     {
         super(version, out, err);
@@ -67,7 +73,7 @@ public class Push
         err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        //err.println("        --time-revision              use current time as the revision name");
+        err.println("        --schedule-from \"yyyy-MM-dd HH:mm:ss Z\"  start schedules from this time instead of current time");
         showCommonOptions();
         return systemExit(error);
     }
@@ -98,6 +104,16 @@ public class Push
         // read parameters
         Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
+        // schedule_from will be server's current time if not set
+        Optional<Instant> scheduleFrom;
+        if (scheduleFromString == null) {
+            scheduleFrom = Optional.absent();
+        }
+        else {
+            scheduleFrom = Optional.of(TimeUtil.parseTime(scheduleFromString,
+                        "--schedule-from option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp (hint: run `date \"+%Y-%m-%d %H:%M:%S %z\"` command to show current local time)"));
+        }
+
         // load project
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
@@ -108,7 +124,7 @@ public class Push
         if (revision == null) {
             revision = Upload.generateDefaultRevisionName();
         }
-        RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
+        RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile(), scheduleFrom);
         showUploadedProject(out, proj);
     }
 }

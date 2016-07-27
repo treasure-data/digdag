@@ -80,7 +80,7 @@ public class ScheduleExecutor
     {
         try {
             sm.lockReadySchedules(Instant.now(), (store, storedSchedule) -> {
-                schedule(new ScheduleControl(store, storedSchedule));
+                runSchedule(new ScheduleControl(store, storedSchedule));
             });
         }
         catch (Throwable t) {
@@ -88,7 +88,7 @@ public class ScheduleExecutor
         }
     }
 
-    public boolean schedule(ScheduleControl lockedSched)
+    private boolean runSchedule(ScheduleControl lockedSched)
     {
         StoredSchedule sched = lockedSched.get();
 

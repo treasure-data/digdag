@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.net.URI;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -367,11 +368,25 @@ public class ProjectResource
     @Consumes("application/gzip")
     @Path("/api/projects")
     public RestProject putProject(@QueryParam("project") String name, @QueryParam("revision") String revision,
-            InputStream body, @HeaderParam("Content-Length") long contentLength)
+            InputStream body, @HeaderParam("Content-Length") long contentLength,
+            @QueryParam("schedule_from") String scheduleFromString)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         Preconditions.checkArgument(name != null, "project= is required");
         Preconditions.checkArgument(revision != null, "revision= is required");
+
+        Instant scheduleFrom;
+        if (scheduleFromString == null || scheduleFromString.isEmpty()) {
+            scheduleFrom = Instant.now();
+        }
+        else {
+            try {
+                scheduleFrom = Instant.parse(scheduleFromString);
+            }
+            catch (DateTimeParseException ex) {
+                throw new IllegalArgumentException("Invalid schedule_from= parameter format. Expected yyyy-MM-dd'T'HH:mm:ss'Z' format", ex);
+            }
+        }
 
         if (contentLength > ARCHIVE_TOTAL_SIZE_LIMIT) {
             throw new IllegalArgumentException(String.format(ENGLISH,
@@ -446,7 +461,7 @@ public class ProjectResource
                         List<StoredWorkflowDefinition> defs =
                             lockedProj.insertWorkflowDefinitions(rev,
                                     meta.getWorkflowList().get(),
-                                    srm, Instant.now());
+                                    srm, scheduleFrom);
                         return RestModels.project(storedProject, rev);
                     });
         }
