@@ -36,7 +36,7 @@ public class LocalAgentManager
         if (agentFactory != null) {
             agent = agentFactory.get();
             Thread thread = new ThreadFactoryBuilder()
-                .setDaemon(true)
+                .setDaemon(false)  // tasks taken from the queue should be certainly processed or callbacked to the server
                 .setNameFormat("local-agent-%d")
                 .build()
                 .newThread(agent);

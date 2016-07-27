@@ -87,7 +87,7 @@ public class Server
             throw usage("Setting both --database and --memory is invalid");
         }
 
-        server();
+        startServer();
     }
 
     @Override
@@ -112,7 +112,7 @@ public class Server
         return systemExit(error);
     }
 
-    private void server()
+    private void startServer()
             throws ServletException, IOException
     {
         ServerBootstrap.startServer(localVersion, buildServerProperties(), ServerBootstrap.class);
