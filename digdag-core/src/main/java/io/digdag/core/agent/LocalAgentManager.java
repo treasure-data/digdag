@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.queue.TaskQueueServerManager;
 
@@ -50,7 +51,7 @@ public class LocalAgentManager
         throws InterruptedException
     {
         if (thread != null) {
-            agent.shutdown();
+            agent.shutdown(Optional.absent());  // TODO should this value configurable? or should it be always forever and wait until thread interruption?
             thread.join();
         }
     }
