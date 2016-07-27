@@ -52,6 +52,7 @@ public class MultiThreadAgent
         synchronized (shutdownLock) {
             // synchronize shutdownLock not to reject task execution after acquiring them from taskServer
             executor.shutdown();
+            shutdownLock.notifyAll();
         }
         if (maximumCompletionWait.isPresent()) {
             long seconds = maximumCompletionWait.get().getSeconds();
@@ -90,7 +91,8 @@ public class MultiThreadAgent
                         }
                     }
                     else {
-                        Thread.sleep(500);
+                        // no executor thread is available. sleep for a while until a task execution finishes
+                        shutdownLock.wait(500);
                     }
                 }
             }
