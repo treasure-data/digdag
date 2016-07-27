@@ -19,10 +19,7 @@ import static org.junit.Assert.*;
 
 public class PgConnectionConfigTest
 {
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new GuavaModule());
-    private final YamlConfigLoader loader = new YamlConfigLoader();
-    private final ConfigFactory configFactory = new ConfigFactory(mapper);
-
+    private final ConfigBuilder configBuilder = new ConfigBuilder();
     private PgConnectionConfig connConfigWithDefaultValue;
     private PgConnectionConfig connConfigWithCustomValue;
 
@@ -36,8 +33,7 @@ public class PgConnectionConfigTest
                     "user", "user0",
                     "database", "database0"
             );
-            Config config = loader.loadString(mapper.writeValueAsString(configInput)).toConfig(configFactory);
-            this.connConfigWithDefaultValue = PgConnectionConfig.configure(config);
+            this.connConfigWithDefaultValue = PgConnectionConfig.configure(configBuilder.createConfig(configInput));
         }
 
         {
@@ -51,8 +47,7 @@ public class PgConnectionConfigTest
                     put("connect_timeout", "15s").
                     put("socket_timeout", "12 m").
                     put("schema", "myschema").build();
-            Config config = loader.loadString(mapper.writeValueAsString(configInput)).toConfig(configFactory);
-            this.connConfigWithCustomValue = PgConnectionConfig.configure(config);
+            this.connConfigWithCustomValue = PgConnectionConfig.configure(configBuilder.createConfig(configInput));
         }
     }
 
