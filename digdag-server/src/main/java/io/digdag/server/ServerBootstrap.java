@@ -347,7 +347,7 @@ public class ServerBootstrap
         try {
             // copied defaults from Undertow
             int httpIoThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-            int httpWorkerThreads = httpIoThreads;
+            int httpWorkerThreads = httpIoThreads * 8;
 
             worker = Xnio.getInstance(Undertow.class.getClassLoader())
                 .createWorker(OptionMap.builder()
