@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.pg;
 
 import com.google.common.collect.ImmutableMap;
+import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,7 +15,7 @@ import static org.junit.Assert.*;
 
 public class PgConnectionConfigTest
 {
-    private final PgOpTestHelper pgOpTestHelper = new PgOpTestHelper();
+    private final JdbcOpTestHelper jdbcOpTestHelper = new JdbcOpTestHelper();
     private PgConnectionConfig connConfigWithDefaultValue;
     private PgConnectionConfig connConfigWithCustomValue;
 
@@ -28,7 +29,7 @@ public class PgConnectionConfigTest
                     "user", "user0",
                     "database", "database0"
             );
-            this.connConfigWithDefaultValue = PgConnectionConfig.configure(pgOpTestHelper.createConfig(configInput));
+            this.connConfigWithDefaultValue = PgConnectionConfig.configure(jdbcOpTestHelper.createConfig(configInput));
         }
 
         {
@@ -42,7 +43,7 @@ public class PgConnectionConfigTest
                     put("connect_timeout", "15s").
                     put("socket_timeout", "12 m").
                     put("schema", "myschema").build();
-            this.connConfigWithCustomValue = PgConnectionConfig.configure(pgOpTestHelper.createConfig(configInput));
+            this.connConfigWithCustomValue = PgConnectionConfig.configure(jdbcOpTestHelper.createConfig(configInput));
         }
     }
 
