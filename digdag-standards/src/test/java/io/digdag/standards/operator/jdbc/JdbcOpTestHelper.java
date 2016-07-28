@@ -1,7 +1,8 @@
-package io.digdag.standards.operator.pg;
+package io.digdag.standards.operator.jdbc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -24,7 +25,7 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 
-public class PgOpTestHelper
+public class JdbcOpTestHelper
 {
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new GuavaModule());
     private final YamlConfigLoader loader = new YamlConfigLoader();
@@ -57,7 +58,7 @@ public class PgOpTestHelper
         return loader.loadString(mapper.writeValueAsString(configInput)).toConfig(configFactory);
     }
 
-    public TaskRequest createTaskRequest(Map<String, Object> configInput)
+    public TaskRequest createTaskRequest(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
             throws IOException
     {
         Config config = createConfig(configInput);
@@ -79,7 +80,12 @@ public class PgOpTestHelper
                 createdAt(Instant.now()).
                 config(config).
                 localConfig(createConfig(ImmutableMap.of())).
-                lastStateParams(createConfig(ImmutableMap.of())).
+                lastStateParams(createConfig(lastState.or(ImmutableMap.of()))).
                 build();
+    }
+
+    public ConfigFactory getConfigFactory()
+    {
+        return configFactory;
     }
 }

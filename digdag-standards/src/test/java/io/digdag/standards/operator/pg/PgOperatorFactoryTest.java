@@ -1,8 +1,10 @@
 package io.digdag.standards.operator.pg;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.spi.Operator;
 import io.digdag.spi.TaskRequest;
+import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -15,7 +17,7 @@ import static org.junit.Assert.*;
 
 public class PgOperatorFactoryTest
 {
-    private PgOpTestHelper testHelper = new PgOpTestHelper();
+    private JdbcOpTestHelper testHelper = new JdbcOpTestHelper();
     private PgOperatorFactory operatorFactory;
 
     @Before
@@ -39,7 +41,7 @@ public class PgOperatorFactoryTest
                 "user", "user0",
                 "database", "database0"
         );
-        TaskRequest taskRequest = testHelper.createTaskRequest(configInput);
+        TaskRequest taskRequest = testHelper.createTaskRequest(configInput, Optional.absent());
         Operator operator = operatorFactory.newTaskExecutor(testHelper.workpath(), taskRequest);
         assertThat(operator, is(instanceOf(PgOperatorFactory.PgOperator.class)));
     }
