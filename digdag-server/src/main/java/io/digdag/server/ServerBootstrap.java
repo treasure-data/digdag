@@ -5,11 +5,19 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.spi.InjectionListener;
+import com.google.inject.spi.TypeEncounter;
+import com.google.inject.spi.TypeListener;
+import com.google.inject.matcher.AbstractMatcher;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.Version;
@@ -52,6 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -66,10 +75,12 @@ public class ServerBootstrap
     public static final String CONFIG_INIT_PARAMETER_KEY = "io.digdag.cli.server.config";
     public static final String VERSION_INIT_PARAMETER_KEY = "io.digdag.cli.server.version";
 
+    private ServerControl control;
+
     @Inject
     public ServerBootstrap(GuiceRsServerControl control)
     {
-        this.control = control;
+        this.control = (ServerControl) control;
     }
 
     @Override
@@ -118,6 +129,7 @@ public class ServerBootstrap
     protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
     {
         return bootstrap
+            .addModules(new EagerShutdownModule(control))
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
@@ -139,13 +151,20 @@ public class ServerBootstrap
         private Undertow server;
         private XnioWorker worker;
         private List<GracefulShutdownHandler> handlers;
+        private List<BackgroundExecutor> eagerShutdownExecutors;
 
         public ServerControl(DeploymentManager deployment)
         {
             this.deployment = deployment;
             this.server = null;
             this.worker = null;
-            this.handlers = new ArrayList<>();
+            this.handlers = Collections.synchronizedList(new ArrayList<>());
+            this.eagerShutdownExecutors = Collections.synchronizedList(new ArrayList<>());
+        }
+
+        void addEagerShutdown(BackgroundExecutor executor)
+        {
+            eagerShutdownExecutors.add(executor);
         }
 
         void workerInitialized(XnioWorker worker)
@@ -166,6 +185,18 @@ public class ServerBootstrap
         @Override
         public void stop()
         {
+            // stops background execution threads that may take time first
+            // so that HTTP requests work during waiting for background tasks.
+            for (BackgroundExecutor executor : eagerShutdownExecutors) {
+                try {
+                    executor.eagerShutdown();
+                }
+                catch (Exception ex) {
+                    // nothing we can do here excepting force killing this process
+                    throw Throwables.propagate(ex);
+                }
+            }
+
             // closes HTTP listening channels
             logger.info("Closing HTTP listening sockets");
             if (server != null) {
@@ -216,6 +247,41 @@ public class ServerBootstrap
         }
     }
 
+    private static class EagerShutdownModule
+            implements Module
+    {
+        private final ServerControl control;
+
+        public EagerShutdownModule(ServerControl control)
+        {
+            this.control = control;
+        }
+
+        public void configure(Binder binder)
+        {
+            binder.bindListener(
+                    new AbstractMatcher<TypeLiteral<?>>() {
+                        @Override
+                        public boolean matches(TypeLiteral<?> type) {
+                            return BackgroundExecutor.class.isAssignableFrom(type.getRawType());
+                        }
+                    },
+                    new TypeListener() {
+                        @Override
+                        @SuppressWarnings("unchecked")
+                        public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
+                            ((TypeEncounter<BackgroundExecutor>) encounter).register(new InjectionListener<BackgroundExecutor>() {
+                                @Override
+                                public void afterInjection(BackgroundExecutor injectee)
+                                {
+                                    control.addEagerShutdown(injectee);
+                                }
+                            });
+                        }
+                    });
+        }
+    }
+
     private static class ThreadLocalServerControlProvider
             implements Provider<GuiceRsServerControl>
     {
@@ -225,8 +291,6 @@ public class ServerBootstrap
             return servletServerControl.get();
         }
     }
-
-    private GuiceRsServerControl control;
 
     public static void startServer(Version version, Properties props, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException

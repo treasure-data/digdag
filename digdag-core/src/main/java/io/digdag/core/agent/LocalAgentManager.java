@@ -8,9 +8,11 @@ import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.queue.TaskQueueServerManager;
 
 public class LocalAgentManager
+        implements BackgroundExecutor
 {
     private final Supplier<MultiThreadAgent> agentFactory;
     private Thread thread;
@@ -32,9 +34,9 @@ public class LocalAgentManager
     }
 
     @PostConstruct
-    public void start()
+    public synchronized void start()
     {
-        if (agentFactory != null) {
+        if (agentFactory != null && thread == null) {
             agent = agentFactory.get();
             Thread thread = new ThreadFactoryBuilder()
                 .setDaemon(false)  // tasks taken from the queue should be certainly processed or callbacked to the server
@@ -47,12 +49,20 @@ public class LocalAgentManager
     }
 
     @PreDestroy
-    public void shutdown()
+    public synchronized void shutdown()
         throws InterruptedException
     {
         if (thread != null) {
             agent.shutdown(Optional.absent());  // TODO should this value configurable? or should it be always forever and wait until thread interruption?
             thread.join();
+            thread = null;
         }
+    }
+
+    @Override
+    public void eagerShutdown()
+            throws InterruptedException
+    {
+        shutdown();
     }
 }

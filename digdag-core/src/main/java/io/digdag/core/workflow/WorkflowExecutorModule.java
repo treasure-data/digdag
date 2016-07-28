@@ -1,7 +1,5 @@
 package io.digdag.core.workflow;
 
-import javax.annotation.PostConstruct;
-import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Binder;
 import com.google.inject.Scopes;
@@ -18,25 +16,6 @@ public class WorkflowExecutorModule
         binder.bind(AttemptBuilder.class).in(Scopes.SINGLETON);
 
         // session
-        binder.bind(SessionMonitorExecutor.class).in(Scopes.SINGLETON);
-        binder.bind(WorkflowExecutorStarter.class).asEagerSingleton();
-    }
-
-    public static class WorkflowExecutorStarter
-    {
-        private final SessionMonitorExecutor sessionMonitorExecutor;
-
-        @Inject
-        public WorkflowExecutorStarter(
-                SessionMonitorExecutor sessionMonitorExecutor)
-        {
-            this.sessionMonitorExecutor = sessionMonitorExecutor;
-        }
-
-        @PostConstruct
-        public void start()
-        {
-            sessionMonitorExecutor.start();
-        }
+        binder.bind(SessionMonitorExecutor.class).asEagerSingleton();
     }
 }
