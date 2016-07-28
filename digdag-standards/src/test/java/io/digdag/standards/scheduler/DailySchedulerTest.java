@@ -42,7 +42,7 @@ public class DailySchedulerTest
     {
         // current time is 09:00:00
         // schedule is 10:00:00 every day
-        // schedule at today 01:00:00
+        // schedule at today 10:00:00
         Instant currentTime1 = instant("2016-02-03 09:00:00 +0000");
         assertThat(
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime1),
@@ -52,7 +52,7 @@ public class DailySchedulerTest
 
         // current time is 16:00:00
         // schedule is 10:00:00 every day
-        // schedule at tomorrow 01:00:00
+        // schedule at tomorrow 10:00:00
         Instant currentTime2 = instant("2016-02-03 16:00:00 +0000");
         assertThat(
                 newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime2),
