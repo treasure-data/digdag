@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +34,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAmount;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.findFreePort;
 import static utils.TestUtils.getAttemptId;
@@ -108,7 +111,7 @@ public class SlaIT
                 throws Exception
         {
             pushAndStart("time_custom.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+            expect(Duration.ofMinutes(5), () -> Files.exists(timeoutFile));
         }
 
         @Test
@@ -116,7 +119,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_fail_default.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
         @Test
@@ -124,7 +127,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_fail_enabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptFailure(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptFailure(server.endpoint(), attemptId));
         }
 
         @Test
@@ -132,7 +135,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_fail_disabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
         @Test
@@ -140,7 +143,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_alert_default.dig", Duration.ofSeconds(5));
-            expectNotification(attemptId, Duration.ofSeconds(30));
+            expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
         @Test
@@ -148,7 +151,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_alert_enabled.dig", Duration.ofSeconds(5));
-            expectNotification(attemptId, Duration.ofSeconds(30));
+            expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
         @Test
@@ -156,7 +159,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("time_alert_disabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
             assertThat(mockWebServer.getRequestCount(), is(0));
         }
     }
@@ -169,7 +172,7 @@ public class SlaIT
                 throws Exception
         {
             pushAndStart("duration_custom.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), () -> Files.exists(timeoutFile));
+            expect(Duration.ofMinutes(5), () -> Files.exists(timeoutFile));
         }
 
         @Test
@@ -177,7 +180,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_fail_default.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
         @Test
@@ -185,7 +188,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_fail_enabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptFailure(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptFailure(server.endpoint(), attemptId));
         }
 
         @Test
@@ -193,7 +196,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_fail_disabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
         @Test
@@ -201,7 +204,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_alert_default.dig", Duration.ofSeconds(5));
-            expectNotification(attemptId, Duration.ofSeconds(30));
+            expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
         @Test
@@ -209,7 +212,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
-            expectNotification(attemptId, Duration.ofSeconds(30));
+            expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
         @Test
@@ -217,7 +220,7 @@ public class SlaIT
                 throws Exception
         {
             long attemptId = pushAndStart("duration_alert_disabled.dig", Duration.ofSeconds(5));
-            expect(Duration.ofSeconds(30), TestUtils.attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
             assertThat(mockWebServer.getRequestCount(), is(0));
         }
 
@@ -240,6 +243,7 @@ public class SlaIT
             throws InterruptedException, IOException
     {
         RecordedRequest recordedRequest = mockWebServer.takeRequest(duration.getSeconds(), TimeUnit.SECONDS);
+        assertThat(recordedRequest, is(not(nullValue())));
         verifyNotification(attemptId, recordedRequest);
     }
 
