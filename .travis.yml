@@ -39,7 +39,7 @@ before_install:
     ./gradlew testClasses
   - ci/validate.sh
 
-install:
+install: true
 
 script:
   - ci/run_test.sh
