@@ -22,7 +22,7 @@ public class MultiThreadAgent
     private final TaskServerApi taskServer;
     private final OperatorManager runner;
     private final ThreadPoolExecutor executor;
-    private final Object shutdownLock = new Object();
+    private final Object newTaskLock = new Object();
     private volatile boolean stop = false;
 
     public MultiThreadAgent(AgentConfig config, AgentId agentId,
@@ -49,10 +49,15 @@ public class MultiThreadAgent
     {
         stop = true;
         taskServer.interruptLocalWait();
-        synchronized (shutdownLock) {
-            // synchronize shutdownLock not to reject task execution after acquiring them from taskServer
+        int activeCount;
+        synchronized (newTaskLock) {
+            // synchronize newTaskLock not to reject task execution after acquiring them from taskServer
             executor.shutdown();
-            shutdownLock.notifyAll();
+            activeCount = executor.getActiveCount();
+            newTaskLock.notifyAll();
+        }
+        if (activeCount > 0) {
+            logger.info("Waiting for completion of {} running tasks...", activeCount);
         }
         if (maximumCompletionWait.isPresent()) {
             long seconds = maximumCompletionWait.get().getSeconds();
@@ -72,7 +77,7 @@ public class MultiThreadAgent
     {
         while (!stop) {
             try {
-                synchronized (shutdownLock) {
+                synchronized (newTaskLock) {
                     if (executor.isShutdown()) {
                         break;
                     }
@@ -92,7 +97,7 @@ public class MultiThreadAgent
                     }
                     else {
                         // no executor thread is available. sleep for a while until a task execution finishes
-                        shutdownLock.wait(500);
+                        newTaskLock.wait(500);
                     }
                 }
             }
