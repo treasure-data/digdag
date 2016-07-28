@@ -163,7 +163,17 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            operator.runTask();
+            try {
+                operator.runTask();
+                assertTrue(false);
+            }
+            catch (TaskExecutionException e) {
+                assertThat(e.getRetryInterval(), is(Optional.of(0)));
+                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+                assertThat(config.get("queryId", UUID.class), is(queryId));
+                assertThat(config.has("completedAt"), is(true));
+            }
+
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
@@ -171,6 +181,8 @@ public class AbstractJdbcOperatorTest
             verify(txHelper).lockedTransaction(eq(queryId), anyObject());
             verify(txHelper).cleanup();
         }
+
+        // TODO Check if runTask() should be called once again and it returns with nothing
     }
 
     @Test
@@ -196,7 +208,17 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            operator.runTask();
+            try {
+                operator.runTask();
+                assertTrue(false);
+            }
+            catch (TaskExecutionException e) {
+                assertThat(e.getRetryInterval(), is(Optional.of(0)));
+                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+                assertThat(config.get("queryId", UUID.class), is(queryId));
+                assertThat(config.has("completedAt"), is(true));
+            }
+
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
@@ -227,7 +249,17 @@ public class AbstractJdbcOperatorTest
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
 
-            operator.runTask();
+            try {
+                operator.runTask();
+                assertTrue(false);
+            }
+            catch (TaskExecutionException e) {
+                assertThat(e.getRetryInterval(), is(Optional.of(0)));
+                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+                assertThat(config.get("queryId", UUID.class), is(queryId));
+                assertThat(config.has("completedAt"), is(true));
+            }
+
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
@@ -257,7 +289,17 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            operator.runTask();
+            try {
+                operator.runTask();
+                assertTrue(false);
+            }
+            catch (TaskExecutionException e) {
+                assertThat(e.getRetryInterval(), is(Optional.of(0)));
+                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+                assertThat(config.get("queryId", UUID.class), is(queryId));
+                assertThat(config.has("completedAt"), is(true));
+            }
+
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
@@ -291,7 +333,17 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("___my_status_table"), eq(Duration.ofHours(48)))).thenReturn(txHelper);
 
-            operator.runTask();
+            try {
+                operator.runTask();
+                assertTrue(false);
+            }
+            catch (TaskExecutionException e) {
+                assertThat(e.getRetryInterval(), is(Optional.of(0)));
+                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+                assertThat(config.get("queryId", UUID.class), is(queryId));
+                assertThat(config.has("completedAt"), is(true));
+            }
+
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));

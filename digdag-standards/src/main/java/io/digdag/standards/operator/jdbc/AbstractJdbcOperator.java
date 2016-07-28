@@ -5,25 +5,18 @@ import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.Operator;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.DurationParam;
-import io.digdag.standards.operator.jdbc.DatabaseException;
-import io.digdag.standards.operator.jdbc.JdbcResultSet;
-import io.digdag.standards.operator.jdbc.TableReference;
-import io.digdag.standards.operator.jdbc.TransactionHelper;
-import io.digdag.standards.operator.jdbc.NoTransactionHelper;
-import io.digdag.standards.operator.jdbc.NotReadOnlyException;
-import io.digdag.standards.operator.jdbc.CsvWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -40,6 +33,7 @@ public abstract class AbstractJdbcOperator <C>
     private final TemplateEngine templateEngine;
 
     private static final String QUERY_ID = "queryId";
+    private static final String COMPLETED_AT = "completedAt";
 
     public AbstractJdbcOperator(Path workspacePath, TaskRequest request, TemplateEngine templateEngine)
     {
@@ -100,6 +94,11 @@ public abstract class AbstractJdbcOperator <C>
             queryId = null;
         }
         else {
+            if (state.has(COMPLETED_AT)) {
+                logger.info("This task is already finished: " + state.get(COMPLETED_AT, Instant.class));
+                return TaskResult.defaultBuilder(request).build();
+            }
+
             // generate query id
             if (!state.has(QUERY_ID)) {
                 // this is the first execution of this task
@@ -180,7 +179,11 @@ public abstract class AbstractJdbcOperator <C>
                     logger.warn("Error during cleaning up status table. Ignoring.", ex);
                 }
 
-                return TaskResult.defaultBuilder(request).build();
+                // It's possible that the query already finished successfully, but this task don't know that
+                // if the previous connection with database was disconnected during waiting result.
+                // So setting `completedAt` in state is needed even if the task was already finished.
+                state.set(COMPLETED_AT, Instant.now());
+                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
             }
         }
         catch (NotReadOnlyException ex) {
