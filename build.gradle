@@ -98,6 +98,12 @@ subprojects {
     // "./gradlew check" runs jacocoTestReport
     check.dependsOn('jacocoTestReport')
 
+    test {
+        testLogging {
+            info.events = ["started", "passed", "skipped", "failed", "standardOut", "standardError"]
+        }
+    }
+
     javadoc {
         options {
             locale = 'en_US'
