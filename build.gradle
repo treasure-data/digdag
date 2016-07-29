@@ -102,6 +102,25 @@ subprojects {
         testLogging {
             info.events = ["started", "passed", "skipped", "failed", "standardOut", "standardError"]
         }
+
+        // Shard test classes over CI workers
+        if (System.env.CI_NODE_INDEX != null) {
+            def n = Integer.parseInt(System.env.CI_NODE_TOTAL)
+            def i = Integer.parseInt(System.env.CI_NODE_INDEX)
+            include {
+                // Recurse into all packages
+                if (it.file.isDirectory()) {
+                    return true
+                }
+
+                // Include test class based on worker index
+                def included = Math.abs(it.file.hashCode()) % n == i
+                if (Boolean.parseBoolean(System.env.CI_DEBUG ?: 'false')) {
+                    logger.info("test '" + it.file + '" included: ' + included)
+                }
+                return included
+            }
+        }
     }
 
     javadoc {
