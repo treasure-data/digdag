@@ -95,7 +95,8 @@ public abstract class AbstractJdbcOperator <C>
         }
         else {
             if (state.has(COMPLETED_AT)) {
-                logger.info("This task is already finished: " + state.get(COMPLETED_AT, Instant.class));
+                // TODO: Deserialize as Instant.class using https://github.com/FasterXML/jackson-datatype-jsr310
+                logger.info("This task is already finished: " + state.get(COMPLETED_AT, Object.class));
                 return TaskResult.defaultBuilder(request).build();
             }
 

@@ -49,7 +49,7 @@ public class JdbcOpTestHelper
     public Path workpath()
             throws IOException
     {
-        return Files.createTempDirectory("pg_op_test");
+        return Files.createTempDirectory("jdbc_op_test");
     }
 
     public Config createConfig(Map<String, Object> configInput)
