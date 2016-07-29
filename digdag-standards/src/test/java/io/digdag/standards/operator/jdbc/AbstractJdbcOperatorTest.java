@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
@@ -14,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -25,6 +28,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -124,6 +128,37 @@ public class AbstractJdbcOperatorTest
         return queryId;
     }
 
+    private Instant runTaskWithQueryId(TestOperator operator, UUID queryId)
+            throws IOException
+    {
+        Instant completedAt = null;
+        try {
+            operator.runTask();
+            assertTrue(false);
+        }
+        catch (TaskExecutionException e) {
+            assertThat(e.getRetryInterval(), is(Optional.of(0)));
+            Config config = e.getStateParams(testHelper.getConfigFactory()).get();
+            assertThat(config.get("queryId", UUID.class), is(queryId));
+            HashMap<String, Long> obj = config.get("completedAt", new TypeReference<HashMap<String, Long>>(){});
+            completedAt = Instant.ofEpochSecond(obj.get("epochSecond"), obj.get("nano"));
+        }
+        return completedAt;
+    }
+
+    private void runTaskWithCompletedAt(Map<String, Object> configInput, UUID queryId, Instant completedAt)
+            throws IOException
+    {
+        TestOperator operator = getJdbcOperator(configInput,
+                Optional.of(ImmutableMap.of("queryId", queryId, "completedAt", completedAt)));
+
+        TestConnection connection = Mockito.mock(TestConnection.class);
+        when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
+
+        operator.runTask();
+        verify(operator, never()).connect(anyObject());
+    }
+
     @Test
     public void selectAndDownload()
             throws IOException, NotReadOnlyException
@@ -153,8 +188,11 @@ public class AbstractJdbcOperatorTest
                 "query", sql
         );
 
+        // First, just generates a query ID
         UUID queryId = runTaskWithoutQueryId(configInput);
 
+        // Next, executes the query and updates statuses
+        Instant completedAt;
         {
             TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
@@ -163,16 +201,7 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            try {
-                operator.runTask();
-                assertTrue(false);
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval(), is(Optional.of(0)));
-                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
-                assertThat(config.get("queryId", UUID.class), is(queryId));
-                assertThat(config.has("completedAt"), is(true));
-            }
+            completedAt = runTaskWithQueryId(operator, queryId);
 
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
@@ -182,7 +211,8 @@ public class AbstractJdbcOperatorTest
             verify(txHelper).cleanup();
         }
 
-        // TODO Check if runTask() should be called once again and it returns with nothing
+        // Finally, just quits since the status is updated
+        runTaskWithCompletedAt(configInput, queryId, completedAt);
     }
 
     @Test
@@ -198,8 +228,11 @@ public class AbstractJdbcOperatorTest
                 put("create_table", "desttbl").
                 put("query", sql).build();
 
+        // First, just generates a query ID
         UUID queryId = runTaskWithoutQueryId(configInput);
 
+        // Next, executes the query and updates statuses
+        Instant completedAt;
         {
             TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
@@ -208,16 +241,7 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            try {
-                operator.runTask();
-                assertTrue(false);
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval(), is(Optional.of(0)));
-                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
-                assertThat(config.get("queryId", UUID.class), is(queryId));
-                assertThat(config.has("completedAt"), is(true));
-            }
+            completedAt = runTaskWithQueryId(operator, queryId);
 
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
@@ -226,6 +250,9 @@ public class AbstractJdbcOperatorTest
             verify(txHelper).lockedTransaction(eq(queryId), anyObject());
             verify(txHelper).cleanup();
         }
+
+        // Finally, just quits since the status is updated
+        runTaskWithCompletedAt(configInput, queryId, completedAt);
     }
 
     @Test
@@ -241,29 +268,26 @@ public class AbstractJdbcOperatorTest
                 put("create_table", "desttbl").
                 put("query", sql).build();
 
+        // First, just generates a query ID
         UUID queryId = runTaskWithoutQueryId(configInput);
 
+        // Next, executes the query and updates statuses
+        Instant completedAt;
         {
             TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
             TestConnection connection = Mockito.mock(TestConnection.class);
             when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
 
-            try {
-                operator.runTask();
-                assertTrue(false);
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval(), is(Optional.of(0)));
-                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
-                assertThat(config.get("queryId", UUID.class), is(queryId));
-                assertThat(config.has("completedAt"), is(true));
-            }
+            completedAt = runTaskWithQueryId(operator, queryId);
 
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
             verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
         }
+
+        // Finally, just quits since the status is updated
+        runTaskWithCompletedAt(configInput, queryId, completedAt);
     }
 
     @Test
@@ -279,8 +303,11 @@ public class AbstractJdbcOperatorTest
                 "query", sql
         );
 
+        // First, just generates a query ID
         UUID queryId = runTaskWithoutQueryId(configInput);
 
+        // Next, executes the query and updates statuses
+        Instant completedAt;
         {
             TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
@@ -289,16 +316,7 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("__digdag_status"), eq(Duration.ofHours(24)))).thenReturn(txHelper);
 
-            try {
-                operator.runTask();
-                assertTrue(false);
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval(), is(Optional.of(0)));
-                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
-                assertThat(config.get("queryId", UUID.class), is(queryId));
-                assertThat(config.has("completedAt"), is(true));
-            }
+            completedAt = runTaskWithQueryId(operator, queryId);
 
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
@@ -307,6 +325,9 @@ public class AbstractJdbcOperatorTest
             verify(txHelper).lockedTransaction(eq(queryId), anyObject());
             verify(txHelper).cleanup();
         }
+
+        // Finally, just quits since the status is updated
+        runTaskWithCompletedAt(configInput, queryId, completedAt);
     }
 
     @Test
@@ -323,8 +344,11 @@ public class AbstractJdbcOperatorTest
                 put("status_table_cleanup", "48h").
                 put("query", sql).build();
 
+        // First, just generates a query ID
         UUID queryId = runTaskWithoutQueryId(configInput);
 
+        // Next, executes the query and updates statuses
+        Instant completedAt;
         {
             TestOperator operator = getJdbcOperator(configInput, Optional.of(ImmutableMap.of("queryId", queryId)));
 
@@ -333,16 +357,7 @@ public class AbstractJdbcOperatorTest
             TransactionHelper txHelper = mock(TransactionHelper.class);
             when(connection.getStrictTransactionHelper(eq("___my_status_table"), eq(Duration.ofHours(48)))).thenReturn(txHelper);
 
-            try {
-                operator.runTask();
-                assertTrue(false);
-            }
-            catch (TaskExecutionException e) {
-                assertThat(e.getRetryInterval(), is(Optional.of(0)));
-                Config config = e.getStateParams(testHelper.getConfigFactory()).get();
-                assertThat(config.get("queryId", UUID.class), is(queryId));
-                assertThat(config.has("completedAt"), is(true));
-            }
+            completedAt = runTaskWithQueryId(operator, queryId);
 
             verify(operator).connect(any(TestConnectionConfig.class));
             verify(connection).validateStatement(eq(sql));
@@ -351,5 +366,8 @@ public class AbstractJdbcOperatorTest
             verify(txHelper).lockedTransaction(eq(queryId), anyObject());
             verify(txHelper).cleanup();
         }
+
+        // Finally, just quits since the status is updated
+        runTaskWithCompletedAt(configInput, queryId, completedAt);
     }
 }
