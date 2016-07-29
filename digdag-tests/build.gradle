@@ -17,7 +17,7 @@ test {
     environment "DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"
 
     // Exclude all acceptance tests if this is not an acceptance test run
-    if (System.env.CI_ACCEPTANCE_TEST == null || Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
-        include { false }
+    if (System.env.CI_ACCEPTANCE_TEST == null || !Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
+        exclude { true }
     }
 }
