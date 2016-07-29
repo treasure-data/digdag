@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.util.DurationParam;
@@ -23,7 +25,8 @@ import static org.postgresql.core.Utils.escapeIdentifier;
 public class PgConnection
     extends AbstractJdbcConnection
 {
-    protected static PgConnection open(PgConnectionConfig config)
+    @VisibleForTesting
+    public static PgConnection open(PgConnectionConfig config)
     {
         return new PgConnection(config.openConnection());
     }

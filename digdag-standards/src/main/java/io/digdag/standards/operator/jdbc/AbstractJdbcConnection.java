@@ -9,6 +9,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +111,8 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    protected void execute(String sql)
+    @VisibleForTesting
+    public void execute(String sql)
         throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
