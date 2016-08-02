@@ -119,7 +119,7 @@ public class PgConnection
         {
             try (Statement stmt = connection.createStatement()) {
                 ResultSet rs = stmt.executeQuery(String.format(ENGLISH,
-                            "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE",
+                            "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
                             escapeIdent(statusTableName),
                             queryId.toString())
                         );
