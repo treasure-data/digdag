@@ -3,6 +3,7 @@ package io.digdag.standards.operator.pg;
 import io.digdag.standards.operator.jdbc.ImmutableTableReference;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
+import io.digdag.standards.operator.jdbc.TransactionHelper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -12,6 +13,10 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.hamcrest.Matchers.is;
@@ -60,7 +65,6 @@ public class PgConnectionTest
     public void executeReadOnlyQuery()
             throws IOException, NotReadOnlyException, SQLException
     {
-        PgConnection pgConnection = spy(PgConnection.open(pgConnectionConfig));
         AtomicReference<JdbcResultSet> rs = new AtomicReference<>();
         pgConnection.executeReadOnlyQuery(SQL, rs::set);
 
@@ -74,7 +78,6 @@ public class PgConnectionTest
     public void buildInsertStatement()
             throws IOException, NotReadOnlyException, SQLException
     {
-        PgConnection pgConnection = spy(PgConnection.open(pgConnectionConfig));
         String insertStatement =
                 pgConnection.buildInsertStatement(SQL, ImmutableTableReference.builder().schema("myschema").name("desttbl").build());
         assertThat(insertStatement, is("INSERT INTO \"myschema\".\"desttbl\"\n" + SQL));
@@ -84,7 +87,6 @@ public class PgConnectionTest
     public void buildCreateTableStatement()
             throws IOException, NotReadOnlyException, SQLException
     {
-        PgConnection pgConnection = spy(PgConnection.open(pgConnectionConfig));
         String insertStatement =
                 pgConnection.buildCreateTableStatement(SQL, ImmutableTableReference.builder().schema("myschema").name("desttbl").build());
         assertThat(insertStatement,
@@ -95,7 +97,6 @@ public class PgConnectionTest
     public void executeScript()
             throws IOException, NotReadOnlyException, SQLException
     {
-        PgConnection pgConnection = spy(PgConnection.open(pgConnectionConfig));
         pgConnection.executeScript(SQL);
         verify(statement).execute(eq(SQL));
     }
@@ -104,8 +105,63 @@ public class PgConnectionTest
     public void executeUpdate()
             throws IOException, NotReadOnlyException, SQLException
     {
-        PgConnection pgConnection = spy(PgConnection.open(pgConnectionConfig));
         pgConnection.executeUpdate(SQL);
         verify(statement).executeUpdate(eq(SQL));
+    }
+
+    @Test
+    public void txHelperPrepare()
+            throws SQLException
+    {
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        txHelper.prepare();
+        verify(pgConnection).execute(eq(
+                "CREATE TABLE IF NOT EXISTS \"__digdag_status\"" +
+                        " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)"));
+    }
+
+    @Test
+    public void txHelperLockedTransactionWithNotCompletedStatus()
+            throws SQLException
+    {
+        UUID queryId = UUID.randomUUID();
+
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        String selectSQL = "SELECT completed_at FROM \"__digdag_status\" WHERE query_id = '" + queryId + "' FOR UPDATE";
+        ResultSet selectRs = mock(ResultSet.class);
+
+        when(statement.executeQuery(eq(selectSQL))).thenReturn(selectRs);
+
+        // A corresponding status record exists which isn't completed
+        when(selectRs.next()).thenReturn(true);
+        when(selectRs.wasNull()).thenReturn(true);
+
+        AtomicBoolean called = new AtomicBoolean(false);
+        assertThat(txHelper.lockedTransaction(queryId, () -> called.set(true)), is(true));
+        verify(pgConnection).execute(eq("BEGIN"));
+        verify(pgConnection).execute(eq("UPDATE \"__digdag_status\" SET completed_at = now() WHERE query_id = '" + queryId + "'"));
+        verify(pgConnection).execute(eq("COMMIT"));
+    }
+
+    @Test
+    public void txHelperLockedTransactionWithCompletedStatus()
+            throws SQLException
+    {
+        UUID queryId = UUID.randomUUID();
+
+        TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
+        String selectSQL = "SELECT completed_at FROM \"__digdag_status\" WHERE query_id = '" + queryId + "' FOR UPDATE";
+        ResultSet selectRs = mock(ResultSet.class);
+
+        when(statement.executeQuery(eq(selectSQL))).thenReturn(selectRs);
+
+        // A corresponding status record exists which is completed
+        when(selectRs.next()).thenReturn(true);
+        when(selectRs.wasNull()).thenReturn(false);
+
+        AtomicBoolean called = new AtomicBoolean(false);
+        assertThat(txHelper.lockedTransaction(queryId, () -> called.set(true)), is(false));
+        verify(pgConnection).execute(eq("BEGIN"));
+        verify(pgConnection).execute(eq("ROLLBACK"));
     }
 }
