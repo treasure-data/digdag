@@ -14,7 +14,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -120,6 +119,15 @@ public class PgConnectionTest
                         " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)"));
     }
 
+    private ResultSet setupMockSelectResultSet(UUID queryId)
+            throws SQLException
+    {
+        String selectSQL = "SELECT completed_at FROM \"__digdag_status\" WHERE query_id = '" + queryId + "' FOR UPDATE NOWAIT";
+        ResultSet selectRs = mock(ResultSet.class);
+        when(statement.executeQuery(eq(selectSQL))).thenReturn(selectRs);
+        return selectRs;
+    }
+
     @Test
     public void txHelperLockedTransactionWithNotCompletedStatus()
             throws SQLException
@@ -127,12 +135,9 @@ public class PgConnectionTest
         UUID queryId = UUID.randomUUID();
 
         TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
-        String selectSQL = "SELECT completed_at FROM \"__digdag_status\" WHERE query_id = '" + queryId + "' FOR UPDATE";
-        ResultSet selectRs = mock(ResultSet.class);
-
-        when(statement.executeQuery(eq(selectSQL))).thenReturn(selectRs);
 
         // A corresponding status record exists which isn't completed
+        ResultSet selectRs = setupMockSelectResultSet(queryId);
         when(selectRs.next()).thenReturn(true);
         when(selectRs.wasNull()).thenReturn(true);
 
@@ -150,12 +155,9 @@ public class PgConnectionTest
         UUID queryId = UUID.randomUUID();
 
         TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
-        String selectSQL = "SELECT completed_at FROM \"__digdag_status\" WHERE query_id = '" + queryId + "' FOR UPDATE";
-        ResultSet selectRs = mock(ResultSet.class);
-
-        when(statement.executeQuery(eq(selectSQL))).thenReturn(selectRs);
 
         // A corresponding status record exists which is completed
+        ResultSet selectRs = setupMockSelectResultSet(queryId);
         when(selectRs.next()).thenReturn(true);
         when(selectRs.wasNull()).thenReturn(false);
 
