@@ -2,6 +2,7 @@ package io.digdag.standards.operator.pg;
 
 import io.digdag.standards.operator.jdbc.ImmutableTableReference;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
+import io.digdag.standards.operator.jdbc.LockConflictException;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 import org.junit.Before;
@@ -130,7 +131,7 @@ public class PgConnectionTest
 
     @Test
     public void txHelperLockedTransactionWithNotCompletedStatus()
-            throws SQLException
+            throws SQLException, LockConflictException
     {
         UUID queryId = UUID.randomUUID();
 
@@ -150,7 +151,7 @@ public class PgConnectionTest
 
     @Test
     public void txHelperLockedTransactionWithCompletedStatus()
-            throws SQLException
+            throws SQLException, LockConflictException
     {
         UUID queryId = UUID.randomUUID();
 

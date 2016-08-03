@@ -17,6 +17,7 @@ public abstract class AbstractPersistentTransactionHelper
 
     @Override
     public boolean lockedTransaction(UUID queryId, TransactionAction action)
+            throws LockConflictException
     {
         boolean completed = beginTransactionAndLockStatusRow(queryId);
 
@@ -36,6 +37,7 @@ public abstract class AbstractPersistentTransactionHelper
     }
 
     protected boolean beginTransactionAndLockStatusRow(UUID queryId)
+            throws LockConflictException
     {
         do {
             beginTransaction();
@@ -60,7 +62,8 @@ public abstract class AbstractPersistentTransactionHelper
         NOT_EXISTS,
     };
 
-    protected abstract StatusRow lockStatusRow(UUID queryId);
+    protected abstract StatusRow lockStatusRow(UUID queryId)
+            throws LockConflictException;
 
     protected void beginTransaction()
     {

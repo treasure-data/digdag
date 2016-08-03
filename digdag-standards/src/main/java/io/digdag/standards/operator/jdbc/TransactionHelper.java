@@ -13,5 +13,6 @@ public interface TransactionHelper
 
     void cleanup();
 
-    boolean lockedTransaction(UUID queryId, TransactionAction action);
+    boolean lockedTransaction(UUID queryId, TransactionAction action)
+            throws LockConflictException;
 }
