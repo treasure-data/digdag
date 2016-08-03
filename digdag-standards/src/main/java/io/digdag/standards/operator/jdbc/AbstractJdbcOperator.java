@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,12 +27,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class AbstractJdbcOperator <C>
     extends BaseOperator
 {
+    private static final String POLL_INTERVAL = "pollInterval";
+    private static final int INITIAL_POLL_INTERVAL = 1;
+    private static final int MAX_POLL_INTERVAL = 1200;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TemplateEngine templateEngine;
 
     private static final String QUERY_ID = "queryId";
-    private static final String COMPLETED_AT = "completedAt";
 
     public AbstractJdbcOperator(Path workspacePath, TaskRequest request, TemplateEngine templateEngine)
     {
@@ -94,12 +95,6 @@ public abstract class AbstractJdbcOperator <C>
             queryId = null;
         }
         else {
-            if (state.has(COMPLETED_AT)) {
-                // TODO: Deserialize as Instant.class using https://github.com/FasterXML/jackson-datatype-jsr310
-                logger.info("This task is already finished: " + state.get(COMPLETED_AT, Object.class));
-                return TaskResult.defaultBuilder(request).build();
-            }
-
             // generate query id
             if (!state.has(QUERY_ID)) {
                 // this is the first execution of this task
@@ -180,15 +175,17 @@ public abstract class AbstractJdbcOperator <C>
                     logger.warn("Error during cleaning up status table. Ignoring.", ex);
                 }
 
-                // It's possible that the query already finished successfully, but this task don't know that
-                // if the previous connection with database was disconnected during waiting result.
-                // So setting `completedAt` in state is needed even if the task was already finished.
-                state.set(COMPLETED_AT, Instant.now());
-                throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+                return TaskResult.defaultBuilder(request).build();
             }
         }
         catch (NotReadOnlyException ex) {
             throw new ConfigException("Query must be read-only if download_file is set", ex.getCause());
+        }
+        catch (LockConflictException ex) {
+            int pollingInterval = state.get(POLL_INTERVAL, Integer.class, INITIAL_POLL_INTERVAL);
+            // Set next interval for exponential backoff
+            state.set(POLL_INTERVAL, Math.min(pollingInterval * 2, MAX_POLL_INTERVAL));
+            throw TaskExecutionException.ofNextPolling(pollingInterval, ConfigElement.copyOf(state));
         }
         catch (DatabaseException ex) {
             // expected error that should suppress stacktrace by default
