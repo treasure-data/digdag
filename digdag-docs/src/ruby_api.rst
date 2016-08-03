@@ -8,7 +8,7 @@ workflow.dig:
 
 .. code-block:: yaml
 
-    export:
+    _export:
       rb:
         require: 'tasks/my_workflow'
 
