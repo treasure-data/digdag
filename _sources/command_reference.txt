@@ -343,7 +343,7 @@ start
 
 .. code-block:: console
 
-    $ digdag start <project-name> <+name> --session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">
+    $ digdag start <project-name> <+name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
 
 Starts a new session. This command requires project name, workflow name, and session_time. Examples:
 
@@ -353,7 +353,7 @@ Starts a new session. This command requires project name, workflow name, and ses
     $ digdag start myproj +main --session hourly
     $ digdag start myproj +main --session "2016-01-01 00:00:00"
 
-:command:`--session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">`
+:command:`--session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">`
   Use this time as session_time.
 
   If ``daily`` is set, today's 00:00:00 is used.
