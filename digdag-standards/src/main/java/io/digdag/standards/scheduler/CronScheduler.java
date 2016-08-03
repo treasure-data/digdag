@@ -18,7 +18,15 @@ public class CronScheduler
 
     CronScheduler(String cronPattern, ZoneId timeZone, long delaySeconds)
     {
-        this.pattern = new SchedulingPattern(cronPattern);
+        this.pattern = new SchedulingPattern(cronPattern) {
+            // workaround for a bug of cron4j:
+            // https://gist.github.com/frsyuki/618c4e6c1f5f876e4ee74b9da2fd37c0
+            @Override
+            public boolean match(long millis)
+            {
+                return match(TimeZone.getTimeZone(timeZone), millis);
+            }
+        };
         this.timeZone = timeZone;
         this.delaySeconds = delaySeconds;
     }
@@ -41,8 +49,9 @@ public class CronScheduler
             // because Predictor doesn't include this time at "next"MatchingTime() method
             truncated = truncated.minusSeconds(1);
         }
+        Instant lastTime = truncated.minusSeconds(delaySeconds);
 
-        return nextScheduleTime(truncated);
+        return nextScheduleTime(lastTime);
     }
 
     @Override

@@ -7,15 +7,15 @@ public interface Scheduler
 {
     ZoneId getTimeZone();
 
-    // align this time with the last schedule time.
-    // returned value is same with currentTime or after currentTime.
+    // align given time with the last time of this schedule.
+    // getRunTime of returned ScheduleTime is same or after currentTime.
     ScheduleTime getFirstScheduleTime(Instant currentTime);
 
-    // align this time with the next schedule time.
-    // returned value is after lastScheduleTime.
+    // align given time with the next schedule time.
+    // getTime of returned ScheduleTime is after lastScheduleTime.
     ScheduleTime nextScheduleTime(Instant lastScheduleTime);
 
-    // align this time with the last schedule time.
-    // returned value is before currentScheduleTime.
+    // align given time with the last schedule time.
+    // getTime of returned ScheduleTime is before currentScheduleTime.
     ScheduleTime lastScheduleTime(Instant currentScheduleTime);
 }
