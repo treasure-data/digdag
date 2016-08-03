@@ -8,18 +8,13 @@ import LRU from 'lru-cache';
 export type Credentials = {[key: string]: string};
 export type Headers = {[key: string]: string};
 
-export type DirectDownloadHandle = {
-  type: string;
-  url: string;
-}
-
 export type LogFileHandle = {
   fileName: string;
   fileSize: number;
   taskName: string;
   fileTime: string;
   agentId: string;
-  direct: ?DirectDownloadHandle;
+  direct: ?string;
 }
 
 export type TarEntry = {
@@ -242,7 +237,7 @@ export class Model {
         reject(`Cannot fetch non-direct log file: ${file.fileName}`);
       });
     }
-    return fetch(file.direct.url).then(response => {
+    return fetch(file.direct).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText);
       }
