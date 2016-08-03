@@ -76,7 +76,7 @@ public class Backfill
     {
         LocalTimeOrInstant fromTime = LocalTimeOrInstant.of(
                     TimeUtil.parseLocalTime(fromTimeString,
-                        "--session must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
+                        "--from must be hourly, daily, now, \"yyyy-MM-dd\", or \"yyyy-MM-dd HH:mm:SS\" format"));
 
         DigdagClient client = buildClient();
 
