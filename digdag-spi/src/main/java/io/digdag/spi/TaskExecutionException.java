@@ -78,6 +78,10 @@ public class TaskExecutionException
         return error.transform(it -> it.toConfig(cf));
     }
 
+    public boolean isError() {
+        return error.isPresent();
+    }
+
     public Optional<Integer> getRetryInterval()
     {
         return retryInterval;

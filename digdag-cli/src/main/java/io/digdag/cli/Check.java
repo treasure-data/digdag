@@ -1,6 +1,7 @@
 package io.digdag.cli;
 
 import java.io.PrintStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
@@ -90,18 +91,24 @@ public class Check
         return systemExit(error);
     }
 
-    public void check(String workflowNameArg) throws Exception
+    public void check(String workflowNameArg)
+            throws Exception
     {
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .withWorkflowExecutor(false)
-            .withScheduleExecutor(false)
-            .withLocalAgent(false)
-            .addModules(binder -> {
-                binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
-            })
-            .initialize()
-            .getInjector();
+        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .withWorkflowExecutor(false)
+                .withScheduleExecutor(false)
+                .withLocalAgent(false)
+                .addModules(binder -> {
+                    binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
+                })
+                .initializeWithoutShutdownHook()) {
+            check(digdag.getInjector(), workflowNameArg);
+        }
+    }
 
+    private void check(Injector injector, String workflowNameArg)
+            throws IOException
+    {
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);

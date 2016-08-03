@@ -57,7 +57,7 @@ public class WorkflowExecutorCasesTest
     public void destroy()
         throws Exception
     {
-        embed.destroy();
+        embed.close();
     }
 
     @Test

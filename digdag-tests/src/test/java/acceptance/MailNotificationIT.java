@@ -7,19 +7,23 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import static acceptance.TestUtils.attemptSuccess;
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.expect;
-import static acceptance.TestUtils.getAttemptId;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMailServer;
 
 public class MailNotificationIT
 {
@@ -29,7 +33,7 @@ public class MailNotificationIT
     private static final String SENDER = "digdag@foo.bar";
     private static final String RECEIVER = "alert@foo.bar";
 
-    private final int port = TestUtils.findFreePort();
+    private final Wiser mailServer = startMailServer(HOSTNAME);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -41,7 +45,7 @@ public class MailNotificationIT
                     "notification.mail.to = " + RECEIVER,
                     "notification.mail.from = " + SENDER,
                     "notification.mail.host= " + HOSTNAME,
-                    "notification.mail.port=" + port,
+                    "notification.mail.port=" + mailServer.getServer().getPort(),
                     "notification.mail.username=mail-user",
                     "notification.mail.password=mail-pass",
                     "notification.mail.tls=false")
@@ -49,7 +53,6 @@ public class MailNotificationIT
 
     private Path config;
     private Path projectDir;
-    private Wiser mailServer;
 
     @Before
     public void setUp()
@@ -59,20 +62,13 @@ public class MailNotificationIT
         config = folder.newFile().toPath();
 
         TestUtils.createProject(projectDir);
-
-        mailServer = new Wiser();
-        mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(port);
-        mailServer.start();
     }
 
     @After
     public void tearDown()
             throws Exception
     {
-        if (mailServer != null) {
-            mailServer.stop();
-        }
+        mailServer.stop();
     }
 
     @Test

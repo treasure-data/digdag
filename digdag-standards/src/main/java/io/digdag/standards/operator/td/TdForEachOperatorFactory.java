@@ -1,15 +1,21 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
+import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -22,13 +28,21 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdForEachOperatorFactory
         implements OperatorFactory
 {
+    private static final String JOB_ID = "jobId";
+    private static final String DOMAIN_KEY = "domainKey";
+    private static final String POLL_ITERATION = "pollIteration";
+
+    private static final Integer INITIAL_POLL_INTERVAL = 1;
+    private static final int MAX_POLL_INTERVAL = 30000;
+
     private static Logger logger = LoggerFactory.getLogger(TdForEachOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
@@ -55,22 +69,80 @@ public class TdForEachOperatorFactory
     private class TdForEachOperator
             extends BaseOperator
     {
+        private final Config params;
+        private final String query;
+        private final int priority;
+        private final int jobRetry;
+        private final String engine;
+        private final Config state;
+        private final Optional<String> existingJobId;
+        private final Optional<String> existingDomainKey;
+
+        private final Config doConfig;
+
         private TdForEachOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
+
+            this.params = request.getConfig().mergeDefault(
+                    request.getConfig().getNestedOrGetEmpty("td"));
+
+            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+
+            this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
+
+            this.jobRetry = params.get("job_retry", int.class, 0);
+
+            this.engine = params.get("engine", String.class, "presto");
+
+            this.state = request.getLastStateParams().deepCopy();
+
+            this.existingJobId = state.getOptional(JOB_ID, String.class);
+            this.existingDomainKey = state.getOptional(DOMAIN_KEY, String.class);
+
+            this.doConfig = request.getConfig().getNested("_do");
         }
 
         @Override
         public TaskResult runTask()
         {
-            Config params = request.getConfig().mergeDefault(
-                    request.getConfig().getNestedOrGetEmpty("td"));
+            try (TDOperator op = TDOperator.fromConfig(params)) {
 
-            String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+                // Generate and store domain key before starting the job
+                if (!existingDomainKey.isPresent()) {
+                    String domainKey = UUID.randomUUID().toString();
+                    state.set(DOMAIN_KEY, domainKey);
+                    throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+                }
 
-            Config doConfig = request.getConfig().getNested("_do");
+                // Start the job
+                if (!existingJobId.isPresent()) {
+                    String jobId = startJob(op);
+                    state.set(JOB_ID, jobId);
+                    state.set(POLL_ITERATION, 1);
+                    throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
+                }
 
-            List<Config> rows = runQuery(request, params, query);
+                // Check if the job is done
+                String jobId = existingJobId.get();
+                TDJobOperator job = op.newJobOperator(jobId);
+                TDJobSummary status = checkJobStatus(job);
+                boolean done = status.getStatus().isFinished();
+                if (!done) {
+                    int pollIteration = state.get(POLL_ITERATION, int.class, 1);
+                    state.set(POLL_ITERATION, pollIteration + 1);
+                    int pollInterval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, pollIteration), MAX_POLL_INTERVAL);
+                    throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
+                }
+
+                // Get the job results
+                return processJobResult(op, job, status);
+            }
+        }
+
+        private TaskResult processJobResult(TDOperator op, TDJobOperator j, TDJobSummary summary)
+        {
+            List<Config> rows = fetchRows(j);
 
             boolean parallel = params.get("_parallel", boolean.class, false);
 
@@ -92,33 +164,47 @@ public class TdForEachOperatorFactory
                     .build();
         }
 
-        private List<Config> runQuery(TaskRequest request, Config params, String query)
+        private String startJob(TDOperator op)
         {
-            String engine = params.get("engine", String.class, "presto");
             if (!engine.equals("presto") && !engine.equals("hive")) {
                 throw new ConfigException("Unknown 'engine:' option (available options are: hive and presto): " + engine);
             }
 
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            assert existingDomainKey.isPresent();
+            TDJobRequest req = new TDJobRequestBuilder()
+                    .setType(engine)
+                    .setDatabase(op.getDatabase())
+                    .setQuery(query)
+                    .setRetryLimit(jobRetry)
+                    .setPriority(priority)
+                    .setDomainKey(existingDomainKey)
+                    .setScheduledTime(request.getSessionTime().getEpochSecond())
+                    .createTDJobRequest();
 
-                int priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
-                int jobRetry = params.get("job_retry", int.class, 0);
+            TDJobOperator j = op.submitNewJob(req);
+            logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), query);
 
-                TDJobRequest req = new TDJobRequestBuilder()
-                        .setType(engine)
-                        .setDatabase(op.getDatabase())
-                        .setQuery(query)
-                        .setRetryLimit(jobRetry)
-                        .setPriority(priority)
-                        .setScheduledTime(request.getSessionTime().getEpochSecond())
-                        .createTDJobRequest();
+            return j.getJobId();
+        }
 
-                TDJobOperator j = op.submitNewJob(req);
-                logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), query);
-
-                joinJob(j);
-
-                return fetchRows(j);
+        private TDJobSummary checkJobStatus(TDJobOperator j)
+        {
+            try {
+                return j.ensureRunningOrSucceeded();
+            }
+            catch (TDJobException ex) {
+                try {
+                    TDJob job = j.getJobInfo();
+                    String message = job.getCmdOut() + "\n" + job.getStdErr();
+                    throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
+                }
+                catch (Exception getJobInfoFailed) {
+                    getJobInfoFailed.addSuppressed(ex);
+                    throw Throwables.propagate(getJobInfoFailed);
+                }
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
             }
         }
 

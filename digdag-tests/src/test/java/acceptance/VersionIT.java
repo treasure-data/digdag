@@ -5,11 +5,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -62,9 +64,8 @@ public class VersionIT
         assertThat(status.code(), is(not(0)));
         assertThat(status.errUtf8(), containsString("Client: " + localVersionString));
         assertThat(status.errUtf8(), containsString("Server: " + REMOTE_VERSION));
-        assertThat(status.errUtf8(), containsString("Please run: digdag selfupdate"));
+        assertThat(status.errUtf8(), containsString("digdag selfupdate "  + REMOTE_VERSION));
         assertThat(status.errUtf8(), containsString(
-                "Before pushing workflows to the server, please run them locally to " +
-                        "verify that they are compatible with the new version of digdag."));
+                "Please run following command locally to download a compatible version with the server"));
     }
 }

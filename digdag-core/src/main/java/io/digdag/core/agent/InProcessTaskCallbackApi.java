@@ -24,7 +24,7 @@ import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.storage.ArchiveManager;
-import io.digdag.core.queue.TaskQueueManager;
+import io.digdag.core.queue.TaskQueueServerManager;
 import io.digdag.core.log.LogServerManager;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.spi.TaskQueueClient;
@@ -57,7 +57,7 @@ public class InProcessTaskCallbackApi
             ProjectStoreManager pm,
             SessionStoreManager sm,
             ArchiveManager archiveManager,
-            TaskQueueManager qm,
+            TaskQueueServerManager qm,
             LogServerManager lm,
             AgentId agentId,
             AttemptBuilder attemptBuilder,

@@ -1,18 +1,23 @@
 package acceptance;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.startMailServer;
 
 public class ServerModeMailIT
 {
@@ -22,13 +27,13 @@ public class ServerModeMailIT
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
 
-    private final int port = TestUtils.findFreePort();
+    private final Wiser mailServer = startMailServer(HOSTNAME);
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "params.mail.host=" + HOSTNAME,
-                    "params.mail.port=" + port,
+                    "params.mail.port=" + mailServer.getServer().getPort(),
                     "params.mail.from=" + SENDER,
                     "params.mail.username=mail-user",
                     "params.mail.password=mail-pass",
@@ -39,6 +44,13 @@ public class ServerModeMailIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    @After
+    public void tearDown()
+            throws Exception
+    {
+        mailServer.stop();
+    }
+
     @Test
     public void mailConfigInFile()
             throws Exception
@@ -48,13 +60,6 @@ public class ServerModeMailIT
         Path configDir = folder.newFolder().toPath();
         Path config = configDir.resolve("config");
         Files.createFile(config);
-
-        // Start mail server
-        Wiser mailServer;
-        mailServer = new Wiser();
-        mailServer.setHostname(HOSTNAME);
-        mailServer.setPort(port);
-        mailServer.start();
 
         copyResource("acceptance/mail_config/mail_config.dig", workflowFile);
         copyResource("acceptance/mail_config/mail_body.txt", projectDir.resolve("mail_body.txt"));

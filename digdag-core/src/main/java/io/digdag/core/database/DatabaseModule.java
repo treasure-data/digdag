@@ -30,7 +30,8 @@ public class DatabaseModule
         binder.bind(QueueSettingStoreManager.class).to(DatabaseQueueSettingStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(SessionStoreManager.class).to(DatabaseSessionStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(ScheduleStoreManager.class).to(DatabaseScheduleStoreManager.class).in(Scopes.SINGLETON);
-        binder.bind(DatabaseTaskQueueStore.class).in(Scopes.SINGLETON);
+        binder.bind(DatabaseTaskQueueConfig.class).in(Scopes.SINGLETON);
+        binder.bind(DatabaseTaskQueueServer.class).in(Scopes.SINGLETON);
     }
 
     public static class AutoMigrator

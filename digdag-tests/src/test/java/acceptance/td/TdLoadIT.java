@@ -1,9 +1,7 @@
-package acceptance;
+package acceptance.td;
 
+import utils.CommandStatus;
 import com.treasuredata.client.TDClient;
-import com.treasuredata.client.model.TDSaveQueryRequest;
-import com.treasuredata.client.model.TDSavedQuery;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -12,22 +10,22 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
-public class TdIT
+public class TdLoadIT
 {
     private static final String TD_API_KEY = System.getenv("TD_API_KEY");
+    private static final String TD_LOAD_IT_SFTP_USER = System.getenv("TD_LOAD_IT_SFTP_USER");
+    private static final String TD_LOAD_IT_SFTP_PASSWORD = System.getenv("TD_LOAD_IT_SFTP_PASSWORD");
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -45,16 +43,26 @@ public class TdIT
             throws Exception
     {
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
-        projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
-        config = folder.newFile().toPath();
-        Files.write(config, ("params.td.apikey = " + TD_API_KEY).getBytes("UTF-8"));
-        outfile = projectDir.resolve("outfile");
+        assumeThat(TD_LOAD_IT_SFTP_USER, not(isEmptyOrNullString()));
+        assumeThat(TD_LOAD_IT_SFTP_PASSWORD, not(isEmptyOrNullString()));
 
         client = TDClient.newBuilder(false)
                 .setApiKey(TD_API_KEY)
                 .build();
         database = "tmp_" + UUID.randomUUID().toString().replace('-', '_');
         client.createDatabase(database);
+
+        client.createTable(database, "td_load_test");
+
+        projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
+        config = folder.newFile().toPath();
+        Files.write(config, asList(
+                "params.td.apikey = " + TD_API_KEY,
+                "params.td.database = " + database,
+                "params.td_load_sftp_user = " + TD_LOAD_IT_SFTP_USER,
+                "params.td_load_sftp_password = " + TD_LOAD_IT_SFTP_PASSWORD
+        ));
+        outfile = projectDir.resolve("outfile");
     }
 
     @After
@@ -67,19 +75,19 @@ public class TdIT
     }
 
     @Test
-    public void testRunQuery()
+    public void testTdLoad()
             throws Exception
     {
-        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
-        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        copyResource("acceptance/td/td_load/td_load.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td_load/td_load_config.yml", projectDir.resolve("td_load_config.yml"));
         runWorkflow();
     }
 
     @Test
-    public void testRunQueryInline()
+    public void testTdLoadSession()
             throws Exception
     {
-        copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td_load/td_load_session.dig", projectDir.resolve("workflow.dig"));
         runWorkflow();
     }
 
@@ -92,6 +100,8 @@ public class TdIT
                 "-p", "outfile=" + outfile,
                 "workflow.dig");
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+
+        // TODO: verify the contents of the target table
 
         assertThat(Files.exists(outfile), is(true));
     }

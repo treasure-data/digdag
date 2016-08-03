@@ -8,14 +8,15 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.CommandStatus;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static acceptance.TestUtils.copyResource;
-import static acceptance.TestUtils.main;
-import static acceptance.TestUtils.validUuid;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
+import static utils.TestUtils.validUuid;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

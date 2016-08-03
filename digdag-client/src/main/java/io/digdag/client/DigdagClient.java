@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 
 import static java.util.Locale.ENGLISH;
 
-public class DigdagClient
+public class DigdagClient implements AutoCloseable
 {
     public static class Builder
     {
@@ -107,6 +107,12 @@ public class DigdagClient
         mapper.registerModule(new GuavaModule());
         mapper.registerModule(new JacksonTimeModule());
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
+        InjectableValues.Std injects = new InjectableValues.Std();
+        injects.addValue(ObjectMapper.class, mapper);
+        mapper.setInjectableValues(injects);
+
         return mapper;
     }
 
@@ -158,15 +164,16 @@ public class DigdagClient
 
         ObjectMapper mapper = objectMapper();
 
-        // InjectableValues makes @JacksonInject work which is used at io.digdag.client.config.Config.<init>
-        InjectableValues.Std injects = new InjectableValues.Std();
-        injects.addValue(ObjectMapper.class, mapper);
-        mapper.setInjectableValues(injects);
-
         this.client = new ResteasyClientBuilder()
             .register(new JacksonJsonProvider(mapper))
             .build();
         this.cf = new ConfigFactory(mapper);
+    }
+
+    @Override
+    public void close()
+    {
+        client.close();
     }
 
     public Config newConfig()
@@ -431,7 +438,7 @@ public class DigdagClient
 
     public InputStream getLogFile(long attemptId, RestLogFileHandle handle)
     {
-        if (handle.getDirect().isPresent() && handle.getDirect().get().getType().equals("http")) {
+        if (handle.getDirect().isPresent()) {
             Response res = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
                     .request()
                     .get();

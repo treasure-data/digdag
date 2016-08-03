@@ -176,7 +176,7 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
 
 .. code-block:: yaml
 
-    +prepare
+    +prepare:
       # +data1, +data2, and +data3 run in parallel.
       _parallel: true
 
@@ -189,14 +189,14 @@ If ``_parallel: true`` parameter is set to a group, child tasks in the group run
       +data3:
         sh>: tasks/prepare_data3.sh
 
-    +analyze
+    +analyze:
         sh>: tasks/analyze_prepared_data_sets.sh
 
 If ``_background: true`` parameter is set to a task or group, the task or group run in parallel with previous tasks. Next task wait for the completion of the background task or group.
 
 .. code-block:: yaml
 
-    +prepare
+    +prepare:
       +data1:
         sh>: tasks/prepare_data1.sh
 
@@ -209,7 +209,7 @@ If ``_background: true`` parameter is set to a task or group, the task or group 
       +data3:
         sh>: tasks/prepare_data3.sh
 
-    +analyze
+    +analyze:
         sh>: tasks/analyze_prepared_data_sets.sh
 
 
@@ -224,7 +224,7 @@ If an operator configuration is set at ``_error:`` parameter, the operator runs 
     _error:
       sh>: tasks/runs_when_workflow_failed.sh
 
-    +analyze
+    +analyze:
         sh>: tasks/analyze_prepared_data_sets.sh
 
 To send mails, you can use `mail> operator <operators.html#mail-sending-email>`_.

@@ -6,6 +6,7 @@ dependencies {
     testCompile 'com.squareup.okhttp3:okhttp:3.3.0'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.3.1'
     testCompile 'pl.pragmatists:JUnitParams:1.0.5'
+    testCompile 'org.littleshoot:littleproxy:1.1.0'
 }
 
 test {
@@ -14,4 +15,9 @@ test {
     minHeapSize = "256m"
     maxHeapSize = "256m"
     environment "DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"
+
+    // Exclude all acceptance tests if this is not an acceptance test run
+    if (System.env.CI_ACCEPTANCE_TEST == null || !Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
+        exclude { true }
+    }
 }

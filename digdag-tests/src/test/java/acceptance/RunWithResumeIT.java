@@ -10,8 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ImmutableList;
+import utils.TestUtils;
 
-import static acceptance.TestUtils.copyResource;
+import static utils.TestUtils.copyResource;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

@@ -3,11 +3,12 @@ package acceptance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static acceptance.TestUtils.copyResource;
+import static utils.TestUtils.copyResource;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

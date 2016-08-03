@@ -23,8 +23,6 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
-import static io.digdag.core.queue.QueueSettingStore.NO_MAX_CONCURRENCY;
 
 public class DatabaseQueueSettingStoreManager
         extends BasicDatabaseStoreManager<DatabaseQueueSettingStoreManager.Dao>
@@ -52,43 +50,6 @@ public class DatabaseQueueSettingStoreManager
         return requiredResource(
                 (handle, dao) -> dao.getQueueIdByName(siteId, name),
                 "queue name=%d", name);
-    }
-
-    @Override
-    public int getQueueIdByNameOrInsertDefault(int siteId, String name)
-    {
-        return transaction((handle, dao, ts) -> {
-            Integer likelyStoredId = dao.getQueueIdByName(siteId, name);
-            if (likelyStoredId != null) {
-                return likelyStoredId;
-            }
-
-            switch (databaseType) {
-            default:
-                if (!ts.isRetried()) {
-                    int qId;
-                    // first try
-                    try {
-                        qId = catchConflict(() ->
-                                dao.insertDefaultQueueSetting(siteId, name),
-                                "queue name=%s", name);
-                        dao.insertQueue(qId, NO_MAX_CONCURRENCY);
-                    }
-                    catch (ResourceConflictException ex) {
-                        ts.retry(ex);
-                        return null;
-                    }
-                    return qId;
-                }
-                else {
-                    Integer qId = dao.getQueueIdByName(siteId, name);
-                    if (qId == null) {
-                        throw new IllegalStateException("Database state error", ts.getLastException());
-                    }
-                    return qId;
-                }
-            }
-        });
     }
 
     private class DatabaseQueueSettingStore
