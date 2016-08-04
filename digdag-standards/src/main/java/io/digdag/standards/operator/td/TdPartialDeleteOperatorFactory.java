@@ -28,7 +28,6 @@ public class TdPartialDeleteOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdPartialDeleteOperatorFactory.class);
 
     private static final String JOB_ID = "jobId";
-    private static final String DOMAIN_KEY = "domainKey";
     private static final String POLL_ITERATION = "pollIteration";
 
     private static final Integer INITIAL_POLL_INTERVAL = 1;
