@@ -46,8 +46,6 @@ import static utils.TestUtils.objectMapper;
 
 public class TdPartialDeleteIT
 {
-    private static final Logger logger = LoggerFactory.getLogger(TdPartialDeleteIT.class);
-
     private static final String TD_API_KEY = System.getenv("TD_API_KEY");
 
     @Rule
@@ -153,7 +151,7 @@ public class TdPartialDeleteIT
             if (status.getStatus() == TDJob.Status.SUCCESS) {
                 return true;
             }
-            if (status.getStatus() != TDJob.Status.RUNNING) {
+            if (status.getStatus().isFinished()) {
                 fail(status.getStatus().toString());
             }
             return false;
