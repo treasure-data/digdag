@@ -288,6 +288,7 @@ public class ScheduleExecutor
                                 ImmutableStoredSessionAttempt.builder()
                                     .retryAttemptName(Optional.of(attemptName))
                                     .workflowDefinitionId(Optional.of(def.getId()))
+                                    .timeZone(def.getTimeZone())
                                     .id(0L)
                                     .params(def.getConfig().getFactory().create())
                                     .stateFlags(AttemptStateFlags.empty())
