@@ -1,0 +1,10 @@
+timezone: UTC
+
+timezone: "Asia/Tokyo"
+
++run:
+  pg>: select_users.sql
+  host: localhost
+  database: digdag_test
+  user: digdag_test
+  download_file: pgtest.csv
