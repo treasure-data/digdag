@@ -609,6 +609,11 @@ Creates a project archive and upload it to the server. This command uploads work
 
   Example: -r f40172ebc58f58087b6132085982147efa9e81fb
 
+:command:`--schedule-from "yyyy-MM-dd HH:mm:ss Z"`
+  Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run ``date \"+%Y-%m-%d %H:%M:%S %z\"`` command to get current local time.
+
+  Example: --schedule-from "2017-07-29 00:00:00 +0200"
+
 
 delete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

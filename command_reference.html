@@ -693,6 +693,10 @@
 <dd><p class="first">Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git&#8217;s SHA1 hash (<code class="docutils literal"><span class="pre">git</span> <span class="pre">show</span> <span class="pre">--pretty=format:'%T'</span> <span class="pre">|</span> <span class="pre">head</span> <span class="pre">-n</span> <span class="pre">1</span></code>) or timestamp (<code class="docutils literal"><span class="pre">date</span> <span class="pre">+%Y-%m-%dT%H:%M:%S%z</span></code>).</p>
 <p class="last">Example: -r f40172ebc58f58087b6132085982147efa9e81fb</p>
 </dd>
+<dt><strong class="command">--schedule-from &quot;yyyy-MM-dd HH:mm:ss Z&quot;</strong></dt>
+<dd><p class="first">Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run <code class="docutils literal"><span class="pre">date</span> <span class="pre">\&quot;+%Y-%m-%d</span> <span class="pre">%H:%M:%S</span> <span class="pre">%z\&quot;</span></code> command to get current local time.</p>
+<p class="last">Example: &#8211;schedule-from &#8220;2017-07-29 00:00:00 +0200&#8221;</p>
+</dd>
 </dl>
 </div>
 <div class="section" id="delete">
