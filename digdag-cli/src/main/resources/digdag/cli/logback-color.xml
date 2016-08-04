@@ -64,6 +64,10 @@
 
   <logger name="com.zaxxer.hikari" level="WARN"/>
 
+  <!-- disable header and content logging by default that may leak security information -->
+  <logger name="org.apache.http.wire" level="WARN"/>
+  <logger name="org.apache.http.headers" level="WARN"/>
+
   <root level="${digdag.log.level}">
     <appender-ref ref="console-error"/>
     <appender-ref ref="console-warn"/>
