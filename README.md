@@ -38,6 +38,16 @@ $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 If major version is incremented, update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
 
 
+### Building digdag-ui
+
+```
+$ cd digdag-ui/
+$ npm install
+$ npm run dev    # starts dev server on http://localhost:8080/
+$ npm run build  # build files on public/
+```
+
+
 ### Updating documents
 
 Documents are in digdag-docs/src directory. They're built using Sphinx.
