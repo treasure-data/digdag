@@ -9,6 +9,9 @@ import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
@@ -36,6 +39,8 @@ import static java.util.Locale.ENGLISH;
 public abstract class ClientCommand
         extends Command
 {
+    private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
+
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
 
     protected final Version localVersion;
@@ -139,6 +144,8 @@ public abstract class ClientCommand
             }
         }
         headers.putAll(this.httpHeaders);
+
+        logger.debug("Using endpoint {}://{}:{}", useSsl ? "https" : "http", host, port);
 
         DigdagClient client = DigdagClient.builder()
                 .host(host)
