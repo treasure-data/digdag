@@ -1,10 +1,8 @@
 timezone: UTC
 
-timezone: "Asia/Tokyo"
-
 +run:
   pg>: select_users.sql
   host: localhost
-  database: digdag_test
+  database: ${pg_database}
   user: digdag_test
-  download_file: pgtest.csv
+  download_file: pg_test.csv
