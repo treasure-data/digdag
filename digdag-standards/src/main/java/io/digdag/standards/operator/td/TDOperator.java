@@ -15,6 +15,7 @@ import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 
 import java.io.Closeable;
+import java.time.Instant;
 import java.util.Date;
 
 import static io.digdag.util.RetryExecutor.retryExecutor;
@@ -194,6 +195,12 @@ public class TDOperator
     {
         // TODO retry with an unique id and ignore conflict
         return newJobOperator(client.submitExportJob(request));
+    }
+
+    public TDJobOperator submitPartialDeleteJob(String table, Instant from, Instant to)
+    {
+        // TODO retry with an unique id and ignore conflict
+        return newJobOperator(client.partialDelete(database, table, from.getEpochSecond(), to.getEpochSecond()).getJobId());
     }
 
     public TDJobOperator startSavedQuery(String name, Date scheduledTime)
