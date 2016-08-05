@@ -1,1 +1,1 @@
-SELECT * FROM users
+SELECT * FROM users ORDER BY id
