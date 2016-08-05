@@ -50,6 +50,6 @@ public class LocalLockMap
 
     public void unlock(int queueId)
     {
-        blocks[queueId].unlock(queueId);
+        blocks[queueId % blocks.length].unlock(queueId);
     }
 }
