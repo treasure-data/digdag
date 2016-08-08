@@ -5,9 +5,10 @@ TARBALL_EXISTS=false
 if [[ -e ~/docker/digdag-build.tar.gz ]]; then
     TARBALL_EXISTS=true
     gunzip -c ~/docker/digdag-build.tar.gz | docker load
+    IMAGE_ID_PRE=$(docker inspect --format="{{.Id}}" digdag-build)
+else
+    IMAGE_ID_PRE=''
 fi
-
-IMAGE_ID_PRE=$(docker inspect --format="{{.Id}}" digdag-build)
 
 cd "$(dirname "$0")"
 docker build -t digdag-build .
