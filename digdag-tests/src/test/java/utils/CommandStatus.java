@@ -1,4 +1,4 @@
-package acceptance;
+package utils;
 
 import org.immutables.value.Value;
 

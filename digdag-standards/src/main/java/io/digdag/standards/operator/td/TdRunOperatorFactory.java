@@ -1,12 +1,9 @@
 package io.digdag.standards.operator.td;
 
 import java.util.Date;
-import java.util.List;
 import java.time.Instant;
 import java.nio.file.Path;
-import java.io.File;
-import java.io.BufferedWriter;
-import java.io.IOException;
+
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.spi.TaskRequest;
@@ -17,15 +14,8 @@ import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
-import com.treasuredata.client.model.TDJobRequest;
-import com.treasuredata.client.model.TDJobRequestBuilder;
-import org.msgpack.value.Value;
-import org.msgpack.value.ArrayValue;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static io.digdag.standards.operator.td.TdOperatorFactory.joinJob;
+
 import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 
@@ -73,7 +63,7 @@ public class TdRunOperatorFactory
                 TDJobOperator j = op.startSavedQuery(name, Date.from(sessionTime));
                 logger.info("Started a saved query name={} with time={}", name, sessionTime);
 
-                TDJobSummary summary = joinJob(j);
+                TDJobSummary summary = j.joinJob();
                 downloadJobResult(j, workspace, downloadFile);
 
                 if (preview) {

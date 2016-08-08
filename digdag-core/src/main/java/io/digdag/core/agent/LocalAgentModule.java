@@ -16,10 +16,10 @@ public class LocalAgentModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(LocalAgentManager.class).in(Scopes.SINGLETON);
         binder.bind(AgentConfig.class).toProvider(AgentConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(WorkspaceManager.class).to(NoopWorkspaceManager.class).in(Scopes.SINGLETON);
         binder.bind(TaskCallbackApi.class).to(InProcessTaskCallbackApi.class).in(Scopes.SINGLETON);
+        binder.bind(TaskServerApi.class).to(InProcessTaskServerApi.class).in(Scopes.SINGLETON);
         binder.bind(OperatorManager.class).in(Scopes.SINGLETON);
 
         // built-in operators
@@ -27,24 +27,6 @@ public class LocalAgentModule
         taskExecutorBinder.addBinding().to(RequireOperatorFactory.class).in(Scopes.SINGLETON);
         taskExecutorBinder.addBinding().to(CallOperatorFactory.class).in(Scopes.SINGLETON);
 
-        binder.bind(LocalAgentStarter.class).asEagerSingleton();
-    }
-
-    public static class LocalAgentStarter
-    {
-        private final LocalAgentManager localAgentManager;
-
-        @Inject
-        public LocalAgentStarter(
-                LocalAgentManager localAgentManager)
-        {
-            this.localAgentManager = localAgentManager;
-        }
-
-        @PostConstruct
-        public void start()
-        {
-            localAgentManager.start();
-        }
+        binder.bind(LocalAgentManager.class).asEagerSingleton();
     }
 }

@@ -7,9 +7,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface QueueSettingStore
 {
-    static final String DEFAULT_QUEUE_NAME = "default";
-    static final int NO_MAX_CONCURRENCY = Integer.MAX_VALUE;
-
     List<StoredQueueSetting> getQueueSettings(int pageSize, Optional<Long> lastId);
 
     StoredQueueSetting getQueueSettingById(long qdId)
@@ -17,4 +14,10 @@ public interface QueueSettingStore
 
     StoredQueueSetting getQueueSettingByName(String name)
         throws ResourceNotFoundException;
+
+    //// TODO remote agent and multiqueue are not implemented yet.
+    // getQueuedTasks(Optional<Long> lastId)
+    // getQueuedTasksOfQueue(int queueId, Optional<Long> lastId)
+    // insertQueueSetting(QueueSetting, Runnable lockAction)
+    // updateQueueSetting(int queueId, Config config, Runnable lockAction)
 }

@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public class ArchiveType
 {
-    public static ArchiveType DB = ArchiveType.of("db");
+    public static final ArchiveType DB = ArchiveType.of("db");
 
-    public static ArchiveType NONE = ArchiveType.of("none");
+    public static final ArchiveType NONE = ArchiveType.of("none");
 
     @JsonCreator
     public static ArchiveType of(String name)

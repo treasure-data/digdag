@@ -81,28 +81,31 @@ public class Sched
     }
 
     private void sched()
-            throws ServletException, IOException
+            throws ServletException, Exception
     {
         // use memory database by default
         if (database == null) {
             memoryDatabase = true;
         }
 
-        Injector injector = new DigdagEmbed.Bootstrap()
-            .withWorkflowExecutor(false)
-            .withScheduleExecutor(false)
-            .withLocalAgent(false)
-            .initialize()
-            .getInjector();
+        Properties props;
 
-        ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-        ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
+        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .withWorkflowExecutor(false)
+                .withScheduleExecutor(false)
+                .withLocalAgent(false)
+                .initializeWithoutShutdownHook()) {
+            Injector injector = digdag.getInjector();
 
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+            ConfigFactory cf = injector.getInstance(ConfigFactory.class);
+            ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Properties props = buildServerProperties();
-        props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
-        props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
+            Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+
+            props = buildServerProperties();
+            props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
+            props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
+        }
 
         ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
     }

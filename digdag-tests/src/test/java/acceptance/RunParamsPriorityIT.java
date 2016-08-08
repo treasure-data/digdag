@@ -8,11 +8,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.ImmutableList;
+
+import utils.TestUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static acceptance.TestUtils.copyResource;
+import static utils.TestUtils.copyResource;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 

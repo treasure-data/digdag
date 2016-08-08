@@ -14,6 +14,9 @@ public interface SessionStoreManager
     Instant getStoreTime();
 
     // for WorkflowExecutor.enqueueTask
+    int getSiteIdOfTask(long taskId)
+        throws ResourceNotFoundException;
+
     StoredSessionAttemptWithSession getAttemptWithSessionById(long attemptId)
         throws ResourceNotFoundException;
 

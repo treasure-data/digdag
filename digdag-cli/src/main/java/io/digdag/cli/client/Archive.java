@@ -73,9 +73,9 @@ public class Archive
     }
 
     private void archive()
-            throws IOException
+            throws Exception
     {
-        Injector injector = new DigdagEmbed.Bootstrap()
+        try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
                 .withWorkflowExecutor(false)
                 .withScheduleExecutor(false)
                 .withLocalAgent(false)
@@ -85,9 +85,14 @@ public class Archive
                     binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
                     binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
                 })
-                .initialize()
-                .getInjector();
+                .initializeWithoutShutdownHook()) {
+            archive(digdag.getInjector());
+        }
+    }
 
+    private void archive(Injector injector)
+            throws IOException
+    {
         ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 

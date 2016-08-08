@@ -53,6 +53,16 @@ public abstract class BaseOperator
             }
         }
         catch (RuntimeException ex) {
+            // Propagate polling TaskExecutionException instances
+            if (ex instanceof TaskExecutionException) {
+                TaskExecutionException tex = (TaskExecutionException) ex;
+                boolean isPolling = !tex.isError();
+                if (isPolling) {
+                    // TODO: reset retry state params
+                    throw tex;
+                }
+            }
+
             boolean doRetry = retry.evaluate();
             if (doRetry) {
                 throw new TaskExecutionException(ex,

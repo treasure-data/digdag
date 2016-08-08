@@ -2,6 +2,8 @@ package io.digdag.standards.operator.pg;
 
 import java.util.Properties;
 import java.time.Duration;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import org.immutables.value.Value;
@@ -14,7 +16,8 @@ public abstract class PgConnectionConfig
 {
     public abstract Optional<String> schema();
 
-    static PgConnectionConfig configure(Config params)
+    @VisibleForTesting
+    public static PgConnectionConfig configure(Config params)
     {
         return ImmutablePgConnectionConfig.builder()
 

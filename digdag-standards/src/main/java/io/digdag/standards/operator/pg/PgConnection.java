@@ -8,8 +8,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
+import io.digdag.standards.operator.jdbc.LockConflictException;
 import io.digdag.util.DurationParam;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;
 import io.digdag.standards.operator.jdbc.AbstractPersistentTransactionHelper;
@@ -23,7 +26,8 @@ import static org.postgresql.core.Utils.escapeIdentifier;
 public class PgConnection
     extends AbstractJdbcConnection
 {
-    protected static PgConnection open(PgConnectionConfig config)
+    @VisibleForTesting
+    public static PgConnection open(PgConnectionConfig config)
     {
         return new PgConnection(config.openConnection());
     }
@@ -103,7 +107,7 @@ public class PgConnection
             executeStatement("delete old query status rows from " + escapeIdent(statusTableName) + " table",
                     String.format(ENGLISH,
                         "DELETE FROM %s WHERE query_id = ANY(" +
-                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d seconds'" +
+                        "SELECT query_id FROM %s WHERE completed_at < now() - interval '%d' second" +
                         ")",
                         escapeIdent(statusTableName),
                         escapeIdent(statusTableName),
@@ -113,10 +117,11 @@ public class PgConnection
 
         @Override
         protected StatusRow lockStatusRow(UUID queryId)
+                throws LockConflictException
         {
             try (Statement stmt = connection.createStatement()) {
                 ResultSet rs = stmt.executeQuery(String.format(ENGLISH,
-                            "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE",
+                            "SELECT completed_at FROM %s WHERE query_id = '%s' FOR UPDATE NOWAIT",
                             escapeIdent(statusTableName),
                             queryId.toString())
                         );
@@ -135,7 +140,12 @@ public class PgConnection
                 }
             }
             catch (SQLException ex) {
-                throw new DatabaseException("Failed to lock a status row", ex);
+                if (ex.getSQLState().equals("55P03")) {
+                    throw new LockConflictException("Failed to acquire a status row lock", ex);
+                }
+                else {
+                    throw new DatabaseException("Failed to lock a status row", ex);
+                }
             }
         }
 

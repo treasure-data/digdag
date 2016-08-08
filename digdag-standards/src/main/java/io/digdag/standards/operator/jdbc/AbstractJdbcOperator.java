@@ -5,20 +5,12 @@ import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.Operator;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.DurationParam;
-import io.digdag.standards.operator.jdbc.DatabaseException;
-import io.digdag.standards.operator.jdbc.JdbcResultSet;
-import io.digdag.standards.operator.jdbc.TableReference;
-import io.digdag.standards.operator.jdbc.TransactionHelper;
-import io.digdag.standards.operator.jdbc.NoTransactionHelper;
-import io.digdag.standards.operator.jdbc.NotReadOnlyException;
-import io.digdag.standards.operator.jdbc.CsvWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -35,6 +27,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class AbstractJdbcOperator <C>
     extends BaseOperator
 {
+    private static final String POLL_INTERVAL = "pollInterval";
+    private static final int INITIAL_POLL_INTERVAL = 1;
+    private static final int MAX_POLL_INTERVAL = 1200;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TemplateEngine templateEngine;
@@ -185,6 +180,12 @@ public abstract class AbstractJdbcOperator <C>
         }
         catch (NotReadOnlyException ex) {
             throw new ConfigException("Query must be read-only if download_file is set", ex.getCause());
+        }
+        catch (LockConflictException ex) {
+            int pollingInterval = state.get(POLL_INTERVAL, Integer.class, INITIAL_POLL_INTERVAL);
+            // Set next interval for exponential backoff
+            state.set(POLL_INTERVAL, Math.min(pollingInterval * 2, MAX_POLL_INTERVAL));
+            throw TaskExecutionException.ofNextPolling(pollingInterval, ConfigElement.copyOf(state));
         }
         catch (DatabaseException ex) {
             // expected error that should suppress stacktrace by default

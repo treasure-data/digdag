@@ -58,7 +58,7 @@ py>: Python scripts
 
 **py>:** operator runs a Python script using ``python`` command.
 
-See `Python API documents <ruby_api.html>`_ for details including variable mappings to keyword arguments.
+See `Python API documents <python_api.html>`_ for details including variable mappings to keyword arguments.
 
 .. code-block:: yaml
 
@@ -326,6 +326,9 @@ Parameters
   * :command:`engine: hive`
   * :command:`engine: presto`
 
+:command:`priority: 0`
+  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , default: 0 (NORMAL)).
+
 
 Output parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -428,7 +431,7 @@ TODO: add more description here
       database: prod
       table: raw
 
-:command:`td_load>: FILE.dig`
+:command:`td_load>: FILE.yml`
   Path to a YAML template file. This configuration needs to be guessed using td command.
 
   * :command:`td_load>: imports/load.yml`

@@ -1,5 +1,10 @@
 sudo: required
 
+language: java
+
+jdk:
+  - oraclejdk8
+
 services:
   - docker
 
@@ -12,12 +17,16 @@ cache:
 env:
   global:
     - TERM=dumb
-    - CI_NODE_TOTAL=4
+    - CI_NODE_TOTAL=8
   matrix:
     - CI_NODE_INDEX=0
     - CI_NODE_INDEX=1
     - CI_NODE_INDEX=2
     - CI_NODE_INDEX=3
+    - CI_NODE_INDEX=4
+    - CI_NODE_INDEX=5
+    - CI_NODE_INDEX=6
+    - CI_NODE_INDEX=7
 
 before_install:
   - sudo docker/setup.sh
@@ -30,7 +39,7 @@ before_install:
     ./gradlew testClasses
   - ci/validate.sh
 
-install:
+install: true
 
 script:
   - ci/run_test.sh

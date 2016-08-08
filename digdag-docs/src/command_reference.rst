@@ -217,7 +217,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.3
+    $ digdag selfupdate 0.8.5
 
 Server-mode commands
 ----------------------------------
@@ -334,7 +334,7 @@ Client-mode common options:
 
 You can include following parameters in ~/.config/digdag/config file:
 
-* cilent.http.endpoint = http://HOST:PORT or https://HOST:PORT
+* client.http.endpoint = http://HOST:PORT or https://HOST:PORT
 * client.http.headers.KEY = VALUE (set custom HTTP header)
 
 

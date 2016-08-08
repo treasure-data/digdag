@@ -9,6 +9,7 @@ import com.google.common.base.Throwables;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
@@ -20,6 +21,8 @@ import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDResultFormat;
+
+import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.td.TDOperator.defaultRetryExecutor;
 
 public class TDJobOperator
@@ -34,6 +37,30 @@ public class TDJobOperator
     {
         this.client = client;
         this.jobId = jobId;
+    }
+
+    public TDJobSummary joinJob()
+    {
+        try {
+            return ensureSucceeded();
+        }
+        catch (TDJobException ex) {
+            try {
+                TDJob job = getJobInfo();
+                String message = job.getCmdOut() + "\n" + job.getStdErr();
+                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
+            }
+            catch (Exception getJobInfoFailed) {
+                getJobInfoFailed.addSuppressed(ex);
+                throw Throwables.propagate(getJobInfoFailed);
+            }
+        }
+        catch (InterruptedException ex) {
+            throw Throwables.propagate(ex);
+        }
+        finally {
+            ensureFinishedOrKill();
+        }
     }
 
     public String getJobId()
@@ -87,6 +114,22 @@ public class TDJobOperator
             throw new TDJobException("TD job " + jobId + " failed with status " + summary.getStatus(), jobId, summary);
         }
         return summary;
+    }
+
+    public TDJobSummary ensureRunningOrSucceeded()
+            throws TDJobException, InterruptedException
+    {
+        if (lastStatus == null) {
+            updateLastStatus();
+        }
+        TDJob.Status status = lastStatus.getStatus();
+        if (!status.isFinished()) {
+            return lastStatus;
+        }
+        if (status != TDJob.Status.SUCCESS) {
+            throw new TDJobException("TD job " + jobId + " failed with status " + status, jobId, lastStatus);
+        }
+        return lastStatus;
     }
 
     public synchronized void ensureFinishedOrKill()

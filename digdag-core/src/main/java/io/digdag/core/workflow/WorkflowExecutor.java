@@ -30,8 +30,12 @@ import io.digdag.core.session.TaskStateCode;
 import io.digdag.core.session.TaskStateFlags;
 import io.digdag.core.session.TaskStateSummary;
 import io.digdag.spi.Notifier;
+import io.digdag.spi.TaskQueueLock;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.spi.TaskQueueRequest;
+import io.digdag.spi.TaskConflictException;
+import io.digdag.spi.TaskNotFoundException;
 import io.digdag.util.RetryControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +58,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import static io.digdag.core.queue.QueueSettingStore.DEFAULT_QUEUE_NAME;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static java.util.Locale.ENGLISH;
 
@@ -320,8 +323,6 @@ public class WorkflowExecutor
         if (updated) {
             noticeStatusPropagate();
         }
-
-        // TODO sync kill requests to already-running tasks in queue
 
         return updated;
     }
@@ -783,9 +784,13 @@ public class WorkflowExecutor
                 return retryGroupingTask(lockedTask);
             }
 
-            StoredSessionAttemptWithSession attempt;
+            if (task.getStateFlags().isCancelRequested()) {
+                return lockedTask.setToCanceled();
+            }
+
+            int siteId;
             try {
-                attempt = sm.getAttemptWithSessionById(task.getAttemptId());
+                siteId = sm.getSiteIdOfTask(taskId);
             }
             catch (ResourceNotFoundException ex) {
                 Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated session attempt does not exist.", ex);
@@ -793,82 +798,34 @@ public class WorkflowExecutor
                 return false;
             }
 
-            Optional<StoredRevision> rev = Optional.absent();
-            if (attempt.getWorkflowDefinitionId().isPresent()) {
-                try {
-                    rev = Optional.of(rm.getRevisionOfWorkflowDefinition(attempt.getWorkflowDefinitionId().get()));
-                }
-                catch (ResourceNotFoundException ex) {
-                    Exception error = new IllegalStateException("Task id="+taskId+" is ready to run but associated workflow definition does not exist.", ex);
-                    logger.error("Database state error enqueuing task.", error);
-                    return false;
-                }
-            }
-
-            StoredProject project;
             try {
-                project = rm.getProjectByIdInternal(attempt.getSession().getProjectId());
-            }
-            catch (ResourceNotFoundException ex) {
-                Exception error = new IllegalStateException("Task id=" + taskId + " is ready to run but associated project does not exist.", ex);
-                logger.error("Database state error enqueuing task.", error);
-                return false;
-            }
+                // TODO make queue name configurable. note that it also needs a new REST API and/or
+                //      CLI ccommands to create/delete/manage queues.
+                Optional<String> queueName = Optional.absent();
 
-            try {
-                // merge order is:
-                //   revision default < attempt < task < runtime
-                Config params = cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class, "{}"));
-                if (rev.isPresent()) {
-                    params.merge(rev.get().getDefaultParams());
-                }
-                params.merge(attempt.getParams());
-                collectParams(params, task, attempt);
-
-                // remove conditional subtasks that may cause JavaScript evaluation error if they include reference to a nested field such as
-                // this_will_be_set_at_this_task.this_is_null.this_access_causes_error.
-                // _do is another conditional subtsaks but they are kept remained and removed later at ConfigEvalEngine because
-                // operator factory needs _do while _check and _error are used only by WorkflowExecutor.
-                Config localConfig = task.getConfig().getLocal().deepCopy();
-                params.remove("_check");
-                params.remove("_error");
-                localConfig.remove("_check");
-                localConfig.remove("_error");
-
-                // create TaskRequest for OperatorManager.
-                // OperatorManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
-                // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
-                // so that OperatorManager can build it using the reloaded local config.
-                TaskRequest request = TaskRequest.builder()
-                    .siteId(attempt.getSiteId())
-                    .projectId(attempt.getSession().getProjectId())
-                    .projectName(project.getName())
-                    .workflowName(attempt.getSession().getWorkflowName())
-                    .revision(rev.transform(it -> it.getName()))
-                    .taskId(task.getId())
-                    .attemptId(attempt.getId())
-                    .sessionId(attempt.getSessionId())
-                    .retryAttemptName(attempt.getRetryAttemptName())
-                    .taskName(task.getFullName())
-                    .queueName(DEFAULT_QUEUE_NAME)  // TODO make this configurable
-                    // TODO support queue resourceType
-                    .lockId("")   // this will be overwritten by TaskQueueServer
+                TaskQueueRequest request = TaskQueueRequest.builder()
                     .priority(0)  // TODO make this configurable
-                    .timeZone(attempt.getTimeZone())
-                    .sessionUuid(attempt.getSessionUuid())
-                    .sessionTime(attempt.getSession().getSessionTime())
-                    .createdAt(Instant.now())
-                    .localConfig(localConfig)
-                    .config(params)
-                    .lastStateParams(task.getStateParams())
+                    .uniqueTaskId(Optional.of(task.getId()))
+                    .data(Optional.absent())
                     .build();
 
-                if (task.getStateFlags().isCancelRequested()) {
-                    return lockedTask.setToCanceled();
+                logger.debug("Queuing task: [{}] {}", task.getId(), task.getFullName());
+                try {
+                    dispatcher.dispatch(siteId, queueName, request);
                 }
-
-                logger.debug("Queuing task: "+request);
-                dispatcher.dispatch(request);
+                catch (TaskConflictException ex) {
+                    // TODO this code has a problem:
+                    //   1. When a thread "A" runs WorkflowExecutor.retryTask with a small retryInterval,
+                    //      another thread "B" may retry the task before "A" deletes the task from the queue
+                    //      at dispatcher.taskFinished call. If this happens, "B" will get TaskConflictException
+                    //      here at dispatcher.dispatch. In this case, dispatcher.dispatch should be retried.
+                    //   2. On the other hand, if dispatcher.dispatch throws exception but actually the task
+                    //      was enqueued to the task, dispatcher.dispatch throws TaskConflictException.
+                    //      In this case, the exception should be ignored so that task won't be enqueued twice.
+                    //   For now, here throws RuntimeException so that dispatch.dispatch is always retried because
+                    //   2. less likely happens, maybe.
+                    throw new RuntimeException(ex);
+                }
 
                 ////
                 // don't throw exceptions after here. task is already dispatched to a queue
@@ -893,6 +850,116 @@ public class WorkflowExecutor
         }).or(false);
     }
 
+    // called by InProcessTaskServerApi
+    public List<TaskRequest> getTaskRequests(List<TaskQueueLock> locks)
+    {
+        ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
+        for (TaskQueueLock lock : locks) {
+            if (lock.getUniqueTaskId().isPresent()) {
+                Optional<TaskRequest> request = getTaskRequest(lock.getUniqueTaskId().get(), lock.getLockId());
+                if (request.isPresent()) {
+                    builder.add(request.get());
+                }
+                else {
+                    dispatcher.deleteInconsistentTask(lock.getLockId());
+                }
+            }
+        }
+        return builder.build();
+    }
+
+    private Optional<TaskRequest> getTaskRequest(long taskId, String lockId)
+    {
+        return sm.<Optional<TaskRequest>>lockTaskIfExists(taskId, (store, task) -> {
+            StoredSessionAttemptWithSession attempt;
+            try {
+                attempt = sm.getAttemptWithSessionById(task.getAttemptId());
+            }
+            catch (ResourceNotFoundException ex) {
+                Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated session attempt does not exist.", ex);
+                logger.error("Database state error enqueuing task.", error);
+                return Optional.absent();
+            }
+
+            Optional<StoredRevision> rev = Optional.absent();
+            if (attempt.getWorkflowDefinitionId().isPresent()) {
+                try {
+                    rev = Optional.of(rm.getRevisionOfWorkflowDefinition(attempt.getWorkflowDefinitionId().get()));
+                }
+                catch (ResourceNotFoundException ex) {
+                    Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated workflow definition does not exist.", ex);
+                    logger.error("Database state error enqueuing task.", error);
+                    return Optional.absent();
+                }
+            }
+
+            StoredProject project;
+            try {
+                project = rm.getProjectByIdInternal(attempt.getSession().getProjectId());
+            }
+            catch (ResourceNotFoundException ex) {
+                Exception error = new IllegalStateException("Task id=" + taskId + " is in the task queue but associated project does not exist.", ex);
+                logger.error("Database state error enqueuing task.", error);
+                return Optional.absent();
+            }
+
+            // merge order is:
+            //   revision default < attempt < task < runtime
+            Config params = cf.fromJsonString(systemConfig.get("digdag.defaultParams", String.class, "{}"));
+            if (rev.isPresent()) {
+                params.merge(rev.get().getDefaultParams());
+            }
+            params.merge(attempt.getParams());
+            collectParams(params, task, attempt);
+
+            // remove conditional subtasks that may cause JavaScript evaluation error if they include reference to a nested field such as
+            // this_will_be_set_at_this_task.this_is_null.this_access_causes_error.
+            // _do is another conditional subtsaks but they are kept remained and removed later at ConfigEvalEngine because
+            // operator factory needs _do while _check and _error are used only by WorkflowExecutor.
+            Config localConfig = task.getConfig().getLocal().deepCopy();
+            params.remove("_check");
+            params.remove("_error");
+            localConfig.remove("_check");
+            localConfig.remove("_error");
+
+            // TODO what should here do if the task is canceled? Add another flag field to TaskRequest
+            //      so that Operator can handle it? Skipping task silently is probably not good idea
+            //      because Operator may want to run cleanup process.
+
+            // create TaskRequest for OperatorManager.
+            // OperatorManager will ignore localConfig because it reloads config from dagfile_path with using the lates params.
+            // TaskRequest.config usually stores params merged with local config. but here passes only params (local config is not merged)
+            // so that OperatorManager can build it using the reloaded local config.
+            TaskRequest request = TaskRequest.builder()
+                .siteId(attempt.getSiteId())
+                .projectId(attempt.getSession().getProjectId())
+                .projectName(project.getName())
+                .workflowName(attempt.getSession().getWorkflowName())
+                .revision(rev.transform(it -> it.getName()))
+                .taskId(task.getId())
+                .attemptId(attempt.getId())
+                .sessionId(attempt.getSessionId())
+                .retryAttemptName(attempt.getRetryAttemptName())
+                .taskName(task.getFullName())
+                .lockId(lockId)
+                .timeZone(attempt.getTimeZone())
+                .sessionUuid(attempt.getSessionUuid())
+                .sessionTime(attempt.getSession().getSessionTime())
+                .createdAt(Instant.now())
+                .localConfig(localConfig)
+                .config(params)
+                .lastStateParams(task.getStateParams())
+                .build();
+
+            return Optional.of(request);
+        })
+        .or(() -> {
+            Exception error = new IllegalStateException("Task id="+taskId+" is in the task queue but associated task is deleted.");
+            logger.error("Database state error enqueuing task.", error);
+            return Optional.<TaskRequest>absent();
+        });
+    }
+
     private boolean retryGroupingTask(TaskControl lockedTask)
     {
         // rest task state of subtasks
@@ -914,7 +981,15 @@ public class WorkflowExecutor
             taskFailed(new TaskControl(store, task), error)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.warn("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }
@@ -927,7 +1002,15 @@ public class WorkflowExecutor
                     result)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.warn("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }
@@ -942,7 +1025,15 @@ public class WorkflowExecutor
                 error)
         ).or(false);
         if (changed) {
-            dispatcher.taskFinished(siteId, lockId, agentId);
+            try {
+                dispatcher.taskFinished(siteId, lockId, agentId);
+            }
+            catch (TaskNotFoundException ex) {
+                logger.warn("Ignoring missing task entry error", ex);
+            }
+            catch (TaskConflictException ex) {
+                logger.warn("Ignoring preempted task entry error", ex);
+            }
         }
         return changed;
     }

@@ -16,7 +16,6 @@ import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.config.Config;
-import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Version;
 
 import static io.digdag.cli.SystemExitException.systemExit;
