@@ -202,4 +202,25 @@ public class TDJobOperator
             throw Throwables.propagate(ex.getCause());
         }
     }
+
+    public TDJobSummary checkStatus()
+    {
+        try {
+            return ensureRunningOrSucceeded();
+        }
+        catch (TDJobException ex) {
+            try {
+                TDJob job = getJobInfo();
+                String message = job.getCmdOut() + "\n" + job.getStdErr();
+                throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
+            }
+            catch (Exception getJobInfoFailed) {
+                getJobInfoFailed.addSuppressed(ex);
+                throw Throwables.propagate(getJobInfoFailed);
+            }
+        }
+        catch (InterruptedException ex) {
+            throw Throwables.propagate(ex);
+        }
+    }
 }

@@ -9,6 +9,7 @@ import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.TDClientHttpUnauthorizedException;
 import com.treasuredata.client.model.TDExportJobRequest;
 import com.treasuredata.client.model.TDJobRequest;
+import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.util.RetryExecutor;
@@ -177,14 +178,35 @@ public class TDOperator
         return newJobOperator(jobId);
     }
 
+    public TDJobOperator submitNewJob(Submitter submitter)
+    {
+        try {
+            return submitter.submit();
+        }
+        catch (TDClientHttpConflictException e) {
+            Optional<String> conflictsWith = e.getConflictsWith();
+            if (conflictsWith.isPresent()) {
+                return newJobOperator(conflictsWith.get());
+            }
+            else {
+                throw e;
+            }
+        }
+    }
+
     public TDJobOperator submitNewJobWithRetry(TDJobRequest req)
     {
         if (!req.getDomainKey().isPresent()) {
             throw new IllegalArgumentException("domain key must be set");
         }
 
+        return submitNewJobWithRetry(() -> submitNewJob(req));
+    }
+
+    public TDJobOperator submitNewJobWithRetry(Submitter submitter)
+    {
         try {
-            return defaultRetryExecutor.run(() -> submitNewJob(req));
+            return defaultRetryExecutor.run(() -> submitNewJob(submitter));
         }
         catch (RetryGiveupException ex) {
             throw Throwables.propagate(ex.getCause());
@@ -203,10 +225,15 @@ public class TDOperator
         return newJobOperator(client.partialDelete(database, table, from.getEpochSecond(), to.getEpochSecond()).getJobId());
     }
 
-    public TDJobOperator startSavedQuery(String name, Date scheduledTime)
+    public TDJobOperator startSavedQuery(String name, Date scheduledTime, String domainKey)
     {
-        // TODO retry with an unique id and ignore conflict
-        return newJobOperator(client.startSavedQuery(name, scheduledTime));
+        TDSavedQueryStartRequest req = TDSavedQueryStartRequest.builder()
+                .name(name)
+                .scheduledTime(scheduledTime)
+                .domainKey(domainKey)
+                .build();
+
+        return submitNewJobWithRetry(() -> newJobOperator(client.startSavedQuery(req)));
     }
 
     public TDJobOperator newJobOperator(String jobId)
@@ -225,5 +252,10 @@ public class TDOperator
     public void close()
     {
         client.close();
+    }
+
+    private interface Submitter
+    {
+        TDJobOperator submit();
     }
 }
