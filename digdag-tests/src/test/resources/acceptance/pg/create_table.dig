@@ -1,7 +1,7 @@
 timezone: UTC
 
 +run:
-  pg>: select_users.sql
+  pg>: select_table.sql
   host: localhost
   database: ${pg_database}
   user: digdag_test

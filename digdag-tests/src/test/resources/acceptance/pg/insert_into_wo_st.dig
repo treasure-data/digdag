@@ -2,7 +2,8 @@ timezone: UTC
 
 +run:
   pg>: select_table.sql
+  strict_transaction: false
   host: localhost
   database: ${pg_database}
-  user: digdag_test
-  download_file: pg_test.csv
+  user: not_admin
+  insert_into: dest_tbl
