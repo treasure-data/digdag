@@ -772,6 +772,11 @@ function formatFullTimestamp(t) {
   return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
 }
 
+const ParamsView = (props:{params: Object}) =>
+  _.isEmpty(props.params)
+    ? null
+    : <pre><PrismCode className="language-yaml">{yaml.safeDump(props.params, {sortKeys: true})}</PrismCode></pre>
+
 const TaskListView = (props:{tasks: Array<Task>}) =>
   <div className="table-responsive">
     <table className="table table-striped table-hover table-condensed">
@@ -797,8 +802,8 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
             <td>{formatTimestamp(task.updatedAt)}</td>
             <td>{task.state}</td>
             <td>{formatTimestamp(task.retryAt)}</td>
-            <td>{yaml.safeDump(task.stateParams, {sortKeys: true})}</td>
-            <td>{yaml.safeDump(task.storeParams, {sortKeys: true})}</td>
+            <td><ParamsView params={task.stateParams}/></td>
+            <td><ParamsView params={task.storeParams}/></td>
           </tr>
         )
       }
