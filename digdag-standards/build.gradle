@@ -17,4 +17,7 @@ dependencies {
     compile 'com.treasuredata.client:td-client:0.7.19'
     compile 'org.msgpack:msgpack-core:0.8.2'
     compile 'org.yaml:snakeyaml:1.14'
+
+    // postgresql
+    compile 'org.postgresql:postgresql:9.4.1208'
 }
