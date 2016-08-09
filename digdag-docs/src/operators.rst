@@ -689,7 +689,7 @@ pg>: PostgreSQL operations
 :command:`port: NUMBER`
   Port number to connect to the database (default: 5432).
 
-  * :command:`host: db.foobar.com`
+  * :command:`port: 2345`
 
 :command:`user: NAME`
   User to connect to the database
