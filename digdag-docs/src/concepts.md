@@ -2,15 +2,15 @@
 
 ## Projects and revisions
 
-In Digdag, workflows are packaged together with other files used in the workflows. Files can be anything such as SQL scripts, Python/Ruby/Shell scripts, configuration files, etc. This set of files is called project.
+In Digdag, workflows are packaged together with other files used in the workflows. The files can be anything such as SQL scripts, Python/Ruby/Shell scripts, configuration files, etc. This set of the workflow definitions is called project.
 
-When project is uploaded to a Digdag server, Digdag server inserts a new version and keeps old versions. A version of a project is called revision. When you run a workflow, Digdag uses the latest revision by default. But you can use old revisions for following purposes:
+When project is uploaded to a Digdag server, Digdag server inserts a new version and keeps old versions. A version of a project is called revision. When you run a workflow, Digdag uses the latest revision by default. But you can also use old revisions for following purposes:
 
 * Check the definition of a past workflow execution.
 * Run a workflow using a old revision to reproduce the same results with before.
 * Revert to a old revision to fix problems introduced in the latest revision by accident.
 
-A project can contain multiple workflows. You should create a new project if a new workflow is unrelated from others because all workflows in the project will be updated together when you upload a new revision.
+A project can contain multiple workflows. But you should create a new project if a new workflow is not related to others. A reason is that all workflows in a project will be updated together when you upload a new revision.
 
 
 ## Sessions and attempts
@@ -42,7 +42,7 @@ Scope influence of export parameters is limited compared to store parameters. Th
 
 Store parameters are visible to all following tasks - store parameters are not visible by previous tasks. For example, you ran a workflow and retried it. In this case, parameters stored by a task won't be visible by previous tasks even if the task has finished successfully in the last execution.
 
-Store parameters are not global variables. When two tasks run in parallel, they will use different store parameters. This makes the workflow behavior consitent regardless of actual execution timing. For example, when another task runs depending on the two parallel tasks, parameter stored by the last task will be used in the order of task submittion.
+Store parameters are not global variables. When two tasks run in parallel, they will use different store parameters. This makes the workflow behavior consitent regardless of actual execution timing. For example, when another task runs depending on the two parallel tasks, parameter stored by the last task will be used in the order of task submission.
 
 
 ## Operators and plugins
@@ -67,7 +67,7 @@ But loops and branches are useful. To solve this issue, Digdag dynamically appen
     echo>: this is ${i}th loop
 ```
 
-`_check` and `_error` options uses dynamic task generation. Those parameters are used by Digdag to run another task only when the task succeeds or failes.
+`_check` and `_error` options uses dynamic task generation. Those parameters are used by Digdag to run another task only when the task succeeds or fails.
 
 `_check` task is generated after successful completion of a task. This is useful especially when you want to validate results of a task before starting next tasks.
 
@@ -91,4 +91,9 @@ Children tasks have parent task's name as the prefix. Workflow name is also pref
 +dump:
   ...
 ```
+
+## Next steps
+
+* [Internal architecture](internal.html)
+* [Command reference](command_reference.html)
 
