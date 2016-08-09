@@ -74,18 +74,6 @@ public class Init
 
         gen.mkdir(".");  // creates destDir itself
 
-        //if (!gen.exists("digdag")) {
-        //    gen.cp("digdag.sh", "digdag");
-        //    gen.setExecutable("digdag");
-        //}
-        //
-        //gen.mkdir(".digdag-wrapper");
-        //File localJarPath = getFatJarPath();
-        //if (localJarPath != null) {
-        //    gen.cpAbsoluteSource(localJarPath, ".digdag-wrapper/digdag.jar");
-        //    gen.setExecutable(".digdag-wrapper/digdag.jar");
-        //}
-
         if (gen.exists(workflowFileName)) {
             out.println("File " + gen.path(workflowFileName) + " already exists.");
         }
@@ -94,14 +82,8 @@ public class Init
                 gen.cp("gitignore", ".gitignore");
             }
 
-            gen.mkdir("tasks");
-            gen.cp("tasks/shell_sample.sh", "tasks/shell_sample.sh");
-            gen.setExecutable("tasks/shell_sample.sh");
-            gen.cp("tasks/repeat_hello.sh", "tasks/repeat_hello.sh");
-            gen.setExecutable("tasks/repeat_hello.sh");
-            gen.cp("tasks/__init__.py", "tasks/__init__.py");
-            gen.cpWithReplace("workflow.dig", workflowFileName,
-                    ImmutableMap.of("@@name@@", workflowName));
+            gen.cp("query.sql", "query.sql");
+            gen.cp("workflow.dig", workflowFileName);
             if (isCurrentDirectory) {
                 out.println("Done. Type `digdag run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
