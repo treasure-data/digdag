@@ -3,7 +3,7 @@ package io.digdag.standards.operator.jdbc;
 import java.sql.SQLException;
 
 public class LockConflictException
-        extends RuntimeException
+        extends Exception
 {
     public LockConflictException(String message)
     {

@@ -33,7 +33,10 @@ import java.util.UUID;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.copyResource;
 
 public class PgIT
@@ -56,9 +59,7 @@ public class PgIT
     @Before
     public void setUp()
     {
-        if (isNullOrEmpty(POSTGRESQL)) {
-            throw new IllegalStateException("Environment variable `DIGDAG_TEST_POSTGRESQL` isn't set");
-        }
+        assumeThat(POSTGRESQL, not(isEmptyOrNullString()));
 
         props = new Properties();
         try (StringReader reader = new StringReader(POSTGRESQL)) {
@@ -81,6 +82,8 @@ public class PgIT
     public void tearDown()
     {
         removeTempDatabase(props, database);
+
+        removeRestrictedUser(props);
     }
 
     @Test
@@ -258,6 +261,7 @@ public class PgIT
     private void createTempDatabase(Properties props, String tempDatabase)
     {
         Config config = getAdminDatabaseConfig(props);
+
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
             conn.executeUpdate("CREATE DATABASE " + tempDatabase);
         }
@@ -266,8 +270,17 @@ public class PgIT
     private void removeTempDatabase(Properties props, String tempDatabase)
     {
         Config config = getAdminDatabaseConfig(props);
+
         try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
             conn.executeUpdate("DROP DATABASE IF EXISTS " + tempDatabase);
+        }
+    }
+    private void removeRestrictedUser(Properties props)
+    {
+        Config config = getAdminDatabaseConfig(props);
+
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+            conn.executeUpdate("DROP ROLE IF EXISTS " + RESTRICTED_USER);
         }
     }
 }
