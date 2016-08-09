@@ -12,6 +12,7 @@ import {Router, Link, Route, browserHistory} from 'react-router';
 import moment from 'moment';
 import pako from 'pako';
 import path from 'path';
+import yaml from 'js-yaml';
 
 //noinspection ES6UnusedImports
 import Prism from 'prismjs';
@@ -782,6 +783,8 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
         <th>Updated</th>
         <th>State</th>
         <th>Retry</th>
+        <th>State Params</th>
+        <th>Store Params</th>
       </tr>
       </thead>
       <tbody>
@@ -794,6 +797,8 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
             <td>{formatTimestamp(task.updatedAt)}</td>
             <td>{task.state}</td>
             <td>{formatTimestamp(task.retryAt)}</td>
+            <td>{yaml.safeDump(task.stateParams, {sortKeys: true})}</td>
+            <td>{yaml.safeDump(task.storeParams, {sortKeys: true})}</td>
           </tr>
         )
       }

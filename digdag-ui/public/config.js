@@ -1,7 +1,7 @@
 var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
   navbar: {
-    logo: 'logo.png',
+    logo: '/logo.png',
     brand: 'Digdag',
     className: 'navbar-inverse',
     style: {
