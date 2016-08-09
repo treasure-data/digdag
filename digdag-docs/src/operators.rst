@@ -624,6 +624,96 @@ Output parameters
   * :command:`52036074`
 
 
+pg>: PostgreSQL operations
+----------------------------------
+
+**_type: pg** operator runs queries and/or DDLs on PostgreSQL
+
+.. code-block:: yaml
+
+
+    _export:
+      pg:
+        host: 192.0.2.1
+        port: 5430
+        database: production_db
+        user: app_user
+        password: 1qazxsw23edcvfr4
+        ssl: true
+
+    +replace_deduplicated_master_table:
+      pg>: queries/dedup_master_table.sql
+      create_table: dedup_master
+
+    +prepare_summary_table:
+      pg>: queries/create_summary_table_ddl.sql
+
+    +insert_to_summary_table:
+      pg>: queries/join_log_with_master.sql
+      insert_into: summary_table
+
+:command:`pg>: FILE.sql`
+  Path of the query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`pg>: queries/complex_queries.sql`
+
+:command:`create_table: NAME`
+  Table name to create from the results. This option deletes the table if it already exists.
+
+  This option adds DROP TABLE IF EXISTS; CREATE TABLE AS before the statements written in the query template file. Also, CREATE TABLE statement can be written in the query template file itself without this command.
+
+  * :command:`create_table: dest_table`
+
+:command:`insert_into: NAME`
+  Table name to append results into.
+
+  This option adds INSERT INTO before the statements written in the query template file. Also, INSERT INTO statement can be written in the query template file itself without this command.
+
+  * :command:`insert_into: dest_table`
+
+:command:`download_file: NAME`
+  Local CSV file name to be downloaded. The file includes the result of query.
+
+  * :command:`download_file: output.csv`
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database (default: 5432).
+
+  * :command:`host: db.foobar.com`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`password: NAME`
+  User password to connect to the database (default: empty)
+
+  * :command:`password: 12345678iuytrewq`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database (default: false).
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name (default: public)
+
+  * :command:`schema: my_schema`
+
+TODO: Add some other commands
+
+
 mail>: Sending email
 ----------------------------------
 
