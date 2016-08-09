@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  td>: query.sql
+  preview: true
+  database: sample_datasets
+
++post:
+  sh>: touch ${outfile}

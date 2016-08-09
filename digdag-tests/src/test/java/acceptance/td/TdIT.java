@@ -114,6 +114,24 @@ public class TdIT
     }
 
     @Test
+    public void testRunQueryWithPreview()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_preview.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow();
+    }
+
+    @Test
+    public void testRunQueryWithPreviewAndCreateTable()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_preview_create_table.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow("td.database=" + database);
+    }
+
+    @Test
     public void testRunQueryInline()
             throws Exception
     {
@@ -299,14 +317,24 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private void runWorkflow()
+    private void runWorkflow(String... params)
     {
-        CommandStatus runStatus = main("run",
+        List<String> args = new ArrayList<>();
+        args.addAll(asList("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
                 "--project", projectDir.toString(),
-                "-p", "outfile=" + outfile,
-                "workflow.dig");
+                "-p", "outfile=" + outfile));
+
+        for (String param : params) {
+            args.add("-p");
+            args.add(param);
+        }
+
+        args.add("workflow.dig");
+
+        CommandStatus runStatus = main(args);
+
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
 
         assertThat(Files.exists(outfile), is(true));
