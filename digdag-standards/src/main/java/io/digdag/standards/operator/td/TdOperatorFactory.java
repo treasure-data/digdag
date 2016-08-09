@@ -161,7 +161,7 @@ public class TdOperatorFactory
                 // Check if the job is done
                 String jobId = existingJobId.get();
                 TDJobOperator job = op.newJobOperator(jobId);
-                TDJobSummary status = checkJobStatus(job);
+                TDJobSummary status = job.checkStatus();
                 boolean done = status.getStatus().isFinished();
                 if (!done) {
                     int pollIteration = state.get(POLL_ITERATION, int.class, 1);
@@ -256,27 +256,6 @@ public class TdOperatorFactory
             logger.info("Started {} job id={}:\n{}", engine, j.getJobId(), stmt);
 
             return j.getJobId();
-        }
-
-        private TDJobSummary checkJobStatus(TDJobOperator j)
-        {
-            try {
-                return j.ensureRunningOrSucceeded();
-            }
-            catch (TDJobException ex) {
-                try {
-                    TDJob job = j.getJobInfo();
-                    String message = job.getCmdOut() + "\n" + job.getStdErr();
-                    throw new TaskExecutionException(message, buildExceptionErrorConfig(ex));
-                }
-                catch (Exception getJobInfoFailed) {
-                    getJobInfoFailed.addSuppressed(ex);
-                    throw Throwables.propagate(getJobInfoFailed);
-                }
-            }
-            catch (InterruptedException ex) {
-                throw Throwables.propagate(ex);
-            }
         }
     }
 
