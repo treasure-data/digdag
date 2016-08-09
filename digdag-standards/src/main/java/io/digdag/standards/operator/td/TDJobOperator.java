@@ -220,6 +220,7 @@ public class TDJobOperator
             }
         }
         catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             throw Throwables.propagate(ex);
         }
     }
