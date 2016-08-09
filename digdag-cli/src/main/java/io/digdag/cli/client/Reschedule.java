@@ -69,15 +69,14 @@ public class Reschedule
         Instant now = Instant.now();
 
         Optional<Instant> runAt = runAtTime == null ? Optional.absent() : Optional.of(
-                TimeUtil.parseTime(runAtTime, "-a, --run-at option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp")
+                TimeUtil.parseTime(runAtTime, "-a, --run-at")
                 );
 
         DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
             updated = client.skipSchedulesToTime(schedId,
-                    TimeUtil.parseTime(toTime,
-                        "-t, --skip-to option must be \"yyyy-MM-dd HH:mm:ss Z\" format or UNIX timestamp"),
+                    TimeUtil.parseTime(toTime, "-t, --skip-to"),
                     runAt,
                     dryRun);
         }

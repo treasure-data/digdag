@@ -73,7 +73,7 @@ public class Start
     {
         err.println("Usage: digdag start <project-name> <name>");
         err.println("  Options:");
-        err.println("        --session <hourly | daily | now | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time (required)");
+        err.println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (required)");
         err.println("        --revision <name>            use a past revision");
         err.println("        --retry NAME                 set retry attempt name to a new session");
         err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
@@ -82,7 +82,7 @@ public class Start
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
-        err.println("    $ digdag start myproj workflow1 --session \"2016-01-01 07:00:00\"");
+        err.println("    $ digdag start myproj workflow1 --session 2016-01-01  # use this day as session_time");
         err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
         err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
         err.println("");

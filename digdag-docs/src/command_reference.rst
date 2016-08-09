@@ -217,7 +217,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.5
+    $ digdag selfupdate 0.8.7
 
 Server-mode commands
 ----------------------------------
@@ -343,7 +343,7 @@ start
 
 .. code-block:: console
 
-    $ digdag start <project-name> <+name> --session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">
+    $ digdag start <project-name> <+name> --session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">
 
 Starts a new session. This command requires project name, workflow name, and session_time. Examples:
 
@@ -353,7 +353,7 @@ Starts a new session. This command requires project name, workflow name, and ses
     $ digdag start myproj +main --session hourly
     $ digdag start myproj +main --session "2016-01-01 00:00:00"
 
-:command:`--session <hourly | daily | now | "yyyy-MM-dd[ HH:mm:ss]">`
+:command:`--session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">`
   Use this time as session_time.
 
   If ``daily`` is set, today's 00:00:00 is used.
@@ -608,6 +608,11 @@ Creates a project archive and upload it to the server. This command uploads work
   Unique name of the revision. If this is not set, a random UUID is automatically generated. Typical argument is git's SHA1 hash (``git show --pretty=format:'%T' | head -n 1``) or timestamp (``date +%Y-%m-%dT%H:%M:%S%z``).
 
   Example: -r f40172ebc58f58087b6132085982147efa9e81fb
+
+:command:`--schedule-from "yyyy-MM-dd HH:mm:ss Z"`
+  Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run ``date \"+%Y-%m-%d %H:%M:%S %z\"`` command to get current local time.
+
+  Example: --schedule-from "2017-07-29 00:00:00 +0200"
 
 
 delete

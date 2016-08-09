@@ -12,6 +12,7 @@ import {Router, Link, Route, browserHistory} from 'react-router';
 import moment from 'moment';
 import pako from 'pako';
 import path from 'path';
+import yaml from 'js-yaml';
 
 //noinspection ES6UnusedImports
 import Prism from 'prismjs';
@@ -771,6 +772,49 @@ function formatFullTimestamp(t) {
   return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
 }
 
+const ParamsView = (props:{params: Object}) =>
+  _.isEmpty(props.params)
+    ? null
+    : <pre><PrismCode className="language-yaml">{yaml.safeDump(props.params, {sortKeys: true})}</PrismCode></pre>
+
+function formatTaskState(state) {
+  switch (state) {
+
+    // Pending
+    case "blocked":
+      return <span><span className="glyphicon glyphicon-refresh text-info"></span> Blocked</span>;
+    case "ready":
+      return <span><span className="glyphicon glyphicon-refresh text-info"></span> Ready</span>;
+    case "retry_waiting":
+      return <span><span className="glyphicon glyphicon-refresh text-info"></span> Retry Waiting</span>;
+    case "group_retry_waiting":
+      return <span><span className="glyphicon glyphicon-refresh text-info"></span> Group Retry Waiting</span>;
+    case "planned":
+      return <span><span className="glyphicon glyphicon-refresh text-info"></span> Planned</span>;
+
+    // Running
+    case "running":
+      return <span><span className="glyphicon glyphicon-play text-info"></span> Running</span>;
+
+    // Error
+    case "group_error":
+      return <span><span className="glyphicon glyphicon-exclamation-sign text-danger"></span> Group Error</span>;
+    case "error":
+      return <span><span className="glyphicon glyphicon-exclamation-sign text-danger"></span> Error</span>;
+
+    // Warning
+    case "canceled":
+      return <span><span className="glyphicon glyphicon-exclamation-sign text-warning"></span> Canceled</span>;
+
+    // Success
+    case "success":
+      return <span><span className="glyphicon glyphicon-ok text-success"></span> Success</span>;
+
+    default:
+      return <span>{_.capitalize(state)}</span>;
+  }
+}
+
 const TaskListView = (props:{tasks: Array<Task>}) =>
   <div className="table-responsive">
     <table className="table table-striped table-hover table-condensed">
@@ -782,6 +826,8 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
         <th>Updated</th>
         <th>State</th>
         <th>Retry</th>
+        <th>State Params</th>
+        <th>Store Params</th>
       </tr>
       </thead>
       <tbody>
@@ -792,8 +838,10 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
             <td>{task.fullName}</td>
             <td>{task.parentId}</td>
             <td>{formatTimestamp(task.updatedAt)}</td>
-            <td>{task.state}</td>
+            <td>{formatTaskState(task.state)}</td>
             <td>{formatTimestamp(task.retryAt)}</td>
+            <td><ParamsView params={task.stateParams}/></td>
+            <td><ParamsView params={task.storeParams}/></td>
           </tr>
         )
       }

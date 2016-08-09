@@ -12,7 +12,6 @@ import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.ConfigEvalEngine;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
@@ -28,7 +27,6 @@ import java.util.UUID;
 public class JdbcOpTestHelper
 {
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new GuavaModule());
-    private final YamlConfigLoader loader = new YamlConfigLoader();
     private final ConfigFactory configFactory = new ConfigFactory(mapper);
     private final Injector injector = Guice.createInjector(new MyModule());
 
@@ -55,7 +53,7 @@ public class JdbcOpTestHelper
     public Config createConfig(Map<String, Object> configInput)
             throws IOException
     {
-        return loader.loadString(mapper.writeValueAsString(configInput)).toConfig(configFactory);
+        return configFactory.create(configInput);
     }
 
     public TaskRequest createTaskRequest(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
@@ -71,9 +69,7 @@ public class JdbcOpTestHelper
                 attemptId(4).
                 sessionId(5).
                 taskName("t").
-                queueName("q").
                 lockId("l").
-                priority(6).
                 timeZone(ZoneId.systemDefault()).
                 sessionUuid(UUID.randomUUID()).
                 sessionTime(Instant.now()).

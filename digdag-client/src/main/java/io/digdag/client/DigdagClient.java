@@ -298,12 +298,29 @@ public class DigdagClient implements AutoCloseable
     public RestProject putProjectRevision(String projName, String revision, File body)
         throws IOException
     {
-        return doPut(RestProject.class,
-                "application/gzip",
-                body,
-                target("/api/projects")
-                .queryParam("project", projName)
-                .queryParam("revision", revision));
+        return putProjectRevision(projName, revision, body, Optional.absent());
+    }
+
+    public RestProject putProjectRevision(String projName, String revision, File body, Optional<Instant> scheduleFrom)
+        throws IOException
+    {
+        if (scheduleFrom.isPresent()) {
+            return doPut(RestProject.class,
+                    "application/gzip",
+                    body,
+                    target("/api/projects")
+                    .queryParam("project", projName)
+                    .queryParam("revision", revision)
+                    .queryParam("schedule_from", scheduleFrom.get().toString()));
+        }
+        else {
+            return doPut(RestProject.class,
+                    "application/gzip",
+                    body,
+                    target("/api/projects")
+                    .queryParam("project", projName)
+                    .queryParam("revision", revision));
+        }
     }
 
     // TODO getArchive with streaming

@@ -7,7 +7,7 @@ if [[ -e ~/docker/digdag-build.tar.gz ]]; then
     gunzip -c ~/docker/digdag-build.tar.gz | docker load
 fi
 
-IMAGE_ID_PRE=$(docker inspect --format="{{.Id}}" digdag-build)
+IMAGE_ID_PRE=$(docker inspect --format="{{.Id}}" digdag-build || true)
 
 cd "$(dirname "$0")"
 docker build -t digdag-build .

@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  td_partial_delete>: ${table}
+  from: ${from}
+  to: ${to}
+
++post:
+  sh>: touch ${outfile}

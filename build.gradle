@@ -10,7 +10,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.8.6-SNAPSHOT'
+    version = '0.8.8-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -288,7 +288,11 @@ uploadRootFiles {
 uploadRootFiles.dependsOn(uploadReleases)
 
 task classpath(dependsOn: [':digdag-cli:classpath']) << { }
-clean { delete 'classpath' }
+
+clean {
+    delete 'classpath'
+    delete 'pkg'
+}
 
 task release() {
     dependsOn subprojects.publish

@@ -19,6 +19,7 @@ import io.digdag.standards.operator.EmbulkOperatorFactory;
 import io.digdag.standards.operator.pg.PgOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
+import io.digdag.standards.operator.td.TdPartialDeleteOperatorFactory;
 import io.digdag.standards.operator.td.TdRunOperatorFactory;
 import io.digdag.standards.operator.td.TdLoadOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
@@ -47,6 +48,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, TdTableExportOperatorFactory.class);
         addStandardOperatorFactory(binder, TdWaitOperatorFactory.class);
         addStandardOperatorFactory(binder, TdWaitTableOperatorFactory.class);
+        addStandardOperatorFactory(binder, TdPartialDeleteOperatorFactory.class);
         addStandardOperatorFactory(binder, EchoOperatorFactory.class);
         addStandardOperatorFactory(binder, IfOperatorFactory.class);
         addStandardOperatorFactory(binder, FailOperatorFactory.class);
