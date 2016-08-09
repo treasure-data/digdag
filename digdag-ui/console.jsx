@@ -930,8 +930,8 @@ class LogFileView extends React.Component {
 
   render() {
     return this.state.data
-      ? <pre>{pako.inflate(this.state.data, {to: 'string'})}</pre>
-      : <pre></pre>;
+      ? <span>{pako.inflate(this.state.data, {to: 'string'})}</span>
+      : null;
   }
 }
 
@@ -983,7 +983,7 @@ class AttemptLogsView extends React.Component {
     return (
       <div className="row">
         <h2>Logs</h2>
-        {this.logFiles()}
+        <pre>{this.logFiles()}</pre>
       </div>
     );
   }
