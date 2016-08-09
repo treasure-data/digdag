@@ -110,7 +110,7 @@ public class WorkflowExecutorCasesTest
                             )),
                     config.getFactory().create().set("_workdir", folder.getRoot().toString()));
             LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
-                    "defualt",
+                    "default",
                     "revision-" + UUID.randomUUID(),
                     meta);
             StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), workflowName);
