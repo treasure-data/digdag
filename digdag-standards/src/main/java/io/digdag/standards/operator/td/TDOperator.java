@@ -26,9 +26,9 @@ import static io.digdag.util.RetryExecutor.retryExecutor;
 public class TDOperator
         implements Closeable
 {
-    private static final String JOB_ID = "job_id";
-    private static final String DOMAIN_KEY = "domain_key";
-    private static final String POLL_ITERATION = "poll_iteration";
+    private static final String JOB_ID = "jobId";
+    private static final String DOMAIN_KEY = "domainKey";
+    private static final String POLL_ITERATION = "pollIteration";
 
     private static final Integer INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 30;
@@ -232,19 +232,6 @@ public class TDOperator
      */
     public TDJobOperator runJob(Config state, JobStarter starter)
     {
-        ///////////////////////////////////////////////////////////////////////
-        // TODO: Remove legacy job state migration code
-        if (!state.has(JOB_ID)) {
-            state.setOptional(JOB_ID, state.getOptional("jobId", String.class));
-        }
-        if (!state.has(DOMAIN_KEY)) {
-            state.setOptional(DOMAIN_KEY, state.getOptional("domainKey", String.class));
-        }
-        if (!state.has(POLL_ITERATION)) {
-            state.setOptional(POLL_ITERATION, state.getOptional("pollIteration", int.class));
-        }
-        ///////////////////////////////////////////////////////////////////////
-
         // Generate and store domain key before starting the job
         Optional<String> domainKey = state.getOptional(DOMAIN_KEY, String.class);
         if (!domainKey.isPresent()) {
