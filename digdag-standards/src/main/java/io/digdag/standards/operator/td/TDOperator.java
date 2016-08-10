@@ -1,5 +1,7 @@
 package io.digdag.standards.operator.td;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
@@ -16,6 +18,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
+import org.immutables.value.Value;
 
 import java.io.Closeable;
 import java.util.UUID;
@@ -26,10 +29,6 @@ import static io.digdag.util.RetryExecutor.retryExecutor;
 public class TDOperator
         implements Closeable
 {
-    private static final String JOB_ID = "jobId";
-    private static final String DOMAIN_KEY = "domainKey";
-    private static final String POLL_ITERATION = "pollIteration";
-
     private static final Integer INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 30;
 
@@ -83,7 +82,7 @@ public class TDOperator
     private final TDClient client;
     private final String database;
 
-    protected TDOperator(TDClient client, String database)
+    TDOperator(TDClient client, String database)
     {
         this.client = client;
         this.database = database;
@@ -230,21 +229,38 @@ public class TDOperator
     /**
      * Run a TD job in a polling non-blocking fashion. Throws TaskExecutionException.ofNextPolling with the passed in state until the job is done.
      */
-    public TDJobOperator runJob(Config state, JobStarter starter)
+    public TDJobOperator runJob(Config state, String key, JobStarter starter)
     {
+        ///////////////////////////////////////////////////////////////////////////////////////////
+        // TODO: remove this migration code
+        if (state.has("jobId")) {
+            Config jobState = state.getNestedOrSetEmpty(key);
+            if (!jobState.isEmpty()) {
+                throw new AssertionError();
+            }
+            jobState.setOptional("jobId", state.getOptional("jobId", String.class));
+            jobState.setOptional("domainKey", state.getOptional("domainKey", String.class));
+            jobState.setOptional("pollIteration", state.getOptional("pollIteration", Integer.class));
+            state.remove("jobId");
+            state.remove("domainKey");
+            state.remove("pollIteration");
+        }
+        ///////////////////////////////////////////////////////////////////////////////////////////
+
+        JobState jobState = state.get(key, JobState.class, JobState.empty());
+
         // Generate and store domain key before starting the job
-        Optional<String> domainKey = state.getOptional(DOMAIN_KEY, String.class);
+        Optional<String> domainKey = jobState.domainKey();
         if (!domainKey.isPresent()) {
-            state.set(DOMAIN_KEY, UUID.randomUUID().toString());
+            state.set(key, jobState.withDomainKey(UUID.randomUUID().toString()));
             throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
         }
 
         // Start the job
-        Optional<String> jobId = state.getOptional(JOB_ID, String.class);
+        Optional<String> jobId = jobState.jobId();
         if (!jobId.isPresent()) {
             assert domainKey.isPresent();
-            state.set(JOB_ID, starter.startJob(this, domainKey.get()));
-            state.set(POLL_ITERATION, 1);
+            state.set(key, jobState.withJobId(starter.startJob(this, domainKey.get())));
             throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
         }
 
@@ -253,9 +269,9 @@ public class TDOperator
         TDJobSummary status = job.checkStatus();
         boolean done = status.getStatus().isFinished();
         if (!done) {
-            int pollIteration = state.get(POLL_ITERATION, int.class, 1);
-            state.set(POLL_ITERATION, pollIteration + 1);
+            int pollIteration = jobState.pollIteration().or(0);
             int pollInterval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, pollIteration), MAX_POLL_INTERVAL);
+            state.set(key, jobState.withPollIteration(pollIteration + 1));
             throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
         }
 
@@ -265,10 +281,6 @@ public class TDOperator
             String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
             throw new TaskExecutionException(message, ConfigElement.empty());
         }
-
-        state.remove(DOMAIN_KEY);
-        state.remove(JOB_ID);
-        state.remove(POLL_ITERATION);
 
         return job;
     }
@@ -294,5 +306,28 @@ public class TDOperator
     public interface JobStarter
     {
         String startJob(TDOperator op, String domainKey);
+    }
+
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonSerialize(as = ImmutableJobState.class)
+    @JsonDeserialize(as = ImmutableJobState.class)
+    interface JobState
+    {
+        Optional<String> jobId();
+        Optional<String> domainKey();
+        Optional<Integer> pollIteration();
+
+        JobState withJobId(String value);
+        JobState withJobId(Optional<String> value);
+        JobState withDomainKey(String value);
+        JobState withDomainKey(Optional<String> value);
+        JobState withPollIteration(int value);
+        JobState withPollIteration(Optional<Integer> value);
+
+        static JobState empty()
+        {
+            return ImmutableJobState.builder().build();
+        }
     }
 }

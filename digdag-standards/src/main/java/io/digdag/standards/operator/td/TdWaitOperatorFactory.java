@@ -27,6 +27,7 @@ public class TdWaitOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
+    public static final String POLL_JOB = "pollJob";
     private static Logger logger = LoggerFactory.getLogger(TdWaitOperatorFactory.class);
 
     private static final String JOB_ID = "jobId";
@@ -84,7 +85,8 @@ public class TdWaitOperatorFactory
         {
             try (TDOperator op = TDOperator.fromConfig(params)) {
 
-                TDJobOperator job = op.runJob(state, this::startJob);
+                TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
+                state.remove(POLL_JOB);
 
                 // Fetch the job output to see if the query condition has been fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());

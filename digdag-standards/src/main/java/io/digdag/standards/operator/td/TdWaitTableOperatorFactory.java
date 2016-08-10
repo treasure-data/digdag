@@ -27,6 +27,7 @@ public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
+    public static final String POLL_JOB = "pollJob";
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
     private static final String TABLE_EXISTS = "table_exists";
@@ -100,7 +101,8 @@ public class TdWaitTableOperatorFactory
                     state.set(TABLE_EXISTS, true);
                 }
 
-                TDJobOperator job = op.runJob(state, this::startJob);
+                TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
+                state.remove(POLL_JOB);
 
                 // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
