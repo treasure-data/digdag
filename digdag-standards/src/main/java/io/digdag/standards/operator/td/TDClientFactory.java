@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
+import com.google.common.annotations.VisibleForTesting;
 import com.treasuredata.client.ProxyConfig;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientBuilder;
@@ -9,9 +10,9 @@ import io.digdag.client.config.ConfigException;
 
 class TDClientFactory
 {
-    static TDClient clientFromConfig(Config params)
+    @VisibleForTesting
+    static TDClientBuilder clientBuilderFromConfig(Config params)
     {
-
         String apikey = params.get("apikey", String.class).trim();
         if (apikey.isEmpty()) {
             throw new ConfigException("Parameter 'apikey' is empty");
@@ -25,14 +26,17 @@ class TDClientFactory
             builder.setProxy(proxyConfig(proxyConfig));
         }
 
-        TDClient client = builder
+        return builder
                 .setEndpoint(params.get("endpoint", String.class, "api.treasuredata.com"))
                 .setUseSSL(params.get("use_ssl", boolean.class, true))
                 .setApiKey(apikey)
                 .setRetryLimit(0)  // disable td-client's retry mechanism
-                .build();
+                ;
+    }
 
-        return client;
+    static TDClient clientFromConfig(Config params)
+    {
+        return clientBuilderFromConfig(params).build();
     }
 
     private static ProxyConfig proxyConfig(Config config)
@@ -57,6 +61,11 @@ class TDClientFactory
         Optional<String> password = config.getOptional("password", String.class);
         if (password.isPresent()) {
             builder.setPassword(password.get());
+        }
+
+        Optional<Boolean> useSsl = config.getOptional("use_ssl", Boolean.class);
+        if (useSsl.isPresent()) {
+            builder.useSSL(useSsl.get());
         }
 
         return builder.createProxyConfig();
