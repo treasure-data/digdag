@@ -2,6 +2,7 @@ package io.digdag.standards.operator.td;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.api.LocalTimeOrInstant;
 
 import java.time.Instant;
@@ -21,15 +22,22 @@ public class TimestampParam
     }
 
     @JsonCreator
-    public static TimestampParam parse(String expr)
+    public static TimestampParam parse(JsonNode expr)
     {
         LocalTimeOrInstant timestamp;
-        if (expr.chars().allMatch(Character::isDigit)) {
-            long epoch = Long.parseLong(expr);
-            timestamp = LocalTimeOrInstant.of(Instant.ofEpochSecond(epoch));
+        if (expr.isTextual()) {
+            if (expr.asText().chars().allMatch(Character::isDigit)) {
+                timestamp = LocalTimeOrInstant.of(Instant.ofEpochSecond(Long.parseLong(expr.asText())));
+            }
+            else {
+                timestamp = LocalTimeOrInstant.fromString(expr.asText());
+            }
+        }
+        else if (expr.isIntegralNumber()) {
+            timestamp = LocalTimeOrInstant.of(Instant.ofEpochSecond(expr.asLong()));
         }
         else {
-            timestamp = LocalTimeOrInstant.fromString(expr);
+            throw new IllegalArgumentException("Not a valid timestamp: '" + expr + "'");
         }
         return new TimestampParam(timestamp);
     }
