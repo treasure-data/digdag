@@ -374,10 +374,21 @@ public class TemporaryDigdagServer
 
     private static void kill(Process p)
     {
-        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+        sendUnixSignal(p, "KILL");
+        p.destroyForcibly();
+    }
+
+    private static void terminate(Process p)
+    {
+        sendUnixSignal(p, "TERM");
+    }
+
+    private static void sendUnixSignal(Process p, String signalName)
+    {
+        if (isUnixProcess(p)) {
             int pid = pid(p);
             if (pid != -1) {
-                String[] cmd = {"kill", "-9", Integer.toString(pid)};
+                String[] cmd = {"kill", "-s", signalName, Integer.toString(pid)};
                 try {
                     Runtime.getRuntime().exec(cmd);
                 }
@@ -385,13 +396,12 @@ public class TemporaryDigdagServer
                     log.warn("command failed: {}", asList(cmd), e);
                 }
             }
-            p.destroyForcibly();
         }
     }
 
     private static int pid(Process p)
     {
-        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+        if (isUnixProcess(p)) {
             try {
                 Field f = p.getClass().getDeclaredField("pid");
                 f.setAccessible(true);
@@ -401,6 +411,11 @@ public class TemporaryDigdagServer
             }
         }
         return -1;
+    }
+
+    private static boolean isUnixProcess(Process p)
+    {
+        return p.getClass().getName().equals("java.lang.UNIXProcess");
     }
 
     private void setupDatabase()
@@ -468,6 +483,27 @@ public class TemporaryDigdagServer
                 log.debug("Failed to close db conn pool", e);
             }
         }
+    }
+
+    public boolean hasUnixProcess()
+    {
+        return serverProcess != null && isUnixProcess(serverProcess);
+    }
+
+    public void terminateProcess()
+    {
+        if (!hasUnixProcess()) {
+            throw new IllegalStateException("server doesn't have UNIX process");
+        }
+        terminate(serverProcess);
+    }
+
+    public boolean isProcessAlive()
+    {
+        if (!hasUnixProcess()) {
+            throw new IllegalStateException("server doesn't have UNIX process");
+        }
+        return serverProcess.isAlive();
     }
 
     public static Builder builder()
