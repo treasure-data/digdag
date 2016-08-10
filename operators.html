@@ -117,6 +117,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#id4">Output parameters</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#pg-postgresql-operations">pg&gt;: PostgreSQL operations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#mail-sending-email">mail&gt;: Sending email</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#embulk-embulk-data-transfer">embulk&gt;: Embulk data transfer</a></li>
 </ul>
@@ -201,8 +202,9 @@
 <li><a class="reference internal" href="#id4" id="id24">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#mail-sending-email" id="id25">mail&gt;: Sending email</a></li>
-<li><a class="reference internal" href="#embulk-embulk-data-transfer" id="id26">embulk&gt;: Embulk data transfer</a></li>
+<li><a class="reference internal" href="#pg-postgresql-operations" id="id25">pg&gt;: PostgreSQL operations</a></li>
+<li><a class="reference internal" href="#mail-sending-email" id="id26">mail&gt;: Sending email</a></li>
+<li><a class="reference internal" href="#embulk-embulk-data-transfer" id="id27">embulk&gt;: Embulk data transfer</a></li>
 </ul>
 </div>
 <div class="section" id="call-calls-another-workflow">
@@ -830,8 +832,104 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 </div>
+<div class="section" id="pg-postgresql-operations">
+<h2><a class="toc-backref" href="#id25">pg&gt;: PostgreSQL operations</a><a class="headerlink" href="#pg-postgresql-operations" title="Permalink to this headline">¶</a></h2>
+<p><strong>_type: pg</strong> operator runs queries and/or DDLs on PostgreSQL</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">pg</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">192.0.2.1</span>
+    <span class="l l-Scalar l-Scalar-Plain">port</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">5430</span>
+    <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">production_db</span>
+    <span class="l l-Scalar l-Scalar-Plain">user</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">app_user</span>
+    <span class="l l-Scalar l-Scalar-Plain">password</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1qazxsw23edcvfr4</span>
+    <span class="l l-Scalar l-Scalar-Plain">ssl</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+replace_deduplicated_master_table</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">pg&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/dedup_master_table.sql</span>
+  <span class="l l-Scalar l-Scalar-Plain">create_table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">dedup_master</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+prepare_summary_table</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">pg&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/create_summary_table_ddl.sql</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+insert_to_summary_table</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">pg&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/join_log_with_master.sql</span>
+  <span class="l l-Scalar l-Scalar-Plain">insert_into</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">summary_table</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><strong class="command">pg&gt;: FILE.sql</strong></dt>
+<dd><p class="first">Path of the query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
+<ul class="last simple">
+<li><strong class="command">pg&gt;: queries/complex_queries.sql</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">create_table: NAME</strong></dt>
+<dd><p class="first">Table name to create from the results. This option deletes the table if it already exists.</p>
+<p>This option adds DROP TABLE IF EXISTS; CREATE TABLE AS before the statements written in the query template file. Also, CREATE TABLE statement can be written in the query template file itself without this command.</p>
+<ul class="last simple">
+<li><strong class="command">create_table: dest_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">insert_into: NAME</strong></dt>
+<dd><p class="first">Table name to append results into.</p>
+<p>This option adds INSERT INTO before the statements written in the query template file. Also, INSERT INTO statement can be written in the query template file itself without this command.</p>
+<ul class="last simple">
+<li><strong class="command">insert_into: dest_table</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">download_file: NAME</strong></dt>
+<dd><p class="first">Local CSV file name to be downloaded. The file includes the result of query.</p>
+<ul class="last simple">
+<li><strong class="command">download_file: output.csv</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">database: NAME</strong></dt>
+<dd><p class="first">Database name.</p>
+<ul class="last simple">
+<li><strong class="command">database: my_db</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">host: NAME</strong></dt>
+<dd><p class="first">Hostname or IP address of the database.</p>
+<ul class="last simple">
+<li><strong class="command">host: db.foobar.com</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">port: NUMBER</strong></dt>
+<dd><p class="first">Port number to connect to the database (default: 5432).</p>
+<ul class="last simple">
+<li><strong class="command">port: 2345</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">user: NAME</strong></dt>
+<dd><p class="first">User to connect to the database</p>
+<ul class="last simple">
+<li><strong class="command">user: app_user</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">password: NAME</strong></dt>
+<dd><p class="first">User password to connect to the database (default: empty)</p>
+<ul class="last simple">
+<li><strong class="command">password: 12345678iuytrewq</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">ssl: BOOLEAN</strong></dt>
+<dd><p class="first">Enable SSL to connect to the database (default: false).</p>
+<ul class="last simple">
+<li><strong class="command">ssl: true</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">schema: NAME</strong></dt>
+<dd><p class="first">Default schema name (default: public)</p>
+<ul class="last simple">
+<li><strong class="command">schema: my_schema</strong></li>
+</ul>
+</dd>
+</dl>
+<p>TODO: Add some other commands</p>
+</div>
 <div class="section" id="mail-sending-email">
-<h2><a class="toc-backref" href="#id25">mail&gt;: Sending email</a><a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id26">mail&gt;: Sending email</a><a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h2>
 <p><strong>mail&gt;:</strong> operator sends an email.</p>
 <p>To use Gmail SMTP server, you need to do either of:</p>
 <blockquote>
@@ -967,7 +1065,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="embulk-embulk-data-transfer">
-<h2><a class="toc-backref" href="#id26">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id27">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
 <p><strong>embulk&gt;:</strong> operator runs <a class="reference external" href="http://www.embulk.org">Embulk</a> to transfer data across storages including local files.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">embulk&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data/load.yml</span>
