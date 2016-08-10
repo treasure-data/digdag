@@ -4,17 +4,46 @@ This guide explains implementation details of Digdag. Understanding the internal
 
 ## Task logging
 
-When a task runs, its log messages are collected and stored into files. When a task starts, a new file is created and messages are written to the file. As the file grows larger than certain limit, the file is uploaded to a storage (note: there is an optimization for local execution with local file system logger: logs are directly appended to the final destionation file). There is an SPI interface called LogServer to customize the storage.
+When a task runs, a logger (SLF4j + logback) collects its log messages and passes them to a task logger set at a thread-local storage. When a task starts, task logger creates a new file and writes messages to the file. As the file grows larger than certain limit, it uploads the file to a storage (note: there is an optimization for local execution with local file system logger: logs are directly appended to the final destionation file). LogServer is the SPI interface that implements this storage.
 
-When a client uploads a file, the client first requests a direct upload URL. If LogServer supports a temporary pre-signed HTTP URL to upload files, server returns the URL. Then, the client uploads the file to the URL directly. Otherwise, the client uploads the file to a digdag server, and the digdag server passes the contents to LogServer interface.
+When a client uploads a file, the client first requests a direct upload URL. If LogServer supports a temporary pre-signed HTTP URL to upload files, server returns the URL. Then, the client uploads the file to the URL directly. Otherwise, the client uploads the file to a digdag server, and the digdag server uploads the contents using LogServer. LogServer stores the file using full name of the task as its path name.
 
-LogServer stores the file with the full name of the task.
+When a client wants log files, the client requests list of files that have a common path prefix. This prefix may be full name of a task to get logs of a task, or name of a parent task to get all logs of its children. Digdag server gets the list of files from LogServer. LogServer must be capable to list files by prefix.
 
-When a client wants log files, the client requests list of files that have a common prefix. This prefix may be full name of a task to get logs of a task, or name of a parent task to get all logs of its children. Digdag server gets the list of files from LogServer. LogServer must be capable to list files by prefix.
+If LogServer supports a temporary pre-signed HTTP URL to download files, LogServer returns the URL in addition to file name in the list. Digdag server returns the list to a client. With this way, download traffic won't go throw the server. S3 LogServer supports this, for example. Otherwise, Digdag server returns the list without direct download URL. Clients will request files from the server, and the server fetches the contents using LogServer. Default local filesystem LogServer doesn't support pre-signed URL, for example.
 
-If LogServer supports a temporary pre-signed HTTP URL to download files, LogServer returns the URL in addition to file name in the list. Digdag server returns the list to a client. With this way, download traffic won't go throw the server. S3 LogServer supports this, for example.
 
-If LogServer doesn't support pre-signed URL, Digdag server returns file list without direct download URL. Clients request contents of each files to the server, and the server fetches the contents through LogServer API. Default local filesystem LogServer doesn't support pre-signed URL.
+## Database
+
+Digdag stores all data in a database (PostgreSQL or H2 database). When digdag runs in local mode, it uses in-memory H2 database.
+
+### Project repository
+
+Tables `projects`, `revisions`, `revision_archives`, `workflow_definitions`, and `workflow_configs` tables store projects.
+
+`projects` table stores names of projects.
+
+`revisions` table stores revisions of projects. It contains information about where project archive is stored. If `archive_type` column is "db", project archive is stored in `revision_archives` table. Otherwise, a project archive is stored using a storage plugin (such as S3).
+
+`workflow_definitions` table stores names of workflows. This table is always used with `workflow_configs` table because actual configurations of workflows are stored there. When a new revision is uploaded, multiple rows are inserted to `workflow_definitions` table because a project can contain multiple workflows. However, in most of cases, only a few workflows are changed. To optimize this workload, a same `workflow_configs` row is shared by multiple `workflow_definitions` if their configurations are identical.
+
+
+### Schedule store
+
+`schedules` table stores status of active schedules. Actual configuration of schedules are stored in project repository. `schedules` table takes only the latest revision and stores their current status.
+
+When a new revision is uploaded, digdag uses workflow names to update schedules. If a new revision contains a workflow and there is an existent schedule of a old workflow with the same name, digdag keeps status of the schedule. If there're no old workflows with the same name, digdag creates a new schedule. If opposite, an old schedule exists but new revision doesn't include workflows with the same name, the schedule will be deleted.
+
+
+### Session store
+
+Tables `sessions`, `session_attempts`, `tasks`, `task_details`, `task_dependencies`, and `task_archives` tables store session information.
+
+`sessoins` table stores history of sessions.
+
+`session_attempts` table stores history of attempts.
+
+`tasks`, `task_details`, and `task_dependencies` tables stores tasks of running attempts. `tasks` table stores state of tasks. `task_details` stores config and parameters of tasks, and `task_dependencies` stores dependency between multiple tasks under an parent tasks. Workflow executor checks these tables periodically to run workflows. When an attempt finishes, its tasks will be removed from the tables and archived in `task_archives` table.
 
 
 ## Task queue
@@ -30,17 +59,26 @@ When a task is pushed to a queue, it pushes ID of the task. TaskRequest will be 
 When an agent fetches a task, it locks the task first. A locked task won't be taken by other agents for a while. The agent must send heartbeat to extend the lock expiration time until execution of the task finishes. When an agent crashes, heartbeat breaks out. In this case, the task will be taken by another agent. The task is deleted from the queue by WorkflowExecutor when task finish callback is sent.
 
 
+## Project archive storage
+
+Storage (`io.digdag.spi.Storage`) is a plugin interface that is used to store task log files and project archives. Task log files use storage through StorageFileLogServer (`io.digdag.core.log`) class, and project archives use storage through ArchiveManager (`io.digdag.core.storage`) class.
+
+S3Storage is a storage implementation that stores files on Amazon S3.
+
+Storage is injected using Extension mechanism (see bellow).
+
+
 ## Extension mechanisms
 
 ### Extension
 
-Extension (`io.digdag.spi.Extension`) is an interface to statically customize Digdag using dependency injection (Guice). This is useful to override some built-in behavior, add built-in operators, or override default parameters.
+Extension (`io.digdag.spi.Extension`) is an interface to statically customize digdag using dependency injection (Guice). This is useful to override some built-in behavior, add built-in operators, or override default parameters.
 
-Extension is the easiest way to let users customize digdag. But it's the hardest to use because users need to write program to use.
+Extension needs least code to make some extension possible. But it's the hardest to use because users need to write program to use.
 
 A typical use case is for system integrators to customize digdag for their internal use.
 
-Many of customization points in digdag are assuming Extension to override (e.g. `io.digdag.server.Authenticator`) because it needs less code. But for ease of use, eventually they should also accept system plugins.
+Many of customization points in digdag are assuming Extension to override (e.g. `io.digdag.server.Authenticator`) because it needs less code. But for ease of use, they should also accept system plugins, eventually.
 
 
 ### System plugins
@@ -58,11 +96,12 @@ All dynamic plugins can be loaded as system plugins. But system plugins can't be
 
 ### Dynamic plugins
 
-Dynamic plugins are plugins loaded when a task runs. Dynamic plugins are loaded using an isolated class loader and isolated Guice instance. Dynamic plugins can access to only allowed resources. For example, dynamic plugin loader of operators allows access to CommandExecutor and TemplateEngine.
+Dynamic plugins are plugins loaded when a task runs. Dynamic plugins are loaded using an isolated class loader and isolated Guice instance. Dynamic plugins can access to only subset of internal resources. For example, dynamic plugin loader of operators allows access to CommandExecutor and TemplateEngine.
 
 An intended use case is loading operators.
 
 A dynamic plugin may be instantiated multiple times depending on cache size of DynamicPluginLoader.
+
 
 ## Next steps
 

@@ -67,7 +67,7 @@ But loops and branches are useful. To solve this issue, Digdag dynamically appen
     echo>: this is ${i}th loop
 ```
 
-`_check` and `_error` options uses dynamic task generation. Those parameters are used by Digdag to run another task only when the task succeeds or fails.
+`_check` and `_error` options use dynamic task generation. Those parameters are used by Digdag to run another task only when the task succeeds or fails.
 
 `_check` task is generated after successful completion of a task. This is useful especially when you want to validate results of a task before starting next tasks.
 
@@ -91,6 +91,14 @@ Children tasks have parent task's name as the prefix. Workflow name is also pref
 +dump:
   ...
 ```
+
+
+## Workspace
+
+Workspace is a directory where a task runs at. Digdag extracts files from a project archive to this directory, change directory there, and executes a task (note: local-mode execution does nothing to create a workspace because it's assumed that current working directory is the workspace).
+
+Plugins will not allow access to parent directories of workspace. This is because digdag server is running on a shared environment. A project should be self-contained so that it doesn't have to depend on external environments. Scripting operator is an exception (e.g. sh> operator). It's recommended to run scripts using `docker:` option.
+
 
 ## Next steps
 
