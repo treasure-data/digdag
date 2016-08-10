@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  td_partial_delete>: ${table}
+  from: 0
+  to: ${(session_unixtime / 3600) * 3600 + (24 * 3600)}
+
++post:
+  sh>: touch ${outfile}

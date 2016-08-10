@@ -144,6 +144,32 @@ public class TdPartialDeleteIT
         assertThat(result.get(0).get(0).asInt(), is(0));
     }
 
+    @Test
+    public void testPartialDeleteWithEpochNumbers()
+            throws Exception
+    {
+        copyResource("acceptance/td/td_partial_delete/td_partial_delete_with_epoch_numbers.dig", projectDir.resolve("workflow.dig"));
+
+        CommandStatus runStatus = main("run",
+                "-o", projectDir.toString(),
+                "--config", config.toString(),
+                "--project", projectDir.toString(),
+                "-p", "outfile=" + outfile,
+                "-p", "database=" + database,
+                "-p", "table=" + table,
+                "workflow.dig");
+
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+
+        assertThat(Files.exists(outfile), is(true));
+
+        // Verify that table contents are deleted
+        String selectCountJobId = client.submit(TDJobRequest.newPrestoQuery(database, "select count(*) from " + table));
+        TestUtils.expect(Duration.ofMinutes(5), jobSuccess(client, selectCountJobId));
+        List<ArrayNode> result = downloadResult(selectCountJobId);
+        assertThat(result.get(0).get(0).asInt(), is(0));
+    }
+
     private static Callable<Boolean> jobSuccess(TDClient client, String jobId)
     {
         return () -> {
