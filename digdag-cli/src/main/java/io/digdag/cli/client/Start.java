@@ -4,6 +4,8 @@ import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 import java.time.Instant;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ClientErrorException;
 
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -170,7 +172,21 @@ public class Start
             err.println("Session attempt is not started.");
         }
         else {
-            RestSessionAttempt newAttempt = client.startSessionAttempt(request);
+            RestSessionAttempt newAttempt;
+            try {
+                newAttempt = client.startSessionAttempt(request);
+            }
+            catch (ClientErrorException ex) {
+                if (ex.getResponse().getStatusInfo().equals(Response.Status.CONFLICT)) {
+                    throw systemExit(String.format(ENGLISH,
+                                "A session for the requested session_time already exists: session_time=%s" +
+                                "\nhint: use `digdag retry <attempt-id> --latest-revision` command to rerun the session again for the same session_time",
+                                truncatedTime.getSessionTime()));
+                }
+                else {
+                    throw ex;
+                }
+            }
 
             ln("Started a session attempt:");
             ln("  session id: %d", newAttempt.getSessionId());
