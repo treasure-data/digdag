@@ -2,7 +2,6 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -24,15 +23,14 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.nio.file.Path;
 
-import static com.treasuredata.client.model.TDJob.Status.SUCCESS;
-
 public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
-    private static final String JOB_ID = "jobId";
+    private static final String TABLE_EXISTS = "table_exists";
+    private static final String POLL_JOB = "pollJob";
 
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig)
@@ -63,7 +61,6 @@ public class TdWaitTableOperatorFactory
         private final int priority;
         private final int jobRetry;
         private final Config state;
-        private final Optional<String> existingJobId;
 
         private TdWaitTableOperator(Path workspacePath, TaskRequest request)
         {
@@ -82,7 +79,6 @@ public class TdWaitTableOperatorFactory
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = request.getLastStateParams().deepCopy();
-            this.existingJobId = state.getOptional(JOB_ID, String.class);
         }
 
         @Override
@@ -90,8 +86,8 @@ public class TdWaitTableOperatorFactory
         {
             try (TDOperator op = TDOperator.fromConfig(params)) {
 
-                // Check if table exists using rest api (if the query job has not yet been started)
-                if (!existingJobId.isPresent()) {
+                // Check if table exists using rest api
+                if (!state.get(TABLE_EXISTS, Boolean.class, false)) {
                     if (!op.tableExists(table.getTable())) {
                         throw TaskExecutionException.ofNextPolling(tableExistencePollInterval, ConfigElement.copyOf(state));
                     }
@@ -100,39 +96,20 @@ public class TdWaitTableOperatorFactory
                     if (rows <= 0) {
                         return TaskResult.empty(request);
                     }
+
+                    // Store that the table has been observed to exist
+                    state.set(TABLE_EXISTS, true);
                 }
 
-                // Start the query job
-                if (!existingJobId.isPresent()) {
-                    String jobId = startJob(op);
-                    state.set(JOB_ID, jobId);
-                    throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
-                }
-
-                // Poll for query job status
-                assert existingJobId.isPresent();
-                TDJobOperator job = op.newJobOperator(existingJobId.get());
-                TDJob jobInfo = job.getJobInfo();
-                TDJob.Status status = jobInfo.getStatus();
-                logger.debug("poll job status: {}: {}", existingJobId.get(), jobInfo);
-
-                if (!status.isFinished()) {
-                    throw TaskExecutionException.ofNextPolling(JOB_STATUS_API_POLL_INTERVAL, ConfigElement.copyOf(state));
-                }
-
-                // Fail the task if the job failed
-                if (status != SUCCESS) {
-                    String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
-                    throw new TaskExecutionException(message, ConfigElement.empty());
-                }
+                TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
+                state.remove(POLL_JOB);
 
                 // Fetch the job output to see if the row count condition was fulfilled
-                logger.debug("fetching poll job result: {}", existingJobId.get());
+                logger.debug("fetching poll job result: {}", job.getJobId());
                 boolean done = fetchJobResult(rows, job);
 
                 // Go back to sleep if the row count condition was not fulfilled
                 if (!done) {
-                    state.remove(JOB_ID);
                     throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
                 }
 
@@ -164,7 +141,7 @@ public class TdWaitTableOperatorFactory
             return BigInteger.valueOf(rows).compareTo(actualRows.asBigInteger()) <= 0;
         }
 
-        private String startJob(TDOperator op)
+        private String startJob(TDOperator op, String domainKey)
         {
             String query = createQuery();
 
@@ -176,8 +153,7 @@ public class TdWaitTableOperatorFactory
                     .setPriority(priority)
                     .createTDJobRequest();
 
-            TDJobOperator job = op.submitNewJob(req);
-            String jobId = job.getJobId();
+            String jobId = op.submitNewJob(req);
             logger.info("Started {} job id={}:\n{}", engine, jobId, query);
             return jobId;
         }

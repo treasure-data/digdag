@@ -1,22 +1,21 @@
 package io.digdag.standards.operator.td;
 
-import java.util.Date;
+import com.google.inject.Inject;
+import com.treasuredata.client.model.TDExportFileFormatType;
+import com.treasuredata.client.model.TDExportJobRequest;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import com.google.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorFactory;
-import io.digdag.util.BaseOperator;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
-import com.treasuredata.client.model.TDExportJobRequest;
-import com.treasuredata.client.model.TDExportFileFormatType;
+import java.util.Date;
 
 import static java.util.Locale.ENGLISH;
 
@@ -41,76 +40,69 @@ public class TdTableExportOperatorFactory
     }
 
     private class TdTableExportOperator
-            extends BaseOperator
+            extends BaseTdJobOperator
     {
-        public TdTableExportOperator(Path workspacePath, TaskRequest request)
+        private final String database;
+        private final TableParam table;
+        private final TDExportFileFormatType fileFormat;
+
+        private TdTableExportOperator(Path workspacePath, TaskRequest request)
         {
             super(workspacePath, request);
-        }
-
-        @Override
-        public TaskResult runTask()
-        {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
+            this.database = params.get("database", String.class);
+            this.table = params.get("table", TableParam.class);
+
             String fileFormatString = params.get("file_format", String.class);
-            TDExportFileFormatType fileFormat;
             try {
-                fileFormat = TDExportFileFormatType.fromName(fileFormatString);
+                this.fileFormat = TDExportFileFormatType.fromName(fileFormatString);
             }
             catch (RuntimeException ex) {
                 throw new ConfigException("invalid file_format option", ex);
             }
+        }
 
-            String database = params.get("database", String.class);
-            TableParam table = params.get("table", TableParam.class);
-
-            TDExportJobRequest req = new TDExportJobRequest(
-                    table.getDatabase().or(database),
-                    table.getTable(),
-                    Date.from(parseTime(params, "from")),
-                    Date.from(parseTime(params, "to")),
-                    fileFormat,
-                    params.get("s3_access_key_id", String.class),
-                    params.get("s3_secret_access_key", String.class),
-                    params.get("s3_bucket", String.class),
-                    params.get("s3_path_prefix", String.class),
-                    params.getOptional("pool_name", String.class));
-
-            try (TDOperator op = TDOperator.fromConfig(params)) {
-                TDJobOperator j = op.submitExportJob(req);
-                logger.info("Started table export job id={}", j.getJobId());
-
-                j.joinJob();
-
-                Config storeParams = request.getConfig().getFactory().create()
-                    .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", j.getJobId()));
-
-                return TaskResult.defaultBuilder(request)
-                    .storeParams(storeParams)
+        @Override
+        protected String startJob(TDOperator op, String domainKey)
+        {
+            TDExportJobRequest req = TDExportJobRequest.builder()
+                    .database(table.getDatabase().or(database))
+                    .table(table.getTable())
+                    .from(Date.from(parseTime(params, "from")))
+                    .to(Date.from(parseTime(params, "to")))
+                    .fileFormat(fileFormat)
+                    .accessKeyId(params.get("s3_access_key_id", String.class))
+                    .secretAccessKey(params.get("s3_secret_access_key", String.class))
+                    .bucketName(params.get("s3_bucket", String.class))
+                    .filePrefix(params.get("s3_path_prefix", String.class))
+                    .poolName(params.getOptional("pool_name", String.class))
                     .build();
-            }
+
+            String jobId = op.submitNewJobWithRetry(client -> client.submitExportJob(req));
+            logger.info("Started table export job id={}", jobId);
+
+            return jobId;
         }
     }
 
     private static final DateTimeFormatter TIME_PARSER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[ Z]", ENGLISH);
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[ Z]", ENGLISH);
 
     private static Instant parseTime(Config params, String key)
     {
         try {
             return Instant.ofEpochSecond(
                     params.get(key, long.class)
-                    );
+            );
         }
         catch (ConfigException ex) {
             return Instant.from(
                     TIME_PARSER
-                    .withZone(params.get("timezone", ZoneId.class))
-                    .parse(params.get(key, String.class))
-                    );
+                            .withZone(params.get("timezone", ZoneId.class))
+                            .parse(params.get(key, String.class))
+            );
         }
     }
 }
