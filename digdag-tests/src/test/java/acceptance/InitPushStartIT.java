@@ -276,6 +276,7 @@ public class InitPushStartIT
         }
 
         // Start the workflow with session_time = 2016-01-01
+        long sessionId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -283,6 +284,7 @@ public class InitPushStartIT
                     "foobar", "foobar",
                     "--session", "2016-01-01");
             assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+            sessionId = getSessionId(startStatus);
         }
 
         // Try to start the workflow with the same session_time
@@ -294,6 +296,7 @@ public class InitPushStartIT
 
         // should fail with a hint message
         assertThat(startStatus.errUtf8(), startStatus.code(), is(1));
-        assertThat(startStatus.errUtf8(), containsString("hint: use `digdag retry <attempt-id> --latest-revision` command to rerun the session again for the same session_time"));
+        assertThat(startStatus.errUtf8(), containsString("A session for the requested session_time already exists (session_id=" + sessionId + ", session_time=2016-01-01T00:00Z)"));
+        assertThat(startStatus.errUtf8(), containsString("hint: use `digdag retry <attempt-id> --latest-revision` command to run the session again for the same session_time"));
     }
 }
