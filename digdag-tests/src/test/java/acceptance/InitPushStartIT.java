@@ -253,4 +253,47 @@ public class InitPushStartIT
             }
         }
     }
+
+    @Test
+    public void startFailsWithConflictedSessionTime()
+            throws Exception
+    {
+        // Create new project
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+
+        copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
+
+        {
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        // Start the workflow with session_time = 2016-01-01
+        {
+            CommandStatus startStatus = main("start",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "foobar", "foobar",
+                    "--session", "2016-01-01");
+            assertThat(startStatus.errUtf8(), startStatus.code(), is(0));
+        }
+
+        // Try to start the workflow with the same session_time
+        CommandStatus startStatus = main("start",
+                "-c", config.toString(),
+                "-e", server.endpoint(),
+                "foobar", "foobar",
+                "--session", "2016-01-01");
+
+        // should fail with a hint message
+        assertThat(startStatus.errUtf8(), startStatus.code(), is(1));
+        assertThat(startStatus.errUtf8(), containsString("hint: use `digdag retry <attempt-id> --latest-revision` command to rerun the session again for the same session_time"));
+    }
 }
