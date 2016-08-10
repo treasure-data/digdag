@@ -18,9 +18,9 @@ test {
 
     // Exclude all acceptance tests if this is not an acceptance test run
     if (System.env.CI_ACCEPTANCE_TEST == null || !Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
-        // run tests if -Dtest.single is explicitly set
-        if (System.getProperty("test.single") == null) {
-            exclude { true }
+        exclude {
+            // run tests if --tests or -Dtest.single is explicitly set
+            System.getProperty("test.single") == null && filter.includePatterns.empty
         }
     }
 }
