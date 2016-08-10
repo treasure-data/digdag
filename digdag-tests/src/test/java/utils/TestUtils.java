@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
@@ -85,6 +86,20 @@ public class TestUtils
         return main(buildVersion(), in, asList(args));
     }
 
+    public static CommandStatus main(Map<String, String> env, String... args)
+    {
+        return main(env, ImmutableList.copyOf(args));
+    }
+
+    public static CommandStatus main(Map<String, String> env, Collection<String> args)
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        InputStream in = new ByteArrayInputStream(new byte[0]);
+        int code = main(env, buildVersion(), args, out, err, in);
+        return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
+    }
+
     public static CommandStatus main(Collection<String> args)
     {
         return main(buildVersion(), args);
@@ -104,17 +119,18 @@ public class TestUtils
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        int code = main(localVersion, args, out, err, in);
+        int code = main(ImmutableMap.of(), localVersion, args, out, err, in);
         return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
-    public static int main(Version localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
+    public static int main(Map<String, String> env, Version localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
     {
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            return new Main(localVersion, outp, errp, in).cli(args.stream().toArray(String[]::new));
+            Main main = new Main(localVersion, env, outp, errp, in);
+            return main.cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();

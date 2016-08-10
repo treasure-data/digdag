@@ -2,9 +2,9 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import com.treasuredata.client.model.TDJobSummary;
 import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
@@ -23,10 +24,13 @@ public class TdRunOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdRunOperatorFactory.class);
+    private final Map<String, String> env;
 
     @Inject
-    public TdRunOperatorFactory()
-    { }
+    public TdRunOperatorFactory(@Environment Map<String, String> env)
+    {
+        this.env = env;
+    }
 
     public String getType()
     {
@@ -51,7 +55,7 @@ public class TdRunOperatorFactory
 
         private TdRunOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

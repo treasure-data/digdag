@@ -34,24 +34,25 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static io.digdag.cli.SystemExitException.systemExit;
-
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
-import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.core.Version.buildVersion;
+import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 
 public class Main
 {
     private static final String PROGRAM_NAME = "digdag";
 
     private final io.digdag.core.Version version;
+    private final Map<String, String> env;
     private final PrintStream out;
     private final PrintStream err;
     private final InputStream in;
 
-    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, InputStream in)
+    public Main(io.digdag.core.Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
     {
         this.version = version;
+        this.env = env;
         this.out = out;
         this.err = err;
         this.in = in;
@@ -65,7 +66,7 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main(buildVersion(), System.out, System.err, System.in).cli(args);
+        int code = new Main(buildVersion(), System.getenv(), System.out, System.err, System.in).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -85,34 +86,34 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init(out, err), "new");
-        jc.addCommand("run", new Run(out, err), "r");
-        jc.addCommand("check", new Check(out, err), "c");
-        jc.addCommand("scheduler", new Sched(version, out, err), "sched");
+        jc.addCommand("init", new Init(env, out, err), "new");
+        jc.addCommand("run", new Run(env, out, err), "r");
+        jc.addCommand("check", new Check(env, out, err), "c");
+        jc.addCommand("scheduler", new Sched(version, env, out, err), "sched");
 
-        jc.addCommand("server", new Server(version, out, err));
+        jc.addCommand("server", new Server(version, env, out, err));
 
-        jc.addCommand("push", new Push(version, out, err));
-        jc.addCommand("archive", new Archive(out, err));
-        jc.addCommand("upload", new Upload(version, out, err));
+        jc.addCommand("push", new Push(version, env, out, err));
+        jc.addCommand("archive", new Archive(env, out, err));
+        jc.addCommand("upload", new Upload(version, env, out, err));
 
-        jc.addCommand("workflow", new ShowWorkflow(version, out, err), "workflows");
-        jc.addCommand("start", new Start(version, out, err));
-        jc.addCommand("retry", new Retry(version, out, err));
-        jc.addCommand("session", new ShowSession(version, out, err), "sessions");
-        jc.addCommand("attempts", new ShowAttempts(version, out, err));
-        jc.addCommand("attempt", new ShowAttempt(version, out, err));
-        jc.addCommand("reschedule", new Reschedule(version, out, err));
-        jc.addCommand("backfill", new Backfill(version, out, err));
-        jc.addCommand("log", new ShowLog(version, out, err), "logs");
-        jc.addCommand("kill", new Kill(version, out, err));
-        jc.addCommand("task", new ShowTask(version, out, err), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
-        jc.addCommand("delete", new Delete(version, out, err));
-        jc.addCommand("secrets", new Secrets(version, out, err, in), "secret");
-        jc.addCommand("version", new Version(version, out, err), "version");
+        jc.addCommand("workflow", new ShowWorkflow(version, env, out, err), "workflows");
+        jc.addCommand("start", new Start(version, env, out, err));
+        jc.addCommand("retry", new Retry(version, env, out, err));
+        jc.addCommand("session", new ShowSession(version, env, out, err), "sessions");
+        jc.addCommand("attempts", new ShowAttempts(version, env, out, err));
+        jc.addCommand("attempt", new ShowAttempt(version, env, out, err));
+        jc.addCommand("reschedule", new Reschedule(version, env, out, err));
+        jc.addCommand("backfill", new Backfill(version, env, out, err));
+        jc.addCommand("log", new ShowLog(version, env, out, err), "logs");
+        jc.addCommand("kill", new Kill(version, env, out, err));
+        jc.addCommand("task", new ShowTask(version, env, out, err), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(version, env, out, err), "schedules");
+        jc.addCommand("delete", new Delete(version, env, out, err));
+        jc.addCommand("secrets", new Secrets(version, env, out, err, in), "secret");
+        jc.addCommand("version", new Version(version, env, out, err), "version");
 
-        jc.addCommand("selfupdate", new SelfUpdate(out, err));
+        jc.addCommand("selfupdate", new SelfUpdate(env, out, err));
 
         // Disable @ expansion
         jc.setExpandAtSign(false);
@@ -123,7 +124,7 @@ public class Main
                 jc.parse(args);
             }
             catch (MissingCommandException ex) {
-                throw usage(err, "available commands are: "+jc.getCommands().keySet());
+                throw usage("available commands are: "+jc.getCommands().keySet());
             }
             catch (ParameterException ex) {
                 if (getParsedCommand(jc) == null) {
@@ -135,15 +136,15 @@ public class Main
             }
 
             if (mainOpts.help) {
-                throw usage(err, null);
+                throw usage(null);
             }
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                throw usage(err, null);
+                throw usage(null);
             }
 
-            verbose = processCommonOptions(err, command);
+            verbose = processCommonOptions(command);
 
             command.main();
             return 0;
@@ -184,7 +185,7 @@ public class Main
         return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    private static boolean processCommonOptions(PrintStream err, Command command)
+    private boolean processCommonOptions(Command command)
             throws SystemExitException
     {
         if (command.help) {
@@ -204,7 +205,7 @@ public class Main
             verbose = true;
             break;
         default:
-            throw usage(err, "Unknown log level '"+command.logLevel+"'");
+            throw usage("Unknown log level '"+command.logLevel+"'");
         }
 
         configureLogging(command.logLevel, command.logPath);
@@ -246,7 +247,7 @@ public class Main
     }
 
     // called also by Run
-    static SystemExitException usage(PrintStream err, String error)
+    private SystemExitException usage(String error)
     {
         err.println("Usage: digdag <command> [options...]");
         err.println("  Local-mode commands:");
@@ -282,7 +283,7 @@ public class Main
         err.println("    version                            show client and server version");
         err.println("");
         err.println("  Options:");
-        showCommonOptions(err);
+        showCommonOptions(env, err);
         if (error == null) {
             err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -292,12 +293,12 @@ public class Main
         }
     }
 
-    public static void showCommonOptions(PrintStream err)
+    public static void showCommonOptions(Map<String, String> env, PrintStream err)
     {
         err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         err.println("    -X KEY=VALUE                     add a performance system config");
-        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath() + ")");
+        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(env) + ")");
         err.println("");
     }
 }

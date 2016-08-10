@@ -3,10 +3,10 @@ package io.digdag.standards.operator.td;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
-import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Environment;
 import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -32,12 +33,14 @@ public class TdForEachOperatorFactory
 
     private final TemplateEngine templateEngine;
     private final ConfigFactory configFactory;
+    private final Map<String, String> env;
 
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, Config systemConfig)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
+        this.env = env;
     }
 
     public String getType()
@@ -64,7 +67,7 @@ public class TdForEachOperatorFactory
 
         private TdForEachOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

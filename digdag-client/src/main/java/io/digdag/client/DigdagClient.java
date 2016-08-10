@@ -60,8 +60,12 @@ public class DigdagClient implements AutoCloseable
         private String host = null;
         private int port = -1;
         private boolean ssl = false;
+        private String proxyHost = null;
+        private Integer proxyPort = null;
+        private String proxyScheme = null;
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
+        private boolean disableCertValidation;
 
         public Builder host(String host)
         {
@@ -81,6 +85,24 @@ public class DigdagClient implements AutoCloseable
             return this;
         }
 
+        public Builder proxyHost(String proxyHost)
+        {
+            this.proxyHost = proxyHost;
+            return this;
+        }
+
+        public Builder proxyPort(int proxyPort)
+        {
+            this.proxyPort = proxyPort;
+            return this;
+        }
+
+        public Builder proxyScheme(String proxyScheme)
+        {
+            this.proxyScheme = proxyScheme;
+            return this;
+        }
+
         public Builder header(String key, String value)
         {
             this.baseHeaders.put(key, value);
@@ -96,6 +118,12 @@ public class DigdagClient implements AutoCloseable
         public Builder headerBuilder(Function<Map<String, String>, Map<String, String>> headerBuilder)
         {
             this.headerBuilder = headerBuilder;
+            return this;
+        }
+
+        public Builder disableCertValidation(boolean value)
+        {
+            this.disableCertValidation = value;
             return this;
         }
 
@@ -168,9 +196,28 @@ public class DigdagClient implements AutoCloseable
 
         ObjectMapper mapper = objectMapper();
 
-        this.client = new ResteasyClientBuilder()
-            .register(new JacksonJsonProvider(mapper))
-            .build();
+        ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+                .register(new JacksonJsonProvider(mapper));
+
+        // TODO: support proxy user/pass
+        if (builder.proxyHost != null) {
+            if (builder.proxyPort == null) {
+                clientBuilder.defaultProxy(builder.proxyHost);
+            } else {
+                if (builder.proxyScheme == null) {
+                    clientBuilder.defaultProxy(builder.proxyHost, builder.proxyPort);
+                } else {
+                    clientBuilder.defaultProxy(builder.proxyHost, builder.proxyPort, builder.proxyScheme);
+                }
+            }
+        }
+
+        if (builder.disableCertValidation) {
+            clientBuilder.disableTrustManager();
+        }
+
+        this.client = clientBuilder.build();
+
         this.cf = new ConfigFactory(mapper);
     }
 
@@ -551,8 +598,7 @@ public class DigdagClient implements AutoCloseable
 
     public Map<String, Object> getVersion()
     {
-        return doGet(new GenericType<Map<String, Object>>() {},
-                target("/api/version"));
+        return doGet(new GenericType<Map<String, Object>>() {}, target("/api/version"));
     }
 
     public void setProjectSecret(int projectId, String key, String value)

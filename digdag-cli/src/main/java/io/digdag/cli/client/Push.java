@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.File;
 import java.time.Instant;
 
 import com.beust.jcommander.Parameter;
@@ -14,7 +13,6 @@ import com.beust.jcommander.DynamicParameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.common.base.Optional;
-import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
@@ -50,9 +48,9 @@ public class Push
     @Parameter(names = {"--schedule-from"})
     String scheduleFromString = null;
 
-    public Push(Version version, PrintStream out, PrintStream err)
+    public Push(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override

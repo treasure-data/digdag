@@ -5,21 +5,16 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
-import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -45,9 +40,9 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
-    public Archive(PrintStream out, PrintStream err)
+    public Archive(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -68,7 +63,7 @@ public class Archive
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

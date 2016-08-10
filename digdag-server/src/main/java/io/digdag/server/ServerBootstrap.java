@@ -114,6 +114,7 @@ public class ServerBootstrap
     protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
     {
         return bootstrap
+            .setEnvironment(serverConfig.getEnvironment())
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
