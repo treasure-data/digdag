@@ -27,10 +27,10 @@ public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
-    public static final String POLL_JOB = "pollJob";
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
     private static final String TABLE_EXISTS = "table_exists";
+    private static final String POLL_JOB = "pollJob";
 
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig)

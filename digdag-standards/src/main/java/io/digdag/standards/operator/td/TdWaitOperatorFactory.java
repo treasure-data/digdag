@@ -27,10 +27,9 @@ public class TdWaitOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
-    public static final String POLL_JOB = "pollJob";
     private static Logger logger = LoggerFactory.getLogger(TdWaitOperatorFactory.class);
-
-    private static final String JOB_ID = "jobId";
+    
+    private static final String POLL_JOB = "pollJob";
 
     private final TemplateEngine templateEngine;
 
@@ -94,7 +93,6 @@ public class TdWaitOperatorFactory
 
                 // If the query condition was not fulfilled, go back to sleep.
                 if (!done) {
-                    state.remove(JOB_ID);
                     throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
                 }
 
