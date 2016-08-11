@@ -4,7 +4,7 @@ dependencies {
     compile project(':digdag-client')
     compile project(':digdag-guice-rs')
 
-    compile 'io.undertow:undertow-servlet:1.4.0.CR4'
+    compile 'io.undertow:undertow-servlet:1.4.0.Final'
 }
 
 
