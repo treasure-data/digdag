@@ -15,6 +15,7 @@ import utils.TestUtils;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.ServiceUnavailableException;
@@ -93,24 +94,24 @@ public class ServerGracefulShutdownIT
         }
 
         // Wait for the task to start
-        for (int i = 0; i < 30; i++) {
-            List<RestTask> tasks = client.getTasks(attemptId);
-            RestTask checkerTask = tasks.stream()
+        TestUtils.expect(Duration.ofMinutes(5), () -> {
+            RestTask checkerTask = client.getTasks(attemptId)
+                .stream()
                 .filter(it -> it.getFullName().endsWith("+start_checker"))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("+start_checker task doesn't exist"));
 
             if (checkerTask.getState().equals("success")) {
-                break;
+                return true;
             }
 
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             if (attempt.getDone()) {
-                break;
+                return true;
             }
 
-            Thread.sleep(1000);
-        }
+            return false;
+        });
 
         return attemptId;
     }
@@ -144,6 +145,10 @@ public class ServerGracefulShutdownIT
                 }
             }
 
+            if (aliveSeconds > Duration.ofMinutes(5).getSeconds()) {
+                throw new IllegalStateException("Server doesn't shutdown");
+            }
+
             Thread.sleep(1000);
         }
 
@@ -159,12 +164,7 @@ public class ServerGracefulShutdownIT
         assertThat(server.outUtf8(), containsString("Waiting for completion of 2 running tasks..."));
         assertThat(server.outUtf8(), containsString("Closing HTTP listening sockets"));
 
-        for (int i = 0; i < 30; i++) {
-            if (!server.isProcessAlive()) {
-                break;
-            }
-            Thread.sleep(1000);
-        }
+        TestUtils.expect(Duration.ofMinutes(5), () -> !server.isProcessAlive());
 
         assertThat(server.outUtf8(), containsString("Shutting down HTTP worker threads"));
         assertThat(server.outUtf8(), containsString("Shutting down system"));
