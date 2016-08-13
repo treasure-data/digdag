@@ -86,7 +86,8 @@
                 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#downloading-the-latest-version">1. Downloading the latest version</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#on-windows-or-if-curl-command-doesn-t-work">On Windows, or if curl command doesn&#8217;t work</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#on-windows">On Windows?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#curl-did-not-work">curl did not work?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#got-error">Got error?</a></li>
 </ul>
 </li>
@@ -156,10 +157,25 @@ $ chmod +x /usr/local/bin/digdag
 </pre></div>
 </div>
 <p>If <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">--help</span></code> command works, Digdag is installed successfully.</p>
-<div class="section" id="on-windows-or-if-curl-command-doesn-t-work">
-<span id="on-windows-or-if-curl-command-doesn-t-work"></span><h3>On Windows, or if curl command doesn&#8217;t work<a class="headerlink" href="#on-windows-or-if-curl-command-doesn-t-work" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="on-windows">
+<span id="on-windows"></span><h3>On Windows?<a class="headerlink" href="#on-windows" title="Permalink to this headline">¶</a></h3>
 <p>On Windows, you can download a file named <code class="docutils literal"><span class="pre">digdag-&lt;VERSION&gt;.jar</span></code> from <a class="reference external" href="https://dl.digdag.io/digdag-latest">https://dl.digdag.io/digdag-latest</a>. This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).</p>
 <p>Once download completed, please rename the file to <code class="docutils literal"><span class="pre">digdag.bat</span></code> (Windows) or <code class="docutils literal"><span class="pre">/usr/local/bin/digdag</span></code> (Linux/UNIX).</p>
+</div>
+<div class="section" id="curl-did-not-work">
+<span id="curl-did-not-work"></span><h3>curl did not work?<a class="headerlink" href="#curl-did-not-work" title="Permalink to this headline">¶</a></h3>
+<p>Some environments (ex: Ubuntu 16.04) may produce the following error:</p>
+<div class="highlight-shell"><div class="highlight"><pre><span></span>curl: <span class="o">(</span>77<span class="o">)</span> error setting certificate verify locations:
+  CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+</pre></div>
+</div>
+<p>Most likely, the SSL certificate file is in <code class="docutils literal"><span class="pre">/etc/ssl/certs/ca-certificates.crt</span></code> while <code class="docutils literal"><span class="pre">curl</span></code> expects it in <code class="docutils literal"><span class="pre">/etc/pki/tls/certs/ca-bundle.crt</span></code>. To fix this, run the folllowing:</p>
+<div class="highlight-shell"><div class="highlight"><pre><span></span>$ sudo mkdir -p /etc/pki/tls/certs
+$ sudo cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+</pre></div>
+</div>
+<p>Then, run Step 1 again.</p>
 </div>
 <div class="section" id="got-error">
 <span id="got-error"></span><h3>Got error?<a class="headerlink" href="#got-error" title="Permalink to this headline">¶</a></h3>
