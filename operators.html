@@ -300,7 +300,12 @@
 <div class="section" id="sh-shell-scripts">
 <h2><a class="toc-backref" href="#id9">sh&gt;: Shell scripts</a><a class="headerlink" href="#sh-shell-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>sh&gt;:</strong> operator runs a shell script.</p>
-<p>TODO: add more description here</p>
+<p>Run a shell command (<cite>/bin/sh</cite>)</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">echo &quot;hello world&quot;</span>
+</pre></div>
+</div>
+<p>Run a shell script</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">sh&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">tasks/step1.sh</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
@@ -315,6 +320,12 @@
 </ul>
 </dd>
 </dl>
+<p>The shell defaults to <cite>/bin/sh</cite>. If an alternate shell such as <cite>zsh</cite> is desired, use the <cite>shell</cite> option in the <cite>_export</cite> section.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">sh</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">shell</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">/usr/bin/zsh</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="loop-repeat-tasks">
 <h2><a class="toc-backref" href="#id10">loop&gt;: Repeat tasks</a><a class="headerlink" href="#loop-repeat-tasks" title="Permalink to this headline">¶</a></h2>
