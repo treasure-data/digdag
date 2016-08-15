@@ -760,17 +760,14 @@ public class DatabaseMigrator
                             " alter column task_id rename to unique_name");
             }
 
-            // at least one of site_id and task_id must be non-null so that following
-            // unique indexes take effect
             handle.update("alter table queued_tasks" +
-                        " add check (site_id is not null or queue_id is not null)");
+                        " alter unique_name set not null");
 
+            handle.update("create unique index queued_tasks_on_site_id_unique_name on queued_tasks (site_id, unique_name)");
             if (isPostgres()) {
-                handle.update("create unique index queued_tasks_on_site_id_unique_name on queued_tasks (site_id, unique_name) where site_id is not null");
                 handle.update("create unique index queued_tasks_on_queue_id_unique_name on queued_tasks (queue_id, unique_name) where queue_id is not null");
             }
             else {
-                handle.update("create unique index queued_tasks_on_site_id_unique_name on queued_tasks (site_id, unique_name)");
                 handle.update("create unique index queued_tasks_on_queue_id_unique_name on queued_tasks (queue_id, unique_name)");
             }
         }
