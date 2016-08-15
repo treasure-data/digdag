@@ -135,7 +135,7 @@ The shell defaults to `/bin/sh`. If an alternate shell such as `zsh` is desired,
 
     _export:
       sh:
-        shell: /usr/bin/zsh
+        shell: [/usr/bin/zsh]
 
 
 loop>: Repeat tasks
