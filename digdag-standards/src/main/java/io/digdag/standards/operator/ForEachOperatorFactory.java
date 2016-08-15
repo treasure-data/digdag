@@ -153,7 +153,7 @@ public class ForEachOperatorFactory
                 raw = node.toString();
             }
             try {
-                return URLEncoder.encode(raw, "UTF-8");
+                return URLEncoder.encode(raw, "UTF-8").replace("+", "%20");  // "+" is not allowed as a task name
             }
             catch (UnsupportedEncodingException ex) {
                 throw Throwables.propagate(ex);
