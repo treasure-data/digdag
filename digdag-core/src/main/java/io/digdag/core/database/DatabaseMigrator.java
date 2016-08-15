@@ -733,6 +733,49 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateQueueUniqueName = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160815202237";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update("drop index queued_tasks_on_queue_id_task_id");
+            handle.update("drop index queued_tasks_on_site_id_task_id");
+
+            // alter "task_id bigint" to "unique_name text"
+            if (isPostgres()) {
+                handle.update("alter table queued_tasks" +
+                        " alter column task_id type text");
+                handle.update("alter table queued_tasks" +
+                            " rename column task_id to unique_name");
+            }
+            else {
+                handle.update("alter table queued_tasks" +
+                        " alter column task_id varchar(255)");
+                handle.update("alter table queued_tasks" +
+                            " alter column task_id rename to unique_name");
+            }
+
+            // at least one of site_id and task_id must be non-null so that following
+            // unique indexes take effect
+            handle.update("alter table queued_tasks" +
+                        " add check (site_id is not null or queue_id is not null)");
+
+            if (isPostgres()) {
+                handle.update("create unique index queued_tasks_on_site_id_unique_name on queued_tasks (site_id, unique_name) where site_id is not null");
+                handle.update("create unique index queued_tasks_on_queue_id_unique_name on queued_tasks (queue_id, unique_name) where queue_id is not null");
+            }
+            else {
+                handle.update("create unique index queued_tasks_on_site_id_unique_name on queued_tasks (site_id, unique_name)");
+                handle.update("create unique index queued_tasks_on_queue_id_unique_name on queued_tasks (queue_id, unique_name)");
+            }
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc,
@@ -740,5 +783,6 @@ public class DatabaseMigrator
         MigrateMakeProjectsDeletable,
         MigrateAddUserInfoColumnToRevisions,
         MigrateQueueRearchitecture,
+        MigrateQueueUniqueName,
     };
 }

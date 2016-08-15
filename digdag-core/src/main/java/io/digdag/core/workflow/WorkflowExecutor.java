@@ -803,9 +803,11 @@ public class WorkflowExecutor
                 //      CLI ccommands to create/delete/manage queues.
                 Optional<String> queueName = Optional.absent();
 
+                String encodedUnique = encodeUniqueQueuedTaskName(lockedTask.get());
+
                 TaskQueueRequest request = TaskQueueRequest.builder()
                     .priority(0)  // TODO make this configurable
-                    .uniqueTaskId(Optional.of(task.getId()))
+                    .uniqueName(encodedUnique)
                     .data(Optional.absent())
                     .build();
 
@@ -814,17 +816,8 @@ public class WorkflowExecutor
                     dispatcher.dispatch(siteId, queueName, request);
                 }
                 catch (TaskConflictException ex) {
-                    // TODO this code has a problem:
-                    //   1. When a thread "A" runs WorkflowExecutor.retryTask with a small retryInterval,
-                    //      another thread "B" may retry the task before "A" deletes the task from the queue
-                    //      at dispatcher.taskFinished call. If this happens, "B" will get TaskConflictException
-                    //      here at dispatcher.dispatch. In this case, dispatcher.dispatch should be retried.
-                    //   2. On the other hand, if dispatcher.dispatch throws exception but actually the task
-                    //      was enqueued to the task, dispatcher.dispatch throws TaskConflictException.
-                    //      In this case, the exception should be ignored so that task won't be enqueued twice.
-                    //   For now, here throws RuntimeException so that dispatch.dispatch is always retried because
-                    //   2. less likely happens, maybe.
-                    throw new RuntimeException(ex);
+                    logger.warn("Task name {} is already queued in queue={} of site id={}. Skipped enqueuing",
+                            encodedUnique, queueName.or("<shared>"), siteId);
                 }
 
                 ////
@@ -850,19 +843,46 @@ public class WorkflowExecutor
         }).or(false);
     }
 
+    private static String encodeUniqueQueuedTaskName(StoredTask task)
+    {
+        if (task.getRetryAt().isPresent()) {
+            Instant retryAt = task.getRetryAt().get();
+            return Long.toString(task.getId()) + ".r" + String.format(ENGLISH,
+                    "%x%08x", retryAt.getEpochSecond(), retryAt.getNano());
+        }
+        else {
+            return Long.toString(task.getId());
+        }
+    }
+
+    private static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)
+    {
+        int posDot = encodedUniqueQueuedTaskName.indexOf('.');
+        if (posDot >= 0) {
+            return Long.parseLong(encodedUniqueQueuedTaskName.substring(0, posDot));
+        }
+        else {
+            return Long.parseLong(encodedUniqueQueuedTaskName);
+        }
+    }
+
     // called by InProcessTaskServerApi
     public List<TaskRequest> getTaskRequests(List<TaskQueueLock> locks)
     {
         ImmutableList.Builder<TaskRequest> builder = ImmutableList.builder();
         for (TaskQueueLock lock : locks) {
-            if (lock.getUniqueTaskId().isPresent()) {
-                Optional<TaskRequest> request = getTaskRequest(lock.getUniqueTaskId().get(), lock.getLockId());
+            try {
+                long taskId = parseTaskIdFromEncodedQueuedTaskName(lock.getUniqueName());
+                Optional<TaskRequest> request = getTaskRequest(taskId, lock.getLockId());
                 if (request.isPresent()) {
                     builder.add(request.get());
                 }
                 else {
                     dispatcher.deleteInconsistentTask(lock.getLockId());
                 }
+            }
+            catch (RuntimeException ex) {
+                logger.error("Invalid association of task queue lock id: {}", lock, ex);
             }
         }
         return builder.build();

@@ -65,9 +65,9 @@ public class DatabaseQueueTest
     public void siteConcurrencyLimit()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
-        TaskQueueRequest req2 = generateRequest(2L);
-        TaskQueueRequest req3 = generateRequest(3L);
+        TaskQueueRequest req1 = generateRequest("1");
+        TaskQueueRequest req2 = generateRequest("2");
+        TaskQueueRequest req3 = generateRequest("3");
 
         // enqueue 3 tasks
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
@@ -99,10 +99,10 @@ public class DatabaseQueueTest
     public void batchPollOrder()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
-        TaskQueueRequest req2 = generateRequest(2L);
-        TaskQueueRequest req3 = generateRequest(3L);
-        TaskQueueRequest req4 = generateRequest(4L);
+        TaskQueueRequest req1 = generateRequest("1");
+        TaskQueueRequest req2 = generateRequest("2");
+        TaskQueueRequest req3 = generateRequest("3");
+        TaskQueueRequest req4 = generateRequest("4");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
         taskQueue.enqueueDefaultQueueTask(siteId, req2);
@@ -111,24 +111,24 @@ public class DatabaseQueueTest
 
         List<TaskQueueLock> poll1 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
         assertThat(poll1.size(), is(2));
-        assertThat(poll1.get(0).getUniqueTaskId(), is(Optional.of(1L)));
-        assertThat(poll1.get(1).getUniqueTaskId(), is(Optional.of(2L)));
+        assertThat(poll1.get(0).getUniqueName(), is("1"));
+        assertThat(poll1.get(1).getUniqueName(), is("2"));
 
         taskQueue.deleteTask(siteId, poll1.get(0).getLockId(), "agent1");
         taskQueue.deleteTask(siteId, poll1.get(1).getLockId(), "agent1");
 
         List<TaskQueueLock> poll2 = taskQueue.lockSharedAgentTasks(2, "agent1", 300, 10);
         assertThat(poll2.size(), is(2));
-        assertThat(poll2.get(0).getUniqueTaskId(), is(Optional.of(3L)));
-        assertThat(poll2.get(1).getUniqueTaskId(), is(Optional.of(4L)));
+        assertThat(poll2.get(0).getUniqueName(), is("3"));
+        assertThat(poll2.get(1).getUniqueName(), is("4"));
     }
 
     @Test
     public void enqueueRejectedIfDuplicatedTaskId()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
-        TaskQueueRequest req1Dup = generateRequest(1L);
+        TaskQueueRequest req1 = generateRequest("1");
+        TaskQueueRequest req1Dup = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
@@ -140,7 +140,7 @@ public class DatabaseQueueTest
     public void deleteRejectedIfAgentIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
+        TaskQueueRequest req1 = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
@@ -154,7 +154,7 @@ public class DatabaseQueueTest
     public void deleteRejectedIfSiteIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
+        TaskQueueRequest req1 = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
@@ -168,8 +168,8 @@ public class DatabaseQueueTest
     public void expireLockAndRetry()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
-        TaskQueueRequest req2 = generateRequest(2L);
+        TaskQueueRequest req1 = generateRequest("1");
+        TaskQueueRequest req2 = generateRequest("2");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
         taskQueue.enqueueDefaultQueueTask(siteId, req2);
@@ -190,8 +190,8 @@ public class DatabaseQueueTest
     public void heartbeatPreventsExpireLock()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
-        TaskQueueRequest req2 = generateRequest(2L);
+        TaskQueueRequest req1 = generateRequest("1");
+        TaskQueueRequest req2 = generateRequest("2");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
         taskQueue.enqueueDefaultQueueTask(siteId, req2);
@@ -209,14 +209,14 @@ public class DatabaseQueueTest
 
         // req2 is expired but req1 is not
         assertThat(poll2.size(), is(1));
-        assertThat(poll2.get(0).getUniqueTaskId(), is(Optional.of(2L)));
+        assertThat(poll2.get(0).getUniqueName(), is("2"));
     }
 
     @Test
     public void heartbeatRejectedIfAgentIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
+        TaskQueueRequest req1 = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
@@ -230,7 +230,7 @@ public class DatabaseQueueTest
     public void heartbeatRejectedIfSiteIdMismatch()
         throws Exception
     {
-        TaskQueueRequest req1 = generateRequest(1L);
+        TaskQueueRequest req1 = generateRequest("1");
 
         taskQueue.enqueueDefaultQueueTask(siteId, req1);
 
@@ -240,11 +240,11 @@ public class DatabaseQueueTest
         assertThat(failedLockIdList, is(Arrays.asList(poll1.get(0).getLockId())));
     }
 
-    private TaskQueueRequest generateRequest(long taskId)
+    private TaskQueueRequest generateRequest(String uniqueName)
     {
         return TaskQueueRequest.builder()
             .priority(0)
-            .uniqueTaskId(Optional.of(taskId))
+            .uniqueName(uniqueName)
             .data(Optional.absent())
             .build();
     }
@@ -253,7 +253,7 @@ public class DatabaseQueueTest
     {
         return TaskQueueLock.builder()
             .lockId(lockId)
-            .uniqueTaskId(data.getUniqueTaskId())
+            .uniqueName(data.getUniqueName())
             .data(data.getData())
             .build();
     }

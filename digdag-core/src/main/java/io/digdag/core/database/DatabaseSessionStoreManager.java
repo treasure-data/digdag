@@ -144,14 +144,17 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private String addSeconds(String timestamp, int seconds)
+    private String addSeconds(String timestampExpression, int seconds)
     {
+        if (seconds == 0) {
+            return timestampExpression;
+        }
         switch (databaseType) {
         case "h2":
-            return "TIMESTAMPADD('SECOND', " + seconds + ", " + timestamp + ")";
+            return "dateadd('SECOND', " + seconds + ", " + timestampExpression + ")";
         default:
             // postgresql
-            return "(" + timestamp + " + interval '" + seconds + " second')";
+            return "(" + timestampExpression + " + interval '" + seconds + " second')";
         }
     }
 
@@ -841,7 +844,13 @@ public class DatabaseSessionStoreManager
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
-                        " retry_at = " + addSeconds("now()", retryInterval) +
+                        " retry_at =" +
+                            // retry_at must be unique because it's used as a part of
+                            // unique key of queued_tasks.
+                            " case when retry_at = " + addSeconds("now()", retryInterval) +
+                            " then " + addSeconds("retry_at", 1) +
+                            " else " + addSeconds("now()", retryInterval) +
+                            " end" +
                     " where id = :id" +
                     " and state = :oldState"
                 )
