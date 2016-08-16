@@ -844,13 +844,7 @@ public class DatabaseSessionStoreManager
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
-                        " retry_at =" +
-                            // retry_at must be unique because it's used as a part of
-                            // unique key of queued_tasks.
-                            " case when retry_at = " + addSeconds("now()", retryInterval) +
-                            " then " + addSeconds("retry_at", 1) +
-                            " else " + addSeconds("now()", retryInterval) +
-                            " end" +
+                        " retry_at = " + addSeconds("now()", retryInterval) +
                     " where id = :id" +
                     " and state = :oldState"
                 )

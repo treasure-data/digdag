@@ -78,6 +78,9 @@ import static java.util.Locale.ENGLISH;
  *         : CANCELED
  *       lockedTask.setReadyToRunning:
  *         : RUNNING
+ *   NOTE: because updated_at column is used as a part of identifier of
+ *         queued task, updated_at must not be updated when state is READY
+ *         so that enqueueReadyTasks can detect duplicated enqueuing.
  *
  * RUNNING:
  *   taskFailed:
@@ -845,14 +848,9 @@ public class WorkflowExecutor
 
     private static String encodeUniqueQueuedTaskName(StoredTask task)
     {
-        if (task.getRetryAt().isPresent()) {
-            Instant retryAt = task.getRetryAt().get();
-            return Long.toString(task.getId()) + ".r" + String.format(ENGLISH,
-                    "%x%08x", retryAt.getEpochSecond(), retryAt.getNano());
-        }
-        else {
-            return Long.toString(task.getId());
-        }
+        Instant updatedAt = task.getUpdatedAt();
+        return Long.toString(task.getId()) + ".t" + String.format(ENGLISH,
+                "%x%08x", updatedAt.getEpochSecond(), updatedAt.getNano());
     }
 
     private static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)
