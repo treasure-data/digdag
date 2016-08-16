@@ -733,6 +733,27 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateAddFinishedAtToSessionAttempts = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160816021018";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            if (isPostgres()) {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp with time zone");
+            }
+            else {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp");
+            }
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc,
@@ -740,5 +761,6 @@ public class DatabaseMigrator
         MigrateMakeProjectsDeletable,
         MigrateAddUserInfoColumnToRevisions,
         MigrateQueueRearchitecture,
+        MigrateAddFinishedAtToSessionAttempts,
     };
 }
