@@ -34,7 +34,13 @@ When an attempt of a session starts, a workflow is transformed into a set of tas
 
 ## Export and store parameters
 
-There are 3 kinds of parameters for a task: local parameters directly set to the task, parameters exported from parent tasks, and parameters stored by previous tasks. They are merged into one object when a task runs.
+There are 3 kinds of parameters for a task.
+
+* **local**: parameters directly set to the task
+* **export**: parameters exported from parent tasks
+* **store**: parameters stored by previous tasks
+
+They are merged into one object when a task runs. Local parameters have the highest priority. Export and store parameters override each other and thus parameters set at later tasks have higher priority.
 
 Export parameters are used for a parent task to pass values to children. Store parameters are used for a task to pass values to all following tasks including children.
 

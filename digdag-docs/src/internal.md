@@ -6,11 +6,11 @@ This guide explains implementation details of Digdag. Understanding the internal
 
 When a task runs, a logger (SLF4j + logback) collects its log messages and passes them to a task logger set at a thread-local storage. When a task starts, task logger creates a new file and writes messages to the file. As the file grows larger than certain limit, it uploads the file to a storage (note: there is an optimization for local execution with local file system logger: logs are directly appended to the final destionation file). LogServer is the SPI interface that implements this storage.
 
-When a client uploads a file, the client first requests a direct upload URL. If LogServer supports a temporary pre-signed HTTP URL to upload files, server returns the URL. Then, the client uploads the file to the URL directly. Otherwise, the client uploads the file to a digdag server, and the digdag server uploads the contents using LogServer. LogServer stores the file using full name of the task as its path name.
+When the task logger uploads a file, it requests a digdag server to send a direct upload URL first. If LogServer supports a temporary pre-signed HTTP URL to upload a file, the server returns a pre-signed URL. Then, the task logger uploads the file to the URL directly. Otherwise, the task logger uploads the file to a server, and the server uploads the contents using LogServer. LogServer stores the file using full name of the task as its path name.
 
-When a client wants log files, the client requests list of files that have a common path prefix. This prefix may be full name of a task to get logs of a task, or name of a parent task to get all logs of its children. Digdag server gets the list of files from LogServer. LogServer must be capable to list files by prefix.
+When a client wants log files, the client requests a digdag server to send list of files that have a common path prefix. This prefix may be full name of a task to get logs of a task, or name of a parent task to get all logs of its children. When requested, digdag server gets the list of files from LogServer. LogServer must be capable to list files by prefix.
 
-If LogServer supports a temporary pre-signed HTTP URL to download files, LogServer returns the URL in addition to file name in the list. Digdag server returns the list to a client. With this way, download traffic won't go throw the server. S3 LogServer supports this, for example. Otherwise, Digdag server returns the list without direct download URL. Clients will request files from the server, and the server fetches the contents using LogServer. Default local filesystem LogServer doesn't support pre-signed URL, for example.
+If LogServer supports a temporary pre-signed HTTP URL to download files, LogServer returns the URL in addition to file name in the list of files. Digdag server returns the list to a client. With this way, downloading traffic won't go throw the server. S3 LogServer supports pre-signed URL, for example. Otherwise, Digdag server returns the list without direct download URL. Clients will request the server to send the files, and the server fetches the contents using LogServer. Default local filesystem LogServer doesn't support pre-signed URL, for example.
 
 
 ## Database
@@ -44,6 +44,25 @@ Tables `sessions`, `session_attempts`, `tasks`, `task_details`, `task_dependenci
 `session_attempts` table stores history of attempts.
 
 `tasks`, `task_details`, and `task_dependencies` tables stores tasks of running attempts. `tasks` table stores state of tasks. `task_details` stores config and parameters of tasks, and `task_dependencies` stores dependency between multiple tasks under an parent tasks. Workflow executor checks these tables periodically to run workflows. When an attempt finishes, its tasks will be removed from the tables and archived in `task_archives` table.
+
+
+## API server, agent, workflow executor, and schedule executor
+
+When Digdag runs as a server, it has 3 major thread pools:
+
+* API server: REST API server. This is the only component that receives requests from external systems.
+* Agent: Agent fetches tasks from a queue and runs them. This is planned to be running on untrusted remote environment. Thus agents won't communicate with database directly.
+* Workflow executor: Workflow executor checks state of tasks of running attempts on database and pushes ready tasks to a queue.
+* Schedule executor: Schedule executor checks state of active schedules on database and starts tasks.
+
+By default, `digdag server` runs all of them. There're some options to disable the components:
+
+* ``--disable-executor-loop`` disables workflow executor and schedule executor.
+* ``--disable-local-agent`` disables agent.
+
+API server, workflow executor, and schedule executor use database (H2 or PostgreSQL) to communicate each other.
+
+Agent and API server use task queue to communicate. And because task queue is built on top of database, they will be a single cluster as long as a database is shared.
 
 
 ## Task queue
