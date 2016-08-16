@@ -8,6 +8,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.workflow.LimitExceededException;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.server.rs.AttemptResource;
@@ -74,6 +75,7 @@ public class ServerModule
             .addProviderInstance(new GenericJsonExceptionHandler<ModelValidationException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<IllegalArgumentException>(Response.Status.BAD_REQUEST) { })
+            .addProviderInstance(new GenericJsonExceptionHandler<LimitExceededException>(Response.Status.BAD_REQUEST) { })
             ;
     }
 

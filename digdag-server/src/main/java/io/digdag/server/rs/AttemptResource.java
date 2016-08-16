@@ -167,9 +167,6 @@ public class AttemptResource
             RestSessionAttempt res = RestModels.attempt(attempt, def.getProject().getName());
             return Response.ok(res).build();
         }
-        catch (LimitExceededException ex) {
-            return Response.status(Response.Status.FORBIDDEN).entity(ex.getMessage()).build();
-        }
         catch (SessionAttemptConflictException ex) {
             StoredSessionAttemptWithSession conflicted = ex.getConflictedSession();
             RestSessionAttempt res = RestModels.attempt(conflicted, def.getProject().getName());
