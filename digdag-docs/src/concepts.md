@@ -22,14 +22,14 @@ The reason why sessions and attempts are separated is that an execution may fail
 
 ## Scheduled execution and session_time
 
-A session has a timestamp called `session_time`. This time means "for which time this workflow runs". For example, if a workflow is scheduled every day, the time is usually 00:00:00 of a day such as 2017-01-01 00:00:00. Actual execution time may not be the same time. You may want to delay execution for 2 hours because some data need 1 hour to be prepared. You may run a workflow for 2017-01-01 00:00:00 on a next day to backfill yesterday's results. The time, 2017-01-01 00:00:00 in this example, is called `session_time`.
+A session has a timestamp called `session_time`. This time means "for which time this workflow runs". For example, if a workflow is scheduled every day, the time is usually 00:00:00 of a day such as 2017-01-01 00:00:00. Actual execution time may not be the same time. You may want to delay execution for 2 hours because some data need 1 hour to be prepared. You may run a workflow for the time on a next day to backfill yesterday's results. The time, 2017-01-01 00:00:00 in this example, is called `session_time`.
 
-`session_time` is unique in a workflow. If you submit two sessions with the same `session_time`, the later request will be rejected. This prevents accidental submission of a session that ran before for the same time. If you need to run a workflow for the same time, you need to retry the past session instead of submitting a new session.
+`session_time` is unique in history of a workflow. If you submit two sessions with the same `session_time`, the later request will be rejected. This prevents accidental submission of a session that ran before for the same time. If you need to run a workflow for the same time, you should retry the past session instead of submitting a new session.
 
 
 ## Tasks
 
-When an attempt of a session starts, a workflow is transformed into a set of tasks. A task has dependency; task +dump depends on +process1 and +process2, task +process1 and +process2 depend on +prepare, etc. Digdag understands the dependencies and run the tasks in order.
+When an attempt of a session starts, a workflow is transformed into a set of tasks. Tasks have dependencies each other. For example, task +dump depends on +process1 and +process2, task +process1 and +process2 depend on +prepare, etc. Digdag understands the dependencies and run the tasks in order.
 
 
 ## Export and store parameters
@@ -44,7 +44,7 @@ They are merged into one object when a task runs. Local parameters have the high
 
 Export parameters are used for a parent task to pass values to children. Store parameters are used for a task to pass values to all following tasks including children.
 
-Scope influence of export parameters is limited compared to store parameters. This lets workflows being "modularized". For example, your workflow uses some scripts to process data. You may set some parameters for the scripts to control their behavior. On the other hand, you don't want make the other scripts affected by the parameters (e.g. data loading part shouldn't be affected by any changes in data processing part). In this case, you can put your scripts under a single parent task and let the parent task export parameters.
+Influence of export parameters is limited compared to store parameters. This lets workflows being "modularized". For example, your workflow uses some scripts to process data. You may set some parameters for the scripts to control their behavior. On the other hand, you don't want make the other scripts affected by the parameters (e.g. data loading part shouldn't be affected by any changes in data processing part). In this case, you can put your scripts under a single parent task and let the parent task export parameters.
 
 Store parameters are visible to all following tasks - store parameters are not visible by previous tasks. For example, you ran a workflow and retried it. In this case, parameters stored by a task won't be visible by previous tasks even if the task has finished successfully in the last execution.
 

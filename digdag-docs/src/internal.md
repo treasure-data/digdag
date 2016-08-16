@@ -87,6 +87,22 @@ S3Storage is a storage implementation that stores files on Amazon S3.
 Storage is injected using Extension mechanism (see bellow).
 
 
+## Command executor
+
+Command executor (`io.digdag.spi.CommandExecutor`) is a plugin interface that is used to execute a command in a sandbox environment.
+
+A sandbox is expected to provide following functionalities to provide multi-user task execution environment:
+
+* Isolated OS image
+* Limited CPU consumption
+* Limited memory consumption
+* Limited disk consumption
+
+An expected use case is that a system administrator of agent configure agent to enforce use of a secure command executor such as Docker, although it is not implemented yet.
+
+Currently, operator code itself (Java code) doesn't run in a sandbox. Operators run in the same environment with agent. Thus operators are required to be secure so that it doesn't leak security information or badly impact on execution environment. If it seems hard to achieve, agent needs another mechanism to isolate execution environment.
+
+
 ## Extension mechanisms
 
 ### Extension
