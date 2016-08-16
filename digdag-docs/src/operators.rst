@@ -83,7 +83,7 @@ See `Ruby API documents <ruby_api.html>`_ for details including best practices h
 .. code-block:: yaml
 
     _export:
-      ruby:
+      rb:
         require: tasks/my_workflow
 
     +step1:
