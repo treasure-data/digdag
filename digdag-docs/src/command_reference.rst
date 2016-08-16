@@ -349,9 +349,10 @@ Starts a new session. This command requires project name, workflow name, and ses
 
 .. code-block:: console
 
+    $ digdag start myproj +main --dry-run --session hourly
     $ digdag start myproj +main --session daily
-    $ digdag start myproj +main --session hourly
     $ digdag start myproj +main --session "2016-01-01 00:00:00"
+    $ digdag start myproj +main --session "2016-01-01" -p environment=staging -p user=frsyuki
 
 :command:`--session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">`
   Use this time as session_time.
