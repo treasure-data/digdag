@@ -50,7 +50,7 @@ public class JdbcOpTestHelper
         return Files.createTempDirectory("jdbc_op_test");
     }
 
-    public Config createConfig(Map<String, Object> configInput)
+    public Config createConfig(Map<String, ?> configInput)
             throws IOException
     {
         return configFactory.create(configInput);

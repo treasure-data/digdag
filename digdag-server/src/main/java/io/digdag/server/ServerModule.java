@@ -1,15 +1,19 @@
 package io.digdag.server;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.google.inject.Inject;
+import com.google.inject.Scopes;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.crypto.SecretCrypto;
+import io.digdag.core.crypto.SecretCryptoProvider;
+import io.digdag.core.database.DatabaseSecretControlStoreManager;
+import io.digdag.core.database.DatabaseSecretStoreManager;
 import io.digdag.core.repository.ModelValidationException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.LimitExceededException;
-import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
@@ -18,6 +22,10 @@ import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
+import io.digdag.spi.SecretAccessPolicy;
+import io.digdag.spi.SecretControlStoreManager;
+import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.StorageFileNotFoundException;
 
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -44,6 +52,15 @@ public class ServerModule
         bindResources(builder);
         bindAuthenticator();
         bindExceptionhandlers(builder);
+        bindSecrets();
+    }
+
+    protected void bindSecrets()
+    {
+        binder().bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
+        binder().bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
+        binder().bind(SecretControlStoreManager.class).to(DatabaseSecretControlStoreManager.class);
+        binder().bind(SecretAccessPolicy.class).to(DefaultSecretAccessPolicy.class);
     }
 
     protected void bindResources(ApplicationBindingBuilder builder)

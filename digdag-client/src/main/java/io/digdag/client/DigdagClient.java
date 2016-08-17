@@ -1,8 +1,8 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
@@ -15,18 +15,22 @@ import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
+import io.digdag.client.api.SecretValidation;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -549,6 +553,50 @@ public class DigdagClient implements AutoCloseable
     {
         return doGet(new GenericType<Map<String, Object>>() {},
                 target("/api/version"));
+    }
+
+    public void setProjectSecret(int projectId, String key, String value)
+    {
+        if (!SecretValidation.isValidSecret(key, value)) {
+            throw new IllegalArgumentException();
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .put(Entity.entity(RestSetSecretRequest.of(value), "application/json"));
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            throw new WebApplicationException("Failed to set project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public void deleteProjectSecret(int projectId, String key)
+    {
+        if (!SecretValidation.isValidSecretKey(key)) {
+            throw new IllegalArgumentException();
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .delete();
+
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            throw new WebApplicationException("Failed to delete project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public RestSecretList listProjectSecrets(int projectId)
+    {
+        return target("/api/projects/{id}/secrets")
+                .resolveTemplate("id", projectId)
+                .request("application/json")
+                .headers(headers.get())
+                .get(RestSecretList.class);
     }
 
     private WebTarget target(String path)

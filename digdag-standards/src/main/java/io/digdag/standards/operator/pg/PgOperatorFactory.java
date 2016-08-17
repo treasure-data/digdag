@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.jdbc.AbstractJdbcOperator;
@@ -40,9 +41,9 @@ public class PgOperatorFactory
         }
 
         @Override
-        protected PgConnectionConfig configure(Config params)
+        protected PgConnectionConfig configure(SecretProvider secrets, Config params)
         {
-            return PgConnectionConfig.configure(params);
+            return PgConnectionConfig.configure(secrets, params);
         }
 
         @Override

@@ -1,15 +1,11 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CharStreams;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.core.JsonEncoding;
@@ -17,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskRequest;
@@ -69,7 +66,7 @@ public class EmbulkOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("embulk"));

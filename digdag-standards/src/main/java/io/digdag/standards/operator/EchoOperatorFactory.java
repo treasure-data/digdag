@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 
@@ -38,7 +39,7 @@ public class EchoOperatorFactory
         }
 
         @Override
-        public TaskResult run()
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

@@ -5,6 +5,11 @@ import javax.ws.rs.ext.Provider;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
 
@@ -36,6 +41,7 @@ public class AuthRequestFilter
         if (result.isAccepted()) {
             requestContext.setProperty("siteId", result.getSiteId());
             requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
+            requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
         }
         else {
             requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));

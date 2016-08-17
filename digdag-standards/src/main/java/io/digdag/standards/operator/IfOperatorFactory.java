@@ -3,6 +3,7 @@ package io.digdag.standards.operator;
 import java.nio.file.Path;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -36,7 +37,7 @@ public class IfOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 
