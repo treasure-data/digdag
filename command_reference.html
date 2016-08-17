@@ -487,9 +487,10 @@
 </pre></div>
 </div>
 <p>Starts a new session. This command requires project name, workflow name, and session_time. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag start myproj +main --session daily
-<span class="gp">$</span> digdag start myproj +main --session hourly
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag start myproj +main --dry-run --session hourly
+<span class="gp">$</span> digdag start myproj +main --session daily
 <span class="gp">$</span> digdag start myproj +main --session <span class="s2">&quot;2016-01-01 00:00:00&quot;</span>
+<span class="gp">$</span> digdag start myproj +main --session <span class="s2">&quot;2016-01-01&quot;</span> -p <span class="nv">environment</span><span class="o">=</span>staging -p <span class="nv">user</span><span class="o">=</span>frsyuki
 </pre></div>
 </div>
 <dl class="docutils">
