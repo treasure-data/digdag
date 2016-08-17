@@ -1,10 +1,10 @@
 package acceptance;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
 import io.digdag.standards.operator.pg.PgConnection;
@@ -22,7 +22,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,13 +29,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeThat;
+import static utils.TestUtils.configFactory;
 import static utils.TestUtils.copyResource;
 
 public class PgIT
@@ -45,6 +44,8 @@ public class PgIT
     private static final String RESTRICTED_USER = "not_admin";
     private static final String SRC_TABLE = "src_tbl";
     private static final String DEST_TABLE = "dest_tbl";
+
+    private static final Config EMPTY_CONFIG = configFactory().create();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -165,9 +166,9 @@ public class PgIT
 
     private void setupSourceTable(Properties props, String database)
     {
-        Config config = getDatabaseConfig(props, database);
+        SecretProvider secrets = getDatabaseSecrets(props, database);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("CREATE TABLE " + SRC_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (0, 'foo', 3.14)");
             conn.executeUpdate("INSERT INTO " + SRC_TABLE + " (id, name, score) VALUES (1, 'bar', 1.23)");
@@ -179,9 +180,9 @@ public class PgIT
 
     private void setupRestrictedUser(Properties props, String database)
     {
-        Config config = getDatabaseConfig(props, database);
+        SecretProvider secrets = getDatabaseSecrets(props, database);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             try {
                 conn.executeUpdate("CREATE ROLE " + RESTRICTED_USER);
             }
@@ -197,9 +198,9 @@ public class PgIT
 
     private void setupDestTable(Properties props, String database)
     {
-        Config config = getDatabaseConfig(props, database);
+        SecretProvider secrets = getDatabaseSecrets(props, database);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("CREATE TABLE IF NOT EXISTS " + DEST_TABLE + " (id integer, name text, score real)");
             conn.executeUpdate("DELETE FROM " + DEST_TABLE + " WHERE id = 9");
             conn.executeUpdate("INSERT INTO " + DEST_TABLE + " (id, name, score) VALUES (9, 'zzz', 9.99)");
@@ -211,9 +212,9 @@ public class PgIT
     private void assertTableContents(Properties props, String database, String table, List<Map<String, Object>> expected)
             throws NotReadOnlyException
     {
-        Config config = getDatabaseConfig(props, database);
+        SecretProvider secrets = getDatabaseSecrets(props, database);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeReadOnlyQuery(String.format("SELECT * FROM %s ORDER BY id", table),
                     (rs) -> {
                         assertThat(rs.getColumnNames(), is(Arrays.asList("id", "name", "score")));
@@ -239,48 +240,46 @@ public class PgIT
         }
     }
 
-    private Config getDatabaseConfig(Properties props, String database)
+    private SecretProvider getDatabaseSecrets(Properties props, String database)
     {
-        return new ConfigFactory(new ObjectMapper()).create(
-                ImmutableMap.of(
-                        "host", props.get("host"),
-                        "user", props.get("user"),
-                        "database", database
-                ));
+        return key -> Optional.fromNullable(ImmutableMap.of(
+                "host", (String) props.get("host"),
+                "user", (String) props.get("user"),
+                "database", database
+        ).get(key));
     }
 
-    private Config getAdminDatabaseConfig(Properties props)
+    private SecretProvider getAdminDatabaseSecrets(Properties props)
     {
-        return new ConfigFactory(new ObjectMapper()).create(
-                ImmutableMap.of(
-                        "host", props.get("host"),
-                        "user", props.get("user"),
-                        "database", props.get("database")
-                ));
+        return key -> Optional.fromNullable(ImmutableMap.of(
+                "host", (String) props.get("host"),
+                "user", (String) props.get("user"),
+                "database", (String) props.get("database")
+        ).get(key));
     }
 
     private void createTempDatabase(Properties props, String tempDatabase)
     {
-        Config config = getAdminDatabaseConfig(props);
+        SecretProvider secrets = getAdminDatabaseSecrets(props);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("CREATE DATABASE " + tempDatabase);
         }
     }
 
     private void removeTempDatabase(Properties props, String tempDatabase)
     {
-        Config config = getAdminDatabaseConfig(props);
+        SecretProvider secrets = getAdminDatabaseSecrets(props);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("DROP DATABASE IF EXISTS " + tempDatabase);
         }
     }
     private void removeRestrictedUser(Properties props)
     {
-        Config config = getAdminDatabaseConfig(props);
+        SecretProvider secrets = getAdminDatabaseSecrets(props);
 
-        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(config))) {
+        try (PgConnection conn = PgConnection.open(PgConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
             conn.executeUpdate("DROP ROLE IF EXISTS " + RESTRICTED_USER);
         }
     }

@@ -349,9 +349,10 @@ Starts a new session. This command requires project name, workflow name, and ses
 
 .. code-block:: console
 
+    $ digdag start myproj +main --dry-run --session hourly
     $ digdag start myproj +main --session daily
-    $ digdag start myproj +main --session hourly
     $ digdag start myproj +main --session "2016-01-01 00:00:00"
+    $ digdag start myproj +main --session "2016-01-01" -p environment=staging -p user=frsyuki
 
 :command:`--session <hourly | daily | now | yyyy-MM-dd | "yyyy-MM-dd HH:mm:ss">`
   Use this time as session_time.
@@ -628,6 +629,72 @@ Deletes a project. Sessions of the deleted project are kept retained so that we 
 
     $ digdag delete myproj
 
+secrets
+~~~~~~~
+
+Digdag provides basic secret management that can be used to securely provide e.g. passwords and api keys etc to operators.
+
+Secrets are handled separately from normal workflow parameters and are stored encrypted by the server. Workflow operators
+can only access secrets that they are permitted access to by server policy or explicitly granted access to by the workflow
+author using the `_secrets` directive.
+
+.. code-block:: console
+
+    $ digdag secrets --project <project>
+
+List secrets set for a project. This will only list the secret keys and will not show the actual secret values.
+
+.. code-block:: console
+
+    $ digdag secrets --project <project> --set key
+
+Set a secret key value for a project. The cli will prompt for the secret value to be entered in the terminal. The entered
+value will not be displayed.
+
+Multiple secrets can be entered by listing multiple keys.
+
+It is also possible to read a secret value from a file. Note that the entire raw file contents are read and used as the
+secret value. Any whitespace and newlines etc are included as-is.
+
+.. code-block:: console
+
+    $ cat secret.txt
+    foobar
+
+    $ digdag secrets --project <project> --set key=@secret.txt
+
+Multiple secrets can be read from a single file in JSON format.
+
+.. code-block:: console
+
+    $ cat secrets.json
+    {
+        "foo": "secret1",
+        "bar": "secret2"
+    }
+
+    $ digdag secrets --project <project> --set @secrets.json
+
+Secrets can also be read from stdin. The below command would set the secret key `foo` to the value `bar`.
+
+.. code-block:: console
+
+    $ echo -n 'bar' | digdag secrets --project <project> --set foo=-
+
+Note that only one secret value can be read using the above command. To read multiple secrets from stdin, omit the secret key
+name on the command line and provide secret keys and values on stdin in JSON format.
+
+.. code-block:: console
+
+    $ echo -n '{"foo": "secret1", "bar": "secret2"}' | digdag secrets --project <project> --set -
+
+    $ cat secrets.json | digdag secrets --project <project> --set -
+
+To delete secrets, use the `--delete` command.
+
+.. code-block:: console
+
+    $ digdag secrets --project <project> --delete foo bar
 
 Common options
 ----------------------------------

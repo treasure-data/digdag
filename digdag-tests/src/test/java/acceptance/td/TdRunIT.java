@@ -1,5 +1,6 @@
 package acceptance.td;
 
+import com.google.common.collect.ImmutableList;
 import utils.CommandStatus;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
@@ -50,7 +51,7 @@ public class TdRunIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
-        Files.write(config, ("params.td.apikey = " + TD_API_KEY).getBytes("UTF-8"));
+        Files.write(config, ImmutableList.of("secrets.td.apikey = " + TD_API_KEY));
         outfile = projectDir.resolve("outfile");
 
         client = TDClient.newBuilder(false)

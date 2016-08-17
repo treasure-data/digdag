@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClientBuilder;
 import com.treasuredata.client.TDClientConfig;
 import io.digdag.client.api.JacksonTimeModule;
@@ -31,7 +32,6 @@ public class TDClientFactoryTest
     public void testProxyConfig()
     {
         Config config = newConfig()
-                .set("apikey", "foobar")
                 .set("proxy",
                         newConfig()
                                 .set("enabled", "true")
@@ -41,7 +41,8 @@ public class TDClientFactoryTest
                                 .set("password", "'(#%")
                                 .set("use_ssl", true));
 
-        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(config);
+        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(
+                config, key -> Optional.fromNullable(ImmutableMap.of("apikey", "foobar").get(key)));
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));

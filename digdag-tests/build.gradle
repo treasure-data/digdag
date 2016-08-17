@@ -5,7 +5,6 @@ dependencies {
     testCompile 'org.subethamail:subethasmtp:3.1.7'
     testCompile 'com.squareup.okhttp3:okhttp:3.3.0'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.3.1'
-    testCompile 'pl.pragmatists:JUnitParams:1.0.5'
     testCompile 'org.littleshoot:littleproxy:1.1.0'
 }
 

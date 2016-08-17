@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import javax.ws.rs.ProcessingException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -49,18 +51,15 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static utils.TestUtils.configFactory;
-import static utils.TestUtils.findFreePort;
-import static utils.TestUtils.main;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static utils.TestUtils.configFactory;
+import static utils.TestUtils.main;
 import static utils.TestUtils.objectMapper;
 
 public class TemporaryDigdagServer
@@ -272,11 +271,14 @@ public class TemporaryDigdagServer
 
         if (inProcess) {
             executor.execute(() -> {
+                OutputStream out = fanout(this.out, System.out);
+                OutputStream err = fanout(this.err, System.err);
+                InputStream in = new ByteArrayInputStream(new byte[0]);
                 if (version.isPresent()) {
-                    main(version.get(), args, out, err);
+                    main(version.get(), args, out, err, in);
                 }
                 else {
-                    main(Version.buildVersion(), args, out, err);
+                    main(Version.buildVersion(), args, out, err, in);
                 }
             });
         }
@@ -302,8 +304,8 @@ public class TemporaryDigdagServer
             processBuilder.directory(workdir);
             serverProcess = processBuilder.start();
 
-            executor.execute(() -> copy(serverProcess.getInputStream(), asList(out, System.out)));
-            executor.execute(() -> copy(serverProcess.getErrorStream(), asList(err, System.err)));
+            executor.execute(() -> copy(serverProcess.getInputStream(), out, System.out));
+            executor.execute(() -> copy(serverProcess.getErrorStream(), err, System.err));
         }
 
         // Wait for server to write the server info with the local address
@@ -352,7 +354,49 @@ public class TemporaryDigdagServer
         }
     }
 
-    private void copy(InputStream in, List<OutputStream> outs)
+    private static OutputStream fanout(OutputStream... outputStreams)
+    {
+        return new OutputStream()
+        {
+            @Override
+            public void write(int b)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b);
+                }
+            }
+
+            @Override
+            public void write(byte[] b)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b);
+                }
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b, off, len);
+                }
+            }
+
+            @Override
+            public void flush()
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.flush();
+                }
+            }
+        };
+    }
+
+    private void copy(InputStream in, OutputStream... outs)
     {
         byte[] buffer = new byte[16 * 1024];
         try {
@@ -525,6 +569,7 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
+
         private Builder()
         {
         }
@@ -533,6 +578,7 @@ public class TemporaryDigdagServer
         private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
         private boolean inProcess = IN_PROCESS_DEFAULT;
+        private byte[] stdin = new byte[0];
 
         public Builder version(Version version)
         {

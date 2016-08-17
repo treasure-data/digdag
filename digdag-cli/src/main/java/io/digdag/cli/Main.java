@@ -15,6 +15,7 @@ import io.digdag.cli.client.Kill;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Retry;
+import io.digdag.cli.client.Secrets;
 import io.digdag.cli.client.ShowAttempt;
 import io.digdag.cli.client.ShowAttempts;
 import io.digdag.cli.client.ShowLog;
@@ -27,6 +28,7 @@ import io.digdag.cli.client.Upload;
 import io.digdag.cli.client.Version;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -45,12 +47,14 @@ public class Main
     private final io.digdag.core.Version version;
     private final PrintStream out;
     private final PrintStream err;
+    private final InputStream in;
 
-    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err)
+    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, InputStream in)
     {
         this.version = version;
         this.out = out;
         this.err = err;
+        this.in = in;
     }
 
     public static class MainOptions
@@ -61,7 +65,7 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main(buildVersion(), System.out, System.err).cli(args);
+        int code = new Main(buildVersion(), System.out, System.err, System.in).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -105,9 +109,14 @@ public class Main
         jc.addCommand("task", new ShowTask(version, out, err), "tasks");
         jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
         jc.addCommand("delete", new Delete(version, out, err));
+        jc.addCommand("secrets", new Secrets(version, out, err, in), "secret");
         jc.addCommand("version", new Version(version, out, err), "version");
 
         jc.addCommand("selfupdate", new SelfUpdate(out, err));
+
+        // Disable @ expansion
+        jc.setExpandAtSign(false);
+        jc.getCommands().values().forEach(c -> c.setExpandAtSign(false));
 
         try {
             try {
@@ -241,35 +250,36 @@ public class Main
     {
         err.println("Usage: digdag <command> [options...]");
         err.println("  Local-mode commands:");
-        err.println("    new <path>                       create a new workflow project");
-        err.println("    r[un] <workflow.dig>             run a workflow");
-        err.println("    c[heck]                          show workflow definitions");
-        err.println("    sched[uler]                      run a scheduler server");
-        err.println("    selfupdate                       update digdag to the latest version");
+        err.println("    new <path>                         create a new workflow project");
+        err.println("    r[un] <workflow.dig>               run a workflow");
+        err.println("    c[heck]                            show workflow definitions");
+        err.println("    sched[uler]                        run a scheduler server");
+        err.println("    selfupdate                         update digdag to the latest version");
         err.println("");
         err.println("  Server-mode commands:");
-        err.println("    server                           start digdag server");
+        err.println("    server                             start digdag server");
         err.println("");
         err.println("  Client-mode commands:");
-        err.println("    push <project-name>              create and upload a new revision");
-        err.println("    start <project-name> <name>      start a new session attempt of a workflow");
-        err.println("    retry <attempt-id>               retry a session");
-        err.println("    kill <attempt-id>                kill a running session attempt");
-        err.println("    backfill <project-name> <name>   start sessions of a schedule for past times");
-        err.println("    reschedule                       skip sessions of a schedule to a future time");
-        err.println("    log <attempt-id>                 show logs of a session attempt");
-        err.println("    workflows [project-name] [name]  show registered workflow definitions");
-        err.println("    schedules                        show registered schedules");
-        err.println("    sessions                         show sessions for all workflows");
-        err.println("    sessions <project-name>          show sessions for all workflows in a project");
-        err.println("    sessions <project-name> <name>   show sessions for a workflow");
-        err.println("    session  <session-id>            show a single session");
-        err.println("    attempts                         show attempts for all sessions");
-        err.println("    attempts <session-id>            show attempts for a session");
-        err.println("    attempt  <attempt-id>            show a single attempt");
-        err.println("    tasks <attempt-id>               show tasks of a session attempt");
-        err.println("    delete <project-name>            delete a project");
-        err.println("    version                          show client and server version");
+        err.println("    push <project-name>                create and upload a new revision");
+        err.println("    start <project-name> <name>        start a new session attempt of a workflow");
+        err.println("    retry <attempt-id>                 retry a session");
+        err.println("    kill <attempt-id>                  kill a running session attempt");
+        err.println("    backfill <project-name> <name>     start sessions of a schedule for past times");
+        err.println("    reschedule                         skip sessions of a schedule to a future time");
+        err.println("    log <attempt-id>                   show logs of a session attempt");
+        err.println("    workflows [project-name] [name]    show registered workflow definitions");
+        err.println("    schedules                          show registered schedules");
+        err.println("    sessions                           show sessions for all workflows");
+        err.println("    sessions <project-name>            show sessions for all workflows in a project");
+        err.println("    sessions <project-name> <name>     show sessions for a workflow");
+        err.println("    session  <session-id>              show a single session");
+        err.println("    attempts                           show attempts for all sessions");
+        err.println("    attempts <session-id>              show attempts for a session");
+        err.println("    attempt  <attempt-id>              show a single attempt");
+        err.println("    tasks <attempt-id>                 show tasks of a session attempt");
+        err.println("    delete <project-name>              delete a project");
+        err.println("    secrets --project <project-name>   manage secrets");
+        err.println("    version                            show client and server version");
         err.println("");
         err.println("  Options:");
         showCommonOptions(err);

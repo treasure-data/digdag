@@ -1,9 +1,9 @@
 package io.digdag.standards.operator;
 
-import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
@@ -37,7 +37,7 @@ public class NopOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("nop"));

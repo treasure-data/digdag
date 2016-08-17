@@ -3,6 +3,8 @@ package io.digdag.util;
 import java.util.List;
 import java.util.ArrayList;
 import java.nio.file.Path;
+
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
@@ -41,12 +43,12 @@ public abstract class BaseOperator
     }
 
     @Override
-    public TaskResult run()
+    public TaskResult run(TaskExecutionContext ctx)
     {
         RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
         try {
             try {
-                return runTask();
+                return runTask(ctx);
             }
             finally {
                 workspace.close();
@@ -76,5 +78,13 @@ public abstract class BaseOperator
         }
     }
 
-    public abstract TaskResult runTask();
+    // TODO: scrap backwards compatibility?
+    @Deprecated
+    public TaskResult runTask() {
+        throw new UnsupportedOperationException();
+    }
+
+    public TaskResult runTask(TaskExecutionContext ctx) {
+        return runTask();
+    }
 }

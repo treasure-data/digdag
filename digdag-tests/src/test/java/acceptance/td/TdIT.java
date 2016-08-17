@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
@@ -52,8 +53,6 @@ import static org.junit.Assume.assumeThat;
 public class TdIT
 {
     private static final Logger logger = LoggerFactory.getLogger(TdIT.class);
-
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -75,7 +74,7 @@ public class TdIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
-        Files.write(config, asList("params.td.apikey = " + TD_API_KEY));
+        Files.write(config, asList("secrets.td.apikey = " + TD_API_KEY));
         outfile = projectDir.resolve("outfile");
 
         client = TDClient.newBuilder(false)
@@ -129,6 +128,20 @@ public class TdIT
         copyResource("acceptance/td/td/td_preview_create_table.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         runWorkflow("td.database=" + database);
+    }
+
+    @Test
+    public void testRunQueryLegacyApikeyParam()
+            throws Exception
+    {
+        // TODO: Remove this test when the legacy support for td.apikey param is removed
+
+        // Replace the "secrets.td.apikey" entry with the legacy "params.td.apikey" entry
+        Files.write(config, asList("params.td.apikey = " + TD_API_KEY));
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow();
     }
 
     @Test

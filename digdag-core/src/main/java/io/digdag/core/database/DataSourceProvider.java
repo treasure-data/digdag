@@ -109,6 +109,7 @@ public class DataSourceProvider
                 throw Throwables.propagate(ex);
             }
             ds = null;
+            closer = null;
         }
     }
 }
