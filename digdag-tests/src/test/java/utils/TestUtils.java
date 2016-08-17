@@ -330,6 +330,11 @@ public class TestUtils
         return getAttemptId(startStatus);
     }
 
+    public static int pushProject(String endpoint, Path project) {
+        String projectName = project.getFileName().toString();
+        return pushProject(endpoint, project, projectName);
+    }
+
     public static int pushProject(String endpoint, Path project, String projectName)
     {
         CommandStatus pushStatus = main("push",

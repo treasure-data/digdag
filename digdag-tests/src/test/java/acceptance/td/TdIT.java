@@ -3,6 +3,7 @@ package acceptance.td;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import io.digdag.client.DigdagClient;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,8 +43,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static acceptance.td.Secrets.TD_API_KEY;
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.main;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -161,10 +161,7 @@ public class TdIT
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
 
         TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-                .configuration(
-                        "params.td.apikey = " + TD_API_KEY,
-                        "params.td.use_ssl = false"
-                )
+                .configuration(Secrets.secretsServerConfiguration())
                 .environment(ImmutableMap.of("http_proxy", proxyUrl))
                 .build();
 
@@ -173,8 +170,18 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
 
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow",
-                ImmutableMap.of("outfile", outfile.toString()));
+        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+
+        DigdagClient digdagClient = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+
+        digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
+
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
+                "outfile", outfile.toString(),
+                "td.use_ssl", "false"));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
