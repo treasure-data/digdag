@@ -42,15 +42,36 @@ public class TimestampParam
         return new TimestampParam(timestamp);
     }
 
+    public static TimestampParam of(LocalTimeOrInstant timestamp)
+    {
+        return new TimestampParam(timestamp);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        TimestampParam that = (TimestampParam) o;
+
+        return timestamp != null ? timestamp.equals(that.timestamp) : that.timestamp == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return timestamp != null ? timestamp.hashCode() : 0;
+    }
+
     @Override
     @JsonValue
     public String toString()
     {
         return timestamp.toString();
-    }
-
-    public static TimestampParam of(LocalTimeOrInstant timestamp)
-    {
-        return new TimestampParam(timestamp);
     }
 }

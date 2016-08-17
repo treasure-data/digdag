@@ -38,6 +38,32 @@ public class TableParam
     }
 
     @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        TableParam that = (TableParam) o;
+
+        if (database != null ? !database.equals(that.database) : that.database != null) {
+            return false;
+        }
+        return table != null ? table.equals(that.table) : that.table == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = database != null ? database.hashCode() : 0;
+        result = 31 * result + (table != null ? table.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     @JsonValue
     public String toString()
     {
