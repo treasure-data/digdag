@@ -100,6 +100,7 @@ public class ShowAttempts
         ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
         ln("  params: %s", attempt.getParams());
         ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
+        ln("  finished at: %s", attempt.getFinishedAt().transform(TimeUtil::formatTime).or(""));
         ln("  kill requested: %s", attempt.getCancelRequested());
         ln("  status: %s", status);
         ln("");

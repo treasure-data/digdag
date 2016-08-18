@@ -756,7 +756,27 @@ public class DatabaseMigrator
                             .addTimestamp("updated_at", "not null")
                             .build());
 
-            handle.update("create index secrets_on_site_id_and_project_id_and_scope_and_key on secrets (site_id, project_id, scope, key)");
+        }
+    };
+
+    private final Migration MigrateAddFinishedAtToSessionAttempts = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160818043815";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            if (isPostgres()) {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp with time zone");
+            }
+            else {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp");
+            }
         }
     };
 
@@ -768,5 +788,6 @@ public class DatabaseMigrator
         MigrateAddUserInfoColumnToRevisions,
         MigrateQueueRearchitecture,
         MigrateAddSecretsTable,
+        MigrateAddFinishedAtToSessionAttempts,
     };
 }
