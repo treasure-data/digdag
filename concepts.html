@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Concepts &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Workflow definition" href="workflow_definition.html"/>
+        <link rel="prev" title="Architecture" href="architecture.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#projects-and-revisions">Projects and revisions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sessions-and-attempts">Sessions and attempts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scheduled-execution-and-session-time">Scheduled execution and session_time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tasks">Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#export-and-store-parameters">Export and store parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operators-and-plugins">Operators and plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dynamic-task-generation-and-check-error-tasks">Dynamic task generation and _check/_error tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-naming-and-resuming">Task naming and resuming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workspace">Workspace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">Internal architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Concepts</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/concepts.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="concepts">
+<span id="concepts"></span><h1>Concepts<a class="headerlink" href="#concepts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="projects-and-revisions">
+<span id="projects-and-revisions"></span><h2>Projects and revisions<a class="headerlink" href="#projects-and-revisions" title="Permalink to this headline">¶</a></h2>
+<p>In Digdag, workflows are packaged together with other files used in the workflows. The files can be anything such as SQL scripts, Python/Ruby/Shell scripts, configuration files, etc. This set of the workflow definitions is called project.</p>
+<p>When project is uploaded to a Digdag server, Digdag server inserts a new version and keeps old versions. A version of a project is called revision. When you run a workflow, Digdag uses the latest revision by default. But you can also use old revisions for following purposes:</p>
+<ul class="simple">
+<li>Check the definition of a past workflow execution.</li>
+<li>Run a workflow using a old revision to reproduce the same results with before.</li>
+<li>Revert to a old revision to fix problems introduced in the latest revision by accident.</li>
+</ul>
+<p>A project can contain multiple workflows. But you should create a new project if a new workflow is not related to others. A reason is that all workflows in a project will be updated together when you upload a new revision.</p>
+</div>
+<div class="section" id="sessions-and-attempts">
+<span id="sessions-and-attempts"></span><h2>Sessions and attempts<a class="headerlink" href="#sessions-and-attempts" title="Permalink to this headline">¶</a></h2>
+<p>A session is a plan to run a workflow which should complete successfully. An attempt is an actual execution of a session. A session has multiple attempts if you retry a failed workflow.</p>
+<p>The reason why sessions and attempts are separated is that an execution may fail. When you list sessions up, the expected status is that all sessions are green. If you find a failing session, you check attempts of it, and debugs the problem from the logs. You may upload a new revision to fix the issue, then start a new attempt. Sessions let you easily confirm that all planned executions are successfully done.</p>
+</div>
+<div class="section" id="scheduled-execution-and-session-time">
+<span id="scheduled-execution-and-session-time"></span><h2>Scheduled execution and session_time<a class="headerlink" href="#scheduled-execution-and-session-time" title="Permalink to this headline">¶</a></h2>
+<p>A session has a timestamp called <code class="docutils literal"><span class="pre">session_time</span></code>. This time means &#8220;for which time this workflow runs&#8221;. For example, if a workflow is scheduled every day, the time is usually 00:00:00 of a day such as 2017-01-01 00:00:00. Actual execution time may not be the same time. You may want to delay execution for 2 hours because some data need 1 hour to be prepared. You may run a workflow for the time on a next day to backfill yesterday&#8217;s results. The time, 2017-01-01 00:00:00 in this example, is called <code class="docutils literal"><span class="pre">session_time</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">session_time</span></code> is unique in history of a workflow. If you submit two sessions with the same <code class="docutils literal"><span class="pre">session_time</span></code>, the later request will be rejected. This prevents accidental submission of a session that ran before for the same time. If you need to run a workflow for the same time, you should retry the past session instead of submitting a new session.</p>
+</div>
+<div class="section" id="tasks">
+<span id="tasks"></span><h2>Tasks<a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h2>
+<p>When an attempt of a session starts, a workflow is transformed into a set of tasks. Tasks have dependencies each other. For example, task +dump depends on +process1 and +process2, task +process1 and +process2 depend on +prepare, etc. Digdag understands the dependencies and run the tasks in order.</p>
+</div>
+<div class="section" id="export-and-store-parameters">
+<span id="export-and-store-parameters"></span><h2>Export and store parameters<a class="headerlink" href="#export-and-store-parameters" title="Permalink to this headline">¶</a></h2>
+<p>There are 3 kinds of parameters for a task.</p>
+<ul class="simple">
+<li><strong>local</strong>: parameters directly set to the task</li>
+<li><strong>export</strong>: parameters exported from parent tasks</li>
+<li><strong>store</strong>: parameters stored by previous tasks</li>
+</ul>
+<p>They are merged into one object when a task runs. Local parameters have the highest priority. Export and store parameters override each other and thus parameters set at later tasks have higher priority.</p>
+<p>Export parameters are used for a parent task to pass values to children. Store parameters are used for a task to pass values to all following tasks including children.</p>
+<p>Influence of export parameters is limited compared to store parameters. This lets workflows being &#8220;modularized&#8221;. For example, your workflow uses some scripts to process data. You may set some parameters for the scripts to control their behavior. On the other hand, you don&#8217;t want make the other scripts affected by the parameters (e.g. data loading part shouldn&#8217;t be affected by any changes in data processing part). In this case, you can put your scripts under a single parent task and let the parent task export parameters.</p>
+<p>Store parameters are visible to all following tasks - store parameters are not visible by previous tasks. For example, you ran a workflow and retried it. In this case, parameters stored by a task won&#8217;t be visible by previous tasks even if the task has finished successfully in the last execution.</p>
+<p>Store parameters are not global variables. When two tasks run in parallel, they will use different store parameters. This makes the workflow behavior consitent regardless of actual execution timing. For example, when another task runs depending on the two parallel tasks, parameter stored by the last task will be used in the order of task submission.</p>
+</div>
+<div class="section" id="operators-and-plugins">
+<span id="operators-and-plugins"></span><h2>Operators and plugins<a class="headerlink" href="#operators-and-plugins" title="Permalink to this headline">¶</a></h2>
+<p>Operators are executor of tasks. Operators are set in a workflow definition as <code class="docutils literal"><span class="pre">sh&gt;</span></code>, <code class="docutils literal"><span class="pre">pg&gt;</span></code>, etc. When a task runs, Digdag picks one operator, merges all parameters (local, export, and store parameters), then give the merged parameters to the operator.</p>
+<p>An operator can be considered as a package of common workload. With operators, you can do the more things with less scripts.</p>
+<p>Operators are designed to be plugins (although it&#8217;s not fully implemented yet). You will install operators to simplify your workflow, and you will create a operator so that other workflows can reuse it. Digdag itself would be a simple platform to run many operators on it.</p>
+</div>
+<div class="section" id="dynamic-task-generation-and-check-error-tasks">
+<span id="dynamic-task-generation-and-check-error-tasks"></span><h2>Dynamic task generation and _check/_error tasks<a class="headerlink" href="#dynamic-task-generation-and-check-error-tasks" title="Permalink to this headline">¶</a></h2>
+<p>Digdag transforms a workflow into a set of tasks with dependencies. This graph of the tasks is called DAG, Directed Acyclic Graph. DAG is good to execute from the most dependent task to the end. However, it can&#8217;t represent loops. Representing <code class="docutils literal"><span class="pre">if</span></code> branches is also not straightforward.</p>
+<p>But loops and branches are useful. To solve this issue, Digdag dynamically appends tasks to an executing DAG. In following example, Digdag generates 3 tasks to represent a loop: <code class="docutils literal"><span class="pre">+example^sub+loop-0</span></code>, <code class="docutils literal"><span class="pre">+example^sub+loop-1</span></code>, and <code class="docutils literal"><span class="pre">+example^sub+loop-2</span></code> (name of a dynamically generated task starts with <code class="docutils literal"><span class="pre">^sub</span></code>):</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+example</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">loop&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">echo&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this is ${i}th loop</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">_check</span></code> and <code class="docutils literal"><span class="pre">_error</span></code> options use dynamic task generation. Those parameters are used by Digdag to run another task only when the task succeeds or fails.</p>
+<p><code class="docutils literal"><span class="pre">_check</span></code> task is generated after successful completion of a task. This is useful especially when you want to validate results of a task before starting next tasks.</p>
+<p><code class="docutils literal"><span class="pre">_error</span></code> task is generated after failure of a task. This is useful to notify failure of a task to external systems.</p>
+</div>
+<div class="section" id="task-naming-and-resuming">
+<span id="task-naming-and-resuming"></span><h2>Task naming and resuming<a class="headerlink" href="#task-naming-and-resuming" title="Permalink to this headline">¶</a></h2>
+<p>A task has an unique name in an attempt. When you retry an attempt, this name is used to match tasks in the last attempt.</p>
+<p>Children tasks have parent task&#8217;s name as the prefix. Workflow name is also prefixed as the root task. In following example, task names will be <code class="docutils literal"><span class="pre">+my_workflow+load+from_mysql+tables</span></code>, <code class="docutils literal"><span class="pre">+my_workflow+load+from_postgres</span></code>, and <code class="docutils literal"><span class="pre">+my_workflow+dump</span></code>.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># my_workflow.dig</span>
+<span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">+from_mysql</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">+tables</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">+from_postgres</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="l l-Scalar l-Scalar-Plain">+dump</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="workspace">
+<span id="workspace"></span><h2>Workspace<a class="headerlink" href="#workspace" title="Permalink to this headline">¶</a></h2>
+<p>Workspace is a directory where a task runs at. Digdag extracts files from a project archive to this directory, change directory there, and executes a task (note: local-mode execution does nothing to create a workspace because it&#8217;s assumed that current working directory is the workspace).</p>
+<p>Plugins will not allow access to parent directories of workspace. This is because digdag server is running on a shared environment. A project should be self-contained so that it doesn&#8217;t have to depend on external environments. Scripting operator is an exception (e.g. sh&gt; operator). It&#8217;s recommended to run scripts using <code class="docutils literal"><span class="pre">docker:</span></code> option.</p>
+</div>
+<div class="section" id="next-steps">
+<span id="next-steps"></span><h2>Next steps<a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="internal.html">Internal architecture</a></li>
+<li><a class="reference external" href="command_reference.html">Command reference</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="workflow_definition.html" class="btn btn-neutral float-right" title="Workflow definition" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="architecture.html" class="btn btn-neutral" title="Architecture" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

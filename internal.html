@@ -1,0 +1,339 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Internal architecture &mdash; Digdag 0.8 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+    <link rel="top" title="Digdag 0.8 documentation" href="index.html"/>
+        <link rel="next" title="Release Notes" href="releases.html"/>
+        <link rel="prev" title="Language API - Ruby" href="ruby_api.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Digdag
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_definition.html">Workflow definition</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduling_workflow.html">Scheduling workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Language API - Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby_api.html">Language API - Ruby</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Internal architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#task-logging">Task logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database">Database</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#project-repository">Project repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#schedule-store">Schedule store</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#session-store">Session store</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#api-server-agent-workflow-executor-and-schedule-executor">API server, agent, workflow executor, and schedule executor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-queue">Task queue</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#project-archive-storage">Project archive storage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-executor">Command executor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extension-mechanisms">Extension mechanisms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#extension">Extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system-plugins">System plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dynamic-plugins">Dynamic plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Digdag</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Internal architecture</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/internal.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="internal-architecture">
+<span id="internal-architecture"></span><h1>Internal architecture<a class="headerlink" href="#internal-architecture" title="Permalink to this headline">¶</a></h1>
+<p>This guide explains implementation details of Digdag. Understanding the internal architecture is helpful for Digdag system administrators and developers to understand why Digdag behaves as described at <a class="reference external" href="architecture.html">architecture</a> page.</p>
+<div class="section" id="task-logging">
+<span id="task-logging"></span><h2>Task logging<a class="headerlink" href="#task-logging" title="Permalink to this headline">¶</a></h2>
+<p>When a task runs, a logger (SLF4j + logback) collects its log messages and passes them to a task logger set at a thread-local storage. When a task starts, task logger creates a new file and writes messages to the file. As the file grows larger than certain limit, it uploads the file to a storage (note: there is an optimization for local execution with local file system logger: logs are directly appended to the final destionation file). LogServer is the SPI interface that implements this storage.</p>
+<p>When the task logger uploads a file, it requests a digdag server to send a direct upload URL first. If LogServer supports a temporary pre-signed HTTP URL to upload a file, the server returns a pre-signed URL. Then, the task logger uploads the file to the URL directly. Otherwise, the task logger uploads the file to a server, and the server uploads the contents using LogServer. LogServer stores the file using full name of the task as its path name.</p>
+<p>When a client wants log files, the client requests a digdag server to send list of files that have a common path prefix. This prefix may be full name of a task to get logs of a task, or name of a parent task to get all logs of its children. When requested, digdag server gets the list of files from LogServer. LogServer must be capable to list files by prefix.</p>
+<p>If LogServer supports a temporary pre-signed HTTP URL to download files, LogServer returns the URL in addition to file name in the list of files. Digdag server returns the list to a client. With this way, downloading traffic won&#8217;t go throw the server. S3 LogServer supports pre-signed URL, for example. Otherwise, Digdag server returns the list without direct download URL. Clients will request the server to send the files, and the server fetches the contents using LogServer. Default local filesystem LogServer doesn&#8217;t support pre-signed URL, for example.</p>
+</div>
+<div class="section" id="database">
+<span id="database"></span><h2>Database<a class="headerlink" href="#database" title="Permalink to this headline">¶</a></h2>
+<p>Digdag stores all data in a database (PostgreSQL or H2 database). When digdag runs in local mode, it uses in-memory H2 database.</p>
+<div class="section" id="project-repository">
+<span id="project-repository"></span><h3>Project repository<a class="headerlink" href="#project-repository" title="Permalink to this headline">¶</a></h3>
+<p>Tables <code class="docutils literal"><span class="pre">projects</span></code>, <code class="docutils literal"><span class="pre">revisions</span></code>, <code class="docutils literal"><span class="pre">revision_archives</span></code>, <code class="docutils literal"><span class="pre">workflow_definitions</span></code>, and <code class="docutils literal"><span class="pre">workflow_configs</span></code> tables store projects.</p>
+<p><code class="docutils literal"><span class="pre">projects</span></code> table stores names of projects.</p>
+<p><code class="docutils literal"><span class="pre">revisions</span></code> table stores revisions of projects. It contains information about where project archive is stored. If <code class="docutils literal"><span class="pre">archive_type</span></code> column is &#8220;db&#8221;, project archive is stored in <code class="docutils literal"><span class="pre">revision_archives</span></code> table. Otherwise, a project archive is stored using a storage plugin (such as S3).</p>
+<p><code class="docutils literal"><span class="pre">workflow_definitions</span></code> table stores names of workflows. This table is always used with <code class="docutils literal"><span class="pre">workflow_configs</span></code> table because actual configurations of workflows are stored there. When a new revision is uploaded, multiple rows are inserted to <code class="docutils literal"><span class="pre">workflow_definitions</span></code> table because a project can contain multiple workflows. However, in most of cases, only a few workflows are changed. To optimize this workload, a same <code class="docutils literal"><span class="pre">workflow_configs</span></code> row is shared by multiple <code class="docutils literal"><span class="pre">workflow_definitions</span></code> if their configurations are identical.</p>
+</div>
+<div class="section" id="schedule-store">
+<span id="schedule-store"></span><h3>Schedule store<a class="headerlink" href="#schedule-store" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">schedules</span></code> table stores status of active schedules. Actual configuration of schedules are stored in project repository. <code class="docutils literal"><span class="pre">schedules</span></code> table takes only the latest revision and stores their current status.</p>
+<p>When a new revision is uploaded, digdag uses workflow names to update schedules. If a new revision contains a workflow and there is an existent schedule of a old workflow with the same name, digdag keeps status of the schedule. If there&#8217;re no old workflows with the same name, digdag creates a new schedule. If opposite, an old schedule exists but new revision doesn&#8217;t include workflows with the same name, the schedule will be deleted.</p>
+</div>
+<div class="section" id="session-store">
+<span id="session-store"></span><h3>Session store<a class="headerlink" href="#session-store" title="Permalink to this headline">¶</a></h3>
+<p>Tables <code class="docutils literal"><span class="pre">sessions</span></code>, <code class="docutils literal"><span class="pre">session_attempts</span></code>, <code class="docutils literal"><span class="pre">tasks</span></code>, <code class="docutils literal"><span class="pre">task_details</span></code>, <code class="docutils literal"><span class="pre">task_dependencies</span></code>, and <code class="docutils literal"><span class="pre">task_archives</span></code> tables store session information.</p>
+<p><code class="docutils literal"><span class="pre">sessoins</span></code> table stores history of sessions.</p>
+<p><code class="docutils literal"><span class="pre">session_attempts</span></code> table stores history of attempts.</p>
+<p><code class="docutils literal"><span class="pre">tasks</span></code>, <code class="docutils literal"><span class="pre">task_details</span></code>, and <code class="docutils literal"><span class="pre">task_dependencies</span></code> tables stores tasks of running attempts. <code class="docutils literal"><span class="pre">tasks</span></code> table stores state of tasks. <code class="docutils literal"><span class="pre">task_details</span></code> stores config and parameters of tasks, and <code class="docutils literal"><span class="pre">task_dependencies</span></code> stores dependency between multiple tasks under an parent tasks. Workflow executor checks these tables periodically to run workflows. When an attempt finishes, its tasks will be removed from the tables and archived in <code class="docutils literal"><span class="pre">task_archives</span></code> table.</p>
+</div>
+</div>
+<div class="section" id="api-server-agent-workflow-executor-and-schedule-executor">
+<span id="api-server-agent-workflow-executor-and-schedule-executor"></span><h2>API server, agent, workflow executor, and schedule executor<a class="headerlink" href="#api-server-agent-workflow-executor-and-schedule-executor" title="Permalink to this headline">¶</a></h2>
+<p>When Digdag runs as a server, it has 3 major thread pools:</p>
+<ul class="simple">
+<li>API server: REST API server. This is the only component that receives requests from external systems.</li>
+<li>Agent: Agent fetches tasks from a queue and runs them. This is planned to be running on untrusted remote environment. Thus agents won&#8217;t communicate with database directly.</li>
+<li>Workflow executor: Workflow executor checks state of tasks of running attempts on database and pushes ready tasks to a queue.</li>
+<li>Schedule executor: Schedule executor checks state of active schedules on database and starts tasks.</li>
+</ul>
+<p>By default, <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">server</span></code> runs all of them. There&#8217;re some options to disable the components:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">--disable-executor-loop</span></code> disables workflow executor and schedule executor.</li>
+<li><code class="docutils literal"><span class="pre">--disable-local-agent</span></code> disables agent.</li>
+</ul>
+<p>API server, workflow executor, and schedule executor use database (H2 or PostgreSQL) to communicate each other.</p>
+<p>Agent and API server use task queue to communicate. And because task queue is built on top of database, they will be a single cluster as long as a database is shared.</p>
+</div>
+<div class="section" id="task-queue">
+<span id="task-queue"></span><h2>Task queue<a class="headerlink" href="#task-queue" title="Permalink to this headline">¶</a></h2>
+<p>Task queue makes sure that a task runs at least once.</p>
+<p>When an attempt starts, WorkflowExecutor pushes the root task to a task queue using TaskQueueServer interface. When the task finished, WorkflowExecutor will get a callback when a task finishes at least once. As tasks become ready to execute, WorkflowExecutor pushes the tasks to a task queue.</p>
+<p>An agent uses TaskQueueClient interface to fetch tasks. The default implementation of TaskQueueClient is TaskQueueServer itself which fetches tasks from the underlaying storage directly. An intended implementation is HTTP-based client that fetches tasks through Digdag&#8217;s REST API.</p>
+<p>When a task is pushed to a queue, it pushes ID of the task. TaskRequest will be instanciated when an agent fetches it.</p>
+<p>When an agent fetches a task, it locks the task first. A locked task won&#8217;t be taken by other agents for a while. The agent must send heartbeat to extend the lock expiration time until execution of the task finishes. When an agent crashes, heartbeat breaks out. In this case, the task will be taken by another agent. The task is deleted from the queue by WorkflowExecutor when task finish callback is sent.</p>
+</div>
+<div class="section" id="project-archive-storage">
+<span id="project-archive-storage"></span><h2>Project archive storage<a class="headerlink" href="#project-archive-storage" title="Permalink to this headline">¶</a></h2>
+<p>Storage (<code class="docutils literal"><span class="pre">io.digdag.spi.Storage</span></code>) is a plugin interface that is used to store task log files and project archives. Task log files use storage through StorageFileLogServer (<code class="docutils literal"><span class="pre">io.digdag.core.log</span></code>) class, and project archives use storage through ArchiveManager (<code class="docutils literal"><span class="pre">io.digdag.core.storage</span></code>) class.</p>
+<p>S3Storage is a storage implementation that stores files on Amazon S3.</p>
+<p>Storage is injected using Extension mechanism (see bellow).</p>
+</div>
+<div class="section" id="command-executor">
+<span id="command-executor"></span><h2>Command executor<a class="headerlink" href="#command-executor" title="Permalink to this headline">¶</a></h2>
+<p>Command executor (<code class="docutils literal"><span class="pre">io.digdag.spi.CommandExecutor</span></code>) is a plugin interface that is used to execute a command in a sandbox environment.</p>
+<p>A sandbox is expected to provide following functionalities to provide multi-user task execution environment:</p>
+<ul class="simple">
+<li>Isolated OS image</li>
+<li>Limited CPU consumption</li>
+<li>Limited memory consumption</li>
+<li>Limited disk consumption</li>
+</ul>
+<p>An expected use case is that a system administrator of agent configure agent to enforce use of a secure command executor such as Docker, although it is not implemented yet.</p>
+<p>Currently, operator code itself (Java code) doesn&#8217;t run in a sandbox. Operators run in the same environment with agent. Thus operators are required to be secure so that it doesn&#8217;t leak security information or badly impact on execution environment. If it seems hard to achieve, agent needs another mechanism to isolate execution environment.</p>
+</div>
+<div class="section" id="extension-mechanisms">
+<span id="extension-mechanisms"></span><h2>Extension mechanisms<a class="headerlink" href="#extension-mechanisms" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="extension">
+<span id="extension"></span><h3>Extension<a class="headerlink" href="#extension" title="Permalink to this headline">¶</a></h3>
+<p>Extension (<code class="docutils literal"><span class="pre">io.digdag.spi.Extension</span></code>) is an interface to statically customize digdag using dependency injection (Guice). This is useful to override some built-in behavior, add built-in operators, or override default parameters.</p>
+<p>Extension needs least code to make some extension possible. But it&#8217;s the hardest to use because users need to write program to use.</p>
+<p>A typical use case is for system integrators to customize digdag for their internal use.</p>
+<p>Many of customization points in digdag are assuming Extension to override (e.g. <code class="docutils literal"><span class="pre">io.digdag.server.Authenticator</span></code>) because it needs less code. But for ease of use, they should also accept system plugins, eventually.</p>
+</div>
+<div class="section" id="system-plugins">
+<span id="system-plugins"></span><h3>System plugins<a class="headerlink" href="#system-plugins" title="Permalink to this headline">¶</a></h3>
+<p>System plugins are plugins loaded when digdag starts. System plugins are loaded using an isolated class loader but they share the same Guice instance with digdag core. Thus system plugins can get any internal resources as long as an instance is available through <code class="docutils literal"><span class="pre">io.digdag.spi</span></code> interface.</p>
+<p>System plugins are used to customize global behavior of digdag. Adding a scheduler is one of intended use cases (although this is not implemented yet).</p>
+<p>A system plugin is instantiated once when digdag starts.</p>
+<p>Plugin loader can fetch files from remote maven repositories. Thus, plugins will be released as a jar file with a pom file on a maven repository.</p>
+<p>All dynamic plugins can be loaded as system plugins. But system plugins can&#8217;t be loaded as dynamic plugins.</p>
+</div>
+<div class="section" id="dynamic-plugins">
+<span id="dynamic-plugins"></span><h3>Dynamic plugins<a class="headerlink" href="#dynamic-plugins" title="Permalink to this headline">¶</a></h3>
+<p>Dynamic plugins are plugins loaded when a task runs. Dynamic plugins are loaded using an isolated class loader and isolated Guice instance. Dynamic plugins can access to only subset of internal resources. For example, dynamic plugin loader of operators allows access to CommandExecutor and TemplateEngine.</p>
+<p>An intended use case is loading operators.</p>
+<p>A dynamic plugin may be instantiated multiple times depending on cache size of DynamicPluginLoader.</p>
+</div>
+</div>
+<div class="section" id="next-steps">
+<span id="next-steps"></span><h2>Next steps<a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="command_reference.html">Command reference</a></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="releases.html" class="btn btn-neutral float-right" title="Release Notes" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="ruby_api.html" class="btn btn-neutral" title="Language API - Ruby" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, 2016, Digdag Project.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
