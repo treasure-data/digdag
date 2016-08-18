@@ -5,11 +5,19 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.spi.InjectionListener;
+import com.google.inject.spi.TypeEncounter;
+import com.google.inject.spi.TypeListener;
+import com.google.inject.matcher.AbstractMatcher;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.Version;
@@ -24,7 +32,7 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
@@ -32,6 +40,10 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.StreamConnection;
@@ -48,6 +60,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -62,10 +75,12 @@ public class ServerBootstrap
     public static final String CONFIG_INIT_PARAMETER_KEY = "io.digdag.cli.server.config";
     public static final String VERSION_INIT_PARAMETER_KEY = "io.digdag.cli.server.version";
 
+    private ServerControl control;
+
     @Inject
     public ServerBootstrap(GuiceRsServerControl control)
     {
-        this.control = control;
+        this.control = (ServerControl) control;
     }
 
     @Override
@@ -87,7 +102,7 @@ public class ServerBootstrap
         // GuiceRsServletContainerInitializer closes Digdag (through Injector implementing AutoCloseable)
         // when servlet context is destroyed.
         DigdagEmbed digdag = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig, version)
-            .initialize();
+            .initializeWithoutShutdownHook();
 
         Injector injector = digdag.getInjector();
 
@@ -124,7 +139,11 @@ public class ServerBootstrap
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
-            .addModules(new JmxModule(), new ServerModule());
+            .addModules(
+                    new EagerShutdownModule(control),
+                    new JmxModule(),
+                    new ServerModule()
+            );
     }
 
     private static final InheritableThreadLocal<GuiceRsServerControl> servletServerControl = new InheritableThreadLocal<>();
@@ -132,13 +151,34 @@ public class ServerBootstrap
     private static class ServerControl
             implements GuiceRsServerControl
     {
-        private final DeploymentManager manager;
+        private final DeploymentManager deployment;
         private Undertow server;
+        private XnioWorker worker;
+        private List<GracefulShutdownHandler> handlers;
+        private List<BackgroundExecutor> eagerShutdownExecutors;
 
-        public ServerControl(DeploymentManager manager)
+        public ServerControl(DeploymentManager deployment)
         {
-            this.manager = manager;
+            this.deployment = deployment;
             this.server = null;
+            this.worker = null;
+            this.handlers = Collections.synchronizedList(new ArrayList<>());
+            this.eagerShutdownExecutors = Collections.synchronizedList(new ArrayList<>());
+        }
+
+        void addEagerShutdown(BackgroundExecutor executor)
+        {
+            eagerShutdownExecutors.add(executor);
+        }
+
+        void workerInitialized(XnioWorker worker)
+        {
+            this.worker = worker;
+        }
+
+        void addHandler(GracefulShutdownHandler handler)
+        {
+            handlers.add(handler);
         }
 
         void serverInitialized(Undertow server)
@@ -149,18 +189,100 @@ public class ServerBootstrap
         @Override
         public void stop()
         {
-            if (server == null) {
-                // server is not even initialized yet
+            // stops background execution threads that may take time first
+            // so that HTTP requests work during waiting for background tasks.
+            for (BackgroundExecutor executor : eagerShutdownExecutors) {
+                try {
+                    executor.eagerShutdown();
+                }
+                catch (Exception ex) {
+                    // nothing we can do here excepting force killing this process
+                    throw Throwables.propagate(ex);
+                }
             }
-            else {
+
+            // closes HTTP listening channels
+            logger.info("Closing HTTP listening sockets");
+            if (server != null) {
                 server.stop();
+            }
+
+            // HTTP handlers will return 503 Service Unavailable for new requests
+            for (GracefulShutdownHandler handler : handlers) {
+                handler.shutdown();
+            }
+
+            // waits for completion of currently handling requests upto 30 seconds
+            logger.info("Waiting for completion of running HTTP requests...");
+            for (GracefulShutdownHandler handler : handlers) {
+                try {
+                    handler.awaitShutdown(30 * 1000);
+                }
+                catch (InterruptedException ex) {
+                    logger.info("Interrupted. Force shutting down running requests");
+                }
+            }
+
+            // kills all processing threads. These threads should be already
+            // idling because there're no currently handling requests.
+            logger.info("Shutting down HTTP worker threads");
+            if (worker != null) {
+                worker.shutdownNow();
             }
         }
 
         @Override
         public void destroy()
         {
-            manager.undeploy();
+            logger.info("Shutting down system");
+            try {
+                // calls Servlet.destroy that is GuiceRsApplicationServlet.destroy defined at
+                // RESTEasy HttpServlet30Dispatcher class
+                deployment.stop();
+            }
+            catch (ServletException ex) {
+                throw Throwables.propagate(ex);
+            }
+            finally {
+                // calls ServletContextListener.contextDestroyed that calls @PreDestroy hooks
+                // through GuiceRsServletContainerInitializer.CloseableInjectorDestroyListener listener
+                deployment.undeploy();
+            }
+        }
+    }
+
+    private static class EagerShutdownModule
+            implements Module
+    {
+        private final ServerControl control;
+
+        public EagerShutdownModule(ServerControl control)
+        {
+            this.control = control;
+        }
+
+        public void configure(Binder binder)
+        {
+            binder.bindListener(
+                    new AbstractMatcher<TypeLiteral<?>>() {
+                        @Override
+                        public boolean matches(TypeLiteral<?> type) {
+                            return BackgroundExecutor.class.isAssignableFrom(type.getRawType());
+                        }
+                    },
+                    new TypeListener() {
+                        @Override
+                        @SuppressWarnings("unchecked")
+                        public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
+                            ((TypeEncounter<BackgroundExecutor>) encounter).register(new InjectionListener<BackgroundExecutor>() {
+                                @Override
+                                public void afterInjection(BackgroundExecutor injectee)
+                                {
+                                    control.addEagerShutdown(injectee);
+                                }
+                            });
+                        }
+                    });
         }
     }
 
@@ -174,14 +296,18 @@ public class ServerBootstrap
         }
     }
 
-    private GuiceRsServerControl control;
-
     public static void startServer(Version version, Properties props, Class<? extends ServerBootstrap> bootstrapClass)
         throws ServletException
     {
         ConfigElement ce = PropertyUtils.toConfigElement(props);
         ServerConfig config = ServerConfig.convertFrom(ce);
-        startServer(version, config, bootstrapClass);
+
+        GuiceRsServerControl control = startServer(version, config, bootstrapClass);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            control.stop();
+            control.destroy();
+        }, "shutdown"));
     }
 
     public static GuiceRsServerControl startServer(Version version, ServerConfig config, Class<? extends ServerBootstrap> bootstrapClass)
@@ -200,32 +326,56 @@ public class ServerBootstrap
             .addInitParameter(VERSION_INIT_PARAMETER_KEY, version.toString())
             ;
 
-        DeploymentManager manager = Servlets.defaultContainer()
+        DeploymentManager deployment = Servlets.defaultContainer()
             .addDeployment(servletBuilder);
 
-        ServerControl control = new ServerControl(manager);
+        ServerControl control = new ServerControl(deployment);
         servletServerControl.set(control);
 
-        manager.deploy();  // ServerBootstrap.initialize runs here
+        deployment.deploy();  // ServerBootstrap.initialize runs here
 
-        PathHandler path = Handlers.path(Handlers.redirect("/"))
-            .addPrefixPath("/", manager.start());
+        GracefulShutdownHandler httpHandler;
+        {
+            HttpHandler handler = Handlers.path(Handlers.redirect("/"))
+                .addPrefixPath("/", deployment.start());
 
-        HttpHandler handler;
-        if (config.getAccessLogPath().isPresent()) {
-            handler = buildAccessLogHandler(config, path);
+            if (config.getAccessLogPath().isPresent()) {
+                handler = buildAccessLogHandler(config, handler);
+            }
+
+            httpHandler = Handlers.gracefulShutdown(handler);
         }
-        else {
-            handler = path;
+        control.addHandler(httpHandler);
+
+        XnioWorker worker;
+        try {
+            // copied defaults from Undertow
+            int httpIoThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+            int httpWorkerThreads = httpIoThreads * 8;
+
+            worker = Xnio.getInstance(Undertow.class.getClassLoader())
+                .createWorker(OptionMap.builder()
+                        .set(Options.WORKER_IO_THREADS, httpIoThreads)
+                        .set(Options.CONNECTION_HIGH_WATER, 1000000)
+                        .set(Options.CONNECTION_LOW_WATER, 1000000)
+                        .set(Options.WORKER_TASK_CORE_THREADS, httpWorkerThreads)
+                        .set(Options.WORKER_TASK_MAX_THREADS, httpWorkerThreads)
+                        .set(Options.TCP_NODELAY, true)
+                        .set(Options.CORK, true)
+                        .getMap());
         }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
+        control.workerInitialized(worker);
 
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
         Undertow server = Undertow.builder()
             .addHttpListener(config.getPort(), config.getBind())
-            .setHandler(handler)
+            .setHandler(httpHandler)
+            .setWorker(worker)
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
             .build();
-
         control.serverInitialized(server);
 
         server.start();  // HTTP server starts here

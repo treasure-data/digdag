@@ -1,6 +1,7 @@
 package io.digdag.core.session;
 
 import java.time.Instant;
+import javax.annotation.PostConstruct;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ScheduledExecutorService;
@@ -11,6 +12,7 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.workflow.TaskControl;
 import io.digdag.core.workflow.Tasks;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -18,13 +20,14 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.client.config.ConfigFactory;
 
 public class SessionMonitorExecutor
+        implements BackgroundExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(SessionMonitorExecutor.class);
 
     private final ConfigFactory cf;
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
-    private final ScheduledExecutorService executor;
+    private ScheduledExecutorService executor;
 
     @Inject
     public SessionMonitorExecutor(
@@ -32,29 +35,41 @@ public class SessionMonitorExecutor
             SessionStoreManager sm,
             WorkflowExecutor exec)
     {
-        this.executor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("session-monitor-scheduler-%d")
-                .build()
-                );
         this.cf = cf;
         this.sm = sm;
         this.exec = exec;
     }
 
-    @PreDestroy
-    public void shutdown()
+    @PostConstruct
+    public synchronized void start()
     {
-        executor.shutdown();
-        // TODO wait for shutdown completion?
-    }
-
-    public void start()
-    {
-        // TODO sleep interval
+        if (executor == null) {
+            executor = Executors.newSingleThreadScheduledExecutor(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("session-monitor-scheduler-%d")
+                    .build()
+                    );
+        }
+        // TODO make interval configurable?
         executor.scheduleWithFixedDelay(() -> run(),
                 1, 1, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public synchronized void shutdown()
+    {
+        if (executor != null) {
+            executor.shutdown();
+            // TODO wait for shutdown completion?
+            executor = null;
+        }
+    }
+
+    @Override
+    public void eagerShutdown()
+    {
+        shutdown();
     }
 
     public void run()

@@ -5,6 +5,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.TaskRequest;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ public class MultiThreadAgent
     private final TaskServerApi taskServer;
     private final OperatorManager runner;
     private final ThreadPoolExecutor executor;
+    private final Object newTaskLock = new Object();
     private volatile boolean stop = false;
 
     public MultiThreadAgent(AgentConfig config, AgentId agentId,
@@ -41,11 +44,32 @@ public class MultiThreadAgent
         }
     }
 
-    public void shutdown()
+    public void shutdown(Optional<Duration> maximumCompletionWait)
+        throws InterruptedException
     {
         stop = true;
         taskServer.interruptLocalWait();
-        executor.shutdown();
+        int activeCount;
+        synchronized (newTaskLock) {
+            // synchronize newTaskLock not to reject task execution after acquiring them from taskServer
+            executor.shutdown();
+            activeCount = executor.getActiveCount();
+            newTaskLock.notifyAll();
+        }
+        if (activeCount > 0) {
+            logger.info("Waiting for completion of {} running tasks...", activeCount);
+        }
+        if (maximumCompletionWait.isPresent()) {
+            long seconds = maximumCompletionWait.get().getSeconds();
+            if (!executor.awaitTermination(seconds, TimeUnit.SECONDS)) {
+                logger.warn("Some tasks didn't finish within maximum wait time ({} seconds)", seconds);
+            }
+        }
+        else {
+            // no maximum wait time. waits for ever
+            while (!executor.awaitTermination(24, TimeUnit.HOURS))
+                ;
+        }
     }
 
     @Override
@@ -53,22 +77,28 @@ public class MultiThreadAgent
     {
         while (!stop) {
             try {
-                int max = Math.min(executor.getMaximumPoolSize() - executor.getActiveCount(), 10);
-                if (max > 0) {
-                    List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(max, agentId, config.getLockRetentionTime(), 1000);
-                    for (TaskRequest req : reqs) {
-                        executor.submit(() -> {
-                            try {
-                                runner.run(req);
-                            }
-                            catch (Throwable t) {
-                                logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
-                            }
-                        });
+                synchronized (newTaskLock) {
+                    if (executor.isShutdown()) {
+                        break;
                     }
-                }
-                else {
-                    Thread.sleep(500);
+                    int max = Math.min(executor.getMaximumPoolSize() - executor.getActiveCount(), 10);
+                    if (max > 0) {
+                        List<TaskRequest> reqs = taskServer.lockSharedAgentTasks(max, agentId, config.getLockRetentionTime(), 1000);
+                        for (TaskRequest req : reqs) {
+                            executor.submit(() -> {
+                                try {
+                                    runner.run(req);
+                                }
+                                catch (Throwable t) {
+                                    logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
+                                }
+                            });
+                        }
+                    }
+                    else {
+                        // no executor thread is available. sleep for a while until a task execution finishes
+                        newTaskLock.wait(500);
+                    }
                 }
             }
             catch (Throwable t) {
