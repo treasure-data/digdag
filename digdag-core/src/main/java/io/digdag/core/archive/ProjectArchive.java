@@ -9,6 +9,7 @@ import org.immutables.value.Value;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import static java.util.Locale.ENGLISH;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProjectArchive
 {
@@ -16,7 +17,7 @@ public class ProjectArchive
 
     public interface PathConsumer
     {
-        public void accept(String resourceName, Path path) throws IOException;
+        public void accept(String resourceName, Path absolutePath) throws IOException;
     }
 
     private final Path projectPath;
@@ -24,6 +25,7 @@ public class ProjectArchive
 
     ProjectArchive(Path projectPath, ArchiveMetadata metadata)
     {
+        checkArgument(projectPath.isAbsolute(), "project path must be absolute: %s", projectPath);
         this.projectPath = projectPath;
         this.metadata = metadata;
     }
@@ -51,6 +53,9 @@ public class ProjectArchive
 
     static String realPathToResourceName(Path projectPath, Path realPath)
     {
+        checkArgument(projectPath.isAbsolute(), "project path must be absolute: %s", projectPath);
+        checkArgument(realPath.isAbsolute(), "real path must be absolute: %s", realPath);
+
         if (!realPath.startsWith(projectPath)) {
             throw new IllegalArgumentException(String.format(ENGLISH,
                         "Given path '%s' is outside of project directory '%s'",
