@@ -1,6 +1,5 @@
 package utils;
 
-import com.amazonaws.util.StringInputStream;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +52,6 @@ import static io.digdag.core.Version.buildVersion;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -110,7 +108,8 @@ public class TestUtils
         return main(localVersion, asList(args));
     }
 
-    public static CommandStatus main(Version localVersion, Collection<String> args) {
+    public static CommandStatus main(Version localVersion, Collection<String> args)
+    {
         InputStream in = new ByteArrayInputStream(new byte[0]);
         return main(localVersion, in, args);
     }
@@ -145,7 +144,8 @@ public class TestUtils
         if (Files.isDirectory(dest)) {
             Path name = Paths.get(resource).getFileName();
             copyResource(resource, dest.resolve(name));
-        } else {
+        }
+        else {
             try (InputStream input = Resources.getResource(resource).openStream()) {
                 Files.copy(input, dest, REPLACE_EXISTING);
             }
@@ -268,7 +268,14 @@ public class TestUtils
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
-            return attemptsStatus.outUtf8().contains("status: error");
+            String output = attemptsStatus.outUtf8();
+            if (output.contains("status: error")) {
+                return true;
+            }
+            if (!output.contains("status: running")) {
+                fail();
+            }
+            return false;
         };
     }
 
@@ -276,16 +283,24 @@ public class TestUtils
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
-            return attemptsStatus.outUtf8().contains("status: success");
+
+            String output = attemptsStatus.outUtf8();
+            if (output.contains("status: success")) {
+                return true;
+            }
+            if (!output.contains("status: running")) {
+                fail();
+            }
+            return false;
         };
     }
 
     public static CommandStatus attempts(String endpoint, long attemptId)
     {
         return main("attempts",
-                        "-c", "/dev/null",
-                        "-e", endpoint,
-                        String.valueOf(attemptId));
+                "-c", "/dev/null",
+                "-e", endpoint,
+                String.valueOf(attemptId));
     }
 
     public static void createProject(Path project)
@@ -316,10 +331,10 @@ public class TestUtils
     public static long startWorkflow(String endpoint, String projectName, String workflow, Map<String, String> params)
     {
         List<String> startCommand = new ArrayList<>(asList("start",
-            "-c", "/dev/null",
-            "-e", endpoint,
-            projectName, workflow,
-            "--session", "now"));
+                "-c", "/dev/null",
+                "-e", endpoint,
+                projectName, workflow,
+                "--session", "now"));
 
         params.forEach((k, v) -> startCommand.addAll(asList("-p", k + "=" + v)));
 
@@ -330,7 +345,8 @@ public class TestUtils
         return getAttemptId(startStatus);
     }
 
-    public static int pushProject(String endpoint, Path project) {
+    public static int pushProject(String endpoint, Path project)
+    {
         String projectName = project.getFileName().toString();
         return pushProject(endpoint, project, projectName);
     }
