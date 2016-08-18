@@ -11,10 +11,14 @@ import io.digdag.core.agent.AgentId;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.TaskQueueDispatcher;
+import org.weakref.jmx.Managed;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class QueueTaskQueueDispatcher
         implements TaskQueueDispatcher
 {
+    private final AtomicLong enqueueCount = new AtomicLong(0L);
+
     private final QueueSettingStoreManager queueManager;
     private final TaskQueueServer taskQueueServer;
 
@@ -27,10 +31,18 @@ public class QueueTaskQueueDispatcher
         this.taskQueueServer = queueServerManager.getTaskQueueServer();
     }
 
+    @Managed
+    public long getEnqueueCount()
+    {
+        return enqueueCount.get();
+    }
+
     @Override
     public void dispatch(int siteId, Optional<String> queueName, TaskQueueRequest request)
         throws ResourceNotFoundException, TaskConflictException
     {
+        enqueueCount.incrementAndGet();
+
         if (queueName.isPresent()) {
             int queueId = queueManager.getQueueIdByName(siteId, queueName.get());
             taskQueueServer.enqueueQueueBoundTask(queueId, request);

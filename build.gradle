@@ -214,6 +214,9 @@ project(':digdag-cli') {
             // undertow is using ServiceLoader to find ExchangeAttributeBuilder
             // which is used by access logger.
         }
+        // force org.weakref.jmx to use unshaded guava to keep binary size small
+        exclude 'org/weakref/jmx/internal/guava/**/*'
+        relocate 'org.weakref.jmx.internal.guava', 'com.google.common'
     }
 
     task classpath(type: Copy, dependsOn: ['jar']) {

@@ -124,7 +124,7 @@ public class ServerBootstrap
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
-            .addModules(new ServerModule());
+            .addModules(new JmxModule(), new ServerModule());
     }
 
     private static final InheritableThreadLocal<GuiceRsServerControl> servletServerControl = new InheritableThreadLocal<>();

@@ -33,6 +33,8 @@ public interface ServerConfig
 
     public Optional<String> getAccessLogPath();
 
+    public Optional<Integer> getJmxPort();
+
     public String getAccessLogPattern();
 
     public boolean getExecutorEnabled();
@@ -70,6 +72,7 @@ public interface ServerConfig
             .serverRuntimeInfoPath(config.getOptional("server.runtime-info.path", String.class))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
+            .jmxPort(config.getOptional("server.jmx.port", Integer.class))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
             .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
