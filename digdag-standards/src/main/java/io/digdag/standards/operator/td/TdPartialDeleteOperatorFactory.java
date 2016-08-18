@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
@@ -12,15 +13,19 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public class TdPartialDeleteOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdPartialDeleteOperatorFactory.class);
+    private final Map<String, String> env;
 
     @Inject
-    public TdPartialDeleteOperatorFactory()
-    { }
+    public TdPartialDeleteOperatorFactory(@Environment Map<String, String> env)
+    {
+        this.env = env;
+    }
 
     public String getType()
     {
@@ -43,7 +48,7 @@ public class TdPartialDeleteOperatorFactory
 
         private TdPartialDeleteOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

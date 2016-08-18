@@ -19,7 +19,6 @@ public class Secrets
     static Collection<String> secretsServerConfiguration()
     {
         return ImmutableList.of(
-                "secrets.td.apikey = " + TD_API_KEY,
                 "digdag.secret-encryption-key = " + ENCRYPTION_KEY,
                 "secret-access-policy.operators.td.secrets = [\"td.*\"]",
                 "secret-access-policy.operators.td_ddl.secrets = [\"td.*\"]",

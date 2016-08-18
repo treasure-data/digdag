@@ -270,7 +270,7 @@ public class Config
     @SuppressWarnings("unchecked")
     public <E> E get(String key, TypeReference<E> type, E defaultValue)
     {
-        return (E) get(key, mapper.getTypeFactory().constructType(type));
+        return (E) get(key, mapper.getTypeFactory().constructType(type), defaultValue);
     }
 
     @SuppressWarnings("unchecked")

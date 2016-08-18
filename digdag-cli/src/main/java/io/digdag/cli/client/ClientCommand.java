@@ -2,6 +2,8 @@ package io.digdag.cli.client;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
+import com.treasuredata.client.ProxyConfig;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
@@ -9,6 +11,7 @@ import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
 
+import io.digdag.standards.Proxies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,24 +20,12 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
-import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
         extends Command
@@ -54,9 +45,12 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-version-check"})
     protected boolean disableVersionCheck;
 
-    public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
+    @Parameter(names = {"--disable-cert-validation"})
+    protected boolean disableCertValidation;
+
+    public ClientCommand(Version localVersion, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
         this.localVersion = Objects.requireNonNull(localVersion, "localVersion");
     }
 
@@ -134,7 +128,8 @@ public abstract class ClientCommand
         }
         else {
             host = fragments[0];
-            port = Integer.parseInt(fragments[1]);
+            String portString = fragments[1].split("/", 2)[0];
+            port = Integer.parseInt(portString);
         }
 
         Map<String, String> headers = new HashMap<>();
@@ -145,14 +140,31 @@ public abstract class ClientCommand
         }
         headers.putAll(this.httpHeaders);
 
-        logger.debug("Using endpoint {}://{}:{}", useSsl ? "https" : "http", host, port);
+        String scheme = useSsl ? "https" : "http";
+        logger.debug("Using endpoint {}://{}:{}", scheme, host, port);
 
-        DigdagClient client = DigdagClient.builder()
+        DigdagClient.Builder builder = DigdagClient.builder()
                 .host(host)
                 .port(port)
                 .ssl(useSsl)
-                .headers(headers)
-                .build();
+                .headers(headers);
+
+        if (disableCertValidation) {
+            builder.disableCertValidation(true);
+        }
+
+        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, env);
+        if (proxyConfig.isPresent()) {
+            ProxyConfig cfg = proxyConfig.get();
+            if (cfg.getUser().isPresent() || cfg.getPassword().isPresent()) {
+                logger.warn("HTTP proxy authentication not supported. Ignoring proxy username and password.");
+            }
+            builder.proxyHost(cfg.getHost());
+            builder.proxyPort(cfg.getPort());
+            builder.proxyScheme(cfg.useSSL() ? "https" : "http");
+        }
+
+        DigdagClient client = builder.build();
 
         if (checkServerVersion && !disableVersionCheck) {
             Map<String, Object> remoteVersions = client.getVersion();
@@ -174,7 +186,7 @@ public abstract class ClientCommand
     public void showCommonOptions()
     {
         err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
     }
 
     protected long parseLongOrUsage(String arg)

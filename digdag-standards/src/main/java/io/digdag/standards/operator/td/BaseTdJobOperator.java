@@ -10,6 +10,7 @@ import io.digdag.util.BaseOperator;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 abstract class BaseTdJobOperator
         extends BaseOperator
@@ -18,8 +19,9 @@ abstract class BaseTdJobOperator
 
     protected final Config state;
     protected final Config params;
+    private final Map<String, String> env;
 
-    BaseTdJobOperator(Path workspacePath, TaskRequest request)
+    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env)
     {
         super(workspacePath, request);
 
@@ -27,6 +29,7 @@ abstract class BaseTdJobOperator
                 request.getConfig().getNestedOrGetEmpty("td"));
 
         this.state = request.getLastStateParams().deepCopy();
+        this.env = env;
     }
 
     @Override
@@ -38,7 +41,7 @@ abstract class BaseTdJobOperator
     @Override
     public final TaskResult runTask(TaskExecutionContext ctx)
     {
-        try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
+        try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
             Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;

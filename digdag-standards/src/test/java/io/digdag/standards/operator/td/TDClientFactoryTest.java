@@ -9,15 +9,19 @@ import com.treasuredata.client.TDClientConfig;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.SecretProvider;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class TDClientFactoryTest
 {
+    private static final SecretProvider EMPTY_SECRETS = key -> Optional.absent();
+
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new GuavaModule())
             .registerModule(new JacksonTimeModule());
@@ -42,7 +46,22 @@ public class TDClientFactoryTest
                                 .set("use_ssl", true));
 
         TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(
-                config, key -> Optional.fromNullable(ImmutableMap.of("apikey", "foobar").get(key)));
+                ImmutableMap.of(), config, key -> Optional.fromNullable(ImmutableMap.of("apikey", "foobar").get(key)));
+        TDClientConfig clientConfig = builder.buildConfig();
+
+        assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));
+        assertThat(clientConfig.proxy.get().getPassword(), is(Optional.of("'(#%")));
+        assertThat(clientConfig.proxy.get().getUri(), is(URI.create("https://example.com:9119")));
+    }
+
+    @Test
+    public void testProxyConfigFromEnv()
+    {
+        Map<String, String> env = ImmutableMap.of("http_proxy", "https://me:%27(%23%25@example.com:9119");
+        Config config = newConfig()
+                .set("apikey", "foobar");
+
+        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(env, config, EMPTY_SECRETS);
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));

@@ -11,6 +11,7 @@ import io.digdag.core.Version;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -20,9 +21,9 @@ public class ShowAttempts
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    public ShowAttempts(Version version, PrintStream out, PrintStream err)
+    public ShowAttempts(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override

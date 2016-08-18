@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.UUID;
 
 import com.beust.jcommander.Parameter;
@@ -20,9 +21,9 @@ public class Upload
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Upload(Version version, PrintStream out, PrintStream err)
+    public Upload(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override

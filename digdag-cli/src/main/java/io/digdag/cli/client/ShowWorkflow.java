@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.NotFoundException;
 import io.digdag.cli.SystemExitException;
@@ -15,9 +16,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
-    public ShowWorkflow(Version version, PrintStream out, PrintStream err)
+    public ShowWorkflow(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override

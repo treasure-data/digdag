@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.util.Map;
+
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.inject.Guice;
@@ -54,6 +56,7 @@ public class DigdagEmbed
         private boolean withScheduleExecutor = true;
         private boolean withLocalAgent = true;
         private boolean withExtensionLoader = true;
+        private Map<String, String> environment = ImmutableMap.of();
 
         public Bootstrap addModules(Module... additionalModules)
         {
@@ -80,6 +83,12 @@ public class DigdagEmbed
         public Bootstrap overrideModulesWith(Iterable<? extends Module> overridingModules)
         {
             return overrideModules(modules -> ImmutableList.of(Modules.override(modules).with(overridingModules)));
+        }
+
+        public Bootstrap setEnvironment(Map<String, String> environment)
+        {
+            this.environment = environment;
+            return this;
         }
 
         public Bootstrap setSystemConfig(ConfigElement systemConfig)
@@ -164,6 +173,7 @@ public class DigdagEmbed
                     new QueueModule(),
                     new NotificationModule(),
                     new StorageModule(),
+                    new EnvironmentModule(environment),
                     (binder) -> {
                         binder.bind(ProjectArchiveLoader.class);
                         binder.bind(ConfigElement.class).toInstance(systemConfig);

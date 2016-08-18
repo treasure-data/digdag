@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 
+import io.digdag.client.DigdagClient;
 import io.digdag.core.LocalSecretAccessPolicy;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.spi.SecretAccessPolicy;
@@ -138,9 +139,9 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(PrintStream out, PrintStream err)
+    public Run(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -198,7 +199,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 
@@ -220,6 +221,7 @@ public class Run
         Properties systemProps = loadSystemProperties();
 
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .setEnvironment(env)
                 .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
                 .setSystemPlugins(loadSystemPlugins(systemProps))
                 .addModules(binder -> {

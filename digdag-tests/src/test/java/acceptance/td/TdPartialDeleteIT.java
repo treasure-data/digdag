@@ -14,8 +14,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.CommandStatus;
 import utils.TestUtils;
 
@@ -29,11 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.HOURS;
 import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;

@@ -44,9 +44,9 @@ public class Secrets
 
     private final InputStream in;
 
-    public Secrets(Version version, PrintStream out, PrintStream err, InputStream in)
+    public Secrets(Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
     {
-        super(version, out, err);
+        super(version, env, out, err);
         this.in = in;
     }
 

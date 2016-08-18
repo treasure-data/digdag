@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
@@ -10,6 +11,7 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +33,9 @@ import static org.mockito.Mockito.when;
 public class TDOperatorTest
 {
     // TODO: update these tests to use secrets
+
+    private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.of();
+    private static final SecretProvider EMPTY_SECRETS = key -> Optional.absent();
 
     @Rule public final ExpectedException exception = ExpectedException.none();
 
@@ -57,7 +62,7 @@ public class TDOperatorTest
                 .set("apikey", "foobar");
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(config);
+        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
     }
 
     @Test
@@ -69,7 +74,7 @@ public class TDOperatorTest
                 .set("apikey", "foobar");
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(config);
+        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
     }
 
     @Test
@@ -81,7 +86,7 @@ public class TDOperatorTest
                 .set("apikey", "");
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(config);
+        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
     }
 
     @Test
@@ -93,7 +98,7 @@ public class TDOperatorTest
                 .set("apikey", " \n\t");
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(config);
+        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
     }
 
     @Test
@@ -103,7 +108,7 @@ public class TDOperatorTest
         Config config = newConfig()
                 .set("database", "foobar")
                 .set("apikey", "quux");
-        TDOperator.fromConfig(config);
+        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
     }
 
     @Test
