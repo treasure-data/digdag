@@ -185,13 +185,13 @@ public class InitPushStartIT
 
             // By session id
             {
-                CommandStatus status = main("sessions",
+                CommandStatus status = main("session",
+                        "--json",
                         "-c", config.toString(),
                         "-e", server.endpoint(),
                         String.valueOf(sessionId));
                 assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                assertThat(status.outJson(RestSession.class), is(session));
             }
         }
 

@@ -3,7 +3,8 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import io.digdag.cli.CollectionPrinter;
+import io.digdag.cli.EntityCollectionPrinter;
+import io.digdag.cli.EntityPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -11,6 +12,7 @@ import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 import io.digdag.core.Version;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
@@ -98,14 +100,14 @@ public class ShowSession
             }
         }
 
-        CollectionPrinter<RestSession> printer = new CollectionPrinter<>();
-        printer.column("SESSION ID", s -> Long.toString(s.getId()));
-        printer.column("PROJECT", s -> s.getProject().getName());
-        printer.column("WORKFLOW", s -> s.getWorkflow().getName());
-        printer.column("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
-        printer.column("LAST ATTEMPTED", s -> s.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
-        printer.column("KILLED", s -> s.getLastAttempt().transform(a -> a.getCancelRequested()).or(false).toString());
-        printer.column("STATUS", s -> status(s).toUpperCase());
+        EntityCollectionPrinter<RestSession> printer = new EntityCollectionPrinter<>();
+        printer.field("SESSION ID", s -> Long.toString(s.getId()));
+        printer.field("PROJECT", s -> s.getProject().getName());
+        printer.field("WORKFLOW", s -> s.getWorkflow().getName());
+        printer.field("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
+        printer.field("LAST ATTEMPTED", s -> s.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
+        printer.field("KILLED", s -> s.getLastAttempt().transform(a -> a.getCancelRequested()).or(false).toString());
+        printer.field("STATUS", s -> status(s).toUpperCase());
 
         printer.print(format, Lists.reverse(sessions), out);
 
@@ -118,19 +120,23 @@ public class ShowSession
     }
 
     private void printSession(RestSession session)
+            throws IOException
     {
-        ln("session id: %d", session.getId());
-        ln("attempt id: %s", session.getLastAttempt().transform(a -> String.valueOf(a.getId())).or(""));
-        ln("uuid: %s", session.getSessionUuid());
-        ln("project: %s", session.getProject().getName());
-        ln("workflow: %s", session.getWorkflow().getName());
-        ln("session time: %s", TimeUtil.formatTime(session.getSessionTime()));
-        ln("retry attempt name: %s", session.getLastAttempt().transform(a -> a.getRetryAttemptName().or("")).or(""));
-        ln("params: %s", session.getLastAttempt().transform(a -> a.getParams().toString()).or(""));
-        ln("created at: %s", session.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
-        ln("kill requested: %s", session.getLastAttempt().transform(a -> a.getCancelRequested()).or(false));
-        ln("status: %s", status(session));
-        ln("");
+        EntityPrinter<RestSession> printer = new EntityPrinter<>();
+
+        printer.field("session id", s -> Long.toString(s.getId()));
+        printer.field("attempt id", s -> s.getLastAttempt().transform(a -> Long.toString(a.getId())).or(""));
+        printer.field("uuid", s -> s.getSessionUuid().toString());
+        printer.field("project", s -> s.getProject().getName());
+        printer.field("workflow", s -> s.getWorkflow().getName());
+        printer.field("session time", s -> TimeUtil.formatTime(s.getSessionTime()));
+        printer.field("retry attempt name", s -> s.getLastAttempt().transform(a -> a.getRetryAttemptName().or("")).or(""));
+        printer.field("params", s -> s.getLastAttempt().transform(a -> a.getParams().toString()).or(""));
+        printer.field("created at", s -> s.getLastAttempt().transform(a -> TimeUtil.formatTime(a.getCreatedAt())).or(""));
+        printer.field("kill requested", s -> Boolean.toString(s.getLastAttempt().transform(a -> a.getCancelRequested()).or(false)));
+        printer.field("status", this::status);
+
+        printer.print(format, session, out);
     }
 
     private String status(RestSession session)

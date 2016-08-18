@@ -1,6 +1,6 @@
 package io.digdag.cli.client;
 
-import io.digdag.cli.CollectionPrinter;
+import io.digdag.cli.EntityCollectionPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -55,11 +55,11 @@ public class ShowWorkflow
     {
         DigdagClient client = buildClient();
 
-        CollectionPrinter<RestWorkflowDefinition> formatter = new CollectionPrinter<>();
-        formatter.column("PROJECT", wf -> wf.getProject().getName());
-        formatter.column("PROJECT ID", wf -> Integer.toString(wf.getProject().getId()));
-        formatter.column("WORKFLOW", wf -> wf.getName());
-        formatter.column("REVISION", wf -> wf.getRevision());
+        EntityCollectionPrinter<RestWorkflowDefinition> formatter = new EntityCollectionPrinter<>();
+        formatter.field("PROJECT", wf -> wf.getProject().getName());
+        formatter.field("PROJECT ID", wf -> Integer.toString(wf.getProject().getId()));
+        formatter.field("WORKFLOW", wf -> wf.getName());
+        formatter.field("REVISION", wf -> wf.getRevision());
 
         List<RestWorkflowDefinition> defs;
         if (projName != null) {

@@ -3,7 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import io.digdag.cli.CollectionPrinter;
+import io.digdag.cli.EntityCollectionPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -65,17 +65,17 @@ public class ShowAttempts
         DigdagClient client = buildClient();
         List<RestSessionAttempt> attempts;
 
-        CollectionPrinter<RestSessionAttempt> printer = new CollectionPrinter<>();
+        EntityCollectionPrinter<RestSessionAttempt> printer = new EntityCollectionPrinter<>();
 
-        printer.column("SESSION ID", s -> Long.toString(s.getId()));
-        printer.column("ATTEMPT ID", sa -> Integer.toString(sa.getProject().getId()));
-        printer.column("PROJECT", s -> s.getProject().getName());
-        printer.column("WORKFLOW", s -> s.getWorkflow().getName());
-        printer.column("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
-        printer.column("CREATED", a -> TimeUtil.formatTime(a.getCreatedAt()));
-        printer.column("KILLED", a -> Boolean.toString(a.getCancelRequested()));
-        printer.column("STATUS", s -> status(s).toUpperCase());
-        printer.column("RETRY NAME", sa -> sa.getRetryAttemptName().or(""));
+        printer.field("SESSION ID", s -> Long.toString(s.getId()));
+        printer.field("ATTEMPT ID", sa -> Integer.toString(sa.getProject().getId()));
+        printer.field("PROJECT", s -> s.getProject().getName());
+        printer.field("WORKFLOW", s -> s.getWorkflow().getName());
+        printer.field("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
+        printer.field("CREATED", a -> TimeUtil.formatTime(a.getCreatedAt()));
+        printer.field("KILLED", a -> Boolean.toString(a.getCancelRequested()));
+        printer.field("STATUS", s -> status(s).toUpperCase());
+        printer.field("RETRY NAME", sa -> sa.getRetryAttemptName().or(""));
 
         if (sessionId == null) {
             attempts = client.getSessionAttempts(Optional.fromNullable(lastId));

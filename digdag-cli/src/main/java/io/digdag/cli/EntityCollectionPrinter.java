@@ -16,7 +16,7 @@ import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 
-public class CollectionPrinter<T>
+public class EntityCollectionPrinter<T>
 {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new GuavaModule())
@@ -31,11 +31,11 @@ public class CollectionPrinter<T>
     private final static ObjectWriter JSON_WRITER = MAPPER
             .writerWithDefaultPrettyPrinter();
 
-    private final List<Column<T>> columns = new ArrayList<>();
+    private final List<Field<T>> fields = new ArrayList<>();
 
-    public void column(String name, Function<T, String> accessor)
+    public void field(String name, Function<T, String> accessor)
     {
-        columns.add(new Column<>(name, accessor));
+        fields.add(new Field<>(name, accessor));
     }
 
     public void print(OutputFormat f, List<T> items, OutputStream out)
@@ -52,12 +52,12 @@ public class CollectionPrinter<T>
         switch (f) {
             case TABLE: {
                 TablePrinter table = new TablePrinter(ps);
-                List<String> header = columns.stream()
+                List<String> header = fields.stream()
                         .map(c -> c.name)
                         .collect(toList());
                 table.row(header);
                 for (T item : items) {
-                    List<String> values = columns.stream()
+                    List<String> values = fields.stream()
                             .map(c -> c.accessor.apply(item))
                             .collect(toList());
                     table.row(values);
@@ -80,12 +80,12 @@ public class CollectionPrinter<T>
         }
     }
 
-    private static class Column<T>
+    private static class Field<T>
     {
         private final String name;
         private final Function<T, String> accessor;
 
-        private Column(String name, Function<T, String> accessor)
+        private Field(String name, Function<T, String> accessor)
         {
             this.name = name;
             this.accessor = accessor;

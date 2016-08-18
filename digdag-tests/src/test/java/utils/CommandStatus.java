@@ -69,6 +69,12 @@ public abstract class CommandStatus
         return this;
     }
 
+    public <T> T outJson(Class<T> type)
+            throws IOException
+    {
+        return MAPPER.readValue(outUtf8(), type);
+    }
+
     public <T> T outJson(TypeReference<T> type)
             throws IOException
     {
