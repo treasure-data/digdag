@@ -24,15 +24,36 @@ public class DurationParam
         return new DurationParam(Durations.parseDuration(expr));
     }
 
+    public static DurationParam of(Duration duration)
+    {
+        return new DurationParam(duration);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        DurationParam that = (DurationParam) o;
+
+        return duration != null ? duration.equals(that.duration) : that.duration == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return duration != null ? duration.hashCode() : 0;
+    }
+
     @Override
     @JsonValue
     public String toString()
     {
         return Durations.formatDuration(duration);
-    }
-
-    public static DurationParam of(Duration duration)
-    {
-        return new DurationParam(duration);
     }
 }

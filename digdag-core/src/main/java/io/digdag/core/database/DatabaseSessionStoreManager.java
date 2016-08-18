@@ -592,7 +592,8 @@ public class DatabaseSessionStoreManager
             }
             int n = handle.createStatement(
                     "update session_attempts" +
-                    " set state_flags = " + bitOr("state_flags", Integer.toString(code)) +
+                    " set state_flags = " + bitOr("state_flags", Integer.toString(code)) + "," +
+                    " finished_at = now()" +
                     " where id = :attemptId")
                 .bind("attemptId", attemptId)
                 .execute();
@@ -1187,7 +1188,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select now() as date")
         Instant now();
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id in (select id from projects where site_id = :siteId)" +
@@ -1196,14 +1197,14 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.id = :id" +
                 " and sa.site_id = :siteId")
         StoredSessionWithLastAttempt getSession(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
@@ -1213,7 +1214,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
@@ -1619,6 +1620,7 @@ public class DatabaseSessionStoreManager
                 .timeZone(ZoneId.of(r.getString("timezone")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
+                .finishedAt(getOptionalTimestampInstant(r, "finished_at"))
                 .build();
         }
     }
@@ -1647,6 +1649,7 @@ public class DatabaseSessionStoreManager
                 .timeZone(ZoneId.of(r.getString("timezone")))
                 .params(cfm.fromResultSetOrEmpty(r, "params"))
                 .createdAt(getTimestampInstant(r, "created_at"))
+                .finishedAt(getOptionalTimestampInstant(r, "finished_at"))
                 .siteId(r.getInt("site_id"))
                 .sessionUuid(getUuid(r, "session_uuid"))
                 .session(
@@ -1687,6 +1690,7 @@ public class DatabaseSessionStoreManager
                             .timeZone(ZoneId.of(r.getString("timezone")))
                             .params(cfm.fromResultSetOrEmpty(r, "params"))
                             .createdAt(getTimestampInstant(r, "created_at"))
+                            .finishedAt(getOptionalTimestampInstant(r, "finished_at"))
                             .build())
                     .siteId(r.getInt("site_id"))
                     .uuid(getUuid(r, "session_uuid"))

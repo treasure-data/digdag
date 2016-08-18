@@ -8,6 +8,7 @@ import io.digdag.spi.NotificationException;
 import io.digdag.spi.Notifier;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -51,7 +52,7 @@ public class NotifyOperatorFactory
         }
 
         @Override
-        public TaskResult run()
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

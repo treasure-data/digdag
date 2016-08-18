@@ -40,6 +40,8 @@ public interface RestSessionAttempt
 
     Instant getCreatedAt();
 
+    Optional<Instant> getFinishedAt();
+
     static ImmutableRestSessionAttempt.Builder builder()
     {
         return ImmutableRestSessionAttempt.builder();

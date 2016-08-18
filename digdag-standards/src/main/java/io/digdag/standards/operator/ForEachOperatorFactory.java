@@ -9,6 +9,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
@@ -52,7 +53,7 @@ public class ForEachOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 
@@ -153,7 +154,7 @@ public class ForEachOperatorFactory
                 raw = node.toString();
             }
             try {
-                return URLEncoder.encode(raw, "UTF-8");
+                return URLEncoder.encode(raw, "UTF-8").replace("+", "%20");  // "+" is not allowed as a task name
             }
             catch (UnsupportedEncodingException ex) {
                 throw Throwables.propagate(ex);

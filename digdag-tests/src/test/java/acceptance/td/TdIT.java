@@ -1,7 +1,9 @@
 package acceptance.td;
 
-import utils.CommandStatus;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import io.digdag.client.DigdagClient;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -26,34 +28,42 @@ import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.CommandStatus;
+import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.main;
+import static acceptance.td.Secrets.TD_API_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
+import static utils.TestUtils.attemptSuccess;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.expect;
+import static utils.TestUtils.main;
+import static utils.TestUtils.pushAndStart;
 
 public class TdIT
 {
     private static final Logger logger = LoggerFactory.getLogger(TdIT.class);
-
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -68,6 +78,8 @@ public class TdIT
 
     private HttpProxyServer proxyServer;
 
+    private TemporaryDigdagServer server;
+
     @Before
     public void setUp()
             throws Exception
@@ -75,7 +87,7 @@ public class TdIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
-        Files.write(config, asList("params.td.apikey = " + TD_API_KEY));
+        Files.write(config, asList("secrets.td.apikey = " + TD_API_KEY));
         outfile = projectDir.resolve("outfile");
 
         client = TDClient.newBuilder(false)
@@ -104,6 +116,16 @@ public class TdIT
         }
     }
 
+    @After
+    public void stopServer()
+            throws Exception
+    {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
+    }
+
     @Test
     public void testRunQuery()
             throws Exception
@@ -111,6 +133,89 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         runWorkflow();
+    }
+
+    @Test
+    public void testRunQueryWithEnvProxy()
+            throws Exception
+    {
+        List<FullHttpRequest> requests = Collections.synchronizedList(new ArrayList<>());
+
+        proxyServer = startRequestTrackingProxy(requests);
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+        runWorkflow(ImmutableMap.of("http_proxy", proxyUrl), ImmutableList.of("td.use_ssl=false"));
+        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+    }
+
+    @Test
+    public void testRunQueryOnServerWithEnvProxy()
+            throws Exception
+    {
+        List<FullHttpRequest> requests = Collections.synchronizedList(new ArrayList<>());
+
+        proxyServer = startRequestTrackingProxy(requests);
+
+        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+
+        TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+                .configuration(Secrets.secretsServerConfiguration())
+                .environment(ImmutableMap.of("http_proxy", proxyUrl))
+                .build();
+
+        server.start();
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+
+        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+
+        DigdagClient digdagClient = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+
+        digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
+
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
+                "outfile", outfile.toString(),
+                "td.use_ssl", "false"));
+
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+
+        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+    }
+
+    public HttpProxyServer startRequestTrackingProxy(final List<FullHttpRequest> requests)
+    {
+        return DefaultHttpProxyServer
+                .bootstrap()
+                .withPort(0)
+                .withFiltersSource(new HttpFiltersSourceAdapter()
+                {
+                    @Override
+                    public int getMaximumRequestBufferSizeInBytes()
+                    {
+                        return 1024 * 1024;
+                    }
+
+                    @Override
+                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
+                    {
+                        return new HttpFiltersAdapter(httpRequest)
+                        {
+                            @Override
+                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
+                            {
+                                assert httpObject instanceof FullHttpRequest;
+                                requests.add(((FullHttpRequest) httpObject).copy());
+                                return null;
+                            }
+                        };
+                    }
+                }).start();
     }
 
     @Test
@@ -129,6 +234,20 @@ public class TdIT
         copyResource("acceptance/td/td/td_preview_create_table.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         runWorkflow("td.database=" + database);
+    }
+
+    @Test
+    public void testRunQueryLegacyApikeyParam()
+            throws Exception
+    {
+        // TODO: Remove this test when the legacy support for td.apikey param is removed
+
+        // Replace the "secrets.td.apikey" entry with the legacy "params.td.apikey" entry
+        Files.write(config, asList("params.td.apikey = " + TD_API_KEY));
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow();
     }
 
     @Test
@@ -317,7 +436,11 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private void runWorkflow(String... params)
+    private void runWorkflow(String... params) {
+        runWorkflow(ImmutableMap.of(), ImmutableList.copyOf(params));
+    }
+
+    private void runWorkflow(Map<String, String> env, List<String> params)
     {
         List<String> args = new ArrayList<>();
         args.addAll(asList("run",
@@ -333,7 +456,7 @@ public class TdIT
 
         args.add("workflow.dig");
 
-        CommandStatus runStatus = main(args);
+        CommandStatus runStatus = main(env, args);
 
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
 

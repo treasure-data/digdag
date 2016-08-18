@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 
 import com.google.common.collect.ImmutableList;
 import io.digdag.core.config.PropertyUtils;
@@ -27,6 +25,7 @@ public abstract class Command
 {
     private static final Logger log = LoggerFactory.getLogger(Command.class);
 
+    protected final Map<String, String> env;
     protected final PrintStream out;
     protected final PrintStream err;
 
@@ -48,8 +47,9 @@ public abstract class Command
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
-    protected Command(PrintStream out, PrintStream err)
+    protected Command(Map<String, String> env, PrintStream out, PrintStream err)
     {
+        this.env = env;
         this.out = out;
         this.err = err;
     }
@@ -69,7 +69,7 @@ public abstract class Command
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath());
+                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(env));
             }
             catch (NoSuchFileException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);
@@ -91,7 +91,7 @@ public abstract class Command
         String localPath = systemProps.getProperty("system-plugin.local-path", "");
         Path localRepositoryPath;
         if (localPath.equals("")) {
-            localRepositoryPath = ConfigUtil.defaultLocalPluginPath();
+            localRepositoryPath = ConfigUtil.defaultLocalPluginPath(env);
         }
         else {
             localRepositoryPath = Paths.get(localPath);

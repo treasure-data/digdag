@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDBulkLoadSessionStartRequest;
 import com.treasuredata.client.model.TDJob;
@@ -10,6 +11,7 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -30,11 +33,13 @@ public class TdLoadOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(TdLoadOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
+    private final Map<String, String> env;
 
     @Inject
-    public TdLoadOperatorFactory(TemplateEngine templateEngine)
+    public TdLoadOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env)
     {
         this.templateEngine = templateEngine;
+        this.env = env;
     }
 
     public String getType()
@@ -61,7 +66,7 @@ public class TdLoadOperatorFactory
 
         protected TdLoadOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

@@ -733,11 +733,58 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateAddSecretsTable = new Migration()
+    {
+        @Override
+        public String getVersion()
+        {
+            return "20160817123456";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update(
+                    new CreateTableBuilder("secrets")
+                            .addLongId("id")
+                            .addLong("site_id", "not null")
+                            .addLong("project_id", "not null references projects (id)")
+                            .addString("scope", "not null")
+                            .addString("engine", "not null")
+                            .addString("key", "not null")
+                            .addLongText("value", "not null")
+                            .addTimestamp("updated_at", "not null")
+                            .build());
+
+        }
+    };
+
+    private final Migration MigrateAddFinishedAtToSessionAttempts = new Migration() {
+        @Override
+        public String getVersion()
+        {
+            return "20160818043815";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            if (isPostgres()) {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp with time zone");
+            }
+            else {
+                handle.update("alter table session_attempts" +
+                        " add column finished_at timestamp");
+            }
+        }
+    };
+
     private final Migration MigrateQueueUniqueName = new Migration() {
         @Override
         public String getVersion()
         {
-            return "20160815202237";
+            return "20160818220026";
         }
 
         @Override
@@ -780,6 +827,8 @@ public class DatabaseMigrator
         MigrateMakeProjectsDeletable,
         MigrateAddUserInfoColumnToRevisions,
         MigrateQueueRearchitecture,
+        MigrateAddSecretsTable,
+        MigrateAddFinishedAtToSessionAttempts,
         MigrateQueueUniqueName,
     };
 }

@@ -64,9 +64,9 @@ public class Server
 
     protected final Version localVersion;
 
-    public Server(Version localVersion, PrintStream out, PrintStream err)
+    public Server(Version localVersion, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
         this.localVersion = localVersion;
     }
 
@@ -87,7 +87,7 @@ public class Server
             throw usage("Setting both --database and --memory is invalid");
         }
 
-        server();
+        startServer();
     }
 
     @Override
@@ -108,11 +108,11 @@ public class Server
         err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 
-    private void server()
+    private void startServer()
             throws ServletException, IOException
     {
         ServerBootstrap.startServer(localVersion, buildServerProperties(), ServerBootstrap.class);
@@ -171,6 +171,8 @@ public class Server
                 props, paramsFile, params);
 
         props.setProperty("digdag.defaultParams", defaultParams.toString());
+
+        env.forEach((key, value) -> props.setProperty("server.environment." + key, value));
 
         return props;
     }

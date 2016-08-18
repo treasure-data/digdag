@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.io.File;
 import com.google.inject.Injector;
@@ -23,9 +24,9 @@ public class Show
 
     // TODO support -p option? for jinja template rendering
 
-    public Show(PrintStream out, PrintStream err)
+    public Show(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class Show
         err.println("Usage: digdag show <digdag.dig> [options...]");
         err.println("  Options:");
         err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

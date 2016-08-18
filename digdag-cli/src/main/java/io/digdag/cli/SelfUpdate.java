@@ -1,9 +1,9 @@
 package io.digdag.cli;
 
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,7 +16,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
 import com.google.common.io.ByteStreams;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import com.beust.jcommander.Parameter;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -28,9 +27,9 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
-    public SelfUpdate(PrintStream out, PrintStream err)
+    public SelfUpdate(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -54,11 +53,11 @@ public class SelfUpdate
     {
         err.println("Usage: digdag selfupdate [version]]");
         err.println("  Options:");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         err.println("");
         err.println("  Examples:");
         err.println("    $ digdag selfupdate");
-        err.println("    $ digdag selfupdate 0.8.8");
+        err.println("    $ digdag selfupdate 0.8.10-SNAPSHOT");
         err.println("");
         return systemExit(error);
     }

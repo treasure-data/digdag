@@ -3,6 +3,7 @@ package utils;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import javax.ws.rs.ProcessingException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -41,19 +43,19 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static utils.TestUtils.configFactory;
-import static utils.TestUtils.findFreePort;
 import static utils.TestUtils.main;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -61,10 +63,12 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static utils.TestUtils.configFactory;
+import static utils.TestUtils.main;
 import static utils.TestUtils.objectMapper;
 
 public class TemporaryDigdagServer
-        implements TestRule
+        implements TestRule, AutoCloseable
 {
     private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "true"));
 
@@ -75,6 +79,7 @@ public class TemporaryDigdagServer
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
     private final Optional<Version> version;
 
     private final String host;
@@ -87,6 +92,7 @@ public class TemporaryDigdagServer
     private final ByteArrayOutputStream err = new ByteArrayOutputStream();
 
     private final boolean inProcess;
+    private final Map<String, String> environment;
 
     private Path workdir;
     private Process serverProcess;
@@ -102,6 +108,9 @@ public class TemporaryDigdagServer
 
     private int port = -1;
 
+    private boolean started;
+    private boolean closed;
+
     public TemporaryDigdagServer(Builder builder)
     {
         this.version = builder.version;
@@ -110,6 +119,7 @@ public class TemporaryDigdagServer
         this.configuration = new ArrayList<>(Objects.requireNonNull(builder.configuration, "configuration"));
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
         this.inProcess = builder.inProcess;
+        this.environment = ImmutableMap.copyOf(builder.environment);
 
         this.executor = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
 
@@ -121,14 +131,6 @@ public class TemporaryDigdagServer
     @Override
     public Statement apply(Statement base, Description description)
     {
-        return RuleChain
-                .outerRule(temporaryFolder)
-                .around(this::statement)
-                .apply(base, description);
-    }
-
-    private Statement statement(Statement statement, Description description)
-    {
         return new Statement()
         {
             @Override
@@ -137,7 +139,7 @@ public class TemporaryDigdagServer
             {
                 before();
                 try {
-                    statement.evaluate();
+                    base.evaluate();
                 }
                 finally {
                     after();
@@ -241,6 +243,19 @@ public class TemporaryDigdagServer
     private void before()
             throws Throwable
     {
+        if (started) {
+            return;
+        }
+        start();
+    }
+
+    public void start()
+            throws Exception
+    {
+        started = true;
+
+        temporaryFolder.create();
+
         setupDatabase();
 
         Path runtimeInfoPath = temporaryFolder.newFolder().toPath().resolve("runtime-info");
@@ -271,14 +286,8 @@ public class TemporaryDigdagServer
         List<String> args = argsBuilder.build();
 
         if (inProcess) {
-            executor.execute(() -> {
-                if (version.isPresent()) {
-                    main(version.get(), args, out, err);
-                }
-                else {
-                    main(Version.buildVersion(), args, out, err);
-                }
-            });
+            InputStream in = new ByteArrayInputStream(new byte[0]);
+            executor.execute(() -> main(environment, version.or(Version.buildVersion()), args, out, err, in));
         }
         else {
             File workdir = temporaryFolder.newFolder();
@@ -299,11 +308,14 @@ public class TemporaryDigdagServer
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
 
+            processBuilder.environment().clear();
+            processBuilder.environment().putAll(environment);
+
             processBuilder.directory(workdir);
             serverProcess = processBuilder.start();
 
-            executor.execute(() -> copy(serverProcess.getInputStream(), asList(out, System.out)));
-            executor.execute(() -> copy(serverProcess.getErrorStream(), asList(err, System.err)));
+            executor.execute(() -> copy(serverProcess.getInputStream(), out, System.out));
+            executor.execute(() -> copy(serverProcess.getErrorStream(), err, System.err));
         }
 
         // Wait for server to write the server info with the local address
@@ -352,7 +364,49 @@ public class TemporaryDigdagServer
         }
     }
 
-    private void copy(InputStream in, List<OutputStream> outs)
+    private static OutputStream fanout(OutputStream... outputStreams)
+    {
+        return new OutputStream()
+        {
+            @Override
+            public void write(int b)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b);
+                }
+            }
+
+            @Override
+            public void write(byte[] b)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b);
+                }
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len)
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.write(b, off, len);
+                }
+            }
+
+            @Override
+            public void flush()
+                    throws IOException
+            {
+                for (OutputStream outputStream : outputStreams) {
+                    outputStream.flush();
+                }
+            }
+        };
+    }
+
+    private void copy(InputStream in, OutputStream... outs)
     {
         byte[] buffer = new byte[16 * 1024];
         try {
@@ -374,10 +428,21 @@ public class TemporaryDigdagServer
 
     private static void kill(Process p)
     {
-        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+        sendUnixSignal(p, "KILL");
+        p.destroyForcibly();
+    }
+
+    private static void terminate(Process p)
+    {
+        sendUnixSignal(p, "TERM");
+    }
+
+    private static void sendUnixSignal(Process p, String signalName)
+    {
+        if (isUnixProcess(p)) {
             int pid = pid(p);
             if (pid != -1) {
-                String[] cmd = {"kill", "-9", Integer.toString(pid)};
+                String[] cmd = {"kill", "-s", signalName, Integer.toString(pid)};
                 try {
                     Runtime.getRuntime().exec(cmd);
                 }
@@ -385,13 +450,12 @@ public class TemporaryDigdagServer
                     log.warn("command failed: {}", asList(cmd), e);
                 }
             }
-            p.destroyForcibly();
         }
     }
 
     private static int pid(Process p)
     {
-        if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
+        if (isUnixProcess(p)) {
             try {
                 Field f = p.getClass().getDeclaredField("pid");
                 f.setAccessible(true);
@@ -401,6 +465,11 @@ public class TemporaryDigdagServer
             }
         }
         return -1;
+    }
+
+    private static boolean isUnixProcess(Process p)
+    {
+        return p.getClass().getName().equals("java.lang.UNIXProcess");
     }
 
     private void setupDatabase()
@@ -445,6 +514,17 @@ public class TemporaryDigdagServer
 
     private void after()
     {
+        if (!started || closed) {
+            return;
+        }
+        close();
+    }
+
+    @Override
+    public void close()
+    {
+        closed = true;
+
         if (serverProcess != null) {
             kill(serverProcess);
         }
@@ -468,6 +548,29 @@ public class TemporaryDigdagServer
                 log.debug("Failed to close db conn pool", e);
             }
         }
+
+        temporaryFolder.delete();
+    }
+
+    public boolean hasUnixProcess()
+    {
+        return serverProcess != null && isUnixProcess(serverProcess);
+    }
+
+    public void terminateProcess()
+    {
+        if (!hasUnixProcess()) {
+            throw new IllegalStateException("server doesn't have UNIX process");
+        }
+        terminate(serverProcess);
+    }
+
+    public boolean isProcessAlive()
+    {
+        if (!hasUnixProcess()) {
+            throw new IllegalStateException("server doesn't have UNIX process");
+        }
+        return serverProcess.isAlive();
     }
 
     public static Builder builder()
@@ -525,6 +628,7 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
+
         private Builder()
         {
         }
@@ -532,7 +636,9 @@ public class TemporaryDigdagServer
         private List<String> args = new ArrayList<>();
         private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
+        private Map<String, String> environment = new HashMap<>();
         private boolean inProcess = IN_PROCESS_DEFAULT;
+        private byte[] stdin = new byte[0];
 
         public Builder version(Version version)
         {
@@ -548,6 +654,12 @@ public class TemporaryDigdagServer
         public Builder configuration(Collection<String> lines)
         {
             this.configuration.addAll(lines);
+            return this;
+        }
+
+        public Builder environment(Map<String, String> environment)
+        {
+            this.environment.putAll(environment);
             return this;
         }
 

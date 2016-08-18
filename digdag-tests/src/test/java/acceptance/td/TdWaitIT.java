@@ -1,8 +1,8 @@
 package acceptance.td;
 
-import utils.CommandStatus;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import io.digdag.client.DigdagClient;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import junitparams.custom.combined.CombinedParameters;
@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
@@ -20,6 +21,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 
+import static acceptance.td.Secrets.TD_API_KEY;
+import static acceptance.td.Secrets.secretsServerConfiguration;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.attemptSuccess;
@@ -28,36 +37,31 @@ import static utils.TestUtils.createProject;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.main;
 import static utils.TestUtils.pushAndStart;
+import static utils.TestUtils.pushProject;
 import static utils.TestUtils.runWorkflow;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitParamsRunner.class)
 public class TdWaitIT
 {
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(
-                    "params.td.apikey = " + TD_API_KEY,
-                    "config.td.wait.min_poll_interval = 5s"
-            )
+            .configuration(secretsServerConfiguration())
+            .configuration("config.td.wait.min_poll_interval = 5s")
             .build();
 
     protected Path projectDir;
+    protected String projectName;
+    protected int projectId;
 
     protected String tempDatabase;
 
     protected TDClient tdClient;
     protected Path outfile;
+
+    protected DigdagClient digdagClient;
 
     @Before
     public void setUp()
@@ -66,6 +70,8 @@ public class TdWaitIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath();
         createProject(projectDir);
+        projectName = projectDir.getFileName().toString();
+        projectId = pushProject(server.endpoint(), projectDir, projectName);
 
         tdClient = TDClient.newBuilder(false).setApiKey(TD_API_KEY).build();
         tempDatabase = "tmp_" + UUID.randomUUID().toString().replace("-", "_");
@@ -73,6 +79,13 @@ public class TdWaitIT
         tdClient.createDatabase(tempDatabase);
 
         outfile = folder.getRoot().toPath().resolve("outfile").toAbsolutePath().normalize();
+
+        digdagClient = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+
+        digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
     }
 
     @After
@@ -259,7 +272,6 @@ public class TdWaitIT
 
         addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
-                .put("td.apikey", TD_API_KEY)
                 .put("database", tempDatabase)
                 .put("wait_poll_interval", "5s")
                 .put("wait_table", table)
@@ -281,10 +293,10 @@ public class TdWaitIT
         }
 
         // Create the table (empty)
-        runWorkflow("acceptance/td/td_wait/create_table.dig", ImmutableMap.of(
-                "td.apikey", TD_API_KEY,
+        runWorkflow(folder, "acceptance/td/td_wait/create_table.dig", ImmutableMap.of(
                 "database", tempDatabase,
-                "table", table));
+                "table", table),
+                ImmutableMap.of("secrets.td.apikey", TD_API_KEY));
 
         // Verify that the workflow still does not proceed beyond running
         {
@@ -297,11 +309,11 @@ public class TdWaitIT
         }
 
         // Insert a row
-        runWorkflow("acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
-                "td.apikey", TD_API_KEY,
+        runWorkflow(folder, "acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
                 "database", tempDatabase,
                 "table", table,
-                "query", "select 1"));
+                "query", "select 1"),
+                ImmutableMap.of("secrets.td.apikey", TD_API_KEY));
 
         // Verify that the workflow still does not proceed beyond running
         {
@@ -317,11 +329,11 @@ public class TdWaitIT
         assertThat(Files.exists(outfile), is(false));
 
         // Insert another row to trigger the workflow to complete
-        runWorkflow("acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
-                "td.apikey", TD_API_KEY,
+        runWorkflow(folder, "acceptance/td/td_wait/insert_into.dig", ImmutableMap.of(
                 "database", tempDatabase,
                 "table", table,
-                "query", "select 1"));
+                "query", "select 1"),
+                ImmutableMap.of("secrets.td.apikey", TD_API_KEY));
 
         // Verify that the workflow completes
         expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));

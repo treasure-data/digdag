@@ -384,9 +384,9 @@ public class WorkflowExecutor
             Instant date = sm.getStoreTime();
             propagateAllBlockedToReady();
             retryRetryWaitingTasks();
-            propagateSessionArchive();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
             propagateAllPlannedToDone();
+            propagateSessionArchive();
 
             //IncrementalStatusPropagator prop = new IncrementalStatusPropagator(date);  // TODO doesn't work yet
             int waitMsec = INITIAL_INTERVAL;
@@ -400,11 +400,13 @@ public class WorkflowExecutor
 
                 propagateAllBlockedToReady();
                 retryRetryWaitingTasks();
-                propagateSessionArchive();
                 enqueueReadyTasks(queuer);
                 boolean someDone = propagateAllPlannedToDone();
 
-                if (!someDone) {
+                if (someDone) {
+                    propagateSessionArchive();
+                }
+                else {
                     propagatorLock.lock();
                     try {
                         if (propagatorNotice) {

@@ -16,3 +16,7 @@ pom.xml
 *.ipr
 *.iws
 *.idea
+
+# generated self-signed cert
+littleproxy_cert
+littleproxy_keystore.jks

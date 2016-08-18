@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.cli.Main;
+import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
@@ -19,12 +21,14 @@ import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Assert;
+import org.junit.rules.TemporaryFolder;
 import org.subethamail.wiser.Wiser;
-import utils.NopDispatcher;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
@@ -41,6 +45,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static io.digdag.core.Version.buildVersion;
@@ -67,9 +72,30 @@ public class TestUtils
 
     public static final Pattern ATTEMPT_ID_PATTERN = Pattern.compile("\\s*attempt id:\\s*(\\d+)\\s*");
 
+    public static final Pattern PROJECT_ID_PATTERN = Pattern.compile("\\s*id:\\s*(\\d+)\\s*");
+
     public static CommandStatus main(String... args)
     {
         return main(buildVersion(), args);
+    }
+
+    public static CommandStatus main(InputStream in, String... args)
+    {
+        return main(buildVersion(), in, asList(args));
+    }
+
+    public static CommandStatus main(Map<String, String> env, String... args)
+    {
+        return main(env, ImmutableList.copyOf(args));
+    }
+
+    public static CommandStatus main(Map<String, String> env, Collection<String> args)
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        InputStream in = new ByteArrayInputStream(new byte[0]);
+        int code = main(env, buildVersion(), args, out, err, in);
+        return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
     public static CommandStatus main(Collection<String> args)
@@ -84,33 +110,45 @@ public class TestUtils
 
     public static CommandStatus main(Version localVersion, Collection<String> args)
     {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final ByteArrayOutputStream err = new ByteArrayOutputStream();
-        return main(localVersion, args, out, err);
+        InputStream in = new ByteArrayInputStream(new byte[0]);
+        return main(localVersion, in, args);
     }
 
-    public static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
+    public static CommandStatus main(Version localVersion, InputStream in, Collection<String> args)
     {
-        final int code;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int code = main(ImmutableMap.of(), localVersion, args, out, err, in);
+        return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
+    }
+
+    public static int main(Map<String, String> env, Version localVersion, Collection<String> args, OutputStream out, OutputStream err, InputStream in)
+    {
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            code = new Main(localVersion, outp, errp).cli(args.stream().toArray(String[]::new));
+            Main main = new Main(localVersion, env, outp, errp, in);
+            return main.cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();
             Assert.fail();
             throw Throwables.propagate(e);
         }
-        return CommandStatus.of(code, out.toByteArray(), err.toByteArray());
     }
 
     public static void copyResource(String resource, Path dest)
             throws IOException
     {
-        try (InputStream input = Resources.getResource(resource).openStream()) {
-            Files.copy(input, dest, REPLACE_EXISTING);
+        if (Files.isDirectory(dest)) {
+            Path name = Paths.get(resource).getFileName();
+            copyResource(resource, dest.resolve(name));
+        }
+        else {
+            try (InputStream input = Resources.getResource(resource).openStream()) {
+                Files.copy(input, dest, REPLACE_EXISTING);
+            }
         }
     }
 
@@ -230,7 +268,14 @@ public class TestUtils
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
-            return attemptsStatus.outUtf8().contains("status: error");
+            String output = attemptsStatus.outUtf8();
+            if (output.contains("status: error")) {
+                return true;
+            }
+            if (!output.contains("status: running")) {
+                fail();
+            }
+            return false;
         };
     }
 
@@ -238,16 +283,24 @@ public class TestUtils
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
-            return attemptsStatus.outUtf8().contains("status: success");
+
+            String output = attemptsStatus.outUtf8();
+            if (output.contains("status: success")) {
+                return true;
+            }
+            if (!output.contains("status: running")) {
+                fail();
+            }
+            return false;
         };
     }
 
     public static CommandStatus attempts(String endpoint, long attemptId)
     {
         return main("attempts",
-                        "-c", "/dev/null",
-                        "-e", endpoint,
-                        String.valueOf(attemptId));
+                "-c", "/dev/null",
+                "-e", endpoint,
+                String.valueOf(attemptId));
     }
 
     public static void createProject(Path project)
@@ -270,14 +323,13 @@ public class TestUtils
         String projectName = project.getFileName().toString();
 
         // Push the project
-        CommandStatus pushStatus = main("push",
-                "--project", project.toString(),
-                projectName,
-                "-c", "/dev/null",
-                "-e", endpoint,
-                "-r", "4711");
-        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        pushProject(endpoint, project, projectName);
 
+        return startWorkflow(endpoint, projectName, workflow, params);
+    }
+
+    public static long startWorkflow(String endpoint, String projectName, String workflow, Map<String, String> params)
+    {
         List<String> startCommand = new ArrayList<>(asList("start",
                 "-c", "/dev/null",
                 "-e", endpoint,
@@ -293,6 +345,26 @@ public class TestUtils
         return getAttemptId(startStatus);
     }
 
+    public static int pushProject(String endpoint, Path project)
+    {
+        String projectName = project.getFileName().toString();
+        return pushProject(endpoint, project, projectName);
+    }
+
+    public static int pushProject(String endpoint, Path project, String projectName)
+    {
+        CommandStatus pushStatus = main("push",
+                "--project", project.toString(),
+                projectName,
+                "-c", "/dev/null",
+                "-e", endpoint);
+        assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
+        boolean found = matcher.find();
+        assertThat(found, is(true));
+        return Integer.valueOf(matcher.group(1));
+    }
+
     public static void addWorkflow(Path project, String resource)
             throws IOException
     {
@@ -306,14 +378,25 @@ public class TestUtils
         copyResource(resource, project.resolve(workflowName));
     }
 
-    public static void runWorkflow(String resource, ImmutableMap<String, String> params)
+    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params)
+            throws IOException
+    {
+        runWorkflow(folder, resource, params, ImmutableMap.of());
+    }
+
+    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config)
             throws IOException
     {
         Path workflow = Paths.get(resource);
-        Path tempdir = Files.createTempDirectory("digdag-test");
+        Path tempdir = folder.newFolder().toPath();
         Path file = tempdir.resolve(workflow.getFileName());
+        Path configFile = folder.newFolder().toPath().resolve("config");
+        List<String> configLines = config.entrySet().stream()
+                .map(e -> e.getKey() + " = " + e.getValue())
+                .collect(Collectors.toList());
+        Files.write(configFile, configLines);
         List<String> runCommand = new ArrayList<>(asList("run",
-                "-c", "/dev/null",
+                "-c", configFile.toAbsolutePath().normalize().toString(),
                 "-o", tempdir.toString(),
                 "--project", tempdir.toString(),
                 workflow.getFileName().toString()));
@@ -331,6 +414,11 @@ public class TestUtils
     public static ObjectMapper objectMapper()
     {
         return OBJECT_MAPPER;
+    }
+
+    public static YamlMapper yamlMapper()
+    {
+        return new YamlMapper(OBJECT_MAPPER);
     }
 
     public static ConfigFactory configFactory()

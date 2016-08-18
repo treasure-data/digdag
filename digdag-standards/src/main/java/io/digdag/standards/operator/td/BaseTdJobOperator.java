@@ -1,12 +1,16 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 abstract class BaseTdJobOperator
         extends BaseOperator
@@ -15,8 +19,9 @@ abstract class BaseTdJobOperator
 
     protected final Config state;
     protected final Config params;
+    private final Map<String, String> env;
 
-    BaseTdJobOperator(Path workspacePath, TaskRequest request)
+    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env)
     {
         super(workspacePath, request);
 
@@ -24,12 +29,19 @@ abstract class BaseTdJobOperator
                 request.getConfig().getNestedOrGetEmpty("td"));
 
         this.state = request.getLastStateParams().deepCopy();
+        this.env = env;
     }
 
     @Override
-    public final TaskResult runTask()
+    public List<String> secretSelectors()
     {
-        try (TDOperator op = TDOperator.fromConfig(params)) {
+        return ImmutableList.of("td.*");
+    }
+
+    @Override
+    public final TaskResult runTask(TaskExecutionContext ctx)
+    {
+        try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
             Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;

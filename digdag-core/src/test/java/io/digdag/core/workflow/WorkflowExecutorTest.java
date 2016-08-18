@@ -34,23 +34,27 @@ import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 
-public class WorkflowExecutorCasesTest
+public class WorkflowExecutorTest
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     private DigdagEmbed embed;
-
     private ConfigFactory cf;
+    private LocalSite localSite;
+    private YamlConfigLoader configLoader;
 
     @Before
     public void setUp()
         throws Exception
     {
-        embed = setupEmbed();
-        cf = embed.getInjector().getInstance(ConfigFactory.class);
+        this.embed = setupEmbed();
+        this.cf = embed.getInjector().getInstance(ConfigFactory.class);
+        this.localSite = embed.getInjector().getInstance(LocalSite.class);
+        this.configLoader = embed.getInjector().getInstance(YamlConfigLoader.class);
     }
 
     @After
@@ -90,9 +94,7 @@ public class WorkflowExecutorCasesTest
     {
         try {
             String content = Resources.toString(getClass().getResource(name), UTF_8);
-            return embed.getInjector().getInstance(YamlConfigLoader.class)
-                .loadString(content)
-                .toConfig(cf);
+            return configLoader.loadString(content).toConfig(cf);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
@@ -102,39 +104,6 @@ public class WorkflowExecutorCasesTest
     private void runWorkflow(String workflowName, Config config)
         throws InterruptedException
     {
-        try {
-            LocalSite localSite = embed.getLocalSite();
-            ArchiveMetadata meta = ArchiveMetadata.of(
-                    WorkflowDefinitionList.of(ImmutableList.of(
-                            WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
-                            )),
-                    config.getFactory().create().set("_workdir", folder.getRoot().toString()));
-            LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
-                    "default",
-                    "revision-" + UUID.randomUUID(),
-                    meta);
-            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), workflowName);
-            AttemptRequest ar = localSite.getAttemptBuilder()
-                .buildFromStoredWorkflow(
-                        stored.getRevision(),
-                        def,
-                        config.getFactory().create(),
-                        ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
-            StoredSessionAttemptWithSession attempt = localSite.submitWorkflow(ar, def);
-            localSite.runUntilDone(attempt.getId());
-        }
-        catch (ResourceNotFoundException | ResourceConflictException ex) {
-            throw Throwables.propagate(ex);
-        }
-    }
-
-    private StoredWorkflowDefinition findDefinition(List<StoredWorkflowDefinition> defs, String name)
-    {
-        for (StoredWorkflowDefinition def : defs) {
-            if (def.getName().equals(name)) {
-                return def;
-            }
-        }
-        throw new RuntimeException("Workflow does not exist: " + name);
+        WorkflowTestingUtils.runWorkflow(localSite, folder.getRoot().toPath(), workflowName, config);
     }
 }

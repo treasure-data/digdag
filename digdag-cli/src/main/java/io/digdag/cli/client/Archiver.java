@@ -51,14 +51,17 @@ class Archiver
             // default mode for file names longer than 100 bytes is throwing an exception (LONGFILE_ERROR)
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
-            project.listFiles((resourceName, path) -> {
-                if (!Files.isDirectory(path)) {
+            project.listFiles((resourceName, absPath) -> {
+                if (!Files.isDirectory(absPath)) {
                     out.println("  Archiving " + resourceName);
 
-                    TarArchiveEntry e = buildTarArchiveEntry(project, path, resourceName);
+                    TarArchiveEntry e = buildTarArchiveEntry(project, absPath, resourceName);
                     tar.putArchiveEntry(e);
-                    if (!e.isSymbolicLink()) {
-                        try (InputStream in = Files.newInputStream(path)) {
+                    if (e.isSymbolicLink()) {
+                        out.println("    symlink -> " + e.getLinkName());
+                    }
+                    else {
+                        try (InputStream in = Files.newInputStream(absPath)) {
                             ByteStreams.copy(in, tar);
                         }
                         tar.closeArchiveEntry();
@@ -84,56 +87,59 @@ class Archiver
         out.println("");
     }
 
-    private TarArchiveEntry buildTarArchiveEntry(ProjectArchive project, Path path, String name)
+    private TarArchiveEntry buildTarArchiveEntry(ProjectArchive project, Path absPath, String name)
             throws IOException
     {
         TarArchiveEntry e;
-        if (Files.isSymbolicLink(path)) {
+        if (Files.isSymbolicLink(absPath)) {
             e = new TarArchiveEntry(name, TarConstants.LF_SYMLINK);
-            Path dest = Files.readSymbolicLink(path);
+            Path rawDest = Files.readSymbolicLink(absPath);
+            Path normalizedAbsDest = absPath.getParent().resolve(rawDest).normalize();
             try {
-                project.pathToResourceName(path.getParent().resolve(dest));
+                project.pathToResourceName(normalizedAbsDest);
             }
             catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException("Invalid symbolic link: " + ex);
+                throw new IllegalArgumentException("Invalid symbolic link: " + ex.getMessage());
             }
-            e.setLinkName(dest.toUri().getPath());
+            // absolute path will be invalid on a server. convert it to a relative path
+            Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
+            e.setLinkName(normalizedRelativeDest.toString());
         }
         else {
-            e = new TarArchiveEntry(path.toFile(), name);
+            e = new TarArchiveEntry(absPath.toFile(), name);
             try {
                 int mode = 0;
-                for (PosixFilePermission perm : Files.getPosixFilePermissions(path)) {
+                for (PosixFilePermission perm : Files.getPosixFilePermissions(absPath)) {
                     switch (perm) {
-                        case OWNER_READ:
-                            mode |= 0400;
-                            break;
-                        case OWNER_WRITE:
-                            mode |= 0200;
-                            break;
-                        case OWNER_EXECUTE:
-                            mode |= 0100;
-                            break;
-                        case GROUP_READ:
-                            mode |= 0040;
-                            break;
-                        case GROUP_WRITE:
-                            mode |= 0020;
-                            break;
-                        case GROUP_EXECUTE:
-                            mode |= 0010;
-                            break;
-                        case OTHERS_READ:
-                            mode |= 0004;
-                            break;
-                        case OTHERS_WRITE:
-                            mode |= 0002;
-                            break;
-                        case OTHERS_EXECUTE:
-                            mode |= 0001;
-                            break;
-                        default:
-                            // ignore
+                    case OWNER_READ:
+                        mode |= 0400;
+                        break;
+                    case OWNER_WRITE:
+                        mode |= 0200;
+                        break;
+                    case OWNER_EXECUTE:
+                        mode |= 0100;
+                        break;
+                    case GROUP_READ:
+                        mode |= 0040;
+                        break;
+                    case GROUP_WRITE:
+                        mode |= 0020;
+                        break;
+                    case GROUP_EXECUTE:
+                        mode |= 0010;
+                        break;
+                    case OTHERS_READ:
+                        mode |= 0004;
+                        break;
+                    case OTHERS_WRITE:
+                        mode |= 0002;
+                        break;
+                    case OTHERS_EXECUTE:
+                        mode |= 0001;
+                        break;
+                    default:
+                        // ignore
                     }
                 }
                 e.setMode(mode);

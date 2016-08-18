@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -13,7 +14,6 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.nio.file.StandardOpenOption.APPEND;
 
@@ -48,7 +48,7 @@ public class EchoOperatorFactory
         }
 
         @Override
-        public TaskResult run()
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

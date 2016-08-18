@@ -8,6 +8,7 @@ import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.TaskQueueFactory;
 import io.digdag.core.database.DatabaseTaskQueueFactory;
 import io.digdag.core.workflow.TaskQueueDispatcher;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class QueueModule
         implements Module
@@ -21,5 +22,7 @@ public class QueueModule
         // built-in queue
         Multibinder<TaskQueueFactory> taskQueueBinder = Multibinder.newSetBinder(binder, TaskQueueFactory.class);
         taskQueueBinder.addBinding().to(DatabaseTaskQueueFactory.class).in(Scopes.SINGLETON);
+
+        newExporter(binder).export(TaskQueueDispatcher.class).withGeneratedName();
     }
 }

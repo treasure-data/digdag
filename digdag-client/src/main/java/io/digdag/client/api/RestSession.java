@@ -33,7 +33,6 @@ public interface RestSession
     @JsonDeserialize(as = ImmutableRestSession.Attempt.class)
     interface Attempt
     {
-
         long getId();
 
         Optional<String> getRetryAttemptName();
@@ -47,6 +46,8 @@ public interface RestSession
         Config getParams();
 
         Instant getCreatedAt();
+
+        Optional<Instant> getFinishedAt();
 
         static ImmutableRestSession.Attempt.Builder builder()
         {

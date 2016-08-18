@@ -8,7 +8,6 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
-import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

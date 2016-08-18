@@ -1,6 +1,7 @@
 package io.digdag.core.session;
 
 import java.time.Instant;
+import com.google.common.base.Optional;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
@@ -16,6 +17,8 @@ public abstract class StoredSessionAttempt
     public abstract long getSessionId();
 
     public abstract Instant getCreatedAt();
+
+    public abstract Optional<Instant> getFinishedAt();
 
     public static StoredSessionAttempt copyOf(StoredSessionAttempt o) {
         return ImmutableStoredSessionAttempt.builder().from(o).build();

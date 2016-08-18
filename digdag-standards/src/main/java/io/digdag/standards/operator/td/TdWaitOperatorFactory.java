@@ -1,14 +1,17 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -20,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -32,12 +37,14 @@ public class TdWaitOperatorFactory
     private static final String POLL_JOB = "pollJob";
 
     private final TemplateEngine templateEngine;
+    private final Map<String, String> env;
 
     @Inject
-    public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig)
+    public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env)
     {
         super(systemConfig);
         this.templateEngine = templateEngine;
+        this.env = env;
     }
 
     public String getType()
@@ -80,9 +87,15 @@ public class TdWaitOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
+        {
+            try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
                 TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
                 state.remove(POLL_JOB);

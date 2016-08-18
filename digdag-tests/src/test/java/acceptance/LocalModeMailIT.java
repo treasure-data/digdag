@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
-import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

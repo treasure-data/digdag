@@ -9,6 +9,7 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
@@ -20,8 +21,6 @@ import static org.junit.Assume.assumeThat;
 
 public class TdForEachIT
 {
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
-
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -35,7 +34,7 @@ public class TdForEachIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         projectDir = folder.getRoot().toPath();
         config = folder.newFile().toPath();
-        Files.write(config, ("params.td.apikey = " + TD_API_KEY).getBytes("UTF-8"));
+        Files.write(config, ("secrets.td.apikey = " + TD_API_KEY).getBytes("UTF-8"));
     }
 
     @Test

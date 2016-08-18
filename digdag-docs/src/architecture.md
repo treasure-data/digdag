@@ -55,7 +55,7 @@ You can use [Docker](https://www.docker.com/) to run tasks in a container.  If `
 
 ## Next steps
 
+* [Concepts](concepts.html)
 * [Getting started](scheduling_workflow.html)
-* [Workflow definition](workflow_definition.html)
 * [More choices of operators](operators.html)
 

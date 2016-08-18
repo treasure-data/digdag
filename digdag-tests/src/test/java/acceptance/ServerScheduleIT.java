@@ -1,10 +1,7 @@
 package acceptance;
 
-import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
-import io.digdag.client.api.RestSession;
-import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,16 +15,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static utils.TestUtils.copyResource;
-import static utils.TestUtils.getAttemptId;
-import static utils.TestUtils.getSessionId;
 import static utils.TestUtils.main;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 
 public class ServerScheduleIT

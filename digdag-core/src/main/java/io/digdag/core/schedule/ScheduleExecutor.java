@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.time.Instant;
-
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.*;
@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
+import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
 
 public class ScheduleExecutor
+        implements BackgroundExecutor
 {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleExecutor.class);
 
@@ -40,7 +42,7 @@ public class ScheduleExecutor
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
     private final SessionStoreManager sessionStoreManager;  // used for validation at backfill
-    private final ScheduledExecutorService executor;
+    private ScheduledExecutorService executor;
 
     @Inject
     public ScheduleExecutor(
@@ -55,25 +57,38 @@ public class ScheduleExecutor
         this.srm = srm;
         this.handler = handler;
         this.sessionStoreManager = sessionStoreManager;
-        this.executor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("scheduler-%d")
-                .build()
-                );
+    }
+
+    @PostConstruct
+    public synchronized void start()
+    {
+        if (executor == null) {
+            executor = Executors.newSingleThreadScheduledExecutor(
+                    new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("scheduler-%d")
+                    .build()
+                    );
+        }
+        // TODO make interval configurable?
+        executor.scheduleWithFixedDelay(() -> run(),
+                1, 1, TimeUnit.SECONDS);
     }
 
     @PreDestroy
-    public void shutdown()
+    public synchronized void shutdown()
     {
-        executor.shutdown();
-        // TODO wait for shutdown completion?
+        if (executor != null) {
+            executor.shutdown();
+            // TODO wait for shutdown completion?
+            executor = null;
+        }
     }
 
-    public void start()
+    @Override
+    public void eagerShutdown()
     {
-        executor.scheduleWithFixedDelay(() -> run(),
-                1, 1, TimeUnit.SECONDS);
+        shutdown();
     }
 
     public void run()
@@ -294,6 +309,7 @@ public class ScheduleExecutor
                                     .stateFlags(AttemptStateFlags.empty())
                                     .sessionId(0L)
                                     .createdAt(Instant.now())
+                                    .finishedAt(Optional.absent())
                                     .build()
                             )
                         );
