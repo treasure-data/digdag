@@ -310,7 +310,19 @@ public class DatabaseSessionStoreManager
     @Override
     public int trySetRetryWaitingToReady()
     {
-        return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReady());
+        return autoCommit((handle, dao) -> handle.createStatement("update tasks " +
+                    " set updated_at =" +
+                        // setting READY_CODE must ensure that updated_at becomes unique
+                        // because it's used as a part of next queued task name.
+                        " case when updated_at = now() then " + addSeconds("now()", 1) +
+                            " else now()" +
+                            " end," +
+                        " retry_at = NULL," +
+                        " state = " + TaskStateCode.READY_CODE +
+                    " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                    " and retry_at <= now()")
+                .execute()
+            );
     }
 
     @Override
@@ -890,20 +902,6 @@ public class DatabaseSessionStoreManager
                 .bind("parentId", taskId)
                 .execute();
         }
-
-        //public boolean trySetBlockedToReadyOrShortCircuitPlanned(long taskId)
-        //{
-        //    int n = handle.createStatement("update tasks " +
-        //            " set updated_at = now(), state = case task_type" +
-        //            " when " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
-        //            " else " + TaskStateCode.READY_CODE +
-        //            " end" +
-        //            " where state = " + TaskStateCode.BLOCKED_CODE +
-        //            " and id = :taskId")
-        //        .bind("taskId", taskId)
-        //        .execute();
-        //    return n > 0;
-        //}
     }
 
     private class DatabaseSessionStore
@@ -1506,12 +1504,6 @@ public class DatabaseSessionStoreManager
                 " set subtask_config = :subtaskConfig, export_params = :exportParams, store_params = :storeParams, report = :report, error = null" +
                 " where id = :id")
         long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
-
-        @SqlUpdate("update tasks " +
-                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
-                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                " and retry_at <= now()")
-        int trySetRetryWaitingToReady();
 
         @SqlQuery("select * from session_monitors" +
                 " where next_run_time <= :currentTime" +
