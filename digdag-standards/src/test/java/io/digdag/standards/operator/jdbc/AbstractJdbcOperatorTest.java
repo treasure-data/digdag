@@ -97,6 +97,12 @@ public class AbstractJdbcOperatorTest
         {
             return Mockito.mock(TestConnection.class);
         }
+
+        @Override
+        protected String type()
+        {
+            return "testop";
+        }
     }
 
     private TestOperator getJdbcOperator(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
