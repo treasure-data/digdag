@@ -1,28 +1,38 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigException;
+import io.digdag.spi.CommandExecutor;
+import io.digdag.spi.CommandLogger;
+import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import io.digdag.util.BaseOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.io.BufferedWriter;
 import java.nio.file.Path;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.inject.Inject;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.CommandLogger;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.Operator;
-import io.digdag.spi.OperatorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.digdag.client.config.Config;
-import io.digdag.util.BaseOperator;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public class ShOperatorFactory
         implements OperatorFactory
@@ -61,7 +71,37 @@ public class ShOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
+        {
+            // Return the secret keys referred to in the env config
+            Set<String> selectors = new HashSet<>();
+            Config envConfig = this.request.getConfig().getNestedOrGetEmpty("_env");
+            for (String name : envConfig.getKeys()) {
+                if (!VALID_ENV_KEY.matcher(name).matches()) {
+                    throw new ConfigException("Invalid _env");
+                }
+                JsonNode value = envConfig.get(name, JsonNode.class);
+                switch(value.getNodeType()) {
+                    case OBJECT:
+                        ObjectNode ref = (ObjectNode) value;
+                        JsonNode secret = ref.get("secret");
+                        if (ref.size() != 1 || secret == null || !secret.isTextual()) {
+                            throw new ConfigException("Invalid _env");
+                        }
+                        String secretKey = secret.textValue();
+                        selectors.add(secretKey);
+                        break;
+                    case STRING:
+                        break;
+                    default:
+                        throw new ConfigException("Invalid _env");
+                }
+            }
+            return ImmutableList.copyOf(selectors);
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
@@ -92,6 +132,32 @@ public class ShOperatorFactory
                         logger.trace("Ignoring invalid env var key: {}", key);
                     }
                 });
+
+            // Set up process environment according to env config. This can also refer to secrets.
+            Config envConfig = this.request.getConfig().getNestedOrGetEmpty("_env");
+            for (String name : envConfig.getKeys()) {
+                if (!VALID_ENV_KEY.matcher(name).matches()) {
+                    throw new ConfigException("Invalid _env");
+                }
+                JsonNode value = envConfig.get(name, JsonNode.class);
+                switch(value.getNodeType()) {
+                    case OBJECT:
+                        ObjectNode ref = (ObjectNode) value;
+                        JsonNode secret = ref.get("secret");
+                        if (ref.size() != 1 || secret == null || !secret.isTextual()) {
+                            throw new ConfigException("Invalid _env");
+                        }
+                        String secretKey = secret.textValue();
+                        String secretValue = ctx.secrets().getSecret(secretKey);
+                        env.put(name, secretValue);
+                        break;
+                    case STRING:
+                        env.put(name, value.textValue());
+                        break;
+                    default:
+                        throw new ConfigException("Invalid _env");
+                }
+            }
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");

@@ -1,8 +1,8 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
@@ -15,18 +15,22 @@ import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
+import io.digdag.client.api.SecretValidation;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -56,8 +60,12 @@ public class DigdagClient implements AutoCloseable
         private String host = null;
         private int port = -1;
         private boolean ssl = false;
+        private String proxyHost = null;
+        private Integer proxyPort = null;
+        private String proxyScheme = null;
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
+        private boolean disableCertValidation;
 
         public Builder host(String host)
         {
@@ -77,6 +85,24 @@ public class DigdagClient implements AutoCloseable
             return this;
         }
 
+        public Builder proxyHost(String proxyHost)
+        {
+            this.proxyHost = proxyHost;
+            return this;
+        }
+
+        public Builder proxyPort(int proxyPort)
+        {
+            this.proxyPort = proxyPort;
+            return this;
+        }
+
+        public Builder proxyScheme(String proxyScheme)
+        {
+            this.proxyScheme = proxyScheme;
+            return this;
+        }
+
         public Builder header(String key, String value)
         {
             this.baseHeaders.put(key, value);
@@ -92,6 +118,12 @@ public class DigdagClient implements AutoCloseable
         public Builder headerBuilder(Function<Map<String, String>, Map<String, String>> headerBuilder)
         {
             this.headerBuilder = headerBuilder;
+            return this;
+        }
+
+        public Builder disableCertValidation(boolean value)
+        {
+            this.disableCertValidation = value;
             return this;
         }
 
@@ -164,9 +196,28 @@ public class DigdagClient implements AutoCloseable
 
         ObjectMapper mapper = objectMapper();
 
-        this.client = new ResteasyClientBuilder()
-            .register(new JacksonJsonProvider(mapper))
-            .build();
+        ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
+                .register(new JacksonJsonProvider(mapper));
+
+        // TODO: support proxy user/pass
+        if (builder.proxyHost != null) {
+            if (builder.proxyPort == null) {
+                clientBuilder.defaultProxy(builder.proxyHost);
+            } else {
+                if (builder.proxyScheme == null) {
+                    clientBuilder.defaultProxy(builder.proxyHost, builder.proxyPort);
+                } else {
+                    clientBuilder.defaultProxy(builder.proxyHost, builder.proxyPort, builder.proxyScheme);
+                }
+            }
+        }
+
+        if (builder.disableCertValidation) {
+            clientBuilder.disableTrustManager();
+        }
+
+        this.client = clientBuilder.build();
+
         this.cf = new ConfigFactory(mapper);
     }
 
@@ -547,8 +598,51 @@ public class DigdagClient implements AutoCloseable
 
     public Map<String, Object> getVersion()
     {
-        return doGet(new GenericType<Map<String, Object>>() {},
-                target("/api/version"));
+        return doGet(new GenericType<Map<String, Object>>() {}, target("/api/version"));
+    }
+
+    public void setProjectSecret(int projectId, String key, String value)
+    {
+        if (!SecretValidation.isValidSecret(key, value)) {
+            throw new IllegalArgumentException();
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .put(Entity.entity(RestSetSecretRequest.of(value), "application/json"));
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            throw new WebApplicationException("Failed to set project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public void deleteProjectSecret(int projectId, String key)
+    {
+        if (!SecretValidation.isValidSecretKey(key)) {
+            throw new IllegalArgumentException();
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .delete();
+
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            throw new WebApplicationException("Failed to delete project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public RestSecretList listProjectSecrets(int projectId)
+    {
+        return target("/api/projects/{id}/secrets")
+                .resolveTemplate("id", projectId)
+                .request("application/json")
+                .headers(headers.get())
+                .get(RestSecretList.class);
     }
 
     private WebTarget target(String path)

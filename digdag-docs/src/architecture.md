@@ -4,7 +4,7 @@
 
 A workflow automates any kinds of manual operations. You'll define a sequence of tasks as workflow, then Digdag keeps running it for you. Tasks are defined using operator plugins so that you can control various kinds of systems from the central workflow engine (see also [list of built-in operator plugins](operators.html)).
 
-As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn't finish within expected amount of tiem, Digdag sends a notification. Digdag starts workflow automatically based on scheduling options.
+As the runtime framework of the plugins, Digdag takes care of the rest of issues around workload automation so that you can focus on automation. If a task fails, Digdag sends an alerts. If the workflow doesn't finish within expected amount of time, Digdag sends a notification. Digdag starts workflow automatically based on scheduling options.
 
 Tasks can run on local machine, distributed servers, or in a Docker container.
 
@@ -55,7 +55,7 @@ You can use [Docker](https://www.docker.com/) to run tasks in a container.  If `
 
 ## Next steps
 
+* [Concepts](concepts.html)
 * [Getting started](scheduling_workflow.html)
-* [Workflow definition](workflow_definition.html)
 * [More choices of operators](operators.html)
 

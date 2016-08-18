@@ -12,7 +12,6 @@ import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.session.SessionStoreManager;
 import org.skife.jdbi.v2.DBI;
-import org.h2.jdbcx.JdbcConnectionPool;
 
 public class DatabaseModule
         implements Module

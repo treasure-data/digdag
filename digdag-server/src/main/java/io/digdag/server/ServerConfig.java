@@ -11,6 +11,8 @@ import io.digdag.client.config.ConfigFactory;
 import org.immutables.value.Value;
 
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -23,8 +25,6 @@ public interface ServerConfig
     public static final String DEFAULT_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
-    static String HEADER_KEY_PREFIX = "server.http.headers.";
-
     public int getPort();
 
     public String getBind();
@@ -33,6 +33,8 @@ public interface ServerConfig
 
     public Optional<String> getAccessLogPath();
 
+    public Optional<Integer> getJmxPort();
+
     public String getAccessLogPattern();
 
     public boolean getExecutorEnabled();
@@ -40,6 +42,8 @@ public interface ServerConfig
     public Map<String, String> getHeaders();
 
     public ConfigElement getSystemConfig();
+
+    public Map<String,String> getEnvironment();
 
     public static ImmutableServerConfig.Builder defaultBuilder()
     {
@@ -57,9 +61,9 @@ public interface ServerConfig
 
     public static ServerConfig convertFrom(Config config)
     {
-        Map<String, String> headers = config.getKeys().stream()
-                .filter(key -> key.startsWith(HEADER_KEY_PREFIX))
-                .collect(toMap(key -> key.substring(HEADER_KEY_PREFIX.length()),
+        Function<String, Map<String, String>> readPrefixed = (prefix) -> config.getKeys().stream()
+                .filter(key -> key.startsWith(prefix))
+                .collect(toMap(key -> key.substring(prefix.length()),
                         key -> config.get(key, String.class)));
 
         return defaultBuilder()
@@ -68,9 +72,11 @@ public interface ServerConfig
             .serverRuntimeInfoPath(config.getOptional("server.runtime-info.path", String.class))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
+            .jmxPort(config.getOptional("server.jmx.port", Integer.class))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
-            .headers(headers)
+            .headers(readPrefixed.apply("server.http.headers."))
             .systemConfig(ConfigElement.copyOf(config))  // systemConfig needs to include other keys such as server.port so that ServerBootstrap.initialize can recover ServerConfig from this systemConfig
+            .environment(readPrefixed.apply("server.environment."))
             .build();
     }
 

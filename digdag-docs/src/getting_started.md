@@ -9,11 +9,31 @@ Digdag is a simple executable file. You can download the file to ``/usr/local/bi
 
 If `digdag --help` command works, Digdag is installed successfully.
 
-### On Windows, or if curl command doesn't work
+### On Windows?
 
 On Windows, you can download a file named `digdag-<VERSION>.jar` from [https://dl.digdag.io/digdag-latest](https://dl.digdag.io/digdag-latest). This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).
 
 Once download completed, please rename the file to `digdag.bat` (Windows) or `/usr/local/bin/digdag` (Linux/UNIX).
+
+
+### curl did not work?
+
+Some environments (ex: Ubuntu 16.04) may produce the following error:
+
+```shell
+curl: (77) error setting certificate verify locations:
+  CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+```
+
+Most likely, the SSL certificate file is in `/etc/ssl/certs/ca-certificates.crt` while `curl` expects it in `/etc/pki/tls/certs/ca-bundle.crt`. To fix this, run the folllowing:
+
+```shell
+$ sudo mkdir -p /etc/pki/tls/certs
+$ sudo cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+```
+
+Then, run Step 1 again.
 
 ### Got error?
 

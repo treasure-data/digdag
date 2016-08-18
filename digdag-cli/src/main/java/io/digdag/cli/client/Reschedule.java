@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import java.io.PrintStream;
 import java.time.Instant;
+import java.util.Map;
 
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
@@ -28,9 +29,9 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Reschedule(Version version, PrintStream out, PrintStream err)
+    public Reschedule(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override

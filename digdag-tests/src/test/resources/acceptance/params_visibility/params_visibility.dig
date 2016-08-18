@@ -26,22 +26,37 @@
   +store_overwrite:
     sh>: echo ${v} > store_overwrite.out
 
-+parallel_store:
-  +store:
++parallel_store_fork:
+  +prepare:
+    py>: helper.store_v
+    value: prepare
+
+  +fork:
     _parallel: true
 
     +a:
-      py>: helper.store_v
-      value: a
+      +store:
+        py>: helper.store_v
+        value: a
+
+      +dump:
+        sh>: echo ${v} > parallel_store_fork_a.out
 
     +b:
-      py>: helper.store_v
-      value: b
+      +store:
+        py>: helper.store_v
+        value: b
 
-  +dump:
-    sh>: echo ${v} > parallel_store.out
+      +dump:
+        sh>: echo ${v} > parallel_store_fork_b.out
 
-+dag_store:
+    +c:
+      sh>: echo ${v} > parallel_store_fork_c.out
+
+  +join:
+    sh>: echo ${v} > parallel_store_fork_join.out
+
++dag_store_join:
   +store:
     _parallel: true
 
@@ -59,5 +74,5 @@
       value: c
 
   +dump:
-    sh>: echo ${v} > dag_store.out
+    sh>: echo ${v} > dag_store_join.out
 

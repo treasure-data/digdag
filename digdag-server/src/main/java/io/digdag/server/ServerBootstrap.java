@@ -129,7 +129,7 @@ public class ServerBootstrap
     protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
     {
         return bootstrap
-            .addModules(new EagerShutdownModule(control))
+            .setEnvironment(serverConfig.getEnvironment())
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
@@ -139,7 +139,11 @@ public class ServerBootstrap
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
             })
-            .addModules(new ServerModule());
+            .addModules(
+                    new EagerShutdownModule(control),
+                    new JmxModule(),
+                    new ServerModule()
+            );
     }
 
     private static final InheritableThreadLocal<GuiceRsServerControl> servletServerControl = new InheritableThreadLocal<>();

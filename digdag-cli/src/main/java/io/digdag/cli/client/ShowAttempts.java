@@ -11,6 +11,7 @@ import io.digdag.core.Version;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -20,9 +21,9 @@ public class ShowAttempts
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    public ShowAttempts(Version version, PrintStream out, PrintStream err)
+    public ShowAttempts(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override
@@ -99,6 +100,7 @@ public class ShowAttempts
         ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
         ln("  params: %s", attempt.getParams());
         ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
+        ln("  finished at: %s", attempt.getFinishedAt().transform(TimeUtil::formatTime).or(""));
         ln("  kill requested: %s", attempt.getCancelRequested());
         ln("  status: %s", status);
         ln("");

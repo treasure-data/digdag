@@ -11,6 +11,7 @@ import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
@@ -49,11 +50,13 @@ public class TdOperatorFactory
     private static final int PREVIEW_ROWS = 20;
 
     private final TemplateEngine templateEngine;
+    private final Map<String, String> env;
 
     @Inject
-    public TdOperatorFactory(TemplateEngine templateEngine)
+    public TdOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env)
     {
         this.templateEngine = templateEngine;
+        this.env = env;
     }
 
     public String getType()
@@ -84,7 +87,7 @@ public class TdOperatorFactory
 
         private TdOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

@@ -146,6 +146,7 @@ public final class RestModels
                         .cancelRequested(attempt.getStateFlags().isCancelRequested())
                         .params(attempt.getParams())
                         .createdAt(attempt.getCreatedAt())
+                        .finishedAt(attempt.getFinishedAt())
                         .build())
                 .build();
     }
@@ -175,6 +176,7 @@ public final class RestModels
             .cancelRequested(attempt.getStateFlags().isCancelRequested())
             .params(attempt.getParams())
             .createdAt(attempt.getCreatedAt())
+            .finishedAt(attempt.getFinishedAt())
             .build();
     }
 

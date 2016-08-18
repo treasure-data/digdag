@@ -4,7 +4,7 @@ package io.digdag.core.workflow;
  * An exception thrown when adding more tasks to a session attempt would cause the task limit to be exceeded.
  */
 public class TaskLimitExceededException
-        extends RuntimeException
+        extends LimitExceededException
 {
     // TODO (dano): should this be a checked exception?
 

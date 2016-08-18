@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 
@@ -58,9 +57,9 @@ public class Check
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
-    public Check(PrintStream out, PrintStream err)
+    public Check(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -87,7 +86,7 @@ public class Check
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

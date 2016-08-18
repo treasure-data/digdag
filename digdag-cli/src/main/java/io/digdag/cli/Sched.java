@@ -1,10 +1,9 @@
 package io.digdag.cli;
 
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.Properties;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletContext;
 
@@ -44,9 +43,9 @@ public class Sched
 
     // TODO no-schedule mode
 
-    public Sched(Version version, PrintStream out, PrintStream err)
+    public Sched(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override
@@ -76,7 +75,7 @@ public class Sched
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

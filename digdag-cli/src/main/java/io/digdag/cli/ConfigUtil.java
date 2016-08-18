@@ -2,22 +2,23 @@ package io.digdag.cli;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 class ConfigUtil
 {
-    static Path defaultConfigPath()
+    static Path defaultConfigPath(Map<String, String> env)
     {
-        return configHome().resolve("digdag").resolve("config");
+        return configHome(env).resolve("digdag").resolve("config");
     }
 
-    static Path defaultLocalPluginPath()
+    static Path defaultLocalPluginPath(Map<String, String> env)
     {
-        return configHome().resolve("digdag").resolve("plugins");
+        return configHome(env).resolve("digdag").resolve("plugins");
     }
 
-    private static Path configHome()
+    private static Path configHome(Map<String, String> env)
     {
-        String configHome = System.getenv("XDG_CONFIG_HOME");
+        String configHome = env.get("XDG_CONFIG_HOME");
         if (configHome != null) {
             return Paths.get(configHome);
         }

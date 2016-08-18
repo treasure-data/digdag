@@ -5,6 +5,7 @@ import com.treasuredata.client.model.TDExportFileFormatType;
 import com.treasuredata.client.model.TDExportJobRequest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
 
@@ -23,10 +25,11 @@ public class TdTableExportOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdTableExportOperatorFactory.class);
+    private final Map<String, String> env;
 
     @Inject
-    public TdTableExportOperatorFactory()
-    { }
+    public TdTableExportOperatorFactory(@Environment Map<String, String> env)
+    { this.env = env;}
 
     public String getType()
     {
@@ -48,7 +51,7 @@ public class TdTableExportOperatorFactory
 
         private TdTableExportOperator(Path workspacePath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(workspacePath, request, env);
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 

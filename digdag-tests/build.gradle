@@ -5,7 +5,6 @@ dependencies {
     testCompile 'org.subethamail:subethasmtp:3.1.7'
     testCompile 'com.squareup.okhttp3:okhttp:3.3.0'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.3.1'
-    testCompile 'pl.pragmatists:JUnitParams:1.0.5'
     testCompile 'org.littleshoot:littleproxy:1.1.0'
 }
 
@@ -18,6 +17,9 @@ test {
 
     // Exclude all acceptance tests if this is not an acceptance test run
     if (System.env.CI_ACCEPTANCE_TEST == null || !Boolean.valueOf(System.env.CI_ACCEPTANCE_TEST)) {
-        exclude { true }
+        exclude {
+            // run tests if --tests or -Dtest.single is explicitly set
+            System.getProperty("test.single") == null && filter.includePatterns.empty
+        }
     }
 }

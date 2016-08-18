@@ -229,7 +229,16 @@ public class InitPushStartIT
                 }
                 Thread.sleep(1000);
             }
+
+            // Verify that the success is reflected to the REST API
             assertThat(attempt.getSuccess(), is(true));
+            assertThat(attempt.getFinishedAt().isPresent(), is(true));
+            {
+                RestSession done = client.getSession(sessionId);
+                assertThat(done.getLastAttempt().get().getDone(), is(true));
+                assertThat(done.getLastAttempt().get().getSuccess(), is(true));
+                assertThat(done.getLastAttempt().get().getFinishedAt().isPresent(), is(true));
+            }
         }
 
         // Verify that the success is reflected in the cli

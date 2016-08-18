@@ -1,22 +1,14 @@
 package io.digdag.standards.operator;
 
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.io.IOException;
 import java.nio.file.Path;
 import com.google.inject.Inject;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import io.digdag.core.Limits;
-import io.digdag.core.workflow.TaskLimitExceededException;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.util.BaseOperator;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -52,7 +44,7 @@ public class LoopOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

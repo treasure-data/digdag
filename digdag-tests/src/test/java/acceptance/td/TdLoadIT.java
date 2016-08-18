@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.main;
 import static java.util.Arrays.asList;
@@ -23,7 +24,6 @@ import static org.junit.Assume.assumeThat;
 
 public class TdLoadIT
 {
-    private static final String TD_API_KEY = System.getenv("TD_API_KEY");
     private static final String TD_LOAD_IT_SFTP_USER = System.getenv("TD_LOAD_IT_SFTP_USER");
     private static final String TD_LOAD_IT_SFTP_PASSWORD = System.getenv("TD_LOAD_IT_SFTP_PASSWORD");
 
@@ -57,7 +57,7 @@ public class TdLoadIT
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
         Files.write(config, asList(
-                "params.td.apikey = " + TD_API_KEY,
+                "secrets.td.apikey = " + TD_API_KEY,
                 "params.td.database = " + database,
                 "params.td_load_sftp_user = " + TD_LOAD_IT_SFTP_USER,
                 "params.td_load_sftp_password = " + TD_LOAD_IT_SFTP_PASSWORD

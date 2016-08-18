@@ -309,6 +309,7 @@ public class ScheduleExecutor
                                     .stateFlags(AttemptStateFlags.empty())
                                     .sessionId(0L)
                                     .createdAt(Instant.now())
+                                    .finishedAt(Optional.absent())
                                     .build()
                             )
                         );

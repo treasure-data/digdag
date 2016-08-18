@@ -83,7 +83,7 @@ See `Ruby API documents <ruby_api.html>`_ for details including best practices h
 .. code-block:: yaml
 
     _export:
-      ruby:
+      rb:
         require: tasks/my_workflow
 
     +step1:
@@ -107,7 +107,15 @@ sh>: Shell scripts
 
 **sh>:** operator runs a shell script.
 
-TODO: add more description here
+Run a shell command (`/bin/sh`)
+
+.. code-block:: yaml
+
+    +step1:
+      sh>: echo "hello world"
+
+
+Run a shell script
 
 .. code-block:: yaml
 
@@ -120,6 +128,14 @@ TODO: add more description here
   Name of the command to run.
 
   * :command:`sh>: tasks/workflow.sh --task1`
+
+The shell defaults to `/bin/sh`. If an alternate shell such as `zsh` is desired, use the `shell` option in the `_export` section.
+
+.. code-block:: yaml
+
+    _export:
+      sh:
+        shell: [/usr/bin/zsh]
 
 
 loop>: Repeat tasks

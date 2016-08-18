@@ -1,12 +1,9 @@
 package io.digdag.standards.operator;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.io.Writer;
 import java.io.BufferedWriter;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,10 +12,10 @@ import java.nio.charset.StandardCharsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import io.digdag.spi.TaskExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
@@ -81,7 +78,7 @@ public class PyOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"))

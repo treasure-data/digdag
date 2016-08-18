@@ -1,26 +1,22 @@
 package io.digdag.cli.client;
 
-import com.beust.jcommander.Parameter;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import java.io.PrintStream;
-import java.util.List;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowAttempt
     extends ClientCommand
 {
-    public ShowAttempt(Version version, PrintStream out, PrintStream err)
+    public ShowAttempt(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(version, env, out, err);
     }
 
     @Override
@@ -75,6 +71,7 @@ public class ShowAttempt
         ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
         ln("  params: %s", attempt.getParams());
         ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
+        ln("  finished at: %s", attempt.getFinishedAt().transform(TimeUtil::formatTime).or(""));
         ln("  kill requested: %s", attempt.getCancelRequested());
         ln("  status: %s", status);
         ln("");

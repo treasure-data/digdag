@@ -25,6 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+
+import io.digdag.client.DigdagClient;
+import io.digdag.core.LocalSecretAccessPolicy;
+import io.digdag.core.config.PropertyUtils;
+import io.digdag.spi.SecretAccessPolicy;
+import io.digdag.spi.SecretStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -34,7 +40,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -73,7 +78,6 @@ import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.config.Config;
@@ -135,9 +139,9 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(PrintStream out, PrintStream err)
+    public Run(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override
@@ -195,7 +199,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 
@@ -217,8 +221,12 @@ public class Run
         Properties systemProps = loadSystemProperties();
 
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .setEnvironment(env)
+                .setSystemConfig(PropertyUtils.toConfigElement(systemProps))
                 .setSystemPlugins(loadSystemPlugins(systemProps))
                 .addModules(binder -> {
+                    binder.bind(SecretAccessPolicy.class).to(LocalSecretAccessPolicy.class).in(Scopes.SINGLETON);
+                    binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                     binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
@@ -627,9 +635,10 @@ public class Run
                 TaskCallbackApi callback, WorkspaceManager workspaceManager,
                 WorkflowCompiler compiler, ConfigFactory cf,
                 ConfigEvalEngine evalEngine, OperatorRegistry registry,
-                Run cmd, YamlMapper yamlMapper)
+                Run cmd, YamlMapper yamlMapper,
+                SecretStoreManager secretStoreManager, SecretAccessPolicy secretAccessPolicy)
         {
-            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry);
+            super(config, agentId, callback, workspaceManager, compiler, cf, evalEngine, registry, secretStoreManager, secretAccessPolicy);
             this.cf = cf;
             this.cmd = cmd;
             this.yamlMapper = yamlMapper;
