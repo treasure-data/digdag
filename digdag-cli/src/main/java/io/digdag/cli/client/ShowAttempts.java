@@ -67,15 +67,15 @@ public class ShowAttempts
 
         EntityCollectionPrinter<RestSessionAttempt> printer = new EntityCollectionPrinter<>();
 
-        printer.field("SESSION ID", s -> Long.toString(s.getId()));
-        printer.field("ATTEMPT ID", sa -> Integer.toString(sa.getProject().getId()));
-        printer.field("PROJECT", s -> s.getProject().getName());
-        printer.field("WORKFLOW", s -> s.getWorkflow().getName());
-        printer.field("SESSION TIME", s -> TimeUtil.formatTime(s.getSessionTime()));
+        printer.field("SESSION ID", a -> Long.toString(a.getId()));
+        printer.field("ATTEMPT ID", a -> Integer.toString(a.getProject().getId()));
+        printer.field("PROJECT", a -> a.getProject().getName());
+        printer.field("WORKFLOW", a -> a.getWorkflow().getName());
+        printer.field("SESSION TIME", a -> TimeUtil.formatTime(a.getSessionTime()));
         printer.field("CREATED", a -> TimeUtil.formatTime(a.getCreatedAt()));
         printer.field("KILLED", a -> Boolean.toString(a.getCancelRequested()));
-        printer.field("STATUS", s -> status(s).toUpperCase());
-        printer.field("RETRY NAME", sa -> sa.getRetryAttemptName().or(""));
+        printer.field("STATUS", a -> status(a).toUpperCase());
+        printer.field("RETRY NAME", a -> a.getRetryAttemptName().or(""));
 
         if (sessionId == null) {
             attempts = client.getSessionAttempts(Optional.fromNullable(lastId));

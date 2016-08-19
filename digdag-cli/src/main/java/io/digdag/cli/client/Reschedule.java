@@ -1,16 +1,17 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.time.Instant;
-import java.util.Map;
-
-import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
+import io.digdag.cli.EntityPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.core.Version;
+
+import java.io.PrintStream;
+import java.time.Instant;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -88,11 +89,14 @@ public class Reschedule
                     dryRun);
         }
 
-        ln("  id: %d", updated.getId());
-        ln("  workflow: %s", updated.getWorkflow().getName());
-        ln("  next session time: %s", TimeUtil.formatTime(updated.getNextScheduleTime()));
-        ln("  next runs at: %s (%s later)", TimeUtil.formatTime(updated.getNextRunTime()), TimeUtil.formatTimeDiff(now, updated.getNextRunTime()));
-        ln("");
+        EntityPrinter<RestScheduleSummary> printer = new EntityPrinter<>();
+
+        printer.field("id", s -> Long.toString(s.getId()));
+        printer.field("workflow", s -> s.getWorkflow().getName());
+        printer.field("next session time", s -> TimeUtil.formatTime(s.getNextScheduleTime()));
+        printer.field("next runs", s -> String.format("%s (%s later)", TimeUtil.formatTime(s.getNextRunTime()), TimeUtil.formatTimeDiff(now, s.getNextRunTime())));
+
+        printer.print(format, updated, out);
 
         if (dryRun) {
             err.println("Schedule is not updated.");

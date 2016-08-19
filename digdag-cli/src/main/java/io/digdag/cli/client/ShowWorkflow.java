@@ -1,6 +1,7 @@
 package io.digdag.cli.client;
 
 import io.digdag.cli.EntityCollectionPrinter;
+import io.digdag.cli.EntityPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -58,8 +59,8 @@ public class ShowWorkflow
         EntityCollectionPrinter<RestWorkflowDefinition> formatter = new EntityCollectionPrinter<>();
         formatter.field("PROJECT", wf -> wf.getProject().getName());
         formatter.field("PROJECT ID", wf -> Integer.toString(wf.getProject().getId()));
-        formatter.field("WORKFLOW", wf -> wf.getName());
-        formatter.field("REVISION", wf -> wf.getRevision());
+        formatter.field("WORKFLOW", RestWorkflowDefinition::getName);
+        formatter.field("REVISION", RestWorkflowDefinition::getRevision);
 
         List<RestWorkflowDefinition> defs;
         if (projName != null) {
@@ -90,7 +91,14 @@ public class ShowWorkflow
 
         RestProject proj = client.getProject(projName);
         RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
-        String yaml = yamlMapper().toYaml(def.getConfig());
-        ln("%s", yaml);
+
+        EntityPrinter<RestWorkflowDefinition> formatter = new EntityPrinter<>();
+
+        formatter.field("project", wf -> wf.getProject().getName());
+        formatter.field("project id", wf -> Integer.toString(wf.getProject().getId()));
+        formatter.field("workflow", RestWorkflowDefinition::getName);
+        formatter.field("revision", RestWorkflowDefinition::getRevision);
+
+        formatter.print(format, def, out);
     }
 }

@@ -1,11 +1,13 @@
 package io.digdag.cli.client;
 
+import io.digdag.cli.EntityPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.core.Version;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
@@ -51,7 +53,27 @@ public class ShowAttempt
         return systemExit(error);
     }
 
-    private void printAttempt(RestSessionAttempt attempt) {
+    private void printAttempt(RestSessionAttempt attempt)
+            throws IOException
+    {
+        EntityPrinter<RestSessionAttempt> printer = new EntityPrinter<>();
+
+        printer.field("session id", a -> Long.toString(a.getSessionId()));
+        printer.field("attempt id", a -> Long.toString(a.getId()));
+        printer.field("uuid", a -> a.getSessionUuid().toString());
+        printer.field("project", a -> a.getProject().getName());
+        printer.field("workflow", a -> a.getWorkflow().getName());
+        printer.field("session time", a -> TimeUtil.formatTime(a.getSessionTime()));
+        printer.field("retry attempt name", a -> a.getRetryAttemptName().or(""));
+        printer.field("created at", a -> TimeUtil.formatTime(a.getCreatedAt()));
+        printer.field("kill requested", a -> Boolean.toString(a.getCancelRequested()));
+        printer.field("status", this::attemptStatus);
+
+        printer.print(format, attempt, out);
+    }
+
+    private String attemptStatus(RestSessionAttempt attempt)
+    {
         String status;
         if (attempt.getSuccess()) {
             status = "success";
@@ -62,17 +84,6 @@ public class ShowAttempt
         else {
             status = "running";
         }
-        ln("  session id: %d", attempt.getSessionId());
-        ln("  attempt id: %d", attempt.getId());
-        ln("  uuid: %s", attempt.getSessionUuid());
-        ln("  project: %s", attempt.getProject().getName());
-        ln("  workflow: %s", attempt.getWorkflow().getName());
-        ln("  session time: %s", TimeUtil.formatTime(attempt.getSessionTime()));
-        ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
-        ln("  params: %s", attempt.getParams());
-        ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
-        ln("  kill requested: %s", attempt.getCancelRequested());
-        ln("  status: %s", status);
-        ln("");
+        return status;
     }
 }

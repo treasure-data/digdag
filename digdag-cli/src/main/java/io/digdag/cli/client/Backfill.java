@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Optional;
+import io.digdag.cli.EntityCollectionPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -102,18 +103,17 @@ public class Backfill
                 Optional.fromNullable(count),
                 dryRun);
 
-        ln("Session attempts:");
-        for (RestSessionAttempt attempt : attempts) {
-            ln("  id: %d", attempt.getId());
-            ln("  uuid: %s", attempt.getSessionUuid());
-            ln("  project: %s", attempt.getProject().getName());
-            ln("  workflow: %s", attempt.getWorkflow().getName());
-            ln("  session time: %s", TimeUtil.formatTime(attempt.getSessionTime()));
-            ln("  retry attempt name: %s", attempt.getRetryAttemptName().or(""));
-            ln("  params: %s", attempt.getParams());
-            ln("  created at: %s", TimeUtil.formatTime(attempt.getCreatedAt()));
-            ln("");
-        }
+        EntityCollectionPrinter<RestSessionAttempt> printer = new EntityCollectionPrinter<>();
+
+        printer.field("SESSION ID", a -> Long.toString(a.getId()));
+        printer.field("ATTEMPT ID", a -> Integer.toString(a.getProject().getId()));
+        printer.field("PROJECT", a -> a.getProject().getName());
+        printer.field("WORKFLOW", a -> a.getWorkflow().getName());
+        printer.field("SESSION TIME", a -> TimeUtil.formatTime(a.getSessionTime()));
+        printer.field("RETRY NAME", a -> a.getRetryAttemptName().or(""));
+        printer.field("CREATED", a -> TimeUtil.formatTime(a.getCreatedAt()));
+
+        printer.print(format, attempts, out);
 
         if (dryRun || attempts.isEmpty()) {
             err.println("No session attempts started.");

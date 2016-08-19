@@ -1,6 +1,6 @@
 package io.digdag.cli;
 
-enum OutputFormat
+public enum OutputFormat
 {
     TABLE,
     JSON,

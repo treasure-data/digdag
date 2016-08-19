@@ -1,36 +1,42 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.HashMap;
-import java.time.Instant;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ClientErrorException;
-
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.google.common.base.Optional;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import io.digdag.cli.TimeUtil;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.*;
-import io.digdag.core.Version;
-import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.cli.EntityPrinter;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.IdName;
+import io.digdag.client.api.LocalTimeOrInstant;
+import io.digdag.client.api.NameOptionalId;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
-import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.Version;
+import io.digdag.core.config.ConfigLoaderManager;
 
-import static java.util.Locale.ENGLISH;
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.core.Response;
+
+import java.io.PrintStream;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
+import static java.util.Locale.ENGLISH;
 
 public class Start
     extends ClientCommand
@@ -157,67 +163,74 @@ public class Start
             .build();
 
         if (dryRun) {
-            ln("Session attempt:");
-            ln("  session id: (dry run)");
-            ln("  attempt id: (dry run)");
-            ln("  uuid: (dry run)");
-            ln("  project: %s", def.getProject().getName());
-            ln("  workflow: %s", def.getName());
-            ln("  session time: %s", TimeUtil.formatTime(request.getSessionTime()));
-            ln("  retry attempt name: %s", request.getRetryAttemptName().or(""));
-            ln("  params: %s", request.getParams());
-            //ln("  created at: (dry run)");
-            ln("");
+            RestSessionAttempt newAttempt = RestSessionAttempt.builder()
+                    .sessionId(0)
+                    .id(0)
+                    .sessionUuid(new UUID(0, 0))
+                    .project(IdName.of(def.getProject().getId(), def.getProject().getName()))
+                    .workflow(NameOptionalId.of(def.getName(), Optional.absent()))
+                    .sessionTime(truncatedTime.getSessionTime())
+                    .retryAttemptName(Optional.fromNullable(retryAttemptName))
+                    .params(overwriteParams)
+                    .build();
+
+            printAttempt(newAttempt);
 
             err.println("Session attempt is not started.");
+            return;
         }
-        else {
-            RestSessionAttempt newAttempt;
-            try {
-                newAttempt = client.startSessionAttempt(request);
-            }
-            catch (ClientErrorException ex) {
-                if (ex.getResponse().getStatusInfo().equals(Response.Status.CONFLICT)) {
-                    // 409 Conflict response contains RestSessionAttempt in its body
-                    RestSessionAttempt conflictedAttempt;
-                    try {
-                        conflictedAttempt = ex.getResponse().readEntity(RestSessionAttempt.class);
-                    }
-                    catch (Exception readEntityError) {
-                        throw systemExit(String.format(ENGLISH,
-                                    "A session for the requested session_time already exists (session_time=%s)" +
-                                    "\nhint: use `digdag retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
-                                    truncatedTime.getSessionTime()));
-                    }
+
+        RestSessionAttempt newAttempt;
+        try {
+            newAttempt = client.startSessionAttempt(request);
+        }
+        catch (ClientErrorException ex) {
+            if (ex.getResponse().getStatusInfo().equals(Response.Status.CONFLICT)) {
+                // 409 Conflict response contains RestSessionAttempt in its body
+                RestSessionAttempt conflictedAttempt;
+                try {
+                    conflictedAttempt = ex.getResponse().readEntity(RestSessionAttempt.class);
+                }
+                catch (Exception readEntityError) {
                     throw systemExit(String.format(ENGLISH,
-                                "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
+                            "A session for the requested session_time already exists (session_time=%s)" +
+                                    "\nhint: use `digdag retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
+                            truncatedTime.getSessionTime()));
+                }
+                throw systemExit(String.format(ENGLISH,
+                        "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
                                 "\nhint: use `digdag retry %d --latest-revision` command to run the session again for the same session_time",
-                                conflictedAttempt.getSessionId(),
-                                conflictedAttempt.getId(),
-                                truncatedTime.getSessionTime(),
-                                conflictedAttempt.getId()));
-                }
-                else {
-                    throw ex;
-                }
+                        conflictedAttempt.getSessionId(),
+                        conflictedAttempt.getId(),
+                        truncatedTime.getSessionTime(),
+                        conflictedAttempt.getId()));
             }
-
-            ln("Started a session attempt:");
-            ln("  session id: %d", newAttempt.getSessionId());
-            ln("  attempt id: %d", newAttempt.getId());
-            ln("  uuid: %s", newAttempt.getSessionUuid());
-            ln("  project: %s", newAttempt.getProject().getName());
-            ln("  workflow: %s", newAttempt.getWorkflow().getName());
-            ln("  session time: %s", TimeUtil.formatTime(newAttempt.getSessionTime()));
-            ln("  retry attempt name: %s", newAttempt.getRetryAttemptName().or(""));
-            ln("  params: %s", newAttempt.getParams());
-            ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
-            ln("");
-
-            err.printf("* Use `digdag session %d` to show session status.%n", newAttempt.getSessionId());
-            err.println(String.format(ENGLISH,
-                        "* Use `digdag task %d` and `digdag log %d` to show task status and logs.",
-                        newAttempt.getId(), newAttempt.getId()));
+            else {
+                throw ex;
+            }
         }
+
+        printAttempt(newAttempt);
+
+        err.printf("* Use `digdag session %d` to show session status.%n", newAttempt.getSessionId());
+        err.println(String.format(ENGLISH,
+                "* Use `digdag task %d` and `digdag log %d` to show task status and logs.",
+                newAttempt.getId(), newAttempt.getId()));
+    }
+
+    private void printAttempt(RestSessionAttempt newAttempt)
+            throws java.io.IOException
+    {EntityPrinter<RestSessionAttempt> printer = new EntityPrinter<>();
+
+        printer.field("session id", a -> Long.toString(a.getSessionId()));
+        printer.field("attempt id", a -> Long.toString(a.getId()));
+        printer.field("uuid", a -> a.getSessionUuid().toString());
+        printer.field("project", a -> a.getProject().getName());
+        printer.field("workflow", a -> a.getWorkflow().getName());
+        printer.field("session time", a -> TimeUtil.formatTime(a.getSessionTime()));
+        printer.field("retry attempt name", a -> a.getRetryAttemptName().or(""));
+        printer.field("created at", a -> TimeUtil.formatTime(a.getCreatedAt()));
+
+        printer.print(format, newAttempt, out);
     }
 }

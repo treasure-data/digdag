@@ -1,11 +1,14 @@
 package io.digdag.cli.client;
 
+import com.google.common.base.Joiner;
+import io.digdag.cli.EntityCollectionPrinter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestTask;
 import io.digdag.core.Version;
 
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -41,24 +44,21 @@ public class ShowTask
     {
         DigdagClient client = buildClient();
 
-        int count = 0;
-        for (RestTask task : client.getTasks(attemptId)) {
-            ln("   id: %d", task.getId());
-            ln("   name: %s", task.getFullName());
-            ln("   state: %s", task.getState());
-            ln("   config: %s", task.getConfig());
-            ln("   parent: %d", task.getParentId().orNull());
-            ln("   upstreams: %s", task.getUpstreams());
-            ln("   export params: %s", task.getExportParams());
-            ln("   store params: %s", task.getStoreParams());
-            ln("   state params: %s", task.getStateParams());
-            ln("");
-            count++;
-        }
 
-        if (count == 0) {
+        List<RestTask> tasks = client.getTasks(attemptId);
+
+        if (tasks.isEmpty()) {
             client.getSessionAttempt(attemptId);  // throws exception if attempt doesn't exist
         }
-        ln("%d entries.", count);
+
+        EntityCollectionPrinter<RestTask> printer = new EntityCollectionPrinter<>();
+
+        printer.field("ID", task -> Long.toString(task.getId()));
+        printer.field("NAME", RestTask::getFullName);
+        printer.field("STATE", RestTask::getState);
+        printer.field("PARENT", task -> task.getParentId().transform(String::valueOf).or(""));
+        printer.field("UPSTREAMS", task -> Joiner.on(", ").join(task.getUpstreams()));
+
+        printer.print(format, tasks, out);
     }
 }

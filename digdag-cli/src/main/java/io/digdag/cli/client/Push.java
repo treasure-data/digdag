@@ -122,6 +122,10 @@ public class Push
             revision = Upload.generateDefaultRevisionName();
         }
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile(), scheduleFrom);
-        showUploadedProject(out, proj);
+        showUploadedProject(out, proj, format);
+
+        err.println("");
+        err.println("Use `digdag workflows` to show all workflows.");
+
     }
 }

@@ -54,7 +54,10 @@ public class Upload
             revision = generateDefaultRevisionName();
         }
         RestProject proj = client.putProjectRevision(projName, revision, new File(path));
-        showUploadedProject(out, proj);
+        showUploadedProject(out, proj, format);
+
+        err.println("");
+        err.println("Use `digdag workflows` to show all workflows.");
     }
 
     public static String generateDefaultRevisionName()
