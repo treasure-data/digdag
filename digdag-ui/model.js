@@ -109,6 +109,8 @@ export class ProjectArchive {
     this.fileMap = new Map();
     this.legacy = false;
     for (let file of files) {
+      // If the archive has a digdag.yml (which is now just a normal file and no longer interpreted as a project definition) we assume that
+      // the archive might stem from that legacy era and also contain <workflow>.yml files.
       if (file.name == 'digdag.yml') {
         this.legacy = true;
       }
@@ -117,9 +119,11 @@ export class ProjectArchive {
   }
 
   getWorkflow(name: string): ?string {
-    const suffix = this.legacy ? 'yml' : 'dig';
-    const filename = `${name}.${suffix}`;
-    const buffer = this.getFileContents(filename);
+    var buffer = this.getFileContents(`${name}.dig`);
+    // Also look for <workflow>.yml if this archive might be a legacy archive.
+    if (this.legacy && !buffer) {
+      buffer = this.getFileContents(`${name}.yml`);
+    }
     return buffer ? buffer.toString() : null;
   }
 
