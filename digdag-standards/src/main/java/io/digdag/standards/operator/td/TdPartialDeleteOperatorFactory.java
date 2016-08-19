@@ -65,9 +65,8 @@ public class TdPartialDeleteOperatorFactory
         @Override
         protected String startJob(TDOperator op, String domainKey)
         {
-            // TODO: use domain key
             String jobId = op.submitNewJobWithRetry(client ->
-                    client.partialDelete(op.getDatabase(), table, from.getEpochSecond(), to.getEpochSecond()).getJobId());
+                    client.partialDelete(op.getDatabase(), table, from.getEpochSecond(), to.getEpochSecond(), domainKey).getJobId());
             logger.info("Started partial delete job id={}", jobId);
             return jobId;
         }
