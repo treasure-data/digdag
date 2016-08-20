@@ -384,7 +384,7 @@ public class DatabaseSessionStoreManager
                 handle.createQuery(
                     "select id, parent_id," +
                     " (select " + commaGroupConcat("upstream_id") + " from task_dependencies where downstream_id = t.id) as upstream_ids" +
-                    " from tasks t " +
+                    " from tasks t" +
                     " where attempt_id = :attemptId"
                     )
                 .bind("attemptId", attemptId)
@@ -404,9 +404,7 @@ public class DatabaseSessionStoreManager
                     "select td.id, td.export_config, ts.export_params" +
                     " from task_details td" +
                     " join task_state_details ts on ts.id = td.id" +
-                    " where td.id in (" +
-                        idList.stream()
-                        .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+                    " where td.id " + inLargeIdListExpression(idList)
                 )
                 .map(new IdConfigMapper(cfm, "export_config", "export_params"))
                 .list()
@@ -424,9 +422,7 @@ public class DatabaseSessionStoreManager
                 handle.createQuery(
                     "select id, store_params" +
                     " from task_state_details" +
-                    " where id in (" +
-                        idList.stream()
-                        .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+                    " where id " + inLargeIdListExpression(idList)
                 )
                 .map(new IdConfigMapper(cfm, "store_params"))
                 .list()
@@ -444,9 +440,7 @@ public class DatabaseSessionStoreManager
                 handle.createQuery(
                     "select id, error" +
                     " from task_state_details" +
-                    " where id in (" +
-                        idList.stream()
-                        .map(id -> Long.toString(id)).collect(Collectors.joining(", "))+")"
+                    " where id " + inLargeIdListExpression(idList)
                 )
                 .map(new IdConfigMapper(cfm, "error"))
                 .list()
@@ -681,9 +675,7 @@ public class DatabaseSessionStoreManager
         public boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList)
         {
             List<StoredTask> tasks = handle.createQuery(
-                    selectTaskDetailsQuery() + " where t.id in (" +
-                    recursiveChildrenIdList.stream()
-                    .map(id -> Long.toString(id)).collect(Collectors.joining(", ")) + ")" +
+                    selectTaskDetailsQuery() + " where t.id " + inLargeIdListExpression(recursiveChildrenIdList) +
                     " and " + bitAnd("t.state_flags", Integer.toString(TaskStateFlags.INITIAL_TASK)) + " != 0"  // only initial tasks
                 )
                 .map(stm)
@@ -884,7 +876,7 @@ public class DatabaseSessionStoreManager
                         " and up.state not in (" + Stream.of(
                             TaskStateCode.canRunDownstreamStates()
                             ).map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
-                    " )")
+                    ")")
                 .bind("parentId", taskId)
                 .execute();
         }

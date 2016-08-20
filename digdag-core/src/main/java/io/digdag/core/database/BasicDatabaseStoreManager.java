@@ -125,6 +125,27 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
+    public <T extends Number> String inLargeIdListExpression(List<T> idList)
+    {
+        if (idList.size() == 1) {
+            return "= " + idList.get(0).toString();
+        }
+        else {
+            switch (databaseType) {
+            case "h2":
+                return "in (" +
+                    idList.stream()
+                    .map(it -> it.toString()).collect(Collectors.joining(", ")) +
+                    ")";
+            default:
+                return "= any('{" +
+                    idList.stream()
+                    .map(it -> it.toString()).collect(Collectors.joining(",")) +
+                    "}')";
+            }
+        }
+    }
+
     public interface AutoCommitAction <T, D> {
         T call(Handle handle, D dao);
     }
