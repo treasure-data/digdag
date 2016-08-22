@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.nio.file.AccessDeniedException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
@@ -19,6 +20,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import com.beust.jcommander.Parameter;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 
 public class SelfUpdate
@@ -67,6 +69,10 @@ public class SelfUpdate
     {
         Path dest = Paths.get(Command.class.getProtectionDomain().getCodeSource().getLocation().toURI());
 
+        if (!endpoint.startsWith("http")) {
+            throw systemExit("-e option must be an HTTP URL (http://HOST:PORT or https://HOST:PORT)");
+        }
+
         Client client = new ResteasyClientBuilder()
             .build();
 
@@ -77,7 +83,9 @@ public class SelfUpdate
                     .request()
                     .buildGet());
             if (res.getStatus() != 200) {
-                throw new RuntimeException("Failed to check the latest version. Error code: " + res.getStatus() + " " + res.getStatusInfo() + "\n" + res.readEntity(String.class));
+                throw systemExit(String.format(ENGLISH,
+                            "Failed to check the latest version. Response code: %d %s\n%s",
+                            res.getStatus(), res.getStatusInfo(), res.readEntity(String.class)));
             }
             version = res.readEntity(String.class).trim();
         }
@@ -91,7 +99,9 @@ public class SelfUpdate
                 .request()
                 .buildGet());
         if (res.getStatus() != 200) {
-            throw new RuntimeException("Failed to download version " + version + ". Error code: " + res.getStatus() + " " + res.getStatusInfo() + "\n" + res.readEntity(String.class));
+            throw systemExit(String.format(ENGLISH,
+                        "Failed to download version %s. Response code: %d %s\n%s",
+                        version, res.getStatus(), res.getStatusInfo(), res.readEntity(String.class)));
         }
 
         Path path = Files.createTempFile("digdag-", ".jar");
@@ -105,13 +115,20 @@ public class SelfUpdate
         out.println("Verifying...");
         verify(path, version);
 
-        Files.move(path, dest, REPLACE_EXISTING);
+        try {
+            Files.move(path, dest, REPLACE_EXISTING);
+        }
+        catch (AccessDeniedException ex) {
+            throw systemExit(String.format(ENGLISH,
+                        "%s: permission denied\nhint: don't you need \"sudo\"?",
+                        ex.getMessage()));
+        }
 
         out.println("Upgraded to " + version);
     }
 
     private void verify(Path path, String expectedVersion)
-        throws IOException, InterruptedException
+        throws IOException, SystemExitException, InterruptedException
     {
         ProcessBuilder pb = new ProcessBuilder(path.toAbsolutePath().toString(), "--version");
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
@@ -123,13 +140,13 @@ public class SelfUpdate
         int ecode = p.waitFor();
         if (ecode != 0) {
             out.println(output);
-            throw new RuntimeException("Failed to verify version: command exists with error code " + ecode);
+            throw systemExit("Failed to verify version: command exists with error code " + ecode);
         }
 
         Matcher m = Pattern.compile("^" + Pattern.quote(expectedVersion) + "$").matcher(output);
         if (!m.find()) {
             out.println(output);
-            throw new RuntimeException("Failed to verify version: version mismatch");
+            throw systemExit("Failed to verify version: version mismatch");
         }
     }
 
