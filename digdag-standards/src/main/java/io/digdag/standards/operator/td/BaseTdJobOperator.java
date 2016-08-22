@@ -57,13 +57,11 @@ abstract class BaseTdJobOperator
             TaskResult taskResult = processJobResult(op, job);
 
             // Set last_job_id param
-            Config storeParams = taskResult.getStoreParams()
-                    .set("td", request.getConfig().getFactory().create()
-                            .set("last_job_id", job.getJobId()));
+            taskResult.getStoreParams()
+                    .getNestedOrSetEmpty("td")
+                    .set("last_job_id", job.getJobId());
 
-            return TaskResult.builder().from(taskResult)
-                    .storeParams(storeParams)
-                    .build();
+            return taskResult;
         }
     }
 

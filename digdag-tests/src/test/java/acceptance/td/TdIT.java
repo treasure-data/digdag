@@ -1,5 +1,6 @@
 package acceptance.td;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
@@ -59,6 +60,7 @@ import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.main;
+import static utils.TestUtils.objectMapper;
 import static utils.TestUtils.pushAndStart;
 
 public class TdIT
@@ -133,6 +135,20 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         runWorkflow();
+    }
+
+    @Test
+    public void testStoreLastResult()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        runWorkflow();
+        JsonNode result = objectMapper().readTree(outfile.toFile());
+        assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_results").isObject(), is(true));
+        assertThat(result.get("last_results").get("a").asInt(), is(1));
+        assertThat(result.get("last_results").get("b").asInt(), is(2));
     }
 
     @Test
@@ -436,11 +452,11 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private void runWorkflow(String... params) {
-        runWorkflow(ImmutableMap.of(), ImmutableList.copyOf(params));
+    private CommandStatus runWorkflow(String... params) {
+        return runWorkflow(ImmutableMap.of(), ImmutableList.copyOf(params));
     }
 
-    private void runWorkflow(Map<String, String> env, List<String> params)
+    private CommandStatus runWorkflow(Map<String, String> env, List<String> params)
     {
         List<String> args = new ArrayList<>();
         args.addAll(asList("run",
@@ -461,5 +477,7 @@ public class TdIT
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
 
         assertThat(Files.exists(outfile), is(true));
+
+        return runStatus;
     }
 }
