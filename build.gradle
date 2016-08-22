@@ -397,6 +397,7 @@ task pom << {
         // XXX (dano): http://stackoverflow.com/a/27978130
         def build = asNode().appendNode('build', '')
         def plugins = build.appendNode('plugins', '')
+
         def compiler = plugins.appendNode('plugin', '')
         compiler.appendNode('groupId', 'org.apache.maven.plugins')
         compiler.appendNode('artifactId', 'maven-compiler-plugin')
@@ -404,6 +405,17 @@ task pom << {
         def compiler_configuration = compiler.appendNode('configuration', '')
         compiler_configuration.appendNode('source', sourceCompatibility)
         compiler_configuration.appendNode('target', targetCompatibility)
+
+        def enforcer = plugins.appendNode('plugin', '')
+        enforcer.appendNode('groupId', 'org.apache.maven.plugins')
+        enforcer.appendNode('artifactId', 'maven-enforcer-plugin')
+        enforcer.appendNode('version', '1.4.1')
+        def enforcer_executions = enforcer.appendNode('executions', '')
+        def enforcer_execution = enforcer_executions.appendNode('execution', '')
+        enforcer_execution.appendNode('id', 'enforce')
+        def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
+        def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
+        enforcer_rules.appendNode('requireUpperBoundDeps', '')
     }.writeTo("pom.xml")
 }
 
