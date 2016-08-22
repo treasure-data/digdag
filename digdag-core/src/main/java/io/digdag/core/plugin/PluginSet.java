@@ -1,10 +1,11 @@
 package io.digdag.core.plugin;
 
-import java.util.List;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import io.digdag.spi.Plugin;
+
+import java.util.List;
 
 public class PluginSet
 {
@@ -28,16 +29,17 @@ public class PluginSet
             for (Plugin plugin : plugins) {
                 Class<? extends T> providerClass = plugin.getServiceProvider(type);
                 if (providerClass != null) {
-                    builder.add(getServiceProvider(providerClass, type));
+                    builder.add(getServiceProvider(providerClass, type, plugin));
                 }
             }
             return builder.build();
         }
 
-        private <T, E extends T> E getServiceProvider(Class<E> providerClass, Class<T> type)
+        private <T, E extends T> E getServiceProvider(Class<E> providerClass, Class<T> type, Plugin plugin)
         {
             return injector.createChildInjector((binder) -> {
-                binder.<E>bind(providerClass);
+                plugin.configureBinder(providerClass, binder);
+                binder.bind(providerClass);
             })
             .getInstance(providerClass);
         }
@@ -48,6 +50,19 @@ public class PluginSet
     public PluginSet(List<Plugin> plugins)
     {
         this.plugins = plugins;
+    }
+
+    public PluginSet withPlugins(Plugin... plugins)
+    {
+        return withPlugins(ImmutableList.copyOf(plugins));
+    }
+
+    public PluginSet withPlugins(List<Plugin> plugins)
+    {
+        return new PluginSet(FluentIterable
+                .from(this.plugins)
+                .append(plugins)
+                .toList());
     }
 
     public WithInjector withInjector(Injector injector)

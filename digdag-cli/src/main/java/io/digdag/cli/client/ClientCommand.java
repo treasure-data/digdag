@@ -4,13 +4,18 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.core.plugin.PluginSet;
+import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
+import io.digdag.standards.td.TdDigdagClientConfigurationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +24,10 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -30,6 +37,8 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
+
+    @Inject Injector injector;
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
@@ -87,11 +96,18 @@ public abstract class ClientCommand
         // load config file
         Properties props = loadSystemProperties();
 
+        PluginSet plugins = loadSystemPlugins(props);
+
+        // TODO: load this as a proper plugin
+        plugins = plugins.withPlugins(new TdDigdagClientConfigurationPlugin());
+
+        List<DigdagClientConfigurator> clientConfigurators = plugins.withInjector(injector).getServiceProviders(DigdagClientConfigurator.class);
+
         if (endpoint == null) {
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
-        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders);
+        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
             Map<String, Object> remoteVersions = client.getVersion();
@@ -111,7 +127,7 @@ public abstract class ClientCommand
     }
 
     @VisibleForTesting
-    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation, Map<String, String> httpHeaders)
+    static DigdagClient buildClient(String endpoint, Map<String, String> env, Properties props, boolean disableCertValidation, Map<String, String> httpHeaders, Iterable<DigdagClientConfigurator> clientConfigurators)
             throws SystemExitException
     {
         String[] fragments = endpoint.split(":", 2);
@@ -171,6 +187,10 @@ public abstract class ClientCommand
             builder.proxyHost(cfg.getHost());
             builder.proxyPort(cfg.getPort());
             builder.proxyScheme(cfg.useSSL() ? "https" : "http");
+        }
+
+        for (DigdagClientConfigurator configurator : clientConfigurators) {
+            builder = configurator.configureClient(builder);
         }
 
         return builder.build();
