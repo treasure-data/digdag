@@ -1,44 +1,43 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.time.Instant;
-import java.time.ZoneId;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
-import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
-import io.digdag.core.workflow.WorkflowCompiler;
-import io.digdag.core.workflow.Workflow;
-import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.spi.Scheduler;
+import io.digdag.core.workflow.Workflow;
+import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.workflow.WorkflowTask;
 import io.digdag.spi.ScheduleTime;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import static io.digdag.cli.TimeUtil.formatTime;
-import static io.digdag.cli.TimeUtil.formatTimeDiff;
+import io.digdag.spi.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Arguments.loadProject;
 import static io.digdag.cli.Arguments.normalizeWorkflowName;
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.cli.TimeUtil.formatTimeDiff;
 
 public class Check
     extends Command
@@ -56,11 +55,6 @@ public class Check
 
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
-
-    public Check(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
 
     @Override
     public void main()
@@ -80,7 +74,7 @@ public class Check
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag check [workflow.dig] [options...]");
+        err.println("Usage: " + programName + " check [workflow.dig] [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");

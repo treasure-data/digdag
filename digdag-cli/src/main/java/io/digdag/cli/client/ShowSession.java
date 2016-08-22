@@ -8,11 +8,8 @@ import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
-import io.digdag.core.Version;
 
-import java.io.PrintStream;
 import java.util.List;
-import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -21,11 +18,6 @@ public class ShowSession
 {
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
-
-    public ShowSession(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -69,10 +61,10 @@ public class ShowSession
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag sessions                         show sessions for all workflows");
-        err.println("       digdag sessions <project-name>          show sessions for all workflows in a project");
-        err.println("       digdag sessions <project-name> <name>   show sessions for a workflow");
-        err.println("       digdag session  <session-id>            show a single session");
+        err.println("Usage: " + programName + " sessions                         show sessions for all workflows");
+        err.println("       " + programName + " sessions <project-name>          show sessions for all workflows in a project");
+        err.println("       " + programName + " sessions <project-name> <name>   show sessions for a workflow");
+        err.println("       " + programName + " session  <session-id>            show a single session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
         showCommonOptions();
@@ -104,7 +96,7 @@ public class ShowSession
         }
 
         if (sessions.isEmpty()) {
-            err.println("Use `digdag start` to start a session.");
+            err.println("Use `" + programName + " start` to start a session.");
         }
     }
 

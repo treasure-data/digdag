@@ -1,27 +1,26 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.io.IOException;
-import java.nio.file.Paths;
-import javax.servlet.ServletException;
-
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.Version;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.server.ServerBootstrap;
 
+import javax.servlet.ServletException;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.client.DigdagClient.objectMapper;
-import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 import static io.digdag.server.ServerConfig.DEFAULT_BIND;
+import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 
 public class Server
     extends Command
@@ -62,14 +61,6 @@ public class Server
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
-    protected final Version localVersion;
-
-    public Server(Version localVersion, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-        this.localVersion = localVersion;
-    }
-
     @Override
     public void main()
             throws Exception
@@ -93,7 +84,7 @@ public class Server
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag server [options...]");
+        err.println("Usage: " + programName + " server [options...]");
         err.println("  Options:");
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
@@ -115,7 +106,7 @@ public class Server
     private void startServer()
             throws ServletException, IOException
     {
-        ServerBootstrap.startServer(localVersion, buildServerProperties(), ServerBootstrap.class);
+        ServerBootstrap.startServer(version, buildServerProperties(), ServerBootstrap.class);
     }
 
     protected Properties buildServerProperties()

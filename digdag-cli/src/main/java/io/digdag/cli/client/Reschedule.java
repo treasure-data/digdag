@@ -1,16 +1,13 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.time.Instant;
-import java.util.Map;
-
-import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestScheduleSummary;
-import io.digdag.core.Version;
+
+import java.time.Instant;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -28,11 +25,6 @@ public class Reschedule
 
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
-
-    public Reschedule(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -54,7 +46,7 @@ public class Reschedule
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag reschedule <schedule-id>");
+        err.println("Usage: " + programName + " reschedule <schedule-id>");
         err.println("  Options:");
         err.println("    -s, --skip N                     skips specified number of schedules from now");
         err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
@@ -98,7 +90,7 @@ public class Reschedule
             err.println("Schedule is not updated.");
         }
         else {
-            err.println("Use `digdag schedules` to show schedules.");
+            err.println("Use `" + programName + " schedules` to show schedules.");
         }
     }
 }

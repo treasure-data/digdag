@@ -7,11 +7,8 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.Version;
 
-import java.io.PrintStream;
 import java.util.List;
-import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -20,11 +17,6 @@ public class ShowAttempts
 {
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
-
-    public ShowAttempts(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -49,8 +41,8 @@ public class ShowAttempts
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag attempts                         show attempts for all sessions");
-        err.println("       digdag attempts <session-id>            show attempts for a session");
+        err.println("Usage: " + programName + " attempts                         show attempts for all sessions");
+        err.println("       " + programName + " attempts <session-id>            show attempts for a session");
         err.println("  Options:");
         err.println("    -i, --last-id ID                 shows more session attempts from this id");
         showCommonOptions();
@@ -76,7 +68,7 @@ public class ShowAttempts
         }
 
         if (attempts.isEmpty()) {
-            err.println("Use `digdag start` to start a session.");
+            err.println("Use `" + programName + " start` to start a session.");
         }
     }
 
