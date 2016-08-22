@@ -6,7 +6,7 @@ machine:
 dependencies:
   override:
     - mkdir -p ~/bin/
-    - curl -u beta:workflow2016 -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
+    - curl -o ~/bin/digdag -L "https://dl.digdag.io/digdag-latest"
     - chmod +x ~/bin/digdag
 
 test:
@@ -20,6 +20,5 @@ deployment:
       - >
         digdag push $(basename $(git rev-parse --show-toplevel))
         -e api-workflow.treasuredata.com
-        -p td.apikey=$TD_API_KEY
         -X client.http.headers.authorization="TD1 $TD_API_KEY"
         -r `date -u +"%Y-%m-%dT%H:%M:%SZ"`-`git rev-parse HEAD`
