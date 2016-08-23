@@ -5,7 +5,7 @@
 Digdag is a simple executable file. You can download the file to ``/usr/local/bin`` using `curl` command as following:
 
     $ sudo curl -o /usr/local/bin/digdag --create-dirs -L "https://dl.digdag.io/digdag-latest"
-    $ sudo chmod +x /usr/local/bin/digdag
+    $ sudo chmod 775 /usr/local/bin/digdag
 
 If `digdag --help` command works, Digdag is installed successfully.
 
