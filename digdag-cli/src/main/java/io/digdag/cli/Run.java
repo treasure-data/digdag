@@ -366,18 +366,18 @@ public class Run
                 if (workflowName.contains("/")) {
                     Path subdir = Paths.get(workflowName).getParent();
                     throw new ResourceNotFoundException(String.format(
-                                "Workflow '%s' doesn't not exist in current directory. You may need to type \"cd %s\" first, or set \"--project %s\" option.",
+                                "Workflow '%s' does not exist in current directory. You may need to type \"cd %s\" first, or set \"--project %s\" option.",
                                 workflowName, subdir, subdir));
                 }
                 else {
                     throw new ResourceNotFoundException(String.format(
-                                "Workflow '%s' doesn't not exist in current directory. You may need to change directory first, or set --project option.",
+                                "Workflow '%s' does not exist in current directory. You may need to change directory first, or set --project option.",
                                 workflowName, projectDirName));
                 }
             }
             else {
                 throw new ResourceNotFoundException(String.format(
-                            "Workflow '%s' doesn't not exist in project directory '%s'.",
+                            "Workflow '%s' does not exist in project directory '%s'.",
                             workflowName, projectDirName));
             }
         }
