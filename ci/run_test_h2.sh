@@ -11,5 +11,5 @@ docker run \
 -e CI_NODE_INDEX="${CI_NODE_INDEX}" \
 -e CI_ACCEPTANCE_TEST=true \
 -e TERM=dumb \
-digdag-build \
+$BUILD_IMAGE \
 ./gradlew clean cleanTest test --info --no-daemon "$@"
