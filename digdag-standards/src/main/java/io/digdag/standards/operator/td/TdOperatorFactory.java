@@ -340,14 +340,12 @@ public class TdOperatorFactory
     {
         Config td = cf.create();
 
-        td.set("last_job_id", j.getJobId());
-
         if (storeLastResults) {
             List<ArrayValue> results = downloadFirstResults(j, 1);
             ArrayValue row = results.get(0);
             Map<RawValue, Value> map = new LinkedHashMap<>();
             List<String> columnNames = j.getResultColumnNames();
-            for (int i=0; i < Math.min(results.size(), columnNames.size()); i++) {
+            for (int i = 0; i < Math.min(row.size(), columnNames.size()); i++) {
                 map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
             }
             MapValue lastResults = ValueFactory.newMap(map);
