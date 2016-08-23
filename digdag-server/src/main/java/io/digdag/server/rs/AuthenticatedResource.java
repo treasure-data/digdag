@@ -28,6 +28,7 @@ public abstract class AuthenticatedResource
     /**
      * Get request context default secrets.
      */
+    @SuppressWarnings("unchecked")
     protected Supplier<Map<String, String>> getSecrets()
     {
         return (Supplier<Map<String, String>>) request.getAttribute("secrets");
