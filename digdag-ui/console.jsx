@@ -2,8 +2,8 @@
 
 import './style.less';
 
-import "babel-polyfill";
-import 'whatwg-fetch'
+import 'babel-polyfill';
+import 'whatwg-fetch';
 
 import _ from 'lodash-fp';
 
@@ -13,6 +13,7 @@ import moment from 'moment';
 import pako from 'pako';
 import path from 'path';
 import yaml from 'js-yaml';
+import Duration from 'duration';
 
 //noinspection ES6UnusedImports
 import Prism from 'prismjs';
@@ -35,8 +36,8 @@ import type {
   Credentials,
   Attempt,
   Task
-} from "./model";
-import {model, setup as setupModel} from "./model";
+} from './model';
+import {model, setup as setupModel} from './model';
 
 type Scrubber = (args:{key: string, value: string}) => string;
 
@@ -219,6 +220,7 @@ class AttemptListView extends React.Component {
           <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
           <td>{formatTimestamp(attempt.createdAt)}</td>
           <td>{formatSessionTime(attempt.sessionTime)}</td>
+          <td>{formatDuration(attempt.createdAt, attempt.finishedAt)}</td>
           <td>{attemptStatus(attempt)}</td>
         </tr>
       );
@@ -235,6 +237,7 @@ class AttemptListView extends React.Component {
               <th>Workflow</th>
               <th>Created</th>
               <th>Session Time</th>
+              <th>Duration</th>
               <th>Status</th>
             </tr>
             </thead>
@@ -264,6 +267,7 @@ class SessionListView extends React.Component {
           <td><SessionRevisionView session={session}/></td>
           <td>{formatSessionTime(session.sessionTime)}</td>
           <td>{session.lastAttempt ? formatTimestamp(session.lastAttempt.createdAt) : null}</td>
+          <td>{session.lastAttempt ? formatDuration(session.lastAttempt.createdAt, session.lastAttempt.finishedAt) : null}</td>
           <td><SessionStatusView session={session}/></td>
         </tr>
       );
@@ -280,6 +284,7 @@ class SessionListView extends React.Component {
             <th>Revision</th>
             <th>Session Time</th>
             <th>Last Attempt</th>
+            <th>Last Attempt Duration</th>
             <th>Status</th>
           </tr>
           </thead>
@@ -745,6 +750,10 @@ const SessionView = (props:{session: Session}) =>
         <td>Last Attempt</td>
         <td>{props.session.lastAttempt ? formatFullTimestamp(props.session.lastAttempt.createdAt) : null}</td>
       </tr>
+      <tr>
+        <td>Last Attempt Duration:</td>
+        <td>{props.session.lastAttempt ? formatDuration(props.session.lastAttempt.createdAt, props.session.lastAttempt.finishedAt) : null}</td>
+      </tr>
       </tbody>
     </table>
   </div>;
@@ -764,12 +773,20 @@ function formatTimestamp(t) {
   return <span>{m.fromNow()}</span>;
 }
 
-function formatFullTimestamp(t) {
+function formatFullTimestamp(t: ?string) {
   if (!t) {
     return '';
   }
   const m = moment(t);
   return <span>{t}<span className="text-muted"> ({m.fromNow()})</span></span>;
+}
+
+function formatDuration(startTime: ?string, endTime: ?string) {
+  if (!startTime || !endTime) {
+    return '';
+  }
+  const duration = new Duration(new Date(startTime), new Date(endTime)).toString(1, 1); // format: 10y 2m 6d 3h 23m 8s
+  return <span>{duration}</span>;
 }
 
 const ParamsView = (props:{params: Object}) =>
