@@ -161,6 +161,11 @@ public class ScheduleExecutor
         return sr.nextScheduleTime(scheduleTime);
     }
 
+    ////
+    // See io.digdag.core.repository.ProjectControl.updateSchedules
+    // for updating schedules when a new revision is uploaded
+    //
+
     public StoredSchedule skipScheduleToTime(int siteId, int schedId, Instant nextTime, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
