@@ -92,7 +92,7 @@
 <li class="toctree-l1"><a class="reference internal" href="operators.html">Operators</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Command reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#local-mode-commands">Local-mode commands</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#new">new</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#init">init</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#run">run</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#check">check</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scheduler">scheduler</a></li>
@@ -176,7 +176,7 @@
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#local-mode-commands" id="id2">Local-mode commands</a><ul>
-<li><a class="reference internal" href="#new" id="id3">new</a></li>
+<li><a class="reference internal" href="#init" id="id3">init</a></li>
 <li><a class="reference internal" href="#run" id="id4">run</a></li>
 <li><a class="reference internal" href="#check" id="id5">check</a></li>
 <li><a class="reference internal" href="#scheduler" id="id6">scheduler</a></li>
@@ -209,13 +209,13 @@
 </div>
 <div class="section" id="local-mode-commands">
 <h2><a class="toc-backref" href="#id2">Local-mode commands</a><a class="headerlink" href="#local-mode-commands" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="new">
-<h3><a class="toc-backref" href="#id3">new</a><a class="headerlink" href="#new" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag new &lt;dir&gt;
+<div class="section" id="init">
+<h3><a class="toc-backref" href="#id3">init</a><a class="headerlink" href="#init" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag init &lt;dir&gt;
 </pre></div>
 </div>
 <p>Creates a new workflow project. This command generates a sample .dig file, scripts used in the workflow, and .gitignore file in <strong>&lt;dir&gt;</strong> directory. Examples:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag new mydag
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag init mydag
 </pre></div>
 </div>
 </div>
