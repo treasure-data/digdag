@@ -7,7 +7,6 @@
 .*node_modules/fbjs.*
 .*node_modules/webpack.*
 .*node_modules/coffee-script.*
-.*node_modules/npm*
 
 [options]
 module.name_mapper.extension='less' -> '<PROJECT_ROOT>/LESSFlowStub.js.flow'
