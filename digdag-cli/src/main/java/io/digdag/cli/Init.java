@@ -1,31 +1,26 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.Map;
+import com.google.common.io.ByteStreams;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.repository.WorkflowDefinition;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.IOException;
+import java.util.Map;
 
-import com.google.common.io.ByteStreams;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.repository.WorkflowDefinition;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.core.archive.ProjectArchive.WORKFLOW_FILE_SUFFIX;
-import static io.digdag.cli.SystemExitException.systemExit;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Init
     extends Command
 {
-    public Init(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
-
     @Override
     public void main()
         throws Exception
@@ -39,11 +34,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag init <dir>");
+        err.println("Usage: " + programName + " init <dir>");
         err.println("  Options:");
         Main.showCommonOptions(env, err);
         err.println("  Example:");
-        err.println("    $ digdag init mydag");
+        err.println("    $ " + programName + " init mydag");
         return systemExit(error);
     }
 
@@ -84,10 +79,10 @@ public class Init
             gen.cp("query.sql", "query.sql");
             gen.cp("workflow.dig", workflowFileName);
             if (isCurrentDirectory) {
-                out.println("Done. Type `digdag run " + workflowFileName + "` to run the workflow. Enjoy!");
+                out.println("Done. Type `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
             else {
-                out.println("Done. Type `cd " + destDir + "` and then `digdag run " + workflowFileName + "` to run the workflow. Enjoy!");
+                out.println("Done. Type `cd " + destDir + "` and then `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
         }
     }

@@ -1,19 +1,19 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.io.File;
-import com.google.inject.Injector;
 import com.beust.jcommander.Parameter;
+import com.google.inject.Injector;
+import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.workflow.Workflow;
 import io.digdag.core.workflow.WorkflowCompiler;
-import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.client.config.ConfigFactory;
+
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Show
@@ -23,11 +23,6 @@ public class Show
     String output = "digdag.png";
 
     // TODO support -p option? for jinja template rendering
-
-    public Show(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
 
     @Override
     public void main()
@@ -42,7 +37,7 @@ public class Show
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag show <digdag.dig> [options...]");
+        err.println("Usage: " + programName + " show <digdag.dig> [options...]");
         err.println("  Options:");
         err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
         Main.showCommonOptions(env, err);

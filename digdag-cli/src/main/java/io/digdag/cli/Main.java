@@ -4,10 +4,15 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Delete;
@@ -26,12 +31,14 @@ import io.digdag.cli.client.ShowWorkflow;
 import io.digdag.cli.client.Start;
 import io.digdag.cli.client.Upload;
 import io.digdag.cli.client.Version;
+import io.digdag.core.Environment;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
@@ -41,13 +48,14 @@ import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 
 public class Main
 {
-    private static final String PROGRAM_NAME = "digdag";
+    private static final String DEFAULT_PROGRAM_NAME = "digdag";
 
     private final io.digdag.core.Version version;
     private final Map<String, String> env;
     private final PrintStream out;
     private final PrintStream err;
     private final InputStream in;
+    private final String programName;
 
     public Main(io.digdag.core.Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
     {
@@ -56,10 +64,14 @@ public class Main
         this.out = out;
         this.err = err;
         this.in = in;
+        this.programName = System.getProperty("io.digdag.cli.programName", DEFAULT_PROGRAM_NAME);
     }
 
     public static class MainOptions
     {
+        @Parameter(names = {"-c", "--config"})
+        protected String configPath = null;
+
         @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
         boolean help;
     }
@@ -84,36 +96,50 @@ public class Main
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
-        jc.setProgramName(PROGRAM_NAME);
+        jc.setProgramName(programName);
 
-        jc.addCommand("init", new Init(env, out, err), "new");
-        jc.addCommand("run", new Run(env, out, err), "r");
-        jc.addCommand("check", new Check(env, out, err), "c");
-        jc.addCommand("scheduler", new Sched(version, env, out, err), "sched");
+        Injector injector = Guice.createInjector(new AbstractModule()
+        {
+            @Override
+            protected void configure()
+            {
+                bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(env);
+                bind(io.digdag.core.Version.class).toInstance(version);
+                bind(String.class).annotatedWith(ProgramName.class).toInstance(programName);
+                bind(InputStream.class).annotatedWith(StdIn.class).toInstance(in);
+                bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
+                bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
+            }
+        });
 
-        jc.addCommand("server", new Server(version, env, out, err));
+        jc.addCommand("init", injector.getInstance(Init.class), "new");
+        jc.addCommand("run", injector.getInstance(Run.class), "r");
+        jc.addCommand("check", injector.getInstance(Check.class), "c");
+        jc.addCommand("scheduler", injector.getInstance(Sched.class), "sched");
 
-        jc.addCommand("push", new Push(version, env, out, err));
-        jc.addCommand("archive", new Archive(env, out, err));
-        jc.addCommand("upload", new Upload(version, env, out, err));
+        jc.addCommand("server", injector.getInstance(Server.class));
 
-        jc.addCommand("workflow", new ShowWorkflow(version, env, out, err), "workflows");
-        jc.addCommand("start", new Start(version, env, out, err));
-        jc.addCommand("retry", new Retry(version, env, out, err));
-        jc.addCommand("session", new ShowSession(version, env, out, err), "sessions");
-        jc.addCommand("attempts", new ShowAttempts(version, env, out, err));
-        jc.addCommand("attempt", new ShowAttempt(version, env, out, err));
-        jc.addCommand("reschedule", new Reschedule(version, env, out, err));
-        jc.addCommand("backfill", new Backfill(version, env, out, err));
-        jc.addCommand("log", new ShowLog(version, env, out, err), "logs");
-        jc.addCommand("kill", new Kill(version, env, out, err));
-        jc.addCommand("task", new ShowTask(version, env, out, err), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(version, env, out, err), "schedules");
-        jc.addCommand("delete", new Delete(version, env, out, err));
-        jc.addCommand("secrets", new Secrets(version, env, out, err, in), "secret");
-        jc.addCommand("version", new Version(version, env, out, err), "version");
+        jc.addCommand("push", injector.getInstance(Push.class));
+        jc.addCommand("archive", injector.getInstance(Archive.class));
+        jc.addCommand("upload", injector.getInstance(Upload.class));
 
-        jc.addCommand("selfupdate", new SelfUpdate(env, out, err));
+        jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
+        jc.addCommand("start", injector.getInstance(Start.class));
+        jc.addCommand("retry", injector.getInstance(Retry.class));
+        jc.addCommand("session", injector.getInstance(ShowSession.class), "sessions");
+        jc.addCommand("attempts", injector.getInstance(ShowAttempts.class));
+        jc.addCommand("attempt", injector.getInstance(ShowAttempt.class));
+        jc.addCommand("reschedule", injector.getInstance(Reschedule.class));
+        jc.addCommand("backfill", injector.getInstance(Backfill.class));
+        jc.addCommand("log", injector.getInstance(ShowLog.class), "logs");
+        jc.addCommand("kill", injector.getInstance(Kill.class));
+        jc.addCommand("task", injector.getInstance(ShowTask.class), "tasks");
+        jc.addCommand("schedule", injector.getInstance(ShowSchedule.class), "schedules");
+        jc.addCommand("delete", injector.getInstance(Delete.class));
+        jc.addCommand("secrets", injector.getInstance(Secrets.class), "secret");
+        jc.addCommand("version", injector.getInstance(Version.class), "version");
+
+        jc.addCommand("selfupdate", injector.getInstance(SelfUpdate.class));
 
         // Disable @ expansion
         jc.setExpandAtSign(false);
@@ -144,7 +170,7 @@ public class Main
                 throw usage(null);
             }
 
-            verbose = processCommonOptions(command);
+            verbose = processCommonOptions(mainOpts, command);
 
             command.main();
             return 0;
@@ -185,7 +211,7 @@ public class Main
         return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    private boolean processCommonOptions(Command command)
+    private boolean processCommonOptions(MainOptions mainOpts, Command command)
             throws SystemExitException
     {
         if (command.help) {
@@ -206,6 +232,10 @@ public class Main
             break;
         default:
             throw usage("Unknown log level '"+command.logLevel+"'");
+        }
+
+        if (command.configPath == null) {
+            command.configPath = mainOpts.configPath;
         }
 
         configureLogging(command.logLevel, command.logPath);
@@ -249,16 +279,16 @@ public class Main
     // called also by Run
     private SystemExitException usage(String error)
     {
-        err.println("Usage: digdag <command> [options...]");
+        err.println("Usage: " + programName + " <command> [options...]");
         err.println("  Local-mode commands:");
         err.println("    new <path>                         create a new workflow project");
         err.println("    r[un] <workflow.dig>               run a workflow");
         err.println("    c[heck]                            show workflow definitions");
         err.println("    sched[uler]                        run a scheduler server");
-        err.println("    selfupdate                         update digdag to the latest version");
+        err.println("    selfupdate                         update cli to the latest version");
         err.println("");
         err.println("  Server-mode commands:");
-        err.println("    server                             start digdag server");
+        err.println("    server                             start server");
         err.println("");
         err.println("  Client-mode commands:");
         err.println("    push <project-name>                create and upload a new revision");

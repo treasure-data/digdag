@@ -1,23 +1,23 @@
 package io.digdag.cli.client;
 
-import java.nio.file.Path;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.cli.Command;
 import io.digdag.cli.Main;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.ConfigLoaderManager;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,11 +40,6 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
-    public Archive(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
-
     @Override
     public void main()
             throws Exception
@@ -58,7 +53,7 @@ public class Archive
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag archive [options...]");
+        err.println("Usage: " + programName + " archive [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
@@ -101,11 +96,11 @@ public class Archive
         injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overwriteParams);
 
         out.println("Created " + output + ".");
-        out.println("Use `digdag upload <path.tar.gz> <project> <revision>` to upload it a server.");
+        out.println("Use `" + programName + " upload <path.tar.gz> <project> <revision>` to upload it a server.");
         out.println("");
         out.println("  Examples:");
-        out.println("    $ digdag upload " + output + " $(basename $(pwd)) -r $(date +%Y%m%d-%H%M%S)");
-        out.println("    $ digdag upload " + output + " $(git rev-parse --abbrev-ref HEAD) -r $(git rev-parse HEAD)");
+        out.println("    $ " + programName + " upload " + output + " $(basename $(pwd)) -r $(date +%Y%m%d-%H%M%S)");
+        out.println("    $ " + programName + " upload " + output + " $(git rev-parse --abbrev-ref HEAD) -r $(git rev-parse HEAD)");
         out.println("");
     }
 }

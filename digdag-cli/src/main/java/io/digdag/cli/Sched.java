@@ -1,34 +1,32 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.Properties;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletContext;
-
-import io.digdag.core.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.Version;
+import io.digdag.core.agent.NoopWorkspaceManager;
+import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.agent.WorkspaceManager;
-import io.digdag.core.agent.NoopWorkspaceManager;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static io.digdag.cli.SystemExitException.systemExit;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+import java.util.Properties;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Arguments.loadProject;
+import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Sched
     extends Server
@@ -42,11 +40,6 @@ public class Sched
     String projectDirName = null;
 
     // TODO no-schedule mode
-
-    public Sched(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void main()
@@ -64,7 +57,7 @@ public class Sched
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag sched [options...]");
+        err.println("Usage: " + programName + " sched [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
@@ -106,7 +99,7 @@ public class Sched
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
 
-        ServerBootstrap.startServer(localVersion, props, SchedulerServerBootStrap.class);
+        ServerBootstrap.startServer(version, props, SchedulerServerBootStrap.class);
     }
 
     public static class SchedulerServerBootStrap

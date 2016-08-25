@@ -1,19 +1,17 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.List;
-import java.io.IOException;
-import java.util.Map;
-
-import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
-import io.digdag.core.Version;
 import io.digdag.core.log.LogLevel;
+
+import java.io.IOException;
+import java.util.List;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowLog
@@ -24,11 +22,6 @@ public class ShowLog
 
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
-
-    public ShowLog(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -48,7 +41,7 @@ public class ShowLog
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag log <attempt-id> [+task name prefix]");
+        err.println("Usage: " + programName + " log <attempt-id> [+task name prefix]");
         err.println("    -v, --verbose                    show debug logs");
         err.println("    -f, --follow                     show new logs until attempt or task finishes");
         err.println("  Options:");

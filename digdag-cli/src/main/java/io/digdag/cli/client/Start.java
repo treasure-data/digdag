@@ -1,36 +1,35 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.HashMap;
-import java.time.Instant;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ClientErrorException;
-
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.google.common.base.Optional;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import io.digdag.cli.TimeUtil;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.core.*;
-import io.digdag.core.Version;
-import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
-import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.SessionTimeTruncate;
+import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.config.ConfigLoaderManager;
 
-import static java.util.Locale.ENGLISH;
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.core.Response;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
+import static java.util.Locale.ENGLISH;
 
 public class Start
     extends ClientCommand
@@ -53,11 +52,6 @@ public class Start
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Start(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
-
     @Override
     public void mainWithClientException()
         throws Exception
@@ -73,7 +67,7 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag start <project-name> <name>");
+        err.println("Usage: " + programName + " start <project-name> <name>");
         err.println("  Options:");
         err.println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (required)");
         err.println("        --revision <name>            use a past revision");
@@ -84,9 +78,9 @@ public class Start
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
-        err.println("    $ digdag start myproj workflow1 --session 2016-01-01  # use this day as session_time");
-        err.println("    $ digdag start myproj workflow1 --session hourly      # use current hour's 00:00");
-        err.println("    $ digdag start myproj workflow1 --session daily       # use current day's 00:00:00");
+        err.println("    $ " + programName + " start myproj workflow1 --session 2016-01-01  # use this day as session_time");
+        err.println("    $ " + programName + " start myproj workflow1 --session hourly      # use current hour's 00:00");
+        err.println("    $ " + programName + " start myproj workflow1 --session daily       # use current day's 00:00:00");
         err.println("");
         return systemExit(error);
     }
@@ -186,12 +180,12 @@ public class Start
                     catch (Exception readEntityError) {
                         throw systemExit(String.format(ENGLISH,
                                     "A session for the requested session_time already exists (session_time=%s)" +
-                                    "\nhint: use `digdag retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
+                                    "\nhint: use `" + programName + " retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
                                     truncatedTime.getSessionTime()));
                     }
                     throw systemExit(String.format(ENGLISH,
                                 "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
-                                "\nhint: use `digdag retry %d --latest-revision` command to run the session again for the same session_time",
+                                "\nhint: use `" + programName + " retry %d --latest-revision` command to run the session again for the same session_time",
                                 conflictedAttempt.getSessionId(),
                                 conflictedAttempt.getId(),
                                 truncatedTime.getSessionTime(),
@@ -214,9 +208,9 @@ public class Start
             ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
             ln("");
 
-            err.printf("* Use `digdag session %d` to show session status.%n", newAttempt.getSessionId());
+            err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
             err.println(String.format(ENGLISH,
-                        "* Use `digdag task %d` and `digdag log %d` to show task status and logs.",
+                    "* Use `" + this.programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
                         newAttempt.getId(), newAttempt.getId()));
         }
     }

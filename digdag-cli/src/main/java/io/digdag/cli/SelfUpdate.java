@@ -1,23 +1,24 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import com.beust.jcommander.Parameter;
+import com.google.common.io.ByteStreams;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.Response;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.nio.file.AccessDeniedException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import com.google.common.io.ByteStreams;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import com.beust.jcommander.Parameter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static io.digdag.cli.SystemExitException.systemExit;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Locale.ENGLISH;
@@ -28,11 +29,6 @@ public class SelfUpdate
 {
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
-
-    public SelfUpdate(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
 
     @Override
     public void main()
@@ -53,13 +49,13 @@ public class SelfUpdate
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag selfupdate [version]]");
+        err.println("Usage: " + programName + " selfupdate [version]]");
         err.println("  Options:");
         Main.showCommonOptions(env, err);
         err.println("");
         err.println("  Examples:");
-        err.println("    $ digdag selfupdate");
-        err.println("    $ digdag selfupdate 0.8.11-SNAPSHOT");
+        err.println("    $ " + programName + " selfupdate");
+        err.println("    $ " + programName + " selfupdate 0.8.11-SNAPSHOT");
         err.println("");
         return systemExit(error);
     }

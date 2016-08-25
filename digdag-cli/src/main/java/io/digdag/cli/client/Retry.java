@@ -1,23 +1,21 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.UUID;
-
-import com.google.common.base.Optional;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestSessionAttemptRequest;
-import io.digdag.core.Version;
+import io.digdag.client.api.RestWorkflowDefinition;
 
-import static java.util.Locale.ENGLISH;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import static io.digdag.cli.SystemExitException.systemExit;
+import static java.util.Locale.ENGLISH;
 
 public class Retry
     extends ClientCommand
@@ -48,11 +46,6 @@ public class Retry
 
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
-
-    public Retry(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -85,7 +78,7 @@ public class Retry
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag retry <attempt-id>");
+        err.println("Usage: " + programName + " retry <attempt-id>");
         err.println("  Options:");
         err.println("        --name <name>                unique identifier of this retry attempt instead of auto-generated UUID");
         err.println("        --latest-revision            use the latest revision");
@@ -163,9 +156,9 @@ public class Retry
         ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        err.printf("* Use `digdag session %d` to show session status.%n", newAttempt.getSessionId());
+        err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
         err.println(String.format(ENGLISH,
-                "* Use `digdag task %d` and `digdag log %d` to show task status and logs.",
+                "* Use `" + programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
                 newAttempt.getId(), newAttempt.getId()));
     }
 }

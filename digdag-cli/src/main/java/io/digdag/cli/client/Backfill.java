@@ -1,23 +1,20 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
-import io.digdag.client.api.LocalTimeOrInstant;
-import io.digdag.core.Version;
+
+import java.util.List;
+import java.util.UUID;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -39,11 +36,6 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Backfill(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
-
     @Override
     public void mainWithClientException()
         throws Exception
@@ -61,7 +53,7 @@ public class Backfill
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag backfill <project-name> <workflow-name>");
+        err.println("Usage: " + programName + " backfill <project-name> <workflow-name>");
         err.println("  Options:");
         err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
         err.println("        --name NAME                  retry attempt name");
@@ -120,7 +112,7 @@ public class Backfill
         }
         else {
             err.println("Backfill session attempts started.");
-            err.println("Use `digdag sessions` to show the session attempts.");
+            err.println("Use `" + programName + " sessions` to show the session attempts.");
         }
     }
 

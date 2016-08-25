@@ -6,7 +6,7 @@ import java.io.PrintStream;
 
 class ProjectUtil
 {
-    static void showUploadedProject(PrintStream out, RestProject proj)
+    static void showUploadedProject(PrintStream out, RestProject proj, String programName)
     {
         out.println("Uploaded:");
         out.println("  id: " + proj.getId());
@@ -16,6 +16,6 @@ class ProjectUtil
         out.println("  project created at: " + proj.getCreatedAt());
         out.println("  revision updated at: " + proj.getUpdatedAt());
         out.println("");
-        out.println("Use `digdag workflows` to show all workflows.");
+        out.println("Use `" + programName + " workflows` to show all workflows.");
     }
 }

@@ -1,16 +1,13 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-import java.util.Map;
-
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
-import io.digdag.core.Version;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -19,11 +16,6 @@ public class Delete
 {
     @Parameter(names = {"--force"})
     boolean force = false;
-
-    public Delete(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
 
     @Override
     public void mainWithClientException()
@@ -37,7 +29,7 @@ public class Delete
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag delete <project>");
+        err.println("Usage: " + programName + " delete <project>");
         err.println("  Options:");
         err.println("        --force                      skip y/N prompt");
         showCommonOptions();

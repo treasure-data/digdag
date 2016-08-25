@@ -1,18 +1,10 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Map;
-import java.util.HashMap;
-import java.time.Instant;
-
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import com.google.common.base.Optional;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
@@ -23,8 +15,15 @@ import io.digdag.client.api.RestProject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.Version;
 import io.digdag.core.config.ConfigLoaderManager;
+
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -48,11 +47,6 @@ public class Push
     @Parameter(names = {"--schedule-from"})
     String scheduleFromString = null;
 
-    public Push(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
-
     @Override
     public void mainWithClientException()
         throws Exception
@@ -65,7 +59,7 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag push <project> -r <revision>");
+        err.println("Usage: " + programName + " push <project> -r <revision>");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
@@ -122,6 +116,6 @@ public class Push
             revision = Upload.generateDefaultRevisionName();
         }
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile(), scheduleFrom);
-        showUploadedProject(out, proj);
+        showUploadedProject(out, proj, programName);
     }
 }
