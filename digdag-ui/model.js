@@ -80,6 +80,7 @@ export type Attempt = {
   cancelRequested: boolean;
   params: Object;
   createdAt: string;
+  finishedAt: string;
 };
 
 export type Session = {
@@ -96,6 +97,7 @@ export type Session = {
     cancelRequested: boolean;
     params: Object;
     createdAt: string;
+    finishedAt: string;
   };
 };
 
