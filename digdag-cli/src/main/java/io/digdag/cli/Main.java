@@ -86,6 +86,7 @@ public class Main
 
     public int cli(String... args)
     {
+        // FIXME (dano): this breaks for `--config <config> --version`
         if (args.length == 1 && args[0].equals("--version")) {
             out.println(version.version());
             return 0;
