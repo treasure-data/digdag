@@ -55,6 +55,7 @@ type AuthItem = {
 
 type ConsoleConfig = {
   url: string;
+  jobUrl: (id:string) => string;
   navbar: ?{
     brand: ?string;
     logo: ?string;
@@ -815,12 +816,23 @@ function formatTaskState(state) {
   }
 }
 
+const JobLink = ({ params }:{params: Object}) => {
+  console.log(params)
+  const jobId = params.td && params.td.last_job_id
+  const link = DIGDAG_CONFIG.jobUrl(jobId)
+  if (!jobId) {
+    return null
+  }
+  return <a href={link} target="_blank">{jobId}</a>
+}
+
 const TaskListView = (props:{tasks: Array<Task>}) =>
   <div className="table-responsive">
     <table className="table table-striped table-hover table-condensed">
       <thead>
       <tr>
         <th>ID</th>
+        <th>Job</th>
         <th>Name</th>
         <th>Parent ID</th>
         <th>Updated</th>
@@ -835,6 +847,7 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
         props.tasks.map(task =>
           <tr key={task.id}>
             <td>{task.id}</td>
+            <td><JobLink params={task.storeParams}/></td>
             <td>{task.fullName}</td>
             <td>{task.parentId}</td>
             <td>{formatTimestamp(task.updatedAt)}</td>
