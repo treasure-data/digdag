@@ -118,13 +118,15 @@ Many of customization points in digdag are assuming Extension to override (e.g. 
 
 ### System plugins
 
-System plugins are plugins loaded when digdag starts. System plugins are loaded using an isolated class loader but they share the same Guice instance with digdag core. Thus system plugins can get any internal resources as long as an instance is available through `io.digdag.spi` interface.
+System plugins are plugins loaded when digdag starts. System plugins are used to customize global behavior of digdag. Adding a scheduler is one of the intended use cases (although this is not implemented yet).
 
-System plugins are used to customize global behavior of digdag. Adding a scheduler is one of intended use cases (although this is not implemented yet).
+If `io.digdag.spi.Plugin` implementations are available using Java's ServiceLoader mechanism in classpath, digdag uses them automatically.
+
+If plugin dependencies are written in config file, digdag downloads them from remote maven repositories, and loads `io.digdag.spi.Plugin` implementations using ServiceLoader. These plugins are loaded using isolated classloaders.
+
+Plugins share the same Guice instance with digdag core. Thus plugins can get any internal resources as long as an instance is available through `io.digdag.spi` interface which are shared even with isolated classloaders.
 
 A system plugin is instantiated once when digdag starts.
-
-Plugin loader can fetch files from remote maven repositories. Thus, plugins will be released as a jar file with a pom file on a maven repository.
 
 All dynamic plugins can be loaded as system plugins. But system plugins can't be loaded as dynamic plugins.
 

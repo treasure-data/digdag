@@ -65,6 +65,11 @@ public class PluginSet
                 .toList());
     }
 
+    public PluginSet withPlugins(PluginSet another)
+    {
+        return withPlugins(another.plugins);
+    }
+
     public WithInjector withInjector(Injector injector)
     {
         return new WithInjector(injector);

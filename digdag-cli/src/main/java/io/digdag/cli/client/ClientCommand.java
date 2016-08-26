@@ -98,9 +98,6 @@ public abstract class ClientCommand
 
         PluginSet plugins = loadSystemPlugins(props);
 
-        // TODO: load this as a proper plugin
-        plugins = plugins.withPlugins(new TdDigdagClientConfigurationPlugin());
-
         List<DigdagClientConfigurator> clientConfigurators = plugins.withInjector(injector).getServiceProviders(DigdagClientConfigurator.class);
 
         if (endpoint == null) {

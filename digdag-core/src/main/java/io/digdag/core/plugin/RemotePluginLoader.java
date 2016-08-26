@@ -1,7 +1,6 @@
 package io.digdag.core.plugin;
 
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.ServiceConfigurationError;
 import java.io.File;
@@ -38,6 +37,8 @@ import io.digdag.spi.Plugin;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.digdag.core.plugin.LocalPluginLoader.lookupPlugins;
 
 public class RemotePluginLoader
         implements PluginLoader
@@ -123,8 +124,7 @@ public class RemotePluginLoader
 
             ClassLoader pluginClassLoader = buildPluginClassLoader(artifactResults);
             try {
-                ServiceLoader<Plugin> serviceLoader = ServiceLoader.load(Plugin.class, pluginClassLoader);
-                List<Plugin> plugins = ImmutableList.copyOf(serviceLoader);
+                List<Plugin> plugins = lookupPlugins(pluginClassLoader);
                 if (plugins.isEmpty()) {
                     logger.warn("No plugins found from a dependency '" + dep + "'");
                 }
