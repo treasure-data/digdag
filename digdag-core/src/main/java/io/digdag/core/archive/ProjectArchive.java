@@ -1,5 +1,6 @@
 package io.digdag.core.archive;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.nio.file.Path;
@@ -62,7 +63,11 @@ public class ProjectArchive
                         realPath, projectPath));
         }
         Path relative = projectPath.relativize(realPath);
-        return relative.toString();  // TODO make sure path names are separated by '/'
+
+        // resource name must be separated by '/'. Resource names are used as a part of
+        // workflow name later using following resourceNameToWorkflowName method.
+        // See also ProjectArchiveLoader.loadWorkflowFile.
+        return relative.toString().replace(File.separatorChar, '/');
     }
 
     public static String resourceNameToWorkflowName(String resourceName)
