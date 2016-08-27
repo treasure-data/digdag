@@ -1,8 +1,15 @@
 package io.digdag.cli.client;
 
 import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.Properties;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Binder;
+import com.google.inject.Guice;
+import com.google.inject.Module;
+import io.digdag.cli.SystemExitException;
+import io.digdag.core.Environment;
 import org.junit.Test;
 
 import io.digdag.client.DigdagClient;
@@ -16,9 +23,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), ImmutableMap.of(), System.out, System.err);
-        cmd.endpoint = endpoint;
-        DigdagClient client = cmd.buildClient(false);
+        DigdagClient client = ClientCommand.buildClient(endpoint, ImmutableMap.of(), new Properties(), false, ImmutableMap.of());
         Field f = client.getClass().getDeclaredField("endpoint");
         f.setAccessible(true);
         return (String) f.get(client);

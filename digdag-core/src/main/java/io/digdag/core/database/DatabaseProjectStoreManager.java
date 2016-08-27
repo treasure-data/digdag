@@ -137,9 +137,7 @@ public class DatabaseProjectStoreManager
                     handle.createQuery(
                         "select * from projects" +
                         " where site_id = :siteId" +
-                        " and id in (" +
-                            projIdList.stream()
-                            .map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")"
+                        " and id " + inLargeIdListExpression(projIdList)
                     )
                     .bind("siteId", siteId)
                     .map(new StoredProjectMapper(cfm))

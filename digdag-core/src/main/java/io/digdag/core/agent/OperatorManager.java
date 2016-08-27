@@ -39,6 +39,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public class OperatorManager
@@ -324,12 +325,23 @@ public class OperatorManager
 
     public static void collectExceptionMessage(StringBuilder sb, Throwable ex, StringBuffer used)
     {
-        if (ex.getMessage() != null && used.indexOf(ex.getMessage()) == -1) {
-            used.append("\n").append(ex.getMessage());
+        String message = ex.getMessage();
+        if (isNullOrEmpty(message)) {
+            message = ex.getClass().getSimpleName();
+        }
+        if (used.indexOf(message) == -1) {
+            used.append("\n").append(message);
             if (sb.length() > 0) {
                 sb.append("\n> ");
             }
-            sb.append(ex.getMessage());
+            sb.append(message);
+            sb.append(" (");
+            sb.append(ex.getClass().getSimpleName()
+                        .replaceFirst("(?:Exception|Error)$", "")
+                        .replaceAll("([A-Z]+)([A-Z][a-z])", "$1 $2")
+                        .replaceAll("([a-z])([A-Z])", "$1 $2")
+                        .toLowerCase());
+            sb.append(")");
         }
         if (ex.getCause() != null) {
             collectExceptionMessage(sb, ex.getCause(), used);

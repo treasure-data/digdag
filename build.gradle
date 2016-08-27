@@ -10,7 +10,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.8.10-SNAPSHOT'
+    version = '0.8.12-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -63,6 +63,9 @@ subprojects {
     compileTestJava.options.encoding = 'UTF-8'
 
     dependencies {
+        compile 'org.slf4j:slf4j-api:1.7.21'
+        compile 'com.google.guava:guava:19.0'
+
         testCompile 'junit:junit:4.12'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
         testCompile 'org.mockito:mockito-core:1.10.19'
@@ -394,6 +397,7 @@ task pom << {
         // XXX (dano): http://stackoverflow.com/a/27978130
         def build = asNode().appendNode('build', '')
         def plugins = build.appendNode('plugins', '')
+
         def compiler = plugins.appendNode('plugin', '')
         compiler.appendNode('groupId', 'org.apache.maven.plugins')
         compiler.appendNode('artifactId', 'maven-compiler-plugin')
@@ -401,6 +405,17 @@ task pom << {
         def compiler_configuration = compiler.appendNode('configuration', '')
         compiler_configuration.appendNode('source', sourceCompatibility)
         compiler_configuration.appendNode('target', targetCompatibility)
+
+        def enforcer = plugins.appendNode('plugin', '')
+        enforcer.appendNode('groupId', 'org.apache.maven.plugins')
+        enforcer.appendNode('artifactId', 'maven-enforcer-plugin')
+        enforcer.appendNode('version', '1.4.1')
+        def enforcer_executions = enforcer.appendNode('executions', '')
+        def enforcer_execution = enforcer_executions.appendNode('execution', '')
+        enforcer_execution.appendNode('id', 'enforce')
+        def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
+        def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
+        enforcer_rules.appendNode('requireUpperBoundDeps', '')
     }.writeTo("pom.xml")
 }
 

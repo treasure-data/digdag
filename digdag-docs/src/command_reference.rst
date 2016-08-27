@@ -7,18 +7,18 @@ Command reference
 Local-mode commands
 ----------------------------------
 
-new
+init
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
-    $ digdag new <dir>
+    $ digdag init <dir>
 
 Creates a new workflow project. This command generates a sample .dig file, scripts used in the workflow, and .gitignore file in **<dir>** directory. Examples:
 
 .. code-block:: console
 
-    $ digdag new mydag
+    $ digdag init mydag
 
 
 run
@@ -217,7 +217,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.9
+    $ digdag selfupdate 0.8.11
 
 Server-mode commands
 ----------------------------------

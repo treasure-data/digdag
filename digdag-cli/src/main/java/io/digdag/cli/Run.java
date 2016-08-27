@@ -1,88 +1,87 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.Properties;
-import java.util.HashMap;
-import java.util.Comparator;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.time.ZonedDateTime;
-import java.time.DateTimeException;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-
-import io.digdag.client.DigdagClient;
-import io.digdag.core.LocalSecretAccessPolicy;
-import io.digdag.core.config.PropertyUtils;
-import io.digdag.spi.SecretAccessPolicy;
-import io.digdag.spi.SecretStoreManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
-import com.google.common.base.Optional;
+import com.beust.jcommander.Parameter;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import io.digdag.core.DigdagEmbed;
-import io.digdag.core.LocalSite;
-import io.digdag.core.LocalSite.StoreWorkflowResult;
-import io.digdag.core.archive.ArchiveMetadata;
-import io.digdag.core.archive.ProjectArchive;
-import io.digdag.core.archive.ProjectArchiveLoader;
-import io.digdag.core.repository.StoredRevision;
-import io.digdag.core.repository.StoredWorkflowDefinition;
-import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.ResourceConflictException;
-import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.session.TaskStateCode;
-import io.digdag.core.session.TaskRelation;
-import io.digdag.core.schedule.SchedulerManager;
-import io.digdag.core.agent.OperatorManager;
-import io.digdag.core.agent.OperatorRegistry;
-import io.digdag.core.agent.TaskCallbackApi;
-import io.digdag.core.agent.SetThreadName;
-import io.digdag.core.agent.ConfigEvalEngine;
-import io.digdag.core.agent.WorkspaceManager;
-import io.digdag.core.agent.AgentId;
-import io.digdag.core.agent.AgentConfig;
-import io.digdag.core.workflow.AttemptBuilder;
-import io.digdag.core.workflow.AttemptRequest;
-import io.digdag.core.workflow.Workflow;
-import io.digdag.core.workflow.WorkflowExecutor;
-import io.digdag.core.workflow.WorkflowCompiler;
-import io.digdag.core.workflow.WorkflowTaskList;
-import io.digdag.core.workflow.SessionAttemptConflictException;
-import io.digdag.core.workflow.TaskTree;
-import io.digdag.core.workflow.TaskMatchPattern;
-import io.digdag.core.config.ConfigLoaderManager;
-import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.Scheduler;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.DigdagEmbed;
+import io.digdag.core.LocalSecretAccessPolicy;
+import io.digdag.core.LocalSite;
+import io.digdag.core.LocalSite.StoreWorkflowResult;
+import io.digdag.core.agent.AgentConfig;
+import io.digdag.core.agent.AgentId;
+import io.digdag.core.agent.ConfigEvalEngine;
+import io.digdag.core.agent.OperatorManager;
+import io.digdag.core.agent.OperatorRegistry;
+import io.digdag.core.agent.SetThreadName;
+import io.digdag.core.agent.TaskCallbackApi;
+import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.archive.ProjectArchive;
+import io.digdag.core.archive.ProjectArchiveLoader;
+import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.session.ArchivedTask;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
+import io.digdag.core.session.TaskRelation;
+import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.workflow.AttemptBuilder;
+import io.digdag.core.workflow.AttemptRequest;
+import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.core.workflow.TaskMatchPattern;
+import io.digdag.core.workflow.TaskTree;
+import io.digdag.core.workflow.Workflow;
+import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.core.workflow.WorkflowTaskList;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.Scheduler;
+import io.digdag.spi.SecretAccessPolicy;
+import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.Arguments.loadProject;
 import static io.digdag.cli.Arguments.normalizeWorkflowName;
@@ -139,11 +138,6 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(env, out, err);
-    }
-
     @Override
     public void main()
             throws Exception
@@ -184,7 +178,7 @@ public class Run
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag run <workflow.dig> [+task] [options...]");
+        err.println("Usage: " + programName + " run <workflow.dig> [+task] [options...]");
         err.println("  Options:");
         err.println("        --project DIR                use this directory as the project directory (default: current directory)");
         err.println("    -a, --rerun                      ignores status files saved at .digdag/status and re-runs all tasks");
@@ -229,7 +223,7 @@ public class Run
                     binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
-                    binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip
+                    binder.bind(Run.class).toProvider(() -> this);  // used by OperatorManagerWithSkip
                 })
                 .overrideModulesWith((binder) -> {
                     binder.bind(OperatorManager.class).to(OperatorManagerWithSkip.class).in(Scopes.SINGLETON);
@@ -366,18 +360,18 @@ public class Run
                 if (workflowName.contains("/")) {
                     Path subdir = Paths.get(workflowName).getParent();
                     throw new ResourceNotFoundException(String.format(
-                                "Workflow '%s' doesn't not exist in current directory. You may need to type \"cd %s\" first, or set \"--project %s\" option.",
+                                "Workflow '%s' does not exist in current directory. You may need to type \"cd %s\" first, or set \"--project %s\" option.",
                                 workflowName, subdir, subdir));
                 }
                 else {
                     throw new ResourceNotFoundException(String.format(
-                                "Workflow '%s' doesn't not exist in current directory. You may need to change directory first, or set --project option.",
+                                "Workflow '%s' does not exist in current directory. You may need to change directory first, or set --project option.",
                                 workflowName, projectDirName));
                 }
             }
             else {
                 throw new ResourceNotFoundException(String.format(
-                            "Workflow '%s' doesn't not exist in project directory '%s'.",
+                            "Workflow '%s' does not exist in project directory '%s'.",
                             workflowName, projectDirName));
             }
         }

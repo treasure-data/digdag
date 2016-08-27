@@ -49,21 +49,23 @@ public abstract class AbstractJdbcOperator <C>
 
     protected abstract JdbcConnection connect(C connectionConfig);
 
+    protected abstract String type();
+
     @Override
     public List<String> secretSelectors()
     {
-        return ImmutableList.of("pg.*");
+        return ImmutableList.of(type() + ".*");
     }
 
     @Override
     public TaskResult runTask(TaskExecutionContext ctx)
     {
-        Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty("pg"));
+        Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
         Config state = request.getLastStateParams().deepCopy();
 
         String query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
 
-        C connectionConfig = configure(ctx.secrets().getSecrets("pg"), params);
+        C connectionConfig = configure(ctx.secrets().getSecrets(type()), params);
 
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);
@@ -107,7 +109,7 @@ public abstract class AbstractJdbcOperator <C>
             // generate query id
             if (!state.has(QUERY_ID)) {
                 // this is the first execution of this task
-                logger.debug("Generating query id for a new pg task");
+                logger.debug("Generating query id for a new {} task", type());
                 queryId = UUID.randomUUID();
                 state.set(QUERY_ID, queryId);
                 throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));

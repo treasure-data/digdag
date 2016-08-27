@@ -4,21 +4,12 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.Version;
-
-import java.io.PrintStream;
-import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class ShowAttempt
     extends ClientCommand
 {
-    public ShowAttempt(Version version, Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        super(version, env, out, err);
-    }
-
     @Override
     public void mainWithClientException()
             throws Exception
@@ -46,7 +37,7 @@ public class ShowAttempt
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag attempt  <attempt-id>            show a single attempt");
+        err.println("Usage: " + programName + " attempt  <attempt-id>            show a single attempt");
         showCommonOptions();
         return systemExit(error);
     }

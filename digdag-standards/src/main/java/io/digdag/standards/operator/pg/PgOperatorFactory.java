@@ -13,6 +13,7 @@ import java.nio.file.Path;
 public class PgOperatorFactory
         implements OperatorFactory
 {
+    private static final String OPERATOR_TYPE = "pg";
     private final TemplateEngine templateEngine;
 
     @Inject
@@ -23,7 +24,7 @@ public class PgOperatorFactory
 
     public String getType()
     {
-        return "pg";
+        return OPERATOR_TYPE;
     }
 
     @Override
@@ -50,6 +51,12 @@ public class PgOperatorFactory
         protected PgConnection connect(PgConnectionConfig connectionConfig)
         {
             return PgConnection.open(connectionConfig);
+        }
+
+        @Override
+        protected String type()
+        {
+            return OPERATOR_TYPE;
         }
     }
 }

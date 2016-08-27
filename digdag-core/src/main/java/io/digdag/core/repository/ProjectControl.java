@@ -111,6 +111,8 @@ public class ProjectControl
         //   * compile workflow
         //   * validate SubtaskMatchPattern
 
+        // DatabaseProjectStoreManager.updateSchedules has more logic
+        // to match names with existent schedules
         store.updateSchedules(project.getId(), schedules.build());
     }
 

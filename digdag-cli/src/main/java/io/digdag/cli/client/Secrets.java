@@ -9,11 +9,8 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSecretList;
-import io.digdag.core.Version;
 
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.sun.mail.imap.protocol.SearchSequence.isAscii;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.client.DigdagClient.objectMapper;
 import static io.digdag.client.api.SecretValidation.isValidSecretKey;
@@ -41,14 +37,6 @@ public class Secrets
 
     @Parameter(names = {"--delete"}, variableArity = true)
     List<String> delete = new ArrayList<>();
-
-    private final InputStream in;
-
-    public Secrets(Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
-    {
-        super(version, env, out, err);
-        this.in = in;
-    }
 
     @Override
     public void mainWithClientException()
@@ -240,7 +228,7 @@ public class Secrets
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: digdag secrets --project <project> [--set <key>=<value>] [--delete key]");
+        err.println("Usage: " + programName + " secrets --project <project> [--set <key>=<value>] [--delete key]");
         showCommonOptions();
         return systemExit(error);
     }

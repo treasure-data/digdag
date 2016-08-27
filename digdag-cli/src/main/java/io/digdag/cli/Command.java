@@ -1,33 +1,40 @@
 package io.digdag.cli;
 
+import com.beust.jcommander.DynamicParameter;
+import com.beust.jcommander.Parameter;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.digdag.core.Environment;
+import io.digdag.core.Version;
+import io.digdag.core.config.PropertyUtils;
+import io.digdag.core.plugin.PluginSet;
+import io.digdag.core.plugin.RemotePluginLoader;
+import io.digdag.core.plugin.Spec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Properties;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-import java.io.IOException;
-
-import com.google.common.collect.ImmutableList;
-import io.digdag.core.config.PropertyUtils;
-import io.digdag.core.plugin.Spec;
-import io.digdag.core.plugin.PluginSet;
-import io.digdag.core.plugin.RemotePluginLoader;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.DynamicParameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
+import java.util.Properties;
 
 public abstract class Command
 {
     private static final Logger log = LoggerFactory.getLogger(Command.class);
 
-    protected final Map<String, String> env;
-    protected final PrintStream out;
-    protected final PrintStream err;
+    @Inject @Environment protected Map<String, String> env;
+    @Inject protected Version version;
+    @Inject @ProgramName protected String programName;
+    @Inject @StdIn protected InputStream in;
+    @Inject @StdOut protected PrintStream out;
+    @Inject @StdErr protected PrintStream err;
 
     @Parameter()
     protected List<String> args = new ArrayList<>();
@@ -46,13 +53,6 @@ public abstract class Command
 
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
-
-    protected Command(Map<String, String> env, PrintStream out, PrintStream err)
-    {
-        this.env = env;
-        this.out = out;
-        this.err = err;
-    }
 
     public abstract void main() throws Exception;
 
