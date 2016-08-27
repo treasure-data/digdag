@@ -817,6 +817,9 @@ public class DatabaseMigrator
             else {
                 handle.update("create unique index queued_tasks_on_queue_id_unique_name on queued_tasks (queue_id, unique_name)");
             }
+
+            handle.update("alter table tasks" +
+                    " add column retry_count int default 0");
         }
     };
 

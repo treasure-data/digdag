@@ -850,9 +850,13 @@ public class WorkflowExecutor
 
     private static String encodeUniqueQueuedTaskName(StoredTask task)
     {
-        Instant updatedAt = task.getUpdatedAt();
-        return Long.toString(task.getId()) + ".t" + String.format(ENGLISH,
-                "%x%08x", updatedAt.getEpochSecond(), updatedAt.getNano());
+        int retryCount = task.getRetryCount();
+        if (retryCount == 0) {
+            return Long.toString(task.getId());
+        }
+        else {
+            return Long.toString(task.getId()) + ".r" + Integer.toString(retryCount);
+        }
     }
 
     private static long parseTaskIdFromEncodedQueuedTaskName(String encodedUniqueQueuedTaskName)

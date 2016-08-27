@@ -310,19 +310,7 @@ public class DatabaseSessionStoreManager
     @Override
     public int trySetRetryWaitingToReady()
     {
-        return autoCommit((handle, dao) -> handle.createStatement("update tasks " +
-                    " set updated_at =" +
-                        // setting READY_CODE must ensure that updated_at becomes unique
-                        // because it's used as a part of next queued task name.
-                        " case when updated_at = now() then " + addSeconds("now()", 1) +
-                            " else now()" +
-                            " end," +
-                        " retry_at = NULL," +
-                        " state = " + TaskStateCode.READY_CODE +
-                    " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
-                    " and retry_at <= now()")
-                .execute()
-            );
+        return autoCommit((handle, dao) -> dao.trySetRetryWaitingToReady());
     }
 
     @Override
@@ -849,7 +837,8 @@ public class DatabaseSessionStoreManager
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
-                        " retry_at = " + addSeconds("now()", retryInterval) +
+                        " retry_at = " + addSeconds("now()", retryInterval) + "," +
+                        " retry_count = retry_count + 1" +
                     " where id = :id" +
                     " and state = :oldState"
                 )
@@ -1498,6 +1487,12 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
 
+        @SqlUpdate("update tasks " +
+                " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
+                " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
+                " and retry_at <= now()")
+        int trySetRetryWaitingToReady();
+
         @SqlQuery("select * from session_monitors" +
                 " where next_run_time <= :currentTime" +
                 " limit :limit" +
@@ -1727,6 +1722,7 @@ public class DatabaseSessionStoreManager
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
+                .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
@@ -1763,6 +1759,7 @@ public class DatabaseSessionStoreManager
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
+                .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
