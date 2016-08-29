@@ -32,6 +32,7 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.AUTHORIZATION;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
@@ -59,6 +60,7 @@ public class TdConfIT
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
         tdConf = folder.newFolder().toPath().resolve("td.conf");
         digdagConf = folder.newFolder().toPath().resolve("digdag");
+        Files.write(digdagConf, emptyList());
     }
 
     @Before
