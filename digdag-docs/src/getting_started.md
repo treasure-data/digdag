@@ -11,9 +11,21 @@ If `digdag --help` command works, Digdag is installed successfully.
 
 ### On Windows?
 
-On Windows, you can download a file named `digdag-<VERSION>.jar` from [https://dl.digdag.io/digdag-latest](https://dl.digdag.io/digdag-latest). This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).
+On Windows, please open cmd.exe or PowerShell.exe and type following command exactly:
 
-Once download completed, please rename the file to `digdag.bat` (Windows) or `/usr/local/bin/digdag` (Linux/UNIX).
+```
+PowerShell -Command "& {mkdir -Force %USERPROFILE%\bin; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile %USERPROFILE%\bin\digdag.bat}"
+```
+
+Above command downloads a file named `digdag.bat` to a folder named `bin` at your home folder (`C:\Users\YOUR_NAME\bin`).
+
+Then, type following command so that cmd.exe or PowerShell.exe search `digdag` command from the `bin` folder:
+
+```
+setx PATH "%PATH%;%USERPROFILE%\bin"
+```
+
+Please reopen your command window. If `digdag --help` command shows usage message, Digdag is installed successfully.
 
 
 ### curl did not work?
