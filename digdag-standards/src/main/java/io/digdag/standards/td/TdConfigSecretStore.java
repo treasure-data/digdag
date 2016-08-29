@@ -8,6 +8,8 @@ import com.treasuredata.client.TDClientConfig;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretStore;
 
+import javax.annotation.Nullable;
+
 import java.util.Map;
 
 class TdConfigSecretStore
@@ -15,8 +17,17 @@ class TdConfigSecretStore
 {
     private final Map<String, String> secrets;
 
+    private final boolean enabled = Boolean.parseBoolean(System.getProperty("io.digdag.standards.td.secrets.enabled", "true"));
+
     @Inject
-    public TdConfigSecretStore(TDClientConfig clientConfig)
+    public TdConfigSecretStore(@Nullable TDClientConfig clientConfig)
+    {
+        this.secrets = (!enabled || clientConfig == null)
+                ? ImmutableMap.of()
+                : secrets(clientConfig);
+    }
+
+    private static ImmutableMap<String, String> secrets(TDClientConfig clientConfig)
     {
         ImmutableMap.Builder<String, String> secrets = ImmutableMap.builder();
 
@@ -41,7 +52,7 @@ class TdConfigSecretStore
             }
         }
 
-        this.secrets = secrets.build();
+        return secrets.build();
     }
 
     @Override

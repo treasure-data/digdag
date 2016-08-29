@@ -28,6 +28,11 @@ public class TdClientConfigProvider
     @Override
     public TDClientConfig get()
     {
+        Path tdConf = configPath(env);
+        if (!Files.exists(tdConf)) {
+            return null;
+        }
+
         ConfigLoader configLoader = new ConfigLoader();
 
         // XXX (dano): silence spam in TDClientConfig
@@ -36,10 +41,7 @@ public class TdClientConfigProvider
             ((ch.qos.logback.classic.Logger) logger).setLevel(Level.WARN);
         }
 
-        Path tdConf = configPath(env);
-        if (Files.exists(tdConf)) {
-            configLoader.setProperties(TDClientConfig.readTDConf(tdConf.toFile()));
-        }
+        configLoader.setProperties(TDClientConfig.readTDConf(tdConf.toFile()));
 
         return configLoader.buildConfig();
     }
