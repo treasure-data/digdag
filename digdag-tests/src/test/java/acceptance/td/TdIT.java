@@ -9,6 +9,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
@@ -42,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static acceptance.td.Secrets.TD_API_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
@@ -49,6 +51,7 @@ import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -163,6 +166,42 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         runWorkflow(ImmutableMap.of("http_proxy", proxyUrl), ImmutableList.of("td.use_ssl=false"));
+        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+    }
+
+    @Test
+    public void testRunQueryAndPickUpApiKeyFromTdConf()
+            throws Exception
+    {
+        List<FullHttpRequest> requests = Collections.synchronizedList(new ArrayList<>());
+
+        proxyServer = startRequestTrackingProxy(requests);
+
+        // Write apikey to td.conf
+        Path tdConf = folder.newFolder().toPath().resolve("td.conf");
+        Files.write(tdConf, asList(
+                "[account]",
+                "  user = foo@bar.com",
+                "  apikey = " + TD_API_KEY,
+                "  usessl = false"
+        ));
+
+        // Remove apikey from digdag conf
+        Files.write(config, emptyList());
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+        runWorkflow(
+                ImmutableMap.of(
+                        "http_proxy", proxyUrl,
+                        "TD_CONFIG_PATH", tdConf.toString()),
+                ImmutableList.of());
+        List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(Collectors.toList());
+        assertThat(issueRequests.size(), is(greaterThan(0)));
+        for (FullHttpRequest request : issueRequests) {
+            assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
+        }
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
@@ -452,7 +491,8 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private CommandStatus runWorkflow(String... params) {
+    private CommandStatus runWorkflow(String... params)
+    {
         return runWorkflow(ImmutableMap.of(), ImmutableList.copyOf(params));
     }
 
