@@ -247,10 +247,11 @@
 </div>
 <div class="section" id="system-plugins">
 <span id="system-plugins"></span><h3>System plugins<a class="headerlink" href="#system-plugins" title="Permalink to this headline">¶</a></h3>
-<p>System plugins are plugins loaded when digdag starts. System plugins are loaded using an isolated class loader but they share the same Guice instance with digdag core. Thus system plugins can get any internal resources as long as an instance is available through <code class="docutils literal"><span class="pre">io.digdag.spi</span></code> interface.</p>
-<p>System plugins are used to customize global behavior of digdag. Adding a scheduler is one of intended use cases (although this is not implemented yet).</p>
+<p>System plugins are plugins loaded when digdag starts. System plugins are used to customize global behavior of digdag. Adding a scheduler is one of the intended use cases (although this is not implemented yet).</p>
+<p>If <code class="docutils literal"><span class="pre">io.digdag.spi.Plugin</span></code> implementations are available using Java&#8217;s ServiceLoader mechanism in classpath, digdag uses them automatically.</p>
+<p>If plugin dependencies are written in config file, digdag downloads them from remote maven repositories, and loads <code class="docutils literal"><span class="pre">io.digdag.spi.Plugin</span></code> implementations using ServiceLoader. These plugins are loaded using isolated classloaders.</p>
+<p>Plugins share the same Guice instance with digdag core. Thus plugins can get any internal resources as long as an instance is available through <code class="docutils literal"><span class="pre">io.digdag.spi</span></code> interface which are shared even with isolated classloaders.</p>
 <p>A system plugin is instantiated once when digdag starts.</p>
-<p>Plugin loader can fetch files from remote maven repositories. Thus, plugins will be released as a jar file with a pom file on a maven repository.</p>
 <p>All dynamic plugins can be loaded as system plugins. But system plugins can&#8217;t be loaded as dynamic plugins.</p>
 </div>
 <div class="section" id="dynamic-plugins">
