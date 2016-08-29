@@ -816,9 +816,10 @@ function formatTaskState(state) {
   }
 }
 
-const JobLink = ({ params }:{params: Object}) => {
-  console.log(params)
-  const jobId = params.td && params.td.last_job_id
+const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: Object}) => {
+  const paramsJobId = storeParams.td && storeParams.td.last_job_id
+  const stateJobId = stateParams.job && stateParams.job.jobId
+  const jobId = paramsJobId || stateJobId
   const link = DIGDAG_CONFIG.jobUrl(jobId)
   if (!jobId) {
     return null
@@ -847,7 +848,7 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
         props.tasks.map(task =>
           <tr key={task.id}>
             <td>{task.id}</td>
-            <td><JobLink params={task.storeParams}/></td>
+            <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams}/></td>
             <td>{task.fullName}</td>
             <td>{task.parentId}</td>
             <td>{formatTimestamp(task.updatedAt)}</td>
