@@ -8,6 +8,7 @@ import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 
 import java.util.Map;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -15,10 +16,12 @@ class LocalSecretStoreManager
         implements SecretStoreManager
 {
     private final Map<String, String> secrets;
+    private final Set<SecretStore> secretStores;
 
     @Inject
-    public LocalSecretStoreManager(Config systemConfig)
+    public LocalSecretStoreManager(Config systemConfig, Set<SecretStore> secretStores)
     {
+        this.secretStores = secretStores;
         String prefix = "secrets.";
         this.secrets = systemConfig.getKeys().stream()
                 .filter(k -> k.startsWith(prefix))
@@ -30,6 +33,18 @@ class LocalSecretStoreManager
     @Override
     public SecretStore getSecretStore(int siteId)
     {
-        return (context, key) -> Optional.fromNullable(secrets.get(key));
+        return (context, key) -> {
+
+            // First attempt to find a matching secret in the backing stores
+            for (SecretStore store : secretStores) {
+                Optional<String> secret = store.getSecret(context, key);
+                if (secret.isPresent()) {
+                    return secret;
+                }
+            }
+
+            // Fall back to secrets from system config
+            return Optional.fromNullable(secrets.get(key));
+        };
     }
 }

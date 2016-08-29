@@ -28,4 +28,7 @@ dependencies {
     // https://bugs.eclipse.org/bugs/show_bug.cgi?id=475546
     // https://github.com/eclipse/jetty.project/issues/416
     compile 'org.eclipse.jetty:jetty-client:9.3.11.v20160721'
+
+    // XXX (dano): This is just here so we can disable TDClientConfing spam in TdDigdagClientConfigurationPlugin
+    compile 'ch.qos.logback:logback-classic:1.1.5'
 }
