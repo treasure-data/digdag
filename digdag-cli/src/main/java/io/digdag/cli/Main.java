@@ -86,12 +86,17 @@ public class Main
 
     public int cli(String... args)
     {
-        // FIXME (dano): this breaks for `--config <config> --version`
-        if (args.length == 1 && args[0].equals("--version")) {
-            out.println(version.version());
-            return 0;
+        for (String arg : args) {
+            if ("--version".equals(arg)) {
+                out.println(version.version());
+                return 0;
+            }
         }
         err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
+        if (args.length == 0) {
+            usage(null);
+            return 0;
+        }
 
         boolean verbose = false;
 
@@ -99,6 +104,7 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(programName);
 
+        // TODO: Use a pojo instead to avoid guice overhead
         Injector injector = Guice.createInjector(new AbstractModule()
         {
             @Override
