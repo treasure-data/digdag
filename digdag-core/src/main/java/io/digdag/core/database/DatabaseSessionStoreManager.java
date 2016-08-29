@@ -144,14 +144,17 @@ public class DatabaseSessionStoreManager
         }
     }
 
-    private String addSeconds(String timestamp, int seconds)
+    private String addSeconds(String timestampExpression, int seconds)
     {
+        if (seconds == 0) {
+            return timestampExpression;
+        }
         switch (databaseType) {
         case "h2":
-            return "TIMESTAMPADD('SECOND', " + seconds + ", " + timestamp + ")";
+            return "dateadd('SECOND', " + seconds + ", " + timestampExpression + ")";
         default:
             // postgresql
-            return "(" + timestamp + " + interval '" + seconds + " second')";
+            return "(" + timestampExpression + " + interval '" + seconds + " second')";
         }
     }
 
@@ -834,7 +837,8 @@ public class DatabaseSessionStoreManager
                     " set updated_at = now()," +
                         " state = :newState," +
                         " state_params = :stateParams," +
-                        " retry_at = " + addSeconds("now()", retryInterval) +
+                        " retry_at = " + addSeconds("now()", retryInterval) + "," +
+                        " retry_count = retry_count + 1" +
                     " where id = :id" +
                     " and state = :oldState"
                 )
@@ -880,20 +884,6 @@ public class DatabaseSessionStoreManager
                 .bind("parentId", taskId)
                 .execute();
         }
-
-        //public boolean trySetBlockedToReadyOrShortCircuitPlanned(long taskId)
-        //{
-        //    int n = handle.createStatement("update tasks " +
-        //            " set updated_at = now(), state = case task_type" +
-        //            " when " + TaskType.GROUPING_ONLY + " then " + TaskStateCode.PLANNED_CODE +
-        //            " else " + TaskStateCode.READY_CODE +
-        //            " end" +
-        //            " where state = " + TaskStateCode.BLOCKED_CODE +
-        //            " and id = :taskId")
-        //        .bind("taskId", taskId)
-        //        .execute();
-        //    return n > 0;
-        //}
     }
 
     private class DatabaseSessionStore
@@ -1732,6 +1722,7 @@ public class DatabaseSessionStoreManager
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
+                .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))
@@ -1768,6 +1759,7 @@ public class DatabaseSessionStoreManager
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
+                .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))
                 .parentId(getOptionalLong(r, "parent_id"))
                 .fullName(r.getString("full_name"))

@@ -130,7 +130,7 @@ public class DatabaseTaskQueueServer
     {
         try {
             enqueue(siteId, null, request.getPriority(),
-                    request.getUniqueTaskId().orNull(), request.getData().orNull());
+                    request.getUniqueName(), request.getData().orNull());
         }
         catch (ResourceConflictException ex) {
             throw new TaskConflictException(ex);
@@ -147,7 +147,7 @@ public class DatabaseTaskQueueServer
             //      if queueId doesn't exist when multi-queue is implemented
             Integer sharedAgentSiteId = autoCommit((handle, dao) -> dao.getSharedSiteId(queueId));
             enqueue(sharedAgentSiteId, queueId, request.getPriority(),
-                    request.getUniqueTaskId().orNull(), request.getData().orNull());
+                    request.getUniqueName(), request.getData().orNull());
         }
         catch (ResourceConflictException ex) {
             throw new TaskConflictException(ex);
@@ -156,14 +156,14 @@ public class DatabaseTaskQueueServer
 
     private long enqueue(
             @Nullable Integer siteId, @Nullable Integer queueId,
-            int priority, @Nullable Long uniqueTaskId,
+            int priority, String uniqueName,
             @Nullable byte[] data)
         throws ResourceConflictException
     {
         long id = transaction((handle, dao, ts) -> {
             long queuedTaskId = catchConflict(() ->
-                dao.insertQueuedTask(siteId, queueId, uniqueTaskId, data),
-                "lock of task id=%d in site id = %d and queue id=%d", uniqueTaskId, siteId, queueId);
+                dao.insertQueuedTask(siteId, queueId, uniqueName, data),
+                "lock of task name=%s in site id = %d and queue id=%d", uniqueName, siteId, queueId);
             dao.insertQueuedTaskLock(queuedTaskId, siteId, queueId, priority);
             return queuedTaskId;
         }, ResourceConflictException.class);
@@ -447,7 +447,7 @@ public class DatabaseTaskQueueServer
         {
             return ImmutableTaskQueueLock.builder()
                 .lockId("")  // should be reset later
-                .uniqueTaskId(getOptionalLong(r, "task_id"))
+                .uniqueName(r.getString("unique_name"))
                 .data(getOptionalBytes(r, "data"))
                 .build();
         }
@@ -484,10 +484,10 @@ public class DatabaseTaskQueueServer
         List<Integer> getActiveSiteIdList();
 
         @SqlUpdate("insert into queued_tasks" +
-                " (site_id, queue_id, task_id, data, created_at)" +
-                " values (:siteId, :queueId, :uniqueTaskId, :data, now())")
+                " (site_id, queue_id, unique_name, data, created_at)" +
+                " values (:siteId, :queueId, :uniqueName, :data, now())")
         @GetGeneratedKeys
-        long insertQueuedTask(@Bind("siteId") Integer siteId, @Bind("queueId") Integer queueId, @Bind("uniqueTaskId") long uniqueTaskId,
+        long insertQueuedTask(@Bind("siteId") Integer siteId, @Bind("queueId") Integer queueId, @Bind("uniqueName") String uniqueName,
                 @Bind("data") byte[] data);
 
         @SqlUpdate("insert into queued_task_locks" +
@@ -497,7 +497,7 @@ public class DatabaseTaskQueueServer
                 @Bind("siteId") Integer siteId, @Bind("queueId") Integer queueId,
                 @Bind("priority") int priority);
 
-        @SqlQuery("select task_id, data from queued_tasks where id = :taskLockId")
+        @SqlQuery("select unique_name, data from queued_tasks where id = :taskLockId")
         ImmutableTaskQueueLock getTaskData(@Bind("taskLockId") long taskLockId);
 
         @SqlUpdate("delete from queued_task_locks" +
