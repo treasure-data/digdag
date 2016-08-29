@@ -106,7 +106,7 @@ public class SelfUpdate
                 ByteStreams.copy(in, out);
             }
         }
-        path.toFile().setExecutable(true);
+        path.toFile().setExecutable(true, false);
 
         out.println("Verifying...");
         verify(path, version);
