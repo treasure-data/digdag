@@ -282,7 +282,7 @@ public class Main
     {
         err.println("Usage: " + programName + " <command> [options...]");
         err.println("  Local-mode commands:");
-        err.println("    new <path>                         create a new workflow project");
+        err.println("    init <dir>                         create a new workflow project");
         err.println("    r[un] <workflow.dig>               run a workflow");
         err.println("    c[heck]                            show workflow definitions");
         err.println("    sched[uler]                        run a scheduler server");
