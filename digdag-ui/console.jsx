@@ -5,7 +5,7 @@ import './style.less';
 import 'babel-polyfill';
 import 'whatwg-fetch';
 
-import _ from 'lodash-fp';
+import _ from 'lodash';
 
 import React from 'react';
 import {Router, Link, Route, browserHistory} from 'react-router';

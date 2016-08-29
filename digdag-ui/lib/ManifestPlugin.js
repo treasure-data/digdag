@@ -1,5 +1,5 @@
 const assert = require('assert')
-const _ = require('lodash-fp')
+const _ = require('lodash')
 
 module.exports = class ManifestPlugin {
   constructor ({ sha, timestamp }) {
