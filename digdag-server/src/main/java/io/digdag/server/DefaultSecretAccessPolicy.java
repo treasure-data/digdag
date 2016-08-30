@@ -44,7 +44,12 @@ public class DefaultSecretAccessPolicy
             return false;
         }
 
-        OperatorSecretAccessPolicy operatorPolicy = this.policy.operators().get(context.operatorType());
+        Optional<String> operatorType = context.operatorType();
+        if (!operatorType.isPresent()) {
+            return false;
+        }
+
+        OperatorSecretAccessPolicy operatorPolicy = this.policy.operators().get(operatorType.get());
         if (operatorPolicy == null) {
             return false;
         }

@@ -823,6 +823,21 @@ public class DatabaseMigrator
         }
     };
 
+    private final Migration MigrateAddSecretsIndex = new Migration()
+    {
+        @Override
+        public String getVersion()
+        {
+            return "20160830123456";
+        }
+
+        @Override
+        public void migrate(Handle handle)
+        {
+            handle.update("create unique index secrets_on_site_id_and_project_id_and_scope_and_key on secrets (site_id, project_id, scope, key)");
+        }
+    };
+
     private final Migration[] migrations = {
         MigrateCreateTables,
         MigrateSessionsOnProjectIdIndexToDesc,
@@ -833,5 +848,6 @@ public class DatabaseMigrator
         MigrateAddSecretsTable,
         MigrateAddFinishedAtToSessionAttempts,
         MigrateQueueUniqueName,
+        MigrateAddSecretsIndex,
     };
 }
