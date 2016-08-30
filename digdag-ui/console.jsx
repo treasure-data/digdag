@@ -41,6 +41,47 @@ import {model, setup as setupModel} from './model';
 
 type Scrubber = (args:{key: string, value: string}) => string;
 
+Prism.languages.digdag = Prism.languages.extend('yaml', {})
+
+Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token in yaml file
+  'td-run': {
+    pattern: /td_run>:.*/,
+    inside: {
+      atrule: /td_run>/,
+      punctuation: /:/,
+      'td-run-value': {
+        pattern: /(\s*).*/,
+        lookbehind: true
+      }
+    }
+  },
+  'td-load': {
+    pattern: /td_load>:.*/,
+    inside: {
+      atrule: /td_load>/,
+      punctuation: /:/,
+      'td-load-value': {
+        pattern: /(\s*).*/,
+        lookbehind: true
+      }
+    }
+  }
+
+});
+
+
+Prism.hooks.add('wrap', (env) => {
+  if (env.type === 'td-run-value' || env.type === 'td-load-value') {
+      env.tag = 'a'
+      env.attributes.target = '_blank'
+      if (env.type === 'td-run-value') {
+        env.attributes.href = `https://console.treasuredata.com/query/${env.content}`
+      } else {
+        env.attributes.href = `https://console.treasuredata.com/connectors/list`
+      }
+  }
+})
+
 type AuthItem = {
   key: string;
   name: string;
@@ -518,7 +559,7 @@ class WorkflowView extends React.Component {
         </div>
         <div className="row">
           <h2>Definition</h2>
-          <pre><PrismCode className="language-yaml">{this.definition()}</PrismCode></pre>
+          <pre><PrismCode className="language-digdag">{this.definition()}</PrismCode></pre>
         </div>
         <div className="row">
           <h2>Sessions</h2>
@@ -1413,6 +1454,29 @@ class LoginPage extends React.Component {
   }
 }
 
+class ParserPage extends React.Component {
+  definition() {
+    return `
+      +step1:
+        td_run>: myquery1
+      +step2:
+        td_run>: myquery2
+        session_time: 2016-01-01T01:01:01+0000
+        td_run>:	my query 2
+        td_run>:	"my query 2"
+        td_load>: mydatatransfer
+    `
+  }
+  render() {
+    return (
+      <div className="container">
+        <Navbar />
+        <pre><PrismCode className="language-digdag">{this.definition()}</PrismCode></pre>
+      </div>
+    )
+  }
+}
+
 class ConsolePage extends React.Component {
 
   render() {
@@ -1425,6 +1489,7 @@ class ConsolePage extends React.Component {
           <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
           <Route path="/sessions/:sessionId" component={SessionPage}/>
           <Route path="/attempts/:attemptId" component={AttemptPage}/>
+          <Route path="/parser" component={ParserPage}/>
         </Router>
       </div>
     );

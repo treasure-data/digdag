@@ -1,0 +1,5 @@
+.td-run-value,
+.td-load-value {
+  cursor: pointer;
+  text-decoration: underline;
+}
