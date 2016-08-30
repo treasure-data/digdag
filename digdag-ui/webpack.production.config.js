@@ -1,6 +1,11 @@
 var webpack = require('webpack');
 var path = require('path');
 var loaders = require('./webpack.loaders');
+var ManifestPlugin = require('./lib/ManifestPlugin')
+var getSHA1 = require('./lib/git-sha1')
+
+const timestamp = new Date().toISOString()
+const sha = getSHA1()
 
 module.exports = {
   devtool: 'source-map',
@@ -16,5 +21,8 @@ module.exports = {
   },
   module: {
     loaders: loaders
-  }
+  },
+  plugins: [
+    new ManifestPlugin({ sha, timestamp })
+  ]
 };
