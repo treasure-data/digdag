@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Properties;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -23,7 +24,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        DigdagClient client = ClientCommand.buildClient(endpoint, ImmutableMap.of(), new Properties(), false, ImmutableMap.of());
+        DigdagClient client = ClientCommand.buildClient(endpoint, ImmutableMap.of(), new Properties(), false, ImmutableMap.of(), ImmutableList.of());
         Field f = client.getClass().getDeclaredField("endpoint");
         f.setAccessible(true);
         return (String) f.get(client);

@@ -8,6 +8,7 @@ import io.digdag.core.Environment;
 import io.digdag.core.Version;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.plugin.PluginSet;
+import io.digdag.core.plugin.LocalPluginLoader;
 import io.digdag.core.plugin.RemotePluginLoader;
 import io.digdag.core.plugin.Spec;
 import org.slf4j.Logger;
@@ -85,6 +86,10 @@ public abstract class Command
 
     protected PluginSet loadSystemPlugins(Properties systemProps)
     {
+        // load plugins in classpath
+        PluginSet localPlugins = new LocalPluginLoader().load(Command.class.getClassLoader());
+
+        // load plugins from remote repositories set at configuration
         Spec spec = Spec.of(
                 ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "system-plugin.repositories").values()),
                 ImmutableList.copyOf(PropertyUtils.toMap(systemProps, "system-plugin.dependencies").values()));
@@ -96,6 +101,8 @@ public abstract class Command
         else {
             localRepositoryPath = Paths.get(localPath);
         }
-        return new RemotePluginLoader(localRepositoryPath).load(spec);
+        PluginSet remotePlugins = new RemotePluginLoader(localRepositoryPath).load(spec);
+
+        return localPlugins.withPlugins(remotePlugins);
     }
 }

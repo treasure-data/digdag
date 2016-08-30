@@ -9,6 +9,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
@@ -38,10 +39,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static acceptance.td.Secrets.TD_API_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
@@ -49,6 +53,7 @@ import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -62,6 +67,7 @@ import static utils.TestUtils.expect;
 import static utils.TestUtils.main;
 import static utils.TestUtils.objectMapper;
 import static utils.TestUtils.pushAndStart;
+import static utils.TestUtils.startRequestTrackingProxy;
 
 public class TdIT
 {
@@ -81,16 +87,23 @@ public class TdIT
     private HttpProxyServer proxyServer;
 
     private TemporaryDigdagServer server;
+    private String noTdConf;
+
+    private Map<String, String> env;
 
     @Before
     public void setUp()
             throws Exception
     {
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        noTdConf = folder.newFolder().toPath().resolve("non-existing-td.conf").toString();
         projectDir = folder.getRoot().toPath().toAbsolutePath().normalize();
         config = folder.newFile().toPath();
         Files.write(config, asList("secrets.td.apikey = " + TD_API_KEY));
         outfile = projectDir.resolve("outfile");
+
+        env = new HashMap<>();
+        env.put("TD_CONFIG_PATH", noTdConf);
 
         client = TDClient.newBuilder(false)
                 .setApiKey(TD_API_KEY)
@@ -162,7 +175,42 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
-        runWorkflow(ImmutableMap.of("http_proxy", proxyUrl), ImmutableList.of("td.use_ssl=false"));
+        env.put("http_proxy", proxyUrl);
+        runWorkflow("td.use_ssl=false");
+        assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+    }
+
+    @Test
+    public void testRunQueryAndPickUpApiKeyFromTdConf()
+            throws Exception
+    {
+        List<FullHttpRequest> requests = Collections.synchronizedList(new ArrayList<>());
+
+        proxyServer = startRequestTrackingProxy(requests);
+
+        // Write apikey to td.conf
+        Path tdConf = folder.newFolder().toPath().resolve("td.conf");
+        Files.write(tdConf, asList(
+                "[account]",
+                "  user = foo@bar.com",
+                "  apikey = " + TD_API_KEY,
+                "  usessl = false"
+        ));
+
+        // Remove apikey from digdag conf
+        Files.write(config, emptyList());
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+        env.put("http_proxy", proxyUrl);
+        env.put("TD_CONFIG_PATH", tdConf.toString());
+        runWorkflow();
+        List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(Collectors.toList());
+        assertThat(issueRequests.size(), is(greaterThan(0)));
+        for (FullHttpRequest request : issueRequests) {
+            assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
+        }
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
@@ -202,36 +250,6 @@ public class TdIT
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
-    }
-
-    public HttpProxyServer startRequestTrackingProxy(final List<FullHttpRequest> requests)
-    {
-        return DefaultHttpProxyServer
-                .bootstrap()
-                .withPort(0)
-                .withFiltersSource(new HttpFiltersSourceAdapter()
-                {
-                    @Override
-                    public int getMaximumRequestBufferSizeInBytes()
-                    {
-                        return 1024 * 1024;
-                    }
-
-                    @Override
-                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
-                    {
-                        return new HttpFiltersAdapter(httpRequest)
-                        {
-                            @Override
-                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
-                            {
-                                assert httpObject instanceof FullHttpRequest;
-                                requests.add(((FullHttpRequest) httpObject).copy());
-                                return null;
-                            }
-                        };
-                    }
-                }).start();
     }
 
     @Test
@@ -452,11 +470,7 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private CommandStatus runWorkflow(String... params) {
-        return runWorkflow(ImmutableMap.of(), ImmutableList.copyOf(params));
-    }
-
-    private CommandStatus runWorkflow(Map<String, String> env, List<String> params)
+    private CommandStatus runWorkflow(String... params)
     {
         List<String> args = new ArrayList<>();
         args.addAll(asList("run",

@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -51,6 +52,7 @@ import io.digdag.core.workflow.WorkflowTaskList;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.spi.SecretAccessPolicy;
+import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -220,6 +222,7 @@ public class Run
                 .setSystemPlugins(loadSystemPlugins(systemProps))
                 .addModules(binder -> {
                     binder.bind(SecretAccessPolicy.class).to(LocalSecretAccessPolicy.class).in(Scopes.SINGLETON);
+                    Multibinder.newSetBinder(binder, SecretStore.class);
                     binder.bind(SecretStoreManager.class).to(LocalSecretStoreManager.class).in(Scopes.SINGLETON);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager

@@ -16,12 +16,22 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Assert;
 import org.junit.rules.TemporaryFolder;
+import org.littleshoot.proxy.HttpFilters;
+import org.littleshoot.proxy.HttpFiltersAdapter;
+import org.littleshoot.proxy.HttpFiltersSourceAdapter;
+import org.littleshoot.proxy.HttpProxyServer;
+import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.subethamail.wiser.Wiser;
 
 import java.io.ByteArrayInputStream;
@@ -447,4 +457,35 @@ public class TestUtils
         }
         return server;
     }
+
+    public static HttpProxyServer startRequestTrackingProxy(final List<FullHttpRequest> requests)
+    {
+        return DefaultHttpProxyServer
+                .bootstrap()
+                .withPort(0)
+                .withFiltersSource(new HttpFiltersSourceAdapter()
+                {
+                    @Override
+                    public int getMaximumRequestBufferSizeInBytes()
+                    {
+                        return 1024 * 1024;
+                    }
+
+                    @Override
+                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
+                    {
+                        return new HttpFiltersAdapter(httpRequest)
+                        {
+                            @Override
+                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
+                            {
+                                assert httpObject instanceof FullHttpRequest;
+                                requests.add(((FullHttpRequest) httpObject).copy());
+                                return null;
+                            }
+                        };
+                    }
+                }).start();
+    }
+
 }
