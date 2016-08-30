@@ -60,7 +60,7 @@ public class Start
             throw usage(null);
         }
         if (sessionString == null) {
-            throw usage("--session option is required");
+            sessionString = "now";
         }
         start(args.get(0), args.get(1));
     }
@@ -69,7 +69,7 @@ public class Start
     {
         err.println("Usage: " + programName + " start <project-name> <name>");
         err.println("  Options:");
-        err.println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (required)");
+        err.println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (default: now)");
         err.println("        --revision <name>            use a past revision");
         err.println("        --retry NAME                 set retry attempt name to a new session");
         err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
@@ -78,6 +78,7 @@ public class Start
         showCommonOptions();
         err.println("");
         err.println("  Examples:");
+        err.println("    $ " + programName + " start myproj workflow1                       # use the current timestamp as session_time");
         err.println("    $ " + programName + " start myproj workflow1 --session 2016-01-01  # use this day as session_time");
         err.println("    $ " + programName + " start myproj workflow1 --session hourly      # use current hour's 00:00");
         err.println("    $ " + programName + " start myproj workflow1 --session daily       # use current day's 00:00:00");
