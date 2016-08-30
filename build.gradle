@@ -424,6 +424,15 @@ task pom << {
         def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
         def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
         enforcer_rules.appendNode('requireUpperBoundDeps', '')
+
+        def jar = plugins.appendNode('plugin', '')
+        jar.appendNode('groupId', 'org.apache.maven.plugins')
+        jar.appendNode('artifactId', 'maven-jar-plugin')
+        jar.appendNode('version', '3.0.2')
+        def jar_executions = jar.appendNode('executions', '')
+        def jar_execution = jar_executions.appendNode('execution', '')
+        def jar_execution_goals = jar_execution.appendNode('goals', '')
+        jar_execution_goals.appendNode('goal', 'test-jar')
     }.writeTo("pom.xml")
 }
 
