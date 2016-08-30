@@ -2,12 +2,19 @@
 
 ## 1. Downloading the latest version
 
-Digdag is a simple executable file. You can download the file to ``/usr/local/bin`` using `curl` command as following:
+Digdag is a single executable file. You can install the file to `~/bin` using `curl` command as following:
 
-    $ sudo curl -o /usr/local/bin/digdag --create-dirs -L "https://dl.digdag.io/digdag-latest"
-    $ sudo chmod 775 /usr/local/bin/digdag
+    $ curl -o ~/bin/digdag --create-dirs -L "https://dl.digdag.io/digdag-latest"
+    $ chmod +x ~/bin/digdag
+    $ echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+
+Please reopen your terminal window or type following command so that the change of PATH takes effect.
+
+    $ source ~/.bashrc
 
 If `digdag --help` command works, Digdag is installed successfully.
+
+(Note: if you're using zsh, modify your`~/.zshrc` file instead of `~/.bashrc`).
 
 ### On Windows?
 

@@ -153,12 +153,18 @@
 <span id="getting-started"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="downloading-the-latest-version">
 <span id="downloading-the-latest-version"></span><h2>1. Downloading the latest version<a class="headerlink" href="#downloading-the-latest-version" title="Permalink to this headline">¶</a></h2>
-<p>Digdag is a simple executable file. You can download the file to <code class="docutils literal"><span class="pre">/usr/local/bin</span></code> using <code class="docutils literal"><span class="pre">curl</span></code> command as following:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$ sudo curl -o /usr/local/bin/digdag --create-dirs -L &quot;https://dl.digdag.io/digdag-latest&quot;
-$ sudo chmod 775 /usr/local/bin/digdag
+<p>Digdag is a single executable file. You can install the file to <code class="docutils literal"><span class="pre">~/bin</span></code> using <code class="docutils literal"><span class="pre">curl</span></code> command as following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ curl -o ~/bin/digdag --create-dirs -L &quot;https://dl.digdag.io/digdag-latest&quot;
+$ chmod +x ~/bin/digdag
+$ echo &#39;export PATH=&quot;$HOME/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
+</pre></div>
+</div>
+<p>Please reopen your terminal window or type following command so that the change of PATH takes effect.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ source ~/.bashrc
 </pre></div>
 </div>
 <p>If <code class="docutils literal"><span class="pre">digdag</span> <span class="pre">--help</span></code> command works, Digdag is installed successfully.</p>
+<p>(Note: if you&#8217;re using zsh, modify your<code class="docutils literal"><span class="pre">~/.zshrc</span></code> file instead of <code class="docutils literal"><span class="pre">~/.bashrc</span></code>).</p>
 <div class="section" id="on-windows">
 <span id="on-windows"></span><h3>On Windows?<a class="headerlink" href="#on-windows" title="Permalink to this headline">¶</a></h3>
 <p>On Windows, you can download a file named <code class="docutils literal"><span class="pre">digdag-&lt;VERSION&gt;.jar</span></code> from <a class="reference external" href="https://dl.digdag.io/digdag-latest">https://dl.digdag.io/digdag-latest</a>. This downloaded file is an executable bat file (as well as a jar file and a UNIX shell script).</p>
