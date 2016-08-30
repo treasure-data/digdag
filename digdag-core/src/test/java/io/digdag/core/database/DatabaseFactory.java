@@ -5,7 +5,6 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
-import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -70,6 +69,16 @@ public class DatabaseFactory
                 objectMapper(),
                 configFactory.create(),
                 mock(Notifier.class));
+    }
+
+    public DatabaseSecretControlStoreManager getSecretControlStoreManager(String secret)
+    {
+        return new DatabaseSecretControlStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
+    }
+
+    public DatabaseSecretStoreManager getSecretStoreManager(String secret)
+    {
+        return new DatabaseSecretStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
     }
 
     public static class NullTaskQueueDispatcher

@@ -12,6 +12,7 @@ import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretAccessDeniedException;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretProvider;
+import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 
 import java.util.List;
@@ -99,6 +100,12 @@ class DefaultSecretProvider
 
     private Optional<String> fetchSecret(String key)
     {
-        return secretStore.getSecret(context, key);
+        Optional<String> projectSecret = secretStore.getSecret(context.projectId(), SecretScopes.PROJECT, key);
+
+        if (projectSecret.isPresent()) {
+            return projectSecret;
+        }
+
+        return secretStore.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
     }
 }

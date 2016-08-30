@@ -99,5 +99,4 @@ public class DefaultSecretAccessPolicy
         }
         return policy;
     }
-
 }

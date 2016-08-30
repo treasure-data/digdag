@@ -56,7 +56,7 @@ class TdConfigSecretStore
     }
 
     @Override
-    public Optional<String> getSecret(SecretAccessContext context, String key)
+    public Optional<String> getSecret(int projectId, String scope, String key)
     {
         return Optional.fromNullable(secrets.get(key));
     }

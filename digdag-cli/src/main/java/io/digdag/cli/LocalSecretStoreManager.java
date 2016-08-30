@@ -33,11 +33,11 @@ class LocalSecretStoreManager
     @Override
     public SecretStore getSecretStore(int siteId)
     {
-        return (context, key) -> {
+        return (projectId, scope, key) -> {
 
             // First attempt to find a matching secret in the backing stores
             for (SecretStore store : secretStores) {
-                Optional<String> secret = store.getSecret(context, key);
+                Optional<String> secret = store.getSecret(projectId, scope, key);
                 if (secret.isPresent()) {
                     return secret;
                 }
