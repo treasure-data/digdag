@@ -2,6 +2,7 @@ package io.digdag.spi;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 import static org.immutables.value.Value.Style.ImplementationVisibility.PACKAGE;
@@ -14,15 +15,15 @@ public interface SecretAccessContext
 {
     int siteId();
 
-    int projectId();
+    Optional<Integer> projectId();
 
-    String revision();
+    Optional<String> revision();
 
-    String workflowName();
+    Optional<String> workflowName();
 
-    String taskName();
+    Optional<String> taskName();
 
-    String operatorType();
+    Optional<String> operatorType();
 
     static Builder builder()
     {

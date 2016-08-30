@@ -45,7 +45,12 @@ class DatabaseSecretStore
             throw new SecretAccessDeniedException("Site id mismatch");
         }
 
-        List<ScopedSecret> secrets = autoCommit((handle, dao) -> dao.getProjectSecrets(siteId, context.projectId(), key));
+        Optional<Integer> projectId = context.projectId();
+        if (!projectId.isPresent()) {
+            return Optional.absent();
+        }
+
+        List<ScopedSecret> secrets = autoCommit((handle, dao) -> dao.getProjectSecrets(siteId, projectId.get(), key));
 
         if (secrets.isEmpty()) {
             return Optional.absent();
@@ -55,15 +60,42 @@ class DatabaseSecretStore
                 .filter(s -> PRIORITIES.containsKey(s.scope))
                 .sorted((a, b) -> PRIORITIES.get(a.scope) - PRIORITIES.get(b.scope))
                 .findFirst().orElseThrow(AssertionError::new);
+        String decrypted = decrypt(secret);
 
+        return Optional.of(decrypted);
+    }
+
+    @Override
+    public Optional<String> getSecret(SecretAccessContext context, String scope, String key)
+    {
+        if (context.siteId() != siteId) {
+            throw new SecretAccessDeniedException("Site id mismatch");
+        }
+
+        Optional<Integer> projectId = context.projectId();
+        if (!projectId.isPresent()) {
+            return Optional.absent();
+        }
+
+        ScopedSecret secret = autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projectId.get(), scope, key));
+
+        if (secret == null) {
+            return Optional.absent();
+        }
+
+        String decrypted = decrypt(secret);
+
+        return Optional.of(decrypted);
+    }
+
+    private String decrypt(ScopedSecret secret)
+    {
         // TODO: look up crypto engine using name
-        if (!crypto.getName().equals(crypto.getName())) {
+        if (!crypto.getName().equals(secret.engine)) {
             throw new AssertionError("Crypto engine mismatch");
         }
 
-        String decrypted = crypto.decryptSecret(secret.value);
-
-        return Optional.of(decrypted);
+        return crypto.decryptSecret(secret.value);
     }
 
     interface Dao
@@ -71,6 +103,10 @@ class DatabaseSecretStore
         @SqlQuery("select scope, engine, value from secrets" +
                 " where site_id = :siteId and project_id = :projectId and key = :key")
         List<ScopedSecret> getProjectSecrets(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("key") String key);
+
+        @SqlQuery("select scope, engine, value from secrets" +
+                " where site_id = :siteId and project_id = :projectId and key = :key and scope = :scope")
+        ScopedSecret getProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
     }
 
     private static class ScopedSecret

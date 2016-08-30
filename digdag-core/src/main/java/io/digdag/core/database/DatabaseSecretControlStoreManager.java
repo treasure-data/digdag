@@ -10,15 +10,13 @@ import org.skife.jdbi.v2.DBI;
 public class DatabaseSecretControlStoreManager
         implements SecretControlStoreManager
 {
-    private final Config systemConfig;
     private final DatabaseConfig config;
     private final DBI dbi;
     private final SecretCrypto crypto;
 
     @Inject
-    public DatabaseSecretControlStoreManager(Config systemConfig, DatabaseConfig config, DBI dbi, SecretCrypto crypto)
+    public DatabaseSecretControlStoreManager(DatabaseConfig config, DBI dbi, SecretCrypto crypto)
     {
-        this.systemConfig = systemConfig;
         this.config = config;
         this.dbi = dbi;
         this.crypto = crypto;
