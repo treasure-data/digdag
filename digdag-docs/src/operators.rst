@@ -263,8 +263,6 @@ td>: Treasure Data queries
 
 **td>:** operator runs a Hive or Presto query on Treasure Data.
 
-TODO: add more description here
-
 .. code-block:: yaml
 
     _export:
@@ -363,12 +361,11 @@ Output parameters
 
   * :command:`{"path":"/index.html","count":1}`
 
+
 td_run>: Treasure Data saved queries
 ----------------------------------
 
 **td_run>:** operator runs a query saved on Treasure Data.
-
-TODO: add more description here
 
 .. code-block:: yaml
 
@@ -433,12 +430,197 @@ Output parameters
   * :command:`{"path":"/index.html","count":1}`
 
 
+td_for_each>: Repeat using Treasure Data queries
+----------------------------------
+
+**td_for_each>:** operator loops subtasks for each result rows of a Hive or Presto query on Treasure Data.
+
+Subtasks set at ``_do`` section can reference results using ${td.each.COLUMN_NAME} syntax where COLUMN_NAME is a name of column.
+
+For example, if you run a query ``select email, name from users`` and the query returns 3 rows, this operator runs subtasks 3 times with ``${td.each.email}`` and ``${td.each.name}}`` parameters.
+
+.. code-block:: yaml
+
+    _export:
+      td:
+        apikey: YOUR/API_KEY
+        database: www_access
+
+    +for_each_users:
+      td_for_each>: queries/users.sql
+      _do:
+        +show:
+          echo>: found a user ${td.each.name} email ${td.each.email}
+
+Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td>: FILE.sql`
+  Path to a query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`td>: queries/step1.sql`
+
+:command:`database: NAME`
+  Name of a database.
+
+  * :command:`database: my_db`
+
+:command:`apikey: APIKEY`
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
+:command:`engine: presto`
+  Query engine (``presto`` or ``hive``).
+
+  * :command:`engine: hive`
+  * :command:`engine: presto`
+
+:command:`priority: 0`
+  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , default: 0 (NORMAL)).
+
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
+
+
+td_wait_table>: Waits for data arriving at Treasure Data table
+----------------------------------
+
+**td_wait_table>:** operator checks a table periodically until it has certain number of records in a configured range. This is useful to wait execution of following tasks until some records are imported to a table.
+
+.. code-block:: yaml
+
+    _export:
+      td:
+        apikey: YOUR/API_KEY
+        database: www_access
+
+    +wait:
+      td_wait_table>: target_table
+
+    +step1:
+      td>: queries/use_records.sql
+
+:command:`td_wait_table>: FILE.sql`
+  Name of a table.
+
+  * :command:`td_wait_table>: target_table`
+
+:command:`rows: N`
+  Number of rows to wait (default: 0).
+
+  * :command:`rows: 10`
+
+:command:`database: NAME`
+  Name of a database.
+
+  * :command:`database: my_db`
+
+:command:`apikey: APIKEY`
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
+:command:`engine: presto`
+  Query engine (``presto`` or ``hive``).
+
+  * :command:`engine: hive`
+  * :command:`engine: presto`
+
+:command:`priority: 0`
+  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , default: 0 (NORMAL)).
+
+
+
+td_wait>: Waits for data arriving at Treasure Data table
+----------------------------------
+
+**td_wait>:** operator runs a query periodically until it returns true. This operator can use more complex query compared to ``td_wait_table>:`` operator
+
+.. code-block:: yaml
+
+    _export:
+      td:
+        apikey: YOUR/API_KEY
+        database: www_access
+
+    +wait:
+      td_wait>: queries/check_recent_record.sql
+
+    +step1:
+      td>: queries/use_records.sql
+
+Example queries:
+
+.. code-block:: sql
+
+    select 1 from target_table where TD_TIME_RANGE(time, '${session_time}') limit 1
+
+    select count(*) > 1000 from target_table where TD_TIME_RANGE(time, '${last_session_time}')
+
+Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td_wait>: FILE.sql`
+  Path to a query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`td_wait>: queries/check_recent_record.sql`
+
+:command:`database: NAME`
+  Name of a database.
+
+  * :command:`database: my_db`
+
+:command:`apikey: APIKEY`
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
+:command:`engine: presto`
+  Query engine (``presto`` or ``hive``).
+
+  * :command:`engine: hive`
+  * :command:`engine: presto`
+
+:command:`priority: 0`
+  Set Priority (From ``-2`` (VERY LOW) to ``2`` (VERY HIGH) , default: 0 (NORMAL)).
+
+Output parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:command:`td.last_job_id`
+  The job id this task executed.
+
+  * :command:`52036074`
+
+
 td_load>: Treasure Data bulk loading
 ----------------------------------
 
 **td_load>:** operator loads data from storages, databases, or services.
-
-TODO: add more description here
 
 .. code-block:: yaml
 
@@ -491,8 +673,6 @@ td_ddl>: Treasure Data operations
 ----------------------------------
 
 **td_ddl>** operator runs an operational task on Treasure Data.
-
-TODO: add more description here
 
 .. code-block:: yaml
 
@@ -556,12 +736,64 @@ Parameters
   Enable SSL (https) to access to the endpoint (default: true).
 
 
+td_partial_delete>: Delete range of Treasure Data table
+----------------------------------
+
+**td_partial_delete>:** operator deletes records from a Treasure Data table.
+
+Please be aware that records imported using streaming import can't be deleted for several hours using td_partial_delete. Records imported by INSERT INTO, Data Connector, and bulk imports can be deleted immediately.
+
+Time range needs to be hourly. Setting non-zero values to minutes or seconds will be rejected.
+
+.. code-block:: yaml
+
+    _export:
+      td:
+        apikey: YOUR/API_KEY
+
+    +step1:
+      td_partial_delete>:
+      database: mydb
+      table: mytable
+      from: 2016-01-01 00:00:00 +0800
+      to:   2016-02-01 00:00:00 +0800
+
+:command:`database: NAME`
+  Name of the database.
+
+  * :command:`database: my_database`
+
+:command:`table: NAME`
+  Name of the table to export.
+
+  * :command:`table: my_table`
+
+:command:`from: yyyy-MM-dd HH:mm:ss[ Z]`
+  Delete records from this time (inclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
+
+  * :command:`from: 2016-01-01 00:00:00 +0800`
+
+:command:`to: yyyy-MM-dd HH:mm:ss[ Z]`
+  Delete records to this time (exclusive). Actual time range is :command:`[from, to)`. Value should be a UNIX timestamp integer (seconds) or string in yyyy-MM-dd HH:mm:ss[ Z] format.
+
+  * :command:`to: 2016-02-01 00:00:00 +0800`
+
+:command:`apikey: APIKEY`
+  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+
+  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
+
+:command:`endpoint: ADDRESS`
+  API endpoint (default: api.treasuredata.com).
+
+:command:`use_ssl: BOOLEAN`
+  Enable SSL (https) to access to the endpoint (default: true).
+
+
 td_table_export>: Treasure Data table export to S3
 ----------------------------------
 
 **td_table_export>:** operator loads data from storages, databases, or services.
-
-TODO: add more description here
 
 .. code-block:: yaml
 
@@ -736,8 +968,6 @@ Parameters
   Default schema name (default: public)
 
   * :command:`schema: my_schema`
-
-TODO: Add some other commands
 
 
 mail>: Sending email
