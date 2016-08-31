@@ -134,20 +134,28 @@ subprojects {
         }
     }
 
-    task testsJar(type: Jar, dependsOn: classes) {
+    task testsJar(type: Jar) {
         classifier = 'tests'
         from sourceSets.test.output
     }
-    task sourcesJar(type: Jar, dependsOn: classes) {
+    task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
     }
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    task javadocJar(type: Jar) {
         classifier = 'javadoc'
-        from javadoc.destinationDir
+        from javadoc
     }
 
     task deps(type: DependencyReportTask) {
+    }
+
+    configurations {
+        testArtifacts.extendsFrom testRuntime
+    }
+
+    artifacts {
+        testArtifacts testsJar
     }
 
     //artifacts {
@@ -416,6 +424,15 @@ task pom << {
         def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
         def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
         enforcer_rules.appendNode('requireUpperBoundDeps', '')
+
+        def jar = plugins.appendNode('plugin', '')
+        jar.appendNode('groupId', 'org.apache.maven.plugins')
+        jar.appendNode('artifactId', 'maven-jar-plugin')
+        jar.appendNode('version', '3.0.2')
+        def jar_executions = jar.appendNode('executions', '')
+        def jar_execution = jar_executions.appendNode('execution', '')
+        def jar_execution_goals = jar_execution.appendNode('goals', '')
+        jar_execution_goals.appendNode('goal', 'test-jar')
     }.writeTo("pom.xml")
 }
 

@@ -15,6 +15,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -103,7 +104,12 @@ class Archiver
             }
             // absolute path will be invalid on a server. convert it to a relative path
             Path normalizedRelativeDest = absPath.getParent().relativize(normalizedAbsDest);
-            e.setLinkName(normalizedRelativeDest.toString());
+
+            String linkName = normalizedRelativeDest.toString();
+
+            // TarArchiveEntry(File) does this normalization but setLinkName doesn't. So do it here:
+            linkName = linkName.replace(File.separatorChar, '/');
+            e.setLinkName(linkName);
         }
         else {
             e = new TarArchiveEntry(absPath.toFile(), name);
