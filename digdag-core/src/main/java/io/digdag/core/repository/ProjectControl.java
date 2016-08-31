@@ -1,6 +1,8 @@
 package io.digdag.core.repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.time.Instant;
 import com.google.common.collect.ImmutableList;
 import com.google.common.base.Optional;
@@ -98,12 +100,14 @@ public class ProjectControl
         throws ResourceConflictException
     {
         ImmutableList.Builder<Schedule> schedules = ImmutableList.builder();
+        Map<Long, Scheduler> wfIdToSchedulers = new HashMap<>();
         for (StoredWorkflowDefinition def : defs) {
             Optional<Scheduler> sr = srm.tryGetScheduler(revision, def);
             if (sr.isPresent()) {
                 ScheduleTime firstTime = sr.get().getFirstScheduleTime(currentTime);
                 Schedule schedule = Schedule.of(def.getName(), def.getId(), firstTime.getRunTime(), firstTime.getTime());
                 schedules.add(schedule);
+                wfIdToSchedulers.put(schedule.getWorkflowDefinitionId(), sr.get());
             }
         }
 
@@ -111,9 +115,15 @@ public class ProjectControl
         //   * compile workflow
         //   * validate SubtaskMatchPattern
 
-        // DatabaseProjectStoreManager.updateSchedules has more logic
-        // to match names with existent schedules
-        store.updateSchedules(project.getId(), schedules.build());
+        store.updateSchedules(project.getId(), schedules.build(), (oldStatus, newSched) -> {
+            return oldStatus.getLastScheduleTime()
+                // if last schedule_time exists (the schedule has run before at least once),
+                // calculate next time from the last time.
+                .transform(it -> wfIdToSchedulers.get(newSched.getWorkflowDefinitionId()).nextScheduleTime(it))
+                // otherwise, if this schedule hasn't run before, simply use the first execution
+                // time of the new schedule setting.
+                .or(() -> ScheduleTime.of(newSched.getNextScheduleTime(), newSched.getNextRunTime()));
+        });
     }
 
     public void deleteSchedules()

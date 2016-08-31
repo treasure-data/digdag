@@ -2,8 +2,11 @@ package io.digdag.core.repository;
 
 import java.util.List;
 import java.time.ZoneId;
+import java.time.Instant;
 import com.google.common.base.Optional;
 import io.digdag.core.schedule.Schedule;
+import io.digdag.core.schedule.ScheduleStatus;
+import io.digdag.spi.ScheduleTime;
 
 public interface ProjectControlStore
 {
@@ -16,7 +19,12 @@ public interface ProjectControlStore
     StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition workflow, ZoneId workflowTimeZone)
         throws ResourceConflictException;
 
-    void updateSchedules(int projId, List<Schedule> schedules)
+    interface ScheduleUpdateAction
+    {
+        public ScheduleTime apply(ScheduleStatus oldStatus, Schedule newSchedule);
+    }
+
+    void updateSchedules(int projId, List<Schedule> schedules, ScheduleUpdateAction func)
         throws ResourceConflictException;
 
     void deleteSchedules(int projId);

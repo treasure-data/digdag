@@ -68,7 +68,9 @@ public class DatabaseScheduleStoreManagerTest
                     revRef.set(lock.insertRevision(srcRev1));
                     wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev1)).get(0));
                     wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf2)).get(0));
-                    store.updateSchedules(stored.getId(), ImmutableList.of(
+                    store.updateSchedules(
+                            stored.getId(),
+                            ImmutableList.of(
                                 Schedule.of(
                                     srcWf1Rev1.getName(),
                                     wfRefA.get().getId(),
@@ -79,7 +81,10 @@ public class DatabaseScheduleStoreManagerTest
                                     wfRefB.get().getId(),
                                     runTime1,
                                     schedTime1)
-                                ));
+                                ),
+                            (oldStatus, newSched) -> {
+                                return oldStatus.getNextScheduleTime();
+                            });
                     return lock.get();
                 });
         StoredRevision rev1 = revRef.get();
@@ -97,7 +102,9 @@ public class DatabaseScheduleStoreManagerTest
                     revRef.set(lock.insertRevision(srcRev2));
                     wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev2)).get(0));
                     wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf3)).get(0));
-                    store.updateSchedules(stored.getId(), ImmutableList.of(
+                    store.updateSchedules(
+                            stored.getId(),
+                            ImmutableList.of(
                                 Schedule.of(
                                     srcWf1Rev2.getName(),
                                     wfRefA.get().getId(),
@@ -107,7 +114,14 @@ public class DatabaseScheduleStoreManagerTest
                                     srcWf3.getName(),
                                     wfRefB.get().getId(),
                                     runTime2,
-                                    schedTime2)));
+                                    schedTime2)
+                                ),
+                            (oldStatus, newSched) -> {
+                                // when conflicted (wf1), rollback 60 seconds schedule time and 120 seconds run time here
+                                return ScheduleTime.of(
+                                        oldStatus.getNextScheduleTime().getTime().minusSeconds(60),
+                                        oldStatus.getNextScheduleTime().getRunTime().minusSeconds(120));
+                            });
                     return lock.get();
                 });
         StoredRevision rev2 = revRef.get();
@@ -143,9 +157,9 @@ public class DatabaseScheduleStoreManagerTest
         assertEquals(schedTime1, sched1.getNextScheduleTime());
         assertEquals(schedTime1, sched2.getNextScheduleTime());
 
-        assertEquals(runTime1, sched3.getNextRunTime());   // updating schedule doesn't update times
+        assertEquals(runTime1.minusSeconds(120), sched3.getNextRunTime());   // conflicted, 2 minute rollback
         assertEquals(runTime2, sched4.getNextRunTime());
-        assertEquals(schedTime1, sched3.getNextScheduleTime());   // updating schedule doesn't update times
+        assertEquals(schedTime1.minusSeconds(60), sched3.getNextScheduleTime());  // conflicted, 1 minutes rollback
         assertEquals(schedTime2, sched4.getNextScheduleTime());
 
         ////
