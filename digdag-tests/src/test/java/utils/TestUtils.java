@@ -343,7 +343,8 @@ public class TestUtils
         List<String> startCommand = new ArrayList<>(asList("start",
                 "-c", "/dev/null",
                 "-e", endpoint,
-                projectName, workflow));
+                projectName, workflow,
+                "--session", "now"));
 
         params.forEach((k, v) -> startCommand.addAll(asList("-p", k + "=" + v)));
 

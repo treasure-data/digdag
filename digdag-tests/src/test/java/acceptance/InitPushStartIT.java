@@ -5,21 +5,21 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
-import utils.TestUtils;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.getAttemptId;
+import static utils.TestUtils.getSessionId;
+import static utils.TestUtils.main;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
@@ -28,10 +28,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.getAttemptId;
-import static utils.TestUtils.getSessionId;
-import static utils.TestUtils.main;
 
 public class InitPushStartIT
 {
@@ -313,22 +309,5 @@ public class InitPushStartIT
         assertThat(startStatus.errUtf8(), startStatus.code(), is(1));
         assertThat(startStatus.errUtf8(), containsString("A session for the requested session_time already exists (session_id=" + sessionId + ", attempt_id=" + attemptId + ", session_time=2016-01-01T00:00Z)"));
         assertThat(startStatus.errUtf8(), containsString("hint: use `digdag retry " + attemptId + " --latest-revision` command to run the session again for the same session_time"));
-    }
-
-    @Test
-    public void startWithDefaultSessionTime()
-            throws Exception
-    {
-
-        Files.createDirectories(projectDir);
-        copyResource("acceptance/basic.dig", projectDir.resolve("basic.dig"));
-        long attemptId = TestUtils.pushAndStart(server.endpoint(), projectDir, "basic");
-
-        long now = Instant.now().getEpochSecond();
-
-        RestSessionAttempt sessionAttempt = client.getSessionAttempt(attemptId);
-        assertThat((double) sessionAttempt.getSessionTime().toInstant().getEpochSecond(), Matchers.closeTo(now, 30));
-
-        TestUtils.expect(Duration.ofSeconds(300), TestUtils.attemptSuccess(server.endpoint(), attemptId));
     }
 }
