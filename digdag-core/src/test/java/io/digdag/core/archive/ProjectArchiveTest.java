@@ -131,6 +131,6 @@ public class ProjectArchiveTest
         exception.expectMessage(containsString(" is outside of project directory "));
         exception.expect(IllegalArgumentException.class);
 
-        archive.pathToResourceName(Paths.get("" + File.separatorChar, "root"));
+        archive.pathToResourceName(Paths.get("" + File.separatorChar + "root"));
     }
 }
