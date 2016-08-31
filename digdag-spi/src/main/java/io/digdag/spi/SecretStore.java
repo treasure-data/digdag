@@ -4,5 +4,5 @@ import com.google.common.base.Optional;
 
 public interface SecretStore
 {
-    Optional<String> getSecret(SecretAccessContext context, String key);
+    Optional<String> getSecret(int projectId, String scope, String key);
 }
