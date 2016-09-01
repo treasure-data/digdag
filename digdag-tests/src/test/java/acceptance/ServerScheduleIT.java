@@ -55,7 +55,7 @@ public class ServerScheduleIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
 
-        copyResource("acceptance/schedule/schedule.dig", projectDir.resolve("schedule.dig"));
+        copyResource("acceptance/schedule/daily10.dig", projectDir.resolve("schedule.dig"));
 
         // Push the project starting schedules from at 2291-02-06 10:00:00 +0000
         {
@@ -65,7 +65,6 @@ public class ServerScheduleIT
                         "foobar",
                         "-c", config.toString(),
                         "-e", server.endpoint(),
-                        "-r", "4711",
                         "--schedule-from", "2291-02-06 10:00:00 +0000");
                 assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
             }
@@ -78,5 +77,48 @@ public class ServerScheduleIT
             assertThat(sched.getNextRunTime(), is(Instant.parse("2291-02-06T10:00:00Z")));
             assertThat(sched.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-06T00:00:00Z")));
         }
+    }
+
+    @Test
+    public void scheduleUpdatedTime()
+            throws Exception
+    {
+        // Create a new project
+        CommandStatus initStatus = main("init",
+                "-c", config.toString(),
+                projectDir.toString());
+        assertThat(initStatus.code(), is(0));
+
+        // Push a project that has daily schedule
+        copyResource("acceptance/schedule/daily10.dig", projectDir.resolve("schedule.dig"));
+        {
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--schedule-from", "2291-02-06 10:00:00 +0000");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        // Update the project that using hourly schedule
+        copyResource("acceptance/schedule/hourly9.dig", projectDir.resolve("schedule.dig"));
+        {
+            CommandStatus pushStatus = main("push",
+                    "--project", projectDir.toString(),
+                    "foobar",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    "--schedule-from", "2291-02-09 00:00:00 +0000");
+            assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+        }
+
+        List<RestSchedule> scheds = client.getSchedules();
+        assertThat(scheds.size(), is(1));
+        RestSchedule sched = scheds.get(0);
+
+        assertThat(sched.getProject().getName(), is("foobar"));
+        assertThat(sched.getNextRunTime(), is(Instant.parse("2291-02-09T00:09:00Z")));  // updated to hourly
+        assertThat(sched.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00:00Z")));
     }
 }

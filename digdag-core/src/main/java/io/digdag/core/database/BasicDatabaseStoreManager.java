@@ -1,5 +1,6 @@
 package io.digdag.core.database;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -125,10 +126,10 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
-    public <T extends Number> String inLargeIdListExpression(List<T> idList)
+    public <T extends Number> String inLargeIdListExpression(Collection<T> idList)
     {
         if (idList.size() == 1) {
-            return "= " + idList.get(0).toString();
+            return "= " + idList.iterator().next().toString();
         }
         else {
             switch (databaseType) {
