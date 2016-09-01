@@ -34,6 +34,6 @@ public class YamlConfigLoaderTest
     {
         Path temp = Files.createTempFile("digdag-YamlConfigLoaderTest", ".yml");
         Files.write(temp, "{\"a\":1, \"a\":2}".getBytes(UTF_8));
-        loader.loadParameterizedFile(temp.toFile(), null);
+        loader.loadParameterizedFile(temp.toFile());
     }
 }
