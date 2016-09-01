@@ -446,8 +446,8 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public void updateSchedules(int projId, List<Schedule> schedules,
-                ScheduleUpdateAction func)
+        public <T extends Schedule> void updateSchedules(int projId, List<T> schedules,
+                ScheduleUpdateAction<T> func)
             throws ResourceConflictException
         {
             Map<String, Integer> oldScheduleNames = idNameListToHashMap(dao.getScheduleNames(projId));
@@ -460,7 +460,7 @@ public class DatabaseProjectStoreManager
             // concurrent update of schedules, here needs to lock schedules
             // before UPDATE.
 
-            for (Schedule schedule : schedules) {
+            for (T schedule : schedules) {
                 Integer matchedSchedId = oldScheduleNames.get(schedule.getWorkflowName());
                 if (matchedSchedId != null) {
                     // found the same name. lock it and update

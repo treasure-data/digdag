@@ -19,12 +19,12 @@ public interface ProjectControlStore
     StoredWorkflowDefinition insertWorkflowDefinition(int projId, int revId, WorkflowDefinition workflow, ZoneId workflowTimeZone)
         throws ResourceConflictException;
 
-    interface ScheduleUpdateAction
+    interface ScheduleUpdateAction <T extends Schedule>
     {
-        public ScheduleTime apply(ScheduleStatus oldStatus, Schedule newSchedule);
+        ScheduleTime apply(ScheduleStatus oldStatus, T newSchedule);
     }
 
-    void updateSchedules(int projId, List<Schedule> schedules, ScheduleUpdateAction func)
+    <T extends Schedule> void updateSchedules(int projId, List<T> schedules, ScheduleUpdateAction<T> func)
         throws ResourceConflictException;
 
     void deleteSchedules(int projId);
