@@ -115,7 +115,7 @@ class ResumeStateManager
                 dir.update();
             }
             catch (Exception ex) {
-                logger.error("Uncaught exception", ex);
+                logger.error("Uncaught exception during updating resume state files at {}. Stopped updating files at this directory.", dir.getPath(), ex);
                 ite.remove();
             }
         }
@@ -131,6 +131,11 @@ class ResumeStateManager
         {
             this.dir = dir;
             this.attempt = attempt;
+        }
+
+        public Path getPath()
+        {
+            return dir;
         }
 
         public StoredSessionAttemptWithSession getSessionAttempt()

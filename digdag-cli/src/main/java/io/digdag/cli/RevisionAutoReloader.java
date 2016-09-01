@@ -88,7 +88,7 @@ class RevisionAutoReloader
                 target.tryReload();
             }
             catch (Exception ex) {
-                logger.error("Uncaught exception", ex);
+                logger.error("Uncaught exception during reloading project at {}. Stopped monitoring this project.", target.getProjectPath(), ex);
                 ite.remove();
             }
         }
@@ -107,6 +107,11 @@ class RevisionAutoReloader
             this.projectPath = project.getProjectPath();
             this.overwriteParams = project.getArchiveMetadata().getDefaultParams();
             storeProject(project, 1);
+        }
+
+        public Path getProjectPath()
+        {
+            return projectPath;
         }
 
         private void storeProject(ProjectArchive project, int revId)

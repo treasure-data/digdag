@@ -90,7 +90,7 @@ public class MultiThreadAgent
                                     runner.run(req);
                                 }
                                 catch (Throwable t) {
-                                    logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
+                                    logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
                                 }
                             });
                         }
