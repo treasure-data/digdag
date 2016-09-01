@@ -17,6 +17,7 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.queue.QueueSettingStore;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.queue.StoredQueueSetting;
@@ -52,6 +53,9 @@ public class DatabaseTaskQueueServer
     private final int expireLockInterval;
     private final LocalLockMap localLockMap = new LocalLockMap();
     private final ScheduledExecutorService expireExecutor;
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public DatabaseTaskQueueServer(DBI dbi, DatabaseConfig config, DatabaseTaskQueueConfig queueConfig, ObjectMapper taskObjectMapper)
@@ -435,6 +439,7 @@ public class DatabaseTaskQueueServer
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This lock expiration thread will be restarted.", t);
+            errorReporter.reportUncaughtError(t);
         }
     }
 

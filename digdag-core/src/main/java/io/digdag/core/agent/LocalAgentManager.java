@@ -3,12 +3,14 @@ package io.digdag.core.agent;
 import java.util.function.Supplier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.BackgroundExecutor;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.queue.TaskQueueServerManager;
 
 public class LocalAgentManager
@@ -18,6 +20,10 @@ public class LocalAgentManager
     private volatile Thread thread;
     private volatile MultiThreadAgent agent;
 
+    @Nullable
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = null;
+
     @Inject
     public LocalAgentManager(
             AgentConfig config,
@@ -26,7 +32,7 @@ public class LocalAgentManager
             OperatorManager operatorManager)
     {
         if (config.getEnabled()) {
-            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager);
+            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, errorReporter);
         }
         else {
             this.agentFactory = null;

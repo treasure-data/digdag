@@ -9,6 +9,7 @@ import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.ErrorReporter;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretAccessContext;
@@ -59,6 +60,9 @@ public class OperatorManager
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
@@ -313,6 +317,7 @@ public class OperatorManager
         }
         catch (Throwable t) {
             logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
+            errorReporter.reportUncaughtError(t);
         }
     }
 
