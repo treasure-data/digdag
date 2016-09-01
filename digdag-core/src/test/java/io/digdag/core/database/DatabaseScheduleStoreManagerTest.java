@@ -87,7 +87,6 @@ public class DatabaseScheduleStoreManagerTest
                             });
                     return lock.get();
                 });
-        StoredRevision rev1 = revRef.get();
         StoredWorkflowDefinition wf1Rev1 = wfRefA.get();
         StoredWorkflowDefinition wf2 = wfRefB.get();
         List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent());
@@ -124,7 +123,6 @@ public class DatabaseScheduleStoreManagerTest
                             });
                     return lock.get();
                 });
-        StoredRevision rev2 = revRef.get();
         StoredWorkflowDefinition wf1Rev2 = wfRefA.get();
         StoredWorkflowDefinition wf3 = wfRefB.get();
         List<StoredSchedule> schedList2 = schedStore.getSchedules(100, Optional.absent());

@@ -461,14 +461,14 @@ public class DatabaseProjectStoreManager
             // before UPDATE.
 
             for (Schedule schedule : schedules) {
-                Integer matchingSchedId = oldScheduleNames.get(schedule.getWorkflowName());
-                if (matchingSchedId != null) {
+                Integer matchedSchedId = oldScheduleNames.get(schedule.getWorkflowName());
+                if (matchedSchedId != null) {
                     // found the same name. lock it and update
-                    ScheduleStatus status = dao.lockScheduleById(matchingSchedId);
+                    ScheduleStatus status = dao.lockScheduleById(matchedSchedId);
                     if (status != null) {
                         ScheduleTime newSchedule = func.apply(status, schedule);
                         dao.updateScheduleById(
-                                matchingSchedId,
+                                matchedSchedId,
                                 schedule.getWorkflowDefinitionId(),
                                 newSchedule.getRunTime().getEpochSecond(),
                                 newSchedule.getTime().getEpochSecond());
