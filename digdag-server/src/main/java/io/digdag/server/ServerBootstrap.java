@@ -67,6 +67,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 public class ServerBootstrap
     implements GuiceRsBootstrap
 {
@@ -106,23 +108,6 @@ public class ServerBootstrap
 
         Injector injector = digdag.getInjector();
 
-        if (serverConfig.getExecutorEnabled()) {
-            // TODO create global site
-            LocalSite site = injector.getInstance(LocalSite.class);
-
-            Thread thread = new Thread(() -> {
-                try {
-                    site.run();
-                }
-                catch (Exception ex) {
-                    logger.error("Uncaught error", ex);
-                    control.destroy();
-                }
-            }, "local-site");
-            thread.setDaemon(true);
-            thread.start();
-        }
-
         return injector;
     }
 
@@ -138,6 +123,7 @@ public class ServerBootstrap
             })
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
+                binder.bind(WorkflowExecutorLoop.class).asEagerSingleton();
             })
             .addModules(
                     new EagerShutdownModule(control),
@@ -307,6 +293,7 @@ public class ServerBootstrap
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             control.stop();
             control.destroy();
+            logger.info("Shutdown completed");
         }, "shutdown"));
     }
 
