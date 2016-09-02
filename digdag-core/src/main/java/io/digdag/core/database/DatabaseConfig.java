@@ -243,4 +243,9 @@ public interface DatabaseConfig
 
         return props;
     }
+
+    static boolean isPostgres(String databaseType)
+    {
+        return databaseType.equals("postgresql");
+    }
 }
