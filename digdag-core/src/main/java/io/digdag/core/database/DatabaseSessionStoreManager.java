@@ -70,6 +70,41 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Store session state on a database.
+ *
+ * Lock relations:
+ *
+ * Attempt initialization:
+ *   // insert the root task of an attempt
+ *   insertRootTask:
+ *     locked session
+ *
+ *   // used by dynamic task generation
+ *   addResumingTasks:
+ *     locked root task
+ *
+ * Attempt execution:
+ *   // generating regular dynamic tasks and monitor tasks
+ *   addSubtask:
+ *     locked parent task
+ *
+ *   // generating dynamic tasks that are resumed by previous attempt
+ *   addResumedSubtask:
+ *     locked parent task
+ *
+ *   // reinserting tasks for group-retry
+ *   copyInitialTasksForRetry:
+ *     locked parent task
+ *     and parent task is ready
+ *
+ * Attempt cleanup:
+ *   // SessionAttemptControlStore.archiveTasks
+ *   aggregateAndInsertTaskArchive, deleteAllTasksOfAttempt, setDoneToAttemptState:
+ *     locked attempt
+ *     and attempt is done yet
+ *
+ */
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager<DatabaseSessionStoreManager.Dao>
         implements SessionStoreManager

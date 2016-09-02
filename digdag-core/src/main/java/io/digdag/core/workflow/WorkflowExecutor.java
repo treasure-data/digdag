@@ -620,9 +620,16 @@ public class WorkflowExecutor
                 .stream()
                 .map(task -> {
                     return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
-                        SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
-                        control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
-                        return true;
+                        if (summary.getStateFlags().isDone()) {
+                            // already archived. This means that another thread archived
+                            // this attempt after findRootTasksByStates call.
+                            return false;
+                        }
+                        else {
+                            SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
+                            control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
+                            return true;
+                        }
                     }).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
