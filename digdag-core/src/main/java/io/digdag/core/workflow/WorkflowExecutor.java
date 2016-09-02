@@ -621,7 +621,7 @@ public class WorkflowExecutor
                 .map(task -> {
                     return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
                         if (summary.getStateFlags().isDone()) {
-                            // already archived. This means that another thread archvied
+                            // already archived. This means that another thread archived
                             // this attempt after findRootTasksByStates call.
                             return false;
                         }
