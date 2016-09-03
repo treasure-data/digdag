@@ -111,7 +111,7 @@ public class WorkflowExecutorLoop
 
             // noticeRunWhileConditionChange is not 100% accurate because
             // WorkflowExecutor doesn't lock stop flag before check. But
-            // it will be repeated at shutdown() method later
+            // it will be repeated in shutdown() method later
             workflowExecutor.noticeRunWhileConditionChange();
         }
     }

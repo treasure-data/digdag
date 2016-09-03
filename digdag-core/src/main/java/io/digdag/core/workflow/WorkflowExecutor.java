@@ -346,7 +346,7 @@ public class WorkflowExecutor
     {
         propagatorLock.lock();
         try {
-            // don't set propagatorNotice but break wait at runWhile
+            // don't set propagatorNotice but break wait in runWhile
             propagatorCondition.signalAll();
         }
         finally {
@@ -957,7 +957,7 @@ public class WorkflowExecutor
 
             // remove conditional subtasks that may cause JavaScript evaluation error if they include reference to a nested field such as
             // this_will_be_set_at_this_task.this_is_null.this_access_causes_error.
-            // _do is another conditional subtsaks but they are kept remained and removed later at ConfigEvalEngine because
+            // _do is another conditional subtsaks but they are kept remained here and removed later in ConfigEvalEngine because
             // operator factory needs _do while _check and _error are used only by WorkflowExecutor.
             Config localConfig = task.getConfig().getLocal().deepCopy();
             params.remove("_check");

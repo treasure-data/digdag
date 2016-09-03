@@ -42,7 +42,7 @@ public class ScheduleExecutor
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
-    private final SessionStoreManager sessionStoreManager;  // used for validation at backfill
+    private final SessionStoreManager sessionStoreManager;  // used for validation in backfill method
     private ScheduledExecutorService executor;
 
     @Inject(optional = true)
