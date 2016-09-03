@@ -3,7 +3,6 @@ package io.digdag.core.agent;
 import java.util.function.Supplier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import com.google.inject.Inject;
@@ -20,9 +19,8 @@ public class LocalAgentManager
     private volatile Thread thread;
     private volatile MultiThreadAgent agent;
 
-    @Nullable
     @Inject(optional = true)
-    private ErrorReporter errorReporter = null;
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public LocalAgentManager(
