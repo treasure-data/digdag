@@ -312,7 +312,7 @@ public class OperatorManager
             }
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. Heartbeat thread will be retried.", t);
+            logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
         }
     }
 

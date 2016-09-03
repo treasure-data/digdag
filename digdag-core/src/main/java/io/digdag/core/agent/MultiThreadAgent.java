@@ -102,7 +102,14 @@ public class MultiThreadAgent
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception. Ignoring.", t);
+                logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
+                try {
+                    // sleep before retrying
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

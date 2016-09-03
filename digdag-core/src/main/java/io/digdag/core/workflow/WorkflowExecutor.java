@@ -342,6 +342,18 @@ public class WorkflowExecutor
         }
     }
 
+    public void noticeRunWhileConditionChange()
+    {
+        propagatorLock.lock();
+        try {
+            // don't set propagatorNotice but break wait at runWhile
+            propagatorCondition.signalAll();
+        }
+        finally {
+            propagatorLock.unlock();
+        }
+    }
+
     public void run()
             throws InterruptedException
     {
@@ -377,7 +389,7 @@ public class WorkflowExecutor
     private static final int INITIAL_INTERVAL = 100;
     private static final int MAX_INTERVAL = 5000;
 
-    private void runWhile(BooleanSupplier cond)
+    public void runWhile(BooleanSupplier cond)
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {

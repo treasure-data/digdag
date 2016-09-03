@@ -15,8 +15,8 @@ public class LocalAgentManager
         implements BackgroundExecutor
 {
     private final Supplier<MultiThreadAgent> agentFactory;
-    private Thread thread;
-    private MultiThreadAgent agent;
+    private volatile Thread thread;
+    private volatile MultiThreadAgent agent;
 
     @Inject
     public LocalAgentManager(
