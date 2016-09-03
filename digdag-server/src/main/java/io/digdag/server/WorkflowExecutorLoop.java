@@ -100,7 +100,7 @@ public class WorkflowExecutorLoop
 
     private void startShutdown()
     {
-        if (stop == false) {
+        if (!stop) {
             stop = true;
             logger.info("Shutting down workflow executor loop");
 
