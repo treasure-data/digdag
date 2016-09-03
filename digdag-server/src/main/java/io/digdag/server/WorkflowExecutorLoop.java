@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.digdag.core.BackgroundExecutor;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.workflow.WorkflowExecutor;
 
 import org.slf4j.Logger;
@@ -24,6 +25,9 @@ public class WorkflowExecutorLoop
 
     private volatile Thread thread = null;
     private volatile boolean stop = false;
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public WorkflowExecutorLoop(
@@ -51,6 +55,7 @@ public class WorkflowExecutorLoop
             }
             catch (Throwable t) {
                 logger.error("Uncaught error during executing workflow state machine. Ignoring. Loop will be retried.", t);
+                errorReporter.reportUncaughtError(t);
                 try {
                     // sleep before retrying
                     Thread.sleep(1000);
@@ -106,7 +111,7 @@ public class WorkflowExecutorLoop
 
             // noticeRunWhileConditionChange is not 100% accurate because
             // WorkflowExecutor doesn't lock stop flag before check. But
-            // it will be repeated at shutdown() method later
+            // it will be repeated in shutdown() method later
             workflowExecutor.noticeRunWhileConditionChange();
         }
     }

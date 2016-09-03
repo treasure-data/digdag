@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.core.BackgroundExecutor;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.workflow.TaskControl;
 import io.digdag.core.workflow.Tasks;
 import io.digdag.core.workflow.WorkflowExecutor;
@@ -28,6 +29,9 @@ public class SessionMonitorExecutor
     private final SessionStoreManager sm;
     private final WorkflowExecutor exec;
     private ScheduledExecutorService executor;
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public SessionMonitorExecutor(
@@ -82,6 +86,7 @@ public class SessionMonitorExecutor
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. This session monitor scheduling will be retried.", t);
+            errorReporter.reportUncaughtError(t);
         }
     }
 

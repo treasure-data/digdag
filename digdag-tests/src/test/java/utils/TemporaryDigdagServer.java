@@ -552,6 +552,16 @@ public class TemporaryDigdagServer
         temporaryFolder.delete();
     }
 
+    public boolean isRemoteDatabase()
+    {
+        return testDatabaseConfig != null && testDatabaseConfig.getRemoteDatabaseConfig().isPresent();
+    }
+
+    public DatabaseConfig getRemoteTestDatabaseConfig()
+    {
+        return testDatabaseConfig;
+    }
+
     public boolean hasUnixProcess()
     {
         return serverProcess != null && isUnixProcess(serverProcess);

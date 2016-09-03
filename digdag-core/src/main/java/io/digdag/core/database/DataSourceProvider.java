@@ -54,7 +54,7 @@ public class DataSourceProvider
         // that such behavior using DB_CLOSE_DELAY=-1 option, there're no methods to close the
         // database explicitly. Only way to close is to not disable shutdown hook of H2 database
         // (DB_CLOSE_ON_EXIT=TRUE). But this also causes unexpected behavior when PreDestroy is
-        // triggered at shutdown hook. Therefore, here needs to rely on injector to take care of
+        // triggered in a shutdown hook. Therefore, here needs to rely on injector to take care of
         // dependencies so that the database is closed after calling all other PreDestroy methods
         // that depend on this DataSourceProvider.
         // To solve this issue, here holds one Connection until PreDestroy.
