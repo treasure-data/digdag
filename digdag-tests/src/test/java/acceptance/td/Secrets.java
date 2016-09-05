@@ -20,6 +20,7 @@ public class Secrets
     {
         return ImmutableList.of(
                 "digdag.secret-encryption-key = " + ENCRYPTION_KEY,
+                "secret-access-policy.enabled = true",
                 "secret-access-policy.operators.td.secrets = [\"td.*\"]",
                 "secret-access-policy.operators.td_ddl.secrets = [\"td.*\"]",
                 "secret-access-policy.operators.td_for_each.secrets = [\"td.*\"]",
