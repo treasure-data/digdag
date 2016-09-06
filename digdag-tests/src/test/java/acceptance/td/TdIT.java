@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static acceptance.td.Secrets.ENCRYPTION_KEY;
 import static acceptance.td.Secrets.TD_API_KEY;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
@@ -250,6 +251,35 @@ public class TdIT
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
+    }
+
+    @Test
+    public void testRunQueryOnServerWithoutSecretAccessPolicy()
+            throws Exception
+    {
+        TemporaryDigdagServer server = TemporaryDigdagServer.builder()
+                .configuration("digdag.secret-encryption-key = " + ENCRYPTION_KEY)
+                .build();
+
+        server.start();
+
+        copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
+        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
+
+        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+
+        DigdagClient digdagClient = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+
+        digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
+
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
+                "outfile", outfile.toString(),
+                "td.use_ssl", "false"));
+
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
     }
 
     @Test
