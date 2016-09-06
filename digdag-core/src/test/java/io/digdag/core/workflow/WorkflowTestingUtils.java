@@ -60,6 +60,7 @@ public class WorkflowTestingUtils
                 operatorFactoryBinder.addBinding().to(NoopOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(EchoOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(FailOperatorFactory.class).in(Scopes.SINGLETON);
+                operatorFactoryBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
@@ -69,27 +70,33 @@ public class WorkflowTestingUtils
         return embed;
     }
 
+    public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
+        throws ResourceNotFoundException, ResourceConflictException
+    {
+        ArchiveMetadata meta = ArchiveMetadata.of(
+                WorkflowDefinitionList.of(ImmutableList.of(
+                        WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
+                        )),
+                config.getFactory().create().set("_workdir", workdir.toString()));
+        LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
+                "default",
+                "revision-" + UUID.randomUUID(),
+                meta);
+        StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), workflowName);
+        AttemptRequest ar = localSite.getAttemptBuilder()
+            .buildFromStoredWorkflow(
+                    stored.getRevision(),
+                    def,
+                    config.getFactory().create(),
+                    ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
+        return localSite.submitWorkflow(ar, def);
+    }
+
     public static void runWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
         throws InterruptedException
     {
         try {
-            ArchiveMetadata meta = ArchiveMetadata.of(
-                    WorkflowDefinitionList.of(ImmutableList.of(
-                            WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
-                            )),
-                    config.getFactory().create().set("_workdir", workdir.toString()));
-            LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
-                    "default",
-                    "revision-" + UUID.randomUUID(),
-                    meta);
-            StoredWorkflowDefinition def = findDefinition(stored.getWorkflowDefinitions(), workflowName);
-            AttemptRequest ar = localSite.getAttemptBuilder()
-                .buildFromStoredWorkflow(
-                        stored.getRevision(),
-                        def,
-                        config.getFactory().create(),
-                        ScheduleTime.runNow(Instant.ofEpochSecond(Instant.now().getEpochSecond())));
-            StoredSessionAttemptWithSession attempt = localSite.submitWorkflow(ar, def);
+            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, workdir, workflowName, config);
             localSite.runUntilDone(attempt.getId());
         }
         catch (ResourceNotFoundException | ResourceConflictException ex) {
