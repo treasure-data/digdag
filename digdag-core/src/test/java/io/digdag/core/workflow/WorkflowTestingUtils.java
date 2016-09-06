@@ -2,12 +2,15 @@ package io.digdag.core.workflow;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSecretAccessPolicy;
 import io.digdag.core.LocalSite;
+import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.archive.ArchiveMetadata;
@@ -26,11 +29,13 @@ import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretStoreManager;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.cleanDatabase;
 import static io.digdag.core.database.DatabaseTestingUtils.getEnvironmentDatabaseConfig;
 
@@ -100,5 +105,16 @@ public class WorkflowTestingUtils
             }
         }
         throw new RuntimeException("Workflow does not exist: " + name);
+    }
+
+    public static Config loadYamlResource(String resourceName)
+    {
+        try {
+            String content = Resources.toString(WorkflowTestingUtils.class.getResource(resourceName), UTF_8);
+            return new YamlConfigLoader().loadString(content).toConfig(ConfigUtils.configFactory);
+        }
+        catch (IOException ex) {
+            throw Throwables.propagate(ex);
+        }
     }
 }
