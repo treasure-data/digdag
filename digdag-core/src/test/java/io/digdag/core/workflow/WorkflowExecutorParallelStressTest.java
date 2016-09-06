@@ -14,14 +14,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import java.util.stream.IntStream;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.CountDownLatch;
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 
