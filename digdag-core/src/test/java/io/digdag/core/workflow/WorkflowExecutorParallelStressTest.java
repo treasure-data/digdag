@@ -52,7 +52,7 @@ public class WorkflowExecutorParallelStressTest
         ExecutorService threads = Executors.newCachedThreadPool();
         ImmutableList.Builder<Future> futures = ImmutableList.builder();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             futures.add(threads.submit(() -> {
                 try {
                     localSite.runUntilDone(attempt.getId());
