@@ -1345,6 +1345,12 @@ class LoginPage extends React.Component {
     });
   }
 
+  componentWillMount() {
+    if (!DIGDAG_CONFIG.auth.items.length) {
+      this.props.onSubmit({})
+    }
+  }
+
   onChange(key) {
     return (e) => {
       e.preventDefault();
