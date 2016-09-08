@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -14,6 +15,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
+    public ShowWorkflow(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -35,7 +41,7 @@ public class ShowWorkflow
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " workflows [project-name] [name]");
+        ctx.err().println("Usage: " + ctx.programName() + " workflows [project-name] [name]");
         showCommonOptions();
         return systemExit(error);
     }
@@ -66,7 +72,7 @@ public class ShowWorkflow
             }
         }
         ln("");
-        err.println("Use `" + programName + " workflows <project-name> <name>` to show details.");
+        ctx.err().println("Use `" + ctx.programName() + " workflows <project-name> <name>` to show details.");
     }
 
     private void showWorkflowDetails(String projName, String defName)

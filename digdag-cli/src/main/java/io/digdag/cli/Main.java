@@ -40,6 +40,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -50,21 +51,23 @@ public class Main
 {
     private static final String DEFAULT_PROGRAM_NAME = "digdag";
 
-    private final io.digdag.core.Version version;
-    private final Map<String, String> env;
-    private final PrintStream out;
-    private final PrintStream err;
-    private final InputStream in;
-    private final String programName;
+    private final ImmutableCommandContext ctx;
 
     public Main(io.digdag.core.Version version, Map<String, String> env, PrintStream out, PrintStream err, InputStream in)
     {
-        this.version = version;
-        this.env = env;
-        this.out = out;
-        this.err = err;
-        this.in = in;
-        this.programName = System.getProperty("io.digdag.cli.programName", DEFAULT_PROGRAM_NAME);
+        this(ImmutableCommandContext.builder()
+                .environment(env)
+                .version(version)
+                .programName(System.getProperty("io.digdag.cli.programName", DEFAULT_PROGRAM_NAME))
+                .in(in)
+                .out(out)
+                .err(err)
+                .build());
+    }
+
+    public Main(ImmutableCommandContext ctx)
+    {
+        this.ctx = Objects.requireNonNull(ctx, "ctx");
     }
 
     public static class MainOptions
@@ -88,11 +91,11 @@ public class Main
     {
         for (String arg : args) {
             if ("--version".equals(arg)) {
-                out.println(version.version());
+                ctx.out().println(ctx.version().version());
                 return 0;
             }
         }
-        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
+        ctx.err().println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + ctx.version());
         if (args.length == 0) {
             usage(null);
             return 0;
@@ -102,51 +105,36 @@ public class Main
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
-        jc.setProgramName(programName);
+        jc.setProgramName(ctx.programName());
 
-        // TODO: Use a pojo instead to avoid guice overhead
-        Injector injector = Guice.createInjector(new AbstractModule()
-        {
-            @Override
-            protected void configure()
-            {
-                bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(env);
-                bind(io.digdag.core.Version.class).toInstance(version);
-                bind(String.class).annotatedWith(ProgramName.class).toInstance(programName);
-                bind(InputStream.class).annotatedWith(StdIn.class).toInstance(in);
-                bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
-                bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
-            }
-        });
+        jc.addCommand("init", new Init(ctx), "new");
+        jc.addCommand("run", new Run(ctx), "r");
+        jc.addCommand("check", new Check(ctx), "c");
+        jc.addCommand("scheduler", new Sched(ctx), "sched");
 
-        jc.addCommand("init", injector.getInstance(Init.class), "new");
-        jc.addCommand("run", injector.getInstance(Run.class), "r");
-        jc.addCommand("check", injector.getInstance(Check.class), "c");
-        jc.addCommand("scheduler", injector.getInstance(Sched.class), "sched");
+        jc.addCommand("server", new Server(ctx));
 
-        jc.addCommand("server", injector.getInstance(Server.class));
+        jc.addCommand("push", new Push(ctx));
+        jc.addCommand("archive", new Archive(ctx));
+        jc.addCommand("upload", new Upload(ctx));
 
-        jc.addCommand("push", injector.getInstance(Push.class));
-        jc.addCommand("archive", injector.getInstance(Archive.class));
-        jc.addCommand("upload", injector.getInstance(Upload.class));
+        jc.addCommand("workflow", new ShowWorkflow(ctx), "workflows");
+        jc.addCommand("start", new Start(ctx));
+        jc.addCommand("retry", new Retry(ctx));
+        jc.addCommand("session", new ShowSession(ctx), "sessions");
+        jc.addCommand("attempts", new ShowAttempts(ctx));
+        jc.addCommand("attempt", new ShowAttempt(ctx));
+        jc.addCommand("reschedule", new Reschedule(ctx));
+        jc.addCommand("backfill", new Backfill(ctx));
+        jc.addCommand("log", new ShowLog(ctx), "logs");
+        jc.addCommand("kill", new Kill(ctx));
+        jc.addCommand("task", new ShowTask(ctx), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(ctx), "schedules");
+        jc.addCommand("delete", new Delete(ctx));
+        jc.addCommand("secrets", new Secrets(ctx), "secret");
+        jc.addCommand("version", new Version(ctx), "version");
 
-        jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
-        jc.addCommand("start", injector.getInstance(Start.class));
-        jc.addCommand("retry", injector.getInstance(Retry.class));
-        jc.addCommand("session", injector.getInstance(ShowSession.class), "sessions");
-        jc.addCommand("attempts", injector.getInstance(ShowAttempts.class));
-        jc.addCommand("attempt", injector.getInstance(ShowAttempt.class));
-        jc.addCommand("reschedule", injector.getInstance(Reschedule.class));
-        jc.addCommand("backfill", injector.getInstance(Backfill.class));
-        jc.addCommand("log", injector.getInstance(ShowLog.class), "logs");
-        jc.addCommand("kill", injector.getInstance(Kill.class));
-        jc.addCommand("task", injector.getInstance(ShowTask.class), "tasks");
-        jc.addCommand("schedule", injector.getInstance(ShowSchedule.class), "schedules");
-        jc.addCommand("delete", injector.getInstance(Delete.class));
-        jc.addCommand("secrets", injector.getInstance(Secrets.class), "secret");
-        jc.addCommand("version", injector.getInstance(Version.class), "version");
-
-        jc.addCommand("selfupdate", injector.getInstance(SelfUpdate.class));
+        jc.addCommand("selfupdate", new SelfUpdate(ctx));
 
         // Disable @ expansion
         jc.setExpandAtSign(false);
@@ -183,12 +171,12 @@ public class Main
             return 0;
         }
         catch (ParameterException ex) {
-            err.println("error: " + ex.getMessage());
+            ctx.err().println("error: " + ex.getMessage());
             return 1;
         }
         catch (SystemExitException ex) {
             if (ex.getMessage() != null) {
-                err.println("error: " + ex.getMessage());
+                ctx.err().println("error: " + ex.getMessage());
             }
             return ex.getCode();
         }
@@ -196,12 +184,12 @@ public class Main
             String message = formatExceptionMessage(ex);
             if (message.trim().isEmpty()) {
                 // prevent silent crash
-                ex.printStackTrace(err);
+                ex.printStackTrace(ctx.err());
             }
             else {
-                err.println("error: " + message);
+                ctx.err().println("error: " + message);
                 if (verbose) {
-                    ex.printStackTrace(err);
+                    ex.printStackTrace(ctx.err());
                 }
             }
             return 1;
@@ -286,43 +274,43 @@ public class Main
     // called also by Run
     private SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " <command> [options...]");
-        err.println("  Local-mode commands:");
-        err.println("    init <dir>                         create a new workflow project");
-        err.println("    r[un] <workflow.dig>               run a workflow");
-        err.println("    c[heck]                            show workflow definitions");
-        err.println("    sched[uler]                        run a scheduler server");
-        err.println("    selfupdate                         update cli to the latest version");
-        err.println("");
-        err.println("  Server-mode commands:");
-        err.println("    server                             start server");
-        err.println("");
-        err.println("  Client-mode commands:");
-        err.println("    push <project-name>                create and upload a new revision");
-        err.println("    start <project-name> <name>        start a new session attempt of a workflow");
-        err.println("    retry <attempt-id>                 retry a session");
-        err.println("    kill <attempt-id>                  kill a running session attempt");
-        err.println("    backfill <project-name> <name>     start sessions of a schedule for past times");
-        err.println("    reschedule                         skip sessions of a schedule to a future time");
-        err.println("    log <attempt-id>                   show logs of a session attempt");
-        err.println("    workflows [project-name] [name]    show registered workflow definitions");
-        err.println("    schedules                          show registered schedules");
-        err.println("    sessions                           show sessions for all workflows");
-        err.println("    sessions <project-name>            show sessions for all workflows in a project");
-        err.println("    sessions <project-name> <name>     show sessions for a workflow");
-        err.println("    session  <session-id>              show a single session");
-        err.println("    attempts                           show attempts for all sessions");
-        err.println("    attempts <session-id>              show attempts for a session");
-        err.println("    attempt  <attempt-id>              show a single attempt");
-        err.println("    tasks <attempt-id>                 show tasks of a session attempt");
-        err.println("    delete <project-name>              delete a project");
-        err.println("    secrets --project <project-name>   manage secrets");
-        err.println("    version                            show client and server version");
-        err.println("");
-        err.println("  Options:");
-        showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " <command> [options...]");
+        ctx.err().println("  Local-mode commands:");
+        ctx.err().println("    init <dir>                         create a new workflow project");
+        ctx.err().println("    r[un] <workflow.dig>               run a workflow");
+        ctx.err().println("    c[heck]                            show workflow definitions");
+        ctx.err().println("    sched[uler]                        run a scheduler server");
+        ctx.err().println("    selfupdate                         update cli to the latest version");
+        ctx.err().println("");
+        ctx.err().println("  Server-mode commands:");
+        ctx.err().println("    server                             start server");
+        ctx.err().println("");
+        ctx.err().println("  Client-mode commands:");
+        ctx.err().println("    push <project-name>                create and upload a new revision");
+        ctx.err().println("    start <project-name> <name>        start a new session attempt of a workflow");
+        ctx.err().println("    retry <attempt-id>                 retry a session");
+        ctx.err().println("    kill <attempt-id>                  kill a running session attempt");
+        ctx.err().println("    backfill <project-name> <name>     start sessions of a schedule for past times");
+        ctx.err().println("    reschedule                         skip sessions of a schedule to a future time");
+        ctx.err().println("    log <attempt-id>                   show logs of a session attempt");
+        ctx.err().println("    workflows [project-name] [name]    show registered workflow definitions");
+        ctx.err().println("    schedules                          show registered schedules");
+        ctx.err().println("    sessions                           show sessions for all workflows");
+        ctx.err().println("    sessions <project-name>            show sessions for all workflows in a project");
+        ctx.err().println("    sessions <project-name> <name>     show sessions for a workflow");
+        ctx.err().println("    session  <session-id>              show a single session");
+        ctx.err().println("    attempts                           show attempts for all sessions");
+        ctx.err().println("    attempts <session-id>              show attempts for a session");
+        ctx.err().println("    attempt  <attempt-id>              show a single attempt");
+        ctx.err().println("    tasks <attempt-id>                 show tasks of a session attempt");
+        ctx.err().println("    delete <project-name>              delete a project");
+        ctx.err().println("    secrets --project <project-name>   manage secrets");
+        ctx.err().println("    version                            show client and server version");
+        ctx.err().println("");
+        ctx.err().println("  Options:");
+        showCommonOptions(ctx);
         if (error == null) {
-            err.println("Use `<command> --help` to see detailed usage of a command.");
+            ctx.err().println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
         }
         else {
@@ -330,12 +318,12 @@ public class Main
         }
     }
 
-    public static void showCommonOptions(Map<String, String> env, PrintStream err)
+    public static void showCommonOptions(CommandContext ctx)
     {
-        err.println("    -L, --log PATH                   output log messages to a file (default: -)");
-        err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
-        err.println("    -X KEY=VALUE                     add a performance system config");
-        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(env) + ")");
-        err.println("");
+        ctx.err().println("    -L, --log PATH                   output log messages to a file (default: -)");
+        ctx.err().println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
+        ctx.err().println("    -X KEY=VALUE                     add a performance system config");
+        ctx.err().println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(ctx.environment()) + ")");
+        ctx.err().println("");
     }
 }

@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
@@ -23,6 +24,11 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
+    public ShowLog(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -41,10 +47,10 @@ public class ShowLog
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " log <attempt-id> [+task name prefix]");
-        err.println("    -v, --verbose                    show debug logs");
-        err.println("    -f, --follow                     show new logs until attempt or task finishes");
-        err.println("  Options:");
+        ctx.err().println("Usage: " + ctx.programName() + " log <attempt-id> [+task name prefix]");
+        ctx.err().println("    -v, --verbose                    show debug logs");
+        ctx.err().println("    -f, --follow                     show new logs until attempt or task finishes");
+        ctx.err().println("  Options:");
         showCommonOptions();
         return systemExit(error);
     }
@@ -55,7 +61,7 @@ public class ShowLog
         DigdagClient client = buildClient();
 
         LogLevel level = verbose ? null : LogLevel.INFO;
-        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, level, out);
+        TaskLogWatcher watcher = new TaskLogWatcher(client, attemptId, level, ctx.out());
 
         update(client, watcher, attemptId, taskName);
 

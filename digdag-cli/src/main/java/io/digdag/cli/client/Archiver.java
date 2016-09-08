@@ -42,8 +42,7 @@ class Archiver
 
     void createArchive(Path projectPath, Path output, Config overwriteParams)
             throws IOException
-    {
-        out.println("Creating " + output + "...");
+    {out.println("Creating " + output + "...");
 
         ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
         ArchiveMetadata meta = project.getArchiveMetadata();
@@ -53,13 +52,11 @@ class Archiver
             tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
 
             project.listFiles((resourceName, absPath) -> {
-                if (!Files.isDirectory(absPath)) {
-                    out.println("  Archiving " + resourceName);
+                if (!Files.isDirectory(absPath)) {out.println("  Archiving " + resourceName);
 
                     TarArchiveEntry e = buildTarArchiveEntry(project, absPath, resourceName);
                     tar.putArchiveEntry(e);
-                    if (e.isSymbolicLink()) {
-                        out.println("    symlink -> " + e.getLinkName());
+                    if (e.isSymbolicLink()) {out.println("    symlink -> " + e.getLinkName());
                     }
                     else {
                         try (InputStream in = Files.newInputStream(absPath)) {
@@ -80,12 +77,9 @@ class Archiver
             tar.write(metaBody);
             tar.closeArchiveEntry();
         }
-
         out.println("Workflows:");
-        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {
-            out.println("  " + workflow.getName());
-        }
-        out.println("");
+        for (WorkflowDefinition workflow : meta.getWorkflowList().get()) {out.println("  " + workflow.getName());
+        }out.println("");
     }
 
     private TarArchiveEntry buildTarArchiveEntry(ProjectArchive project, Path absPath, String name)

@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -52,6 +53,11 @@ public class Start
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Start(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -67,21 +73,21 @@ public class Start
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " start <project-name> <name>");
-        err.println("  Options:");
-        err.println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (required)");
-        err.println("        --revision <name>            use a past revision");
-        err.println("        --retry NAME                 set retry attempt name to a new session");
-        err.println("    -d, --dry-run                    tries to start a session attempt but does nothing");
-        err.println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
+        ctx.err().println("Usage: " + ctx.programName() + " start <project-name> <name>");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --session <hourly | daily | now | yyyy-MM-dd | \"yyyy-MM-dd HH:mm:ss\">  set session_time to this time (required)");
+        ctx.err().println("        --revision <name>            use a past revision");
+        ctx.err().println("        --retry NAME                 set retry attempt name to a new session");
+        ctx.err().println("    -d, --dry-run                    tries to start a session attempt but does nothing");
+        ctx.err().println("    -p, --param KEY=VALUE            add a session parameter (use multiple times to set many parameters)");
+        ctx.err().println("    -P, --params-file PATH.yml       read session parameters from a YAML file");
         showCommonOptions();
-        err.println("");
-        err.println("  Examples:");
-        err.println("    $ " + programName + " start myproj workflow1 --session 2016-01-01  # use this day as session_time");
-        err.println("    $ " + programName + " start myproj workflow1 --session hourly      # use current hour's 00:00");
-        err.println("    $ " + programName + " start myproj workflow1 --session daily       # use current day's 00:00:00");
-        err.println("");
+        ctx.err().println("");
+        ctx.err().println("  Examples:");
+        ctx.err().println("    $ " + ctx.programName() + " start myproj workflow1 --session 2016-01-01  # use this day as session_time");
+        ctx.err().println("    $ " + ctx.programName() + " start myproj workflow1 --session hourly      # use current hour's 00:00");
+        ctx.err().println("    $ " + ctx.programName() + " start myproj workflow1 --session daily       # use current day's 00:00:00");
+        ctx.err().println("");
         return systemExit(error);
     }
 
@@ -163,7 +169,7 @@ public class Start
             //ln("  created at: (dry run)");
             ln("");
 
-            err.println("Session attempt is not started.");
+            ctx.err().println("Session attempt is not started.");
         }
         else {
             RestSessionAttempt newAttempt;
@@ -180,12 +186,12 @@ public class Start
                     catch (Exception readEntityError) {
                         throw systemExit(String.format(ENGLISH,
                                     "A session for the requested session_time already exists (session_time=%s)" +
-                                    "\nhint: use `" + programName + " retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
+                                    "\nhint: use `" + ctx.programName() + " retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
                                     truncatedTime.getSessionTime()));
                     }
                     throw systemExit(String.format(ENGLISH,
                                 "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
-                                "\nhint: use `" + programName + " retry %d --latest-revision` command to run the session again for the same session_time",
+                                "\nhint: use `" + ctx.programName() + " retry %d --latest-revision` command to run the session again for the same session_time",
                                 conflictedAttempt.getSessionId(),
                                 conflictedAttempt.getId(),
                                 truncatedTime.getSessionTime(),
@@ -208,9 +214,9 @@ public class Start
             ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
             ln("");
 
-            err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
-            err.println(String.format(ENGLISH,
-                    "* Use `" + this.programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
+            ctx.err().printf("* Use `" + ctx.programName() + " session %d` to show session status.%n", newAttempt.getSessionId());
+            ctx.err().println(String.format(ENGLISH,
+                    "* Use `" + ctx.programName() + " task %d` and `" + ctx.programName() + " log %d` to show task status and logs.",
                         newAttempt.getId(), newAttempt.getId()));
         }
     }

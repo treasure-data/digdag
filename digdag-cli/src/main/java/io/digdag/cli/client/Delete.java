@@ -1,6 +1,7 @@
 package io.digdag.cli.client;
 
 import com.beust.jcommander.Parameter;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -17,6 +18,11 @@ public class Delete
     @Parameter(names = {"--force"})
     boolean force = false;
 
+    public Delete(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -29,9 +35,9 @@ public class Delete
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " delete <project>");
-        err.println("  Options:");
-        err.println("        --force                      skip y/N prompt");
+        ctx.err().println("Usage: " + ctx.programName() + " delete <project>");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --force                      skip y/N prompt");
         showCommonOptions();
         return systemExit(error);
     }
@@ -51,7 +57,7 @@ public class Delete
         ln("  last updated at: %s", TimeUtil.formatTime(proj.getUpdatedAt()));
 
         if (!force) {
-            err.print("Are you sure you want to delete this project? [y/N]: ");
+            ctx.err().print("Are you sure you want to delete this project? [y/N]: ");
             String line;
             try (BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in))) {
                 line = stdin.readLine();
@@ -62,6 +68,6 @@ public class Delete
         }
 
         client.deleteProject(proj.getId());
-        err.println("Project '" + projName + "' is deleted.");
+        ctx.err().println("Project '" + projName + "' is deleted.");
     }
 }

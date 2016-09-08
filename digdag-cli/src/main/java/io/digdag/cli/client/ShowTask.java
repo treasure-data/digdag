@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestTask;
@@ -9,6 +10,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowTask
     extends ClientCommand
 {
+    public ShowTask(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -21,8 +27,8 @@ public class ShowTask
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " tasks <attempt-id>");
-        err.println("  Options:");
+        ctx.err().println("Usage: " + ctx.programName() + " tasks <attempt-id>");
+        ctx.err().println("  Options:");
         showCommonOptions();
         return systemExit(error);
     }

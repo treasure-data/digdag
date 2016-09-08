@@ -24,6 +24,11 @@ public class Show
 
     // TODO support -p option? for jinja template rendering
 
+    public Show(CommandContext ctx)
+    {
+        super(ctx);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -37,10 +42,10 @@ public class Show
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " show <digdag.dig> [options...]");
-        err.println("  Options:");
-        err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " show <digdag.dig> [options...]");
+        ctx.err().println("  Options:");
+        ctx.err().println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
+        Main.showCommonOptions(ctx);
         return systemExit(error);
     }
 
@@ -85,6 +90,6 @@ public class Show
             throws InterruptedException
     {
         new GraphvizWorkflowVisualizer().visualize(nodes, path);
-        err.println("Stored PNG file at '"+path+"'");
+        ctx.err().println("Stored PNG file at '"+path+"'");
     }
 }

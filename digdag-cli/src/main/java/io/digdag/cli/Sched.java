@@ -39,13 +39,18 @@ public class Sched
     @Parameter(names = {"--project"})
     String projectDirName = null;
 
+    public Sched(CommandContext context)
+    {
+        super(context);
+    }
+
     // TODO no-schedule mode
 
     @Override
     public void main()
             throws Exception
     {
-        JvmUtil.validateJavaRuntime(err);
+        JvmUtil.validateJavaRuntime(ctx);
 
         if (args.size() != 0) {
             throw usage(null);
@@ -57,18 +62,18 @@ public class Sched
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " sched [options...]");
-        err.println("  Options:");
-        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
-        err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
-        err.println("    -o, --database DIR               store status to this database");
-        err.println("    -O, --task-log DIR               store task logs to this database");
-        err.println("        --max-task-threads N         limit maxium number of task execution threads");
-        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " sched [options...]");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --project DIR                use this directory as the project directory (default: current directory)");
+        ctx.err().println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
+        ctx.err().println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
+        ctx.err().println("    -o, --database DIR               store status to this database");
+        ctx.err().println("    -O, --task-log DIR               store task logs to this database");
+        ctx.err().println("        --max-task-threads N         limit maxium number of task execution threads");
+        ctx.err().println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        ctx.err().println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        ctx.err().println("    -c, --config PATH.properties     server configuration property path");
+        Main.showCommonOptions(ctx);
         return systemExit(error);
     }
 
@@ -99,7 +104,7 @@ public class Sched
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
 
-        ServerBootstrap.startServer(version, props, SchedulerServerBootStrap.class);
+        ServerBootstrap.startServer(ctx.version(), props, SchedulerServerBootStrap.class);
     }
 
     public static class SchedulerServerBootStrap

@@ -21,6 +21,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Init
     extends Command
 {
+    public Init(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void main()
         throws Exception
@@ -34,11 +39,11 @@ public class Init
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " init <dir>");
-        err.println("  Options:");
-        Main.showCommonOptions(env, err);
-        err.println("  Example:");
-        err.println("    $ " + programName + " init mydag");
+        ctx.err().println("Usage: " + ctx.programName() + " init <dir>");
+        ctx.err().println("  Options:");
+        Main.showCommonOptions(ctx);
+        ctx.err().println("  Example:");
+        ctx.err().println("    $ " + ctx.programName() + " init mydag");
         return systemExit(error);
     }
 
@@ -69,7 +74,7 @@ public class Init
         gen.mkdir(".");  // creates destDir itself
 
         if (gen.exists(workflowFileName)) {
-            out.println("File " + gen.path(workflowFileName) + " already exists.");
+            ctx.out().println("File " + gen.path(workflowFileName) + " already exists.");
         }
         else {
             if (!gen.exists(".gitignore")) {
@@ -79,10 +84,10 @@ public class Init
             gen.cp("query.sql", "query.sql");
             gen.cp("workflow.dig", workflowFileName);
             if (isCurrentDirectory) {
-                out.println("Done. Type `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+                ctx.out().println("Done. Type `" + ctx.programName() + " run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
             else {
-                out.println("Done. Type `cd " + destDir + "` and then `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+                ctx.out().println("Done. Type `cd " + destDir + "` and then `" + ctx.programName() + " run " + workflowFileName + "` to run the workflow. Enjoy!");
             }
         }
     }
@@ -111,7 +116,7 @@ public class Init
         private void cpAbsoluteDest(String src, Path dest)
             throws IOException
         {
-            out.println("  Creating " + dest);
+            ctx.out().println("  Creating " + dest);
             try (InputStream in = getClass().getResourceAsStream(sourcePrefix + src)) {
                 if (in == null) {
                     throw new RuntimeException("Resource not exists: " + sourcePrefix + src);
@@ -126,7 +131,7 @@ public class Init
             throws IOException
         {
             Path dest = path(name);
-            out.println("  Creating " + dest);
+            ctx.out().println("  Creating " + dest);
             try (InputStream in = Files.newInputStream(file)) {
                 try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
@@ -148,7 +153,7 @@ public class Init
                 data = data.replaceAll(pair.getKey(), pair.getValue());
             }
             Path dest = path(name);
-            out.println("  Creating " + dest);
+            ctx.out().println("  Creating " + dest);
             try (OutputStream out = Files.newOutputStream(dest)) {
                 out.write(data.getBytes(UTF_8));
             }

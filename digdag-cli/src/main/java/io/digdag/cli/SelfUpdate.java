@@ -30,6 +30,11 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
+    public SelfUpdate(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -49,14 +54,14 @@ public class SelfUpdate
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " selfupdate [version]]");
-        err.println("  Options:");
-        Main.showCommonOptions(env, err);
-        err.println("");
-        err.println("  Examples:");
-        err.println("    $ " + programName + " selfupdate");
-        err.println("    $ " + programName + " selfupdate 0.8.14-SNAPSHOT");
-        err.println("");
+        ctx.err().println("Usage: " + ctx.programName() + " selfupdate [version]]");
+        ctx.err().println("  Options:");
+        Main.showCommonOptions(ctx);
+        ctx.err().println("");
+        ctx.err().println("  Examples:");
+        ctx.err().println("    $ " + ctx.programName() + " selfupdate");
+        ctx.err().println("    $ " + ctx.programName() + " selfupdate 0.8.14-SNAPSHOT");
+        ctx.err().println("");
         return systemExit(error);
     }
 
@@ -73,7 +78,7 @@ public class SelfUpdate
             .build();
 
         if (version == null) {
-            out.println("Checking the latest version...");
+            ctx.out().println("Checking the latest version...");
             Response res = getWithRedirect(client, client
                     .target(fromUri(endpoint + "/digdag-latest-version"))
                     .request()
@@ -88,7 +93,7 @@ public class SelfUpdate
 
         // TODO abort if already this version
 
-        out.println("Upgrading to " + version + "...");
+        ctx.out().println("Upgrading to " + version + "...");
 
         Response res = getWithRedirect(client, client
                 .target(fromUri(endpoint + "/digdag-" + version))
@@ -108,7 +113,7 @@ public class SelfUpdate
         }
         path.toFile().setExecutable(true, false);
 
-        out.println("Verifying...");
+        ctx.out().println("Verifying...");
         verify(path, version);
 
         try {
@@ -120,7 +125,7 @@ public class SelfUpdate
                         ex.getMessage()));
         }
 
-        out.println("Upgraded to " + version);
+        ctx.out().println("Upgraded to " + version);
     }
 
     private void verify(Path path, String expectedVersion)
@@ -135,13 +140,13 @@ public class SelfUpdate
 
         int ecode = p.waitFor();
         if (ecode != 0) {
-            out.println(output);
+            ctx.out().println(output);
             throw systemExit("Failed to verify version: command exists with error code " + ecode);
         }
 
         Matcher m = Pattern.compile("^" + Pattern.quote(expectedVersion) + "$").matcher(output);
         if (!m.find()) {
-            out.println(output);
+            ctx.out().println(output);
             throw systemExit("Failed to verify version: version mismatch");
         }
     }

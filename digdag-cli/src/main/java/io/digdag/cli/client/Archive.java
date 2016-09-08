@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.cli.Command;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.Main;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
@@ -40,6 +41,11 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
+    public Archive(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void main()
             throws Exception
@@ -53,12 +59,12 @@ public class Archive
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " archive [options...]");
-        err.println("  Options:");
-        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
-        err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " archive [options...]");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --project DIR                use this directory as the project directory (default: current directory)");
+        ctx.err().println("    -f, --file PATH                  use this file to load a project (default: digdag.dig)");
+        ctx.err().println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
+        Main.showCommonOptions(ctx);
         return systemExit(error);
     }
 
@@ -72,8 +78,8 @@ public class Archive
                 .addModules(binder -> {
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
                     binder.bind(Archiver.class).in(Scopes.SINGLETON);
-                    binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
-                    binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
+                    binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(ctx.out());
+                    binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(ctx.err());
                 })
                 .initializeWithoutShutdownHook()) {
             archive(digdag.getInjector());
@@ -95,12 +101,12 @@ public class Archive
             Paths.get(projectDirName).normalize().toAbsolutePath();
         injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overwriteParams);
 
-        out.println("Created " + output + ".");
-        out.println("Use `" + programName + " upload <path.tar.gz> <project> <revision>` to upload it a server.");
-        out.println("");
-        out.println("  Examples:");
-        out.println("    $ " + programName + " upload " + output + " $(basename $(pwd)) -r $(date +%Y%m%d-%H%M%S)");
-        out.println("    $ " + programName + " upload " + output + " $(git rev-parse --abbrev-ref HEAD) -r $(git rev-parse HEAD)");
-        out.println("");
+        ctx.out().println("Created " + output + ".");
+        ctx.out().println("Use `" + ctx.programName() + " upload <path.tar.gz> <project> <revision>` to upload it a server.");
+        ctx.out().println("");
+        ctx.out().println("  Examples:");
+        ctx.out().println("    $ " + ctx.programName() + " upload " + output + " $(basename $(pwd)) -r $(date +%Y%m%d-%H%M%S)");
+        ctx.out().println("    $ " + ctx.programName() + " upload " + output + " $(git rev-parse --abbrev-ref HEAD) -r $(git rev-parse HEAD)");
+        ctx.out().println("");
     }
 }

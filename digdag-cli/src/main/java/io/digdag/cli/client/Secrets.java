@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.google.common.io.CharStreams;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -37,6 +38,11 @@ public class Secrets
 
     @Parameter(names = {"--delete"}, variableArity = true)
     List<String> delete = new ArrayList<>();
+
+    public Secrets(CommandContext context)
+    {
+        super(context);
+    }
 
     @Override
     public void mainWithClientException()
@@ -90,7 +96,7 @@ public class Secrets
         // Delete secrets
         for (String key : deleteSecrets.keySet()) {
             client.deleteProjectSecret(projectId, key);
-            err.println("Secret '" + key + "' deleted");
+            ctx.err().println("Secret '" + key + "' deleted");
         }
     }
 
@@ -126,7 +132,7 @@ public class Secrets
                     source = "stdin";
 
                     YAMLFactory yaml = new YAMLFactory();
-                    YAMLParser parser = yaml.createParser(in);
+                    YAMLParser parser = yaml.createParser(ctx.in());
                     secrets = DigdagClient.objectMapper().readValue(parser, new TypeReference<Map<String, String>>() {});
                 }
                 else {
@@ -185,7 +191,7 @@ public class Secrets
                         throw usage("Can only read once from stdin");
                     }
                     inConsumed = true;
-                    String input = CharStreams.toString(new InputStreamReader(in));
+                    String input = CharStreams.toString(new InputStreamReader(ctx.in()));
                     setSecrets.put(key, input);
                     continue;
                 }
@@ -216,19 +222,19 @@ public class Secrets
         // Set secrets
         for (Map.Entry<String, String> entry : setSecrets.entrySet()) {
             client.setProjectSecret(projectId, entry.getKey(), entry.getValue());
-            err.println("Secret '" + entry.getKey() + "' set");
+            ctx.err().println("Secret '" + entry.getKey() + "' set");
         }
     }
 
     private void listProjectSecrets(DigdagClient client, int projectId)
     {
         RestSecretList secretList = client.listProjectSecrets(projectId);
-        secretList.secrets().forEach(s -> out.println(s.key()));
+        secretList.secrets().forEach(s -> ctx.out().println(s.key()));
     }
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " secrets --project <project> [--set <key>=<value>] [--delete key]");
+        ctx.err().println("Usage: " + ctx.programName() + " secrets --project <project> [--set <key>=<value>] [--delete key]");
         showCommonOptions();
         return systemExit(error);
     }

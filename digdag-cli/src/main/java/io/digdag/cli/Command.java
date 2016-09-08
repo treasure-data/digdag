@@ -24,18 +24,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 public abstract class Command
 {
     private static final Logger log = LoggerFactory.getLogger(Command.class);
 
-    @Inject @Environment protected Map<String, String> env;
-    @Inject protected Version version;
-    @Inject @ProgramName protected String programName;
-    @Inject @StdIn protected InputStream in;
-    @Inject @StdOut protected PrintStream out;
-    @Inject @StdErr protected PrintStream err;
+    protected final CommandContext ctx;
 
     @Parameter()
     protected List<String> args = new ArrayList<>();
@@ -55,6 +51,11 @@ public abstract class Command
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
+    public Command(CommandContext ctx)
+    {
+        this.ctx = Objects.requireNonNull(ctx);
+    }
+
     public abstract void main() throws Exception;
 
     public abstract SystemExitException usage(String error);
@@ -70,7 +71,7 @@ public abstract class Command
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(env));
+                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(ctx.environment()));
             }
             catch (NoSuchFileException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);
@@ -96,7 +97,7 @@ public abstract class Command
         String localPath = systemProps.getProperty("system-plugin.local-path", "");
         Path localRepositoryPath;
         if (localPath.equals("")) {
-            localRepositoryPath = ConfigUtil.defaultLocalPluginPath(env);
+            localRepositoryPath = ConfigUtil.defaultLocalPluginPath(ctx.environment());
         }
         else {
             localRepositoryPath = Paths.get(localPath);

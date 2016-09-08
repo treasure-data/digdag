@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -26,6 +27,11 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Reschedule(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -46,12 +52,12 @@ public class Reschedule
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " reschedule <schedule-id>");
-        err.println("  Options:");
-        err.println("    -s, --skip N                     skips specified number of schedules from now");
-        err.println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
-        err.println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
-        err.println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
+        ctx.err().println("Usage: " + ctx.programName() + " reschedule <schedule-id>");
+        ctx.err().println("  Options:");
+        ctx.err().println("    -s, --skip N                     skips specified number of schedules from now");
+        ctx.err().println("    -t, --skip-to 'yyyy-MM-dd HH:mm:ss Z'  skips schedules until the specified time (exclusive)");
+        ctx.err().println("    -a, --run-at 'yyyy-MM-dd HH:mm:ss Z'   set next run time to this time");
+        ctx.err().println("    -d, --dry-run                    tries to reschedule and validates the results but does nothing");
         showCommonOptions();
         return systemExit(error);
     }
@@ -87,10 +93,10 @@ public class Reschedule
         ln("");
 
         if (dryRun) {
-            err.println("Schedule is not updated.");
+            ctx.err().println("Schedule is not updated.");
         }
         else {
-            err.println("Use `" + programName + " schedules` to show schedules.");
+            ctx.err().println("Use `" + ctx.programName() + " schedules` to show schedules.");
         }
     }
 }

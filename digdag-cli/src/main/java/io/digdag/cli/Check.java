@@ -53,6 +53,11 @@ public class Check
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
+    public Check(CommandContext context)
+    {
+        super(context);
+    }
+
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
@@ -74,13 +79,13 @@ public class Check
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " check [workflow.dig] [options...]");
-        err.println("  Options:");
-        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
-        //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " check [workflow.dig] [options...]");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --project DIR                use this directory as the project directory (default: current directory)");
+        ctx.err().println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
+        ctx.err().println("    -P, --params-file PATH.yml       read parameters from a YAML file");
+        //ctx.err().println("    -g, --graph OUTPUT.png           visualize a task and exit");
+        Main.showCommonOptions(ctx);
         return systemExit(error);
     }
 
@@ -203,7 +208,7 @@ public class Check
 
     private void ln(String format, Object... args)
     {
-        out.println(String.format(format, args));
+        ctx.out().println(String.format(format, args));
     }
 
     private class Formatter
@@ -234,7 +239,7 @@ public class Check
 
         public void print()
         {
-            out.print(sb.toString());
+            ctx.out().print(sb.toString());
         }
     }
 }

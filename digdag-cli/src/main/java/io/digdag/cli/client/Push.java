@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
 import io.digdag.cli.SystemExitException;
@@ -47,6 +48,11 @@ public class Push
     @Parameter(names = {"--schedule-from"})
     String scheduleFromString = null;
 
+    public Push(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -59,13 +65,13 @@ public class Push
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " push <project> -r <revision>");
-        err.println("  Options:");
-        err.println("        --project DIR                use this directory as the project directory (default: current directory)");
-        err.println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
-        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        err.println("        --schedule-from \"yyyy-MM-dd HH:mm:ss Z\"  start schedules from this time instead of current time");
+        ctx.err().println("Usage: " + ctx.programName() + " push <project> -r <revision>");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --project DIR                use this directory as the project directory (default: current directory)");
+        ctx.err().println("    -r, --revision REVISION          specific revision name instead of auto-generated UUID");
+        ctx.err().println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        ctx.err().println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        ctx.err().println("        --schedule-from \"yyyy-MM-dd HH:mm:ss Z\"  start schedules from this time instead of current time");
         showCommonOptions();
         return systemExit(error);
     }
@@ -84,8 +90,8 @@ public class Push
                 .addModules(binder -> {
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);
                     binder.bind(Archiver.class).in(Scopes.SINGLETON);
-                    binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(out);
-                    binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(err);
+                    binder.bind(PrintStream.class).annotatedWith(StdOut.class).toInstance(ctx.out());
+                    binder.bind(PrintStream.class).annotatedWith(StdErr.class).toInstance(ctx.err());
                 })
                 .initialize()
                 .getInjector();
@@ -116,6 +122,6 @@ public class Push
             revision = Upload.generateDefaultRevisionName();
         }
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile(), scheduleFrom);
-        showUploadedProject(out, proj, programName);
+        showUploadedProject(ctx, proj);
     }
 }

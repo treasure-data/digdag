@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -17,6 +18,11 @@ public class ShowAttempts
 {
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
+
+    public ShowAttempts(CommandContext context)
+    {
+        super(context);
+    }
 
     @Override
     public void mainWithClientException()
@@ -41,10 +47,10 @@ public class ShowAttempts
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " attempts                         show attempts for all sessions");
-        err.println("       " + programName + " attempts <session-id>            show attempts for a session");
-        err.println("  Options:");
-        err.println("    -i, --last-id ID                 shows more session attempts from this id");
+        ctx.err().println("Usage: " + ctx.programName() + " attempts                         show attempts for all sessions");
+        ctx.err().println("       " + ctx.programName() + " attempts <session-id>            show attempts for a session");
+        ctx.err().println("  Options:");
+        ctx.err().println("    -i, --last-id ID                 shows more session attempts from this id");
         showCommonOptions();
         return systemExit(error);
     }
@@ -68,7 +74,7 @@ public class ShowAttempts
         }
 
         if (attempts.isEmpty()) {
-            err.println("Use `" + programName + " start` to start a session.");
+            ctx.err().println("Use `" + ctx.programName() + " start` to start a session.");
         }
     }
 

@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 class JvmUtil
 {
-    static void validateJavaRuntime(Properties systemProps, PrintStream err)
+    static void validateJavaRuntime(Properties systemProps, CommandContext ctx)
         throws SystemExitException
     {
         String javaVmName = systemProps.getProperty("java.vm.name", "");
@@ -17,14 +17,14 @@ class JvmUtil
             // Android Dalvik: Dalvik
             // Kaffe: Kaffe
             String javaVersion = systemProps.getProperty("java.version", "");
-            validateOpenJdkVersion(javaVersion, err);
+            validateOpenJdkVersion(javaVersion, ctx);
         }
         else {
-            err.println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Please OpenJDK instead.");
+            ctx.err().println("Unsupported java.vm.name (" + javaVmName + "). Digdag may not work. Please OpenJDK instead.");
         }
     }
 
-    private static void validateOpenJdkVersion(String javaVersion, PrintStream err)
+    private static void validateOpenJdkVersion(String javaVersion, CommandContext ctx)
         throws SystemExitException
     {
         Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)(?:_(\\d+))?").matcher(javaVersion);
@@ -54,7 +54,7 @@ class JvmUtil
             }
         }
         else {
-            err.println("Unsupported java version syntax (" + javaVersion + "). Digdag may not work. Please use OpenJDK instead.");
+            ctx.err().println("Unsupported java version syntax (" + javaVersion + "). Digdag may not work. Please use OpenJDK instead.");
         }
     }
 
@@ -63,9 +63,9 @@ class JvmUtil
         return SystemExitException.systemExit("Found too old java version (" + javaVersion + "). Please use at least JDK 8u71 (1.8.0_71).");
     }
 
-    static void validateJavaRuntime(PrintStream err)
+    static void validateJavaRuntime(CommandContext ctx)
             throws SystemExitException
     {
-        validateJavaRuntime(System.getProperties(), err);
+        validateJavaRuntime(System.getProperties(), ctx);
     }
 }

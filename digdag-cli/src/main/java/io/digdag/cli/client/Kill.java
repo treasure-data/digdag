@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 
@@ -8,6 +9,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Kill
     extends ClientCommand
 {
+    public Kill(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -20,8 +26,8 @@ public class Kill
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " kill <attempt-id>");
-        err.println("  Options:");
+        ctx.err().println("Usage: " + ctx.programName() + " kill <attempt-id>");
+        ctx.err().println("  Options:");
         showCommonOptions();
         return systemExit(error);
     }

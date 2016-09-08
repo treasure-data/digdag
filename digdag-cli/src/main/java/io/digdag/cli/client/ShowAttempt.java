@@ -1,5 +1,6 @@
 package io.digdag.cli.client;
 
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -10,6 +11,11 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowAttempt
     extends ClientCommand
 {
+    public ShowAttempt(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
             throws Exception
@@ -37,7 +43,7 @@ public class ShowAttempt
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " attempt  <attempt-id>            show a single attempt");
+        ctx.err().println("Usage: " + ctx.programName() + " attempt  <attempt-id>            show a single attempt");
         showCommonOptions();
         return systemExit(error);
     }

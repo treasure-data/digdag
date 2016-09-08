@@ -4,18 +4,20 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.inject.Inject;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.cli.Command;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.core.Environment;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
-import io.digdag.standards.td.TdDigdagClientConfigurationPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -37,8 +38,6 @@ public abstract class ClientCommand
     private static final Logger logger = LoggerFactory.getLogger(ClientCommand.class);
 
     private static final String DEFAULT_ENDPOINT = "http://127.0.0.1:65432";
-
-    @Inject Injector injector;
 
     @Parameter(names = {"-e", "--endpoint"})
     protected String endpoint = null;
@@ -51,6 +50,11 @@ public abstract class ClientCommand
 
     @Parameter(names = {"--disable-cert-validation"})
     protected boolean disableCertValidation;
+
+    public ClientCommand(CommandContext context)
+    {
+        super(context);
+    }
 
     @Override
     public void main()
@@ -98,25 +102,28 @@ public abstract class ClientCommand
 
         PluginSet plugins = loadSystemPlugins(props);
 
+        Injector injector = Guice.createInjector((binder -> {
+            binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(ctx.environment());
+        }));
         List<DigdagClientConfigurator> clientConfigurators = plugins.withInjector(injector).getServiceProviders(DigdagClientConfigurator.class);
 
         if (endpoint == null) {
             endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
         }
 
-        DigdagClient client = buildClient(endpoint, env, props, disableCertValidation, httpHeaders, clientConfigurators);
+        DigdagClient client = buildClient(endpoint, ctx.environment(), props, disableCertValidation, httpHeaders, clientConfigurators);
 
         if (checkServerVersion && !disableVersionCheck) {
             Map<String, Object> remoteVersions = client.getVersion();
             String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
 
-            if (!version.version().equals(remoteVersion)) {
+            if (!ctx.version().version().equals(remoteVersion)) {
                 throw systemExit(String.format(""
                                 + "Client and server version mismatch: Client: %s, Server: %s.%n"
                                 + "Please run following command locally to download a compatible version with the server:%n"
                                 + "%n"
-                                + "    " + programName + " selfupdate %s%n",
-                        version, remoteVersion, remoteVersion));
+                                + "    " + ctx.programName() + " selfupdate %s%n",
+                        ctx.version(), remoteVersion, remoteVersion));
             }
         }
 
@@ -195,8 +202,8 @@ public abstract class ClientCommand
 
     public void showCommonOptions()
     {
-        err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
+        Main.showCommonOptions(ctx);
     }
 
     protected long parseLongOrUsage(String arg)
@@ -223,7 +230,7 @@ public abstract class ClientCommand
 
     protected void ln(String format, Object... args)
     {
-        out.println(String.format(format, args));
+        ctx.out().println(String.format(format, args));
     }
 
     protected static YamlMapper yamlMapper()

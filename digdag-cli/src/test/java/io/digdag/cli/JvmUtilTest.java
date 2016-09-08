@@ -1,13 +1,19 @@
 package io.digdag.cli;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Properties;
 
 import static org.junit.Assert.fail;
 
+@RunWith(MockitoJUnitRunner.class)
 public class JvmUtilTest
 {
+    @Mock CommandContext ctx;
+
     @Test
     public void shouldCheckJavaVersion()
     {
@@ -19,20 +25,20 @@ public class JvmUtilTest
         assertJdkVersionValidationPass("1.9.0_1");
     }
 
-    private static void assertJdkVersionValidationNotPass(String v)
+    private void assertJdkVersionValidationNotPass(String v)
     {
         try {
-            JvmUtil.validateJavaRuntime(newJdkProperties(v), System.err);
+            JvmUtil.validateJavaRuntime(newJdkProperties(v), ctx);
             fail();
         }
         catch (SystemExitException ex) {
         }
     }
 
-    private static void assertJdkVersionValidationPass(String v)
+    private void assertJdkVersionValidationPass(String v)
     {
         try {
-            JvmUtil.validateJavaRuntime(newJdkProperties(v), System.err);
+            JvmUtil.validateJavaRuntime(newJdkProperties(v), ctx);
         }
         catch (SystemExitException ex) {
             fail();

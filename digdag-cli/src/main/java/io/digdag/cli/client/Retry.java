@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -47,6 +48,11 @@ public class Retry
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
+    public Retry(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -78,16 +84,16 @@ public class Retry
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " retry <attempt-id>");
-        err.println("  Options:");
-        err.println("        --name <name>                unique identifier of this retry attempt instead of auto-generated UUID");
-        err.println("        --latest-revision            use the latest revision");
-        err.println("        --keep-revision              keep the same revision");
-        err.println("        --revision <name>            use a specific revision");
-        err.println("        --all                        retry all tasks");
-        err.println("        --resume                     retry only non-successful tasks");
-        err.println("        --resume-from <+name>        retry from a specific task");
-        err.println("");
+        ctx.err().println("Usage: " + ctx.programName() + " retry <attempt-id>");
+        ctx.err().println("  Options:");
+        ctx.err().println("        --name <name>                unique identifier of this retry attempt instead of auto-generated UUID");
+        ctx.err().println("        --latest-revision            use the latest revision");
+        ctx.err().println("        --keep-revision              keep the same revision");
+        ctx.err().println("        --revision <name>            use a specific revision");
+        ctx.err().println("        --all                        retry all tasks");
+        ctx.err().println("        --resume                     retry only non-successful tasks");
+        ctx.err().println("        --resume-from <+name>        retry from a specific task");
+        ctx.err().println("");
         return systemExit(error);
     }
 
@@ -156,9 +162,9 @@ public class Retry
         ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
-        err.println(String.format(ENGLISH,
-                "* Use `" + programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
+        ctx.err().printf("* Use `" + ctx.programName() + " session %d` to show session status.%n", newAttempt.getSessionId());
+        ctx.err().println(String.format(ENGLISH,
+                "* Use `" + ctx.programName() + " task %d` and `" + ctx.programName() + " log %d` to show task status and logs.",
                 newAttempt.getId(), newAttempt.getId()));
     }
 }

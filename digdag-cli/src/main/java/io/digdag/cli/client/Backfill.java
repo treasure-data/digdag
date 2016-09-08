@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Optional;
+import io.digdag.cli.CommandContext;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -36,6 +37,11 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
+    public Backfill(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void mainWithClientException()
         throws Exception
@@ -53,12 +59,12 @@ public class Backfill
 
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " backfill <project-name> <workflow-name>");
-        err.println("  Options:");
-        err.println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
-        err.println("        --name NAME                  retry attempt name");
-        err.println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
-        err.println("        --count N                    number of sessions to run from the time (default: all sessions until the next schedule time)");
+        ctx.err().println("Usage: " + ctx.programName() + " backfill <project-name> <workflow-name>");
+        ctx.err().println("  Options:");
+        ctx.err().println("    -f, --from 'yyyy-MM-dd[ HH:mm:ss]'  timestamp to start backfill from (required)");
+        ctx.err().println("        --name NAME                  retry attempt name");
+        ctx.err().println("    -d, --dry-run                    tries to backfill and validates the results but does nothing");
+        ctx.err().println("        --count N                    number of sessions to run from the time (default: all sessions until the next schedule time)");
         showCommonOptions();
         return systemExit(error);
     }
@@ -108,11 +114,11 @@ public class Backfill
         }
 
         if (dryRun || attempts.isEmpty()) {
-            err.println("No session attempts started.");
+            ctx.err().println("No session attempts started.");
         }
         else {
-            err.println("Backfill session attempts started.");
-            err.println("Use `" + programName + " sessions` to show the session attempts.");
+            ctx.err().println("Backfill session attempts started.");
+            ctx.err().println("Use `" + ctx.programName() + " sessions` to show the session attempts.");
         }
     }
 

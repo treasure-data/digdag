@@ -61,11 +61,16 @@ public class Server
     @Parameter(names = {"-P", "--params-file"})
     String paramsFile = null;
 
+    public Server(CommandContext context)
+    {
+        super(context);
+    }
+
     @Override
     public void main()
             throws Exception
     {
-        JvmUtil.validateJavaRuntime(err);
+        JvmUtil.validateJavaRuntime(ctx);
 
         if (args.size() != 0) {
             throw usage(null);
@@ -84,29 +89,29 @@ public class Server
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " server [options...]");
-        err.println("  Options:");
-        err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
-        err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
-        err.println("    -m, --memory                     uses memory database");
-        err.println("    -o, --database DIR               store status to this database");
-        err.println("    -O, --task-log DIR               store task logs to this database");
-        err.println("    -A, --access-log DIR             store access logs files to this path");
-        err.println("        --max-task-threads N         limit maxium number of task execution threads");
-        err.println("        --disable-executor-loop      disable workflow executor loop");
-        err.println("        --disable-local-agent        disable local task execution");
-        err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
-        err.println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
-        err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
-        err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(env, err);
+        ctx.err().println("Usage: " + ctx.programName() + " server [options...]");
+        ctx.err().println("  Options:");
+        ctx.err().println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
+        ctx.err().println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
+        ctx.err().println("    -m, --memory                     uses memory database");
+        ctx.err().println("    -o, --database DIR               store status to this database");
+        ctx.err().println("    -O, --task-log DIR               store task logs to this database");
+        ctx.err().println("    -A, --access-log DIR             store access logs files to this path");
+        ctx.err().println("        --max-task-threads N         limit maxium number of task execution threads");
+        ctx.err().println("        --disable-executor-loop      disable workflow executor loop");
+        ctx.err().println("        --disable-local-agent        disable local task execution");
+        ctx.err().println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
+        ctx.err().println("    -H, --header KEY=VALUE           a header to include in api HTTP responses");
+        ctx.err().println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
+        ctx.err().println("    -c, --config PATH.properties     server configuration property path");
+        Main.showCommonOptions(ctx);
         return systemExit(error);
     }
 
     private void startServer()
             throws ServletException, IOException
     {
-        ServerBootstrap.startServer(version, buildServerProperties(), ServerBootstrap.class);
+        ServerBootstrap.startServer(ctx.version(), buildServerProperties(), ServerBootstrap.class);
     }
 
     protected Properties buildServerProperties()
@@ -163,7 +168,7 @@ public class Server
 
         props.setProperty("digdag.defaultParams", defaultParams.toString());
 
-        env.forEach((key, value) -> props.setProperty("server.environment." + key, value));
+        ctx.environment().forEach((key, value) -> props.setProperty("server.environment." + key, value));
 
         return props;
     }
