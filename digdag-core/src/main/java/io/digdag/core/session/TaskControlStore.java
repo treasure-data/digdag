@@ -23,9 +23,6 @@ public interface TaskControlStore
 
     boolean copyInitialTasksForRetry(List<Long> recursiveChildrenIdList);
 
-    StoredTask getTaskById(long taskId)
-        throws ResourceNotFoundException;
-
     void addDependencies(long downstream, List<Long> upstreams);
 
     // return true if one or more child task is progressible.
