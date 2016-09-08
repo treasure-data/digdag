@@ -288,7 +288,7 @@ public abstract class BasicDatabaseStoreManager <D>
                                     "from within the callback. See cause " +
                                     "for the original exception.", ex);
                         }
-                        handle.commit();
+                        validateTransactionAndCommit(handle);
                         return retval;
                     }
                     finally {
@@ -340,7 +340,7 @@ public abstract class BasicDatabaseStoreManager <D>
                                     "from within the callback. See cause " +
                                     "for the original exception.", ex);
                         }
-                        handle.commit();
+                        validateTransactionAndCommit(handle);
                         return retval;
                     }
                     finally {
@@ -431,13 +431,21 @@ public abstract class BasicDatabaseStoreManager <D>
     private void validateTransactionAndCommit(Handle handle)
         throws TransactionFailedException
     {
-        // Validate connection before COMMIT. This is necessary because PostgreSQL actually runs
-        // ROLLBACK silently when COMMIT is issued if a statement failed during the transaction.
-        // It means that BasicDatabaseStoreManager.transaction method doesn't throw exceptions
-        // but the actual transaction is rolled back. Here checks state of the transaction by
-        // calling org.postgresql.jdbc.PgConnection.isValid method.
+        // Validate the connection before COMMIT. Purpose of this method is to avoid
+        // following unexpected behavior of PostgreSQL:
         //
-        // Here assumes that HikariDB doesn't overwrite isValid.
+        // 1. A thread starts a transaction
+        // 2. The thread issues a statement and it fails (e.g. unique key violation)
+        // 3. The thread catch the exception and does other things
+        // 4. The thread issues COMMIT
+        // 5. PostgreSQL silently translate COMMIT to ROLLBACK without errors. The thread
+        //    assumes that the transaction is committed but actually everything is rolled back.
+        //
+        // To avoid this issue, the thread needs to send a dummy SELECT statement after step 4.
+        // PostgreSQL makes the statement failed ("ERROR:  25P02: current transaction is aborted,
+        // commands ignored until end of transaction block").
+        //
+        // Here assumes that HikariDB doesn't overwrite PgConnection.isValid method.
         boolean isValid;
         try {
             isValid = handle.getConnection().isValid(30);
