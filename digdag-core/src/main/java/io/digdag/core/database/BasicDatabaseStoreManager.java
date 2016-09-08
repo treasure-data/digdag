@@ -22,7 +22,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public abstract class BasicDatabaseStoreManager <D>
 {
@@ -227,7 +226,6 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
-    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
     public <T> T transaction(TransactionAction<T, D> action)
     {
         Handle nested = currentTransaction.get();
