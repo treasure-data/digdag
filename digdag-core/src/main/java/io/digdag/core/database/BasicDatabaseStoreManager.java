@@ -359,19 +359,19 @@ public abstract class BasicDatabaseStoreManager <D>
     }
 
     @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception, E2 extends Exception> T transactionWithRetry(RetryableTransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
+    public <T, E1 extends Exception, E2 extends Exception> T transactionWithLocalRetry(RetryableTransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
     {
         // TODO
         // Here should throw error if currentTransaction.get() != null to avoid race condition under high load.
         // In following scenario, a deadlock happens:
-        // * thread1 acquires a row lock on RDBMS (such as lockTaskIfExists), then calls transactionWithRetry.
+        // * thread1 acquires a row lock on RDBMS (such as lockTaskIfExists), then calls transactionWithLocalRetry.
         // * thread2 opens a connection and try to lock the same row on RDBMS (this is blocked).
-        // * thread1's transactionWithRetry calls dbi.open to open another connection. But this could be blocked
+        // * thread1's transactionWithLocalRetry calls dbi.open to open another connection. But this could be blocked
         //   for ever if number of opened connection reached maximumPoolSize when thread2 opened a connection.
-        // However, ScheduleExecutor.backfill is calling putAndLockSession (that calls transactionWithRetry)
+        // However, ScheduleExecutor.backfill is calling putAndLockSession (that calls transactionWithLocalRetry)
         // within lockScheduleById transaction. There're no good solutions to avoid both issues for now.
         //
-        //checkState(currentTransaction.get() == null, "Nested retrying transaction is not allowed");
+        //checkState(currentTransaction.get() == null, "Nested transaction with local retry is not allowed");
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
                 TransactionState ts = new TransactionState();

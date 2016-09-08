@@ -929,7 +929,7 @@ public class DatabaseSessionStoreManager
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
         {
-            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transactionWithRetry((handle, dao, ts) -> {
+            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transactionWithLocalRetry((handle, dao, ts) -> {
                 long sesId;
 
                 switch (databaseType) {

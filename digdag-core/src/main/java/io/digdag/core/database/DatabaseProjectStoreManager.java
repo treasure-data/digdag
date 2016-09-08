@@ -176,7 +176,7 @@ public class DatabaseProjectStoreManager
         public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
         {
-            return transactionWithRetry((handle, dao, ts) -> {
+            return transactionWithLocalRetry((handle, dao, ts) -> {
                 int projId;
 
                 if (!ts.isRetried()) {
