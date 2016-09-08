@@ -251,6 +251,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
@@ -301,6 +302,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
@@ -353,6 +355,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
@@ -420,6 +423,7 @@ public abstract class BasicDatabaseStoreManager <D>
             throw Throwables.propagate(innerException);
         }
         catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             throw Throwables.propagate(ex);
         }
     }
@@ -472,6 +476,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
@@ -498,6 +503,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
@@ -525,6 +531,7 @@ public abstract class BasicDatabaseStoreManager <D>
                 throw Throwables.propagate(innerException);
             }
             catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
                 throw Throwables.propagate(ex);
             }
         }
