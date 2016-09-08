@@ -135,7 +135,6 @@ public class DatabaseSessionStoreManager
         dbi.registerMapper(new SessionAttemptSummaryMapper());
         dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
         dbi.registerMapper(new TaskRelationMapper());
-        dbi.registerMapper(new InstantMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
 
         this.mapper = mapper;
@@ -211,7 +210,8 @@ public class DatabaseSessionStoreManager
     @Override
     public Instant getStoreTime()
     {
-        return autoCommit((handle, dao) -> dao.now());
+        java.sql.Timestamp now = autoCommit((handle, dao) -> dao.now());
+        return now.toInstant();
     }
 
     @Override
@@ -273,7 +273,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             SessionAttemptSummary locked = dao.lockAttempt(attemptId);
             if (locked != null) {
                 return Optional.of(func.call(new DatabaseSessionAttemptControlStore(handle), locked));
@@ -321,7 +321,7 @@ public class DatabaseSessionStoreManager
     @Override
     public boolean requestCancelAttempt(long attemptId)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             int n = handle.createStatement("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
@@ -351,7 +351,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(new DatabaseTaskControlStore(handle));
@@ -364,7 +364,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
@@ -384,7 +384,7 @@ public class DatabaseSessionStoreManager
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
-        List<RuntimeException> exceptions = transaction((handle, dao, ts) -> {
+        List<RuntimeException> exceptions = transaction((handle, dao) -> {
             return dao.lockReadySessionMonitors(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(monitor -> {
@@ -929,7 +929,7 @@ public class DatabaseSessionStoreManager
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
         {
-            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao, ts) -> {
+            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transactionWithRetry((handle, dao, ts) -> {
                 long sesId;
 
                 switch (databaseType) {
@@ -1195,7 +1195,7 @@ public class DatabaseSessionStoreManager
     public interface Dao
     {
         @SqlQuery("select now() as date")
-        Instant now();
+        java.sql.Timestamp now();
 
         @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
                 " from sessions s" +
@@ -1567,23 +1567,6 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from resuming_tasks" +
                 " where attempt_id = :attemptId")
         int deleteResumingTasks(@Bind("attemptId") long attemptId);
-    }
-
-    private static class InstantMapper
-            implements ResultSetMapper<Instant>
-    {
-        @Override
-        public Instant map(int index, ResultSet r, StatementContext ctx)
-                throws SQLException
-        {
-            java.sql.Timestamp t = r.getTimestamp("date");
-            if (t == null) {
-                return null;
-            }
-            else {
-                return t.toInstant();
-            }
-        }
     }
 
     private static class StoredSessionMapper

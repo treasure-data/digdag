@@ -46,6 +46,8 @@ public abstract class BasicDatabaseStoreManager <D>
     private final Class<D> daoIface;
     private final IDBI dbi;
 
+    private static final ThreadLocal<Handle> currentTransaction = new ThreadLocal<>();
+
     protected BasicDatabaseStoreManager(String databaseType, Class<D> daoIface, IDBI dbi)
     {
         this.databaseType = databaseType;
@@ -160,14 +162,18 @@ public abstract class BasicDatabaseStoreManager <D>
     }
 
     public interface TransactionAction <T, D> {
-        T call(Handle handle, D dao, TransactionState ts);
+        T call(Handle handle, D dao);
     }
 
     public interface TransactionActionWithException <T, D, E extends Exception> {
-        T call(Handle handle, D dao, TransactionState ts) throws E;
+        T call(Handle handle, D dao) throws E;
     }
 
     public interface TransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
+        T call(Handle handle, D dao) throws E1, E2;
+    }
+
+    public interface RetryableTransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
         T call(Handle handle, D dao, TransactionState ts) throws E1, E2;
     }
 
@@ -224,45 +230,48 @@ public abstract class BasicDatabaseStoreManager <D>
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
     public <T> T transaction(TransactionAction<T, D> action)
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                TransactionState ts = new TransactionState();
-                while (true) {
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return nested.inTransaction((h, status) -> action.call(h, h.attach(daoIface)));
+        }
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
                     try (Handle handle = dbi.open()) {
-                        T retval = handle.inTransaction((h, status) -> action.call(h, h.attach(daoIface), ts));
-                        if (ts.retryNext) {
-                            ts.retryNext = false;
-                            ts.retryCount += 1;
-                        }
-                        else {
-                            return retval;
-                        }
+                        currentTransaction.set(handle);
+                        return handle.inTransaction((h, status) -> action.call(h, h.attach(daoIface)));
                     }
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+                    finally {
+                        currentTransaction.set(null);
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T, E extends Exception> T transaction(TransactionActionWithException<T, D, E> action, Class<E> exClass) throws E
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                TransactionState ts = new TransactionState();
-                while (true) {
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return action.call(nested, nested.attach(daoIface));
+        }
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
                     try (Handle handle = dbi.open()) {
-                        T retval;
-                        // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
+                        currentTransaction.set(handle);
                         handle.begin();
+                        T retval;
                         try {
-                            retval = action.call(handle, handle.attach(daoIface), ts);
+                            retval = action.call(handle, handle.attach(daoIface));
                         }
                         catch (Exception ex) {
                             try {
@@ -274,42 +283,105 @@ public abstract class BasicDatabaseStoreManager <D>
                             Throwables.propagateIfInstanceOf(ex, exClass);
                             Throwables.propagateIfPossible(ex);
                             throw new TransactionFailedException(
-                                    "Transaction failed do to exception being thrown " +
+                                    "Transaction failed due to exception being thrown " +
                                     "from within the callback. See cause " +
                                     "for the original exception.", ex);
                         }
-                        if (!ts.retryNext) {
-                            validateTransactionAndCommit(handle);
-                            return retval;
-                        }
-                        handle.rollback();
-                        ts.retryNext = false;
-                        ts.retryCount += 1;
+                        handle.commit();
+                        return retval;
                     }
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+                    finally {
+                        currentTransaction.set(null);
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                Throwables.propagateIfInstanceOf(innerException, exClass);
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T, E1 extends Exception, E2 extends Exception> T transaction(TransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
     {
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return action.call(nested, nested.attach(daoIface));
+        }
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
+                    try (Handle handle = dbi.open()) {
+                        currentTransaction.set(handle);
+                        handle.begin();
+                        T retval;
+                        try {
+                            retval = action.call(handle, handle.attach(daoIface));
+                        }
+                        catch (Exception ex) {
+                            try {
+                                handle.rollback();
+                            }
+                            catch (Exception rollback) {
+                                ex.addSuppressed(rollback);
+                            }
+                            Throwables.propagateIfInstanceOf(ex, exClass1);
+                            Throwables.propagateIfInstanceOf(ex, exClass2);
+                            Throwables.propagateIfPossible(ex);
+                            throw new TransactionFailedException(
+                                    "Transaction failed due to exception being thrown " +
+                                    "from within the callback. See cause " +
+                                    "for the original exception.", ex);
+                        }
+                        handle.commit();
+                        return retval;
+                    }
+                    finally {
+                        currentTransaction.set(null);
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                Throwables.propagateIfInstanceOf(innerException, exClass1);
+                Throwables.propagateIfInstanceOf(innerException, exClass2);
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, E1 extends Exception, E2 extends Exception> T transactionWithRetry(RetryableTransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
+    {
+        // TODO
+        // Here should throw error if currentTransaction.get() != null to avoid race condition under high load.
+        // In following scenario, a deadlock happens:
+        // * thread1 acquires a row lock on RDBMS (such as lockTaskIfExists), then calls transactionWithRetry.
+        // * thread2 opens a connection and try to lock the same row on RDBMS (this is blocked).
+        // * thread1's transactionWithRetry calls dbi.open to open another connection. But this could be blocked
+        //   for ever if number of opened connection reached maximumPoolSize when thread2 opened a connection.
+        // However, ScheduleExecutor.backfill is calling putAndLockSession (that calls transactionWithRetry)
+        // within lockScheduleById transaction. There're no good solutions to avoid both issues for now.
+        //
+        //checkState(currentTransaction.get() == null, "Nested retrying transaction is not allowed");
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
                 TransactionState ts = new TransactionState();
                 while (true) {
+                    Handle savedNestedTransaction = currentTransaction.get();
                     try (Handle handle = dbi.open()) {
-                        T retval;
-                        // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
+                        // Here doesn't use handle.inTransaction. See comments on validateTransactionAndCommit.
                         handle.begin();
+                        currentTransaction.set(handle);
+                        T retval;
                         try {
                             retval = action.call(handle, handle.attach(daoIface), ts);
                         }
@@ -324,7 +396,7 @@ public abstract class BasicDatabaseStoreManager <D>
                             Throwables.propagateIfInstanceOf(ex, exClass2);
                             Throwables.propagateIfPossible(ex);
                             throw new TransactionFailedException(
-                                    "Transaction failed do to exception being thrown " +
+                                    "Transaction failed due to exception being thrown " +
                                     "from within the callback. See cause " +
                                     "for the original exception.", ex);
                         }
@@ -334,6 +406,9 @@ public abstract class BasicDatabaseStoreManager <D>
                         }
                         ts.retryNext = false;
                         ts.retryCount += 1;
+                    }
+                    finally {
+                        currentTransaction.set(savedNestedTransaction);
                     }
                 }
             });
@@ -380,62 +455,78 @@ public abstract class BasicDatabaseStoreManager <D>
 
     public <T> T autoCommit(AutoCommitAction<T, D> action)
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
-            });
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return action.call(nested, nested.attach(daoIface));
         }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
+                    try (Handle handle = dbi.open()) {
+                        return action.call(handle, handle.attach(daoIface));
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T, E extends Exception> T autoCommit(AutoCommitActionWithException<T, D, E> action, Class<E> exClass) throws E
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return action.call(handle, handle.attach(daoIface));
-                }
-            });
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return action.call(nested, nested.attach(daoIface));
         }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
+                    try (Handle handle = dbi.open()) {
+                        return action.call(handle, handle.attach(daoIface));
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                Throwables.propagateIfInstanceOf(innerException, exClass);
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T, E1 extends Exception, E2 extends Exception> T autoCommit(AutoCommitActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return handle.inTransaction((h, status) -> {
-                        return action.call(h, h.attach(daoIface));
-                    });
-                }
-            });
+        Handle nested = currentTransaction.get();
+        if (nested != null) {
+            return action.call(nested, nested.attach(daoIface));
         }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass1);
-            Throwables.propagateIfInstanceOf(innerException, exClass2);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
+        else {
+            try {
+                return transactionRetryExecutor.runInterruptible(() -> {
+                    try (Handle handle = dbi.open()) {
+                        return action.call(handle, handle.attach(daoIface));
+                    }
+                });
+            }
+            catch (RetryGiveupException ex) {
+                Throwable innerException = ex.getCause();
+                Throwables.propagateIfInstanceOf(innerException, exClass1);
+                Throwables.propagateIfInstanceOf(innerException, exClass2);
+                throw Throwables.propagate(innerException);
+            }
+            catch (InterruptedException ex) {
+                throw Throwables.propagate(ex);
+            }
         }
     }
 

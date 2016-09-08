@@ -176,7 +176,7 @@ public class DatabaseProjectStoreManager
         public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
         {
-            return transaction((handle, dao, ts) -> {
+            return transactionWithRetry((handle, dao, ts) -> {
                 int projId;
 
                 if (!ts.isRetried()) {
@@ -204,14 +204,14 @@ public class DatabaseProjectStoreManager
                 }
 
                 return func.call(new DatabaseProjectControlStore(handle, siteId), proj);
-            }, ResourceConflictException.class);
+            }, ResourceConflictException.class, RuntimeException.class);
         }
 
         @Override
         public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
             throws ResourceNotFoundException
         {
-            return transaction((handle, dao, ts) -> {
+            return transaction((handle, dao) -> {
                 StoredProject proj = requiredResource(
                         dao.getProjectByIdWithLockForDelete(siteId, projId),
                         "project id=%d", projId);
