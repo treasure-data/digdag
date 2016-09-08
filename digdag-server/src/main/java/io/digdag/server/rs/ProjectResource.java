@@ -479,6 +479,10 @@ public class ProjectResource
                 }
             }
 
+            // Getting secrets might fail. To avoid ending up with a project without secrets, get the secrets _before_ storing the project.
+            // If getting the project secrets fails, the project will not be stored and the push can then be retried with the same revision.
+            Map<String, String> secrets = getSecrets().get();
+
             RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
                     Project.of(name),
                     (store, storedProject) -> {
@@ -521,8 +525,7 @@ public class ProjectResource
                     });
 
             SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            Supplier<Map<String, String>> secrets = getSecrets();
-            secrets.get().forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
+            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
             return restProject;
         }
     }
