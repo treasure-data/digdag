@@ -486,7 +486,7 @@ Output parameters
 td_ddl>: Treasure Data operations
 ----------------------------------
 
-**_type: td_ddl** operator runs an operational task on Treasure Data.
+**td_ddl>** operator runs an operational task on Treasure Data.
 
 TODO: add more description here
 
@@ -498,13 +498,13 @@ TODO: add more description here
         database: www_access
 
     +step1:
-      _type: td_ddl
+      td_ddl>:
       create_tables: ["my_table_${session_date_compact}"]
     +step2:
-      _type: td_ddl
+      td_ddl>:
       drop_tables: ["my_table_${session_date_compact}"]
     +step2:
-      _type: td_ddl
+      td_ddl>:
       empty_tables: ["my_table_${session_date_compact}"]
 
 :command:`create_tables: [ARRAY OF NAMES]`
@@ -563,7 +563,7 @@ TODO: add more description here
         apikey: YOUR/API_KEY
 
     +step1:
-      _type: td_table_export
+      td_table_export>:
       database: mydb
       table: mytable
       file_format: jsonl.gz
@@ -643,7 +643,7 @@ Output parameters
 pg>: PostgreSQL operations
 ----------------------------------
 
-**_type: pg** operator runs queries and/or DDLs on PostgreSQL
+**pg>** operator runs queries and/or DDLs on PostgreSQL
 
 .. code-block:: yaml
 
@@ -758,7 +758,7 @@ To use Gmail SMTP server, you need to do either of:
       to: [me@example.com]
 
     +step2:
-      _type: mail
+      mail>:
       body: this is email body in string
       subject: workflow started
       to: [me@example.com]
