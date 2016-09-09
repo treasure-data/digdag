@@ -11,12 +11,10 @@ import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSecretAccessPolicy;
 import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
-import io.digdag.core.crypto.SecretCrypto;
-import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
-import io.digdag.core.database.DatabaseSecretStoreManager;
+import io.digdag.core.repository.ProjectStoreSecretStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
@@ -50,8 +48,7 @@ public class WorkflowTestingUtils
             .addModules((binder) -> {
                 binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
 
-                binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
-                binder.bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
+                binder.bind(SecretStoreManager.class).to(ProjectStoreSecretStoreManager.class).in(Scopes.SINGLETON);
                 binder.bind(SecretAccessPolicy.class).to(LocalSecretAccessPolicy.class);
 
                 Multibinder<SchedulerFactory> schedulerFactoryBinder = Multibinder.newSetBinder(binder, SchedulerFactory.class);

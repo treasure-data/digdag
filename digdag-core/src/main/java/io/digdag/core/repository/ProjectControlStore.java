@@ -28,4 +28,9 @@ public interface ProjectControlStore
         throws ResourceConflictException;
 
     void deleteSchedules(int projId);
+
+
+    void putSecret(int projId, String scope, String key, String value);
+
+    boolean deleteSecretIfExists(int projId, String scope, String key);
 }

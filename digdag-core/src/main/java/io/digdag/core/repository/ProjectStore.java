@@ -20,10 +20,19 @@ public interface ProjectStore
     interface ProjectLockAction <T>
     {
         T call(ProjectControlStore store, StoredProject storedProject)
+            throws ResourceNotFoundException, ResourceConflictException;
+    }
+
+    <T> T lockProjectById(int projId, ProjectLockAction<T> func)
+        throws ResourceNotFoundException, ResourceConflictException;
+
+    interface NewProjectLockAction <T>
+    {
+        T call(ProjectControlStore store, StoredProject storedProject)
             throws ResourceConflictException;
     }
 
-    <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
+    <T> T putAndLockProject(Project project, NewProjectLockAction<T> func)
         throws ResourceConflictException;
 
     interface ProjectObsoleteAction <T>
@@ -34,6 +43,11 @@ public interface ProjectStore
 
     <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
         throws ResourceNotFoundException;
+
+
+    List<String> listSecrets(int projId, String scope);
+
+    Optional<String> getSecretIfExists(int projId, String scope, String key);
 
 
     StoredRevision getRevisionById(int revId)

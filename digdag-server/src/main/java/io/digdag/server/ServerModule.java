@@ -7,10 +7,8 @@ import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.crypto.SecretCrypto;
-import io.digdag.core.crypto.SecretCryptoProvider;
-import io.digdag.core.database.DatabaseSecretControlStoreManager;
-import io.digdag.core.database.DatabaseSecretStoreManager;
 import io.digdag.core.repository.ModelValidationException;
+import io.digdag.core.repository.ProjectStoreSecretStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.LimitExceededException;
@@ -23,7 +21,6 @@ import io.digdag.server.rs.SessionResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.SecretAccessPolicy;
-import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
 
@@ -57,9 +54,7 @@ public class ServerModule
 
     protected void bindSecrets()
     {
-        binder().bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
-        binder().bind(SecretStoreManager.class).to(DatabaseSecretStoreManager.class).in(Scopes.SINGLETON);
-        binder().bind(SecretControlStoreManager.class).to(DatabaseSecretControlStoreManager.class);
+        binder().bind(SecretStoreManager.class).to(ProjectStoreSecretStoreManager.class).in(Scopes.SINGLETON);
         binder().bind(SecretAccessPolicy.class).to(DefaultSecretAccessPolicy.class);
     }
 
