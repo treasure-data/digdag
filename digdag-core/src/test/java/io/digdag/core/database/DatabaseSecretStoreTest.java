@@ -2,12 +2,17 @@ package io.digdag.core.database;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import io.digdag.core.repository.Project;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -122,5 +127,32 @@ public class DatabaseSecretStoreTest
 
             secretControlStore.deleteProjectSecret(storedProject.getId(), setScope, KEY1);
         }
+    }
+
+    @Test
+    public void concurrentPutShouldNotThrowExceptions()
+            throws Exception
+    {
+		ExecutorService threads = Executors.newCachedThreadPool();
+		ImmutableList.Builder<Future> futures = ImmutableList.builder();
+
+		for (int i = 0; i < 20; i++) {
+            String value = "thread-" + i;
+			futures.add(threads.submit(() -> {
+                try {
+                    for (int j = 0; j < 50; j++) {
+                        secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
+                        secretControlStore.setProjectSecret(projectId, SecretScopes.PROJECT, KEY1, value);
+                    }
+                }
+                catch (Exception ex) {
+                    throw Throwables.propagate(ex);
+                }
+			}));
+		}
+
+		for (Future f : futures.build()) {
+			f.get();
+		}
     }
 }
