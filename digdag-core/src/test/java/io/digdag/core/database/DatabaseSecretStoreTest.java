@@ -133,12 +133,12 @@ public class DatabaseSecretStoreTest
     public void concurrentPutShouldNotThrowExceptions()
             throws Exception
     {
-		ExecutorService threads = Executors.newCachedThreadPool();
-		ImmutableList.Builder<Future> futures = ImmutableList.builder();
+        ExecutorService threads = Executors.newCachedThreadPool();
+        ImmutableList.Builder<Future> futures = ImmutableList.builder();
 
-		for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 20; i++) {
             String value = "thread-" + i;
-			futures.add(threads.submit(() -> {
+            futures.add(threads.submit(() -> {
                 try {
                     for (int j = 0; j < 50; j++) {
                         secretControlStore.deleteProjectSecret(projectId, SecretScopes.PROJECT, KEY1);
@@ -148,11 +148,11 @@ public class DatabaseSecretStoreTest
                 catch (Exception ex) {
                     throw Throwables.propagate(ex);
                 }
-			}));
-		}
+            }));
+        }
 
-		for (Future f : futures.build()) {
-			f.get();
-		}
+        for (Future f : futures.build()) {
+            f.get();
+        }
     }
 }
