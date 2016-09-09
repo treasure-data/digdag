@@ -439,7 +439,7 @@ public abstract class BasicDatabaseStoreManager <D>
         // 5. PostgreSQL silently translate COMMIT to ROLLBACK without errors. The thread
         //    assumes that the transaction is committed but actually everything is rolled back.
         //
-        // To avoid this issue, the thread needs to send a dummy SELECT statement after step 4.
+        // To avoid this issue, the thread needs to send a dummy SELECT statement before step 4.
         // PostgreSQL makes the statement failed ("ERROR:  25P02: current transaction is aborted,
         // commands ignored until end of transaction block").
         //
