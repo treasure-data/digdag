@@ -22,7 +22,23 @@ public class DatabaseModule
         binder.bind(DatabaseConfig.class).toProvider(DatabaseConfigProvider.class).in(Scopes.SINGLETON);
         binder.bind(DataSource.class).toProvider(DataSourceProvider.class).in(Scopes.SINGLETON);
         binder.bind(AutoMigrator.class);
-        binder.bind(DBI.class).toProvider(DbiProvider.class);  // don't make this singleton because DBI.registerMapper is called for each StoreManager
+
+        // Here makes DBI singletone because all BasicDatabaseStoreManager classes must share a DBI instance
+        // so that all transactions can use all registered mappers and argument factories (dbi.registerMapper,
+        // dbi.registerArgumentFactory). This is because a transaction handle (Handle) created by a
+        // DatabaseStoreManager-A could be used by another DatabaseStoreManager-B if A starts a transaction
+        // and B runs a nested transaction (including autoCommit). B should not create another handle in this
+        // case because creating a handle opens another connection. Opening a connection in a transaction causes
+        // deadlock as following:
+        //
+        // * Thread1 starts a transaction and acquires a row lock (such as lockTaskIfExists).
+        // * Thread2 opens a connection and try to lock the same row. This is blocked blocked because Thread1
+        //   already locks the row.
+        // * Thread1 tries to open another connection in the transaction. This could be blocked for ever by
+        //   Thread2 if number of opened connection reached maximumPoolSize when thread2 opened a connection.
+        //
+        binder.bind(DBI.class).toProvider(DbiProvider.class).in(Scopes.SINGLETON);
+
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(ProjectStoreManager.class).to(DatabaseProjectStoreManager.class).in(Scopes.SINGLETON);

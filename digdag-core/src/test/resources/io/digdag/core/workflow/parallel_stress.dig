@@ -1,9 +1,9 @@
 +parallel_generate:
-  loop>: 8
+  loop>: 10
   _parallel: true
   _do:
     +parallel_run:
-      loop>: 5
+      loop>: 10
       _parallel: true
       _do:
         noop>:

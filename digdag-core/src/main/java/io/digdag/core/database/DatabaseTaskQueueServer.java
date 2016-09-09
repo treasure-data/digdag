@@ -164,7 +164,7 @@ public class DatabaseTaskQueueServer
             @Nullable byte[] data)
         throws ResourceConflictException
     {
-        long id = transaction((handle, dao, ts) -> {
+        long id = transaction((handle, dao) -> {
             long queuedTaskId = catchConflict(() ->
                 dao.insertQueuedTask(siteId, queueId, uniqueName, data),
                 "lock of task name=%s in site id = %d and queue id=%d", uniqueName, siteId, queueId);
@@ -217,7 +217,7 @@ public class DatabaseTaskQueueServer
     private void deleteTask0(int siteId, long taskLockId, String agentId)
         throws TaskNotFoundException, TaskConflictException
     {
-        this.<Boolean, TaskNotFoundException, TaskConflictException>transaction((handle, dao, ts) -> {
+        this.<Boolean, TaskNotFoundException, TaskConflictException>transaction((handle, dao) -> {
             int count;
 
             count = dao.deleteQueuedTask(siteId, taskLockId);
@@ -243,7 +243,7 @@ public class DatabaseTaskQueueServer
 
     private boolean forceDeleteTask0(long taskLockId)
     {
-        return this.transaction((handle, dao, ts) -> {
+        return this.transaction((handle, dao) -> {
             int taskCount = dao.forceDeleteQueuedTask(taskLockId);
             int lockCount = dao.forceDeleteQueuedTaskLock(taskLockId);
             return taskCount > 0 || lockCount > 0;
@@ -340,7 +340,7 @@ public class DatabaseTaskQueueServer
 
         try {
             if (isEmbededDatabase()) {
-                return transaction((handle, dao, ts) -> {
+                return transaction((handle, dao) -> {
                     List<Long> taskLockIds = handle.createQuery(
                             "select id " +
                             "from queued_task_locks " +
