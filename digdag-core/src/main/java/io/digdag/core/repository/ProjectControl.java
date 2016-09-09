@@ -129,6 +129,16 @@ public class ProjectControl
         store.deleteSchedules(project.getId());
     }
 
+    public void putSecret(String scope, String key, String value)
+    {
+        store.putSecret(project.getId(), scope, key, value);
+    }
+
+    public boolean deleteSecretIfExists(String scope, String key)
+    {
+        return store.deleteSecretIfExists(project.getId(), scope, key);
+    }
+
     private static class ScheduleWithScheduler
             extends Schedule
     {

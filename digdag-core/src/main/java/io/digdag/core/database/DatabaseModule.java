@@ -7,6 +7,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Provider;
 import javax.sql.DataSource;
 import javax.annotation.PostConstruct;
+import io.digdag.core.crypto.SecretCrypto;
+import io.digdag.core.crypto.SecretCryptoProvider;
 import io.digdag.core.queue.QueueSettingStoreManager;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.schedule.ScheduleStoreManager;
@@ -26,6 +28,7 @@ public class DatabaseModule
         binder.bind(ConfigMapper.class).in(Scopes.SINGLETON);
         binder.bind(DatabaseMigrator.class).in(Scopes.SINGLETON);
         binder.bind(ProjectStoreManager.class).to(DatabaseProjectStoreManager.class).in(Scopes.SINGLETON);
+        binder.bind(SecretCrypto.class).toProvider(SecretCryptoProvider.class).in(Scopes.SINGLETON);
         binder.bind(QueueSettingStoreManager.class).to(DatabaseQueueSettingStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(SessionStoreManager.class).to(DatabaseSessionStoreManager.class).in(Scopes.SINGLETON);
         binder.bind(ScheduleStoreManager.class).to(DatabaseScheduleStoreManager.class).in(Scopes.SINGLETON);

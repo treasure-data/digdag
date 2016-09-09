@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.api.IdName;
 import io.digdag.client.config.Config;
+import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ImmutableStoredProject;
 import io.digdag.core.repository.ImmutableStoredRevision;
@@ -56,9 +57,10 @@ public class DatabaseProjectStoreManager
         implements ProjectStoreManager
 {
     private final ConfigMapper cfm;
+    private final SecretCrypto crypto;
 
     @Inject
-    public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
+    public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config, SecretCrypto crypto)
     {
         super(config.getType(), Dao.class, dbi);
 
@@ -68,10 +70,12 @@ public class DatabaseProjectStoreManager
         dbi.registerMapper(new StoredWorkflowDefinitionWithProjectMapper(cfm));
         dbi.registerMapper(new WorkflowConfigMapper());
         dbi.registerMapper(new IdNameMapper());
+        dbi.registerMapper(new EncryptedSecretMapper());
         dbi.registerMapper(new ScheduleStatusMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
 
         this.cfm = cfm;
+        this.crypto = crypto;
     }
 
     @Override
@@ -173,7 +177,20 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
+        public <T> T lockProjectById(int projId, ProjectLockAction<T> func)
+                throws ResourceNotFoundException, ResourceConflictException
+        {
+            return DatabaseProjectStoreManager.this.<T, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao, ts) -> {
+                StoredProject proj = requiredResource(
+                        dao.lockProject(projId),
+                        "project id=%d", projId);
+
+                return func.call(new DatabaseProjectControlStore(handle, siteId), proj);
+            }, ResourceNotFoundException.class, ResourceConflictException.class);
+        }
+
+        @Override
+        public <T> T putAndLockProject(Project project, NewProjectLockAction<T> func)
                 throws ResourceConflictException
         {
             return transaction((handle, dao, ts) -> {
@@ -222,6 +239,30 @@ public class DatabaseProjectStoreManager
 
                 return res;
             }, ResourceNotFoundException.class);
+        }
+
+        @Override
+        public List<String> listSecrets(int projId, String scope)
+        {
+            return autoCommit((handle, dao) -> dao.listProjectSecrets(siteId, projId, scope));
+        }
+
+        @Override
+        public Optional<String> getSecretIfExists(int projId, String scope, String key)
+        {
+            EncryptedSecret secret = autoCommit((handle, dao) -> dao.getProjectSecret(siteId, projId, scope, key));
+
+            if (secret == null) {
+                return Optional.absent();
+            }
+
+            // TODO: look up crypto engine using name
+            if (!crypto.getName().equals(secret.engine)) {
+                throw new AssertionError("Crypto engine mismatch");
+            }
+
+            String decrypted = crypto.decryptSecret(secret.value);
+            return Optional.of(decrypted);
         }
 
         @Override
@@ -355,6 +396,31 @@ public class DatabaseProjectStoreManager
                 throws SQLException
         {
             return new IdTimeZone(r.getLong("id"), ZoneId.of(r.getString("timezone")));
+        }
+    }
+
+    public static class EncryptedSecret
+    {
+        private final String engine;
+        private final String value;
+
+        private EncryptedSecret(String engine, String value)
+        {
+            this.engine = engine;
+            this.value = value;
+        }
+    }
+
+    private class EncryptedSecretMapper
+            implements ResultSetMapper<EncryptedSecret>
+    {
+        @Override
+        public EncryptedSecret map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return new EncryptedSecret(
+                    r.getString("engine"),
+                    r.getString("value"));
         }
     }
 
@@ -503,6 +569,23 @@ public class DatabaseProjectStoreManager
         {
             dao.deleteSchedules(projId);
         }
+
+        @Override
+        public void putSecret(int projId, String scope, String key, String value)
+        {
+            String engine = crypto.getName();
+            String encrypted = crypto.encryptSecret(value);
+
+            dao.deleteProjectSecret(siteId, projId, scope, key);
+            dao.insertProjectSecret(siteId, projId, scope, key, engine, encrypted);
+        }
+
+        @Override
+        public boolean deleteSecretIfExists(int projId, String scope, String key)
+        {
+            int n = dao.deleteProjectSecret(siteId, projId, scope, key);
+            return n > 0;
+        }
     }
 
     public interface Dao
@@ -520,6 +603,24 @@ public class DatabaseProjectStoreManager
                 " where id = :projId "+
                 " and name is not null")
         int deleteProject(@Bind("projId") int projId);
+
+        @SqlUpdate("delete from secrets" +
+                " where site_id = :siteId and project_id = :projectId and scope = :scope and key = :key")
+        int deleteProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
+
+        @SqlUpdate("insert into secrets" +
+                " (site_id, project_id, scope, key, engine, value, updated_at)" +
+                " values (:siteId, :projectId, :scope, :key, :engine, :value, now())")
+        @GetGeneratedKeys
+        long insertProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key, @Bind("engine") String engine, @Bind("value") String value);
+
+        @SqlQuery("select key from secrets" +
+                " where site_id = :siteId and project_id = :projectId and scope = :scope")
+        List<String> listProjectSecrets(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope);
+
+        @SqlQuery("select engine, value from secrets" +
+                " where site_id = :siteId and project_id = :projectId and key = :key and scope = :scope")
+        EncryptedSecret getProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
 
         @SqlQuery("select * from projects" +
                 " where site_id = :siteId" +

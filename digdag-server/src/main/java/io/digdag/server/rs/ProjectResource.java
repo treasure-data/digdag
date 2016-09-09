@@ -71,8 +71,6 @@ import io.digdag.core.session.StoredSessionWithLastAttempt;
 import io.digdag.core.storage.ArchiveManager;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.server.GenericJsonExceptionHandler;
-import io.digdag.spi.SecretControlStore;
-import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretScopes;
 import io.digdag.client.api.SecretValidation;
 import io.digdag.spi.StorageFileNotFoundException;
@@ -149,7 +147,6 @@ public class ProjectResource
     private final SchedulerManager srm;
     private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
-    private final SecretControlStoreManager scsp;
 
     @Inject
     public ProjectResource(
@@ -161,8 +158,7 @@ public class ProjectResource
             ScheduleStoreManager sm,
             SchedulerManager srm,
             TempFileManager tempFiles,
-            SessionStoreManager ssm,
-            SecretControlStoreManager scsp)
+            SessionStoreManager ssm)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -173,7 +169,6 @@ public class ProjectResource
         this.sm = sm;
         this.tempFiles = tempFiles;
         this.ssm = ssm;
-        this.scsp = scsp;
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -450,6 +445,8 @@ public class ProjectResource
         }
         int size = (int) contentLength;
 
+        Map<String, String> secrets = getSecrets().get();
+
         try (TempFile tempFile = tempFiles.createTempFile("upload-", ".tar.gz")) {
             // Read uploaded data to the temp file and following variables
             ArchiveMetadata meta;
@@ -479,7 +476,7 @@ public class ProjectResource
                 }
             }
 
-            RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
+            return rm.getProjectStore(getSiteId()).putAndLockProject(
                     Project.of(name),
                     (store, storedProject) -> {
                         ProjectControl lockedProj = new ProjectControl(store, storedProject);
@@ -517,13 +514,11 @@ public class ProjectResource
                             lockedProj.insertWorkflowDefinitions(rev,
                                     meta.getWorkflowList().get(),
                                     srm, scheduleFrom);
+
+                        secrets.forEach((k, v) -> lockedProj.putSecret(SecretScopes.PROJECT_DEFAULT, k, v));
+
                         return RestModels.project(storedProject, rev);
                     });
-
-            SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            Supplier<Map<String, String>> secrets = getSecrets();
-            secrets.get().forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
-            return restProject;
         }
     }
 
@@ -598,12 +593,12 @@ public class ProjectResource
 
         // Verify that the project exists
         ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        StoredProject project = projectStore.getProjectById(projectId);
-        ensureNotDeletedProject(project);
-
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
-
-        store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
+        projectStore.lockProjectById(projectId, (store, storedProject) -> {
+            ensureNotDeletedProject(storedProject);
+            ProjectControl lockedProj = new ProjectControl(store, storedProject);
+            lockedProj.putSecret(SecretScopes.PROJECT, key, request.value());
+            return true;
+        });
     }
 
     @DELETE
@@ -617,12 +612,11 @@ public class ProjectResource
 
         // Verify that the project exists
         ProjectStore projectStore = rm.getProjectStore(getSiteId());
-        StoredProject project = projectStore.getProjectById(projectId);
-        ensureNotDeletedProject(project);
-
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
-
-        store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
+        projectStore.lockProjectById(projectId, (store, storedProject) -> {
+            ensureNotDeletedProject(storedProject);
+            ProjectControl lockedProj = new ProjectControl(store, storedProject);
+            return lockedProj.deleteSecretIfExists(SecretScopes.PROJECT, key);
+        });
     }
 
     @GET
@@ -636,8 +630,7 @@ public class ProjectResource
         StoredProject project = projectStore.getProjectById(projectId);
         ensureNotDeletedProject(project);
 
-        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
-        List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);
+        List<String> keys = projectStore.listSecrets(projectId, SecretScopes.PROJECT);
 
         return RestSecretList.builder()
                 .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))

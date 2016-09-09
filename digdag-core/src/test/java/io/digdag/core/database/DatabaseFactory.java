@@ -5,11 +5,14 @@ import com.google.common.base.Optional;
 import com.google.inject.Provider;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.AgentId;
+import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.workflow.TaskQueueDispatcher;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.workflow.WorkflowExecutor;
 import io.digdag.spi.Notifier;
 import io.digdag.spi.TaskQueueRequest;
+import java.util.Base64;
+import java.util.Random;
 import org.skife.jdbi.v2.DBI;
 
 import static io.digdag.client.DigdagClient.objectMapper;
@@ -44,7 +47,20 @@ public class DatabaseFactory
 
     public DatabaseProjectStoreManager getProjectStoreManager()
     {
-        return new DatabaseProjectStoreManager(dbi, createConfigMapper(), config);
+        return getProjectStoreManager(newRandomSecretCrypto());
+    }
+
+    public DatabaseProjectStoreManager getProjectStoreManager(SecretCrypto sharedSecret)
+    {
+        return new DatabaseProjectStoreManager(dbi, createConfigMapper(), config, sharedSecret);
+    }
+
+    public SecretCrypto newRandomSecretCrypto()
+    {
+        byte[] random = new byte[16];
+        new Random().nextBytes(random);
+        String sharedSecret = Base64.getEncoder().encodeToString(random);
+        return new AESGCMSecretCrypto(sharedSecret);
     }
 
     public DatabaseScheduleStoreManager getScheduleStoreManager()
@@ -69,16 +85,6 @@ public class DatabaseFactory
                 objectMapper(),
                 configFactory.create(),
                 mock(Notifier.class));
-    }
-
-    public DatabaseSecretControlStoreManager getSecretControlStoreManager(String secret)
-    {
-        return new DatabaseSecretControlStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
-    }
-
-    public DatabaseSecretStoreManager getSecretStoreManager(String secret)
-    {
-        return new DatabaseSecretStoreManager(config, dbi, new AESGCMSecretCrypto(secret));
     }
 
     public static class NullTaskQueueDispatcher
