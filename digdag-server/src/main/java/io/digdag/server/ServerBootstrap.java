@@ -337,8 +337,13 @@ public class ServerBootstrap
         XnioWorker worker;
         try {
             // copied defaults from Undertow
-            int httpIoThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-            int httpWorkerThreads = httpIoThreads * 8;
+            int httpIoThreads = config.getHttpIoThreads().or(() -> Math.max(Runtime.getRuntime().availableProcessors(), 2));
+            int httpWorkerThreads = config.getHttpWorkerThreads().or(httpIoThreads * 8);
+
+            // WORKER_TASK_CORE_THREADS is not used since this commit:
+            // https://github.com/xnio/xnio/commit/fc16271f732630d9f1486d9d23eebb01a5159bb9
+            // Xnio always uses corePoolSize == maximumPoolSize which means that all threads are
+            // always alive even if they're idle.
 
             worker = Xnio.getInstance(Undertow.class.getClassLoader())
                 .createWorker(OptionMap.builder()
