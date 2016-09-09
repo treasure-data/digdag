@@ -97,6 +97,21 @@ public class TdWaitIT
         }
     }
 
+    private static Duration expectDuration()
+    {
+        return expectDuration("presto");
+    }
+
+    private static Duration expectDuration(String kind)
+    {
+        switch (kind) {
+        case "hive":
+            return Duration.ofMinutes(15);
+        default:
+            return Duration.ofMinutes(5);
+        }
+    }
+
     public static class BadQueryFailureIT
             extends TdWaitIT
     {
@@ -109,7 +124,7 @@ public class TdWaitIT
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
-            expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
+            expect(expectDuration(), attemptFailure(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(false));
         }
     }
@@ -127,7 +142,7 @@ public class TdWaitIT
                     .put("wait_rows", "1")
                     .put("database", "sample_datasets")
                     .build());
-            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+            expect(expectDuration(), attemptSuccess(server.endpoint(), attemptId));
         }
     }
 
@@ -146,7 +161,7 @@ public class TdWaitIT
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
-            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+            expect(expectDuration(), attemptSuccess(server.endpoint(), attemptId));
         }
     }
 
@@ -170,7 +185,7 @@ public class TdWaitIT
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
-            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+            expect(expectDuration(engine), attemptSuccess(server.endpoint(), attemptId));
         }
     }
 
@@ -189,7 +204,7 @@ public class TdWaitIT
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
-            expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+            expect(expectDuration(engine), attemptSuccess(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(true));
         }
     }
@@ -336,7 +351,7 @@ public class TdWaitIT
                 ImmutableMap.of("secrets.td.apikey", TD_API_KEY));
 
         // Verify that the workflow completes
-        expect(Duration.ofSeconds(300), attemptSuccess(server.endpoint(), attemptId));
+        expect(expectDuration(engine), attemptSuccess(server.endpoint(), attemptId));
 
         // Check that the task after the td_wait executed and the output file exists
         assertThat(Files.exists(outfile), is(true));
@@ -360,7 +375,7 @@ public class TdWaitIT
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
-            expect(Duration.ofSeconds(300), attemptFailure(server.endpoint(), attemptId));
+            expect(expectDuration(), attemptFailure(server.endpoint(), attemptId));
             CommandStatus logStatus = main("log",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
