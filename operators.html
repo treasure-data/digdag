@@ -679,7 +679,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 <div class="section" id="td-ddl-treasure-data-operations">
 <h2><a class="toc-backref" href="#id22">td_ddl&gt;: Treasure Data operations</a><a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h2>
-<p><strong>_type: td_ddl</strong> operator runs an operational task on Treasure Data.</p>
+<p><strong>td_ddl&gt;</strong> operator runs an operational task on Treasure Data.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td</span><span class="p p-Indicator">:</span>
@@ -687,13 +687,13 @@ td.last_results is a map of column name and a value. To access to a single value
     <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">www_access</span>
 
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">create_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">drop_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_ddl</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">empty_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
@@ -755,7 +755,7 @@ td.last_results is a map of column name and a value. To access to a single value
     <span class="l l-Scalar l-Scalar-Plain">apikey</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">YOUR/API_KEY</span>
 
 <span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">td_table_export</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_table_export&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">database</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydb</span>
   <span class="l l-Scalar l-Scalar-Plain">table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mytable</span>
   <span class="l l-Scalar l-Scalar-Plain">file_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">jsonl.gz</span>
@@ -847,7 +847,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 <div class="section" id="pg-postgresql-operations">
 <h2><a class="toc-backref" href="#id25">pg&gt;: PostgreSQL operations</a><a class="headerlink" href="#pg-postgresql-operations" title="Permalink to this headline">¶</a></h2>
-<p><strong>_type: pg</strong> operator runs queries and/or DDLs on PostgreSQL</p>
+<p><strong>pg&gt;</strong> operator runs queries and/or DDLs on PostgreSQL</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">pg</span><span class="p p-Indicator">:</span>
     <span class="l l-Scalar l-Scalar-Plain">host</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">192.0.2.1</span>
@@ -966,7 +966,7 @@ td.last_results is a map of column name and a value. To access to a single value
   <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
 
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mail</span>
+  <span class="l l-Scalar l-Scalar-Plain">mail&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">body</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">this is email body in string</span>
   <span class="l l-Scalar l-Scalar-Plain">subject</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow started</span>
   <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">me@example.com</span><span class="p p-Indicator">]</span>
