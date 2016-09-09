@@ -43,10 +43,10 @@ public abstract class BasicDatabaseStoreManager <D>
             });
 
     protected final String databaseType;
-    private final Class<D> daoIface;
+    private final Class<? extends D> daoIface;
     private final IDBI dbi;
 
-    protected BasicDatabaseStoreManager(String databaseType, Class<D> daoIface, IDBI dbi)
+    protected BasicDatabaseStoreManager(String databaseType, Class<? extends D> daoIface, IDBI dbi)
     {
         this.databaseType = databaseType;
         this.daoIface = daoIface;
