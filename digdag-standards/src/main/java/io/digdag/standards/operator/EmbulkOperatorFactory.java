@@ -77,7 +77,7 @@ public class EmbulkOperatorFactory
 
                 if (params.has("_command")) {
                     String command = params.get("_command", String.class);
-                    String data = templateEngine.templateFile(workspacePath, command, UTF_8, params);
+                    String data = workspace.templateFile(templateEngine, command, UTF_8, params);
                     Files.write(workspace.getPath(tempFile), data.getBytes(UTF_8));
                 }
                 else {

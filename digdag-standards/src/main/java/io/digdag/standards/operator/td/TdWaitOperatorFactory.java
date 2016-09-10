@@ -75,7 +75,7 @@ public class TdWaitOperatorFactory
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
-            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
             this.pollInterval = getPollInterval(params);
             this.engine = params.get("engine", String.class, "presto");
             if (!engine.equals("presto") && !engine.equals("hive")) {
