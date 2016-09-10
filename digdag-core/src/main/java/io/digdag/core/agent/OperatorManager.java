@@ -193,11 +193,7 @@ public class OperatorManager
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
-            // workdir can't include ${...}.
-            // TODO throw exeption if workdir includes ${...}.
-            String workdir = all.get("_workdir", String.class, "");
-
-            config = evalEngine.eval(workspacePath.resolve(workdir), all, evalParams);
+            config = evalEngine.eval(all, evalParams);
         }
         catch (RuntimeException | TemplateException ex) {
             throw new RuntimeException("Failed to process task config templates", ex);

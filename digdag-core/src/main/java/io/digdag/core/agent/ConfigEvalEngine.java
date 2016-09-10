@@ -55,11 +55,11 @@ public class ConfigEvalEngine
         this.jsEngineFactory = new NashornScriptEngineFactory();
     }
 
-    protected Config eval(Path workspacePath, Config config, Config params)
+    protected Config eval(Config config, Config params)
         throws TemplateException
     {
         ObjectNode object = config.convert(ObjectNode.class);
-        ObjectNode built = new Context(workspacePath, params).evalObjectRecursive(object);
+        ObjectNode built = new Context(params).evalObjectRecursive(object);
         return config.getFactory().create(built);
     }
 
@@ -80,7 +80,7 @@ public class ConfigEvalEngine
         return (Invocable) jsEngine;
     }
 
-    private String invokeTemplate(Invocable templateInvocable, Path workspacePath, String code, Config params)
+    private String invokeTemplate(Invocable templateInvocable, String code, Config params)
         throws TemplateException
     {
         try {
@@ -94,13 +94,11 @@ public class ConfigEvalEngine
 
     private class Context
     {
-        private final Path workspacePath;
         private final Config params;
         private final Invocable templateInvocable;
 
-        public Context(Path workspacePath, Config params)
+        public Context(Config params)
         {
-            this.workspacePath = workspacePath;
             this.params = params;
             this.templateInvocable = newTemplateInvocable(params);
         }
@@ -167,7 +165,7 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = invokeTemplate(templateInvocable, workspacePath, code, scopedParams);
+            String resultText = invokeTemplate(templateInvocable, code, scopedParams);
             if (resultText == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }
@@ -178,11 +176,11 @@ public class ConfigEvalEngine
     }
 
     @Override
-    public String template(Path basePath, String content, Config params)
+    public String template(String content, Config params)
         throws TemplateException
     {
         Invocable templateInvocable = newTemplateInvocable(params);
-        String resultText = invokeTemplate(templateInvocable, basePath, content, params);
+        String resultText = invokeTemplate(templateInvocable, content, params);
         if (resultText == null) {
             return "";
         }
@@ -203,7 +201,7 @@ public class ConfigEvalEngine
 
         try (InputStream in = Files.newInputStream(absPath)) {
             String content = CharStreams.toString(new InputStreamReader(in, fileCharset));
-            return template(basePath, content, params);
+            return template(content, params);
         }
     }
 }

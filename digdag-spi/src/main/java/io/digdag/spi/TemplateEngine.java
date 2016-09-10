@@ -8,7 +8,7 @@ import io.digdag.client.config.ConfigException;
 
 public interface TemplateEngine
 {
-    String template(Path basePath, String content, Config params)
+    String template(String content, Config params)
         throws TemplateException;
 
     String templateFile(Path basePath, String fileName, Charset fileCharset, Config params)
