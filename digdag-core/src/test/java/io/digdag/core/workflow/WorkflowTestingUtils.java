@@ -3,6 +3,7 @@ package io.digdag.core.workflow;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
@@ -13,6 +14,7 @@ import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
+import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
@@ -28,8 +30,10 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskRequest;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +45,8 @@ import static io.digdag.core.database.DatabaseTestingUtils.getEnvironmentDatabas
 
 public class WorkflowTestingUtils
 {
+    private static final String TEST_WORKSPACE_PATH = "test_workspace_path";
+
     private WorkflowTestingUtils() { }
 
     public static DigdagEmbed setupEmbed()
@@ -64,6 +70,7 @@ public class WorkflowTestingUtils
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
+                binder.bind(WorkspaceManager.class).to(TestWorkspaceManager.class);
             })
             .initializeWithoutShutdownHook();
         cleanDatabase(embed);
@@ -77,7 +84,7 @@ public class WorkflowTestingUtils
                 WorkflowDefinitionList.of(ImmutableList.of(
                         WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
                         )),
-                config.getFactory().create().set("_workdir", workdir.toString()));
+                config.getFactory().create().set(TEST_WORKSPACE_PATH, workdir.toString()));  // used by TestWorkspaceManager
         LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 "revision-" + UUID.randomUUID(),
@@ -101,6 +108,22 @@ public class WorkflowTestingUtils
         }
         catch (ResourceNotFoundException | ResourceConflictException ex) {
             throw Throwables.propagate(ex);
+        }
+    }
+
+    private static class TestWorkspaceManager
+        implements WorkspaceManager
+    {
+        @Inject
+        public TestWorkspaceManager()
+        { }
+
+        @Override
+        public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
+        {
+            String path = request.getConfig().get(TEST_WORKSPACE_PATH, String.class, "");
+            Path workspacePath = FileSystems.getDefault().getPath(path).toAbsolutePath();
+            return func.run(workspacePath);
         }
     }
 
