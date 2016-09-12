@@ -21,7 +21,7 @@ import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.Version;
-import io.digdag.core.agent.LocalWorkspaceManager;
+import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.guice.rs.GuiceRsBootstrap;
@@ -118,7 +118,7 @@ public class ServerBootstrap
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
-                binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
+                binder.bind(WorkspaceManager.class).to(ExtractArchiveWorkspaceManager.class).in(Scopes.SINGLETON);
                 binder.bind(Version.class).toInstance(version);
             })
             .addModules((binder) -> {

@@ -14,7 +14,7 @@ import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
-import io.digdag.core.agent.WorkspaceManager;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
@@ -45,8 +45,6 @@ import static io.digdag.core.database.DatabaseTestingUtils.getEnvironmentDatabas
 
 public class WorkflowTestingUtils
 {
-    private static final String TEST_WORKSPACE_PATH = "test_workspace_path";
-
     private WorkflowTestingUtils() { }
 
     public static DigdagEmbed setupEmbed()
@@ -70,21 +68,20 @@ public class WorkflowTestingUtils
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
-                binder.bind(WorkspaceManager.class).to(TestWorkspaceManager.class);
             })
             .initializeWithoutShutdownHook();
         cleanDatabase(embed);
         return embed;
     }
 
-    public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
+    public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws ResourceNotFoundException, ResourceConflictException
     {
         ArchiveMetadata meta = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(
                         WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
                         )),
-                config.getFactory().create().set(TEST_WORKSPACE_PATH, workdir.toString()));  // used by TestWorkspaceManager
+                config.getFactory().create().set(LocalWorkspaceManager.PROJECT_PATH, projectPath.toString()));
         LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 "revision-" + UUID.randomUUID(),
@@ -99,31 +96,15 @@ public class WorkflowTestingUtils
         return localSite.submitWorkflow(ar, def);
     }
 
-    public static void runWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
+    public static void runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws InterruptedException
     {
         try {
-            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, workdir, workflowName, config);
+            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
             localSite.runUntilDone(attempt.getId());
         }
         catch (ResourceNotFoundException | ResourceConflictException ex) {
             throw Throwables.propagate(ex);
-        }
-    }
-
-    private static class TestWorkspaceManager
-        implements WorkspaceManager
-    {
-        @Inject
-        public TestWorkspaceManager()
-        { }
-
-        @Override
-        public <T> T withExtractedArchive(TaskRequest request, ArchiveProvider archiveProvider, WithWorkspaceAction<T> func)
-        {
-            String path = request.getConfig().get(TEST_WORKSPACE_PATH, String.class, "");
-            Path workspacePath = FileSystems.getDefault().getPath(path).toAbsolutePath();
-            return func.run(workspacePath);
         }
     }
 
