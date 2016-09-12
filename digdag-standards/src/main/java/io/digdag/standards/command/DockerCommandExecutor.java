@@ -188,7 +188,8 @@ public class DockerCommandExecutor
         logger.info("Building docker image {}", imageName);
         try {
             // create Dockerfile
-            Path tmpPath = projectPath.resolve(".digdag/tmp/docker");  // TODO this should be configurable Files.createDirectories(tmpPath);
+            Path tmpPath = projectPath.resolve(".digdag/tmp/docker");  // TODO this should be configurable
+            Files.createDirectories(tmpPath);
             Path dockerFilePath = tmpPath.resolve("Dockerfile." + imageName.replaceAll(":", "."));
 
             try (BufferedWriter out = Files.newBufferedWriter(dockerFilePath)) {
