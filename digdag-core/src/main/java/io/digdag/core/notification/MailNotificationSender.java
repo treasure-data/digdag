@@ -78,7 +78,6 @@ public class MailNotificationSender
     private final Boolean isHtml;
     private final String from;
     private final Config config;
-    private final Path tempDir;
 
     @Inject
     public MailNotificationSender(Config systemConfig, TemplateEngine templateEngine, ObjectMapper mapper)
@@ -96,12 +95,6 @@ public class MailNotificationSender
         this.isHtml = config.get(NOTIFICATION_MAIL_HTML, boolean.class, NOTIFICATION_MAIL_HTML_DEFAULT);
         Optional<String> bodyTemplateFile = config.getOptional(NOTIFICATION_MAIL_BODY_TEMPLATE_FILE, String.class);
         this.bodyTemplate = bodyTemplateFile.transform(this::readFile).or(NOTIFICATION_MAIL_BODY_TEMPLATE_DEFAULT);
-        try {
-            this.tempDir = Files.createTempDirectory("digdag-mail-notification-sender");
-        }
-        catch (IOException e) {
-            throw Throwables.propagate(e);
-        }
 
         selfCheck();
     }
@@ -196,7 +189,7 @@ public class MailNotificationSender
     {
         final String paramsJson = mapper.writeValueAsString(notification);
         Config params = config.getFactory().fromJsonString(paramsJson);
-        return templateEngine.template(tempDir, bodyTemplate, params);
+        return templateEngine.template(bodyTemplate, params);
     }
 
     private Session createSession()

@@ -162,7 +162,7 @@ public class TdLoadOperatorFactory
             ObjectNode embulkConfig;
             String built;
             try {
-                built = templateEngine.templateFile(workspacePath, command, UTF_8, params);
+                built = workspace.templateFile(templateEngine, command, UTF_8, params);
             }
             catch (IOException | TemplateException ex) {
                 throw new ConfigException("Failed to load bulk load file", ex);

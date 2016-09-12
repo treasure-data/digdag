@@ -71,7 +71,7 @@ public class TdForEachOperatorFactory
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
-            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.engine = params.get("engine", String.class, "presto");

@@ -92,7 +92,7 @@ public class TdOperatorFactory
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
 
             this.insertInto = params.getOptional("insert_into", TableParam.class);
             this.createTable = params.getOptional("create_table", TableParam.class);
