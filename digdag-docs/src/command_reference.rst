@@ -298,6 +298,8 @@ In the config file, following parameters are available
 * server.port (integer)
 * server.access-log.path (string. same with --access-log)
 * server.access-log.pattern (string, "json", "combined" or "common")
+* server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)
+* server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)

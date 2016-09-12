@@ -33,6 +33,10 @@ public interface ServerConfig
 
     public Optional<String> getAccessLogPath();
 
+    public Optional<Integer> getHttpIoThreads();
+
+    public Optional<Integer> getHttpWorkerThreads();
+
     public Optional<Integer> getJmxPort();
 
     public String getAccessLogPattern();
@@ -72,6 +76,8 @@ public interface ServerConfig
             .serverRuntimeInfoPath(config.getOptional("server.runtime-info.path", String.class))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
+            .httpIoThreads(config.getOptional("server.http.io-threads", Integer.class))
+            .httpWorkerThreads(config.getOptional("server.http.worker-threads", Integer.class))
             .jmxPort(config.getOptional("server.jmx.port", Integer.class))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
             .headers(readPrefixed.apply("server.http.headers."))
