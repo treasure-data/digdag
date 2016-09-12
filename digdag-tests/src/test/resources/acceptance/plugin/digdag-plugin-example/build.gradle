@@ -5,7 +5,7 @@ apply plugin: 'maven-publish'
 group = 'io.digdag.plugin'
 version = '0.1.0'
 
-def digdagVersion = '0.8.2'
+def digdagVersion = '0.8.14'
 
 repositories {
     mavenLocal()

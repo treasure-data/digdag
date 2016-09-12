@@ -48,7 +48,7 @@ public class ExampleOperatorFactory
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("example"));
 
-            String message = templateEngine.templateCommand(workspacePath, params, "message", UTF_8);
+            String message = workspace.templateCommand(templateEngine, params, "message", UTF_8);
             String path = params.get("path", String.class);
 
             try {
