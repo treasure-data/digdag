@@ -12,9 +12,10 @@ import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.agent.ConfigEvalEngine;
-import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
+
+import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,25 +60,10 @@ public class JdbcOpTestHelper
     public TaskRequest createTaskRequest(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
             throws IOException
     {
-        Config config = createConfig(configInput);
-        return ImmutableTaskRequest.
-                builder().
-                siteId(1).
-                projectId(2).
-                workflowName("wf").
-                taskId(3).
-                attemptId(4).
-                sessionId(5).
-                taskName("t").
-                lockId("l").
-                timeZone(ZoneId.systemDefault()).
-                sessionUuid(UUID.randomUUID()).
-                sessionTime(Instant.now()).
-                createdAt(Instant.now()).
-                config(config).
-                localConfig(createConfig(ImmutableMap.of())).
-                lastStateParams(createConfig(lastState.or(ImmutableMap.of()))).
-                build();
+        return newTaskRequest()
+            .withConfig(createConfig(configInput))
+            .withLocalConfig(createConfig(ImmutableMap.of()))
+            .withLastStateParams(createConfig(lastState.or(ImmutableMap.of())));
     }
 
     public ConfigFactory getConfigFactory()

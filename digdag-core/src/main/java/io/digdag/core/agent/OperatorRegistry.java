@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Binder;
+import com.google.inject.TypeLiteral;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.spi.OperatorProvider;
@@ -17,6 +18,7 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Environment;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.core.plugin.PluginLoader;
 import io.digdag.core.plugin.DynamicPluginLoader;
@@ -39,6 +41,10 @@ public class OperatorRegistry
         @Inject
         protected Config systemConfig;
 
+        @Inject
+        @Environment
+        protected Map<String, String> environment;
+
         @Override
         public void configure(Binder binder)
         {
@@ -46,6 +52,7 @@ public class OperatorRegistry
             binder.bind(TemplateEngine.class).toInstance(templateEngine);
             binder.bind(ConfigFactory.class).toInstance(cf);
             binder.bind(Config.class).toInstance(systemConfig);
+            binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(Environment.class).toInstance(environment);
         }
     }
 

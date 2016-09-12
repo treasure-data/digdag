@@ -151,8 +151,11 @@ public class Workspace
                 catch (FileNotFoundException | NoSuchFileException ex) {
                     throw new ConfigException("File not found: " + ex.getMessage(), ex);
                 }
-                catch (RuntimeException | IOException ex) {
+                catch (IOException ex) {
                     throw new ConfigException("Failed to read a template file: " + command + ": " + ex.getClass(), ex);
+                }
+                catch (RuntimeException ex) {
+                    throw new ConfigException("" + ex.getMessage() + ": " + command, ex);
                 }
             }
             // ${...} in nested parameters are already evaluated. no needs to call template.
