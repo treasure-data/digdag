@@ -113,6 +113,7 @@ public class ShOperatorFactory
             String command = params.get("_command", String.class);
 
             ProcessBuilder pb = new ProcessBuilder(shell);
+            pb.directory(workspace.getPath().toFile());
 
             final Map<String, String> env = pb.environment();
             params.getKeys()

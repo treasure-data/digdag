@@ -7,7 +7,6 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
-import static io.digdag.util.Workspace.workspacePath;
 
 public class SimpleCommandExecutor
     implements CommandExecutor
@@ -20,6 +19,6 @@ public class SimpleCommandExecutor
         throws IOException
     {
         // TODO set TZ environment variable
-        return pb.directory(workspacePath(projectPath, request).toFile()).start();
+        return pb.start();
     }
 }

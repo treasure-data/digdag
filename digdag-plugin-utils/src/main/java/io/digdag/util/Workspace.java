@@ -26,20 +26,6 @@ import java.nio.charset.Charset;
 public class Workspace
     implements Closeable
 {
-    public static Path workspacePath(Path projectPath, TaskRequest taskRequest)
-    {
-        return workspacePath(projectPath, taskRequest.getConfig().get("_workdir", String.class, ""));
-    }
-
-    public static Path workspacePath(Path projectPath, String workdir)
-    {
-        Path path = projectPath.resolve(workdir).normalize().toAbsolutePath();
-        if (!path.toString().startsWith(projectPath.toString())) {
-            throw new IllegalArgumentException("Working directory must not be outside of project path (" + projectPath + "): " + workdir);
-        }
-        return path;
-    }
-
     public static Workspace ofTaskRequest(Path projectPath, TaskRequest taskRequest)
     {
         return of(projectPath, taskRequest.getConfig().get("_workdir", String.class, ""));
@@ -57,7 +43,16 @@ public class Workspace
     private Workspace(Path projectPath, String workdir)
     {
         this.projectPath = projectPath.normalize().toAbsolutePath();
-        this.workspacePath = workspacePath(projectPath, workdir);
+        this.workspacePath = resolveWorkspacePath(projectPath, workdir);
+    }
+
+    private static Path resolveWorkspacePath(Path projectPath, String workdir)
+    {
+        Path path = projectPath.resolve(workdir).normalize().toAbsolutePath();
+        if (!path.toString().startsWith(projectPath.toString())) {
+            throw new IllegalArgumentException("Working directory must not be outside of project path (" + projectPath + "): " + workdir);
+        }
+        return path;
     }
 
     public Path getProjectPath()

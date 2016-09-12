@@ -127,6 +127,7 @@ public class PyOperatorFactory
                 .addAll(args)
                 .build();
             ProcessBuilder pb = new ProcessBuilder(cmdline);
+            pb.directory(workspace.getPath().toFile());
             pb.redirectErrorStream(true);
             Process p = exec.start(workspace.getPath(), request, pb);
 

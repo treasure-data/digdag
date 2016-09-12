@@ -110,7 +110,7 @@ public class AbstractJdbcOperatorTest
     {
         TaskRequest taskRequest = testHelper.createTaskRequest(configInput, lastState);
         TemplateEngine templateEngine = testHelper.injector().getInstance(TemplateEngine.class);
-        return Mockito.spy(new TestOperator(testHelper.workpath(), taskRequest, templateEngine));
+        return Mockito.spy(new TestOperator(testHelper.projectPath(), taskRequest, templateEngine));
     }
 
     private void runTaskReadOnly(Map<String, Object> configInput, String sql)

@@ -5,6 +5,6 @@ import java.nio.file.Path;
 
 public interface CommandExecutor
 {
-    Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
+    Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
         throws IOException;
 }

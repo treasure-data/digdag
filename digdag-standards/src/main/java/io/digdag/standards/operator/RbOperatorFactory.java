@@ -135,6 +135,7 @@ public class RbOperatorFactory
             cmdline.addAll(args);
 
             ProcessBuilder pb = new ProcessBuilder(cmdline.build());
+            pb.directory(workspace.getPath().toFile());
             pb.redirectErrorStream(true);
             Process p = exec.start(workspace.getPath(), request, pb);
 

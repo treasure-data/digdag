@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.Files;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
@@ -43,20 +44,20 @@ public class DockerCommandExecutor
         this.simple = simple;
     }
 
-    public Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
         // TODO set TZ environment variable
         Config config = request.getConfig();
         if (config.has("docker")) {
-            return startWithDocker(workspacePath, request, pb);
+            return startWithDocker(projectPath, request, pb);
         }
         else {
-            return simple.start(workspacePath, request, pb);
+            return simple.start(projectPath.toAbsolutePath(), request, pb);
         }
     }
 
-    private Process startWithDocker(Path workspacePath, TaskRequest request, ProcessBuilder pb)
+    private Process startWithDocker(Path projectPath, TaskRequest request, ProcessBuilder pb)
     {
         Config dockerConfig = request.getConfig().getNestedOrGetEmpty("docker");
         String baseImageName = dockerConfig.get("image", String.class);
@@ -65,7 +66,7 @@ public class DockerCommandExecutor
         if (dockerConfig.has("build")) {
             List<String> buildCommands = dockerConfig.getList("build", String.class);
             imageName = uniqueImageName(request, baseImageName, buildCommands);
-            buildImage(imageName, workspacePath, baseImageName, buildCommands);
+            buildImage(imageName, projectPath, baseImageName, buildCommands);
         }
         else {
             imageName = baseImageName;
@@ -81,10 +82,11 @@ public class DockerCommandExecutor
 
             // mount
             command.add("-v").add(String.format(ENGLISH,
-                        "%s:%s:rw", workspacePath.toAbsolutePath(), "/digdag"));
+                        "%s:%s:rw", projectPath, projectPath));  // use projectPath to keep pb.directory() valid
 
             // workdir
-            command.add("-w").add("/digdag");
+            Path workdir = (pb.directory() == null) ? Paths.get("") : pb.directory().toPath();
+            command.add("-w").add(workdir.normalize().toAbsolutePath().toString());
 
             logger.debug("Running in docker: {} {}", command.build().stream().collect(Collectors.joining(" ")), imageName);
 
@@ -117,7 +119,7 @@ public class DockerCommandExecutor
             docker.redirectErrorStream(pb.redirectErrorStream());
             docker.redirectInput(pb.redirectInput());
             docker.redirectOutput(pb.redirectOutput());
-            docker.directory(workspacePath.toFile());
+            docker.directory(projectPath.toFile());
 
             return docker.start();
         }
@@ -143,7 +145,7 @@ public class DockerCommandExecutor
         return name + ':' + tag;
     }
 
-    private void buildImage(String imageName, Path workspacePath,
+    private void buildImage(String imageName, Path projectPath,
             String baseImageName, List<String> buildCommands)
     {
         try {
@@ -186,8 +188,7 @@ public class DockerCommandExecutor
         logger.info("Building docker image {}", imageName);
         try {
             // create Dockerfile
-            Path tmpPath = workspacePath.resolve(".digdag/tmp");  // TODO this should not be workspacePath. This should go to a configured working directory
-            Files.createDirectories(tmpPath);
+            Path tmpPath = projectPath.resolve(".digdag/tmp/docker");  // TODO this should be configurable Files.createDirectories(tmpPath);
             Path dockerFilePath = tmpPath.resolve("Dockerfile." + imageName.replaceAll(":", "."));
 
             try (BufferedWriter out = Files.newBufferedWriter(dockerFilePath)) {
@@ -195,12 +196,10 @@ public class DockerCommandExecutor
                 out.write(baseImageName.replace("\n", ""));
                 out.write("\n");
 
-                // Disabled 'ADD' because it spoils caching. Using the same base image and
-                // same build commands should share pre-build revisions. Using revision name
+                // Here shouldn't use 'ADD' because it spoils caching. Using the same base image
+                // and build commands should share pre-build revisions. Using revision name
                 // as the unique key is not good enough for local mode because revision name
                 // is automatically generated based on execution time.
-                //out.write("ADD . /digdag\n");
-                //out.write("WORKDIR /digdag\n");
 
                 for (String command : buildCommands) {
                     for (String line : command.split("\n")) {
@@ -216,12 +215,12 @@ public class DockerCommandExecutor
             command.add("-f").add(dockerFilePath.toString());
             command.add("--force-rm");
             command.add("-t").add(imageName);
-            command.add(workspacePath.toString());
+            command.add(projectPath.toString());
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
             docker.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-            docker.directory(workspacePath.toFile());
+            docker.directory(projectPath.toFile());
 
             Process p = docker.start();
             int ecode = p.waitFor();
