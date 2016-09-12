@@ -448,6 +448,8 @@
 <li>server.port (integer)</li>
 <li>server.access-log.path (string. same with &#8211;access-log)</li>
 <li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
+<li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)</li>
+<li>server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)</li>
 <li>server.http.headers.KEY = VALUE (HTTP header to set on API responses)</li>
 <li>database.type (enum, &#8220;h2&#8221; or &#8220;postgresql&#8221;)</li>
 <li>database.user (string)</li>
