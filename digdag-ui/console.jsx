@@ -75,9 +75,14 @@ Prism.hooks.add('wrap', (env) => {
       env.tag = 'a'
       env.attributes.target = '_blank'
       if (env.type === 'td-run-value') {
-        env.attributes.href = `https://console.treasuredata.com/query/${env.content}`
+        env.attributes.id = env.content
+        //env.attributes.href = `https://console.treasuredata.com/query/${env.content}`
+        setTimeout(() => {
+          const elem = document.getElementById(env.content)
+          elem.setAttribute('href', 'foo')
+        }, 400)
       } else {
-        env.attributes.href = `https://console.treasuredata.com/connectors/list`
+        env.attributes.href = `https://console-next.treasuredata.com/connections/data-transfers`
       }
   }
 })
