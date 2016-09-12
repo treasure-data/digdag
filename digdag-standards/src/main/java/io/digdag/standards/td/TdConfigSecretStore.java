@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import com.treasuredata.client.TDClientConfig;
 import io.digdag.spi.SecretAccessContext;
+import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 
 import javax.annotation.Nullable;
@@ -58,6 +59,9 @@ class TdConfigSecretStore
     @Override
     public Optional<String> getSecret(int projectId, String scope, String key)
     {
+        if (!scope.equals(SecretScopes.PROJECT_DEFAULT)) {
+            return Optional.absent();
+        }
         return Optional.fromNullable(secrets.get(key));
     }
 }

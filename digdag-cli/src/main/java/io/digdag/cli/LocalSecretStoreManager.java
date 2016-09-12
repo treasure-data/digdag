@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretAccessContext;
+import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
 
@@ -44,6 +45,9 @@ class LocalSecretStoreManager
             }
 
             // Fall back to secrets from system config
+            if (!scope.equals(SecretScopes.PROJECT)) {
+                return Optional.absent();
+            }
             return Optional.fromNullable(secrets.get(key));
         };
     }

@@ -2,6 +2,7 @@ package acceptance.td;
 
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import com.treasuredata.client.model.TDDatabase;
 import io.digdag.client.DigdagClient;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -19,6 +20,7 @@ import utils.TestUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import static acceptance.td.Secrets.TD_API_KEY;
