@@ -37,9 +37,9 @@ public class TdTableExportOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdTableExportOperator(workspacePath, request);
+        return new TdTableExportOperator(projectPath, request);
     }
 
     private class TdTableExportOperator
@@ -49,9 +49,9 @@ public class TdTableExportOperatorFactory
         private final TableParam table;
         private final TDExportFileFormatType fileFormat;
 
-        private TdTableExportOperator(Path workspacePath, TaskRequest request)
+        private TdTableExportOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 

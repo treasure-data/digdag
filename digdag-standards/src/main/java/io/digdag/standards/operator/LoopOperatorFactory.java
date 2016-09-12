@@ -8,7 +8,6 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.client.config.Config;
@@ -30,21 +29,23 @@ public class LoopOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new LoopOperator(workspacePath, request);
+        return new LoopOperator(request);
     }
 
     private static class LoopOperator
-            extends BaseOperator
+            implements Operator
     {
-        public LoopOperator(Path workspacePath, TaskRequest request)
+        private final TaskRequest request;
+
+        public LoopOperator(TaskRequest request)
         {
-            super(workspacePath, request);
+            this.request = request;
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

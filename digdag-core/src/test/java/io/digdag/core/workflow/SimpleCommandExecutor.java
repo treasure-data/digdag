@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.TaskRequest;
+import static io.digdag.util.Workspace.workspacePath;
 
 public class SimpleCommandExecutor
     implements CommandExecutor
@@ -15,9 +16,9 @@ public class SimpleCommandExecutor
     public SimpleCommandExecutor()
     { }
 
-    public Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
-        return pb.directory(workspacePath.toFile()).start();
+        return pb.directory(workspacePath(projectPath, request).toFile()).start();
     }
 }

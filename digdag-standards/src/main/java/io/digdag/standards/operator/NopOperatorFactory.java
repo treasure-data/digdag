@@ -6,7 +6,6 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,21 +22,23 @@ public class NopOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new ShOperator(workspacePath, request);
+        return new NopOperator(request);
     }
 
-    private class ShOperator
-            extends BaseOperator
+    private class NopOperator
+            implements Operator
     {
-        public ShOperator(Path workspacePath, TaskRequest request)
+        private final TaskRequest request;
+
+        public NopOperator(TaskRequest request)
         {
-            super(workspacePath, request);
+            this.request = request;
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("nop"));

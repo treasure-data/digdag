@@ -30,20 +30,20 @@ public class EchoOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new EchoOperator(workspacePath, request);
+        return new EchoOperator(projectPath, request);
     }
 
     private static class EchoOperator
             implements Operator
     {
-        private final Path workspacePath;
+        private final Path projectPath;
         private final TaskRequest request;
 
-        public EchoOperator(Path workspacePath, TaskRequest request)
+        public EchoOperator(Path projectPath, TaskRequest request)
         {
-            this.workspacePath = workspacePath;
+            this.projectPath = projectPath;
             this.request = request;
         }
 
@@ -57,7 +57,7 @@ public class EchoOperatorFactory
 
             try {
                 if (appendFile.isPresent()) {
-                    Files.write(workspacePath.resolve(appendFile.get()), message.getBytes(UTF_8), CREATE, WRITE, APPEND);
+                    Files.write(projectPath.resolve(appendFile.get()), message.getBytes(UTF_8), CREATE, WRITE, APPEND);
                 }
                 else {
                     System.out.println(message);

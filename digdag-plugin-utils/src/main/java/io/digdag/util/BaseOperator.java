@@ -16,17 +16,17 @@ import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 public abstract class BaseOperator
         implements Operator
 {
-    protected final Path workspacePath;
+    protected final Path projectPath;
     protected final Workspace workspace;
     protected final TaskRequest request;
 
     protected final List<Config> inputs;
     protected final List<Config> outputs;
 
-    public BaseOperator(Path workspacePath, TaskRequest request)
+    public BaseOperator(Path projectPath, TaskRequest request)
     {
-        this.workspacePath = workspacePath;
-        this.workspace = new Workspace(workspacePath);
+        this.projectPath = projectPath;
+        this.workspace = Workspace.ofTaskRequest(projectPath, request);
         this.request = request;
         this.inputs = new ArrayList<>();
         this.outputs = new ArrayList<>();

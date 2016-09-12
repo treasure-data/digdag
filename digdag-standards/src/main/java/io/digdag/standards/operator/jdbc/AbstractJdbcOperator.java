@@ -39,9 +39,9 @@ public abstract class AbstractJdbcOperator <C>
 
     private static final String QUERY_ID = "queryId";
 
-    public AbstractJdbcOperator(Path workspacePath, TaskRequest request, TemplateEngine templateEngine)
+    public AbstractJdbcOperator(Path projectPath, TaskRequest request, TemplateEngine templateEngine)
     {
-        super(workspacePath, request);
+        super(projectPath, request);
         this.templateEngine = checkNotNull(templateEngine, "templateEngine");
     }
 

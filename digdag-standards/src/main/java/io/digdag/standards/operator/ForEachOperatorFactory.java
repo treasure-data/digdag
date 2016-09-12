@@ -12,7 +12,6 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,21 +38,23 @@ public class ForEachOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new ForEachOperator(workspacePath, request);
+        return new ForEachOperator(request);
     }
 
     private static class ForEachOperator
-            extends BaseOperator
+            implements Operator
     {
-        public ForEachOperator(Path workspacePath, TaskRequest request)
+        private final TaskRequest request;
+
+        public ForEachOperator(TaskRequest request)
         {
-            super(workspacePath, request);
+            this.request = request;
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

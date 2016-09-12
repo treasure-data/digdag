@@ -44,7 +44,7 @@ public class JdbcOpTestHelper
         return injector;
     }
 
-    public Path workpath()
+    public Path projectPath()
             throws IOException
     {
         return Files.createTempDirectory("jdbc_op_test");

@@ -29,17 +29,17 @@ public class ExampleOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new ExampleOperator(workspacePath, request);
+        return new ExampleOperator(projectPath, request);
     }
 
     private class ExampleOperator
             extends BaseOperator
     {
-        public ExampleOperator(Path workspacePath, TaskRequest request)
+        public ExampleOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override

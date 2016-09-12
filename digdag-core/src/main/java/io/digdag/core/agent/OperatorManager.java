@@ -133,9 +133,9 @@ public class OperatorManager
     private void runWithHeartbeat(TaskRequest request)
     {
         try {
-            workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (workspacePath) -> {
+            workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (projectPath) -> {
                 try {
-                    runWithWorkspace(workspacePath, request);
+                    runWithWorkspace(projectPath, request);
                 }
                 catch (TaskExecutionException ex) {
                     if (ex.getRetryInterval().isPresent()) {
@@ -182,7 +182,7 @@ public class OperatorManager
         }
     }
 
-    private void runWithWorkspace(Path workspacePath, TaskRequest request)
+    private void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
         // evaluate config and creates the complete merged config.
@@ -241,10 +241,7 @@ public class OperatorManager
             .config(checkedConfig)
             .build();
 
-        // re-get workdir from CheckedConfig
-        String workdir = checkedConfig.get("_workdir", String.class, "");
-
-        TaskResult result = callExecutor(workspacePath.resolve(workdir), type, mergedRequest);
+        TaskResult result = callExecutor(projectPath, type, mergedRequest);
 
         if (!checkedConfig.isAllUsed()) {
             List<String> usedKeys = checkedConfig.getUsedKeys();
@@ -270,14 +267,14 @@ public class OperatorManager
         }
     }
 
-    protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
+    protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
 
-        Operator operator = factory.newTaskExecutor(workspacePath, mergedRequest);
+        Operator operator = factory.newOperator(projectPath, mergedRequest);
 
         SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
 

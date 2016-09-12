@@ -28,17 +28,17 @@ public class PgOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new PgOperator(workspacePath, request, templateEngine);
+        return new PgOperator(projectPath, request, templateEngine);
     }
 
     public static class PgOperator
         extends AbstractJdbcOperator<PgConnectionConfig>
     {
-        public PgOperator(Path workspacePath, TaskRequest request, TemplateEngine templateEngine)
+        public PgOperator(Path projectPath, TaskRequest request, TemplateEngine templateEngine)
         {
-            super(workspacePath, request, templateEngine);
+            super(projectPath, request, templateEngine);
         }
 
         @Override

@@ -57,17 +57,17 @@ public class ShOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new ShOperator(workspacePath, request);
+        return new ShOperator(projectPath, request);
     }
 
     private class ShOperator
             extends BaseOperator
     {
-        public ShOperator(Path workspacePath, TaskRequest request)
+        public ShOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override
@@ -162,17 +162,17 @@ public class ShOperatorFactory
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");
             if (pathEnv == null) {
-                pathEnv = workspacePath.toAbsolutePath().toString();
+                pathEnv = workspace.getPath().toString();
             }
             else {
-                pathEnv = pathEnv + File.pathSeparator + workspacePath.toAbsolutePath().toString();
+                pathEnv = pathEnv + File.pathSeparator + workspace.getPath().toAbsolutePath().toString();
             }
 
             pb.redirectErrorStream(true);
 
             int ecode;
             try {
-                Process p = exec.start(workspacePath, request, pb);
+                Process p = exec.start(workspace.getPath(), request, pb);
 
                 // feed command to stdin
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
