@@ -38,29 +38,13 @@ public class DatabaseTestingUtils
                 throw Throwables.propagate(ex);
             }
 
-            return DatabaseConfig.builder()
-                .type("postgresql")
-                .path(Optional.absent())
-                .remoteDatabaseConfig(
-                        RemoteDatabaseConfig.builder()
-                        .user(props.getProperty("user"))
-                        .password(props.getProperty("password", ""))
-                        .host(props.getProperty("host"))
-                        .port(Integer.parseInt(props.getProperty("port")))
-                        .database(props.getProperty("database"))
-                        .loginTimeout(10)
-                        .socketTimeout(60)
-                        .ssl(false)
-                        .build())
-                .options(ImmutableMap.of())
-                .expireLockInterval(10)
-                .autoMigrate(true)
-                .connectionTimeout(30)
-                .idleTimeout(600)
-                .validationTimeout(5)
-                .minimumPoolSize(0)
-                .maximumPoolSize(10)
-                .build();
+            Config config = createConfig();
+            for (String key : props.stringPropertyNames()) {
+                config.set("database." + key, props.getProperty(key));
+            }
+            config.set("database.type", "postgresql");
+
+            return DatabaseConfig.convertFrom(config);
         }
         else {
             return DatabaseConfig.builder()
