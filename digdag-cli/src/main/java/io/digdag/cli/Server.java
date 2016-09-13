@@ -90,7 +90,7 @@ public class Server
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
         err.println("    -m, --memory                     uses memory database");
         err.println("    -o, --database DIR               store status to this database");
-        err.println("    -O, --task-log DIR               store task logs to this database");
+        err.println("    -O, --task-log DIR               store task logs to this path");
         err.println("    -A, --access-log DIR             store access logs files to this path");
         err.println("        --max-task-threads N         limit maxium number of task execution threads");
         err.println("        --disable-executor-loop      disable workflow executor loop");
