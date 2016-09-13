@@ -317,6 +317,7 @@ task release() {
         println("done.")
     }
 }
+check.dependsOn('releaseCheck')
 
 task setVersion << {
     if (!project.hasProperty("to")) {
@@ -357,21 +358,26 @@ task setVersion << {
 }
 
 task releaseCheck << {
-    if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
-        throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+    if (project.version.endsWith('-SNAPSHOT')) {
+        println "Releasing a SNAPSHOT version."
     }
-    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
-        throw new GradleException("Release note for ${project.version} doesn't exist")
+    else {
+        if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
+            throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+        }
+        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
+            throw new GradleException("Release note for ${project.version} doesn't exist")
+        }
+        if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
+            throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
+        }
+        String date = new Date().format("yyyy-MM-dd")
+        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
+            throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
+        }
+        // TODO check git-ls-files includes release-<version>.rst file
+        println "Ready. Run 'release' task."
     }
-    if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
-        throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
-    }
-    String date = new Date().format("yyyy-MM-dd")
-    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
-        throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
-    }
-    // TODO check git-ls-files includes release-<version>.rst file
-    println "Ready. Run 'release' task."
 }
 
 // Generate parent maven manifest
