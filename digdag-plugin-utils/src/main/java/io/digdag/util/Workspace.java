@@ -23,6 +23,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
 import java.nio.charset.Charset;
 
+import static java.util.Locale.ENGLISH;
+
 public class Workspace
     implements Closeable
 {
@@ -138,24 +140,33 @@ public class Workspace
                 nested = params.getNested("_command");
             }
             catch (ConfigException notNested) {
-                String command = params.get("_command", String.class);
+                String fileName = params.get("_command", String.class);
                 try {
-                    return templateFile(templateEngine, command, fileCharset, params);
+                    return templateFile(templateEngine, fileName, fileCharset, params);
                 }
                 catch (ConfigException ex) {
                     throw ex;
                 }
                 catch (TemplateException ex) {
-                    throw new ConfigException("" + ex.getMessage() + " in " + command, ex);
+                    throw new ConfigException(
+                            String.format(ENGLISH, "%s in %s", ex.getMessage(), fileName),
+                            ex);
                 }
                 catch (FileNotFoundException | NoSuchFileException ex) {
-                    throw new ConfigException("File not found: " + ex.getMessage(), ex);
+                    // ex includes file name
+                    throw new ConfigException(
+                            String.format(ENGLISH, "File not found: %s", ex.getMessage()),
+                            ex);
                 }
                 catch (IOException ex) {
-                    throw new ConfigException("Failed to read a template file: " + command + ": " + ex.getClass(), ex);
+                    throw new ConfigException(
+                            String.format(ENGLISH, "Failed to read a template file: %s: %s", fileName, ex.getClass()),
+                            ex);
                 }
                 catch (RuntimeException ex) {
-                    throw new ConfigException("" + ex.getMessage() + ": " + command, ex);
+                    throw new ConfigException(
+                            String.format(ENGLISH, "%s: %s", ex.getMessage(), fileName),
+                            ex);
                 }
             }
             // ${...} in nested parameters are already evaluated. no needs to call template.
