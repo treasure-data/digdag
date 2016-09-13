@@ -55,6 +55,10 @@ targetCompatibility = 1.8
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+}
+
 javadoc {
     options {
         locale = 'en_US'

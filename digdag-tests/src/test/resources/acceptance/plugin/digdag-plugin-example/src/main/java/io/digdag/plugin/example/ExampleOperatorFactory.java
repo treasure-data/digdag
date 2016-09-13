@@ -10,6 +10,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.util.BaseOperator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -43,7 +44,7 @@ public class ExampleOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("example"));
