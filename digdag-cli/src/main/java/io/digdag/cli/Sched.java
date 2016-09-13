@@ -75,11 +75,6 @@ public class Sched
     private void sched()
             throws ServletException, Exception
     {
-        // use memory database by default
-        if (database == null) {
-            memoryDatabase = true;
-        }
-
         Properties props;
 
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
@@ -95,6 +90,12 @@ public class Sched
             Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
             props = buildServerProperties();
+
+            // use memory database by default
+            if (!props.containsKey("database.type")) {
+                props.setProperty("database.type", "memory");
+            }
+
             props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
