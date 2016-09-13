@@ -106,6 +106,7 @@ public class Server
     private void startServer()
             throws ServletException, IOException
     {
+        // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
         ServerBootstrap.startServer(version, buildServerProperties(), ServerBootstrap.class);
     }
 

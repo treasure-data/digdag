@@ -51,7 +51,7 @@ public class Sched
             throw usage(null);
         }
 
-        sched();
+        startScheduler();
     }
 
     @Override
@@ -72,7 +72,7 @@ public class Sched
         return systemExit(error);
     }
 
-    private void sched()
+    private void startScheduler()
             throws ServletException, Exception
     {
         Properties props;
@@ -100,6 +100,7 @@ public class Sched
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
 
+        // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
         ServerBootstrap.startServer(version, props, SchedulerServerBootStrap.class);
     }
 
