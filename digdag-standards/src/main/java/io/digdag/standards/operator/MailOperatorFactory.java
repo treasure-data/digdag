@@ -56,9 +56,9 @@ public class MailOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new MailOperator(workspacePath, request);
+        return new MailOperator(projectPath, request);
     }
 
     @Value.Immutable
@@ -74,9 +74,9 @@ public class MailOperatorFactory
     private class MailOperator
             extends BaseOperator
     {
-        public MailOperator(Path workspacePath, TaskRequest request)
+        public MailOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override

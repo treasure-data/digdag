@@ -8,7 +8,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Version;
-import io.digdag.core.agent.NoopWorkspaceManager;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -145,8 +145,8 @@ public class Sched
                     binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 })
                 .overrideModulesWith((binder) -> {
-                    // overwrite server that uses LocalWorkspaceManager
-                    binder.bind(WorkspaceManager.class).to(NoopWorkspaceManager.class).in(Scopes.SINGLETON);
+                    // overwrite server that uses ExtractArchiveManager
+                    binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
                 });
         }
     }

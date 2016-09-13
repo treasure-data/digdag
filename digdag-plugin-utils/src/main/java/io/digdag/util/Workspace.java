@@ -2,6 +2,7 @@ package io.digdag.util;
 
 import com.google.common.io.CharStreams;
 
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.client.config.Config;
@@ -22,59 +23,57 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
 import java.nio.charset.Charset;
 
+import static java.util.Locale.ENGLISH;
+
 public class Workspace
     implements Closeable
 {
-    private final Path path;
-    private final List<String> tempFiles = new ArrayList<>();
-
-    public Workspace(Path path)
+    public static Workspace ofTaskRequest(Path projectPath, TaskRequest taskRequest)
     {
-        this.path = path;
+        return of(projectPath, taskRequest.getConfig().get("_workdir", String.class, ""));
+    }
+
+    public static Workspace of(Path projectPath, String workdir)
+    {
+        return new Workspace(projectPath, workdir);
+    }
+
+    private final Path projectPath;
+    private final List<Path> tempFilePaths = new ArrayList<>();
+    private Path workspacePath;
+
+    private Workspace(Path projectPath, String workdir)
+    {
+        this.projectPath = projectPath.normalize().toAbsolutePath();
+        this.workspacePath = resolveWorkspacePath(projectPath, workdir);
+    }
+
+    private static Path resolveWorkspacePath(Path projectPath, String workdir)
+    {
+        Path path = projectPath.resolve(workdir).normalize().toAbsolutePath();
+        if (!path.toString().startsWith(projectPath.toString())) {
+            throw new IllegalArgumentException("Working directory must not be outside of project path (" + projectPath + "): " + workdir);
+        }
+        return path;
+    }
+
+    public Path getProjectPath()
+    {
+        return projectPath;
     }
 
     public Path getPath()
     {
+        return workspacePath;
+    }
+
+    public Path getPath(String fileName)
+    {
+        Path path = workspacePath.resolve(fileName);
+        if (!path.normalize().toString().startsWith(projectPath.toString())) {
+            throw new IllegalArgumentException("File name must not be outside of project path (" + projectPath + "): " + fileName);
+        }
         return path;
-    }
-
-    public String createTempFile(String prefix, String suffix)
-        throws IOException
-    {
-        // file will be deleted by WorkspaceManager
-        Path file = Files.createTempFile(getTempDir(), prefix, suffix);
-        String relative = path.relativize(file).toString();
-        tempFiles.add(relative);
-        return relative;
-    }
-
-    public InputStream newInputStream(String relative)
-        throws IOException
-    {
-        return Files.newInputStream(getPath(relative));
-    }
-
-    public BufferedReader newBufferedReader(String relative, Charset cs)
-        throws IOException
-    {
-        return Files.newBufferedReader(getPath(relative), cs);
-    }
-
-    public OutputStream newOutputStream(String relative)
-        throws IOException
-    {
-        return Files.newOutputStream(getPath(relative));
-    }
-
-    public BufferedWriter newBufferedWriter(String relative, Charset cs)
-        throws IOException
-    {
-        return Files.newBufferedWriter(getPath(relative), cs);
-    }
-
-    public Path getPath(String relative)
-    {
-        return path.resolve(relative);
     }
 
     public File getFile(String relative)
@@ -82,10 +81,44 @@ public class Workspace
         return getPath(relative).toFile();
     }
 
+    public String createTempFile(String prefix, String suffix)
+        throws IOException
+    {
+        // file will be deleted by WorkspaceManager
+        Path file = Files.createTempFile(getTempDir(), prefix, suffix);
+        tempFilePaths.add(file);
+        return workspacePath.relativize(file).toString();
+    }
+
+    public InputStream newInputStream(String fileName)
+        throws IOException
+    {
+        return Files.newInputStream(getPath(fileName));
+    }
+
+    public BufferedReader newBufferedReader(String fileName, Charset cs)
+        throws IOException
+    {
+        return Files.newBufferedReader(getPath(fileName), cs);
+    }
+
+    public OutputStream newOutputStream(String fileName)
+        throws IOException
+    {
+        return Files.newOutputStream(getPath(fileName));
+    }
+
+    public BufferedWriter newBufferedWriter(String fileName, Charset cs)
+        throws IOException
+    {
+        return Files.newBufferedWriter(getPath(fileName), cs);
+    }
+
     private synchronized Path getTempDir()
         throws IOException
     {
-        Path dir = path.resolve(".digdag/tmp");
+        // <projectDir>/.digdag/tmp
+        Path dir = projectPath.resolve(".digdag/tmp");
         Files.createDirectories(dir);
         return dir;
     }
@@ -93,13 +126,7 @@ public class Workspace
     public String templateFile(TemplateEngine templateEngine, String fileName, Charset fileCharset, Config params)
         throws IOException, TemplateException
     {
-        Path basePath = path.toAbsolutePath().normalize();
-        Path absPath = basePath.resolve(fileName).normalize();
-        if (!absPath.toString().startsWith(basePath.toString())) {
-            throw new IllegalArgumentException("file name must not include ..: " + fileName);
-        }
-
-        try (BufferedReader reader = Files.newBufferedReader(absPath, fileCharset)) {
+        try (BufferedReader reader = newBufferedReader(fileName, fileCharset)) {
             String content = CharStreams.toString(reader);
             return templateEngine.template(content, params);
         }
@@ -113,21 +140,33 @@ public class Workspace
                 nested = params.getNested("_command");
             }
             catch (ConfigException notNested) {
-                String command = params.get("_command", String.class);
+                String fileName = params.get("_command", String.class);
                 try {
-                    return templateFile(templateEngine, command, fileCharset, params);
+                    return templateFile(templateEngine, fileName, fileCharset, params);
                 }
                 catch (ConfigException ex) {
                     throw ex;
                 }
                 catch (TemplateException ex) {
-                    throw new ConfigException("" + ex.getMessage() + " in " + command, ex);
+                    throw new ConfigException(
+                            String.format(ENGLISH, "%s in %s", ex.getMessage(), fileName),
+                            ex);
                 }
                 catch (FileNotFoundException | NoSuchFileException ex) {
-                    throw new ConfigException("File not found: " + ex.getMessage(), ex);
+                    // ex includes file name
+                    throw new ConfigException(
+                            String.format(ENGLISH, "File not found: %s", ex.getMessage()),
+                            ex);
                 }
-                catch (RuntimeException | IOException ex) {
-                    throw new ConfigException("Failed to read a template file: " + command + ": " + ex.getClass(), ex);
+                catch (IOException ex) {
+                    throw new ConfigException(
+                            String.format(ENGLISH, "Failed to read a template file: %s: %s", fileName, ex.getClass()),
+                            ex);
+                }
+                catch (RuntimeException ex) {
+                    throw new ConfigException(
+                            String.format(ENGLISH, "%s: %s", ex.getMessage(), fileName),
+                            ex);
                 }
             }
             // ${...} in nested parameters are already evaluated. no needs to call template.
@@ -144,9 +183,9 @@ public class Workspace
     @Override
     public void close()
     {
-        for (String relative : tempFiles) {
+        for (Path path : tempFilePaths) {
             try {
-                Files.deleteIfExists(getPath(relative));
+                Files.deleteIfExists(path);
             }
             catch (IOException ex) {
                 // TODO show warning log

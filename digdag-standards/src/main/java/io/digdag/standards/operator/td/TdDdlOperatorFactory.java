@@ -36,17 +36,17 @@ public class TdDdlOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdDdlOperator(workspacePath, request);
+        return new TdDdlOperator(projectPath, request);
     }
 
     private class TdDdlOperator
             extends BaseOperator
     {
-        public TdDdlOperator(Path workspacePath, TaskRequest request)
+        public TdDdlOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override

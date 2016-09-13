@@ -3,6 +3,7 @@ package io.digdag.core.workflow;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.client.config.Config;
@@ -13,6 +14,7 @@ import io.digdag.core.LocalSite;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.crypto.SecretCrypto;
 import io.digdag.core.crypto.SecretCryptoProvider;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.archive.ArchiveMetadata;
 import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
@@ -28,8 +30,10 @@ import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.SchedulerFactory;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretStoreManager;
+import io.digdag.spi.TaskRequest;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -70,14 +74,14 @@ public class WorkflowTestingUtils
         return embed;
     }
 
-    public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
+    public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws ResourceNotFoundException, ResourceConflictException
     {
         ArchiveMetadata meta = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(
                         WorkflowFile.fromConfig(workflowName, config).toWorkflowDefinition()
                         )),
-                config.getFactory().create().set("_workdir", workdir.toString()));
+                config.getFactory().create().set(LocalWorkspaceManager.PROJECT_PATH, projectPath.toString()));
         LocalSite.StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 "revision-" + UUID.randomUUID(),
@@ -92,11 +96,11 @@ public class WorkflowTestingUtils
         return localSite.submitWorkflow(ar, def);
     }
 
-    public static void runWorkflow(LocalSite localSite, Path workdir, String workflowName, Config config)
+    public static void runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws InterruptedException
     {
         try {
-            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, workdir, workflowName, config);
+            StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
             localSite.runUntilDone(attempt.getId());
         }
         catch (ResourceNotFoundException | ResourceConflictException ex) {

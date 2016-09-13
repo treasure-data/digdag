@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowResourceMatcher;
@@ -90,10 +91,10 @@ public class Arguments
             projectPath = Paths.get(projectDirName).normalize().toAbsolutePath();
         }
 
-        // if projectPath is not current dir, set _workdir to overwriteParams
-        if (!projectPath.equals(currentDirectory) && !overwriteParams.has("_workdir")) {
-            logger.info("Setting workdir to {}", projectPath);
-            overwriteParams.set("_workdir", projectPath.toString());
+        // if projectPath is not current dir, set _project_path to overwriteParams
+        if (!projectPath.equals(currentDirectory)) {
+            logger.info("Setting project path to {}", projectPath);
+            overwriteParams.set(LocalWorkspaceManager.PROJECT_PATH, projectPath.toString());
         }
 
         return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);

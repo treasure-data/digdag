@@ -49,9 +49,9 @@ public class TdForEachOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdForEachOperator(workspacePath, request);
+        return new TdForEachOperator(projectPath, request);
     }
 
     private class TdForEachOperator
@@ -65,9 +65,9 @@ public class TdForEachOperatorFactory
 
         private final Config doConfig;
 
-        private TdForEachOperator(Path workspacePath, TaskRequest request)
+        private TdForEachOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
