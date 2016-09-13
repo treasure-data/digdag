@@ -261,17 +261,16 @@ public class Run
             taskMatchPattern = Optional.of(TaskMatchPattern.compile(matchPattern));
         }
 
-        // store workflow definition archive
-        ArchiveMetadata archive = project.getArchiveMetadata();
+        // store workflow definitions
         StoreWorkflowResult stored = localSite.storeLocalWorkflowsWithoutSchedule(
                 "default",
                 Instant.now().toString(),  // TODO revision name
-                archive);
+                project.getArchiveMetadata());
 
         // submit workflow
         StoredSessionAttemptWithSession attempt = submitWorkflow(injector,
                 stored.getRevision(), stored.getWorkflowDefinitions(),
-                archive, overwriteParams,
+                project, overwriteParams,
                 workflowName, taskMatchPattern);
         // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 
@@ -340,7 +339,7 @@ public class Run
 
     private StoredSessionAttemptWithSession submitWorkflow(Injector injector,
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
-            ArchiveMetadata archive, Config overwriteParams,
+            ProjectArchive project, Config overwriteParams,
             String workflowName, Optional<TaskMatchPattern> taskMatchPattern)
         throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, SessionAttemptConflictException
     {
@@ -392,14 +391,16 @@ public class Run
             tasks = workflow.getTasks();
         }
 
+        // calculate ./.digdag/status/<session_time> path.
+        // if sessionStatusDir is not set, use .digdag/status.
+        Path sessionStatusPath = project.getProjectPath().resolve(sessionStatusDir).normalize();
+
         // calculate session_time
         Optional<Scheduler> sr = srm.tryGetScheduler(rev, def);
         ZoneId timeZone = def.getTimeZone();
-        Instant sessionTime = parseSessionTime(sessionString, Paths.get(sessionStatusDir), def.getName(), sr, timeZone);
+        Instant sessionTime = parseSessionTime(sessionString, sessionStatusPath, def.getName(), sr, timeZone);
 
-        // calculate ./.digdag/status/<session_time> path.
-        // if sessionStatusDir is not set, use .digdag/status.
-        this.resumeStatePath = Paths.get(sessionStatusDir).resolve(
+        this.resumeStatePath = sessionStatusPath.resolve(
                 SESSION_STATE_TIME_DIRNAME_FORMATTER.withZone(timeZone).format(sessionTime)
                 );
         if (!noSave) {
@@ -512,7 +513,7 @@ public class Run
     }
 
     private static Instant parseSessionTime(String sessionString,
-            Path sessionStatusDir, String workflowName,
+            Path sessionStatusPath, String workflowName,
             Optional<Scheduler> sr, ZoneId timeZone)
         throws SystemExitException
     {
@@ -529,7 +530,7 @@ public class Run
 
         case "last":
             {
-                Optional<Instant> last = getLastSessionTime(sessionStatusDir, workflowName);
+                Optional<Instant> last = getLastSessionTime(sessionStatusPath, workflowName);
                 if (last.isPresent()) {
                     logger.warn("Reusing the last session time {}.", SESSION_DISPLAY_FORMATTER.withZone(timeZone).format(last.get()));
                     return last.get();
@@ -575,11 +576,11 @@ public class Run
         }
     }
 
-    private static Optional<Instant> getLastSessionTime(Path sessionStatusDir, String workflowName)
+    private static Optional<Instant> getLastSessionTime(Path sessionStatusPath, String workflowName)
     {
         try {
             List<Instant> times = new ArrayList<>();
-            try (DirectoryStream<Path> ds = Files.newDirectoryStream(sessionStatusDir, p -> Files.isDirectory(p) && taskExists(p, workflowName))) {
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(sessionStatusPath, p -> Files.isDirectory(p) && taskExists(p, workflowName))) {
                 for (Path path : ds) {
                     try {
                         times.add(Instant.from(SESSION_STATE_TIME_DIRNAME_FORMATTER.parse(path.getFileName().toString())));
