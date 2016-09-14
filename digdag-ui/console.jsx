@@ -1048,7 +1048,7 @@ class Navbar extends React.Component {
   logout(e) {
     e.preventDefault();
     window.localStorage.removeItem("digdag.credentials");
-    window.location = '/';
+    window.location = DIGDAG_CONFIG.logoutUrl;
   }
 
   brand() {

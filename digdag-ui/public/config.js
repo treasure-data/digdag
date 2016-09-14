@@ -1,6 +1,7 @@
 var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
   jobUrl: (jobId) => ``,
+  logoutUrl: '/',
   navbar: {
     logo: '/logo.png',
     brand: 'Digdag',
