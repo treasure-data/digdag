@@ -43,3 +43,6 @@ install: true
 
 script:
   - ci/run_test.sh
+
+after_success:
+  - ci/report_coverage.sh
