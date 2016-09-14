@@ -156,13 +156,25 @@ public class TdIT
             throws Exception
     {
         copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
-        copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         runWorkflow();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
         assertThat(result.get("last_results").isObject(), is(true));
+        assertThat(result.get("last_results").isEmpty(objectMapper().getSerializerProvider()), is(false));
         assertThat(result.get("last_results").get("a").asInt(), is(1));
         assertThat(result.get("last_results").get("b").asInt(), is(2));
+    }
+
+    @Test
+    public void testStoreLastResultWithEmptyQueryResult()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_store_last_result_empty.dig", projectDir.resolve("workflow.dig"));
+        runWorkflow();
+        JsonNode result = objectMapper().readTree(outfile.toFile());
+        assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_results").isObject(), is(true));
+        assertThat(result.get("last_results").isEmpty(objectMapper().getSerializerProvider()), is(true));
     }
 
     @Test

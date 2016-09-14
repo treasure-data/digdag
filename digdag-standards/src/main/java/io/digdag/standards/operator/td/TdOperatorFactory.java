@@ -342,11 +342,13 @@ public class TdOperatorFactory
 
         if (storeLastResults) {
             List<ArrayValue> results = downloadFirstResults(j, 1);
-            ArrayValue row = results.get(0);
             Map<RawValue, Value> map = new LinkedHashMap<>();
-            List<String> columnNames = j.getResultColumnNames();
-            for (int i = 0; i < Math.min(row.size(), columnNames.size()); i++) {
-                map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
+            if (!results.isEmpty()) {
+                ArrayValue row = results.get(0);
+                List<String> columnNames = j.getResultColumnNames();
+                for (int i = 0; i < Math.min(row.size(), columnNames.size()); i++) {
+                    map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
+                }
             }
             MapValue lastResults = ValueFactory.newMap(map);
             try {
