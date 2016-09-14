@@ -91,7 +91,10 @@ public interface DatabaseConfig
                 config.get("database.idleTimeout", int.class, 600));  // HikariCP default: 600
         builder.validationTimeout(
                 config.get("database.validationTimeout", int.class, 5));  // HikariCP default: 5
-        int maximumPoolSize = config.get("database.maximumPoolSize", int.class, 10); // HikariCP default: 10
+
+        int maximumPoolSize = config.get("database.maximumPoolSize", int.class,
+                Runtime.getRuntime().availableProcessors() * 32); // HikariCP default: 10
+
         builder.maximumPoolSize(maximumPoolSize);
         builder.minimumPoolSize(
                  config.get("database.minimumPoolSize", int.class, maximumPoolSize));  // HikariCP default: Same as maximumPoolSize
