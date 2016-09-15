@@ -74,6 +74,8 @@ public class TemporaryDigdagServer
 
     private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
 
+    private static final String JACOCO_JVM_ARG = System.getenv("JACOCO_JVM_ARG");  // set at build.gradle
+
     private static final Logger log = LoggerFactory.getLogger(TemporaryDigdagServer.class);
 
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
@@ -302,6 +304,9 @@ public class TemporaryDigdagServer
                     "-Xms128m", "-Xmx128m"));
             if (version.isPresent()) {
                 processArgs.add("-D" + Version.VERSION_PROPERTY + "=" + version.get());
+            }
+            if (!isNullOrEmpty(JACOCO_JVM_ARG)) {
+                processArgs.add(JACOCO_JVM_ARG);
             }
             processArgs.add(Trampoline.class.getName());
             processArgs.addAll(args);

@@ -106,6 +106,14 @@ subprojects {
             info.events = ["started", "passed", "skipped", "failed", "standardOut", "standardError"]
         }
 
+        // used by TemporaryDigdagServer
+        if (jacoco.enabled) {
+            def workingDir = getWorkingDir()
+            setWorkingDir('/')  // let getAsJvmArg generate absolute path
+            environment "JACOCO_JVM_ARG", jacoco.getAsJvmArg()
+            setWorkingDir(workingDir)
+        }
+
         // Shard test classes over CI workers
         if (System.env.CI_NODE_INDEX != null) {
             def n = Integer.parseInt(System.env.CI_NODE_TOTAL)
