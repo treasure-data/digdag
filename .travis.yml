@@ -45,4 +45,4 @@ script:
   - ci/run_test.sh
 
 after_success:
-  - ci/report_coverage.sh
+  - ci/travis_report_coverage.sh
