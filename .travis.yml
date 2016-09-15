@@ -34,12 +34,15 @@ before_install:
     docker run \
     -w /digdag \
     -v `pwd`/:/digdag \
-    -v ~/.gradle:/root/.gradle \
+    -v $HOME/.gradle:/root/.gradle \
     digdag-build \
     ./gradlew testClasses
   - ci/validate.sh
 
 install: true
+
+before_cache:
+  - sudo chown `id -u`:`id -g` -R $HOME/docker $HOME/.gradle $HOME/.m2  # make them cachable
 
 script:
   - ci/run_test.sh
