@@ -313,7 +313,7 @@ In the config file, following parameters are available
 * database.connectionTimeout (seconds in integer, default: 30)
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
-* database.maximumPoolSize (integer, default: 10)
+* database.maximumPoolSize (integer, default: available CPU cores * 32)
 
 
 Client-mode commands
