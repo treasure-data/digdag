@@ -82,23 +82,28 @@ public class PgConnection
         return new PgPersistentTransactionHelper(statusTableName, cleanupDuration);
     }
 
-    private class PgPersistentTransactionHelper
+    public class PgPersistentTransactionHelper
             extends AbstractPersistentTransactionHelper
     {
-        PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+        protected PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
         {
             super(statusTableName, cleanupDuration);
+        }
+
+        protected String buildCreateTable()
+        {
+            return String.format(ENGLISH,
+                    "CREATE TABLE IF NOT EXISTS %s" +
+                    " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
+                    escapeIdent(statusTableName));
         }
 
         @Override
         public void prepare()
         {
-            executeStatement("create a status table " + escapeIdent(statusTableName),
-                    String.format(ENGLISH,
-                        "CREATE TABLE IF NOT EXISTS %s" +
-                        " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
-                        escapeIdent(statusTableName))
-                   );
+            String sql = buildCreateTable();
+            executeStatement("create a status table " + escapeIdent(statusTableName) + ".\nhint: if you don't have permission to create tables, please add \"strict_transaction: false\" option to disable exactly-once transaction control that depends on this table.\nOr please ask system administrator to create this table using following command: " + sql + ";",
+                   sql);
         }
 
         @Override
