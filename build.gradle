@@ -182,7 +182,7 @@ jacocoTestReport {
     classDirectories =  files(subprojects.sourceSets.main.output)
     executionData = files(subprojects.jacocoTestReport.executionData)
     reports {
-        xml.enabled = false
+        xml.enabled = true
         html.enabled = true
     }
     onlyIf = { true }
