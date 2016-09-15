@@ -75,6 +75,7 @@ public class ModelValidator
     // retry attempt name, revision name
     public ModelValidator checkIdentifierName(String fieldName, String value)
     {
+        checkNotEmpty(fieldName, value);
         checkMaxLength(fieldName, value, 255);
         return this;
     }
