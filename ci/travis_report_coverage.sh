@@ -14,4 +14,4 @@ docker run \
 -e TRAVIS_PULL_REQUEST \
 -e CI_NAME \
 digdag-build \
-./gradlew jacocoTestReport coveralls -x test --info --no-daemon "$@"
+./gradlew jacocoTestReport coveralls -x test --no-daemon "$@"
