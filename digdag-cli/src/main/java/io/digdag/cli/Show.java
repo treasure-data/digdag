@@ -59,11 +59,10 @@ public class Show
     private void show(Injector injector, String workflowPath)
             throws Exception
     {
-        final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
 
-        List<WorkflowDefinition> workflowSources = loader.loadParameterizedFile(new File(workflowPath), cf.create()).convert(WorkflowDefinitionList.class).get();
+        List<WorkflowDefinition> workflowSources = loader.loadParameterizedFile(new File(workflowPath)).convert(WorkflowDefinitionList.class).get();
 
         List<Workflow> workflows = workflowSources
             .stream()

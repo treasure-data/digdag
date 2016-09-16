@@ -62,13 +62,13 @@ public class YamlConfigLoader
         return ConfigElement.of(object);
     }
 
-    public ConfigElement loadParameterizedFile(File file, Config params)
+    public ConfigElement loadParameterizedFile(File file)
         throws IOException
     {
-        return ConfigElement.of(loadParameterizedInclude(file.toPath(), params));
+        return ConfigElement.of(loadParameterizedInclude(file.toPath()));
     }
 
-    ObjectNode loadParameterizedInclude(Path path, Config params)
+    ObjectNode loadParameterizedInclude(Path path)
         throws IOException
     {
         String content;
@@ -84,18 +84,16 @@ public class YamlConfigLoader
             throw new FileNotFoundException("Loading file named '/' is invalid");
         }
 
-        return new ParameterizeContext(includeDir, params).evalObjectRecursive(object);
+        return new ParameterizeContext(includeDir).evalObjectRecursive(object);
     }
 
     private class ParameterizeContext
     {
         private final Path includeDir;
-        private final Config params;
 
-        private ParameterizeContext(Path includeDir, Config params)
+        private ParameterizeContext(Path includeDir)
         {
             this.includeDir = includeDir.toAbsolutePath().normalize();
-            this.params = params;
         }
 
         private ObjectNode evalObjectRecursive(ObjectNode object)
@@ -172,7 +170,7 @@ public class YamlConfigLoader
                 throw new FileNotFoundException("File name must not include ..: " + name);
             }
 
-            return loadParameterizedInclude(path, params);
+            return loadParameterizedInclude(path);
         }
 
         private void mergeObject(ObjectNode dest, ObjectNode src)

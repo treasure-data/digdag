@@ -19,10 +19,10 @@ public class ConfigLoaderManager
         this.yaml = yaml;
     }
 
-    public Config loadParameterizedFile(File path, Config params)
+    public Config loadParameterizedFile(File path)
         throws IOException
     {
         // TODO check suffix .dig, .yml or .yaml. otherwise throw exception
-        return yaml.loadParameterizedFile(path, params).toConfig(cf);
+        return yaml.loadParameterizedFile(path).toConfig(cf);
     }
 }

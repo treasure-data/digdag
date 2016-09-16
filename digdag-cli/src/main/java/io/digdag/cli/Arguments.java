@@ -48,7 +48,7 @@ public class Arguments
 
         // -P files
         if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
+            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile)));
         }
 
         // -p options

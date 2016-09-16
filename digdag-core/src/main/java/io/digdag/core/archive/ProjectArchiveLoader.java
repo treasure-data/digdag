@@ -77,7 +77,7 @@ public class ProjectArchiveLoader
         String workflowName = resourceNameToWorkflowName(resourceName);
 
         WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
-                configLoader.loadParameterizedFile(path.toFile(), overwriteParams));
+                configLoader.loadParameterizedFile(path.toFile()));
 
         int posSlash = workflowName.lastIndexOf('/');
         if (posSlash >= 0) {

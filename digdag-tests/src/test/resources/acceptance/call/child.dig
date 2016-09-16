@@ -1,0 +1,2 @@
++hello:
+  sh>: touch ${outdir}/${name}.out
