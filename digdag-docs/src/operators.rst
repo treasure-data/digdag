@@ -880,3 +880,81 @@ embulk>: Embulk data transfer
 
   * :command:`embulk>: embulk/mysql_to_csv.yml`
 
+
+s3_wait>: Wait for a file in Amazon S3
+--------------------------------------
+
+The **s3_wait>:** operator waits for file to appear in Amazon S3.
+
+
+.. code-block:: yaml
+
+    +wait:
+      s3_wait>: my-bucket/my-key
+
+Secrets
+~~~~~~~
+
+:command:`aws.access-key`
+  The AWS Access Key ID to use when accessing S3.
+
+:command:`aws.secret-key`
+  The AWS Secret Access Key when accessing S3.
+
+:command:`aws.sse-key`
+  An optional Server-Side Encryption key to use when accessing S3. Must be Base64 encoded.
+
+:command:`aws.sse-key-algorithm`
+  An optional Server-Side Encryption key algorithm to use when accessing S3.
+
+:command:`aws.sse-key-md5`
+  An optional MD5 digest of the Server-Side Encryption key algorithm to use when accessing S3. Must be Base64 encoded.
+
+Parameters
+~~~~~~~~~~
+
+:command:`s3_wait>: BUCKET/KEY`
+  Path to the file in Amazon S3 to wait for.
+
+  * :command:`s3_wait>: my-bucket/my-data.gz`
+
+  * :command:`s3_wait>: my-bucket/file/in/a/directory`
+
+:command:`region: REGION`
+  The region of the S3 bucket.
+
+:command:`bucket: BUCKET`
+  The S3 bucket of the file. Can be used together with `key:` instead of putting the path on the operator line.
+
+:command:`key: KEY`
+  The S3 key of the file. Can be used together with `bucket:` instead of putting the path on the operator line.
+
+:command:`version_id: VERSION_ID`
+  An optional object version to check for.
+
+Output Parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`s3.last_object`
+  Information about the detected file.
+
+    .. code-block:: yaml
+
+        {
+          "metadata": {
+            "Accept-Ranges": "bytes",
+            "Access-Control-Allow-Origin": "*",
+            "Content-Length": 4711,
+            "Content-Type": "application/octet-stream",
+            "ETag": "5eb63bbbe01eeed093cb22bb8f5acdc3",
+            "Last-Modified": 1474360744000,
+            "Last-Ranges": "bytes"
+          },
+          "user_metadata": {
+            "foo": "bar",
+            "baz": "quux"
+          }
+        }
+
+
+

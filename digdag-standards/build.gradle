@@ -22,6 +22,9 @@ dependencies {
     // postgresql
     compile 'org.postgresql:postgresql:9.4.1211'
 
+    // aws
+    compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
+
     // Newer version of jetty-client with some important bugfixes.
     // jetty-client is used by td-client-java, and ideally we would bump the version there but
     // td-client-java still targets JDK 7 and jetty-client 9.3.x targets JDK 8.

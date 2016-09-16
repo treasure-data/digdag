@@ -5,4 +5,5 @@ dependencies {
     testCompile project(':digdag-core')
 
     compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
+    compile 'commons-logging:commons-logging:1.2'
 }
