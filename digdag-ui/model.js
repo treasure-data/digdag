@@ -284,6 +284,7 @@ export class Model {
 
   get(url: string): Promise {
     return fetch(this.config.url + url, {
+      credentials: 'include',
       headers: this.headers(),
     }).then(response => {
       if (!response.ok) {
