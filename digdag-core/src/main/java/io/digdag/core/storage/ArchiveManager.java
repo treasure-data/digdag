@@ -5,6 +5,9 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -94,6 +97,8 @@ public class ArchiveManager
 
     private String formatFilePath(int siteId, String projectName, String revisionName)
     {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(projectName), "projectName");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(revisionName), "revisionName");
         return String.format(ENGLISH,
                 "%d/%s/%s.%s.tar.gz",
                 siteId, projectName, revisionName, DATE_TIME_SUFFIX_FORMAT.format(Instant.now()));

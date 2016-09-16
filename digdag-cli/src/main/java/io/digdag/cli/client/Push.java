@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.cli.StdErr;
@@ -73,6 +74,11 @@ public class Push
     private void push(String projName)
         throws Exception
     {
+        Preconditions.checkNotNull(projName, "projName");
+        if (projName.isEmpty()) {
+            throw usage("project name cannot be empty");
+        }
+
         Path dir = Files.createDirectories(Paths.get(".digdag/tmp"));
         Path archivePath = Files.createTempFile(dir, "archive-", ".tar.gz");
         archivePath.toFile().deleteOnExit();
@@ -112,6 +118,9 @@ public class Push
         injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overwriteParams);
 
         DigdagClient client = buildClient();
+        if ("".equals(revision)) {
+            throw usage("revision cannot be empty");
+        }
         if (revision == null) {
             revision = Upload.generateDefaultRevisionName();
         }
