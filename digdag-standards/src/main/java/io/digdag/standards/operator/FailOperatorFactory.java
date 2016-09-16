@@ -24,20 +24,18 @@ public class FailOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new FailOperator(workspacePath, request);
+        return new FailOperator(request);
     }
 
     private static class FailOperator
             implements Operator
     {
-        private final Path workspacePath;
         private final TaskRequest request;
 
-        public FailOperator(Path workspacePath, TaskRequest request)
+        public FailOperator(TaskRequest request)
         {
-            this.workspacePath = workspacePath;
             this.request = request;
         }
 

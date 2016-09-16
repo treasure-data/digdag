@@ -8,7 +8,6 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.util.BaseOperator;
 
 public class IfOperatorFactory
         implements OperatorFactory
@@ -23,21 +22,23 @@ public class IfOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new IfOperator(workspacePath, request);
+        return new IfOperator(request);
     }
 
     private static class IfOperator
-            extends BaseOperator
+            implements Operator
     {
-        public IfOperator(Path workspacePath, TaskRequest request)
+        private final TaskRequest request;
+
+        public IfOperator(TaskRequest request)
         {
-            super(workspacePath, request);
+            this.request = request;
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult run(TaskExecutionContext ctx)
         {
             Config params = request.getConfig();
 

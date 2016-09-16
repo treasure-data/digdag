@@ -28,6 +28,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.Response;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.inject.Inject;
 import com.google.common.base.Throwables;
@@ -427,8 +428,8 @@ public class ProjectResource
             @QueryParam("schedule_from") String scheduleFromString)
         throws IOException, ResourceConflictException, ResourceNotFoundException
     {
-        Preconditions.checkArgument(name != null, "project= is required");
-        Preconditions.checkArgument(revision != null, "revision= is required");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "project= is required");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision= is required");
 
         Instant scheduleFrom;
         if (scheduleFromString == null || scheduleFromString.isEmpty()) {
@@ -479,6 +480,10 @@ public class ProjectResource
                 }
             }
 
+            // Getting secrets might fail. To avoid ending up with a project without secrets, get the secrets _before_ storing the project.
+            // If getting the project secrets fails, the project will not be stored and the push can then be retried with the same revision.
+            Map<String, String> secrets = getSecrets().get();
+
             RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
                     Project.of(name),
                     (store, storedProject) -> {
@@ -521,8 +526,7 @@ public class ProjectResource
                     });
 
             SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            Supplier<Map<String, String>> secrets = getSecrets();
-            secrets.get().forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
+            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
             return restProject;
         }
     }
@@ -530,6 +534,7 @@ public class ProjectResource
     private ArchiveMetadata readArchiveMetadata(InputStream in, String projectName)
         throws IOException
     {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(projectName), "projectName");
         try (TempDir dir = tempFiles.createTempDir("push", projectName)) {
             long totalSize = 0;
             try (TarArchiveInputStream archive = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(in, 32*1024)))) {

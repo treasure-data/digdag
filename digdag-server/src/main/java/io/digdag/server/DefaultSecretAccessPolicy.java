@@ -29,17 +29,47 @@ public class DefaultSecretAccessPolicy
     private static final Logger logger = LoggerFactory.getLogger(DefaultSecretAccessPolicy.class);
 
     private final ServerSecretAccessPolicy policy;
+    private final Boolean enabled;
 
     @Inject
     public DefaultSecretAccessPolicy(Config systemConfig, ObjectMapper mapper)
             throws IOException
     {
-        this.policy = loadPolicy(systemConfig, mapper);
+        ServerSecretAccessPolicy.Builder builder;
+        Optional<String> policyFilename = systemConfig.getOptional("digdag.secret-access-policy-file", String.class);
+        if (policyFilename.isPresent()) {
+            this.enabled = true;
+            builder = ServerSecretAccessPolicy.builder().from(readPolicy(mapper, Paths.get(policyFilename.get())));
+        }
+        else {
+            this.enabled = systemConfig.get("secret-access-policy.enabled", Boolean.class, false);
+            builder = ServerSecretAccessPolicy.builder();
+        }
+
+        Pattern pattern = Pattern.compile("^secret-access-policy\\.operators\\.(\\w+)\\.secrets$");
+
+        for (String key : systemConfig.getKeys()) {
+            Matcher m = pattern.matcher(key);
+            if (m.find()) {
+                String operatorType = m.group(1);
+                String value = systemConfig.get(key, String.class);
+                List<SecretSelector> selectors = mapper.readValue(value, new TypeReference<List<SecretSelector>>() {});
+                builder.putOperators(operatorType, OperatorSecretAccessPolicy.of(selectors));
+            }
+        }
+
+        this.policy = builder.build();
+
+        logger.info("loaded secret access policy: {} (enabled: {})", policy, enabled);
     }
 
     @Override
     public boolean isSecretAccessible(SecretAccessContext context, String key)
     {
+        if (!enabled) {
+            return true;
+        }
+
         if (policy == null) {
             return false;
         }
@@ -58,46 +88,18 @@ public class DefaultSecretAccessPolicy
         return false;
     }
 
-    private static ServerSecretAccessPolicy loadPolicy(Config systemConfig, ObjectMapper mapper)
-            throws IOException
-    {
-        ServerSecretAccessPolicy.Builder builder;
-        Optional<String> policyFilename = systemConfig.getOptional("digdag.secret-access-policy-file", String.class);
-        if (policyFilename.isPresent()) {
-            builder = ServerSecretAccessPolicy.builder().from(readPolicy(mapper, Paths.get(policyFilename.get())));
-        }
-        else {
-            builder = ServerSecretAccessPolicy.builder();
-        }
-
-        Pattern pattern = Pattern.compile("^secret-access-policy\\.operators\\.(\\w+)\\.secrets$");
-
-        for (String key : systemConfig.getKeys()) {
-            Matcher m = pattern.matcher(key);
-            if (m.find()) {
-                String operatorType = m.group(1);
-                String value = systemConfig.get(key, String.class);
-                List<SecretSelector> selectors = mapper.readValue(value, new TypeReference<List<SecretSelector>>() {});
-                builder.putOperators(operatorType, OperatorSecretAccessPolicy.of(selectors));
-            }
-        }
-
-        ServerSecretAccessPolicy policy = builder.build();
-
-        logger.info("loaded secret access policy: {}", policy);
-
-        return policy;
-    }
-
     private static ServerSecretAccessPolicy readPolicy(ObjectMapper mapper, Path path)
             throws IOException
     {
-        ServerSecretAccessPolicy policy;
         try (InputStream in = Files.newInputStream(path)) {
-            YAMLParser parser = new YAMLFactory().createParser(in);
-            policy = mapper.readValue(parser, ServerSecretAccessPolicy.class);
+            return readPolicy(mapper, in);
         }
-        return policy;
     }
 
+    private static ServerSecretAccessPolicy readPolicy(ObjectMapper mapper, InputStream in)
+            throws IOException
+    {
+        YAMLParser parser = new YAMLFactory().createParser(in);
+        return mapper.readValue(parser, ServerSecretAccessPolicy.class);
+    }
 }

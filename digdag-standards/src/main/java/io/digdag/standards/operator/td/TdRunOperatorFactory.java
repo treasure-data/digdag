@@ -38,9 +38,9 @@ public class TdRunOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdRunOperator(workspacePath, request);
+        return new TdRunOperator(projectPath, request);
     }
 
     private class TdRunOperator
@@ -53,9 +53,9 @@ public class TdRunOperatorFactory
         private final boolean storeLastResults;
         private final boolean preview;
 
-        private TdRunOperator(Path workspacePath, TaskRequest request)
+        private TdRunOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

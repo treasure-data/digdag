@@ -14,6 +14,7 @@ import com.google.inject.spi.TypeListener;
 import com.google.inject.matcher.AbstractMatcher;
 
 import io.digdag.client.config.ConfigElement;
+import io.digdag.core.ErrorReporter;
 
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -28,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weakref.jmx.guice.MBeanModule;
 
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 public class JmxModule
     implements Module
 {
@@ -39,6 +42,8 @@ public class JmxModule
         new MBeanModule().configure(binder);
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
         binder.bind(JmxAgent.class).asEagerSingleton();
+        binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(ErrorReporter.class).withGeneratedName();
     }
 
     private static class JmxAgent

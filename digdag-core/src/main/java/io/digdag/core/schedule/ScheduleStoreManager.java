@@ -24,6 +24,6 @@ public interface ScheduleStoreManager
             throws ResourceNotFoundException, ResourceConflictException;
     }
 
-    <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
+    <T> T lockScheduleById(int schedId, ScheduleLockAction<T> func)
         throws ResourceNotFoundException, ResourceConflictException;
 }

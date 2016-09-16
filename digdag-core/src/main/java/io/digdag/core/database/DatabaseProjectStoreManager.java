@@ -25,6 +25,8 @@ import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.TimeZoneMap;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.schedule.Schedule;
+import io.digdag.core.schedule.ScheduleStatus;
+import io.digdag.spi.ScheduleTime;
 import org.immutables.value.Value;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -66,6 +68,7 @@ public class DatabaseProjectStoreManager
         dbi.registerMapper(new StoredWorkflowDefinitionWithProjectMapper(cfm));
         dbi.registerMapper(new WorkflowConfigMapper());
         dbi.registerMapper(new IdNameMapper());
+        dbi.registerMapper(new ScheduleStatusMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
 
         this.cfm = cfm;
@@ -443,51 +446,54 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
-        public void updateSchedules(int projId, List<Schedule> schedules)
+        public <T extends Schedule> void updateSchedules(int projId, List<T> schedules,
+                ScheduleUpdateAction<T> func)
             throws ResourceConflictException
         {
-            Map<String, Integer> oldNames = idNameListToHashMap(dao.getScheduleNames(projId));
+            Map<String, Integer> oldScheduleNames = idNameListToHashMap(dao.getScheduleNames(projId));
 
-            for (Schedule schedule : schedules) {
-                if (oldNames.containsKey(schedule.getWorkflowName())) {
-                    // found the same name. overwriting workflow_definition_id
-                    int n = handle.createStatement(
-                            "update schedules" +
-                            " set workflow_definition_id = :workflowDefinitionId, updated_at = now()" +
-                            // TODO should here update next_run_time nad next_schedule_time?
-                            " where id = :id"
-                        )
-                        .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
-                        .bind("id", oldNames.get(schedule.getWorkflowName()))
-                        .execute();
-                    if (n <= 0) {
-                        // TODO exception?
+            // Concurrent call of updateSchedules doesn't happen because having
+            // ProjectControlStore means that the project is locked.
+            //
+            // However, ScheduleExecutor modifies schedules without locking the
+            // project. Instead, ScheduleExecutor locks schedules. To avoid
+            // concurrent update of schedules, here needs to lock schedules
+            // before UPDATE.
+
+            for (T schedule : schedules) {
+                Integer matchedSchedId = oldScheduleNames.get(schedule.getWorkflowName());
+                if (matchedSchedId != null) {
+                    // found the same name. lock it and update
+                    ScheduleStatus status = dao.lockScheduleById(matchedSchedId);
+                    if (status != null) {
+                        ScheduleTime newSchedule = func.apply(status, schedule);
+                        dao.updateScheduleById(
+                                matchedSchedId,
+                                schedule.getWorkflowDefinitionId(),
+                                newSchedule.getRunTime().getEpochSecond(),
+                                newSchedule.getTime().getEpochSecond());
+                        oldScheduleNames.remove(schedule.getWorkflowName());
                     }
-                    oldNames.remove(schedule.getWorkflowName());
                 }
                 else {
                     // not found this name. inserting a new entry.
-                    // TODO this INSERT can be optimized by using lazy multiple-value insert
                     catchConflict(() ->
-                            handle.createStatement(
-                                "insert into schedules" +
-                                " (project_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
-                                " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())"
-                            )
-                            .bind("projId", projId)
-                            .bind("workflowDefinitionId", schedule.getWorkflowDefinitionId())
-                            .bind("nextRunTime", schedule.getNextRunTime().getEpochSecond())
-                            .bind("nextScheduleTime", schedule.getNextScheduleTime().getEpochSecond())
-                            .execute(),
-                            "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
+                        dao.insertSchedule(
+                                projId,
+                                schedule.getWorkflowDefinitionId(),
+                                schedule.getNextRunTime().getEpochSecond(),
+                                schedule.getNextScheduleTime().getEpochSecond()),
+                        "workflow_definition_id=%d", schedule.getWorkflowDefinitionId());
                 }
             }
-            if (!oldNames.isEmpty()) {
+
+            // delete unused schedules
+            if (!oldScheduleNames.isEmpty()) {
                 // those names don exist any more.
                 handle.createStatement(
                         "delete from schedules" +
-                        " where id in (" +
-                            oldNames.values().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")) + ")")
+                        " where id " + inLargeIdListExpression(oldScheduleNames.values())
+                    )
                     .execute();
             }
         }
@@ -693,6 +699,22 @@ public class DatabaseProjectStoreManager
         @SqlUpdate("delete from schedules" +
                 " where project_id = :projId")
         int deleteSchedules(@Bind("projId") int projId);
+
+        @SqlQuery("select next_run_time, next_schedule_time, last_session_time from schedules" +
+                " where id = :id" +
+                " for update")
+        ScheduleStatus lockScheduleById(@Bind("id") int schedId);
+
+        @SqlUpdate("update schedules" +
+                " set workflow_definition_id = :workflowDefinitionId, next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
+                " where id = :id")
+        int updateScheduleById(@Bind("id") int schedId, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+
+        @SqlUpdate("insert into schedules" +
+                    " (project_id, workflow_definition_id, next_run_time, next_schedule_time, last_session_time, created_at, updated_at)" +
+                    " values (:projId, :workflowDefinitionId, :nextRunTime, :nextScheduleTime, NULL, now(), now())")
+        @GetGeneratedKeys
+        int insertSchedule(@Bind("projId") int projid, @Bind("workflowDefinitionId") long workflowDefinitionId, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
     }
 
     @Value.Immutable
@@ -889,4 +911,20 @@ public class DatabaseProjectStoreManager
         }
         return map;
     }
+
+    private static class ScheduleStatusMapper
+            implements ResultSetMapper<ScheduleStatus>
+    {
+        @Override
+        public ScheduleStatus map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ScheduleStatus.of(
+                    ScheduleTime.of(
+                        Instant.ofEpochSecond(r.getLong("next_schedule_time")),
+                        Instant.ofEpochSecond(r.getLong("next_run_time"))),
+                    getOptionalLong(r, "last_session_time").transform(it -> Instant.ofEpochSecond(it)));
+        }
+    }
+
 }

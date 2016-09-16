@@ -56,9 +56,9 @@ public class MailOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new MailOperator(workspacePath, request);
+        return new MailOperator(projectPath, request);
     }
 
     @Value.Immutable
@@ -74,9 +74,9 @@ public class MailOperatorFactory
     private class MailOperator
             extends BaseOperator
     {
-        public MailOperator(Path workspacePath, TaskRequest request)
+        public MailOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override
@@ -87,7 +87,7 @@ public class MailOperatorFactory
 
             // Note: Do not include system mail config params in the body template params to
             //       ensure that they are not accessible to the user.
-            String body = templateEngine.templateCommand(workspacePath, bodyParams, "body", UTF_8);
+            String body = workspace.templateCommand(templateEngine, bodyParams, "body", UTF_8);
 
             // Load system mail config params
             Config params = bodyParams.deepCopy();

@@ -15,9 +15,9 @@ public class SimpleCommandExecutor
     public SimpleCommandExecutor()
     { }
 
-    public Process start(Path workspacePath, TaskRequest request, ProcessBuilder pb)
+    public Process start(Path projectPath, TaskRequest request, ProcessBuilder pb)
         throws IOException
     {
-        return pb.directory(workspacePath.toFile()).start();
+        return pb.start();
     }
 }

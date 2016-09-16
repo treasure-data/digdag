@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
@@ -355,6 +357,8 @@ public class DigdagClient implements AutoCloseable
     public RestProject putProjectRevision(String projName, String revision, File body, Optional<Instant> scheduleFrom)
         throws IOException
     {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(projName), "projName");
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(revision), "revision");
         if (scheduleFrom.isPresent()) {
             return doPut(RestProject.class,
                     "application/gzip",

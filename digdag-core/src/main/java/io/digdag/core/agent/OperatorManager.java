@@ -9,6 +9,7 @@ import io.digdag.core.log.LogLevel;
 import io.digdag.core.log.TaskContextLogging;
 import io.digdag.core.log.TaskLogger;
 import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.core.ErrorReporter;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretAccessContext;
@@ -59,6 +60,9 @@ public class OperatorManager
 
     private final ScheduledExecutorService heartbeatScheduler;
     private final ConcurrentHashMap<Long, TaskRequest> runningTaskMap = new ConcurrentHashMap<>();  // {taskId => TaskRequest}
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public OperatorManager(AgentConfig agentConfig, AgentId agentId,
@@ -129,9 +133,9 @@ public class OperatorManager
     private void runWithHeartbeat(TaskRequest request)
     {
         try {
-            workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (workspacePath) -> {
+            workspaceManager.withExtractedArchive(request, () -> callback.openArchive(request), (projectPath) -> {
                 try {
-                    runWithWorkspace(workspacePath, request);
+                    runWithWorkspace(projectPath, request);
                 }
                 catch (TaskExecutionException ex) {
                     if (ex.getRetryInterval().isPresent()) {
@@ -178,7 +182,7 @@ public class OperatorManager
         }
     }
 
-    private void runWithWorkspace(Path workspacePath, TaskRequest request)
+    private void runWithWorkspace(Path projectPath, TaskRequest request)
         throws TaskExecutionException
     {
         // evaluate config and creates the complete merged config.
@@ -189,14 +193,16 @@ public class OperatorManager
             Config evalParams = all.deepCopy();
             all.merge(request.getLocalConfig());
 
-            // workdir can't include ${...}.
-            // TODO throw exeption if workdir includes ${...}.
-            String workdir = all.get("_workdir", String.class, "");
-
-            config = evalEngine.eval(workspacePath.resolve(workdir), all, evalParams);
+            config = evalEngine.eval(all, evalParams);
         }
-        catch (RuntimeException | TemplateException ex) {
-            throw new RuntimeException("Failed to process task config templates", ex);
+        catch (TemplateException ex) {
+            throw new ConfigException(ex.getMessage(), ex);
+        }
+        catch (ConfigException ex) {
+            throw ex;
+        }
+        catch (RuntimeException ex) {
+            throw new RuntimeException("Failed to process variables", ex);
         }
         logger.debug("evaluated config: {}", config);
 
@@ -235,10 +241,7 @@ public class OperatorManager
             .config(checkedConfig)
             .build();
 
-        // re-get workdir from CheckedConfig
-        String workdir = checkedConfig.get("_workdir", String.class, "");
-
-        TaskResult result = callExecutor(workspacePath.resolve(workdir), type, mergedRequest);
+        TaskResult result = callExecutor(projectPath, type, mergedRequest);
 
         if (!checkedConfig.isAllUsed()) {
             List<String> usedKeys = checkedConfig.getUsedKeys();
@@ -264,14 +267,14 @@ public class OperatorManager
         }
     }
 
-    protected TaskResult callExecutor(Path workspacePath, String type, TaskRequest mergedRequest)
+    protected TaskResult callExecutor(Path projectPath, String type, TaskRequest mergedRequest)
     {
         OperatorFactory factory = registry.get(mergedRequest, type);
         if (factory == null) {
             throw new ConfigException("Unknown task type: " + type);
         }
 
-        Operator operator = factory.newTaskExecutor(workspacePath, mergedRequest);
+        Operator operator = factory.newOperator(projectPath, mergedRequest);
 
         SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
 
@@ -312,7 +315,8 @@ public class OperatorManager
             }
         }
         catch (Throwable t) {
-            logger.error("An uncaught exception is ignored. Heartbeat thread will be retried.", t);
+            logger.error("Uncaught exception during sending task heartbeats to a server. Ignoring. Heartbeat thread will be retried.", t);
+            errorReporter.reportUncaughtError(t);
         }
     }
 

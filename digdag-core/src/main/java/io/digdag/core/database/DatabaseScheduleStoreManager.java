@@ -83,7 +83,7 @@ public class DatabaseScheduleStoreManager
         }
     }
 
-    public <T> T lockScheduleById(long schedId, ScheduleLockAction<T> func)
+    public <T> T lockScheduleById(int schedId, ScheduleLockAction<T> func)
         throws ResourceNotFoundException, ResourceConflictException
     {
         return this.<T, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao, ts) -> {
@@ -143,7 +143,7 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime)
+        public boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime)
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
@@ -152,7 +152,7 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public boolean updateNextScheduleTime(long schedId, ScheduleTime nextTime,
+        public boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime,
                 Instant lastSessionTime)
         {
             int n = dao.updateNextScheduleTime(schedId,
@@ -168,7 +168,7 @@ public class DatabaseScheduleStoreManager
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId")
-        StoredSchedule getScheduleByIdInternal(@Bind("schedId") long schedId);
+        StoredSchedule getScheduleByIdInternal(@Bind("schedId") int schedId);
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
@@ -190,7 +190,7 @@ public class DatabaseScheduleStoreManager
                     " where proj.id = s.project_id" +
                     " and proj.site_id = :siteId" +
                 ")")
-        StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") long schedId);
+        StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") int schedId);
 
         @SqlQuery("select id from schedules" +
                 " where next_run_time <= :currentTime" +
@@ -201,17 +201,17 @@ public class DatabaseScheduleStoreManager
         @SqlQuery("select * from schedules" +
                 " where id = :id" +
                 " for update")
-        int lockScheduleById(@Bind("id") long taskId);
+        int lockScheduleById(@Bind("id") long schedId);
 
         @SqlUpdate("update schedules" +
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, updated_at = now()" +
                 " where id = :id")
-        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
+        int updateNextScheduleTime(@Bind("id") int id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime);
 
         @SqlUpdate("update schedules" +
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, last_session_time = :lastSessionTime, updated_at = now()" +
                 " where id = :id")
-        int updateNextScheduleTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionTime") long lastSessionTime);
+        int updateNextScheduleTime(@Bind("id") int id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionTime") long lastSessionTime);
     }
 
     private static class StoredScheduleMapper

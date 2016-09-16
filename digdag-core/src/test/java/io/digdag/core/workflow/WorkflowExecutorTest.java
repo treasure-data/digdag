@@ -17,7 +17,6 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.core.session.*;
 import io.digdag.core.workflow.*;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
@@ -30,7 +29,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
+import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.is;
 
@@ -43,18 +44,14 @@ public class WorkflowExecutorTest
     public TemporaryFolder folder = new TemporaryFolder();
 
     private DigdagEmbed embed;
-    private ConfigFactory cf;
     private LocalSite localSite;
-    private YamlConfigLoader configLoader;
 
     @Before
     public void setUp()
         throws Exception
     {
         this.embed = setupEmbed();
-        this.cf = embed.getInjector().getInstance(ConfigFactory.class);
         this.localSite = embed.getInjector().getInstance(LocalSite.class);
-        this.configLoader = embed.getInjector().getInstance(YamlConfigLoader.class);
     }
 
     @After
@@ -68,7 +65,7 @@ public class WorkflowExecutorTest
     public void run()
         throws Exception
     {
-        runWorkflow("basic", loadYamlResource("/digdag/workflow/cases/basic.dig"));
+        runWorkflow("basic", loadYamlResource("/io/digdag/core/workflow/basic.dig"));
     }
 
     @Test
@@ -76,9 +73,9 @@ public class WorkflowExecutorTest
         throws Exception
     {
         exception.expect(ConfigException.class);
-        runWorkflow("unknown_schedule", cf.create()
-                .set("invalid_schedule", cf.create().set("daily>", "00:00:00"))
-                .set("+step1", cf.create().set("sh>", "echo ok"))
+        runWorkflow("unknown_schedule", newConfig()
+                .set("invalid_schedule", newConfig().set("daily>", "00:00:00"))
+                .set("+step1", newConfig().set("sh>", "echo ok"))
                 );
     }
 
@@ -86,19 +83,8 @@ public class WorkflowExecutorTest
     public void retryOnGroupingTask()
         throws Exception
     {
-        runWorkflow("retry_on_group", loadYamlResource("/digdag/workflow/cases/retry_on_group.dig"));
+        runWorkflow("retry_on_group", loadYamlResource("/io/digdag/core/workflow/retry_on_group.dig"));
         assertThat(new String(Files.readAllBytes(folder.getRoot().toPath().resolve("out")), UTF_8), is("trytrytrytry"));
-    }
-
-    private Config loadYamlResource(String name)
-    {
-        try {
-            String content = Resources.toString(getClass().getResource(name), UTF_8);
-            return configLoader.loadString(content).toConfig(cf);
-        }
-        catch (IOException ex) {
-            throw Throwables.propagate(ex);
-        }
     }
 
     private void runWorkflow(String workflowName, Config config)

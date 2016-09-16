@@ -3,7 +3,6 @@ package io.digdag.core.agent;
 import java.util.Map;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -55,11 +53,11 @@ public class ConfigEvalEngine
         this.jsEngineFactory = new NashornScriptEngineFactory();
     }
 
-    protected Config eval(Path workspacePath, Config config, Config params)
+    protected Config eval(Config config, Config params)
         throws TemplateException
     {
         ObjectNode object = config.convert(ObjectNode.class);
-        ObjectNode built = new Context(workspacePath, params).evalObjectRecursive(object);
+        ObjectNode built = new Context(params).evalObjectRecursive(object);
         return config.getFactory().create(built);
     }
 
@@ -80,27 +78,44 @@ public class ConfigEvalEngine
         return (Invocable) jsEngine;
     }
 
-    private String invokeTemplate(Invocable templateInvocable, Path workspacePath, String code, Config params)
+    private String invokeTemplate(Invocable templateInvocable, String code, Config params)
         throws TemplateException
     {
+        String context;
         try {
-            String context = jsonMapper.writeValueAsString(params);
+            context = jsonMapper.writeValueAsString(params);
+        }
+        catch (RuntimeException | IOException ex) {
+            throw new TemplateException("Failed to serialize parameters to JSON", ex);
+        }
+        try {
             return (String) templateInvocable.invokeFunction("template", code, context);
         }
-        catch (ScriptException | NoSuchMethodException | IOException ex) {
+        catch (ScriptException ex) {
+            String message;
+            if (ex.getCause() != null) {
+                // ScriptException.getMessage includes filename and line number but they
+                // are confusing because filename is always dummy file name and line number
+                // is not accurate.
+                message = ex.getCause().getMessage();
+            }
+            else {
+                message = ex.getMessage();
+            }
+            throw new TemplateException("Failed to evaluate a variable " + code + " (" + message + ")");
+        }
+        catch (NoSuchMethodException ex) {
             throw new TemplateException("Failed to evaluate JavaScript code: " + code, ex);
         }
     }
 
     private class Context
     {
-        private final Path workspacePath;
         private final Config params;
         private final Invocable templateInvocable;
 
-        public Context(Path workspacePath, Config params)
+        public Context(Config params)
         {
-            this.workspacePath = workspacePath;
             this.params = params;
             this.templateInvocable = newTemplateInvocable(params);
         }
@@ -167,7 +182,7 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = invokeTemplate(templateInvocable, workspacePath, code, scopedParams);
+            String resultText = invokeTemplate(templateInvocable, code, scopedParams);
             if (resultText == null) {
                 return jsonMapper.getNodeFactory().nullNode();
             }
@@ -178,32 +193,16 @@ public class ConfigEvalEngine
     }
 
     @Override
-    public String template(Path basePath, String content, Config params)
+    public String template(String content, Config params)
         throws TemplateException
     {
         Invocable templateInvocable = newTemplateInvocable(params);
-        String resultText = invokeTemplate(templateInvocable, basePath, content, params);
+        String resultText = invokeTemplate(templateInvocable, content, params);
         if (resultText == null) {
             return "";
         }
         else {
             return resultText;
-        }
-    }
-
-    @Override
-    public String templateFile(Path basePath, String fileName, Charset fileCharset, Config params)
-        throws IOException, TemplateException
-    {
-        basePath = basePath.toAbsolutePath().normalize();
-        Path absPath = basePath.resolve(fileName).normalize();
-        if (!absPath.toString().startsWith(basePath.toString())) {
-            throw new FileNotFoundException("file name must not include ..: " + fileName);
-        }
-
-        try (InputStream in = Files.newInputStream(absPath)) {
-            String content = CharStreams.toString(new InputStreamReader(in, fileCharset));
-            return template(basePath, content, params);
         }
     }
 }

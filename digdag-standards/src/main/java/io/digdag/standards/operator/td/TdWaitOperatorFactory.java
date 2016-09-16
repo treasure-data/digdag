@@ -53,9 +53,9 @@ public class TdWaitOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdWaitOperator(workspacePath, request);
+        return new TdWaitOperator(projectPath, request);
     }
 
     private class TdWaitOperator
@@ -69,13 +69,13 @@ public class TdWaitOperatorFactory
         private final int jobRetry;
         private final Config state;
 
-        private TdWaitOperator(Path workspacePath, TaskRequest request)
+        private TdWaitOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
-            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
             this.pollInterval = getPollInterval(params);
             this.engine = params.get("engine", String.class, "presto");
             if (!engine.equals("presto") && !engine.equals("hive")) {

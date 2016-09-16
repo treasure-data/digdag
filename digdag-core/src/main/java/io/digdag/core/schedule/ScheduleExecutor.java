@@ -14,6 +14,7 @@ import com.google.inject.Inject;
 import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.core.ErrorReporter;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.core.BackgroundExecutor;
@@ -41,8 +42,11 @@ public class ScheduleExecutor
     private final ScheduleStoreManager sm;
     private final SchedulerManager srm;
     private final ScheduleHandler handler;
-    private final SessionStoreManager sessionStoreManager;  // used for validation at backfill
+    private final SessionStoreManager sessionStoreManager;  // used for validation in backfill method
     private ScheduledExecutorService executor;
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public ScheduleExecutor(
@@ -100,6 +104,7 @@ public class ScheduleExecutor
         }
         catch (Throwable t) {
             logger.error("An uncaught exception is ignored. Scheduling will be retried.", t);
+            errorReporter.reportUncaughtError(t);
         }
     }
 

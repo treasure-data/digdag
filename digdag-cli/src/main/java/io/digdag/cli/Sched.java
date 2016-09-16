@@ -8,7 +8,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Version;
-import io.digdag.core.agent.NoopWorkspaceManager;
+import io.digdag.core.agent.LocalWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
@@ -51,7 +51,7 @@ public class Sched
             throw usage(null);
         }
 
-        sched();
+        startScheduler();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class Sched
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: 65432)");
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: 127.0.0.1)");
         err.println("    -o, --database DIR               store status to this database");
-        err.println("    -O, --task-log DIR               store task logs to this database");
+        err.println("    -O, --task-log DIR               store task logs to this path");
         err.println("        --max-task-threads N         limit maxium number of task execution threads");
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
@@ -72,14 +72,9 @@ public class Sched
         return systemExit(error);
     }
 
-    private void sched()
+    private void startScheduler()
             throws ServletException, Exception
     {
-        // use memory database by default
-        if (database == null) {
-            memoryDatabase = true;
-        }
-
         Properties props;
 
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
@@ -95,10 +90,17 @@ public class Sched
             Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
             props = buildServerProperties();
+
+            // use memory database by default
+            if (!props.containsKey("database.type")) {
+                props.setProperty("database.type", "memory");
+            }
+
             props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
 
+        // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
         ServerBootstrap.startServer(version, props, SchedulerServerBootStrap.class);
     }
 
@@ -145,8 +147,8 @@ public class Sched
                     binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
                 })
                 .overrideModulesWith((binder) -> {
-                    // overwrite server that uses LocalWorkspaceManager
-                    binder.bind(WorkspaceManager.class).to(NoopWorkspaceManager.class).in(Scopes.SINGLETON);
+                    // overwrite server that uses ExtractArchiveManager
+                    binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
                 });
         }
     }

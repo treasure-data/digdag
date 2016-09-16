@@ -23,7 +23,7 @@ public class EchoOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
         return new EchoOperator(request);
     }

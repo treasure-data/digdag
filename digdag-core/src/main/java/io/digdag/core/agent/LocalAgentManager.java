@@ -9,14 +9,18 @@ import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.core.BackgroundExecutor;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.queue.TaskQueueServerManager;
 
 public class LocalAgentManager
         implements BackgroundExecutor
 {
     private final Supplier<MultiThreadAgent> agentFactory;
-    private Thread thread;
-    private MultiThreadAgent agent;
+    private volatile Thread thread;
+    private volatile MultiThreadAgent agent;
+
+    @Inject(optional = true)
+    private ErrorReporter errorReporter = ErrorReporter.empty();
 
     @Inject
     public LocalAgentManager(
@@ -26,7 +30,7 @@ public class LocalAgentManager
             OperatorManager operatorManager)
     {
         if (config.getEnabled()) {
-            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager);
+            this.agentFactory = () -> new MultiThreadAgent(config, agentId, taskServer, operatorManager, errorReporter);
         }
         else {
             this.agentFactory = null;

@@ -84,7 +84,7 @@ public class WorkflowFile
         Config otherTopLevelConfig = copy.getFactory().create();
         for (String key : TOP_LEVEL_CONFIG) {
             if (copy.has(key)) {
-                otherTopLevelConfig.set(key, copy.getNested(key));
+                otherTopLevelConfig.set(key, copy.get(key, JsonNode.class));
                 copy.remove(key);
             }
         }

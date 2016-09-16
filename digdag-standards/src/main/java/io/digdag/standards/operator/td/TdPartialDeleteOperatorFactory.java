@@ -33,9 +33,9 @@ public class TdPartialDeleteOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdPartialDeleteOperator(workspacePath, request);
+        return new TdPartialDeleteOperator(projectPath, request);
     }
 
     private class TdPartialDeleteOperator
@@ -46,9 +46,9 @@ public class TdPartialDeleteOperatorFactory
         private final Instant from;
         private final Instant to;
 
-        private TdPartialDeleteOperator(Path workspacePath, TaskRequest request)
+        private TdPartialDeleteOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

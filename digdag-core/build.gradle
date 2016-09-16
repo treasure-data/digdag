@@ -32,4 +32,6 @@ dependencies {
         // sisu dependency injector is not used
         exclude group: 'org.eclipse.sisu'
     }
+
+    testCompile project(path: ':digdag-client', configuration: 'testArtifacts')
 }

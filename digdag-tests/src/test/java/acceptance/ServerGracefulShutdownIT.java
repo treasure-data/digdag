@@ -168,5 +168,6 @@ public class ServerGracefulShutdownIT
 
         assertThat(server.outUtf8(), containsString("Shutting down HTTP worker threads"));
         assertThat(server.outUtf8(), containsString("Shutting down system"));
+        assertThat(server.outUtf8(), containsString("Shutdown completed"));
     }
 }

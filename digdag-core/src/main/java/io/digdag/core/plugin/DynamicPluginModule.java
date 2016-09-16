@@ -28,7 +28,7 @@ public class DynamicPluginModule
         {
             boolean enabled = systemConfig.get("plugin.enabled", boolean.class, true);
             if (enabled) {
-                String localRepositoryPath = systemConfig.get("plugin.local-path", String.class, ".digdag/plugins");
+                String localRepositoryPath = systemConfig.get("plugin.local-path", String.class, ".digdag/plugins");  // TODO use ~/.config/digdag/plugins by default
                 this.pluginLoader = new RemotePluginLoader(Paths.get(localRepositoryPath));
             }
             else {

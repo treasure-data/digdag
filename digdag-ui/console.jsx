@@ -8,7 +8,7 @@ import 'whatwg-fetch';
 import _ from 'lodash';
 
 import React from 'react';
-import {Router, Link, Route, browserHistory} from 'react-router';
+import {Router, Link, Route, browserHistory, withRouter} from 'react-router';
 import moment from 'moment';
 import pako from 'pako';
 import path from 'path';
@@ -1124,7 +1124,7 @@ class Navbar extends React.Component {
   logout(e) {
     e.preventDefault();
     window.localStorage.removeItem("digdag.credentials");
-    window.location = '/';
+    window.location = DIGDAG_CONFIG.logoutUrl;
   }
 
   brand() {
@@ -1421,6 +1421,12 @@ class LoginPage extends React.Component {
     });
   }
 
+  componentWillMount() {
+    if (!DIGDAG_CONFIG.auth.items.length) {
+      this.props.onSubmit({})
+    }
+  }
+
   onChange(key) {
     return (e) => {
       e.preventDefault();
@@ -1489,6 +1495,20 @@ class LoginPage extends React.Component {
   }
 }
 
+class NotFoundPage extends React.Component {
+  props:{
+    router: Object;
+  };
+
+  componentDidMount() {
+    this.props.router.replace('/');
+  }
+
+  render() {
+    return null;
+  }
+}
+
 class ConsolePage extends React.Component {
   render() {
     return (
@@ -1501,6 +1521,7 @@ class ConsolePage extends React.Component {
             <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
             <Route path="/sessions/:sessionId" component={SessionPage}/>
             <Route path="/attempts/:attemptId" component={AttemptPage}/>
+            <Route path="*" component={withRouter(NotFoundPage)}/>
           </Route>
         </Router>
       </div>

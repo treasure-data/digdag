@@ -40,9 +40,9 @@ public class RequireOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new RequireOperator(workspacePath, callback, request);
+        return new RequireOperator(projectPath, callback, request);
     }
 
     private static class RequireOperator
@@ -52,9 +52,9 @@ public class RequireOperatorFactory
         private final TaskRequest request;
         private ConfigFactory cf;
 
-        private RequireOperator(Path workspacePath, TaskCallbackApi callback, TaskRequest request)
+        private RequireOperator(Path projectPath, TaskCallbackApi callback, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
             this.callback = callback;
             this.request = request;
             this.cf = request.getConfig().getFactory();

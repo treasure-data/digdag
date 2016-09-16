@@ -35,8 +35,8 @@ public interface AgentConfig
     {
         return defaultBuilder()
             .enabled(config.get("agent.enabled", boolean.class, true))
-            .heartbeatInterval(config.get("agent.heartbeatInterval", int.class, DEFAULT_HEARTBEAT_INTERVAL))
-            .lockRetentionTime(config.get("agent.lockRetentionTime", int.class, DEFAULT_LOCK_RETENTION_TIME))
+            .heartbeatInterval(config.get("agent.heartbeat-interval", int.class, DEFAULT_HEARTBEAT_INTERVAL))
+            .lockRetentionTime(config.get("agent.lock-retention-time", int.class, DEFAULT_LOCK_RETENTION_TIME))
             .maxThreads(config.get("agent.max-task-threads", int.class, DEFAULT_MAX_TASK_THREADS))
             .build();
     }

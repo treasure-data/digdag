@@ -9,6 +9,7 @@ import java.time.Duration;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.spi.TaskRequest;
+import io.digdag.core.ErrorReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,17 +22,21 @@ public class MultiThreadAgent
     private final AgentId agentId;
     private final TaskServerApi taskServer;
     private final OperatorManager runner;
+    private final ErrorReporter errorReporter;
     private final ThreadPoolExecutor executor;
     private final Object newTaskLock = new Object();
     private volatile boolean stop = false;
 
-    public MultiThreadAgent(AgentConfig config, AgentId agentId,
-            TaskServerApi taskServer, OperatorManager runner)
+    public MultiThreadAgent(
+            AgentConfig config, AgentId agentId,
+            TaskServerApi taskServer, OperatorManager runner,
+            ErrorReporter errorReporter)
     {
         this.agentId = agentId;
         this.config = config;
         this.taskServer = taskServer;
         this.runner = runner;
+        this.errorReporter = errorReporter;
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setDaemon(false)  // make them non-daemon threads so that shutting down agent doesn't kill operator execution
             .setNameFormat("task-thread-%d")
@@ -90,7 +95,8 @@ public class MultiThreadAgent
                                     runner.run(req);
                                 }
                                 catch (Throwable t) {
-                                    logger.error("Uncaught exception. Task heartbeat for at-least-once task execution is not implemented yet.", t);
+                                    logger.error("Uncaught exception. Task queue will detect this failure and this task will be retried later.", t);
+                                    errorReporter.reportUncaughtError(t);
                                 }
                             });
                         }
@@ -102,7 +108,15 @@ public class MultiThreadAgent
                 }
             }
             catch (Throwable t) {
-                logger.error("Uncaught exception. Ignoring.", t);
+                logger.error("Uncaught exception during acquiring tasks from a server. Ignoring. Agent thread will be retried.", t);
+                errorReporter.reportUncaughtError(t);
+                try {
+                    // sleep before retrying
+                    Thread.sleep(1000);
+                }
+                catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

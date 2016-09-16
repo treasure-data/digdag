@@ -10,7 +10,7 @@ apply plugin: 'maven'
 
 allprojects {
     group = 'io.digdag'
-    version = '0.8.12-SNAPSHOT'
+    version = '0.8.15-SNAPSHOT'
 
     apply plugin: 'idea'
     apply plugin: 'java'
@@ -134,20 +134,28 @@ subprojects {
         }
     }
 
-    task testsJar(type: Jar, dependsOn: classes) {
+    task testsJar(type: Jar) {
         classifier = 'tests'
         from sourceSets.test.output
     }
-    task sourcesJar(type: Jar, dependsOn: classes) {
+    task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
     }
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    task javadocJar(type: Jar) {
         classifier = 'javadoc'
-        from javadoc.destinationDir
+        from javadoc
     }
 
     task deps(type: DependencyReportTask) {
+    }
+
+    configurations {
+        testArtifacts.extendsFrom testRuntime
+    }
+
+    artifacts {
+        testArtifacts testsJar
     }
 
     //artifacts {
@@ -162,6 +170,23 @@ subprojects {
                     groupId project.group
                     artifactId 'digdag'
                     version project.version
+                }
+            }
+        }.withXml {
+            project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
+                it instanceof ModuleDependency && !it.excludeRules.isEmpty()
+            }.each { ModuleDependency dep ->
+                def xmlDep = asNode().dependencies.dependency.find {
+                    it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
+                }
+                def xmlExclusions = xmlDep.exclusions[0]
+                if (!xmlExclusions) {
+                    xmlExclusions = xmlDep.appendNode('exclusions')
+                }
+                dep.excludeRules.each { ExcludeRule rule ->
+                    def xmlExclusion = xmlExclusions.appendNode('exclusion')
+                    xmlExclusion.appendNode('groupId', rule.group)
+                    xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
                 }
             }
         }.writeTo("${delegate.project.projectDir}/pom.xml")
@@ -191,7 +216,7 @@ jacocoTestReport {
 check.dependsOn('jacocoTestReport')
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.11'
+    gradleVersion = '3.0'
 }
 
 project(':digdag-cli') {
@@ -309,6 +334,7 @@ task release() {
         println("done.")
     }
 }
+check.dependsOn('releaseCheck')
 
 task setVersion << {
     if (!project.hasProperty("to")) {
@@ -349,21 +375,26 @@ task setVersion << {
 }
 
 task releaseCheck << {
-    if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
-        throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+    if (project.version.endsWith('-SNAPSHOT')) {
+        println "Releasing a SNAPSHOT version."
     }
-    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
-        throw new GradleException("Release note for ${project.version} doesn't exist")
+    else {
+        if (!file("digdag-core/src/main/resources/io/digdag/core/version.txt").getText().contains("${project.version}")) {
+            throw new GradleException("digdag-core/src/main/resources/io/digdag/core/version.txt doesn't include ${project.version}")
+        }
+        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains("${project.version}")) {
+            throw new GradleException("Release note for ${project.version} doesn't exist")
+        }
+        if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
+            throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
+        }
+        String date = new Date().format("yyyy-MM-dd")
+        if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
+            throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
+        }
+        // TODO check git-ls-files includes release-<version>.rst file
+        println "Ready. Run 'release' task."
     }
-    if (!file("digdag-docs/src/releases.rst").getText().contains("release-${project.version}")) {
-        throw new GradleException("digdag-docs/src/releases.rst doesn't include release-${project.version}")
-    }
-    String date = new Date().format("yyyy-MM-dd")
-    if (!file("digdag-docs/src/releases/release-${project.version}.rst").getText().contains(date)) {
-        throw new GradleException("digdag-docs/src/releases/release-${project.version}.rst doesn't include today's release date")
-    }
-    // TODO check git-ls-files includes release-<version>.rst file
-    println "Ready. Run 'release' task."
 }
 
 // Generate parent maven manifest
@@ -416,6 +447,15 @@ task pom << {
         def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
         def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
         enforcer_rules.appendNode('requireUpperBoundDeps', '')
+
+        def jar = plugins.appendNode('plugin', '')
+        jar.appendNode('groupId', 'org.apache.maven.plugins')
+        jar.appendNode('artifactId', 'maven-jar-plugin')
+        jar.appendNode('version', '3.0.2')
+        def jar_executions = jar.appendNode('executions', '')
+        def jar_execution = jar_executions.appendNode('execution', '')
+        def jar_execution_goals = jar_execution.appendNode('goals', '')
+        jar_execution_goals.appendNode('goal', 'test-jar')
     }.writeTo("pom.xml")
 }
 

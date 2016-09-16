@@ -6,6 +6,7 @@ var DIGDAG_CONFIG = {
     queryUrl: (queryId) => `https://console.treasuredata.com/queries/${queryId}`,
     jobUrl: (jobId) => `https://console.treasuredata.com/jobs/${jobId}`
   },
+  logoutUrl: '/',
   navbar: {
     logo: '/logo.png',
     brand: 'Digdag',

@@ -5,7 +5,7 @@ apply plugin: 'maven-publish'
 group = 'io.digdag.plugin'
 version = '0.1.0'
 
-def digdagVersion = '0.8.2'
+def digdagVersion = '0.8.14'
 
 repositories {
     mavenLocal()
@@ -54,6 +54,10 @@ targetCompatibility = 1.8
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+}
 
 javadoc {
     options {

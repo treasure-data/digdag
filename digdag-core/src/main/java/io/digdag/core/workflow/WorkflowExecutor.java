@@ -342,6 +342,18 @@ public class WorkflowExecutor
         }
     }
 
+    public void noticeRunWhileConditionChange()
+    {
+        propagatorLock.lock();
+        try {
+            // don't set propagatorNotice but break wait in runWhile
+            propagatorCondition.signalAll();
+        }
+        finally {
+            propagatorLock.unlock();
+        }
+    }
+
     public void run()
             throws InterruptedException
     {
@@ -377,7 +389,7 @@ public class WorkflowExecutor
     private static final int INITIAL_INTERVAL = 100;
     private static final int MAX_INTERVAL = 5000;
 
-    private void runWhile(BooleanSupplier cond)
+    public void runWhile(BooleanSupplier cond)
             throws InterruptedException
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
@@ -620,9 +632,16 @@ public class WorkflowExecutor
                 .stream()
                 .map(task -> {
                     return sm.lockAttemptIfExists(task.getAttemptId(), (store, summary) -> {
-                        SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
-                        control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
-                        return true;
+                        if (summary.getStateFlags().isDone()) {
+                            // already archived. This means that another thread archived
+                            // this attempt after findRootTasksByStates call.
+                            return false;
+                        }
+                        else {
+                            SessionAttemptControl control = new SessionAttemptControl(store, task.getAttemptId());
+                            control.archiveTasks(archiveMapper, task.getState() == TaskStateCode.SUCCESS);
+                            return true;
+                        }
                     }).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
@@ -938,7 +957,7 @@ public class WorkflowExecutor
 
             // remove conditional subtasks that may cause JavaScript evaluation error if they include reference to a nested field such as
             // this_will_be_set_at_this_task.this_is_null.this_access_causes_error.
-            // _do is another conditional subtsaks but they are kept remained and removed later at ConfigEvalEngine because
+            // _do is another conditional subtsaks but they are kept remained here and removed later in ConfigEvalEngine because
             // operator factory needs _do while _check and _error are used only by WorkflowExecutor.
             Config localConfig = task.getConfig().getLocal().deepCopy();
             params.remove("_check");

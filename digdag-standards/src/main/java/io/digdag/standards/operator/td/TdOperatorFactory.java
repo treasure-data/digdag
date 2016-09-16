@@ -65,9 +65,9 @@ public class TdOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdOperator(workspacePath, request);
+        return new TdOperator(projectPath, request);
     }
 
     private class TdOperator
@@ -85,14 +85,14 @@ public class TdOperatorFactory
         private final boolean storeLastResults;
         private final boolean preview;
 
-        private TdOperator(Path workspacePath, TaskRequest request)
+        private TdOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
-            this.query = templateEngine.templateCommand(workspacePath, params, "query", UTF_8);
+            this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
 
             this.insertInto = params.getOptional("insert_into", TableParam.class);
             this.createTable = params.getOptional("create_table", TableParam.class);
@@ -342,11 +342,13 @@ public class TdOperatorFactory
 
         if (storeLastResults) {
             List<ArrayValue> results = downloadFirstResults(j, 1);
-            ArrayValue row = results.get(0);
             Map<RawValue, Value> map = new LinkedHashMap<>();
-            List<String> columnNames = j.getResultColumnNames();
-            for (int i = 0; i < Math.min(row.size(), columnNames.size()); i++) {
-                map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
+            if (!results.isEmpty()) {
+                ArrayValue row = results.get(0);
+                List<String> columnNames = j.getResultColumnNames();
+                for (int i = 0; i < Math.min(row.size(), columnNames.size()); i++) {
+                    map.put(ValueFactory.newString(columnNames.get(i)), row.get(i));
+                }
             }
             MapValue lastResults = ValueFactory.newMap(map);
             try {

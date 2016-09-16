@@ -21,7 +21,7 @@ import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.LocalSite;
 import io.digdag.core.Version;
-import io.digdag.core.agent.LocalWorkspaceManager;
+import io.digdag.core.agent.ExtractArchiveWorkspaceManager;
 import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.guice.rs.GuiceRsBootstrap;
@@ -67,6 +67,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 public class ServerBootstrap
     implements GuiceRsBootstrap
 {
@@ -106,23 +108,6 @@ public class ServerBootstrap
 
         Injector injector = digdag.getInjector();
 
-        if (serverConfig.getExecutorEnabled()) {
-            // TODO create global site
-            LocalSite site = injector.getInstance(LocalSite.class);
-
-            Thread thread = new Thread(() -> {
-                try {
-                    site.run();
-                }
-                catch (Exception ex) {
-                    logger.error("Uncaught error", ex);
-                    control.destroy();
-                }
-            }, "local-site");
-            thread.setDaemon(true);
-            thread.start();
-        }
-
         return injector;
     }
 
@@ -133,11 +118,12 @@ public class ServerBootstrap
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {
-                binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
+                binder.bind(WorkspaceManager.class).to(ExtractArchiveWorkspaceManager.class).in(Scopes.SINGLETON);
                 binder.bind(Version.class).toInstance(version);
             })
             .addModules((binder) -> {
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
+                binder.bind(WorkflowExecutorLoop.class).asEagerSingleton();
             })
             .addModules(
                     new EagerShutdownModule(control),
@@ -307,6 +293,7 @@ public class ServerBootstrap
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             control.stop();
             control.destroy();
+            logger.info("Shutdown completed");
         }, "shutdown"));
     }
 
@@ -350,8 +337,13 @@ public class ServerBootstrap
         XnioWorker worker;
         try {
             // copied defaults from Undertow
-            int httpIoThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-            int httpWorkerThreads = httpIoThreads * 8;
+            int httpIoThreads = config.getHttpIoThreads().or(() -> Math.max(Runtime.getRuntime().availableProcessors(), 2));
+            int httpWorkerThreads = config.getHttpWorkerThreads().or(httpIoThreads * 8);
+
+            // WORKER_TASK_CORE_THREADS is not used since this commit:
+            // https://github.com/xnio/xnio/commit/fc16271f732630d9f1486d9d23eebb01a5159bb9
+            // Xnio always uses corePoolSize == maximumPoolSize which means that all threads are
+            // always alive even if they're idle.
 
             worker = Xnio.getInstance(Undertow.class.getClassLoader())
                 .createWorker(OptionMap.builder()

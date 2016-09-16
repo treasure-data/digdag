@@ -52,9 +52,9 @@ public class TdWaitTableOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdWaitTableOperator(workspacePath, request);
+        return new TdWaitTableOperator(projectPath, request);
     }
 
     private class TdWaitTableOperator
@@ -70,9 +70,9 @@ public class TdWaitTableOperatorFactory
         private final int jobRetry;
         private final Config state;
 
-        private TdWaitTableOperator(Path workspacePath, TaskRequest request)
+        private TdWaitTableOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

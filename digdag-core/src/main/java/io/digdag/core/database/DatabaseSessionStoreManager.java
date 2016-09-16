@@ -70,6 +70,41 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Store session state on a database.
+ *
+ * Lock relations:
+ *
+ * Attempt initialization:
+ *   // insert the root task of an attempt
+ *   insertRootTask:
+ *     locked session
+ *
+ *   // used by dynamic task generation
+ *   addResumingTasks:
+ *     locked root task
+ *
+ * Attempt execution:
+ *   // generating regular dynamic tasks and monitor tasks
+ *   addSubtask:
+ *     locked parent task
+ *
+ *   // generating dynamic tasks that are resumed by previous attempt
+ *   addResumedSubtask:
+ *     locked parent task
+ *
+ *   // reinserting tasks for group-retry
+ *   copyInitialTasksForRetry:
+ *     locked parent task
+ *     and parent task is ready
+ *
+ * Attempt cleanup:
+ *   // SessionAttemptControlStore.archiveTasks
+ *   aggregateAndInsertTaskArchive, deleteAllTasksOfAttempt, setDoneToAttemptState:
+ *     locked attempt
+ *     and attempt is done yet
+ *
+ */
 public class DatabaseSessionStoreManager
         extends BasicDatabaseStoreManager<DatabaseSessionStoreManager.Dao>
         implements SessionStoreManager
@@ -267,7 +302,7 @@ public class DatabaseSessionStoreManager
         return autoCommit((handle, dao) ->
                 handle.createQuery(
                     "select id, attempt_id, state" +
-                    " from tasks " +
+                    " from tasks" +
                     " where parent_id is null" +
                     " and state in (" +
                         Stream.of(states)
@@ -287,7 +322,7 @@ public class DatabaseSessionStoreManager
     public boolean requestCancelAttempt(long attemptId)
     {
         return transaction((handle, dao, ts) -> {
-            int n = handle.createStatement("update tasks " +
+            int n = handle.createStatement("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
                     " and state in (" +
@@ -698,13 +733,6 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public StoredTask getTaskById(long taskId)
-            throws ResourceNotFoundException
-        {
-            return DatabaseSessionStoreManager.this.getTaskById(handle, taskId);
-        }
-
-        @Override
         public void addDependencies(long downstream, List<Long> upstreams)
         {
             for (long upstream : upstreams) {
@@ -813,7 +841,7 @@ public class DatabaseSessionStoreManager
 
         public boolean setPlannedStateWithDelayedError(long taskId, TaskStateCode beforeState, TaskStateCode afterState, int newFlags, Optional<Config> updateError)
         {
-            int n = handle.createStatement("update tasks " +
+            int n = handle.createStatement("update tasks" +
                     " set updated_at = now(), state = :newState, state_flags = " + bitOr("state_flags", Integer.toString(newFlags)) +
                     " where id = :id" +
                     " and state = :oldState"
@@ -1437,16 +1465,16 @@ public class DatabaseSessionStoreManager
                 " and full_name like :fullNamePattern")
         List<ResumingTask> findResumingTasksByNamePrefix(@Bind("attemptId") long attemptId, @Bind("fullNamePattern") String fullNamePattern);
 
-        @SqlQuery("select id, attempt_id, parent_id, state, updated_at " +
-                " from tasks " +
+        @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
+                " from tasks" +
                 " where updated_at > :updatedSince" +
                 " or (updated_at = :updatedSince and id > :lastId)" +
                 " order by updated_at asc, id asc" +
                 " limit :limit")
         List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Instant updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
-        @SqlQuery("select id, attempt_id, parent_id, state, updated_at " +
-                " from tasks " +
+        @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
+                " from tasks" +
                 " where state = :state" +
                 " and id > :lastId" +
                 " order by id asc" +
@@ -1454,7 +1482,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<TaskStateSummary> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
-        @SqlQuery("select id from tasks " +
+        @SqlQuery("select id from tasks" +
                 " where id = :id" +
                 " for update")
         Long lockTask(@Bind("id") long taskId);
@@ -1465,29 +1493,29 @@ public class DatabaseSessionStoreManager
                 " for update")
         Long lockRootTask(@Bind("attemptId") long attemptId);
 
-        @SqlUpdate("update tasks " +
+        @SqlUpdate("update tasks" +
                 " set updated_at = now(), state = :newState" +
                 " where id = :id" +
                 " and state = :oldState")
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
-        @SqlUpdate("update tasks " +
+        @SqlUpdate("update tasks" +
                 " set updated_at = now(), state = :newState, state_params = NULL" +  // always set state_params = NULL
                 " where id = :id" +
                 " and state = :oldState")
         long setDoneState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
-        @SqlUpdate("update task_state_details " +
+        @SqlUpdate("update task_state_details" +
                 " set error = :error" +
                 " where id = :id")
         long setError(@Bind("id") long taskId, @Bind("error") Config error);
 
-        @SqlUpdate("update task_state_details " +
+        @SqlUpdate("update task_state_details" +
                 " set subtask_config = :subtaskConfig, export_params = :exportParams, store_params = :storeParams, report = :report, error = null" +
                 " where id = :id")
         long setSuccessfulReport(@Bind("id") long taskId, @Bind("subtaskConfig") Config subtaskConfig, @Bind("exportParams") Config exportParams, @Bind("storeParams") Config storeParams, @Bind("report") Config report);
 
-        @SqlUpdate("update tasks " +
+        @SqlUpdate("update tasks" +
                 " set updated_at = now(), retry_at = NULL, state = " + TaskStateCode.READY_CODE +
                 " where state in (" + TaskStateCode.RETRY_WAITING_CODE +"," + TaskStateCode.GROUP_RETRY_WAITING_CODE + ")" +
                 " and retry_at <= now()")

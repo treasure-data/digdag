@@ -1,13 +1,7 @@
 package io.digdag.core.archive;
 
 import java.io.IOException;
-import java.util.Properties;
-import java.util.HashSet;
-import java.util.Set;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import com.google.inject.Inject;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
@@ -16,8 +10,7 @@ import io.digdag.core.repository.WorkflowDefinitionList;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.repository.ModelValidator;
 import io.digdag.core.repository.ModelValidationException;
-import io.digdag.core.archive.ProjectArchive.PathConsumer;
-import static io.digdag.core.archive.ProjectArchive.realPathToResourceName;
+import static io.digdag.core.archive.ProjectArchive.listFiles;
 import static io.digdag.core.archive.ProjectArchive.resourceNameToWorkflowName;
 
 public class ProjectArchiveLoader
@@ -45,7 +38,7 @@ public class ProjectArchiveLoader
         ImmutableList.Builder<WorkflowDefinition> defs = ImmutableList.builder();
 
         listFiles(projectPath, (resourceName, path) -> {
-            if (matcher.matches(resourceName)) {
+            if (matcher.matches(resourceName, path)) {
                 try {
                     WorkflowFile workflowFile = loadWorkflowFile(resourceName, path, overwriteParams);
                     defs.add(workflowFile.toWorkflowDefinition());
@@ -95,32 +88,5 @@ public class ProjectArchiveLoader
         }
 
         return workflowFile;
-    }
-
-    static void listFiles(Path projectPath, PathConsumer consumer)
-        throws IOException
-    {
-        listFilesRecursively(projectPath, projectPath, consumer, new HashSet<>());
-    }
-
-    private static void listFilesRecursively(Path projectPath, Path targetDir, PathConsumer consumer, Set<String> listed)
-        throws IOException
-    {
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(targetDir, ProjectArchiveLoader::rejectDotFiles)) {
-            for (Path path : ds) {
-                String resourceName = realPathToResourceName(projectPath, path);
-                if (listed.add(resourceName)) {
-                    consumer.accept(resourceName, path);
-                    if (Files.isDirectory(path)) {
-                        listFilesRecursively(projectPath, path, consumer, listed);
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean rejectDotFiles(Path target)
-    {
-        return !target.getFileName().toString().startsWith(".");
     }
 }

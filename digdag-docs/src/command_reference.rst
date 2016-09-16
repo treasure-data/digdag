@@ -217,7 +217,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.11
+    $ digdag selfupdate 0.8.14
 
 Server-mode commands
 ----------------------------------
@@ -298,6 +298,8 @@ In the config file, following parameters are available
 * server.port (integer)
 * server.access-log.path (string. same with --access-log)
 * server.access-log.pattern (string, "json", "combined" or "common")
+* server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)
+* server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
@@ -311,7 +313,7 @@ In the config file, following parameters are available
 * database.connectionTimeout (seconds in integer, default: 30)
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
-* database.maximumPoolSize (integer, default: 10)
+* database.maximumPoolSize (integer, default: available CPU cores * 32)
 
 
 Client-mode commands

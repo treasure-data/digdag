@@ -48,9 +48,9 @@ public class TdLoadOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new TdLoadOperator(workspacePath, request);
+        return new TdLoadOperator(projectPath, request);
     }
 
     private class TdLoadOperator
@@ -64,9 +64,9 @@ public class TdLoadOperatorFactory
         private final Optional<String> sessionName;
         private final Optional<ObjectNode> embulkConfig;
 
-        protected TdLoadOperator(Path workspacePath, TaskRequest request)
+        protected TdLoadOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request, env);
+            super(projectPath, request, env);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -162,7 +162,7 @@ public class TdLoadOperatorFactory
             ObjectNode embulkConfig;
             String built;
             try {
-                built = templateEngine.templateFile(workspacePath, command, UTF_8, params);
+                built = workspace.templateFile(templateEngine, command, UTF_8, params);
             }
             catch (IOException | TemplateException ex) {
                 throw new ConfigException("Failed to load bulk load file", ex);

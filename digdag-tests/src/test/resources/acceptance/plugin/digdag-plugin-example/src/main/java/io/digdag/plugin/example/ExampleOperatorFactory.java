@@ -10,6 +10,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.util.BaseOperator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -29,26 +30,26 @@ public class ExampleOperatorFactory
     }
 
     @Override
-    public Operator newTaskExecutor(Path workspacePath, TaskRequest request)
+    public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new ExampleOperator(workspacePath, request);
+        return new ExampleOperator(projectPath, request);
     }
 
     private class ExampleOperator
             extends BaseOperator
     {
-        public ExampleOperator(Path workspacePath, TaskRequest request)
+        public ExampleOperator(Path projectPath, TaskRequest request)
         {
-            super(workspacePath, request);
+            super(projectPath, request);
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("example"));
 
-            String message = templateEngine.templateCommand(workspacePath, params, "message", UTF_8);
+            String message = workspace.templateCommand(templateEngine, params, "message", UTF_8);
             String path = params.get("path", String.class);
 
             try {

@@ -33,7 +33,7 @@ public class PgOperatorFactoryTest
     }
 
     @Test
-    public void newTaskExecutor()
+    public void newOperator()
             throws IOException
     {
         Map<String, Object> configInput = ImmutableMap.of(
@@ -42,7 +42,7 @@ public class PgOperatorFactoryTest
                 "database", "database0"
         );
         TaskRequest taskRequest = testHelper.createTaskRequest(configInput, Optional.absent());
-        Operator operator = operatorFactory.newTaskExecutor(testHelper.workpath(), taskRequest);
+        Operator operator = operatorFactory.newOperator(testHelper.projectPath(), taskRequest);
         assertThat(operator, is(instanceOf(PgOperatorFactory.PgOperator.class)));
     }
 }
