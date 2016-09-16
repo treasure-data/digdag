@@ -172,6 +172,25 @@ subprojects {
                     version project.version
                 }
             }
+        }.withXml {
+            project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
+                it instanceof ModuleDependency && !it.excludeRules.isEmpty()
+            }.each { ModuleDependency dep ->
+                def xmlDep = asNode().dependencies.dependency.find {
+                    it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
+                }
+                def xmlExclusions = xmlDep.exclusions[0]
+                if (!xmlExclusions) {
+                    xmlExclusions = xmlDep.appendNode('exclusions')
+                }
+                dep.excludeRules.each { ExcludeRule rule ->
+                    def xmlExclusion = xmlExclusions.appendNode('exclusion')
+                    xmlExclusion.appendNode('groupId', rule.group)
+                    print 'rule: ' + rule
+                    print 'rule.module: ' + rule.module
+                    xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+                }
+            }
         }.writeTo("${delegate.project.projectDir}/pom.xml")
     }
 }
