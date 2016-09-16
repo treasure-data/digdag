@@ -55,7 +55,7 @@ public class PgConnectionConfigTest
         );
 
         this.connConfigWithCustomValue = PgConnectionConfig.configure(
-                key -> Optional.absent(), jdbcOpTestHelper.createConfig(customConfigValues)
+                key -> key.equals("password") ? Optional.of("password1") : Optional.absent(), jdbcOpTestHelper.createConfig(customConfigValues)
         );
 
         this.connConfigWithCustomValueFromSecrets = PgConnectionConfig.configure(
