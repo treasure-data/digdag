@@ -253,6 +253,7 @@ export class Model {
 
   fetchProjectArchiveLatest(projectId: number): Promise<ProjectArchive> {
     return fetch(this.config.url + `projects/${projectId}/archive`, {
+      credentials: 'include',
       headers: this.headers(),
     }).then(response => {
       if (!response.ok) {
@@ -268,6 +269,7 @@ export class Model {
 
   fetchProjectArchiveWithRevision(projectId: number, revisionName: string): Promise<ProjectArchive> {
     return fetch(this.config.url + `projects/${projectId}/archive?revision=${encodeURIComponent(revisionName)}`, {
+      credentials: 'include',
       headers: this.headers(),
     }).then(response => {
       if (!response.ok) {
