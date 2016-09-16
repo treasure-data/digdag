@@ -281,6 +281,17 @@ export class Model {
     });
   }
 
+  getTDQueryIdFromName(queryName: string) {
+    console.log('boo', this.config)
+    return fetch(this.config.tdApiUrl + '/schedule/history/'+ queryName, {
+      headers: this.headers()
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.json();
+    });
+  }
 
   get(url: string): Promise {
     return fetch(this.config.url + url, {

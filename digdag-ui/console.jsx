@@ -75,12 +75,16 @@ Prism.hooks.add('wrap', (env) => {
       env.tag = 'a'
       env.attributes.target = '_blank'
       if (env.type === 'td-run-value') {
-        env.attributes.id = env.content
-        //env.attributes.href = `https://console.treasuredata.com/query/${env.content}`
-        setTimeout(() => {
-          const elem = document.getElementById(env.content)
-          elem.setAttribute('href', 'foo')
-        }, 400)
+        env.attributes.name = env.content
+        model().getTDQueryIdFromName(env.content)
+          .then((values) => {
+            console.log('c', values)
+            const htmlElements = document.getElementsByName(env.content)
+            const elements = [].slice.call(htmlElements)
+            elements.forEach((element) => {
+              element.setAttribute('href', 'foo')
+            })
+          })
       } else {
         env.attributes.href = `https://console-next.treasuredata.com/connections/data-transfers`
       }
@@ -1521,6 +1525,7 @@ export default class Console extends React.Component {
   setup(credentials:Credentials) {
     setupModel({
       url: DIGDAG_CONFIG.url,
+      tdApiUrl: DIGDAG_CONFIG.tdApiUrl,
       credentials: credentials,
       headers: DIGDAG_CONFIG.headers
     });
