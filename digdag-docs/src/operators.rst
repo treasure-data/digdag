@@ -16,18 +16,20 @@ This operator embeds another workflow as a subtask.
 
     # workflow1.dig
     +step1:
-      call>: another_workflow
+      call>: another_workflow.dig
+    +step2:
+      call>: sub/shared_workflow.dig
 
 .. code-block:: yaml
 
     # another_workflow.dig
-    +step2:
-      sh>: tasks/step2.sh
+    +another:
+      sh>: tasks/another.sh
 
-:command:`call>: NAME`
-  Name of a workflow.
+:command:`call>: FILE`
+  Path to a workflow definition file.
 
-  Example: another_workflow
+  Example: another_workflow.dig
 
 require>: Depends on another workflow
 ----------------------------------

@@ -51,12 +51,12 @@ public class WorkflowFile
         check();
     }
 
-    public void setWorkdir(String value)
+    public void setBaseWorkdir(String base)
     {
-        topLevelExport.set("_workdir",
-                topLevelExport.getOptional("_workdir", String.class)
-                .transform(it -> it + "/" + value)
-                .or(value));
+        String workdir = topLevelExport.getOptional("_workdir", String.class)
+            .transform(it -> base + "/" + it)  // prepend base to _workdir
+            .or(base);
+        topLevelExport.set("_workdir", workdir);
     }
 
     protected void check()
