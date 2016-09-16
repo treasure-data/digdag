@@ -81,7 +81,7 @@ Prism.hooks.add('wrap', (env) => {
           env.tag = 'span'
         }
       } else {
-        env.attributes.href = DIGDAG_CONFIG.connectorUrl(env.con)`https://console-next.treasuredata.com/connections/data-transfers`
+        env.attributes.href = DIGDAG_CONFIG.connectorUrl(env.con)
       }
   }
 })
