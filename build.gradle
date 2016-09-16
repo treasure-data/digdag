@@ -186,8 +186,6 @@ subprojects {
                 dep.excludeRules.each { ExcludeRule rule ->
                     def xmlExclusion = xmlExclusions.appendNode('exclusion')
                     xmlExclusion.appendNode('groupId', rule.group)
-                    print 'rule: ' + rule
-                    print 'rule.module: ' + rule.module
                     xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
                 }
             }
