@@ -146,6 +146,12 @@ export type HeadersProvider = (args: {credentials: Credentials}) => Headers;
 
 export type ModelConfig = {
   url: string;
+  td: {
+    apiV4: string;
+    connectorUrl: (id: string) => string;
+    queryUrl: (id: string) => string;
+    jobUrl: (id: string) => string;
+  };
   credentials: Credentials;
   headers: HeadersProvider;
 }
@@ -153,10 +159,12 @@ export type ModelConfig = {
 export class Model {
   config: ModelConfig;
   workflowCache: LRU;
+  queriesCache: LRU;
 
   constructor(config: ModelConfig) {
     this.config = config;
     this.workflowCache = LRU({ max: 10000 });
+    this.queriesCache = LRU({ max: 10000 });
   }
 
   fetchProjects(): Promise<Array<Project>> {
@@ -281,16 +289,27 @@ export class Model {
     });
   }
 
-  getTDQueryIdFromName(queryName: string) {
-    console.log('boo', this.config)
-    return fetch(this.config.tdApiUrl + '/schedule/history/'+ queryName, {
+  getTDQueryIdFromName(queryName: string) : string {
+    const query = this.queriesCache.get(queryName, null);
+    if (!query) {
+      return '' // this forces to go to query list
+    }
+    return query.id;
+  }
+
+  fillTDQueryCache() : Promise {
+    return fetch(this.config.td.apiV4 + '/queries', {
       headers: this.headers()
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText);
       }
       return response.json();
-    });
+    }).then((queries) => {
+      queries.forEach((query) => {
+        this.queriesCache.set(query.name, query)
+      })
+    })
   }
 
   get(url: string): Promise {

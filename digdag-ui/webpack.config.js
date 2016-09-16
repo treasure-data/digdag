@@ -8,7 +8,7 @@ module.exports = {
   entry: [
     'babel-polyfill',
     'whatwg-fetch',
-    'webpack-dev-server/client?http://0.0.0.0:8080', // WebpackDevServer host and port
+    'webpack-dev-server/client?http://0.0.0.0:9000', // WebpackDevServer host and port
     'webpack/hot/only-dev-server',
     'bootstrap-loader',
     './index.jsx',

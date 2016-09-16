@@ -1,3 +1,51 @@
+html, #root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   padding-top: 80px;
+  width: 100%;
+  height: 100%;
+}
+
+a.td-run-value,
+a.td-load-value {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+code,
+pre {
+  tab-size: 2 !important;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.glyphicon.spinning {
+  font-size: 30px;
+  animation: spin 1s infinite linear;
+  -webkit-animation: spin2 1s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: scale(1) rotate(0deg); }
+  to { transform: scale(1) rotate(360deg); }
+}
+
+@-webkit-keyframes spin2 {
+  from { -webkit-transform: rotate(0deg); }
+  to { -webkit-transform: rotate(360deg); }
+}
+
+.loadingText {
+  margin-top: 40px;
+  font-size: 22px;
 }

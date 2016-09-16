@@ -66,7 +66,6 @@ Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token 
       }
     }
   }
-
 });
 
 
@@ -75,18 +74,14 @@ Prism.hooks.add('wrap', (env) => {
       env.tag = 'a'
       env.attributes.target = '_blank'
       if (env.type === 'td-run-value') {
-        env.attributes.name = env.content
-        model().getTDQueryIdFromName(env.content)
-          .then((values) => {
-            console.log('c', values)
-            const htmlElements = document.getElementsByName(env.content)
-            const elements = [].slice.call(htmlElements)
-            elements.forEach((element) => {
-              element.setAttribute('href', 'foo')
-            })
-          })
+        const queryId = model().getTDQueryIdFromName(env.content)
+        if (queryId) {
+          env.attributes.href = DIGDAG_CONFIG.td.queryUrl(queryId)
+        } else {
+          env.tag = 'span'
+        }
       } else {
-        env.attributes.href = `https://console-next.treasuredata.com/connections/data-transfers`
+        env.attributes.href = DIGDAG_CONFIG.connectorUrl(env.con)`https://console-next.treasuredata.com/connections/data-transfers`
       }
   }
 })
@@ -106,7 +101,12 @@ type AuthItem = {
 
 type ConsoleConfig = {
   url: string;
-  jobUrl: (id:string) => string;
+  td: {
+    apiV4: string,
+    jobUrl: (id:string) => string;
+    connectorUrl: (id:string) => string;
+    queryUrl: (id:string) => string;
+  },
   navbar: ?{
     brand: ?string;
     logo: ?string;
@@ -120,6 +120,32 @@ type ConsoleConfig = {
 }
 
 declare var DIGDAG_CONFIG:ConsoleConfig;
+
+class CacheLoader extends React.Component {
+  state = {
+    hasCache: false
+  };
+
+  componentWillMount() {
+    model().fillTDQueryCache().then(() => {
+      this.setState({ hasCache: true })
+    })
+  }
+
+  render() {
+    const { hasCache } = this.state
+    const { children } = this.props
+    if (!hasCache) {
+      return (
+        <div className="loadingContainer">
+          <span className="glyphicon glyphicon-refresh spinning"></span>
+          <span className="loadingText">Loading ...</span>
+        </div>
+      )
+    }
+    return children
+  }
+}
 
 class ProjectListView extends React.Component {
   props:{
@@ -887,7 +913,7 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
   const paramsJobId = storeParams.td && storeParams.td.last_job_id
   const stateJobId = stateParams.job && stateParams.job.jobId
   const jobId = paramsJobId || stateJobId
-  const link = DIGDAG_CONFIG.jobUrl(jobId)
+  const link = DIGDAG_CONFIG.td.jobUrl(jobId)
   if (!jobId) {
     return null
   }
@@ -1463,42 +1489,19 @@ class LoginPage extends React.Component {
   }
 }
 
-class ParserPage extends React.Component {
-  definition() {
-    return `
-      +step1:
-        td_run>: myquery1
-      +step2:
-        td_run>: myquery2
-        session_time: 2016-01-01T01:01:01+0000
-        td_run>:	my query 2
-        td_run>:	"my query 2"
-        td_load>: mydatatransfer
-    `
-  }
-  render() {
-    return (
-      <div className="container">
-        <Navbar />
-        <pre><PrismCode className="language-digdag">{this.definition()}</PrismCode></pre>
-      </div>
-    )
-  }
-}
-
 class ConsolePage extends React.Component {
-
   render() {
     return (
       <div className="container-fluid">
         <Router history={browserHistory}>
-          <Route path="/" component={ProjectsPage}/>
-          <Route path="/projects/:projectId" component={ProjectPage}/>
-          <Route path="/projects/:projectId/workflows/:workflowName" component={WorkflowPage}/>
-          <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
-          <Route path="/sessions/:sessionId" component={SessionPage}/>
-          <Route path="/attempts/:attemptId" component={AttemptPage}/>
-          <Route path="/parser" component={ParserPage}/>
+          <Route component={CacheLoader}>
+            <Route path="/" component={ProjectsPage}/>
+            <Route path="/projects/:projectId" component={ProjectPage}/>
+            <Route path="/projects/:projectId/workflows/:workflowName" component={WorkflowPage}/>
+            <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
+            <Route path="/sessions/:sessionId" component={SessionPage}/>
+            <Route path="/attempts/:attemptId" component={AttemptPage}/>
+          </Route>
         </Router>
       </div>
     );
@@ -1525,7 +1528,7 @@ export default class Console extends React.Component {
   setup(credentials:Credentials) {
     setupModel({
       url: DIGDAG_CONFIG.url,
-      tdApiUrl: DIGDAG_CONFIG.tdApiUrl,
+      td: DIGDAG_CONFIG.td,
       credentials: credentials,
       headers: DIGDAG_CONFIG.headers
     });
