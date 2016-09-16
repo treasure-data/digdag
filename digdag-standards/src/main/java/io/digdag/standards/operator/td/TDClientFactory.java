@@ -37,15 +37,18 @@ class TDClientFactory
             }
         }
 
-        String apikey = secrets.getSecretOptional("apikey").or(() -> params.get("apikey", String.class)).trim();
-        if (apikey.isEmpty()) {
-            throw new ConfigException("Parameter 'apikey' is empty");
+        Optional<String> apikey = secrets.getSecretOptional("apikey").transform(String::trim);
+        if (!apikey.isPresent()) {
+            throw new ConfigException("The 'td.apikey' secret is missing");
+        }
+        if (apikey.get().isEmpty()) {
+            throw new ConfigException("The 'td.apikey' secret is empty");
         }
         
         return builder
                 .setEndpoint(secrets.getSecretOptional("endpoint").or(() -> params.get("endpoint", String.class, "api.treasuredata.com")))
                 .setUseSSL(useSSL)
-                .setApiKey(apikey)
+                .setApiKey(apikey.get())
                 .setRetryLimit(0)  // disable td-client's retry mechanism
                 ;
     }
