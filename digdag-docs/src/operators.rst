@@ -18,16 +18,17 @@ This operator embeds another workflow as a subtask.
     +step1:
       call>: another_workflow.dig
     +step2:
-      call>: sub/shared_workflow.dig
+      call>: common/shared_workflow.dig
 
 .. code-block:: yaml
 
     # another_workflow.dig
     +another:
-      sh>: tasks/another.sh
+      sh>: ../scripts/my_script.sh
 
 :command:`call>: FILE`
-  Path to a workflow definition file.
+  Path to a workflow definition file. File name must end with ``.dig``.
+  If called workflow is in a subdirectory, the workflow uses the subdirectory as the working directory. For example, a task has ``call>: common/called_workflow.dig``, using ``queries/data.sql`` file in the called workflow should be ``../queries/data.sql``.
 
   Example: another_workflow.dig
 
