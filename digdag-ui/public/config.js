@@ -2,9 +2,9 @@ var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
   td: {
     apiV4: 'https://api-console.treasuredata.com/v4',
-    connectorUrl: (connectorName) => `https://console.treasuredata.com/connections/data-transfers`,
-    queryUrl: (queryId) => `https://console.treasuredata.com/queries/${queryId}`,
-    jobUrl: (jobId) => `https://console.treasuredata.com/jobs/${jobId}`
+    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers'},
+    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId; },
+    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId; }
   },
   logoutUrl: '/',
   navbar: {
