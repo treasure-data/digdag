@@ -47,6 +47,8 @@ public interface SessionStoreManager
     // for WorkflowExecutorManager.propagateSessionArchive
     List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId);
 
+    List<Long> findDirectParentsOfBlockedTasks(long lastId);
+
     boolean requestCancelAttempt(long attemptId);
 
     int trySetRetryWaitingToReady();

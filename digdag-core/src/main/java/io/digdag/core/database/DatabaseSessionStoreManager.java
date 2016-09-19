@@ -319,6 +319,25 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
+    public List<Long> findDirectParentsOfBlockedTasks(long lastId)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                    "select distinct parent_id" +
+                    " from tasks" +
+                    " where parent_id > :lastId" +
+                    " and state = " + TaskStateCode.BLOCKED_CODE +
+                    " order by parent_id" +
+                    " limit :limit"
+                    )
+                .bind("lastId", lastId)
+                .bind("limit", 100)
+                .mapTo(Long.class)
+                .list()
+            );
+    }
+
+    @Override
     public boolean requestCancelAttempt(long attemptId)
     {
         return transaction((handle, dao, ts) -> {

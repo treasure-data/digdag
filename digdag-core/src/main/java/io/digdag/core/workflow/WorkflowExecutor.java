@@ -444,36 +444,22 @@ public class WorkflowExecutor
     private boolean propagateAllBlockedToReady()
     {
         boolean anyChanged = false;
-        long lastTaskId = 0;
-        Set<Long> checkedParentIds = new HashSet<>();
+        long lastParentId = 0;
         while (true) {
-            List<TaskStateSummary> tasks = sm.findTasksByState(TaskStateCode.BLOCKED, lastTaskId);
-            if (tasks.isEmpty()) {
+            List<Long> parentIds = sm.findDirectParentsOfBlockedTasks(lastParentId);
+            if (parentIds.isEmpty()) {
                 break;
             }
             anyChanged =
-                tasks
+                parentIds
                 .stream()
-                .map(summary -> {
-                    if (summary.getParentId().isPresent()) {
-                        long parentId = summary.getParentId().get();
-                        if (checkedParentIds.add(parentId)) {
-                            return sm.lockTaskIfExists(parentId, (store) ->
-                                store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0
-                            ).or(false);
-                        }
-                        return false;
-                    }
-                    else {
-                        // root task can't be BLOCKED. See submitWorkflow
-                        return false;
-                        //return sm.lockTaskIfExists(summary.getId(), (store) -> {
-                        //    return store.setRootPlannedToReady(summary.getId());
-                        //}).or(false);
-                    }
+                .map(parentId -> {
+                    return sm.lockTaskIfExists(parentId, (store) ->
+                        store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0
+                    ).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = tasks.get(tasks.size() - 1).getId();
+            lastParentId = parentIds.get(parentIds.size() - 1);
         }
         return anyChanged;
     }
