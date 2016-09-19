@@ -161,7 +161,6 @@ public class Migration_20151204221156_CreateTables
         handle.update("create index tasks_on_attempt_id on tasks (attempt_id, id)");
         handle.update("create index tasks_on_parent_id_and_state on tasks (parent_id, state)");
         if (context.isPostgres()) {
-            // for findDirectParentsOfBlockedTasks at propagateBlockedChildrenToReady
             // for findTasksByState(PLANNED) at propagateAllPlannedToDone
             // for findTasksByState(READY) through findAllReadyTaskIds() at enqueueReadyTasks
             handle.update("create index tasks_on_state_and_id on tasks (state, id) where state = 0 or state = 1 or state = 5");

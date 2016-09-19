@@ -42,7 +42,7 @@ public interface SessionStoreManager
     List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId);
 
     // for WorkflowExecutorManager.propagateAllPlannedToDone
-    List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
+    List<Long> findTasksByState(TaskStateCode state, long lastId);
 
     // for WorkflowExecutorManager.propagateSessionArchive
     List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId);

@@ -291,7 +291,7 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId)
+    public List<Long> findTasksByState(TaskStateCode state, long lastId)
     {
         return autoCommit((handle, dao) -> dao.findTasksByState(state.get(), lastId, 100));
     }
@@ -1492,14 +1492,14 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Instant updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
-        @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
+        @SqlQuery("select id" +
                 " from tasks" +
                 " where state = :state" +
                 " and id > :lastId" +
                 " order by id asc" +
                 //" order by updated_at asc, id asc" +
                 " limit :limit")
-        List<TaskStateSummary> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
+        List<Long> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
         @SqlQuery("select id from tasks" +
                 " where id = :id" +

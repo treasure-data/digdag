@@ -473,20 +473,20 @@ public class WorkflowExecutor
         boolean anyChanged = false;
         long lastTaskId = 0;
         while (true) {
-            List<TaskStateSummary> tasks = sm.findTasksByState(TaskStateCode.PLANNED, lastTaskId);
-            if (tasks.isEmpty()) {
+            List<Long> taskIds = sm.findTasksByState(TaskStateCode.PLANNED, lastTaskId);
+            if (taskIds.isEmpty()) {
                 break;
             }
             anyChanged =
-                tasks
+                taskIds
                 .stream()
-                .map(summary -> {
-                    return sm.lockTaskIfExists(summary.getId(), (store, storedTask) ->
+                .map(taskId -> {
+                    return sm.lockTaskIfExists(taskId, (store, storedTask) ->
                         setDoneFromDoneChildren(new TaskControl(store, storedTask))
                     ).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = tasks.get(tasks.size() - 1).getId();
+            lastTaskId = taskIds.get(taskIds.size() - 1);
         }
         return anyChanged;
     }
