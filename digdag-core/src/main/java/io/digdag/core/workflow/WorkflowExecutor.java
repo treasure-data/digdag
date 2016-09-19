@@ -65,11 +65,15 @@ import static java.util.Locale.ENGLISH;
  * State transitions.
  *
  * BLOCKED:
- *   propagateAllBlockedToReady:
+ *   propagateBlockedChildrenToReady:
  *     store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled:
  *       (if GROUPING_ONLY flag is set) : PLANNED
  *       (if CANCEL_REQUESTED flag is set) : CANCELED
  *       : READY
+ *   NOTE: propagateBlockedChildrenToReady is for non-root tasks. There
+ *         are no methods that changes state of BLOCKED root tasks.
+ *         Instead, WorkflowExecutor.submitTasks sets PLANNED or READY
+ *         state when it inserts root tasks.
  *
  * READY:
  *   enqueueReadyTasks:
@@ -391,7 +395,7 @@ public class WorkflowExecutor
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
             Instant date = sm.getStoreTime();
-            propagateAllBlockedToReady();
+            propagateBlockedChildrenToReady();
             retryRetryWaitingTasks();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
             propagateAllPlannedToDone();
@@ -407,7 +411,7 @@ public class WorkflowExecutor
                 //    propagatorNotice = true;
                 //}
 
-                propagateAllBlockedToReady();
+                propagateBlockedChildrenToReady();
                 retryRetryWaitingTasks();
                 enqueueReadyTasks(queuer);
                 boolean someDone = propagateAllPlannedToDone();
@@ -441,7 +445,7 @@ public class WorkflowExecutor
         }
     }
 
-    private boolean propagateAllBlockedToReady()
+    private boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
         long lastParentId = 0;
