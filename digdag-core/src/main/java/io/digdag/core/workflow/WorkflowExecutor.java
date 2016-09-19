@@ -190,11 +190,6 @@ public class WorkflowExecutor
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
 
-        logger.debug("Checking a session of workflow '{}' ({}) with session parameters: {}",
-                def.getName(),
-                def.getConfig().getNestedOrGetEmpty("meta"),
-                ar.getSessionParams());
-
         return submitTasks(siteId, ar, tasks);
     }
 
@@ -205,11 +200,13 @@ public class WorkflowExecutor
             WorkflowTaskList tasks)
         throws ResourceNotFoundException, SessionAttemptConflictException
     {
-        for (WorkflowTask task : tasks) {
-            logger.trace("  Step[{}]: {}", task.getIndex(), task.getName());
-            logger.trace("    parent: {}", task.getParentIndex().transform(it -> Integer.toString(it)).or("(root)"));
-            logger.trace("    upstreams: {}", task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
-            logger.trace("    config: {}", task.getConfig());
+        if (logger.isTraceEnabled()) {
+            for (WorkflowTask task : tasks) {
+                logger.trace("  Step[{}]: {}", task.getIndex(), task.getName());
+                logger.trace("    parent: {}", task.getParentIndex().transform(it -> Integer.toString(it)).or("(root)"));
+                logger.trace("    upstreams: {}", task.getUpstreamIndexes().stream().map(it -> Integer.toString(it)).collect(Collectors.joining(", ")));
+                logger.trace("    config: {}", task.getConfig());
+            }
         }
 
         int projId = ar.getStored().getProjectId();
@@ -835,7 +832,7 @@ public class WorkflowExecutor
                     .data(Optional.absent())
                     .build();
 
-                logger.debug("Queuing task: [{}] {}", task.getId(), task.getFullName());
+                logger.debug("Queuing task of attempt_id={}: id={} {}", task.getAttemptId(), task.getId(), task.getFullName());
                 try {
                     dispatcher.dispatch(siteId, queueName, request);
                 }
