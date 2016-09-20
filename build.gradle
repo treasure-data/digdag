@@ -1,9 +1,8 @@
-buildscript {
-    repositories { jcenter() }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
-    }
+plugins {
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.github.kt3k.coveralls' version '2.6.3'
 }
+
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'idea'
 apply plugin: 'maven'
@@ -125,6 +124,16 @@ subprojects {
                 return included
             }
         }
+
+        doFirst {
+            // used by TemporaryDigdagServer
+            if (jacoco.enabled) {
+                def workingDir = getWorkingDir()
+                setWorkingDir('/')  // let jacoco.getAsJvmArg generate absolute path
+                environment "JACOCO_JVM_ARG", jacoco.getAsJvmArg()
+                setWorkingDir(workingDir)
+            }
+        }
     }
 
     javadoc {
@@ -195,12 +204,11 @@ subprojects {
 
 jacocoTestReport {
     dependsOn = subprojects.test
-    additionalSourceDirs = files(subprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(subprojects.sourceSets.main.allSource.srcDirs)
     classDirectories =  files(subprojects.sourceSets.main.output)
     executionData = files(subprojects.jacocoTestReport.executionData)
     reports {
-        xml.enabled = false
+        xml.enabled = true
         html.enabled = true
     }
     onlyIf = { true }
@@ -214,6 +222,10 @@ jacocoTestReport {
     }
 }
 check.dependsOn('jacocoTestReport')
+
+coveralls {
+    sourceDirs += jacocoTestReport.sourceDirectories.toList()
+}
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.0'

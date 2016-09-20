@@ -46,3 +46,6 @@ before_cache:
 
 script:
   - ci/run_test.sh
+
+after_success:
+  - ci/travis_report_coverage.sh

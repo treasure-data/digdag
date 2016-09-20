@@ -60,6 +60,7 @@ import static utils.TestUtils.main;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -73,6 +74,8 @@ public class TemporaryDigdagServer
     private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "true"));
 
     private static final String POSTGRESQL = System.getenv("DIGDAG_TEST_POSTGRESQL");
+
+    private static final String JACOCO_JVM_ARG = System.getenv("JACOCO_JVM_ARG");  // set at build.gradle
 
     private static final Logger log = LoggerFactory.getLogger(TemporaryDigdagServer.class);
 
@@ -307,6 +310,9 @@ public class TemporaryDigdagServer
             if (version.isPresent()) {
                 processArgs.add("-D" + Version.VERSION_PROPERTY + "=" + version.get());
             }
+            if (!isNullOrEmpty(JACOCO_JVM_ARG)) {
+                processArgs.add(JACOCO_JVM_ARG);
+            }
             processArgs.add(Trampoline.class.getName());
             processArgs.addAll(args);
 
@@ -435,16 +441,30 @@ public class TemporaryDigdagServer
 
     private static void kill(Process p)
     {
-        sendUnixSignal(p, "KILL");
-        p.destroyForcibly();
+        // Send TERM first and wait for a while so that shutdown handler runs
+        // and Jacoco agent can write coverage data.
+        boolean exited = false;
+        if (terminate(p)) {
+            try {
+                exited = p.waitFor(5, SECONDS);
+            }
+            catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                // kill anyways
+            }
+        }
+        if (!exited) {
+            sendUnixSignal(p, "KILL");
+            p.destroyForcibly();
+        }
     }
 
-    private static void terminate(Process p)
+    private static boolean terminate(Process p)
     {
-        sendUnixSignal(p, "TERM");
+        return sendUnixSignal(p, "TERM");
     }
 
-    private static void sendUnixSignal(Process p, String signalName)
+    private static boolean sendUnixSignal(Process p, String signalName)
     {
         if (isUnixProcess(p)) {
             int pid = pid(p);
@@ -457,6 +477,10 @@ public class TemporaryDigdagServer
                     log.warn("command failed: {}", asList(cmd), e);
                 }
             }
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
