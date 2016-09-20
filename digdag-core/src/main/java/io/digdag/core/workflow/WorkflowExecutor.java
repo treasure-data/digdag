@@ -65,11 +65,15 @@ import static java.util.Locale.ENGLISH;
  * State transitions.
  *
  * BLOCKED:
- *   propagateAllBlockedToReady:
+ *   propagateBlockedChildrenToReady:
  *     store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled:
  *       (if GROUPING_ONLY flag is set) : PLANNED
  *       (if CANCEL_REQUESTED flag is set) : CANCELED
  *       : READY
+ *   NOTE: propagateBlockedChildrenToReady is for non-root tasks. There
+ *         are no methods that changes state of BLOCKED root tasks.
+ *         Instead, WorkflowExecutor.submitTasks sets PLANNED or READY
+ *         state when it inserts root tasks.
  *
  * READY:
  *   enqueueReadyTasks:
@@ -391,7 +395,7 @@ public class WorkflowExecutor
     {
         try (TaskQueuer queuer = new TaskQueuer()) {
             Instant date = sm.getStoreTime();
-            propagateAllBlockedToReady();
+            propagateBlockedChildrenToReady();
             retryRetryWaitingTasks();
             enqueueReadyTasks(queuer);  // TODO enqueue all (not only first 100)
             propagateAllPlannedToDone();
@@ -407,7 +411,7 @@ public class WorkflowExecutor
                 //    propagatorNotice = true;
                 //}
 
-                propagateAllBlockedToReady();
+                propagateBlockedChildrenToReady();
                 retryRetryWaitingTasks();
                 enqueueReadyTasks(queuer);
                 boolean someDone = propagateAllPlannedToDone();
@@ -441,39 +445,25 @@ public class WorkflowExecutor
         }
     }
 
-    private boolean propagateAllBlockedToReady()
+    private boolean propagateBlockedChildrenToReady()
     {
         boolean anyChanged = false;
-        long lastTaskId = 0;
-        Set<Long> checkedParentIds = new HashSet<>();
+        long lastParentId = 0;
         while (true) {
-            List<TaskStateSummary> tasks = sm.findTasksByState(TaskStateCode.BLOCKED, lastTaskId);
-            if (tasks.isEmpty()) {
+            List<Long> parentIds = sm.findDirectParentsOfBlockedTasks(lastParentId);
+            if (parentIds.isEmpty()) {
                 break;
             }
             anyChanged =
-                tasks
+                parentIds
                 .stream()
-                .map(summary -> {
-                    if (summary.getParentId().isPresent()) {
-                        long parentId = summary.getParentId().get();
-                        if (checkedParentIds.add(parentId)) {
-                            return sm.lockTaskIfExists(parentId, (store) ->
-                                store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0
-                            ).or(false);
-                        }
-                        return false;
-                    }
-                    else {
-                        // root task can't be BLOCKED. See submitWorkflow
-                        return false;
-                        //return sm.lockTaskIfExists(summary.getId(), (store) -> {
-                        //    return store.setRootPlannedToReady(summary.getId());
-                        //}).or(false);
-                    }
+                .map(parentId -> {
+                    return sm.lockTaskIfExists(parentId, (store) ->
+                        store.trySetChildrenBlockedToReadyOrShortCircuitPlannedOrCanceled(parentId) > 0
+                    ).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = tasks.get(tasks.size() - 1).getId();
+            lastParentId = parentIds.get(parentIds.size() - 1);
         }
         return anyChanged;
     }
@@ -483,20 +473,20 @@ public class WorkflowExecutor
         boolean anyChanged = false;
         long lastTaskId = 0;
         while (true) {
-            List<TaskStateSummary> tasks = sm.findTasksByState(TaskStateCode.PLANNED, lastTaskId);
-            if (tasks.isEmpty()) {
+            List<Long> taskIds = sm.findTasksByState(TaskStateCode.PLANNED, lastTaskId);
+            if (taskIds.isEmpty()) {
                 break;
             }
             anyChanged =
-                tasks
+                taskIds
                 .stream()
-                .map(summary -> {
-                    return sm.lockTaskIfExists(summary.getId(), (store, storedTask) ->
+                .map(taskId -> {
+                    return sm.lockTaskIfExists(taskId, (store, storedTask) ->
                         setDoneFromDoneChildren(new TaskControl(store, storedTask))
                     ).or(false);
                 })
                 .reduce(anyChanged, (a, b) -> a || b);
-            lastTaskId = tasks.get(tasks.size() - 1).getId();
+            lastTaskId = taskIds.get(taskIds.size() - 1);
         }
         return anyChanged;
     }

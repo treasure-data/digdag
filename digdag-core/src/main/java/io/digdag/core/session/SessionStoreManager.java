@@ -41,11 +41,14 @@ public interface SessionStoreManager
     // for WorkflowExecutorManager.IncrementalStatusPropagator.propagateStatus
     List<TaskStateSummary> findRecentlyChangedTasks(Instant updatedSince, long lastId);
 
-    // for WorkflowExecutorManager.propagateAllBlockedToReady
-    List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId);
+    // for WorkflowExecutorManager.propagateAllPlannedToDone
+    List<Long> findTasksByState(TaskStateCode state, long lastId);
 
     // for WorkflowExecutorManager.propagateSessionArchive
     List<TaskAttemptSummary> findRootTasksByStates(TaskStateCode[] states, long lastId);
+
+    // for WorkflowExecutorManager.propagateBlockedChildrenToReady
+    List<Long> findDirectParentsOfBlockedTasks(long lastId);
 
     boolean requestCancelAttempt(long attemptId);
 

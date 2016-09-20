@@ -291,7 +291,7 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public List<TaskStateSummary> findTasksByState(TaskStateCode state, long lastId)
+    public List<Long> findTasksByState(TaskStateCode state, long lastId)
     {
         return autoCommit((handle, dao) -> dao.findTasksByState(state.get(), lastId, 100));
     }
@@ -314,6 +314,25 @@ public class DatabaseSessionStoreManager
                 .bind("lastId", lastId)
                 .bind("limit", 100)
                 .map(tasm)
+                .list()
+            );
+    }
+
+    @Override
+    public List<Long> findDirectParentsOfBlockedTasks(long lastId)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                    "select distinct parent_id" +
+                    " from tasks" +
+                    " where parent_id > :lastId" +
+                    " and state = " + TaskStateCode.BLOCKED_CODE +
+                    " order by parent_id" +
+                    " limit :limit"
+                    )
+                .bind("lastId", lastId)
+                .bind("limit", 100)
+                .mapTo(Long.class)
                 .list()
             );
     }
@@ -1473,14 +1492,14 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<TaskStateSummary> findRecentlyChangedTasks(@Bind("updatedSince") Instant updatedSince, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
-        @SqlQuery("select id, attempt_id, parent_id, state, updated_at" +
+        @SqlQuery("select id" +
                 " from tasks" +
                 " where state = :state" +
                 " and id > :lastId" +
                 " order by id asc" +
                 //" order by updated_at asc, id asc" +
                 " limit :limit")
-        List<TaskStateSummary> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
+        List<Long> findTasksByState(@Bind("state") short state, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
         @SqlQuery("select id from tasks" +
                 " where id = :id" +
