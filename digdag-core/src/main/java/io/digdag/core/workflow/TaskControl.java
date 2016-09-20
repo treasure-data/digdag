@@ -93,7 +93,7 @@ public class TaskControl
 
         // Limit the total number of tasks in a session.
         // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
-        long taskCount = store.getTaskCount(attemptId);
+        long taskCount = store.getTaskCountOfAttempt(attemptId);
         if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
             throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
         }

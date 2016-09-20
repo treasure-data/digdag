@@ -650,12 +650,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public long getTaskCount(long attemptId)
+        public long getTaskCountOfAttempt(long attemptId)
         {
             long count = handle.createQuery(
                     "select count(*) from tasks t" +
                             " where t.attempt_id = :attemptId"
-            )
+                    )
                     .bind("attemptId", attemptId)
                     .mapTo(long.class)
                     .first();
