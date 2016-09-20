@@ -1,0 +1,21 @@
+timezone: UTC
+
+_export:
+  pg:
+    user: digdag_test_user
+    host: localhost
+    database: digdag_test_db
+
++caution:
+  echo>: This workflow can work with PostgreSQL running in your local machine.
+         If you already set up PostgreSQL, please create database and user described in the above configuration
+
++create_src_table:
+  pg>: create_src_table.sql
+
++insert_data_to_src_table:
+  pg>: insert_data_to_src_table.sql
+
++summarize_src_table:
+  pg>: summarize_src_table.sql
+  create_table: summarized_data
