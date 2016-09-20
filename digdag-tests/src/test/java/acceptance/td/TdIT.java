@@ -1,7 +1,6 @@
 package acceptance.td;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
@@ -18,6 +17,7 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData.HttpDataType;
 import io.netty.util.ReferenceCountUtil;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -148,7 +147,7 @@ public class TdIT
     {
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
     }
 
     @Test
@@ -156,7 +155,7 @@ public class TdIT
             throws Exception
     {
         copyResource("acceptance/td/td/td_store_last_result.dig", projectDir.resolve("workflow.dig"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
         assertThat(result.get("last_results").isObject(), is(true));
@@ -170,7 +169,7 @@ public class TdIT
             throws Exception
     {
         copyResource("acceptance/td/td/td_store_last_result_empty.dig", projectDir.resolve("workflow.dig"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
         JsonNode result = objectMapper().readTree(outfile.toFile());
         assertThat(result.get("last_job_id").asInt(), is(not(0)));
         assertThat(result.get("last_results").isObject(), is(true));
@@ -189,7 +188,7 @@ public class TdIT
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
-        runWorkflow("td.use_ssl=false");
+        assertWorkflowRunsSuccessfully("td.use_ssl=false");
         assertThat(requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).count(), is(greaterThan(0L)));
     }
 
@@ -218,7 +217,7 @@ public class TdIT
         String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
         env.put("http_proxy", proxyUrl);
         env.put("TD_CONFIG_PATH", tdConf.toString());
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
         List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(Collectors.toList());
         assertThat(issueRequests.size(), is(greaterThan(0)));
         for (FullHttpRequest request : issueRequests) {
@@ -300,7 +299,7 @@ public class TdIT
     {
         copyResource("acceptance/td/td/td_preview.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
     }
 
     @Test
@@ -309,21 +308,22 @@ public class TdIT
     {
         copyResource("acceptance/td/td/td_preview_create_table.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-        runWorkflow("td.database=" + database);
+        assertWorkflowRunsSuccessfully("td.database=" + database);
     }
 
     @Test
-    public void testRunQueryLegacyApikeyParam()
+    public void verifyApikeyParamIsNotUsed()
             throws Exception
     {
-        // TODO: Remove this test when the legacy support for td.apikey param is removed
-
         // Replace the "secrets.td.apikey" entry with the legacy "params.td.apikey" entry
         Files.write(config, asList("params.td.apikey = " + TD_API_KEY));
 
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
-        runWorkflow();
+
+        CommandStatus status = runWorkflow();
+
+        assertThat(status.errUtf8(), Matchers.containsString("The 'td.apikey' secret is missing"));
     }
 
     @Test
@@ -331,7 +331,7 @@ public class TdIT
             throws Exception
     {
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
     }
 
     @Test
@@ -387,7 +387,7 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
 
         for (FullHttpRequest request : jobIssueRequests) {
             ReferenceCountUtil.releaseLater(request);
@@ -472,7 +472,7 @@ public class TdIT
         ), APPEND);
 
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
-        runWorkflow();
+        assertWorkflowRunsSuccessfully();
 
         for (FullHttpRequest request : jobIssueRequests) {
             ReferenceCountUtil.releaseLater(request);
@@ -512,9 +512,16 @@ public class TdIT
         return ((Attribute) domainKeyData).getValue();
     }
 
-    private CommandStatus runWorkflow(String... params)
+    private CommandStatus assertWorkflowRunsSuccessfully(String... params)
     {
-        List<String> args = new ArrayList<>();
+        CommandStatus runStatus = runWorkflow(params);
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
+        assertThat(Files.exists(outfile), is(true));
+        return runStatus;
+    }
+
+    private CommandStatus runWorkflow(String... params)
+    {List<String> args = new ArrayList<>();
         args.addAll(asList("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
@@ -528,12 +535,6 @@ public class TdIT
 
         args.add("workflow.dig");
 
-        CommandStatus runStatus = main(env, args);
-
-        assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
-
-        assertThat(Files.exists(outfile), is(true));
-
-        return runStatus;
+        return main(env, args);
     }
 }
