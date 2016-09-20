@@ -301,6 +301,7 @@ export class Model {
 
   fillTDQueryCache() : Promise {
     return fetch(this.config.td.apiV4 + '/queries', {
+      credentials: 'include',
       headers: this.headers()
     }).then(response => {
       if (!response.ok) {
