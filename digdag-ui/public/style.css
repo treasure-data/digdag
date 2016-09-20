@@ -1,0 +1,52 @@
+body {
+  padding-top: 80px;
+}
+
+a.td-run-value,
+a.td-load-value {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+code,
+pre {
+  -moz-tab-size: 2 !important;
+    -o-tab-size: 2 !important;
+       tab-size: 2 !important;
+}
+
+.loadingContainer {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.glyphicon.spinning {
+    animation: spin 1s infinite linear;
+    -webkit-animation: spin2 1s infinite linear;
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1) rotate(360deg); }
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+.loadingText {
+  margin-top: 40px;
+  font-size: 22px;
+}
+

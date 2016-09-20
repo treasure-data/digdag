@@ -41,6 +41,51 @@ import {model, setup as setupModel} from './model';
 
 type Scrubber = (args:{key: string, value: string}) => string;
 
+Prism.languages.digdag = Prism.languages.extend('yaml', {})
+
+Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token in yaml file
+  'td-run': {
+    pattern: /td_run>:.*/,
+    inside: {
+      atrule: /td_run>/,
+      punctuation: /:/,
+      'td-run-value': {
+        pattern: /(\s*).*/,
+        lookbehind: true
+      }
+    }
+  },
+  'td-load': {
+    pattern: /td_load>:.*/,
+    inside: {
+      atrule: /td_load>/,
+      punctuation: /:/,
+      'td-load-value': {
+        pattern: /(\s*).*/,
+        lookbehind: true
+      }
+    }
+  }
+});
+
+
+Prism.hooks.add('wrap', (env) => {
+  if (env.type === 'td-run-value' || env.type === 'td-load-value') {
+      env.tag = 'a'
+      env.attributes.target = '_blank'
+      if (env.type === 'td-run-value') {
+        const queryId = model().getTDQueryIdFromName(env.content)
+        if (queryId) {
+          env.attributes.href = DIGDAG_CONFIG.td.queryUrl(queryId)
+        } else {
+          env.tag = 'span'
+        }
+      } else {
+        env.attributes.href = DIGDAG_CONFIG.connectorUrl(env.con)
+      }
+  }
+})
+
 type AuthItem = {
   key: string;
   name: string;
@@ -56,7 +101,12 @@ type AuthItem = {
 
 type ConsoleConfig = {
   url: string;
-  jobUrl: (id:string) => string;
+  td: {
+    apiV4: string,
+    jobUrl: (id:string) => string;
+    connectorUrl: (id:string) => string;
+    queryUrl: (id:string) => string;
+  },
   navbar: ?{
     brand: ?string;
     logo: ?string;
@@ -70,6 +120,32 @@ type ConsoleConfig = {
 }
 
 declare var DIGDAG_CONFIG:ConsoleConfig;
+
+class CacheLoader extends React.Component {
+  state = {
+    hasCache: false
+  };
+
+  componentWillMount() {
+    model().fillTDQueryCache().then(() => {
+      this.setState({ hasCache: true })
+    })
+  }
+
+  render() {
+    const { hasCache } = this.state
+    const { children } = this.props
+    if (!hasCache) {
+      return (
+        <div className="loadingContainer">
+          <span className="glyphicon glyphicon-refresh spinning"></span>
+          <span className="loadingText">Loading ...</span>
+        </div>
+      )
+    }
+    return children
+  }
+}
 
 class ProjectListView extends React.Component {
   props:{
@@ -518,7 +594,7 @@ class WorkflowView extends React.Component {
         </div>
         <div className="row">
           <h2>Definition</h2>
-          <pre><PrismCode className="language-yaml">{this.definition()}</PrismCode></pre>
+          <pre><PrismCode className="language-digdag">{this.definition()}</PrismCode></pre>
         </div>
         <div className="row">
           <h2>Sessions</h2>
@@ -837,7 +913,7 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
   const paramsJobId = storeParams.td && storeParams.td.last_job_id
   const stateJobId = stateParams.job && stateParams.job.jobId
   const jobId = paramsJobId || stateJobId
-  const link = DIGDAG_CONFIG.jobUrl(jobId)
+  const link = DIGDAG_CONFIG.td.jobUrl(jobId)
   if (!jobId) {
     return null
   }
@@ -1434,18 +1510,19 @@ class NotFoundPage extends React.Component {
 }
 
 class ConsolePage extends React.Component {
-
   render() {
     return (
       <div className="container-fluid">
         <Router history={browserHistory}>
-          <Route path="/" component={ProjectsPage}/>
-          <Route path="/projects/:projectId" component={ProjectPage}/>
-          <Route path="/projects/:projectId/workflows/:workflowName" component={WorkflowPage}/>
-          <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
-          <Route path="/sessions/:sessionId" component={SessionPage}/>
-          <Route path="/attempts/:attemptId" component={AttemptPage}/>
-          <Route path="*" component={withRouter(NotFoundPage)}/>
+          <Route component={CacheLoader}>
+            <Route path="/" component={ProjectsPage}/>
+            <Route path="/projects/:projectId" component={ProjectPage}/>
+            <Route path="/projects/:projectId/workflows/:workflowName" component={WorkflowPage}/>
+            <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
+            <Route path="/sessions/:sessionId" component={SessionPage}/>
+            <Route path="/attempts/:attemptId" component={AttemptPage}/>
+            <Route path="*" component={withRouter(NotFoundPage)}/>
+          </Route>
         </Router>
       </div>
     );
@@ -1472,6 +1549,7 @@ export default class Console extends React.Component {
   setup(credentials:Credentials) {
     setupModel({
       url: DIGDAG_CONFIG.url,
+      td: DIGDAG_CONFIG.td,
       credentials: credentials,
       headers: DIGDAG_CONFIG.headers
     });

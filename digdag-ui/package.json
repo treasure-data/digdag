@@ -4,7 +4,7 @@
   "description": "",
   "main": "console.jsx",
   "scripts": {
-    "dev": "webpack-dev-server --progress --profile --colors --hot",
+    "dev": "webpack-dev-server --progress --profile --colors --hot --port 9000",
     "build": "NODE_ENV=production webpack -p --config webpack.production.config.js --progress --profile --colors",
     "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },

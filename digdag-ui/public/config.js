@@ -1,6 +1,11 @@
 var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
-  jobUrl: (jobId) => ``,
+  td: {
+    apiV4: 'https://api-console.treasuredata.com/v4',
+    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers'},
+    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId; },
+    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId; }
+  },
   logoutUrl: '/',
   navbar: {
     logo: '/logo.png',
