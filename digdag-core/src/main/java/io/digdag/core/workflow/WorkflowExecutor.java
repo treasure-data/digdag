@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.Limits;
 import io.digdag.core.agent.AgentId;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
@@ -20,6 +21,7 @@ import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionAttempt;
 import io.digdag.core.session.SessionMonitor;
+import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -248,8 +250,14 @@ public class WorkflowExecutor
 
         StoredSessionAttemptWithSession stored;
         try {
-            stored = sm
-                .getSessionStore(siteId)
+            SessionStore ss = sm.getSessionStore(siteId);
+
+            long activeAttempts = ss.getActiveAttemptCount();
+            if (activeAttempts + 1 > Limits.maxAttempts()) {
+                throw new AttemptLimitExceededException("Too many attempts running. Limit: " + Limits.maxAttempts() + ", Current: " + activeAttempts);
+            }
+
+            stored = ss
                 // putAndLockSession + insertAttempt might be able to be faster by combining them into one method and optimize using a single SQL with CTE
                 .putAndLockSession(session, (store, storedSession) -> {
                     StoredProject proj = rm.getProjectStore(siteId).getProjectById(projId);
