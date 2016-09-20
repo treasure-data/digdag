@@ -32,10 +32,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class TDOperatorTest
 {
-    // TODO: update these tests to use secrets
-
     private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.of();
-    private static final SecretProvider EMPTY_SECRETS = key -> Optional.absent();
 
     @Rule public final ExpectedException exception = ExpectedException.none();
 
@@ -58,11 +55,13 @@ public class TDOperatorTest
             throws Exception
     {
         Config config = newConfig()
-                .set("database", "")
-                .set("apikey", "foobar");
+                .set("database", "");
+
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
+        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -70,11 +69,13 @@ public class TDOperatorTest
             throws Exception
     {
         Config config = newConfig()
-                .set("database", " \t\n")
-                .set("apikey", "foobar");
+                .set("database", " \t\n");
+
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "foobar").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
+        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -82,11 +83,13 @@ public class TDOperatorTest
             throws Exception
     {
         Config config = newConfig()
-                .set("database", "foobar")
-                .set("apikey", "");
+                .set("database", "foobar");
+
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
+        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -94,11 +97,13 @@ public class TDOperatorTest
             throws Exception
     {
         Config config = newConfig()
-                .set("database", "foobar")
-                .set("apikey", " \n\t");
+                .set("database", "foobar");
+
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", " \n\t").get(key));
 
         exception.expect(ConfigException.class);
-        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
+        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
     }
 
     @Test
@@ -106,9 +111,10 @@ public class TDOperatorTest
             throws Exception
     {
         Config config = newConfig()
-                .set("database", "foobar")
-                .set("apikey", "quux");
-        TDOperator.fromConfig(EMPTY_ENV, config, EMPTY_SECRETS);
+                .set("database", "foobar");
+        SecretProvider secrets = key -> Optional.fromNullable(
+                ImmutableMap.of("apikey", "quux").get(key));
+        TDOperator.fromConfig(EMPTY_ENV, config, secrets);
     }
 
     @Test

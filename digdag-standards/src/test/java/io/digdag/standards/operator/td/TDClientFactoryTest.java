@@ -20,7 +20,7 @@ import static org.junit.Assert.assertThat;
 
 public class TDClientFactoryTest
 {
-    private static final SecretProvider EMPTY_SECRETS = key -> Optional.absent();
+    private static final SecretProvider SECRETS = key -> Optional.fromNullable(ImmutableMap.of("apikey", "foobar").get(key));
 
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new GuavaModule())
@@ -46,7 +46,7 @@ public class TDClientFactoryTest
                                 .set("use_ssl", true));
 
         TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(
-                ImmutableMap.of(), config, key -> Optional.fromNullable(ImmutableMap.of("apikey", "foobar").get(key)));
+                ImmutableMap.of(), config, SECRETS);
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));
@@ -58,10 +58,8 @@ public class TDClientFactoryTest
     public void testProxyConfigFromEnv()
     {
         Map<String, String> env = ImmutableMap.of("http_proxy", "https://me:%27(%23%25@example.com:9119");
-        Config config = newConfig()
-                .set("apikey", "foobar");
 
-        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(env, config, EMPTY_SECRETS);
+        TDClientBuilder builder = TDClientFactory.clientBuilderFromConfig(env, newConfig(), SECRETS);
         TDClientConfig clientConfig = builder.buildConfig();
 
         assertThat(clientConfig.proxy.get().getUser(), is(Optional.of("me")));
