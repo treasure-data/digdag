@@ -287,7 +287,11 @@ public class TemporaryDigdagServer
 
         if (inProcess) {
             InputStream in = new ByteArrayInputStream(new byte[0]);
-            executor.execute(() -> main(environment, version.or(Version.buildVersion()), args, out, err, in));
+            executor.execute(() -> {
+                OutputStream out = fanout(this.out, System.out);
+                OutputStream err = fanout(this.err, System.err);
+                main(environment, version.or(Version.buildVersion()), args, out, err, in);
+            });
         }
         else {
             File workdir = temporaryFolder.newFolder();
@@ -322,6 +326,9 @@ public class TemporaryDigdagServer
         ServerRuntimeInfo serverRuntimeInfo = null;
         for (int i = 0; i < 300; i++) {
             Thread.sleep(1000);
+            if (serverProcess != null && !serverProcess.isAlive()) {
+                break;
+            }
             if (!Files.exists(runtimeInfoPath)) {
                 continue;
             }
