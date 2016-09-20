@@ -11,16 +11,16 @@ dependencies {
     compile project(':digdag-core')
 
     // mail
-    compile 'javax.mail:javax.mail-api:1.5.5'
-    compile 'com.sun.mail:javax.mail:1.5.5'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
+    compile 'javax.mail:javax.mail-api:1.5.6'
+    compile 'com.sun.mail:javax.mail:1.5.6'   // 'com.sun.mail:smtp' doesn't work because enabling mail.debug property throws java.lang.NoClassDefFoundError: com/sun/mail/util/MailLogger
 
     // td
     compile 'com.treasuredata.client:td-client:0.7.26'
     compile 'org.msgpack:msgpack-core:0.8.2'
-    compile 'org.yaml:snakeyaml:1.14'
+    compile 'org.yaml:snakeyaml:1.17'
 
     // postgresql
-    compile 'org.postgresql:postgresql:9.4.1208'
+    compile 'org.postgresql:postgresql:9.4.1211'
 
     // Newer version of jetty-client with some important bugfixes.
     // jetty-client is used by td-client-java, and ideally we would bump the version there but
