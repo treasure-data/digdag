@@ -22,6 +22,7 @@ import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.workflow.AttemptLimitExceededException;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.AttemptStateFlags;
@@ -128,6 +129,13 @@ public class ScheduleExecutor
                 Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
                 logger.error("Database state error during scheduling. Skipping this schedule: {}", sched, error);
                 ScheduleTime nextTime = sr.nextScheduleTime(sched.getNextScheduleTime());
+                return lockedSched.tryUpdateNextScheduleTime(nextTime);
+            }
+            catch (AttemptLimitExceededException ex) {
+                logger.info("Number of attempts exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
+                ScheduleTime nextTime = ScheduleTime.of(
+                        sched.getNextScheduleTime(),
+                        sched.getNextRunTime().plusSeconds(600));
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
             catch (RuntimeException ex) {
