@@ -444,6 +444,9 @@ task pom << {
         def enforcer_executions = enforcer.appendNode('executions', '')
         def enforcer_execution = enforcer_executions.appendNode('execution', '')
         enforcer_execution.appendNode('id', 'enforce')
+        def enforcer_goals = enforcer_execution.appendNode('goals', '')
+        enforcer_goals.appendNode('goal', 'enforce')
+
         def enforcer_execution_configuration = enforcer_execution.appendNode('configuration', '')
         def enforcer_rules = enforcer_execution_configuration.appendNode('rules', '')
         enforcer_rules.appendNode('requireUpperBoundDeps', '')

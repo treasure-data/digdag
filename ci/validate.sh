@@ -8,8 +8,11 @@ docker run \
 digdag-build \
 bash -ex <<EOF
 
-# Verify that gradle can generate a working maven pom
+# Verify that gradle can generate a working maven pom and generate a dependency tree
 ./gradlew clean pom --info --no-daemon
-mvn compile test-compile
+mvn compile test-compile dependency:tree
+
+# Run the maven enforcer
+mvn validate
 
 EOF
