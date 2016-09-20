@@ -43,10 +43,4 @@ public interface TaskCallbackApi
             Optional<String> retryAttemptName,
             Config overwriteParams)
         throws ResourceNotFoundException;
-
-    Config getWorkflowDefinition(
-            int siteId,
-            int projectId,
-            String workflowName)
-        throws ResourceNotFoundException;
 }

@@ -190,19 +190,4 @@ public class InProcessTaskCallbackApi
             return ex.getConflictedSession().getStateFlags();
         }
     }
-
-    @Override
-    public Config getWorkflowDefinition(
-            int siteId,
-            int projectId,
-            String workflowName)
-        throws ResourceNotFoundException
-    {
-        ProjectStore projectStore = pm.getProjectStore(siteId);
-
-        StoredProject proj = projectStore.getProjectById(projectId);
-        StoredWorkflowDefinitionWithProject def = projectStore.getLatestWorkflowDefinitionByName(proj.getId(), workflowName);
-
-        return def.getConfig();
-    }
 }

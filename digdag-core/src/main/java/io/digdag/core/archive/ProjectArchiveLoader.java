@@ -84,9 +84,19 @@ public class ProjectArchiveLoader
             // workflow is in a subdirectory. set _workdir accordingly.
             String workdir = overwriteParams.getOptional("_workdir", String.class)  // overwriteParams has higher priority
                 .or(workflowName.substring(0, posSlash));
-            workflowFile.setWorkdir(workdir);
+            workflowFile.setBaseWorkdir(workdir);
         }
 
         return workflowFile;
+    }
+
+    public WorkflowFile loadWorkflowFileFromPath(Path projectPath, Path workflowPath,
+            Config overwriteParams)
+        throws IOException
+    {
+        String resourceName = ProjectArchive.realPathToResourceName(
+                projectPath.normalize().toAbsolutePath(),
+                workflowPath.normalize().toAbsolutePath());
+        return loadWorkflowFile(resourceName, workflowPath, overwriteParams);
     }
 }

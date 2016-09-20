@@ -1,0 +1,24 @@
++call_by_name:
+  _export:
+    name: call_by_name
+  +call:
+    call>: child
+
++call_by_file:
+  _export:
+    name: call_by_file
+  +call:
+    call>: child.dig
+
++call_sub:
+  _export:
+    name: call_sub
+  +call:
+    call>: sub/child.dig
+
++call_subsub:
+  _export:
+    name: call_subsub
+  +call:
+    call>: sub/subsub/child.dig
+

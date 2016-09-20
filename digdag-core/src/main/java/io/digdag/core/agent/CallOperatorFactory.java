@@ -1,7 +1,5 @@
 package io.digdag.core.agent;
 
-import java.nio.file.Path;
-
 import com.google.inject.Inject;
 import io.digdag.spi.TaskExecutionContext;
 import org.slf4j.Logger;
@@ -10,22 +8,30 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.archive.ProjectArchiveLoader;
+import io.digdag.core.archive.WorkflowFile;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.util.BaseOperator;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+import static io.digdag.core.archive.ProjectArchive.WORKFLOW_FILE_SUFFIX;
+import static io.digdag.util.Workspace.propagateIoException;
 
 public class CallOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(CallOperatorFactory.class);
 
-    private final TaskCallbackApi callback;
+    private final ProjectArchiveLoader projectLoader;
 
     @Inject
-    public CallOperatorFactory(TaskCallbackApi callback)
+    public CallOperatorFactory(ProjectArchiveLoader projectLoader)
     {
-        this.callback = callback;
+        this.projectLoader = projectLoader;
     }
 
     public String getType()
@@ -36,46 +42,42 @@ public class CallOperatorFactory
     @Override
     public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new CallOperator(callback, request);
+        return new CallOperator(projectPath, request);
     }
 
-    private static class CallOperator
-            implements Operator
+    private class CallOperator
+            extends BaseOperator
     {
-        private final TaskCallbackApi callback;
-        private final TaskRequest request;
-        private ConfigFactory cf;
-
-        public CallOperator(TaskCallbackApi callback, TaskRequest request)
+        public CallOperator(Path projectPath, TaskRequest request)
         {
-            this.callback = callback;
-            this.request = request;
-            this.cf = request.getConfig().getFactory();
+            super(projectPath, request);
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config config = request.getConfig();
 
-            String workflowName = config.get("_command", String.class);
-            int projectId = config.get("project_id", int.class);
-            Config exportParams = config.getNestedOrGetEmpty("params");
+            String workflowFileName = config.get("_command", String.class);
+            if (!workflowFileName.endsWith(WORKFLOW_FILE_SUFFIX)) {
+                workflowFileName += WORKFLOW_FILE_SUFFIX;
+            }
 
-            Config def;
+            Path workflowPath = workspace.getPath(workflowFileName);
+
+            WorkflowFile workflowFile;
             try {
-                def = callback.getWorkflowDefinition(
-                        request.getSiteId(),
-                        projectId,
-                        workflowName);
+                workflowFile = projectLoader.loadWorkflowFileFromPath(
+                        workspace.getProjectPath(), workflowPath, config);
             }
-            catch (ResourceNotFoundException ex) {
-                throw new ConfigException(ex);
+            catch (IOException ex) {
+                throw propagateIoException(ex, workflowFileName, ConfigException::new);
             }
+
+            Config def = workflowFile.toWorkflowDefinition().getConfig();
 
             return TaskResult.defaultBuilder(request)
                 .subtaskConfig(def)
-                .exportParams(exportParams)
                 .build();
         }
     }

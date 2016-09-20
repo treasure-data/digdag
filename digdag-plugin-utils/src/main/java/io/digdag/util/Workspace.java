@@ -152,16 +152,8 @@ public class Workspace
                             String.format(ENGLISH, "%s in %s", ex.getMessage(), fileName),
                             ex);
                 }
-                catch (FileNotFoundException | NoSuchFileException ex) {
-                    // ex includes file name
-                    throw new ConfigException(
-                            String.format(ENGLISH, "File not found: %s", ex.getMessage()),
-                            ex);
-                }
                 catch (IOException ex) {
-                    throw new ConfigException(
-                            String.format(ENGLISH, "Failed to read a template file: %s: %s", fileName, ex.getClass()),
-                            ex);
+                    throw propagateIoException(ex, fileName, ConfigException::new);
                 }
                 catch (RuntimeException ex) {
                     throw new ConfigException(
@@ -190,6 +182,27 @@ public class Workspace
             catch (IOException ex) {
                 // TODO show warning log
             }
+        }
+    }
+
+    public interface ExceptionFactory <E>
+    {
+        E newInstance(String message, Throwable cause);
+    }
+
+    public static <E extends RuntimeException> E propagateIoException(IOException ex, String fileName,
+            ExceptionFactory<E> factory)
+    {
+        if (ex instanceof FileNotFoundException || ex instanceof NoSuchFileException) {
+            // ex includes file name
+            return factory.newInstance(
+                    String.format(ENGLISH, "File not found: %s", ex.getMessage()),
+                    ex);
+        }
+        else {
+            return factory.newInstance(
+                    String.format(ENGLISH, "Failed to read file: %s: %s", fileName, ex.getClass()),
+                    ex);
         }
     }
 }
