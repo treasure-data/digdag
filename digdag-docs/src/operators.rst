@@ -268,7 +268,6 @@ TODO: add more description here
 
     _export:
       td:
-        apikey: YOUR/API_KEY
         database: www_access
 
     +step1:
@@ -279,6 +278,12 @@ TODO: add more description here
     +step3:
       td>: queries/step2.sql
       insert_into: mytable
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
 
 Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,11 +333,6 @@ Parameters
 
   * :command:`database: my_db`
 
-:command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
-
-  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
-
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
 
@@ -373,7 +373,6 @@ TODO: add more description here
 
     _export:
       td:
-        apikey: YOUR/API_KEY
         database: www_access
 
     +step1:
@@ -381,6 +380,12 @@ TODO: add more description here
     +step2:
       td_run>: myquery2
       session_time: 2016-01-01T01:01:01+0000
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
 
 Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -405,11 +410,6 @@ Parameters
   Tries to show some query results to confirm the results of a query.
 
   * :command:`preview: true`
-
-:command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
-
-  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
@@ -441,14 +441,19 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    _export:
-      td:
-        apikey: YOUR/API_KEY
-
     +step1:
       td_load>: config/guessed.dig
       database: prod
       table: raw
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when submitting Treasure Data bulk load jobs.
+
+Parameters
+~~~~~~~~~~
 
 :command:`td_load>: FILE.yml`
   Path to a YAML template file. This configuration needs to be guessed using td command.
@@ -464,11 +469,6 @@ TODO: add more description here
   Name of the table load data to.
 
   * :command:`table: my_table`
-
-:command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
-
-  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
@@ -497,7 +497,6 @@ TODO: add more description here
 
     _export:
       td:
-        apikey: YOUR/API_KEY
         database: www_access
 
     +step1:
@@ -509,6 +508,15 @@ TODO: add more description here
     +step2:
       td_ddl>:
       empty_tables: ["my_table_${session_date_compact}"]
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when performing Treasure Data operations.
+
+Parameters
+~~~~~~~~~~
 
 :command:`create_tables: [ARRAY OF NAMES]`
   Create new tables if not exists.
@@ -540,11 +548,6 @@ TODO: add more description here
 
   * :command:`drop_databases: [my_database1, my_database2]`
 
-:command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
-
-  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
-
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
 
@@ -561,10 +564,6 @@ TODO: add more description here
 
 .. code-block:: yaml
 
-    _export:
-      td:
-        apikey: YOUR/API_KEY
-
     +step1:
       td_table_export>:
       database: mydb
@@ -576,6 +575,15 @@ TODO: add more description here
       s3_path_prefix: mydb/mytable
       s3_access_key_id: ABCDEFGHJKLMNOPQRSTU
       s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data table exports.
+
+Parameters
+~~~~~~~~~~
 
 :command:`database: NAME`
   Name of the database.
@@ -622,11 +630,6 @@ TODO: add more description here
 
   * :command:`s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
 
-:command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
-
-  * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
-
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).
 
@@ -657,7 +660,6 @@ pg>: PostgreSQL operations
         port: 5430
         database: production_db
         user: app_user
-        password: 1qazxsw23edcvfr4
         ssl: true
 
     +replace_deduplicated_master_table:
@@ -670,6 +672,16 @@ pg>: PostgreSQL operations
     +insert_to_summary_table:
       pg>: queries/join_log_with_master.sql
       insert_into: summary_table
+
+
+Secrets
+~~~~~~~
+
+:command:`pg.password: NAME`
+  Optional user password to use when connecting to the postgres database (default: empty)
+
+Parameters
+~~~~~~~~~~
 
 :command:`pg>: FILE.sql`
   Path of the query template file. This file can contain ``${...}`` syntax to embed variables.
@@ -714,11 +726,6 @@ pg>: PostgreSQL operations
   User to connect to the database
 
   * :command:`user: app_user`
-
-:command:`password: NAME`
-  User password to connect to the database (default: empty)
-
-  * :command:`password: 12345678iuytrewq`
 
 :command:`ssl: BOOLEAN`
   Enable SSL to connect to the database (default: false).
