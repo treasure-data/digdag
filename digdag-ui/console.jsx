@@ -1537,12 +1537,17 @@ export default class Console extends React.Component {
 
   constructor(props:any) {
     super(props);
-    const credentials = window.localStorage.getItem("digdag.credentials");
-    if (credentials) {
-      this.setup(JSON.parse(credentials));
+    if (DIGDAG_CONFIG.auth.items.length == 0) {
       this.state = {authenticated: true};
+      this.setup({});
     } else {
-      this.state = {authenticated: false};
+      const credentials = window.localStorage.getItem("digdag.credentials");
+      if (credentials) {
+        this.setup(JSON.parse(credentials));
+        this.state = {authenticated: true};
+      } else {
+        this.state = {authenticated: false};
+      }
     }
   }
 
