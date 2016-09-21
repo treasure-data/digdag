@@ -1,5 +1,9 @@
 package io.digdag.cli;
 
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -11,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -21,6 +26,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Init
     extends Command
 {
+    private static final Map<String, Function<>> TYPES_TABLE = ImmutableMap.<String, Runnable>builder()
+            .put("echo", () -> {})
+            .build();
+    @Parameter(names = {"-t", "--type"})
+    String exampleType = "echo";
+
     @Override
     public void main()
         throws Exception
@@ -28,14 +39,18 @@ public class Init
         if (args.size() != 1) {
             throw usage(null);
         }
+        if (!TYPES_TABLE.containsKey(exampleType)) {
+            throw usage("--type has an invalid value");
+        }
         init(args.get(0));
     }
 
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " init <dir>");
+        err.println("Usage: " + programName + " init <dir> [options...]");
         err.println("  Options:");
+        err.println("    -t, --type EXAMPLE_TYPE          example project type (echo / sh / ruby / python / td / postgresql. default: echo)");
         Main.showCommonOptions(env, err);
         err.println("  Example:");
         err.println("    $ " + programName + " init mydag");
@@ -64,7 +79,7 @@ public class Init
 
         String workflowFileName = workflowName + WORKFLOW_FILE_SUFFIX;
 
-        ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", destDir);
+        ResourceGenerator gen = new ResourceGenerator("/digdag/cli/" + exampleType, destDir);
 
         gen.mkdir(".");  // creates destDir itself
 
