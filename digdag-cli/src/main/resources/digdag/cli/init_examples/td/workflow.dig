@@ -1,0 +1,10 @@
+timezone: UTC
+
++caution:
+  echo>: This workflow can work with Treasure Data account.
+         If you already have your account in Treasure Data, please create `my_db` for this workflow. Thanks
+
++query:
+  td>: queries/query.sql
+  database: sample_datasets
+  create_table: my_db.nasdaq_summary_${session_date_compact}
