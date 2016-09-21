@@ -20,6 +20,15 @@ Creates a new workflow project. This command generates a sample .dig file, scrip
 
     $ digdag init mydag
 
+Options:
+
+:command:`-t, --type EXAMPLE_TYPE`
+  Use specified example project type (default: echo).
+
+  Available types are `echo`, `sh`, `ruby`, `python`, `td` or `postgresql`.
+
+  Example: -t sh
+
 
 run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
