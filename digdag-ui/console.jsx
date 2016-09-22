@@ -83,7 +83,7 @@ Prism.hooks.add('wrap', (env) => {
           env.tag = 'span'
         }
       } else {
-        env.attributes.href = DIGDAG_CONFIG.connectorUrl(env.con)
+        env.attributes.href = DIGDAG_CONFIG.td.connectorUrl(env.con)
       }
   }
 })
