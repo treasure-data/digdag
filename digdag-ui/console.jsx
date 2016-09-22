@@ -109,6 +109,7 @@ type ConsoleConfig = {
     connectorUrl: (id:string) => string;
     queryUrl: (id:string) => string;
   },
+  logoutUrl: ?string,
   navbar: ?{
     brand: ?string;
     logo: ?string;
