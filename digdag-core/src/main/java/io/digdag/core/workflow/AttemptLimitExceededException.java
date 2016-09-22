@@ -9,6 +9,8 @@ package io.digdag.core.workflow;
 public class AttemptLimitExceededException
         extends LimitExceededException
 {
+    // TODO (sada): should this be a checked exception?
+
     public AttemptLimitExceededException(String message)
     {
         super(message);

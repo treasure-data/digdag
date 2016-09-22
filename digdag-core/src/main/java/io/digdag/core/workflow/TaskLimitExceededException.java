@@ -9,6 +9,8 @@ package io.digdag.core.workflow;
 public class TaskLimitExceededException
         extends LimitExceededException
 {
+    // TODO (dano): should this be a checked exception?
+
     public TaskLimitExceededException(String message)
     {
         super(message);
