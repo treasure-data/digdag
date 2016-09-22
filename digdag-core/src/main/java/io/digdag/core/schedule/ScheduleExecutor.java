@@ -135,14 +135,14 @@ public class ScheduleExecutor
                 logger.info("Number of attempts exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
                 ScheduleTime nextTime = ScheduleTime.of(
                         sched.getNextScheduleTime(),
-                        sched.getNextRunTime().plusSeconds(600));
+                        ScheduleTime.alignedNow().plusSeconds(600));
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
             catch (RuntimeException ex) {
                 logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
                 ScheduleTime nextTime = ScheduleTime.of(
                         sched.getNextScheduleTime(),
-                        sched.getNextRunTime().plusSeconds(3600));
+                        ScheduleTime.alignedNow().plusSeconds(3600));
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
         }

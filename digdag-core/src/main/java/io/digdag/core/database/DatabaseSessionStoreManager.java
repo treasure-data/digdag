@@ -950,7 +950,7 @@ public class DatabaseSessionStoreManager
                     handle.createQuery(
                         "select count(*) from session_attempts" +
                         " where site_id = :siteId" +
-                        " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " != 0"
+                        " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0"
                     )
                     .bind("siteId", siteId)
                     .mapTo(long.class)
