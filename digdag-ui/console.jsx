@@ -41,6 +41,8 @@ import {model, setup as setupModel} from './model';
 
 type Scrubber = (args:{key: string, value: string}) => string;
 
+const isDevelopmentEnv = process.env.NODE_ENV !== 'production'
+
 Prism.languages.digdag = Prism.languages.extend('yaml', {})
 
 Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token in yaml file
@@ -1509,6 +1511,40 @@ class NotFoundPage extends React.Component {
   }
 }
 
+class ParserTest extends React.Component {
+  definition() {
+    return `
+      timezone: UTC
+
+      schedule:
+        daily>: "07:00:00"
+
+      _export:
+        td:
+          database: se379
+          table: fbtest
+        reload_window: 10
+        start_from: "\${session_unixtime - (86400 * (reload_window - 1))}"
+
+      +delete_records:
+        td_partial_delete>: \${td.table}
+        to: "\${session_time}"
+        from: "\${start_from}"
+
+      +import_from_facebook:
+        td_load>: imports/facebook_ads_reporting.yml
+        table: \${td.table}
+    `
+  }
+  render() {
+    return (
+      <div className="container">
+        <pre><PrismCode className="language-digdag">{this.definition()}</PrismCode></pre>
+      </div>
+    )
+  }
+}
+
 class ConsolePage extends React.Component {
   render() {
     return (
@@ -1521,6 +1557,9 @@ class ConsolePage extends React.Component {
             <Route path="/workflows/:workflowId" component={WorkflowRevisionPage}/>
             <Route path="/sessions/:sessionId" component={SessionPage}/>
             <Route path="/attempts/:attemptId" component={AttemptPage}/>
+            {isDevelopmentEnv &&
+              <Route path="/parser-test" component={ParserTest} />
+            }
             <Route path="*" component={withRouter(NotFoundPage)}/>
           </Route>
         </Router>
