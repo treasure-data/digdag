@@ -191,7 +191,7 @@ public class WorkflowExecutor
     public StoredSessionAttemptWithSession submitWorkflow(int siteId,
             AttemptRequest ar,
             WorkflowDefinition def)
-        throws ResourceNotFoundException, SessionAttemptConflictException
+        throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());  // TODO cache (CachedWorkflowCompiler which takes def id as the cache key)
         WorkflowTaskList tasks = workflow.getTasks();
@@ -204,7 +204,7 @@ public class WorkflowExecutor
 
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
-        throws ResourceNotFoundException, SessionAttemptConflictException
+        throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
     {
         if (logger.isTraceEnabled()) {
             for (WorkflowTask task : tasks) {
@@ -281,8 +281,13 @@ public class WorkflowExecutor
                         .stateFlags(TaskStateFlags.empty().withInitialTask())
                         .build();
                     store.insertRootTask(storedAttempt.getId(), rootTask, (taskStore, storedTaskId) -> {
-                        TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
-                                storedTaskId, tasks, resumingTasks);
+                        try {
+                            TaskControl.addInitialTasksExceptingRootTask(taskStore, storedAttempt.getId(),
+                                    storedTaskId, tasks, resumingTasks);
+                        }
+                        catch (TaskLimitExceededException ex) {
+                            throw new WorkflowTaskLimitExceededException(ex);
+                        }
                         return null;
                     });
                     if (!ar.getSessionMonitors().isEmpty()) {
@@ -293,6 +298,9 @@ public class WorkflowExecutor
                     }
                     return StoredSessionAttemptWithSession.of(siteId, storedSession, storedAttempt);
                 });
+        }
+        catch (WorkflowTaskLimitExceededException ex) {
+            throw ex.getCause();
         }
         catch (ResourceConflictException sessionAlreadyExists) {
             StoredSessionAttemptWithSession conflicted;
@@ -324,6 +332,21 @@ public class WorkflowExecutor
         }
 
         return stored;
+    }
+
+    private static class WorkflowTaskLimitExceededException
+            extends RuntimeException
+    {
+        public WorkflowTaskLimitExceededException(TaskLimitExceededException cause)
+        {
+            super(cause);
+        }
+
+        @Override
+        public TaskLimitExceededException getCause()
+        {
+            return (TaskLimitExceededException) super.getCause();
+        }
     }
 
     public boolean killAttemptById(int siteId, long attemptId)
@@ -545,31 +568,49 @@ public class WorkflowExecutor
         }
         else if (lockedTask.isAnyErrorChild()) {
             // group error
-            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
-
-            boolean willRetry = retryControl.evaluate();
-            List<Long> errorTaskIds;
-            if (!willRetry) {
-                errorTaskIds = addErrorTasksIfAny(lockedTask,
-                        true,
-                        (export) -> collectErrorParams(export, lockedTask.get()));
-            }
-            else {
-                errorTaskIds = ImmutableList.of();
-            }
             boolean updated;
+
+            RetryControl retryControl = RetryControl.prepare(task.getConfig().getMerged(), task.getStateParams(), false);  // don't retry by default
+            boolean willRetry = retryControl.evaluate();
             if (willRetry) {
                 updated = lockedTask.setPlannedToGroupRetryWaiting(
                         retryControl.getNextRetryStateParams(),
                         retryControl.getNextRetryInterval());
             }
-            else if (!errorTaskIds.isEmpty()) {
-                // don't set GROUP_ERROR but set DELAYED_GROUP_ERROR. Delay until next setDoneFromDoneChildren call
-                updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();  // TODO set flag
-            }
             else {
-                updated = lockedTask.setPlannedToGroupError();
+                List<Long> errorTaskIds = new ArrayList<>();
+
+                // root task is always group-only task
+				boolean isRootTask = !lockedTask.get().getParentId().isPresent();
+				if (isRootTask) {
+					errorTaskIds.add(addAttemptFailureAlertTask(lockedTask));
+				}
+
+                try {
+                    Optional<Long> errorTask = addErrorTasksIfAny(lockedTask,
+                            true,
+                            (export) -> collectErrorParams(export, lockedTask.get()));
+                    if (errorTask.isPresent()) {
+                        errorTaskIds.add(errorTask.get());
+                    }
+                }
+                catch (TaskLimitExceededException ex) {
+                    // addErrorTasksIfAny threw TaskLimitExceededException. Giveup adding them.
+                    // TODO this is a fundamental design problem. Probably _error tasks should be removed.
+                    //      use notification tasks instead.
+                }
+
+                if (errorTaskIds.isEmpty()) {
+                    // set GROUP_ERROR state
+                    updated = lockedTask.setPlannedToGroupError();
+                }
+                else {
+                    // set DELAYED_GROUP_ERROR flag and keep state. actual change of state is delay
+                    // until next setDoneFromDoneChildren call.
+                    updated = lockedTask.setPlannedToPlannedWithDelayedGroupError();
+                }
             }
+
             return updated;
         }
         else {
@@ -1088,9 +1129,18 @@ public class WorkflowExecutor
         }
 
         // task failed. add ^error tasks
-        List<Long> errorTaskIds = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
+        boolean errorTaskAdded;
+        try {
+            Optional<Long> errorTaskId = addErrorTasksIfAny(lockedTask, false, (export) -> export.set("error", error));
+            errorTaskAdded = errorTaskId.isPresent();
+        }
+        catch (TaskLimitExceededException ex) {
+            errorTaskAdded = false;
+            logger.debug("Failed to add error tasks because of task limit");
+        }
+
         boolean updated;
-        if (!errorTaskIds.isEmpty()) {
+        if (errorTaskAdded) {
             logger.trace("Added an error task");
             // transition from planned to error is delayed until setDoneFromDoneChildren
             updated = lockedTask.setRunningToPlannedWithDelayedError(error);
@@ -1123,9 +1173,16 @@ public class WorkflowExecutor
             return false;
         }
 
-        // task successfully finished. add :sub and :check tasks
-        Optional<Long> rootSubtaskId = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
-        addCheckTasksIfAny(lockedTask, rootSubtaskId);
+        // task successfully finished. add ^sub and ^check tasks
+        boolean subtaskAdded = false;
+        try {
+            Optional<Long> rootSubtaskId = addSubtasksIfNotEmpty(lockedTask, result.getSubtaskConfig());
+            Optional<Long> checkTaskId = addCheckTasksIfAny(lockedTask, rootSubtaskId);
+            subtaskAdded = rootSubtaskId.isPresent() || checkTaskId.isPresent();
+        }
+        catch (TaskLimitExceededException ex) {
+            return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
+        }
         boolean updated = lockedTask.setRunningToPlannedSuccessful(result);
 
         noticeStatusPropagate();
@@ -1196,6 +1253,7 @@ public class WorkflowExecutor
     }
 
     private Optional<Long> addSubtasksIfNotEmpty(TaskControl lockedTask, Config subtaskConfig)
+        throws TaskLimitExceededException
     {
         if (subtaskConfig.isEmpty()) {
             return Optional.absent();
@@ -1211,18 +1269,12 @@ public class WorkflowExecutor
         return Optional.of(rootTaskId);
     }
 
-    private List<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
+    private Optional<Long> addErrorTasksIfAny(TaskControl lockedTask, boolean isParentErrorPropagatedFromChildren, Function<Config, Config> errorBuilder)
+        throws TaskLimitExceededException
     {
-        List<Long> taskIds = new ArrayList<>();
-
-        boolean isRootTask = lockedTask.get().getParentId().isPresent();
-        if (!isRootTask) {
-            taskIds.add(addAttemptFailureAlertTask(lockedTask));
-        }
-
         Config subtaskConfig = lockedTask.get().getConfig().getErrorConfig();
         if (subtaskConfig.isEmpty()) {
-            return taskIds;
+            return Optional.absent();
         }
 
         // modify export params
@@ -1232,13 +1284,12 @@ public class WorkflowExecutor
 
         WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^error", subtaskConfig);
         if (tasks.isEmpty()) {
-            return taskIds;
+            return Optional.absent();
         }
 
         logger.trace("Adding error tasks: {}", tasks);
         long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
-        taskIds.add(rootTaskId);
-        return taskIds;
+        return Optional.of(rootTaskId);
     }
 
     private long addAttemptFailureAlertTask(TaskControl rootTask)
@@ -1247,10 +1298,11 @@ public class WorkflowExecutor
         config.set("_type", "notify");
         config.set("_command", "Workflow session attempt failed");
         WorkflowTaskList tasks = compiler.compileTasks(rootTask.get().getFullName(), "^failure-alert", config);
-        return rootTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        return rootTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
     }
 
     private Optional<Long> addCheckTasksIfAny(TaskControl lockedTask, Optional<Long> upstreamTaskId)
+        throws TaskLimitExceededException
     {
         Config subtaskConfig = lockedTask.get().getConfig().getCheckConfig();
         if (subtaskConfig.isEmpty()) {
@@ -1286,7 +1338,7 @@ public class WorkflowExecutor
         }
 
         logger.trace("Adding {} tasks: {}", type, tasks);
-        long rootTaskId = lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+        long rootTaskId = lockedTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
         return Optional.of(rootTaskId);
     }
 
@@ -1310,7 +1362,7 @@ public class WorkflowExecutor
             WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^alert", config);
             logger.trace("Adding {} tasks: {}", type, tasks);
             // TODO: attempt should not fail if the alert notification task fails
-            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+            lockedTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
         }
 
         // Fail the attempt?
@@ -1328,7 +1380,7 @@ public class WorkflowExecutor
             config.set("_command", "SLA violation");
             WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^" + type + "^fail", config);
             logger.trace("Adding {} tasks: {}", type, tasks);
-            lockedTask.addGeneratedSubtasks(tasks, ImmutableList.of(), false);
+            lockedTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
         }
     }
 }

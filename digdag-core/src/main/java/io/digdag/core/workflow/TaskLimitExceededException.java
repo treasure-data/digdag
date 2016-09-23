@@ -1,5 +1,7 @@
 package io.digdag.core.workflow;
 
+import io.digdag.core.repository.ResourceLimitExceededException;
+
 /**
  * An exception thrown when adding more tasks to a session attempt would cause the task limit to be exceeded.
  *
@@ -7,10 +9,8 @@ package io.digdag.core.workflow;
  * tasks is based on a slight old transaction.
  */
 public class TaskLimitExceededException
-        extends LimitExceededException
+        extends ResourceLimitExceededException
 {
-    // TODO (dano): should this be a checked exception?
-
     public TaskLimitExceededException(String message)
     {
         super(message);
