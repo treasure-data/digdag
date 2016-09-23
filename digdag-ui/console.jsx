@@ -675,7 +675,6 @@ function enumerateTaskFiles(node:Object, files:Array<TaskFile>, projectArchive:P
 function workflowFiles(workflow:Workflow, projectArchive:ProjectArchive):Array<TaskFile> {
   const files = [];
   enumerateTaskFiles(workflow.config, files, projectArchive);
-  console.log('workflowFiles', 'workflow', workflow, 'projectArchive', projectArchive, 'files', files);
   return files;
 }
 
