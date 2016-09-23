@@ -144,7 +144,7 @@ public class LocalSite
     public StoredSessionAttemptWithSession submitWorkflow(
             AttemptRequest ar,
             WorkflowDefinition def)
-        throws ResourceNotFoundException, SessionAttemptConflictException
+        throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
         return exec.submitWorkflow(0, ar, def);
     }

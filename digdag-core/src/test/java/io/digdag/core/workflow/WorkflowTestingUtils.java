@@ -20,6 +20,7 @@ import io.digdag.core.archive.WorkflowFile;
 import io.digdag.core.database.DatabaseConfig;
 import io.digdag.core.database.DatabaseSecretStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinition;
 import io.digdag.core.repository.WorkflowDefinitionList;
@@ -75,7 +76,7 @@ public class WorkflowTestingUtils
     }
 
     public static StoredSessionAttemptWithSession submitWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         ArchiveMetadata meta = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(ImmutableList.of(
@@ -103,7 +104,7 @@ public class WorkflowTestingUtils
             StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
             localSite.runUntilDone(attempt.getId());
         }
-        catch (ResourceNotFoundException | ResourceConflictException ex) {
+        catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
             throw Throwables.propagate(ex);
         }
     }

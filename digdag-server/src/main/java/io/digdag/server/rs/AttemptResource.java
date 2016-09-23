@@ -141,7 +141,7 @@ public class AttemptResource
     @Consumes("application/json")
     @Path("/api/attempts")
     public Response startAttempt(RestSessionAttemptRequest request)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         ProjectStore rs = rm.getProjectStore(getSiteId());
 

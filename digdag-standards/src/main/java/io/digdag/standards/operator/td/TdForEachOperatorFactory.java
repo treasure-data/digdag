@@ -14,6 +14,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.spi.TaskExecutionException;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -134,7 +135,8 @@ public class TdForEachOperatorFactory
                 while (ite.hasNext()) {
                     rows.add(row(columnNames, ite.next().asArrayValue()));
                     if (rows.size() > Limits.maxWorkflowTasks()) {
-                        throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                        TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                        throw new TaskExecutionException(cause, TaskExecutionException.buildExceptionErrorConfig(cause));
                     }
                 }
                 return rows;
