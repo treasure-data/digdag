@@ -236,7 +236,7 @@ public abstract class BasicDatabaseStoreManager <D>
                         Throwables.propagateIfInstanceOf(ex, exClass);
                         Throwables.propagateIfPossible(ex);
                         throw new TransactionFailedException(
-                                "Transaction failed do to exception being thrown " +
+                                "Transaction failed due to exception being thrown " +
                                 "from within the callback. See cause " +
                                 "for the original exception.", ex);
                     }
@@ -277,7 +277,7 @@ public abstract class BasicDatabaseStoreManager <D>
                         Throwables.propagateIfInstanceOf(ex, exClass2);
                         Throwables.propagateIfPossible(ex);
                         throw new TransactionFailedException(
-                                "Transaction failed do to exception being thrown " +
+                                "Transaction failed due to exception being thrown " +
                                 "from within the callback. See cause " +
                                 "for the original exception.", ex);
                     }

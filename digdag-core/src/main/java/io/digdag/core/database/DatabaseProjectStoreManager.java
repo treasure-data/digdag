@@ -514,7 +514,7 @@ public class DatabaseProjectStoreManager
     public interface H2Dao
             extends Dao
     {
-        // h2's MERGE doesn't reutrn generated id when conflicting row already exists
+        // h2's MERGE doesn't return generated id when conflicting row already exists
         @SqlUpdate("merge into projects" +
                 " (site_id, name, created_at)" +
                 " key (site_id, name)" +
