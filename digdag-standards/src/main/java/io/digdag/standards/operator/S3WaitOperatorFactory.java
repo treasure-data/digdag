@@ -6,7 +6,6 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
@@ -135,10 +133,8 @@ public class S3WaitOperatorFactory
                     () -> awsSecrets.getSecretOptional("region"),
                     () -> params.getOptional("region", String.class));
 
-            String accessKey = first(
-                    () -> s3Secrets.getSecretOptional("access-key-id"),
-                    () -> awsSecrets.getSecretOptional("access-key-id"))
-                    .or(() -> params.get("access-key-id", String.class));
+            String accessKey = s3Secrets.getSecretOptional("access-key-id")
+                    .or(() -> awsSecrets.getSecret("access-key-id"));
 
             String secretKey = s3Secrets.getSecretOptional("secret-access-key")
                     .or(() -> awsSecrets.getSecret("secret-access-key"));
@@ -260,7 +256,8 @@ public class S3WaitOperatorFactory
         return Optional.absent();
     }
 
-    interface AmazonS3ClientFactory {
+    interface AmazonS3ClientFactory
+    {
         AmazonS3Client create(AWSCredentials credentials, ClientConfiguration clientConfiguration);
     }
 }
