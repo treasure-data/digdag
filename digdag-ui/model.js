@@ -147,6 +147,7 @@ export type HeadersProvider = (args: {credentials: Credentials}) => Headers;
 export type ModelConfig = {
   url: string;
   td: {
+    useTD: boolean;
     apiV4: string;
     connectorUrl: (id: string) => string;
     queryUrl: (id: string) => string;
@@ -300,6 +301,9 @@ export class Model {
   }
 
   fillTDQueryCache() : Promise {
+    if (!this.config.td.useTD) {
+      return Promise.resolve({})
+    }
     return fetch(this.config.td.apiV4 + '/queries', {
       credentials: 'include',
       headers: this.headers()

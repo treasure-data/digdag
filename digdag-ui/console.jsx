@@ -104,6 +104,7 @@ type AuthItem = {
 type ConsoleConfig = {
   url: string;
   td: {
+    useTD: boolean;
     apiV4: string,
     jobUrl: (id:string) => string;
     connectorUrl: (id:string) => string;
