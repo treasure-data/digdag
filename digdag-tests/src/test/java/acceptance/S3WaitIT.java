@@ -51,7 +51,6 @@ public class S3WaitIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    private Path config;
     private Path projectDir;
     private DigdagClient client;
 
@@ -62,7 +61,6 @@ public class S3WaitIT
         assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         projectDir = folder.getRoot().toPath().resolve("foobar");
-        config = folder.newFile().toPath();
 
         client = DigdagClient.builder()
                 .host(server.host())

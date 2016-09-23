@@ -886,7 +886,6 @@ s3_wait>: Wait for a file in Amazon S3
 
 The **s3_wait>:** operator waits for file to appear in Amazon S3.
 
-
 .. code-block:: yaml
 
     +wait:
@@ -895,20 +894,28 @@ The **s3_wait>:** operator waits for file to appear in Amazon S3.
 Secrets
 ~~~~~~~
 
-:command:`aws.access-key`
+:command:`aws.s3.access-key, aws.access-key`
   The AWS Access Key ID to use when accessing S3.
 
-:command:`aws.secret-key`
+:command:`aws.s3.secret-key, aws.secret-key`
   The AWS Secret Access Key when accessing S3.
 
-:command:`aws.sse-key`
-  An optional Server-Side Encryption key to use when accessing S3. Must be Base64 encoded.
+:command:`aws.s3.region, aws.region`
+  An optional explicit AWS Region in which to access S3.
 
-:command:`aws.sse-key-algorithm`
-  An optional Server-Side Encryption key algorithm to use when accessing S3.
+:command:`aws.s3.endpoint`
+  An optional explicit API endpoint to use when accessing S3. This overrides the `aws.region` secret.
 
-:command:`aws.sse-key-md5`
-  An optional MD5 digest of the Server-Side Encryption key algorithm to use when accessing S3. Must be Base64 encoded.
+:command:`aws.s3.sse-c-key`
+  An optional Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
+
+:command:`aws.s3.sse-c-key-algorithm`
+  An optional Customer-Provided Server-Side Encryption (SSE-C) key algorithm to use when accessing S3.
+
+:command:`aws.s3.sse-c-key-md5`
+  An optional MD5 digest of the Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
+
+For more information about SSE-C, See the `AWS S3 Documentation <http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html>`_.
 
 Parameters
 ~~~~~~~~~~
@@ -921,16 +928,24 @@ Parameters
   * :command:`s3_wait>: my-bucket/file/in/a/directory`
 
 :command:`region: REGION`
-  The region of the S3 bucket.
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.region` secret.
+
+:command:`endpoint: ENDPOINT`
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.region` secret.
+  *Note:* This will override the `region` parameter.
 
 :command:`bucket: BUCKET`
-  The S3 bucket of the file. Can be used together with `key:` instead of putting the path on the operator line.
+  The S3 bucket where the file is located. Can be used together with the `key` parameter instead of putting the path on the operator line.
 
 :command:`key: KEY`
-  The S3 key of the file. Can be used together with `bucket:` instead of putting the path on the operator line.
+  The S3 key of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator line.
 
 :command:`version_id: VERSION_ID`
   An optional object version to check for.
+
+:command:`path_style_access: true/false`
+  An optional flag to control whether to use path-style or virtual hosted-style access when accessing S3.
+  *Note:* Enabling `path_style_access` also requires specifying a `region`.
 
 Output Parameters
 ~~~~~~~~~~~~~~~~~
@@ -956,5 +971,6 @@ Output Parameters
           }
         }
 
-
+.. note:: The **s3_wait>:** operator makes use of polling with *exponential backoff*.
+As such there might be some time interval between a file being created and the **s3_wait>:** operator detecting it.
 
