@@ -277,9 +277,10 @@ public class TaskControl
         return false;
     }
 
+    // setRunningToPlannedWithDelayedError + setPlannedToError
     public boolean setRunningToShortCircuitError(Config error)
     {
-        if (store.setDoneStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, error)) {
+        if (store.setErrorStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -343,6 +344,16 @@ public class TaskControl
         }
         return false;
         // transitionToPlanned
+    }
+
+    // setRunningToPlannedSuccessful + setPlannedToSuccess
+    public boolean setRunningToShortCircuitSuccess(TaskResult result)
+    {
+        if (store.setSuccessStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.SUCCESS, result)) {
+            state = TaskStateCode.SUCCESS;
+            return true;
+        }
+        return false;
     }
 
     // to planned with error
