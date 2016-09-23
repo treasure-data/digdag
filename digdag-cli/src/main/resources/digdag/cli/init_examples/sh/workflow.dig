@@ -1,0 +1,19 @@
+timezone: UTC
+
++setup:
+  sh>: echo start ${session_time}
+
++disp_current_date:
+  sh>: date
+
++repeat:
+  for_each>:
+    order: [first, second, third]
+    animal: [dog, cat]
+  _do:
+    sh>: scripts/myscript.sh ${order} ${animal}
+  _parallel: false
+
++teardown:
+  sh>: echo finish ${session_time}
+

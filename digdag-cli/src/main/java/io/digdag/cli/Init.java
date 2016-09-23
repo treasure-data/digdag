@@ -1,5 +1,7 @@
 package io.digdag.cli;
 
+import com.beust.jcommander.Parameter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -21,6 +23,36 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Init
     extends Command
 {
+    private static final Map<String, ExampleProjectGenerator> TYPES_TABLE = ImmutableMap.<String, ExampleProjectGenerator>builder()
+            .put("echo", (gen) -> {})
+            .put("sh", (gen) -> {
+                gen.mkdir("scripts");
+                gen.cp("scripts/myscript.sh", "scripts/myscript.sh");
+                gen.setExecutable("scripts/myscript.sh");
+            })
+            .put("ruby", (gen) -> {
+                gen.mkdir("scripts");
+                gen.cp("scripts/myclass.rb", "scripts/myclass.rb");
+            })
+            .put("python", (gen) -> {
+                gen.mkdir("scripts");
+                gen.cp("scripts/__init__.py", "scripts/__init__.py");
+                gen.cp("scripts/myclass.py", "scripts/myclass.py");
+            })
+            .put("td", (gen) -> {
+                gen.mkdir("queries");
+                gen.cp("queries/query.sql", "queries/query.sql");
+            })
+            .put("postgresql", (gen) -> {
+                gen.mkdir("queries");
+                gen.cp("queries/create_src_table.sql", "queries/create_src_table.sql");
+                gen.cp("queries/insert_data_to_src_table.sql", "queries/insert_data_to_src_table.sql");
+                gen.cp("queries/summarize_src_table.sql", "queries/summarize_src_table.sql");
+            })
+            .build();
+    @Parameter(names = {"-t", "--type"})
+    String exampleType = "echo";
+
     @Override
     public void main()
         throws Exception
@@ -28,14 +60,18 @@ public class Init
         if (args.size() != 1) {
             throw usage(null);
         }
+        if (!TYPES_TABLE.containsKey(exampleType)) {
+            throw usage("--type has an invalid value");
+        }
         init(args.get(0));
     }
 
     @Override
     public SystemExitException usage(String error)
     {
-        err.println("Usage: " + programName + " init <dir>");
+        err.println("Usage: " + programName + " init <dir> [options...]");
         err.println("  Options:");
+        err.println("    -t, --type EXAMPLE_TYPE          example project type (echo / sh / ruby / python / td / postgresql. default: echo)");
         Main.showCommonOptions(env, err);
         err.println("  Example:");
         err.println("    $ " + programName + " init mydag");
@@ -64,7 +100,7 @@ public class Init
 
         String workflowFileName = workflowName + WORKFLOW_FILE_SUFFIX;
 
-        ResourceGenerator gen = new ResourceGenerator("/digdag/cli/", destDir);
+        ResourceGenerator gen = new ResourceGenerator(String.format("/digdag/cli/init_examples/%s/", exampleType), destDir);
 
         gen.mkdir(".");  // creates destDir itself
 
@@ -72,17 +108,26 @@ public class Init
             out.println("File " + gen.path(workflowFileName) + " already exists.");
         }
         else {
-            if (!gen.exists(".gitignore")) {
-                gen.cp("gitignore", ".gitignore");
-            }
-
-            gen.cp("query.sql", "query.sql");
+            TYPES_TABLE.get(exampleType).generate(gen);
             gen.cp("workflow.dig", workflowFileName);
-            if (isCurrentDirectory) {
-                out.println("Done. Type `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+            if (!gen.exists(".gitignore")) {
+                gen.cp("../gitignore", ".gitignore");
+            }
+            if (exampleType.equals("td")) {
+                if (isCurrentDirectory) {
+                    out.println("Done. Set up you Treasure Data API key and type `" + programName + " push " + workflowName + "` to push the workflow to Treasure Data. Enjoy!");
+                }
+                else {
+                    out.println("Done. Set up you Treasure Data API key and type `cd " + destDir + "` and then `" + programName + " push " + workflowName + "` to push the workflow to Treasure Data. Enjoy!");
+                }
             }
             else {
-                out.println("Done. Type `cd " + destDir + "` and then `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+                if (isCurrentDirectory) {
+                    out.println("Done. Type `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+                }
+                else {
+                    out.println("Done. Type `cd " + destDir + "` and then `" + programName + " run " + workflowFileName + "` to run the workflow. Enjoy!");
+                }
             }
         }
     }
@@ -112,9 +157,10 @@ public class Init
             throws IOException
         {
             out.println("  Creating " + dest);
-            try (InputStream in = getClass().getResourceAsStream(sourcePrefix + src)) {
+            String normalizedSrc = Paths.get(sourcePrefix).resolve(src).normalize().toString();
+            try (InputStream in = getClass().getResourceAsStream(normalizedSrc)) {
                 if (in == null) {
-                    throw new RuntimeException("Resource not exists: " + sourcePrefix + src);
+                    throw new RuntimeException("Resource not exists: " + normalizedSrc);
                 }
                 try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
@@ -193,5 +239,11 @@ public class Init
                 return new String(ByteStreams.toByteArray(in), UTF_8);
             }
         }
+    }
+
+    private interface ExampleProjectGenerator
+    {
+        void generate(ResourceGenerator gen)
+            throws IOException;
     }
 }
