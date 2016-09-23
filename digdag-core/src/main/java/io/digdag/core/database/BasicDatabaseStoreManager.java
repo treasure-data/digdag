@@ -22,7 +22,6 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public abstract class BasicDatabaseStoreManager <D>
 {
@@ -147,31 +146,25 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
-    public interface AutoCommitAction <T, D> {
+    public interface AutoCommitAction <T, D>
+    {
         T call(Handle handle, D dao);
     }
 
-    public interface AutoCommitActionWithException <T, D, E extends Exception> {
-        T call(Handle handle, D dao) throws E;
+    public interface AutoCommitActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception, E3 extends Exception>
+    {
+        T call(Handle handle, D dao) throws E1, E2, E3;
     }
 
-    public interface AutoCommitActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
-        T call(Handle handle, D dao) throws E1, E2;
-    }
-
-    public interface TransactionAction <T, D> {
+    public interface TransactionAction <T, D>
+    {
         T call(Handle handle, D dao);
     }
 
-    public interface TransactionActionWithException <T, D, E extends Exception> {
-        T call(Handle handle, D dao) throws E;
+    public interface TransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception, E3 extends Exception> {
+        T call(Handle handle, D dao) throws E1, E2, E3;
     }
 
-    public interface TransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
-        T call(Handle handle, D dao) throws E1, E2;
-    }
-
-    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
     public <T> T transaction(TransactionAction<T, D> action)
     {
         try {
@@ -193,48 +186,29 @@ public abstract class BasicDatabaseStoreManager <D>
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public <T, E extends Exception> T transaction(TransactionActionWithException<T, D, E> action, Class<E> exClass) throws E
+    public <T, E1 extends Exception> T transaction(
+            TransactionActionWithExceptions<T, D, E1, RuntimeException, RuntimeException> action,
+            Class<E1> exClass1)
+        throws E1
     {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    handle.begin();
-                    T retval;
-                    try {
-                        retval = action.call(handle, handle.attach(daoIface));
-                    }
-                    catch (Exception ex) {
-                        try {
-                            handle.rollback();
-                        }
-                        catch (Exception rollback) {
-                            ex.addSuppressed(rollback);
-                        }
-                        Throwables.propagateIfInstanceOf(ex, exClass);
-                        Throwables.propagateIfPossible(ex);
-                        throw new TransactionFailedException(
-                                "Transaction failed due to exception being thrown " +
-                                "from within the callback. See cause " +
-                                "for the original exception.", ex);
-                    }
-                    validateTransactionAndCommit(handle);
-                    return retval;
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
+        return transaction(action, exClass1, RuntimeException.class, RuntimeException.class);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception, E2 extends Exception> T transaction(TransactionActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
+    public <T, E1 extends Exception, E2 extends Exception> T transaction(
+            TransactionActionWithExceptions<T, D, E1, E2, RuntimeException> action,
+            Class<E1> exClass1,
+            Class<E2> exClass2)
+        throws E1, E2
+    {
+        return transaction(action, exClass1, exClass2, RuntimeException.class);
+    }
+
+    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception> T transaction(
+            TransactionActionWithExceptions<T, D, E1, E2, E3> action,
+            Class<E1> exClass1,
+            Class<E2> exClass2,
+            Class<E3> exClass3)
+        throws E1, E2, E3
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
@@ -253,6 +227,7 @@ public abstract class BasicDatabaseStoreManager <D>
                         }
                         Throwables.propagateIfInstanceOf(ex, exClass1);
                         Throwables.propagateIfInstanceOf(ex, exClass2);
+                        Throwables.propagateIfInstanceOf(ex, exClass3);
                         Throwables.propagateIfPossible(ex);
                         throw new TransactionFailedException(
                                 "Transaction failed due to exception being thrown " +
@@ -268,6 +243,7 @@ public abstract class BasicDatabaseStoreManager <D>
             Throwable innerException = ex.getCause();
             Throwables.propagateIfInstanceOf(innerException, exClass1);
             Throwables.propagateIfInstanceOf(innerException, exClass2);
+            Throwables.propagateIfInstanceOf(innerException, exClass3);
             throw Throwables.propagate(innerException);
         }
         catch (InterruptedException ex) {
@@ -323,7 +299,31 @@ public abstract class BasicDatabaseStoreManager <D>
     }
 
     @SuppressWarnings("unchecked")
-    public <T, E extends Exception> T autoCommit(AutoCommitActionWithException<T, D, E> action, Class<E> exClass) throws E
+    public <T, E1 extends Exception> T autoCommit(
+            AutoCommitActionWithExceptions<T, D, E1, RuntimeException, RuntimeException> action,
+            Class<E1> exClass1)
+        throws E1
+    {
+        return autoCommit(action, exClass1, RuntimeException.class, RuntimeException.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, E1 extends Exception, E2 extends Exception> T autoCommit(
+            AutoCommitActionWithExceptions<T, D, E1, E2, RuntimeException> action,
+            Class<E1> exClass1,
+            Class<E2> exClass2)
+        throws E1, E2
+    {
+        return autoCommit(action, exClass1, exClass2, RuntimeException.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, E1 extends Exception, E2 extends Exception, E3 extends Exception> T autoCommit(
+            AutoCommitActionWithExceptions<T, D, E1, E2, E3> action,
+            Class<E1> exClass1,
+            Class<E2> exClass2,
+            Class<E3> exClass3)
+        throws E1, E2, E3
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
@@ -334,30 +334,9 @@ public abstract class BasicDatabaseStoreManager <D>
         }
         catch (RetryGiveupException ex) {
             Throwable innerException = ex.getCause();
-            Throwables.propagateIfInstanceOf(innerException, exClass);
-            throw Throwables.propagate(innerException);
-        }
-        catch (InterruptedException ex) {
-            throw Throwables.propagate(ex);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T, E1 extends Exception, E2 extends Exception> T autoCommit(AutoCommitActionWithExceptions<T, D, E1, E2> action, Class<E1> exClass1, Class<E2> exClass2) throws E1, E2
-    {
-        try {
-            return transactionRetryExecutor.runInterruptible(() -> {
-                try (Handle handle = dbi.open()) {
-                    return handle.inTransaction((h, status) -> {
-                        return action.call(h, h.attach(daoIface));
-                    });
-                }
-            });
-        }
-        catch (RetryGiveupException ex) {
-            Throwable innerException = ex.getCause();
             Throwables.propagateIfInstanceOf(innerException, exClass1);
             Throwables.propagateIfInstanceOf(innerException, exClass2);
+            Throwables.propagateIfInstanceOf(innerException, exClass3);
             throw Throwables.propagate(innerException);
         }
         catch (InterruptedException ex) {
