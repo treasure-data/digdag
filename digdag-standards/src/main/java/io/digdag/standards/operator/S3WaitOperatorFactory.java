@@ -136,12 +136,12 @@ public class S3WaitOperatorFactory
                     () -> params.getOptional("region", String.class));
 
             String accessKey = first(
-                    () -> s3Secrets.getSecretOptional("access-key"),
-                    () -> awsSecrets.getSecretOptional("access-key"))
-                    .or(() -> params.get("access-key", String.class));
+                    () -> s3Secrets.getSecretOptional("access-key-id"),
+                    () -> awsSecrets.getSecretOptional("access-key-id"))
+                    .or(() -> params.get("access-key-id", String.class));
 
-            String secretKey = s3Secrets.getSecretOptional("secret-key")
-                    .or(() -> awsSecrets.getSecret("secret-key"));
+            String secretKey = s3Secrets.getSecretOptional("secret-access-key")
+                    .or(() -> awsSecrets.getSecret("secret-access-key"));
 
             // Create S3 Client
             ClientConfiguration configuration = new ClientConfiguration();

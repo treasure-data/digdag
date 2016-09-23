@@ -894,11 +894,11 @@ The **s3_wait>:** operator waits for file to appear in Amazon S3.
 Secrets
 ~~~~~~~
 
-:command:`aws.s3.access-key, aws.access-key`
+:command:`aws.s3.access-key-id, aws.access-key-id`
   The AWS Access Key ID to use when accessing S3.
 
-:command:`aws.s3.secret-key, aws.secret-key`
-  The AWS Secret Access Key when accessing S3.
+:command:`aws.s3.secret-access-key, aws.secret-access-key`
+  The AWS Secret Access Key to use when accessing S3.
 
 :command:`aws.s3.region, aws.region`
   An optional explicit AWS Region in which to access S3.

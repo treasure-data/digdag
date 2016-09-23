@@ -28,7 +28,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -56,8 +55,8 @@ public class S3WaitOperatorFactoryTest
     private static final String BUCKET = "test.bucket";
     private static final String KEY = "a/test/key";
 
-    private static final String ACCESS_KEY = "test-access-key";
-    private static final String SECRET_KEY = "test-secret-key";
+    private static final String ACCESS_KEY_ID = "test-access-key-id";
+    private static final String SECRET_ACCESS_KEY = "test-secret-access-key";
     private static final String CONTENT_TYPE = "text/plain";
     private static final long CONTENT_LENGTH = 4711;
     private static final Map<String, String> USER_METADATA = ImmutableMap.of(
@@ -115,8 +114,8 @@ public class S3WaitOperatorFactoryTest
 
         when(secretProvider.getSecrets("aws")).thenReturn(awsSecrets);
         when(awsSecrets.getSecrets("s3")).thenReturn(s3Secrets);
-        when(s3Secrets.getSecretOptional("access-key")).thenReturn(Optional.of(ACCESS_KEY));
-        when(s3Secrets.getSecretOptional("secret-key")).thenReturn(Optional.of(SECRET_KEY));
+        when(s3Secrets.getSecretOptional("access-key-id")).thenReturn(Optional.of(ACCESS_KEY_ID));
+        when(s3Secrets.getSecretOptional("secret-access-key")).thenReturn(Optional.of(SECRET_ACCESS_KEY));
 
         when(s3ClientFactory.create(any(AWSCredentials.class), any(ClientConfiguration.class))).thenReturn(s3Client);
         when(taskExecutionContext.secrets()).thenReturn(secretProvider);
@@ -158,8 +157,8 @@ public class S3WaitOperatorFactoryTest
         assertThat(s3ClientOptions.isPathStyleAccess(), is(false));
 
         AWSCredentials credentials = credentialsCaptor.getValue();
-        assertThat(credentials.getAWSAccessKeyId(), is(ACCESS_KEY));
-        assertThat(credentials.getAWSSecretKey(), is(SECRET_KEY));
+        assertThat(credentials.getAWSAccessKeyId(), is(ACCESS_KEY_ID));
+        assertThat(credentials.getAWSSecretKey(), is(SECRET_ACCESS_KEY));
 
         GetObjectMetadataRequest objectMetadataRequest = objectMetadataRequestCaptor.getValue();
         assertThat(objectMetadataRequest.getKey(), is(KEY));

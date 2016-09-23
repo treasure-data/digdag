@@ -72,7 +72,7 @@ public class S3WaitIT
     public void testRun()
             throws Exception
     {
-        AWSCredentials credentials = new BasicAWSCredentials("test-access-key", "test-secret-key");
+        AWSCredentials credentials = new BasicAWSCredentials("test-access-key-id", "test-secret-access-key");
         AmazonS3Client s3Client = new AmazonS3Client(credentials);
         s3Client.setEndpoint(FAKE_S3_ENDPOINT);
 
@@ -87,8 +87,8 @@ public class S3WaitIT
         int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         // Configure AWS credentials
-        client.setProjectSecret(projectId, "aws.s3.access-key", "test-access-key");
-        client.setProjectSecret(projectId, "aws.s3.secret-key", "test-secret-key");
+        client.setProjectSecret(projectId, "aws.s3.access-key-id", "test-access-key-id");
+        client.setProjectSecret(projectId, "aws.s3.secret-access-key", "test-secret-access-key");
         client.setProjectSecret(projectId, "aws.s3.endpoint", FAKE_S3_ENDPOINT);
 
         // Start workflow
