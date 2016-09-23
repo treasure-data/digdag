@@ -100,6 +100,8 @@ import static java.util.Locale.ENGLISH;
  *   taskSucceeded:
  *     lockedTask.setRunningToPlannedSuccessful:
  *       : PLANNED
+ *     lockedTask.setRunningToShortCircuitSuccess:
+ *       : SUCCESS
  *
  *   retryTask:
  *     lockedTask.setRunningToRetryWaiting:
@@ -1183,14 +1185,21 @@ public class WorkflowExecutor
         catch (TaskLimitExceededException ex) {
             return taskFailed(lockedTask, buildExceptionErrorConfig(ex).toConfig(cf));
         }
-        boolean updated = lockedTask.setRunningToPlannedSuccessful(result);
+
+        boolean updated;
+        if (subtaskAdded) {
+            updated = lockedTask.setRunningToPlannedSuccessful(result);
+        }
+        else {
+            updated = lockedTask.setRunningToShortCircuitSuccess(result);
+        }
 
         noticeStatusPropagate();
 
         if (!updated) {
-            // return value of setRunningToPlannedSuccessful must be true because this task is locked
-            // (won't be updated by other machines concurrently) and confirmed that
-            // current state is RUNNING.
+            // return value of setRunningToPlannedSuccessful or setRunningToShortCircuitSuccess
+            // won't be false because this task is locked (won't be updated by other machines
+            // concurrently) and confirmed that current state is RUNNING.
             logger.warn("Unexpected state change failure from RUNNING to PLANNED: {}", lockedTask.get());
         }
         return updated;

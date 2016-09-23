@@ -848,7 +848,7 @@ public class DatabaseSessionStoreManager
             return n > 0;
         }
 
-        public boolean setDoneStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error)
+        public boolean setErrorStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error)
         {
             long n = dao.setDoneState(taskId, beforeState.get(), afterState.get());
             if (n > 0) {
@@ -859,6 +859,20 @@ public class DatabaseSessionStoreManager
         }
 
         public boolean setPlannedStateSuccessful(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
+        {
+            long n = dao.setState(taskId, beforeState.get(), afterState.get());
+            if (n > 0) {
+                dao.setSuccessfulReport(taskId,
+                        result.getSubtaskConfig(),
+                        result.getExportParams(),
+                        result.getStoreParams(),
+                        cf.create());  // TODO create a class for stored report
+                return true;
+            }
+            return false;
+        }
+
+        public boolean setSuccessStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
             if (n > 0) {
