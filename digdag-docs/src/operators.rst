@@ -904,7 +904,7 @@ Secrets
   An optional explicit AWS Region in which to access S3.
 
 :command:`aws.s3.endpoint`
-  An optional explicit API endpoint to use when accessing S3. This overrides the `aws.region` secret.
+  An optional explicit API endpoint to use when accessing S3. This overrides the `region` secret.
 
 :command:`aws.s3.sse-c-key`
   An optional Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
@@ -928,10 +928,10 @@ Parameters
   * :command:`s3_wait>: my-bucket/file/in/a/directory`
 
 :command:`region: REGION`
-  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.region` secret.
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.region` secret.
 
 :command:`endpoint: ENDPOINT`
-  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.region` secret.
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.endpoint` secret.
   *Note:* This will override the `region` parameter.
 
 :command:`bucket: BUCKET`
