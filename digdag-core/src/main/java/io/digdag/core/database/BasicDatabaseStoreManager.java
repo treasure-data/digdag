@@ -171,28 +171,6 @@ public abstract class BasicDatabaseStoreManager <D>
         T call(Handle handle, D dao) throws E1, E2;
     }
 
-    private static class InnerException
-            extends RuntimeException
-    {
-        private final int index;
-
-        public InnerException(Throwable cause)
-        {
-            this(cause, 0);
-        }
-
-        public InnerException(Throwable cause, int index)
-        {
-            super(cause);
-            this.index = index;
-        }
-
-        public int getIndex()
-        {
-            return index;
-        }
-    }
-
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
     public <T> T transaction(TransactionAction<T, D> action)
     {
