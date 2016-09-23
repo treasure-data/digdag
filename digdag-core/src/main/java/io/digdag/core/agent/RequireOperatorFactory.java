@@ -6,6 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.spi.Operator;
@@ -89,6 +90,10 @@ public class RequireOperatorFactory
             }
             catch (ResourceNotFoundException ex) {
                 throw new ConfigException(ex);
+            }
+            catch (ResourceLimitExceededException ex) {
+                throw new TaskExecutionException(ex,
+                        TaskExecutionException.buildExceptionErrorConfig(ex));
             }
         }
     }

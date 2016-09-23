@@ -32,6 +32,7 @@ import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
@@ -237,7 +238,7 @@ public class Run
     }
 
     private void run(Properties systemProps, Injector injector, String workflowNameArg, String matchPattern)
-        throws IOException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException, ResourceNotFoundException, ResourceConflictException, SystemExitException, InterruptedException
+        throws IOException, TaskMatchPattern.MultipleTaskMatchException, TaskMatchPattern.NoMatchException, ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException, SystemExitException, InterruptedException
     {
         final LocalSite localSite = injector.getInstance(LocalSite.class);
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
@@ -341,7 +342,7 @@ public class Run
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
             ProjectArchive project, Config overwriteParams,
             String workflowName, Optional<TaskMatchPattern> taskMatchPattern)
-        throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, SessionAttemptConflictException
+        throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
         final WorkflowCompiler compiler = injector.getInstance(WorkflowCompiler.class);
         final WorkflowExecutor executor = injector.getInstance(WorkflowExecutor.class);

@@ -13,6 +13,7 @@ import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.workflow.AttemptRequest;
 import io.digdag.core.workflow.AttemptBuilder;
@@ -165,7 +166,7 @@ public class InProcessTaskCallbackApi
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
-        throws ResourceNotFoundException
+        throws ResourceNotFoundException, ResourceLimitExceededException
     {
         ProjectStore projectStore = pm.getProjectStore(siteId);
 

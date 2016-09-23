@@ -157,7 +157,7 @@ public class ScheduleResource
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
     public List<RestSessionAttempt> backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 

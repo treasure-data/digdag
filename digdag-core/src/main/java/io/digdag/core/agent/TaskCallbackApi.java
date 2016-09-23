@@ -10,6 +10,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.StorageObject;
 import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskCallbackApi
@@ -42,5 +43,5 @@ public interface TaskCallbackApi
             Instant instant,
             Optional<String> retryAttemptName,
             Config overwriteParams)
-        throws ResourceNotFoundException;
+        throws ResourceNotFoundException, ResourceLimitExceededException;
 }
