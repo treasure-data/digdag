@@ -965,33 +965,35 @@ public class DatabaseSessionStoreManager
             return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao) -> {
                 StoredSession storedSession;
 
-                if (dao instanceof H2Dao) {
-                    catchForeignKeyNotFound(
-                        () -> {
-                            ((H2Dao) dao).upsertAndLockSession(
+                // select first so that conflicting insert (postgresql) or foreign key constraint violation (h2)
+                // doesn't increment sequence of primary key unnecessarily
+                storedSession = dao.getSessionByConflictedNamesInternal(
+                        session.getProjectId(),
+                        session.getWorkflowName(),
+                        session.getSessionTime().getEpochSecond());
+
+                if (storedSession == null) {
+                    if (dao instanceof H2Dao) {
+                        catchForeignKeyNotFound(
+                            () -> {
+                                ((H2Dao) dao).upsertAndLockSession(
+                                    session.getProjectId(),
+                                    session.getWorkflowName(),
+                                    session.getSessionTime().getEpochSecond());
+                                return 0;
+                            },
+                            "project id=%d", session.getProjectId());
+                        storedSession = dao.getSessionByConflictedNamesInternal(
                                 session.getProjectId(),
                                 session.getWorkflowName(),
                                 session.getSessionTime().getEpochSecond());
-                            return 0;
-                        },
-                        "project id=%d", session.getProjectId());
-                    storedSession = dao.getSessionByConflictedNamesInternal(
-                            session.getProjectId(),
-                            session.getWorkflowName(),
-                            session.getSessionTime().getEpochSecond());
-                    if (storedSession == null) {
-                        throw new IllegalStateException(String.format(ENGLISH,
-                                    "Database state error: locked session is null: project_id=%d, workflow_name=%s, session_time=%d",
-                                    session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()));
+                        if (storedSession == null) {
+                            throw new IllegalStateException(String.format(ENGLISH,
+                                        "Database state error: locked session is null: project_id=%d, workflow_name=%s, session_time=%d",
+                                        session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()));
+                        }
                     }
-                }
-                else {
-                    // select first so that conflicting insert doesn't increment sequence of primary key unnecessarily
-                    storedSession = dao.getSessionByConflictedNamesInternal(
-                            session.getProjectId(),
-                            session.getWorkflowName(),
-                            session.getSessionTime().getEpochSecond());
-                    if (storedSession == null) {
+                    else {
                         storedSession = catchForeignKeyNotFound(
                                 () -> ((PgDao) dao).upsertAndLockSession(
                                     session.getProjectId(),
