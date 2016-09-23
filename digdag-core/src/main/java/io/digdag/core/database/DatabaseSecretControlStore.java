@@ -41,7 +41,7 @@ class DatabaseSecretControlStore
         String encrypted = crypto.encryptSecret(value);
         String engine = crypto.getName();
 
-        transaction((handle, dao, ts) -> {
+        transaction((handle, dao) -> {
             dao.upsertProjectSecret(siteId, projectId, scope, key, engine, encrypted);
             return null;
         });
@@ -50,7 +50,7 @@ class DatabaseSecretControlStore
     @Override
     public void deleteProjectSecret(int projectId, String scope, String key)
     {
-        transaction((handle, dao, ts) -> {
+        transaction((handle, dao) -> {
             dao.deleteProjectSecret(siteId, projectId, scope, key);
             return null;
         });
@@ -59,7 +59,7 @@ class DatabaseSecretControlStore
     @Override
     public List<String> listProjectSecrets(int projectId, String scope)
     {
-        return transaction((handle, dao, ts) -> dao.listProjectSecrets(siteId, projectId, scope));
+        return transaction((handle, dao) -> dao.listProjectSecrets(siteId, projectId, scope));
     }
 
     interface Dao

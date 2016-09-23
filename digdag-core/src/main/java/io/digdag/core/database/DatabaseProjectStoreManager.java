@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.Locale.ENGLISH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class DatabaseProjectStoreManager
@@ -60,7 +61,7 @@ public class DatabaseProjectStoreManager
     @Inject
     public DatabaseProjectStoreManager(DBI dbi, ConfigMapper cfm, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, dbi);
+        super(config.getType(), dao(config.getType()), dbi);
 
         dbi.registerMapper(new StoredProjectMapper(cfm));
         dbi.registerMapper(new StoredRevisionMapper(cfm));
@@ -72,6 +73,18 @@ public class DatabaseProjectStoreManager
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
 
         this.cfm = cfm;
+    }
+
+    private static Class<? extends Dao> dao(String type)
+    {
+        switch (type) {
+        case "postgresql":
+            return PgDao.class;
+        case "h2":
+            return H2Dao.class;
+        default:
+            throw new IllegalArgumentException("Unknown database type: " + type);
+        }
     }
 
     @Override
@@ -176,31 +189,24 @@ public class DatabaseProjectStoreManager
         public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
         {
-            return transaction((handle, dao, ts) -> {
-                int projId;
+            return transaction((handle, dao) -> {
+                StoredProject proj;
 
-                if (!ts.isRetried()) {
-                    try {
-                        projId = catchConflict(() ->
-                                dao.insertProject(siteId, project.getName()),
-                                "project name=%s", project.getName());
-                    }
-                    catch (ResourceConflictException ex) {
-                        ts.retry(ex);
-                        return null;
+                if (dao instanceof H2Dao) {
+                    ((H2Dao) dao).upsertAndLockProject(siteId, project.getName());
+                    proj = dao.getProjectByName(siteId, project.getName());
+                    if (proj == null) {
+                        throw new IllegalStateException(String.format(ENGLISH,
+                                    "Database state error: locked project is null: site_id=%d, name=%s",
+                                    siteId, project.getName()));
                     }
                 }
                 else {
-                    StoredProject proj = dao.getProjectByName(siteId, project.getName());
+                    // select first so that conflicting insert doesn't increment sequence of primary key unnecessarily
+                    proj = dao.getProjectByName(siteId, project.getName());
                     if (proj == null) {
-                        throw new IllegalStateException("Database state error", ts.getLastException());
+                        proj = ((PgDao) dao).upsertAndLockProject(siteId, project.getName());
                     }
-                    projId = proj.getId();
-                }
-
-                StoredProject proj = dao.lockProject(projId);
-                if (proj == null) {
-                    throw new IllegalStateException("Database state error");
                 }
 
                 return func.call(new DatabaseProjectControlStore(handle, siteId), proj);
@@ -211,7 +217,7 @@ public class DatabaseProjectStoreManager
         public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
             throws ResourceNotFoundException
         {
-            return transaction((handle, dao, ts) -> {
+            return transaction((handle, dao) -> {
                 StoredProject proj = requiredResource(
                         dao.getProjectByIdWithLockForDelete(siteId, projId),
                         "project id=%d", projId);
@@ -505,6 +511,30 @@ public class DatabaseProjectStoreManager
         }
     }
 
+    public interface H2Dao
+            extends Dao
+    {
+        // h2's MERGE doesn't return generated id when conflicting row already exists
+        @SqlUpdate("merge into projects" +
+                " (site_id, name, created_at)" +
+                " key (site_id, name)" +
+                " values (:siteId, :name, coalesce((select created_at from projects where site_id = :siteId and name = :name), now()))")
+        void upsertAndLockProject(@Bind("siteId") int siteId, @Bind("name") String name);
+    }
+
+    public interface PgDao
+            extends Dao
+    {
+        @SqlQuery("insert into projects" +
+                " (site_id, name, created_at)" +
+                " values (:siteId, :name, now())" +
+                " on conflict (site_id, name) do update set created_at = projects.created_at" +
+                " returning *")
+                // this query includes "set created_at = projects.created_at" because "do nothing"
+                // doesn't lock the row
+        StoredProject upsertAndLockProject(@Bind("siteId") int siteId, @Bind("name") String name);
+    }
+
     public interface Dao
     {
         @SqlQuery("select * from projects" +
@@ -548,16 +578,6 @@ public class DatabaseProjectStoreManager
                 " and name = :name" +
                 " limit 1")
         StoredProject getProjectByName(@Bind("siteId") int siteId, @Bind("name") String name);
-
-        @SqlQuery("select * from projects where id = :id" +
-                " for update")
-        StoredProject lockProject(@Bind("id") int id);
-
-        @SqlUpdate("insert into projects" +
-                " (site_id, name, created_at)" +
-                " values (:siteId, :name, now())")
-        @GetGeneratedKeys
-        int insertProject(@Bind("siteId") int siteId, @Bind("name") String name);
 
         @SqlQuery("select rev.* from revisions rev" +
                 " join projects proj on proj.id = rev.project_id" +

@@ -160,65 +160,15 @@ public abstract class BasicDatabaseStoreManager <D>
     }
 
     public interface TransactionAction <T, D> {
-        T call(Handle handle, D dao, TransactionState ts);
+        T call(Handle handle, D dao);
     }
 
     public interface TransactionActionWithException <T, D, E extends Exception> {
-        T call(Handle handle, D dao, TransactionState ts) throws E;
+        T call(Handle handle, D dao) throws E;
     }
 
     public interface TransactionActionWithExceptions <T, D, E1 extends Exception, E2 extends Exception> {
-        T call(Handle handle, D dao, TransactionState ts) throws E1, E2;
-    }
-
-    public static class TransactionState {
-        private boolean retryNext = false;
-        private int retryCount = 0;
-        private Throwable lastException;
-
-        public boolean isRetried()
-        {
-            return retryCount > 0;
-        }
-
-        public Throwable getLastException()
-        {
-            return lastException;
-        }
-
-        public void retry()
-        {
-            retryNext = true;
-            lastException = null;
-        }
-
-        public void retry(Throwable exception)
-        {
-            retryNext = true;
-            lastException = exception;
-        }
-    }
-
-    private static class InnerException
-            extends RuntimeException
-    {
-        private final int index;
-
-        public InnerException(Throwable cause)
-        {
-            this(cause, 0);
-        }
-
-        public InnerException(Throwable cause, int index)
-        {
-            super(cause);
-            this.index = index;
-        }
-
-        public int getIndex()
-        {
-            return index;
-        }
+        T call(Handle handle, D dao) throws E1, E2;
     }
 
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
@@ -226,18 +176,11 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                TransactionState ts = new TransactionState();
-                while (true) {
-                    try (Handle handle = dbi.open()) {
-                        T retval = handle.inTransaction((h, status) -> action.call(h, h.attach(daoIface), ts));
-                        if (ts.retryNext) {
-                            ts.retryNext = false;
-                            ts.retryCount += 1;
-                        }
-                        else {
-                            return retval;
-                        }
-                    }
+                try (Handle handle = dbi.open()) {
+                    handle.begin();
+                    T retval = action.call(handle, handle.attach(daoIface));
+                    validateTransactionAndCommit(handle);
+                    return retval;
                 }
             });
         }
@@ -255,37 +198,28 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                TransactionState ts = new TransactionState();
-                while (true) {
-                    try (Handle handle = dbi.open()) {
-                        T retval;
-                        // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
-                        handle.begin();
-                        try {
-                            retval = action.call(handle, handle.attach(daoIface), ts);
-                        }
-                        catch (Exception ex) {
-                            try {
-                                handle.rollback();
-                            }
-                            catch (Exception rollback) {
-                                ex.addSuppressed(rollback);
-                            }
-                            Throwables.propagateIfInstanceOf(ex, exClass);
-                            Throwables.propagateIfPossible(ex);
-                            throw new TransactionFailedException(
-                                    "Transaction failed do to exception being thrown " +
-                                    "from within the callback. See cause " +
-                                    "for the original exception.", ex);
-                        }
-                        if (!ts.retryNext) {
-                            validateTransactionAndCommit(handle);
-                            return retval;
-                        }
-                        handle.rollback();
-                        ts.retryNext = false;
-                        ts.retryCount += 1;
+                try (Handle handle = dbi.open()) {
+                    handle.begin();
+                    T retval;
+                    try {
+                        retval = action.call(handle, handle.attach(daoIface));
                     }
+                    catch (Exception ex) {
+                        try {
+                            handle.rollback();
+                        }
+                        catch (Exception rollback) {
+                            ex.addSuppressed(rollback);
+                        }
+                        Throwables.propagateIfInstanceOf(ex, exClass);
+                        Throwables.propagateIfPossible(ex);
+                        throw new TransactionFailedException(
+                                "Transaction failed due to exception being thrown " +
+                                "from within the callback. See cause " +
+                                "for the original exception.", ex);
+                    }
+                    validateTransactionAndCommit(handle);
+                    return retval;
                 }
             });
         }
@@ -304,37 +238,29 @@ public abstract class BasicDatabaseStoreManager <D>
     {
         try {
             return transactionRetryExecutor.runInterruptible(() -> {
-                TransactionState ts = new TransactionState();
-                while (true) {
-                    try (Handle handle = dbi.open()) {
-                        T retval;
-                        // Here doesn't use handle.inTransaction See comments on validateTransactionAndCommit.
-                        handle.begin();
-                        try {
-                            retval = action.call(handle, handle.attach(daoIface), ts);
-                        }
-                        catch (Exception ex) {
-                            try {
-                                handle.rollback();
-                            }
-                            catch (Exception rollback) {
-                                ex.addSuppressed(rollback);
-                            }
-                            Throwables.propagateIfInstanceOf(ex, exClass1);
-                            Throwables.propagateIfInstanceOf(ex, exClass2);
-                            Throwables.propagateIfPossible(ex);
-                            throw new TransactionFailedException(
-                                    "Transaction failed do to exception being thrown " +
-                                    "from within the callback. See cause " +
-                                    "for the original exception.", ex);
-                        }
-                        if (!ts.retryNext) {
-                            validateTransactionAndCommit(handle);
-                            return retval;
-                        }
-                        ts.retryNext = false;
-                        ts.retryCount += 1;
+                try (Handle handle = dbi.open()) {
+                    handle.begin();
+                    T retval;
+                    try {
+                        retval = action.call(handle, handle.attach(daoIface));
                     }
+                    catch (Exception ex) {
+                        try {
+                            handle.rollback();
+                        }
+                        catch (Exception rollback) {
+                            ex.addSuppressed(rollback);
+                        }
+                        Throwables.propagateIfInstanceOf(ex, exClass1);
+                        Throwables.propagateIfInstanceOf(ex, exClass2);
+                        Throwables.propagateIfPossible(ex);
+                        throw new TransactionFailedException(
+                                "Transaction failed due to exception being thrown " +
+                                "from within the callback. See cause " +
+                                "for the original exception.", ex);
+                    }
+                    validateTransactionAndCommit(handle);
+                    return retval;
                 }
             });
         }
