@@ -650,12 +650,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public long getTaskCount(long attemptId)
+        public long getTaskCountOfAttempt(long attemptId)
         {
             long count = handle.createQuery(
                     "select count(*) from tasks t" +
                             " where t.attempt_id = :attemptId"
-            )
+                    )
                     .bind("attemptId", attemptId)
                     .mapTo(long.class)
                     .first();
@@ -942,6 +942,20 @@ public class DatabaseSessionStoreManager
         public DatabaseSessionStore(int siteId)
         {
             this.siteId = siteId;
+        }
+
+        public long getActiveAttemptCount()
+        {
+            return autoCommit((handle, dao) ->
+                    handle.createQuery(
+                        "select count(*) from session_attempts" +
+                        " where site_id = :siteId" +
+                        " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0"
+                    )
+                    .bind("siteId", siteId)
+                    .mapTo(long.class)
+                    .first()
+                );
         }
 
         @Override

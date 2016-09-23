@@ -39,6 +39,8 @@ public interface SessionStore
 
     List<ArchivedTask> getTasksOfAttempt(long attemptId);
 
+    long getActiveAttemptCount();
+
     interface SessionLockAction <T>
     {
         T call(SessionControlStore store, StoredSession storedSession)
