@@ -14,6 +14,7 @@ import com.google.common.collect.*;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.schedule.Schedule;
 import io.digdag.core.schedule.ScheduleStore;
@@ -83,19 +84,10 @@ public class DatabaseScheduleStoreManager
         }
     }
 
-    public <T> T lockScheduleById(int schedId, ScheduleLockAction<T> func)
-        throws ResourceNotFoundException, ResourceConflictException
+    private interface ScheduleCombinedLockAction <T, E extends Exception>
     {
-        return this.<T, ResourceNotFoundException, ResourceConflictException>transaction((handle, dao) -> {
-            // JOIN + FOR UPDATE doesn't work with H2 database. So here locks it first then get columns.
-            if (dao.lockScheduleById(schedId) == 0) {
-                throw new ResourceNotFoundException("schedule id="+schedId);
-            }
-            StoredSchedule schedule = requiredResource(
-                    dao.getScheduleByIdInternal(schedId),
-                    "schedule id=%d", schedId);
-            return func.call(new DatabaseScheduleControlStore(handle), schedule);
-        }, ResourceNotFoundException.class, ResourceConflictException.class);
+        public T call(ScheduleControlStore store, StoredSchedule storedSched)
+            throws ResourceNotFoundException, ResourceConflictException, E;
     }
 
     private class DatabaseScheduleStore
@@ -128,6 +120,35 @@ public class DatabaseScheduleStoreManager
                     (handle, dao) -> dao.getScheduleById(siteId, schedId),
                     "schedule id=%d", schedId);
         }
+
+        private <T, E extends Exception> T combinedLockScheduleById(int schedId, ScheduleCombinedLockAction<T, E> func, Class<E> exClass)
+            throws ResourceNotFoundException, ResourceConflictException, E
+        {
+            return DatabaseScheduleStoreManager.this.<T, ResourceNotFoundException, ResourceConflictException, E>transaction((handle, dao) -> {
+                // JOIN + FOR UPDATE doesn't work with H2 database. So here locks it first then get columns.
+                if (dao.lockScheduleById(schedId) == 0) {
+                    throw new ResourceNotFoundException("schedule id="+schedId);
+                }
+                StoredSchedule schedule = requiredResource(
+                        dao.getScheduleByIdInternal(schedId),
+                        "schedule id=%d", schedId);
+                return func.call(new DatabaseScheduleControlStore(handle), schedule);
+            }, ResourceNotFoundException.class, ResourceConflictException.class, exClass);
+        }
+
+        @Override
+        public <T> T updateScheduleById(int schedId, ScheduleUpdateAction<T> func)
+            throws ResourceNotFoundException, ResourceConflictException
+        {
+            return combinedLockScheduleById(schedId, (store, sched) -> func.call(store, sched), RuntimeException.class);
+        }
+
+        @Override
+        public <T> T lockScheduleById(int schedId, ScheduleLockAction<T> func)
+            throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
+        {
+            return combinedLockScheduleById(schedId, (store, sched) -> func.call(store, sched), ResourceLimitExceededException.class);
+        }
     }
 
     private static class DatabaseScheduleControlStore
@@ -143,23 +164,29 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime)
+        public void updateNextScheduleTime(int schedId, ScheduleTime nextTime)
+            throws ResourceNotFoundException
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
                     nextTime.getTime().getEpochSecond());
-            return n > 0;
+            if (n <= 0) {
+                throw new ResourceNotFoundException("schedule id=" + schedId);
+            }
         }
 
         @Override
-        public boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime,
+        public void updateNextScheduleTimeAndLastSessionTime(int schedId, ScheduleTime nextTime,
                 Instant lastSessionTime)
+            throws ResourceNotFoundException
         {
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
                     nextTime.getTime().getEpochSecond(),
                     lastSessionTime.getEpochSecond());
-            return n > 0;
+            if (n <= 0) {
+                throw new ResourceNotFoundException("schedule id=" + schedId);
+            }
         }
     }
 

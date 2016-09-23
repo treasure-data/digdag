@@ -169,9 +169,9 @@ public class DatabaseScheduleStoreManagerTest
         assertEquals(sched4, schedStore.getScheduleById(sched4.getId()));
 
         ////
-        // manager internal getters
+        // control actions
         //
-        assertEquals(sched4.getId(), (long) schedManager.lockScheduleById(sched4.getId(), (store, schedule) -> schedule.getId()));
+        assertEquals(sched4.getId(), (long) schedStore.lockScheduleById(sched4.getId(), (store, schedule) -> schedule.getId()));
 
         List<Integer> lockedByRuntime1 = new ArrayList<>();
         schedManager.lockReadySchedules(runTime1, (store, schedule) -> {
@@ -210,7 +210,12 @@ public class DatabaseScheduleStoreManagerTest
                     throw new RuntimeException();
                 }
                 else {
-                    store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3));
+                    try {
+                        store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3));
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             });
             fail();
@@ -221,7 +226,12 @@ public class DatabaseScheduleStoreManagerTest
         List<Integer> updated = new ArrayList<>();
         schedManager.lockReadySchedules(runTime2, (store, schedule) -> {
             updated.add(schedule.getId());
-            store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
+            try {
+                store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new RuntimeException(ex);
+            }
         });
         assertEquals(ImmutableList.of(sched1.getId()), updated);
 

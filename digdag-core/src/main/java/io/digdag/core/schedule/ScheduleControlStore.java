@@ -2,10 +2,13 @@ package io.digdag.core.schedule;
 
 import java.time.Instant;
 import io.digdag.spi.ScheduleTime;
+import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface ScheduleControlStore
 {
-    boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime, Instant lastSessionTime);
+    void updateNextScheduleTime(int schedId, ScheduleTime nextTime)
+        throws ResourceNotFoundException;
 
-    boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime);
+    void updateNextScheduleTimeAndLastSessionTime(int schedId, ScheduleTime nextTime, Instant lastSessionTime)
+        throws ResourceNotFoundException;
 }
