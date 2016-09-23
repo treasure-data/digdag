@@ -287,7 +287,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             SessionAttemptSummary locked = dao.lockAttempt(attemptId);
             if (locked != null) {
                 return Optional.of(func.call(new DatabaseSessionAttemptControlStore(handle), locked));
@@ -354,7 +354,7 @@ public class DatabaseSessionStoreManager
     @Override
     public boolean requestCancelAttempt(long attemptId)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             int n = handle.createStatement("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
@@ -384,7 +384,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(new DatabaseTaskControlStore(handle));
@@ -397,7 +397,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
@@ -417,7 +417,7 @@ public class DatabaseSessionStoreManager
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
-        List<RuntimeException> exceptions = transaction((handle, dao, ts) -> {
+        List<RuntimeException> exceptions = transaction((handle, dao) -> {
             return dao.lockReadySessionMonitors(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(monitor -> {
@@ -962,7 +962,7 @@ public class DatabaseSessionStoreManager
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
         {
-            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao, ts) -> {
+            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao) -> {
                 StoredSession storedSession;
 
                 if (dao instanceof H2Dao) {
@@ -986,12 +986,19 @@ public class DatabaseSessionStoreManager
                     }
                 }
                 else {
-                    storedSession = catchForeignKeyNotFound(
-                            () -> ((PgDao) dao).upsertAndLockSession(
-                                session.getProjectId(),
-                                session.getWorkflowName(),
-                                session.getSessionTime().getEpochSecond()),
-                            "project id=%d", session.getProjectId());
+                    // select first so that conflicting insert doesn't increment sequence of primary key unnecessarily
+                    storedSession = dao.getSessionByConflictedNamesInternal(
+                            session.getProjectId(),
+                            session.getWorkflowName(),
+                            session.getSessionTime().getEpochSecond());
+                    if (storedSession == null) {
+                        storedSession = catchForeignKeyNotFound(
+                                () -> ((PgDao) dao).upsertAndLockSession(
+                                    session.getProjectId(),
+                                    session.getWorkflowName(),
+                                    session.getSessionTime().getEpochSecond()),
+                                "project id=%d", session.getProjectId());
+                    }
                 }
 
                 return func.call(new DatabaseSessionControlStore(handle, siteId), storedSession);

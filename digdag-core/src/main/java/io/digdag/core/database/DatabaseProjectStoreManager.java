@@ -189,7 +189,7 @@ public class DatabaseProjectStoreManager
         public <T> T putAndLockProject(Project project, ProjectLockAction<T> func)
                 throws ResourceConflictException
         {
-            return transaction((handle, dao, ts) -> {
+            return transaction((handle, dao) -> {
                 StoredProject proj;
 
                 if (dao instanceof H2Dao) {
@@ -202,7 +202,7 @@ public class DatabaseProjectStoreManager
                     }
                 }
                 else {
-                    // check existance of project first so that conflicting insert doesn't increment sequence of primary key
+                    // select first so that conflicting insert doesn't increment sequence of primary key unnecessarily
                     proj = dao.getProjectByName(siteId, project.getName());
                     if (proj == null) {
                         proj = ((PgDao) dao).upsertAndLockProject(siteId, project.getName());
@@ -217,7 +217,7 @@ public class DatabaseProjectStoreManager
         public <T> T deleteProject(int projId, ProjectObsoleteAction<T> func)
             throws ResourceNotFoundException
         {
-            return transaction((handle, dao, ts) -> {
+            return transaction((handle, dao) -> {
                 StoredProject proj = requiredResource(
                         dao.getProjectByIdWithLockForDelete(siteId, projId),
                         "project id=%d", projId);
