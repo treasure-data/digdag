@@ -20,29 +20,16 @@ public class ScheduleControl
         return schedule;
     }
 
-    public StoredSchedule updateNextScheduleTime(ScheduleTime nextTime)
+    public void updateNextScheduleTime(ScheduleTime nextTime)
         throws ResourceNotFoundException
     {
-        if (store.updateNextScheduleTime(schedule.getId(), nextTime)) {
-            return ImmutableStoredSchedule.builder()
-                .from(schedule)
-                .nextRunTime(nextTime.getRunTime())
-                .nextScheduleTime(nextTime.getTime())
-                .build();
-        }
-        else {
-            throw new ResourceNotFoundException("schedule id=" + schedule.getId());
-        }
+        store.updateNextScheduleTime(schedule.getId(), nextTime);
     }
 
-    public boolean tryUpdateNextScheduleTime(ScheduleTime nextTime)
+    public void updateNextScheduleTimeAndLastSessionTime(ScheduleTime nextTime, Instant lastSessionTime)
+        throws ResourceNotFoundException
     {
-        return store.updateNextScheduleTime(schedule.getId(), nextTime);
-    }
-
-    public boolean tryUpdateNextScheduleTimeAndLastSessionTime(ScheduleTime nextTime, Instant lastSessionTime)
-    {
-        return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionTime);
+        store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), nextTime, lastSessionTime);
     }
 
     public void enableSchedule()

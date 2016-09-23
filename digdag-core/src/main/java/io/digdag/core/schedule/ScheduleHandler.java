@@ -15,6 +15,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.WorkflowDefinition;
 import io.digdag.core.session.Session;
@@ -46,7 +47,7 @@ public class ScheduleHandler
 
     public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithProject def,
             ScheduleTime time, Optional<String> retryAttemptName)
-            throws ResourceNotFoundException, SessionAttemptConflictException
+            throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                 def,
