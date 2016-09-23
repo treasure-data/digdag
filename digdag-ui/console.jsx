@@ -72,19 +72,17 @@ Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token 
 
 
 Prism.hooks.add('wrap', (env) => {
-  if (env.type === 'td-run-value' || env.type === 'td-load-value') {
+  if (env.type === 'td-run-value') {
+    const queryId = model().getTDQueryIdFromName(env.content)
+    if (queryId) {
       env.tag = 'a'
       env.attributes.target = '_blank'
-      if (env.type === 'td-run-value') {
-        const queryId = model().getTDQueryIdFromName(env.content)
-        if (queryId) {
-          env.attributes.href = DIGDAG_CONFIG.td.queryUrl(queryId)
-        } else {
-          env.tag = 'span'
-        }
-      } else {
-        env.attributes.href = DIGDAG_CONFIG.td.connectorUrl(env.con)
-      }
+      env.attributes.href = DIGDAG_CONFIG.td.queryUrl(queryId)
+    }
+  } else if (env.type === 'td-load-value') {
+    env.tag = 'a'
+    env.attributes.target = '_blank'
+    env.attributes.href = DIGDAG_CONFIG.td.connectorUrl(env.con)
   }
 })
 

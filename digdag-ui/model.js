@@ -295,7 +295,7 @@ export class Model {
   getTDQueryIdFromName(queryName: string) : string {
     const query = this.queriesCache.get(queryName, null);
     if (!query) {
-      return '' // this forces to go to query list
+      return ''
     }
     return query.id;
   }
