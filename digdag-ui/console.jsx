@@ -1447,7 +1447,7 @@ class LoginPage extends React.Component {
     }
   }
 
-  invalid(values, key, value, message) {
+  invalid(values, key, value, message = '') {
     return (key) => {
       console.log(`${key} is invalid: message=${message})`);
     };

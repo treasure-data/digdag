@@ -27,9 +27,9 @@ export type IdName = {
   name: string;
 }
 
-export type NameOptionalId = {
+export type NameId = {
   name: string;
-  id: ?number;
+  id: number;
 };
 
 export type UUID = string;
@@ -70,7 +70,7 @@ export type Task = {
 export type Attempt = {
   id: number;
   project: IdName;
-  workflow: NameOptionalId;
+  workflow: NameId;
   sessionId: number;
   sessionUuid: UUID;
   sessionTime: string;
@@ -86,7 +86,7 @@ export type Attempt = {
 export type Session = {
   id: number;
   project: IdName;
-  workflow: NameOptionalId;
+  workflow: NameId;
   sessionUuid: UUID;
   sessionTime: string;
   lastAttempt: ?{
@@ -299,7 +299,7 @@ export class Model {
     return query.id;
   }
 
-  fillTDQueryCache() : Promise {
+  fillTDQueryCache() : Promise<*> {
     return fetch(this.config.td.apiV4 + '/queries', {
       credentials: 'include',
       headers: this.headers()
@@ -315,7 +315,7 @@ export class Model {
     })
   }
 
-  get(url: string): Promise {
+  get(url: string): Promise<*> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       headers: this.headers(),

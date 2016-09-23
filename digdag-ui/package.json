@@ -48,7 +48,7 @@
     "eslint": "2.11.0",
     "eslint-plugin-react": "5.1.1",
     "file-loader": "0.8.5",
-    "flow-bin": "0.26.0",
+    "flow-bin": "^0.32.0",
     "flow-status-webpack-plugin": "0.1.4",
     "less": "2.7.1",
     "less-loader": "2.2.3",
