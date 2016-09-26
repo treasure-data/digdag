@@ -27,9 +27,9 @@ export type IdName = {
   name: string;
 }
 
-export type NameId = {
+export type NameOptionalId = {
   name: string;
-  id: number;
+  id: ?number;
 };
 
 export type UUID = string;
@@ -70,7 +70,7 @@ export type Task = {
 export type Attempt = {
   id: number;
   project: IdName;
-  workflow: NameId;
+  workflow: NameOptionalId;
   sessionId: number;
   sessionUuid: UUID;
   sessionTime: string;
@@ -86,7 +86,7 @@ export type Attempt = {
 export type Session = {
   id: number;
   project: IdName;
-  workflow: NameId;
+  workflow: NameOptionalId;
   sessionUuid: UUID;
   sessionTime: string;
   lastAttempt: ?{

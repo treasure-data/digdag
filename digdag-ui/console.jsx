@@ -27,15 +27,16 @@ import 'prismjs/themes/prism.css';
 import {PrismCode} from "react-prism";
 
 import type {
-  HeadersProvider,
-  ProjectArchive,
-  Project,
-  Workflow,
-  Session,
-  LogFileHandle,
-  Credentials,
   Attempt,
-  Task
+  Credentials,
+  HeadersProvider,
+  LogFileHandle,
+  NameOptionalId,
+  Project,
+  ProjectArchive,
+  Session,
+  Task,
+  Workflow
 } from './model';
 import {model, setup as setupModel} from './model';
 
@@ -122,6 +123,13 @@ type ConsoleConfig = {
 }
 
 declare var DIGDAG_CONFIG:ConsoleConfig;
+
+function MaybeWorkflowLink({ workflow } : { workflow: NameOptionalId }) {
+  if (workflow.id) {
+    return <Link to={`/workflows/${workflow.id}`}>{workflow.name}</Link>
+  }
+  return <span>workflow.name</span>
+}
 
 class CacheLoader extends React.Component {
   state = {
@@ -296,7 +304,7 @@ class AttemptListView extends React.Component {
       return (
         <tr key={attempt.id}>
           <td><Link to={`/attempts/${attempt.id}`}>{attempt.id}</Link></td>
-          <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
+          <td><MaybeWorkflowLink workflow={attempt.workflow}/></td>
           <td>{formatTimestamp(attempt.createdAt)}</td>
           <td>{formatSessionTime(attempt.sessionTime)}</td>
           <td>{formatDuration(attempt.createdAt, attempt.finishedAt)}</td>
@@ -342,7 +350,7 @@ class SessionListView extends React.Component {
         <tr key={session.id}>
           <td><Link to={`/sessions/${session.id}`}>{session.id}</Link></td>
           <td><Link to={`/projects/${session.project.id}`}>{session.project.name}</Link></td>
-          <td><Link to={`/workflows/${session.workflow.id}`}>{session.workflow.name}</Link></td>
+          <td><MaybeWorkflowLink workflow={session.workflow}/></td>
           <td><SessionRevisionView session={session}/></td>
           <td>{formatSessionTime(session.sessionTime)}</td>
           <td>{session.lastAttempt ? formatTimestamp(session.lastAttempt.createdAt) : null}</td>
@@ -806,7 +814,7 @@ const SessionView = (props:{session: Session}) =>
       </tr>
       <tr>
         <td>Workflow</td>
-        <td><Link to={`/workflows/${props.session.workflow.id}`}>{props.session.workflow.name}</Link></td>
+        <td><MaybeWorkflowLink workflow={props.session.workflow}/></td>
       </tr>
       <tr>
         <td>Revision</td>
