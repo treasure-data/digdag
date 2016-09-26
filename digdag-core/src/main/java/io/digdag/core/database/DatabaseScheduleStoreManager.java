@@ -1,38 +1,28 @@
 package io.digdag.core.database;
 
-import java.util.List;
-import java.util.Map;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.stream.Stream;
-import java.util.stream.Collectors;
-import com.google.common.primitives.Longs;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.schedule.Schedule;
+import io.digdag.core.schedule.ImmutableStoredSchedule;
+import io.digdag.core.schedule.ScheduleControlStore;
 import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
-import io.digdag.core.schedule.ScheduleControl;
-import io.digdag.core.schedule.ScheduleControlStore;
 import io.digdag.core.schedule.StoredSchedule;
-import io.digdag.core.schedule.ImmutableStoredSchedule;
 import io.digdag.spi.ScheduleTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import io.digdag.client.config.Config;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class DatabaseScheduleStoreManager
         extends BasicDatabaseStoreManager<DatabaseScheduleStoreManager.Dao>
@@ -161,6 +151,20 @@ public class DatabaseScheduleStoreManager
                     lastSessionTime.getEpochSecond());
             return n > 0;
         }
+
+        @Override
+        public boolean disableSchedule(int schedId, Instant timestamp)
+        {
+            int n = dao.disableSchedule(schedId, timestamp.getEpochSecond());
+            return n > 0;
+        }
+
+        @Override
+        public boolean enableSchedule(int schedId)
+        {
+            int n = dao.enableSchedule(schedId);
+            return n > 0;
+        }
     }
 
     public interface Dao
@@ -194,6 +198,7 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select id from schedules" +
                 " where next_run_time <= :currentTime" +
+                " and disabled_at is null" +
                 " limit :limit" +
                 " for update")
         List<Integer> lockReadySchedules(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
@@ -212,6 +217,16 @@ public class DatabaseScheduleStoreManager
                 " set next_run_time = :nextRunTime, next_schedule_time = :nextScheduleTime, last_session_time = :lastSessionTime, updated_at = now()" +
                 " where id = :id")
         int updateNextScheduleTime(@Bind("id") int id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionTime") long lastSessionTime);
+
+        @SqlUpdate("update schedules" +
+                " set disabled_at = :currentTime, updated_at = now()" +
+                " where id = :id")
+        int disableSchedule(@Bind("id") int id, @Bind("currentTime") long currentTime);
+
+        @SqlUpdate("update schedules" +
+                " set disabled_at = null, updated_at = now()" +
+                " where id = :id")
+        int enableSchedule(@Bind("id") int id);
     }
 
     private static class StoredScheduleMapper
@@ -237,6 +252,7 @@ public class DatabaseScheduleStoreManager
                 .workflowName(r.getString("name"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
+                .disabledAt(getOptionalLong(r, "disabled_at").transform(Instant::ofEpochSecond))
                 .build();
         }
     }

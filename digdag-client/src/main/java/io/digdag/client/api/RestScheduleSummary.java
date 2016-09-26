@@ -24,6 +24,8 @@ public interface RestScheduleSummary
 
     Instant getUpdatedAt();
 
+    Optional<Instant> getDisabledAt();
+
     static ImmutableRestScheduleSummary.Builder builder()
     {
         return ImmutableRestScheduleSummary.builder();

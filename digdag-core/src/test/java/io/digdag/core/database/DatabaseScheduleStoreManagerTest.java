@@ -1,8 +1,12 @@
 package io.digdag.core.database;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.hamcrest.Matchers;
 import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
 import com.google.common.base.Optional;
@@ -11,6 +15,9 @@ import io.digdag.core.repository.*;
 import io.digdag.core.schedule.*;
 import io.digdag.spi.ScheduleTime;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
+import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.*;
 
 public class DatabaseScheduleStoreManagerTest
@@ -229,5 +236,100 @@ public class DatabaseScheduleStoreManagerTest
         assertEquals(sched1.getId(), updatedSched1.getId());
         assertEquals(runTime4, updatedSched1.getNextRunTime());
         assertEquals(schedTime4, updatedSched1.getNextScheduleTime());
+    }
+
+    @Test
+    public void testDisableEnable()
+        throws Exception
+    {
+        Project srcProj1 = Project.of("proj1");
+        Revision srcRev1 = createRevision("rev1");
+        WorkflowDefinition srcWf1Rev1 = createWorkflow("wf1");
+        WorkflowDefinition srcWf2 = createWorkflow("wf2");
+
+        Instant yesterday = Instant.now().minus(Duration.ofDays(1)).truncatedTo(SECONDS);
+
+        final AtomicReference<StoredRevision> revRef = new AtomicReference<>();
+        final AtomicReference<StoredWorkflowDefinition> wfRefA = new AtomicReference<>();
+        final AtomicReference<StoredWorkflowDefinition> wfRefB = new AtomicReference<>();
+
+        StoredProject proj1 = store.putAndLockProject(
+                srcProj1,
+                (store, stored) -> {
+                    ProjectControl lock = new ProjectControl(store, stored);
+                    revRef.set(lock.insertRevision(srcRev1));
+                    wfRefA.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf1Rev1)).get(0));
+                    wfRefB.set(lock.insertWorkflowDefinitionsWithoutSchedules(revRef.get(), ImmutableList.of(srcWf2)).get(0));
+                    store.updateSchedules(
+                            stored.getId(),
+                            ImmutableList.of(
+                                Schedule.of(
+                                    srcWf1Rev1.getName(),
+                                    wfRefA.get().getId(),
+                                    yesterday,
+                                    yesterday),
+                                Schedule.of(
+                                    srcWf2.getName(),
+                                    wfRefB.get().getId(),
+                                    yesterday,
+                                    yesterday)
+                                ),
+                            (oldStatus, newSched) -> {
+                                return oldStatus.getNextScheduleTime();
+                            });
+                    return lock.get();
+                });
+
+        StoredWorkflowDefinition wf1Rev1 = wfRefA.get();
+        StoredWorkflowDefinition wf2 = wfRefB.get();
+        List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent());
+        assertEquals(2, schedList1.size());
+        StoredSchedule sched1 = schedList1.get(0);
+        StoredSchedule sched2 = schedList1.get(1);
+
+        // Verify that enabling a schedule that has not been disabled is a nop
+        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+            store.enableSchedule(schedule.getId());
+            return schedule;
+        });
+        {
+            List<Integer> ready = new ArrayList<>();
+            schedManager.lockReadySchedules(Instant.now(), (store, schedule) -> ready.add(schedule.getId()));
+            assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+        }
+
+        // Disable one of the schedules and verify that lockReadySchedules skips it
+        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+            store.disableSchedule(schedule.getId(), Instant.now());
+            return schedule;
+        });
+        {
+            List<Integer> ready = new ArrayList<>();
+            schedManager.lockReadySchedules(Instant.now(), (store, schedule) -> ready.add(schedule.getId()));
+            assertThat(ready, contains(sched2.getId()));
+        }
+
+
+        // Re-enable the schedule and verify that lockReadySchedules processes it
+        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+            store.enableSchedule(schedule.getId());
+            return schedule;
+        });
+        {
+            List<Integer> ready = new ArrayList<>();
+            schedManager.lockReadySchedules(Instant.now(), (store, schedule) -> ready.add(schedule.getId()));
+            assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+        }
+
+        // Verify that enabling is idempotent
+        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+            store.enableSchedule(schedule.getId());
+            return schedule;
+        });
+        {
+            List<Integer> ready = new ArrayList<>();
+            schedManager.lockReadySchedules(Instant.now(), (store, schedule) -> ready.add(schedule.getId()));
+            assertThat(ready, containsInAnyOrder(sched1.getId(), sched2.getId()));
+        }
     }
 }

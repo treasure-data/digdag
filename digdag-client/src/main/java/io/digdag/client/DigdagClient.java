@@ -8,6 +8,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
@@ -598,6 +599,22 @@ public class DigdagClient implements AutoCloseable
                     .build(),
                 target("/api/schedules/{id}/backfill")
                 .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary disableSchedule(int scheduleId)
+    {
+        return doPost(RestScheduleSummary.class,
+                ImmutableMap.of(),
+                target("/api/schedules/{id}/disable")
+                        .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary enableSchedule(int scheduleId)
+    {
+        return doPost(RestScheduleSummary.class,
+                ImmutableMap.of(),
+                target("/api/schedules/{id}/enable")
+                        .resolveTemplate("id", scheduleId));
     }
 
     public Map<String, Object> getVersion()

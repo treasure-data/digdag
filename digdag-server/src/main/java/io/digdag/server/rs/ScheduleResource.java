@@ -1,5 +1,6 @@
 package io.digdag.server.rs;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.time.ZoneId;
@@ -138,5 +139,48 @@ public class ScheduleResource
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
         return RestModels.attemptModels(rm, getSiteId(), attempts);
+    }
+
+    @POST
+    @Path("/api/schedules/{id}/disable")
+    public RestScheduleSummary disableSchedule(@PathParam("id") int id)
+            throws ResourceNotFoundException, ResourceConflictException
+    {
+        // TODO: this is racy
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                .getScheduleById(id);
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
+        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+            Instant now = Instant.now();
+            lockedSched.disableSchedule(now);
+            return ImmutableStoredSchedule.builder().from(storedSchedule)
+                    .disabledAt(now)
+                    .build();
+        });
+
+        return RestModels.scheduleSummary(updated, timeZone);
+    }
+
+    @POST
+    @Path("/api/schedules/{id}/enable")
+    public RestScheduleSummary enableSchedule(@PathParam("id") int id)
+            throws ResourceNotFoundException, ResourceConflictException
+    {
+        // TODO: this is racy
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                .getScheduleById(id);
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
+        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+            lockedSched.enableSchedule();
+            return ImmutableStoredSchedule.builder().from(storedSchedule)
+                    .disabledAt(Optional.absent())
+                    .build();
+        });
+
+        return RestModels.scheduleSummary(updated, timeZone);
     }
 }

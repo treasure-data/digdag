@@ -113,6 +113,7 @@ public final class RestModels
             .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
+            .disabledAt(sched.getDisabledAt())
             .build();
     }
 
@@ -125,6 +126,7 @@ public final class RestModels
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
             .updatedAt(sched.getCreatedAt())
+            .disabledAt(sched.getDisabledAt())
             .build();
     }
 

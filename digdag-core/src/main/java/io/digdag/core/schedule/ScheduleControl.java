@@ -44,4 +44,14 @@ public class ScheduleControl
     {
         return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionTime);
     }
+
+    public void enableSchedule()
+    {
+        store.enableSchedule(schedule.getId());
+    }
+
+    public void disableSchedule(Instant now)
+    {
+        store.disableSchedule(schedule.getId(), now);
+    }
 }
