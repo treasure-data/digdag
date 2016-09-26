@@ -879,3 +879,97 @@ embulk>: Embulk data transfer
 
   * :command:`embulk>: embulk/mysql_to_csv.yml`
 
+
+s3_wait>: Wait for a file in Amazon S3
+--------------------------------------
+
+The **s3_wait>:** operator waits for file to appear in Amazon S3.
+
+.. code-block:: yaml
+
+    +wait:
+      s3_wait>: my-bucket/my-key
+
+Secrets
+~~~~~~~
+
+:command:`aws.s3.access-key-id, aws.access-key-id`
+  The AWS Access Key ID to use when accessing S3.
+
+:command:`aws.s3.secret-access-key, aws.secret-access-key`
+  The AWS Secret Access Key to use when accessing S3.
+
+:command:`aws.s3.region, aws.region`
+  An optional explicit AWS Region in which to access S3.
+
+:command:`aws.s3.endpoint`
+  An optional explicit API endpoint to use when accessing S3. This overrides the `region` secret.
+
+:command:`aws.s3.sse-c-key`
+  An optional Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
+
+:command:`aws.s3.sse-c-key-algorithm`
+  An optional Customer-Provided Server-Side Encryption (SSE-C) key algorithm to use when accessing S3.
+
+:command:`aws.s3.sse-c-key-md5`
+  An optional MD5 digest of the Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
+
+For more information about SSE-C, See the `AWS S3 Documentation <http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html>`_.
+
+Parameters
+~~~~~~~~~~
+
+:command:`s3_wait>: BUCKET/KEY`
+  Path to the file in Amazon S3 to wait for.
+
+  * :command:`s3_wait>: my-bucket/my-data.gz`
+
+  * :command:`s3_wait>: my-bucket/file/in/a/directory`
+
+:command:`region: REGION`
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.region` secret.
+
+:command:`endpoint: ENDPOINT`
+  An optional explicit AWS Region in which to access S3. This may also be specified using the `aws.s3.endpoint` secret.
+  *Note:* This will override the `region` parameter.
+
+:command:`bucket: BUCKET`
+  The S3 bucket where the file is located. Can be used together with the `key` parameter instead of putting the path on the operator line.
+
+:command:`key: KEY`
+  The S3 key of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator line.
+
+:command:`version_id: VERSION_ID`
+  An optional object version to check for.
+
+:command:`path_style_access: true/false`
+  An optional flag to control whether to use path-style or virtual hosted-style access when accessing S3.
+  *Note:* Enabling `path_style_access` also requires specifying a `region`.
+
+Output Parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`s3.last_object`
+  Information about the detected file.
+
+    .. code-block:: yaml
+
+        {
+          "metadata": {
+            "Accept-Ranges": "bytes",
+            "Access-Control-Allow-Origin": "*",
+            "Content-Length": 4711,
+            "Content-Type": "application/octet-stream",
+            "ETag": "5eb63bbbe01eeed093cb22bb8f5acdc3",
+            "Last-Modified": 1474360744000,
+            "Last-Ranges": "bytes"
+          },
+          "user_metadata": {
+            "foo": "bar",
+            "baz": "quux"
+          }
+        }
+
+.. note:: The **s3_wait>:** operator makes use of polling with *exponential backoff*.
+As such there might be some time interval between a file being created and the **s3_wait>:** operator detecting it.
+
