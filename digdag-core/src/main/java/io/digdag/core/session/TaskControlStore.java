@@ -9,7 +9,7 @@ import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface TaskControlStore
 {
-    long getTaskCount(long attemptId);
+    long getTaskCountOfAttempt(long attemptId);
 
     long addSubtask(long attemptId, Task task);
 

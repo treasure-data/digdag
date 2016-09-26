@@ -147,6 +147,7 @@ export type HeadersProvider = (args: {credentials: Credentials}) => Headers;
 export type ModelConfig = {
   url: string;
   td: {
+    useTD: boolean;
     apiV4: string;
     connectorUrl: (id: string) => string;
     queryUrl: (id: string) => string;
@@ -294,12 +295,15 @@ export class Model {
   getTDQueryIdFromName(queryName: string) : string {
     const query = this.queriesCache.get(queryName, null);
     if (!query) {
-      return '' // this forces to go to query list
+      return ''
     }
     return query.id;
   }
 
   fillTDQueryCache() : Promise<*> {
+    if (!this.config.td.useTD) {
+      return Promise.resolve({})
+    }
     return fetch(this.config.td.apiV4 + '/queries', {
       credentials: 'include',
       headers: this.headers()

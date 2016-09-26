@@ -14,6 +14,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -119,7 +120,7 @@ public class TdOperatorFactory
         }
 
         @Override
-        protected TaskResult processJobResult(TDOperator op, TDJobOperator j)
+        protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator j)
         {
             downloadJobResult(j, workspace, downloadFile);
 
@@ -143,7 +144,7 @@ public class TdOperatorFactory
         }
 
         @Override
-        protected String startJob(TDOperator op, String domainKey)
+        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
         {
             String stmt;
             switch(engine) {

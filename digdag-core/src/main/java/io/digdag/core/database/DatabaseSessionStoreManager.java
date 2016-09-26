@@ -70,6 +70,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Locale.ENGLISH;
+
 /**
  * Store session state on a database.
  *
@@ -121,7 +123,7 @@ public class DatabaseSessionStoreManager
     @Inject
     public DatabaseSessionStoreManager(DBI dbi, ConfigFactory cf, ConfigMapper cfm, ObjectMapper mapper, DatabaseConfig config)
     {
-        super(config.getType(), Dao.class, dbi);
+        super(config.getType(), dao(config.getType()), dbi);
 
         dbi.registerMapper(new StoredTaskMapper(cfm));
         dbi.registerMapper(new ArchivedTaskMapper(cfm));
@@ -144,6 +146,18 @@ public class DatabaseSessionStoreManager
         this.stm = new StoredTaskMapper(cfm);
         this.atm = new ArchivedTaskMapper(cfm);
         this.tasm = new TaskAttemptSummaryMapper();
+    }
+
+    private static Class<? extends Dao> dao(String type)
+    {
+        switch (type) {
+        case "postgresql":
+            return PgDao.class;
+        case "h2":
+            return H2Dao.class;
+        default:
+            throw new IllegalArgumentException("Unknown database type: " + type);
+        }
     }
 
     private String bitAnd(String op1, String op2)
@@ -273,7 +287,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             SessionAttemptSummary locked = dao.lockAttempt(attemptId);
             if (locked != null) {
                 return Optional.of(func.call(new DatabaseSessionAttemptControlStore(handle), locked));
@@ -340,7 +354,7 @@ public class DatabaseSessionStoreManager
     @Override
     public boolean requestCancelAttempt(long attemptId)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             int n = handle.createStatement("update tasks" +
                     " set state_flags = " + bitOr("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) +
                     " where attempt_id = :attemptId" +
@@ -370,7 +384,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockAction<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
                 T result = func.call(new DatabaseTaskControlStore(handle));
@@ -383,7 +397,7 @@ public class DatabaseSessionStoreManager
     @Override
     public <T> Optional<T> lockTaskIfExists(long taskId, TaskLockActionWithDetails<T> func)
     {
-        return transaction((handle, dao, ts) -> {
+        return transaction((handle, dao) -> {
             // TODO JOIN + FOR UPDATE doesn't work with H2 database
             Long locked = dao.lockTask(taskId);
             if (locked != null) {
@@ -403,7 +417,7 @@ public class DatabaseSessionStoreManager
     @Override
     public void lockReadySessionMonitors(Instant currentTime, SessionMonitorAction func)
     {
-        List<RuntimeException> exceptions = transaction((handle, dao, ts) -> {
+        List<RuntimeException> exceptions = transaction((handle, dao) -> {
             return dao.lockReadySessionMonitors(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
                 .stream()
                 .map(monitor -> {
@@ -650,12 +664,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
-        public long getTaskCount(long attemptId)
+        public long getTaskCountOfAttempt(long attemptId)
         {
             long count = handle.createQuery(
                     "select count(*) from tasks t" +
                             " where t.attempt_id = :attemptId"
-            )
+                    )
                     .bind("attemptId", attemptId)
                     .mapTo(long.class)
                     .first();
@@ -944,45 +958,63 @@ public class DatabaseSessionStoreManager
             this.siteId = siteId;
         }
 
+        public long getActiveAttemptCount()
+        {
+            return autoCommit((handle, dao) ->
+                    handle.createQuery(
+                        "select count(*) from session_attempts" +
+                        " where site_id = :siteId" +
+                        " and " + bitAnd("state_flags", Integer.toString(AttemptStateFlags.DONE_CODE)) + " = 0"
+                    )
+                    .bind("siteId", siteId)
+                    .mapTo(long.class)
+                    .first()
+                );
+        }
+
         @Override
         public <T> T putAndLockSession(Session session, SessionLockAction<T> func)
             throws ResourceConflictException, ResourceNotFoundException
         {
-            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao, ts) -> {
-                long sesId;
+            return DatabaseSessionStoreManager.this.<T, ResourceConflictException, ResourceNotFoundException>transaction((handle, dao) -> {
+                StoredSession storedSession;
 
-                switch (databaseType) {
-                //// This query doesn't work because ID increments when keys conflicted
-                //case "h2":
-                //    "merge into sessions key (project_id, workflow_name, instant) values (DEFAULT, :projectId, :workflowName, :instant, NULL)";
-                //    break;
-                default:
-                    if (!ts.isRetried()) {
-                        // first try
-                        try {
-                            sesId = catchForeignKeyNotFound(()->
-                                    catchConflict(() ->
-                                        dao.insertSession(session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()),
-                                        "session instant=%s in project_id=%d and workflow_name=%s", session.getSessionTime(), session.getProjectId(), session.getWorkflowName()),
-                                    "project id=%d", session.getProjectId());
-                        }
-                        catch (ResourceConflictException ex) {
-                            ts.retry(ex);
-                            return null;
+                // select first so that conflicting insert (postgresql) or foreign key constraint violation (h2)
+                // doesn't increment sequence of primary key unnecessarily
+                storedSession = dao.getSessionByConflictedNamesInternal(
+                        session.getProjectId(),
+                        session.getWorkflowName(),
+                        session.getSessionTime().getEpochSecond());
+
+                if (storedSession == null) {
+                    if (dao instanceof H2Dao) {
+                        catchForeignKeyNotFound(
+                            () -> {
+                                ((H2Dao) dao).upsertAndLockSession(
+                                    session.getProjectId(),
+                                    session.getWorkflowName(),
+                                    session.getSessionTime().getEpochSecond());
+                                return 0;
+                            },
+                            "project id=%d", session.getProjectId());
+                        storedSession = dao.getSessionByConflictedNamesInternal(
+                                session.getProjectId(),
+                                session.getWorkflowName(),
+                                session.getSessionTime().getEpochSecond());
+                        if (storedSession == null) {
+                            throw new IllegalStateException(String.format(ENGLISH,
+                                        "Database state error: locked session is null: project_id=%d, workflow_name=%s, session_time=%d",
+                                        session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond()));
                         }
                     }
                     else {
-                        StoredSession storedSession = dao.getSessionByConflictedNamesInternal(session.getProjectId(), session.getWorkflowName(), session.getSessionTime().getEpochSecond());
-                        if (storedSession == null) {
-                            throw new IllegalStateException("Database state error", ts.getLastException());
-                        }
-                        sesId = storedSession.getId();
+                        storedSession = catchForeignKeyNotFound(
+                                () -> ((PgDao) dao).upsertAndLockSession(
+                                    session.getProjectId(),
+                                    session.getWorkflowName(),
+                                    session.getSessionTime().getEpochSecond()),
+                                "project id=%d", session.getProjectId());
                     }
-                }
-
-                StoredSession storedSession = dao.lockSession(sesId);
-                if (storedSession == null) {
-                    throw new IllegalStateException("Database state error");
                 }
 
                 return func.call(new DatabaseSessionControlStore(handle, siteId), storedSession);
@@ -1211,6 +1243,32 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    public interface H2Dao
+            extends Dao
+    {
+        // h2's MERGE doesn't reutrn generated id when conflicting row already exists
+        @SqlUpdate("merge into sessions" +
+                " (project_id, workflow_name, session_time)" +
+                " key (project_id, workflow_name, session_time)" +
+                " values (:projectId, :workflowName, :sessionTime)")
+        void upsertAndLockSession(@Bind("projectId") int projectId,
+                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+    }
+
+    public interface PgDao
+            extends Dao
+    {
+        @SqlQuery("insert into sessions" +
+                " (project_id, workflow_name, session_time)" +
+                " values (:projectId, :workflowName, :sessionTime)" +
+                " on conflict (project_id, workflow_name, session_time) do update set last_attempt_id = sessions.last_attempt_id" +
+                " returning *")
+                // this query includes "set last_attempt_id = sessions.last_attempt_id" because "do nothing"
+                // doesn't lock the row
+        StoredSession upsertAndLockSession(@Bind("projectId") int projectId,
+                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
+    }
+
     public interface Dao
     {
         @SqlQuery("select now() as date")
@@ -1382,17 +1440,6 @@ public class DatabaseSessionStoreManager
                 " join session_attempts sa on sa.id = tasks.attempt_id" +
                 " where tasks.id = :taskId")
         Integer getSiteIdOfTask(@Bind("taskId") long taskId);
-
-        @SqlQuery("select * from sessions" +
-                " where id = :sessionId" +
-                " for update")
-        StoredSession lockSession(@Bind("sessionId") long sessionId);
-
-        @SqlUpdate("insert into sessions (project_id, workflow_name, session_time, last_attempt_id)" +
-                " values (:projectId, :workflowName, :sessionTime, NULL)")
-        @GetGeneratedKeys
-        long insertSession(@Bind("projectId") int projectId,
-                @Bind("workflowName") String workflowName, @Bind("sessionTime") long sessionTime);
 
         @SqlQuery("select * from sessions" +
                 " where project_id = :projectId" +

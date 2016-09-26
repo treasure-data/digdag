@@ -96,6 +96,7 @@ public class TemporaryDigdagServer
 
     private final boolean inProcess;
     private final Map<String, String> environment;
+    private final Properties properties;
 
     private Path workdir;
     private Process serverProcess;
@@ -123,6 +124,7 @@ public class TemporaryDigdagServer
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
         this.inProcess = builder.inProcess;
         this.environment = ImmutableMap.copyOf(builder.environment);
+        this.properties = builder.properties;
 
         this.executor = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
 
@@ -309,6 +311,9 @@ public class TemporaryDigdagServer
                     "-Xms128m", "-Xmx128m"));
             if (version.isPresent()) {
                 processArgs.add("-D" + Version.VERSION_PROPERTY + "=" + version.get());
+            }
+            for (String key : properties.stringPropertyNames()) {
+                processArgs.add("-D" + key + "=" + properties.getProperty(key));
             }
             if (!isNullOrEmpty(JACOCO_JVM_ARG)) {
                 processArgs.add(JACOCO_JVM_ARG);
@@ -669,7 +674,6 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
-
         private Builder()
         {
         }
@@ -678,6 +682,7 @@ public class TemporaryDigdagServer
         private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
         private Map<String, String> environment = new HashMap<>();
+        private Properties properties = new Properties();
         private boolean inProcess = IN_PROCESS_DEFAULT;
         private byte[] stdin = new byte[0];
 
@@ -723,6 +728,12 @@ public class TemporaryDigdagServer
         public Builder inProcess(boolean inProcess)
         {
             this.inProcess = inProcess;
+            return this;
+        }
+
+        public Builder systemProperty(String key, String value)
+        {
+            properties.setProperty(key, value);
             return this;
         }
 

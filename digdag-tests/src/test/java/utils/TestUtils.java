@@ -208,6 +208,8 @@ public class TestUtils
         for (RestLogFileHandle handle : handles) {
             try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {
                 logs.append(new String(ByteStreams.toByteArray(s), UTF_8));
+            } catch (IOException ignore) {
+                // XXX: the digdag client can return empty streams
             }
         }
         return logs.toString();

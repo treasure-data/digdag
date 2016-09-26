@@ -1,6 +1,7 @@
 var DIGDAG_CONFIG = {
   url: 'http://localhost:65432/api/',
   td: {
+    useTD: false,
     apiV4: 'https://api-console.treasuredata.com/v4',
     connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers'},
     queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId; },

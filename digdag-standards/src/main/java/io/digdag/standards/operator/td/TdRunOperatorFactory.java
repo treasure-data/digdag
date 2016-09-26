@@ -7,6 +7,7 @@ import io.digdag.client.config.Config;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class TdRunOperatorFactory
         }
 
         @Override
-        protected String startJob(TDOperator op, String domainKey)
+        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
         {
             TDSavedQueryStartRequest req = TDSavedQueryStartRequest.builder()
                     .name(name)
@@ -82,7 +83,7 @@ public class TdRunOperatorFactory
         }
 
         @Override
-        protected TaskResult processJobResult(TDOperator op, TDJobOperator job)
+        protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
         {
             downloadJobResult(job, workspace, downloadFile);
             if (preview) {

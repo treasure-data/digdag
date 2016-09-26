@@ -3,7 +3,6 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDBulkLoadSessionStartRequest;
 import com.treasuredata.client.model.TDJob;
@@ -14,6 +13,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
@@ -107,7 +107,7 @@ public class TdLoadOperatorFactory
         }
 
         @Override
-        protected String startJob(TDOperator op, String domainKey)
+        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
         {
             assert Stream.of(embulkConfig, sessionName).filter(Optional::isPresent).count() == 1;
 

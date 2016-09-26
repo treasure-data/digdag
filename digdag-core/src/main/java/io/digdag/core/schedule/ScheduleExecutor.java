@@ -22,6 +22,7 @@ import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
+import io.digdag.core.workflow.AttemptLimitExceededException;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.AttemptStateFlags;
@@ -130,11 +131,18 @@ public class ScheduleExecutor
                 ScheduleTime nextTime = sr.nextScheduleTime(sched.getNextScheduleTime());
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
+            catch (AttemptLimitExceededException ex) {
+                logger.info("Number of attempts exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
+                ScheduleTime nextTime = ScheduleTime.of(
+                        sched.getNextScheduleTime(),
+                        ScheduleTime.alignedNow().plusSeconds(600));
+                return lockedSched.tryUpdateNextScheduleTime(nextTime);
+            }
             catch (RuntimeException ex) {
                 logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
                 ScheduleTime nextTime = ScheduleTime.of(
                         sched.getNextScheduleTime(),
-                        sched.getNextRunTime().plusSeconds(3600));
+                        ScheduleTime.alignedNow().plusSeconds(3600));
                 return lockedSched.tryUpdateNextScheduleTime(nextTime);
             }
         }

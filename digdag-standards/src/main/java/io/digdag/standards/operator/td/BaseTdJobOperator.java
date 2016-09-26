@@ -46,7 +46,7 @@ abstract class BaseTdJobOperator
             Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {
-                job = op.runJob(state, "job", this::startJob);
+                job = op.runJob(state, "job", (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
                 state.set(DONE_JOB_ID, job.getJobId());
             }
             else {
@@ -54,7 +54,7 @@ abstract class BaseTdJobOperator
             }
 
             // Get the job results
-            TaskResult taskResult = processJobResult(op, job);
+            TaskResult taskResult = processJobResult(ctx, op, job);
 
             // Set last_job_id param
             taskResult.getStoreParams()
@@ -65,9 +65,9 @@ abstract class BaseTdJobOperator
         }
     }
 
-    protected abstract String startJob(TDOperator op, String domainKey);
+    protected abstract String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey);
 
-    protected TaskResult processJobResult(TDOperator op, TDJobOperator job)
+    protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
     {
         return TaskResult.empty(request);
     }

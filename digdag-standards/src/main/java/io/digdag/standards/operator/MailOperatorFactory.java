@@ -6,6 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -80,8 +81,16 @@ public class MailOperatorFactory
         }
 
         @Override
+        public List<String> secretSelectors()
+        {
+            return ImmutableList.of("mail.*");
+        }
+
+        @Override
         public TaskResult runTask(TaskExecutionContext ctx)
         {
+            SecretProvider secrets = ctx.secrets().getSecrets("mail");
+
             Config bodyParams = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));
 
@@ -130,25 +139,26 @@ public class MailOperatorFactory
 
             Properties props = new Properties();
 
-            props.setProperty("mail.smtp.host", params.get("host", String.class));
-            props.setProperty("mail.smtp.port", params.get("port", String.class));
-            props.put("mail.smtp.starttls.enable", Boolean.toString(params.get("tls", boolean.class, true)));
-            if (params.get("ssl", boolean.class, false)) {
-                props.put("mail.smtp.socketFactory.port", params.get("port", String.class));
+
+            props.setProperty("mail.smtp.host", secrets.getSecretOptional("host").or(params.get("host", String.class)));
+            props.setProperty("mail.smtp.port", secrets.getSecretOptional("port").or(params.get("port", String.class)));
+            props.put("mail.smtp.starttls.enable", secrets.getSecretOptional("tls").or(Boolean.toString(params.get("tls", boolean.class, true))));
+            if (secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false))) {
+                props.put("mail.smtp.socketFactory.port", secrets.getSecretOptional("port").or(params.get("port", String.class)));
                 props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
                 props.put("mail.smtp.socketFactory.fallback", "false");
             }
 
-            props.setProperty("mail.debug", Boolean.toString(params.get("debug", boolean.class, false)));
+            props.setProperty("mail.debug", Boolean.toString((params.get("debug", boolean.class, false))));
 
             props.setProperty("mail.smtp.connectiontimeout", "10000");
             props.setProperty("mail.smtp.timeout", "60000");
 
             Session session;
-            final String username = params.get("username", String.class, null);
+            final String username = secrets.getSecretOptional("username").or(params.get("username", String.class, null));
             if (username != null) {
                 props.setProperty("mail.smtp.auth", "true");
-                final String password = params.get("password", String.class, "");
+                final String password = secrets.getSecretOptional("password").or("");
                 session = Session.getInstance(props,
                         new Authenticator()
                         {
@@ -207,18 +217,6 @@ public class MailOperatorFactory
         {
             return config.getNestedOrGetEmpty("mail").getOptional(key, String.class)
                 .or(() -> config.get(key, String.class));
-        }
-
-        private String getFlatOrNested(Config config, String key, String defaultValue)
-        {
-            return config.getNestedOrGetEmpty("mail").getOptional(key, String.class)
-                .or(() -> config.get(key, String.class, defaultValue));
-        }
-
-        private boolean getFlatOrNested(Config config, String key, boolean defaultValue)
-        {
-            return config.getNestedOrGetEmpty("mail").getOptional(key, boolean.class)
-                .or(() -> config.get(key, boolean.class, defaultValue));
         }
 
         private InternetAddress newAddress(String str)

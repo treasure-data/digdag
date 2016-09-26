@@ -1,0 +1,8 @@
+timezone: UTC
+
+schedule:
+  hourly>: 00:00
+
++foo:
+  sh>: sleep 20
+
