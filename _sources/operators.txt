@@ -754,12 +754,7 @@ To use Gmail SMTP server, you need to do either of:
 
     _export:
       mail:
-        host: smtp.gmail.com
-        port: 587
         from: "you@gmail.com"
-        username: "you@gmail.com"
-        password: "...password..."
-        debug: true
 
     +step1:
       mail>: body.txt
@@ -778,6 +773,42 @@ To use Gmail SMTP server, you need to do either of:
         mail>: body.txt
         subject: this workflow failed
         to: [me@example.com]
+
+Secrets
+~~~~~~~
+
+:command:`mail.host: HOST`
+  SMTP host name.
+
+  * :command:`mail.host: smtp.gmail.com`
+
+:command:`mail.port: PORT`
+  SMTP port number.
+
+  * :command:`mail.port: 587`
+
+:command:`mail.username: NAME`
+  SMTP login username.
+
+  * :command:`mail.username: me`
+
+:command:`mail.password: PASSWORD`
+  SMTP login password.
+
+  * :command:`mail.password: MyPaSsWoRd`
+
+:command:`mail.tls: BOOLEAN`
+  Enables TLS handshake.
+
+  * :command:`mail.tls: true`
+
+:command:`mail.ssl: BOOLEAN`
+  Enables legacy SSL encryption.
+
+  * :command:`mail.ssl: false`
+
+Parameters
+~~~~~~~~~~
 
 :command:`mail>: FILE`
   Path to a mail body template file. This file can contain ``${...}`` syntax to embed variables.
@@ -815,14 +846,9 @@ To use Gmail SMTP server, you need to do either of:
   * :command:`port: 587`
 
 :command:`username: NAME`
-  SMTP login username if authentication is required me.
+  SMTP login username.
 
   * :command:`username: me`
-
-:command:`password: PASSWORD`
-  SMTP login password.
-
-  * :command:`password: MyPaSsWoRd`
 
 :command:`tls: BOOLEAN`
   Enables TLS handshake.
