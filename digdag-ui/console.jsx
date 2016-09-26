@@ -128,7 +128,7 @@ function MaybeWorkflowLink({ workflow } : { workflow: NameOptionalId }) {
   if (workflow.id) {
     return <Link to={`/workflows/${workflow.id}`}>{workflow.name}</Link>
   }
-  return <span>workflow.name</span>
+  return <span>{workflow.name}</span>
 }
 
 class CacheLoader extends React.Component {
