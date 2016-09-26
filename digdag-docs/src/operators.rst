@@ -573,14 +573,23 @@ TODO: add more description here
       to:   2016-02-01 00:00:00 +0800
       s3_bucket: my_backup_backet
       s3_path_prefix: mydb/mytable
-      s3_access_key_id: ABCDEFGHJKLMNOPQRSTU
-      s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3
 
 Secrets
 ~~~~~~~
 
 :command:`td.apikey: API_KEY`
   The Treasure Data API key to use when running Treasure Data table exports.
+
+:command:`aws.s3.access-key-id: ACCESS_KEY_ID`
+  The AWS Access Key ID to use when writing to S3.
+
+  * :command:`aws.s3.access-key-id: ABCDEFGHJKLMNOPQRSTU`
+
+:command:`aws.s3.secret-access-key: SECRET_ACCESS_KEY`
+  The AWS Secret Access Key to use when writing to S3.
+
+  * :command:`aws.s3.secret-access-key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
+
 
 Parameters
 ~~~~~~~~~~
@@ -619,16 +628,6 @@ Parameters
   S3 file name prefix.
 
   * :command:`s3_path_prefix: mytable/mydb`
-
-:command:`s3_access_key_id: KEY`
-  S3 access key id.
-
-  * :command:`s3_access_key_id: ABCDEFGHJKLMNOPQRSTU`
-
-:command:`s3_secret_access_key: KEY`
-  S3 secret access key.
-
-  * :command:`s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
 
 :command:`endpoint: ADDRESS`
   API endpoint (default: api.treasuredata.com).

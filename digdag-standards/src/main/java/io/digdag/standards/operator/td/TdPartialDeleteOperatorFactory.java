@@ -6,13 +6,13 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 
 public class TdPartialDeleteOperatorFactory
@@ -63,7 +63,7 @@ public class TdPartialDeleteOperatorFactory
         }
 
         @Override
-        protected String startJob(TDOperator op, String domainKey)
+        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
         {
             String jobId = op.submitNewJobWithRetry(client ->
                     client.partialDelete(op.getDatabase(), table, from.getEpochSecond(), to.getEpochSecond(), domainKey).getJobId());

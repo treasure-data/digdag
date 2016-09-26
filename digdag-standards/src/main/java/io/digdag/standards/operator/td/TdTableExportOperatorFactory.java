@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.td;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDExportFileFormatType;
 import com.treasuredata.client.model.TDExportJobRequest;
@@ -8,6 +9,8 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Locale.ENGLISH;
@@ -49,6 +53,12 @@ public class TdTableExportOperatorFactory
         private final TableParam table;
         private final TDExportFileFormatType fileFormat;
 
+        @Override
+        public List<String> secretSelectors()
+        {
+            return ImmutableList.of("td.*", "aws.*");
+        }
+
         private TdTableExportOperator(Path projectPath, TaskRequest request)
         {
             super(projectPath, request, env);
@@ -68,16 +78,19 @@ public class TdTableExportOperatorFactory
         }
 
         @Override
-        protected String startJob(TDOperator op, String domainKey)
+        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
         {
+            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
+
             TDExportJobRequest req = TDExportJobRequest.builder()
                     .database(table.getDatabase().or(database))
                     .table(table.getTable())
                     .from(Date.from(parseTime(params, "from")))
                     .to(Date.from(parseTime(params, "to")))
                     .fileFormat(fileFormat)
-                    .accessKeyId(params.get("s3_access_key_id", String.class))
-                    .secretAccessKey(params.get("s3_secret_access_key", String.class))
+                    .accessKeyId(s3Secrets.getSecretOptional("access-key-id").or(awsSecrets.getSecret("access-key-id")))
+                    .secretAccessKey(s3Secrets.getSecretOptional("secret-access-key").or(awsSecrets.getSecret("secret-access-key")))
                     .bucketName(params.get("s3_bucket", String.class))
                     .filePrefix(params.get("s3_path_prefix", String.class))
                     .poolName(params.getOptional("pool_name", String.class))
