@@ -793,8 +793,6 @@ td.last_results is a map of column name and a value. To access to a single value
   <span class="l l-Scalar l-Scalar-Plain">to</span><span class="p p-Indicator">:</span>   <span class="l l-Scalar l-Scalar-Plain">2016-02-01 00:00:00 +0800</span>
   <span class="l l-Scalar l-Scalar-Plain">s3_bucket</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_backup_backet</span>
   <span class="l l-Scalar l-Scalar-Plain">s3_path_prefix</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">mydb/mytable</span>
-  <span class="l l-Scalar l-Scalar-Plain">s3_access_key_id</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ABCDEFGHJKLMNOPQRSTU</span>
-  <span class="l l-Scalar l-Scalar-Plain">s3_secret_access_key</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</span>
 </pre></div>
 </div>
 <div class="section" id="id9">
@@ -802,6 +800,18 @@ td.last_results is a map of column name and a value. To access to a single value
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when running Treasure Data table exports.</dd>
+<dt><strong class="command">aws.s3.access-key-id: ACCESS_KEY_ID</strong></dt>
+<dd><p class="first">The AWS Access Key ID to use when writing to S3.</p>
+<ul class="last simple">
+<li><strong class="command">aws.s3.access-key-id: ABCDEFGHJKLMNOPQRSTU</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">aws.s3.secret-access-key: SECRET_ACCESS_KEY</strong></dt>
+<dd><p class="first">The AWS Secret Access Key to use when writing to S3.</p>
+<ul class="last simple">
+<li><strong class="command">aws.s3.secret-access-key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</strong></li>
+</ul>
+</dd>
 </dl>
 </div>
 <div class="section" id="id10">
@@ -847,18 +857,6 @@ td.last_results is a map of column name and a value. To access to a single value
 <dd><p class="first">S3 file name prefix.</p>
 <ul class="last simple">
 <li><strong class="command">s3_path_prefix: mytable/mydb</strong></li>
-</ul>
-</dd>
-<dt><strong class="command">s3_access_key_id: KEY</strong></dt>
-<dd><p class="first">S3 access key id.</p>
-<ul class="last simple">
-<li><strong class="command">s3_access_key_id: ABCDEFGHJKLMNOPQRSTU</strong></li>
-</ul>
-</dd>
-<dt><strong class="command">s3_secret_access_key: KEY</strong></dt>
-<dd><p class="first">S3 secret access key.</p>
-<ul class="last simple">
-<li><strong class="command">s3_secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3</strong></li>
 </ul>
 </dd>
 <dt><strong class="command">endpoint: ADDRESS</strong></dt>
