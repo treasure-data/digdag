@@ -43,7 +43,7 @@ If major version is incremented, update `version =` and `release =` at [digdag-d
 ```
 $ cd digdag-ui/
 $ npm install
-$ npm run dev    # starts dev server on http://localhost:8080/
+$ npm run dev    # starts dev server on http://localhost:9000/
 $ npm run build  # build files on public/
 ```
 

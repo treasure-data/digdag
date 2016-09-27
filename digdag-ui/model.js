@@ -300,7 +300,7 @@ export class Model {
     return query.id;
   }
 
-  fillTDQueryCache() : Promise {
+  fillTDQueryCache() : Promise<*> {
     if (!this.config.td.useTD) {
       return Promise.resolve({})
     }
@@ -319,7 +319,7 @@ export class Model {
     })
   }
 
-  get(url: string): Promise {
+  get(url: string): Promise<*> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       headers: this.headers(),
