@@ -412,7 +412,7 @@ public class DigdagClient implements AutoCloseable
         WebTarget target = target("/api/schedules")
                 .queryParam("project_id", projectId);
         if (workflowName.isPresent()) {
-            target = target.queryParam("workflow_name", workflowName.get());
+            target = target.queryParam("workflow", workflowName.get());
         }
         return doGet(new GenericType<List<RestSchedule>>() {}, target);
     }

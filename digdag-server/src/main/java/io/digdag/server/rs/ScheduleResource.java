@@ -69,7 +69,7 @@ public class ScheduleResource
     @Path("/api/schedules")
     public List<RestSchedule> getSchedules(
             @QueryParam("project_id") Integer projectId,
-            @QueryParam("workflow_name") String workflowName,
+            @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Integer lastId
     )
     {
