@@ -10,6 +10,7 @@ import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -32,7 +33,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,8 +42,6 @@ public class ScheduleResource
     extends AuthenticatedResource
 {
     // GET  /api/schedules                                   # list schedules of the latest revision of all projects
-    // GET  /api/schedules?project_id={id}                   # list schedules of the latest revision of a project
-    // GET  /api/schedules?project_id={id}&workflow={name}   # get the schedule of the latest revision of a workflow in a project
     // GET  /api/schedules/{id}                              # show a particular schedule (which belongs to a workflow)
     // POST /api/schedules/{id}/skip                         # skips schedules forward to a future time
     // POST /api/schedules/{id}/backfill                     # run or re-run past schedules
@@ -67,44 +65,26 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules")
-    public List<RestSchedule> getSchedules(
-            @QueryParam("project_id") Integer projectId,
-            @QueryParam("workflow") String workflowName,
-            @QueryParam("last_id") Integer lastId
-    )
+    public List<RestSchedule> getSchedules(@QueryParam("last_id") Integer lastId)
     {
-        if (workflowName != null && projectId == null) {
-            throw new BadRequestException();
-        }
+        List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
+            .getSchedules(100, Optional.fromNullable(lastId));
 
-        ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
+        return restSchedules(rm.getProjectStore(getSiteId()), scheds);
+    }
 
-        List<StoredSchedule> scheds;
-        if (workflowName != null) {
-            StoredSchedule sched;
-            try {
-                sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
-            }
-            catch (ResourceNotFoundException e) {
-                return Collections.emptyList();
-            }
-            scheds = ImmutableList.of(sched);
-        } else if (projectId != null) {
-            scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
-        } else {
-            scheds = scheduleStore.getSchedules(100, Optional.fromNullable(lastId));
-        }
-
-        ProjectMap projs = rm.getProjectStore(getSiteId())
-            .getProjectsByIdList(
-                    scheds.stream()
-                    .map(StoredSchedule::getProjectId)
-                    .collect(Collectors.toList()));
-        TimeZoneMap defTimeZones = rm.getProjectStore(getSiteId())
-            .getWorkflowTimeZonesByIdList(
-                    scheds.stream()
-                    .map(StoredSchedule::getWorkflowDefinitionId)
-                    .collect(Collectors.toList()));
+    static List<RestSchedule> restSchedules(
+            ProjectStore projectStore,
+            List<StoredSchedule> scheds)
+    {
+        ProjectMap projs = projectStore.getProjectsByIdList(
+                scheds.stream()
+                .map(StoredSchedule::getProjectId)
+                .collect(Collectors.toList()));
+        TimeZoneMap defTimeZones = projectStore.getWorkflowTimeZonesByIdList(
+                scheds.stream()
+                .map(StoredSchedule::getWorkflowDefinitionId)
+                .collect(Collectors.toList()));
 
         return scheds.stream()
             .map(sched -> {

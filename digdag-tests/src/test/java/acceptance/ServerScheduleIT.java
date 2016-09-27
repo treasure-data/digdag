@@ -127,7 +127,7 @@ public class ServerScheduleIT
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
 
-        List<RestSchedule> projectSchedules = client.getSchedules(projectId);
+        List<RestSchedule> projectSchedules = client.getSchedules(projectId, Optional.absent());
         assertThat(projectSchedules, is(scheds));
 
         List<RestSchedule> workflowSchedules = client.getSchedules(projectId, "schedule");
