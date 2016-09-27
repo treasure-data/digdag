@@ -19,7 +19,7 @@ public class Migration_20160926123456_AddDisabledAtColumnToSchedules
 
         if (context.isPostgres()) {
             handle.update("drop index schedules_on_next_run_time");
-            handle.update("create index schedules_on_next_run_time on schedules (next_run_time) where deleted_at is null");
+            handle.update("create index schedules_on_next_run_time on schedules (next_run_time) where disabled_at is null");
         }
     }
 }
