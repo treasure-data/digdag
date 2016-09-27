@@ -4,7 +4,9 @@ import java.time.Duration;
 import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
+import org.hamcrest.Matchers;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -13,8 +15,11 @@ import io.digdag.core.schedule.*;
 import io.digdag.spi.ScheduleTime;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
 import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class DatabaseScheduleStoreManagerTest
@@ -97,6 +102,24 @@ public class DatabaseScheduleStoreManagerTest
         assertEquals(2, schedList1.size());
         StoredSchedule sched1 = schedList1.get(0);
         StoredSchedule sched2 = schedList1.get(1);
+
+        assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent()), is(schedList1));
+        assertThat(schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), srcWf1Rev1.getName()), is(sched1));
+        assertThat(schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), srcWf2.getName()), is(sched2));
+
+        assertThat(schedStore.getSchedulesByProjectId(4711, 100, Optional.absent()), is(empty()));
+
+        try {
+            schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), "non-existent-workflow");
+            fail();
+        } catch (ResourceNotFoundException ignore) {
+        }
+
+        try {
+            schedStore.getScheduleByProjectIdAndWorkflowName(4711, srcWf1Rev1.getName());
+            fail();
+        } catch (ResourceNotFoundException ignore) {
+        }
 
         store.putAndLockProject(
                 srcProj1,
@@ -277,7 +300,7 @@ public class DatabaseScheduleStoreManagerTest
                     return lock.get();
                 });
 
-        StoredWorkflowDefinition wf1Rev1 = wfRefA.get();
+        StoredWorkflowDefinition wf1 = wfRefA.get();
         StoredWorkflowDefinition wf2 = wfRefB.get();
         List<StoredSchedule> schedList1 = schedStore.getSchedules(100, Optional.absent());
         assertEquals(2, schedList1.size());
@@ -306,6 +329,22 @@ public class DatabaseScheduleStoreManagerTest
             assertThat(ready, contains(sched2.getId()));
         }
 
+        // Verify that the disabled schedule can still be fetched
+        {
+            double now = Instant.now().getEpochSecond();
+
+            StoredSchedule s1 = schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), wf1.getName());
+            StoredSchedule s2 = schedStore.getScheduleByProjectIdAndWorkflowName(proj1.getId(), wf2.getName());
+            assertThat(s1.getId(), is(sched1.getId()));
+            assertThat(s2.getId(), is(sched2.getId()));
+            assertThat((double) s1.getDisabledAt().get().getEpochSecond(), is(closeTo(now, 30)));
+            assertThat(s2.getDisabledAt(), is(Optional.absent()));
+
+            assertThat(schedStore.getSchedules(100, Optional.absent()),
+                    containsInAnyOrder(s1, s2));
+            assertThat(schedStore.getSchedulesByProjectId(proj1.getId(), 100, Optional.absent()),
+                    containsInAnyOrder(s1, s2));
+        }
 
         // Re-enable the schedule and verify that lockReadySchedules processes it
         schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {

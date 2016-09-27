@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,6 +95,8 @@ public class ServerScheduleIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
 
+        int projectId;
+
         // Push a project that has daily schedule
         copyResource("acceptance/schedule/daily10.dig", projectDir.resolve("schedule.dig"));
         {
@@ -104,6 +107,8 @@ public class ServerScheduleIT
                     "-e", server.endpoint(),
                     "--schedule-from", "2291-02-06 10:00:00 +0000");
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
+            projectId = TestUtils.getProjectId(pushStatus);
+
         }
 
         // Update the project that using hourly schedule
@@ -121,6 +126,12 @@ public class ServerScheduleIT
         List<RestSchedule> scheds = client.getSchedules();
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
+
+        List<RestSchedule> projectSchedules = client.getSchedules(projectId);
+        assertThat(projectSchedules, is(scheds));
+
+        List<RestSchedule> workflowSchedules = client.getSchedules(projectId, "schedule");
+        assertThat(workflowSchedules, is(scheds));
 
         assertThat(sched.getProject().getName(), is("foobar"));
         assertThat(sched.getNextRunTime(), is(Instant.parse("2291-02-09T00:09:00Z")));  // updated to hourly

@@ -398,6 +398,25 @@ public class DigdagClient implements AutoCloseable
                 target("/api/schedules"));
     }
 
+    public List<RestSchedule> getSchedules(int projectId)
+    {
+        return getSchedules(projectId, Optional.absent());
+    }
+
+    public List<RestSchedule> getSchedules(int projectId, String workflowName) {
+        return getSchedules(projectId, Optional.of(workflowName));
+    }
+
+    public List<RestSchedule> getSchedules(int projectId, Optional<String> workflowName)
+    {
+        WebTarget target = target("/api/schedules")
+                .queryParam("project_id", projectId);
+        if (workflowName.isPresent()) {
+            target = target.queryParam("workflow_name", workflowName.get());
+        }
+        return doGet(new GenericType<List<RestSchedule>>() {}, target);
+    }
+
     public RestSchedule getSchedule(long id)
     {
         return doGet(RestSchedule.class,

@@ -1,24 +1,40 @@
 package io.digdag.server.rs;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.time.ZoneId;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.GET;
-import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleSkipRequest;
+import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.TimeZoneMap;
+import io.digdag.core.schedule.ScheduleControl;
+import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.schedule.ScheduleStore;
+import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.client.api.*;
+
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/")
 @Produces("application/json")
@@ -26,9 +42,13 @@ public class ScheduleResource
     extends AuthenticatedResource
 {
     // GET  /api/schedules                                   # list schedules of the latest revision of all projects
+    // GET  /api/schedules?project_id={id}                   # list schedules of the latest revision of a project
+    // GET  /api/schedules?project_id={id}&workflow={name}   # get the schedule of the latest revision of a workflow in a project
     // GET  /api/schedules/{id}                              # show a particular schedule (which belongs to a workflow)
     // POST /api/schedules/{id}/skip                         # skips schedules forward to a future time
     // POST /api/schedules/{id}/backfill                     # run or re-run past schedules
+    // POST /api/schedules/{id}/disable                      # disable a schedule
+    // POST /api/schedules/{id}/enable                       # enable a schedule
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
@@ -47,10 +67,33 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules")
-    public List<RestSchedule> getSchedules(@QueryParam("last_id") Integer lastId)
+    public List<RestSchedule> getSchedules(
+            @QueryParam("project_id") Integer projectId,
+            @QueryParam("workflow_name") String workflowName,
+            @QueryParam("last_id") Integer lastId
+    )
     {
-        List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
-            .getSchedules(100, Optional.fromNullable(lastId));
+        if (workflowName != null && projectId == null) {
+            throw new BadRequestException();
+        }
+
+        ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
+
+        List<StoredSchedule> scheds;
+        if (workflowName != null) {
+            StoredSchedule sched;
+            try {
+                sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
+            }
+            catch (ResourceNotFoundException e) {
+                return Collections.emptyList();
+            }
+            scheds = ImmutableList.of(sched);
+        } else if (projectId != null) {
+            scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
+        } else {
+            scheds = scheduleStore.getSchedules(100, Optional.fromNullable(lastId));
+        }
 
         ProjectMap projs = rm.getProjectStore(getSiteId())
             .getProjectsByIdList(

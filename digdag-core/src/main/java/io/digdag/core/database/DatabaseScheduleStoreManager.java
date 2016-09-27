@@ -118,6 +118,21 @@ public class DatabaseScheduleStoreManager
                     (handle, dao) -> dao.getScheduleById(siteId, schedId),
                     "schedule id=%d", schedId);
         }
+
+        @Override
+        public List<StoredSchedule> getSchedulesByProjectId(int projectId, int pageSize, Optional<Integer> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getSchedulesByProjectId(siteId, projectId, pageSize, lastId.or(0)));
+        }
+
+        @Override
+        public StoredSchedule getScheduleByProjectIdAndWorkflowName(int projectId, String workflowName)
+                throws ResourceNotFoundException
+        {
+            return requiredResource(
+                    (handle, dao) -> dao.getScheduleByProjectIdAndWorkflowName(siteId, projectId, workflowName),
+                    "schedule projectId=%d workflowName", projectId, workflowName);
+        }
     }
 
     private static class DatabaseScheduleControlStore
@@ -194,6 +209,19 @@ public class DatabaseScheduleStoreManager
 
         @SqlQuery("select s.*, wd.name as name from schedules s" +
                 " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " where s.project_id = :projectId " +
+                " and exists (" +
+                    "select * from projects proj" +
+                    " where proj.id = s.project_id" +
+                    " and proj.site_id = :siteId" +
+                ")" +
+                " and s.id > :lastId" +
+                " order by s.id asc" +
+                " limit :limit")
+        List<StoredSchedule> getSchedulesByProjectId(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("limit") int limit, @Bind("lastId") int lastId);
+
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
                 " where s.id = :schedId" +
                 " and exists (" +
                     "select * from projects proj" +
@@ -201,6 +229,17 @@ public class DatabaseScheduleStoreManager
                     " and proj.site_id = :siteId" +
                 ")")
         StoredSchedule getScheduleById(@Bind("siteId") int siteId, @Bind("schedId") int schedId);
+
+        @SqlQuery("select s.*, wd.name as name from schedules s" +
+                " join workflow_definitions wd on wd.id = s.workflow_definition_id" +
+                " where wd.name = :workflowName" +
+                " and s.project_id = :projectId" +
+                " and exists (" +
+                    "select * from projects proj" +
+                    " where proj.id = s.project_id" +
+                    " and proj.site_id = :siteId" +
+                ")")
+        StoredSchedule getScheduleByProjectIdAndWorkflowName(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("workflowName") String workflowName);
 
         @SqlQuery("select id from schedules" +
                 " where next_run_time <= :currentTime" +
