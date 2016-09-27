@@ -94,6 +94,8 @@ A common use case is formatting timestamp in different format. Digdag bundles `M
 
 .. code-block:: yaml
 
+  timezone: America/Los_Angeles
+
   +format_session_time:
     # "2016-09-24 00:00:00 -0700"
     echo>: ${moment(session_time).format("YYYY-MM-DD HH:mm:ss Z")}
@@ -103,8 +105,8 @@ A common use case is formatting timestamp in different format. Digdag bundles `M
     echo>: ${moment(session_time).utc().format("YYYY-MM-DD HH:mm:ss")}
 
   +format_tomorrow:
-    # "Sunday, September 25th 2016, 7:00:00 am"
-    echo>: ${moment(session_time).add(1, 'days').format("dddd, MMMM Do YYYY, h:mm:ss a")}
+    # "September 24, 2016 12:00 AM"
+    echo>: ${moment(session_time).add(1, 'days').format("LLL")}
 
   +get_execution_time:
     # "2016-09-24 05:24:49 -0700"

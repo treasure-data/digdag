@@ -6,3 +6,4 @@ hour_later: ${moment(session_time).add(1, 'hours').format()}
 hour_ago: ${moment(session_time).add(-1, 'hours').format()}
 utc: ${moment(session_time).utc().format()}
 format_sql_time: ${moment(session_time).format("YYYY-MM-DD HH:mm:ss Z")}
+format_LLL: ${moment(session_time).format("LLL")}
