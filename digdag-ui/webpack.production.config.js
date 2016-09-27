@@ -1,6 +1,6 @@
-var webpack = require('webpack');
-var path = require('path');
-var loaders = require('./webpack.loaders');
+var webpack = require('webpack')
+var path = require('path')
+var loaders = require('./webpack.loaders')
 var ManifestPlugin = require('./lib/ManifestPlugin')
 var getSHA1 = require('./lib/git-sha1')
 
@@ -27,20 +27,20 @@ module.exports = {
     new webpack.optimize.DedupePlugin(),
     new webpack.optimize.OccurenceOrderPlugin(),
     new webpack.ProvidePlugin({
-      $: "jquery",
-      jQuery: "jquery",
-      "window.jQuery": "jquery"
+      $: 'jquery',
+      jQuery: 'jquery',
+      'window.jQuery': 'jquery'
     }),
     new webpack.DefinePlugin({
-      'process.env':{
+      'process.env': {
         'NODE_ENV': JSON.stringify('production')
       }
     }),
     new webpack.optimize.UglifyJsPlugin({
-      compress:{
+      compress: {
         warnings: false
       }
     }),
     new ManifestPlugin({ sha, timestamp })
   ]
-};
+}

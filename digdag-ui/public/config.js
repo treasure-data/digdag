@@ -3,9 +3,9 @@ var DIGDAG_CONFIG = {
   td: {
     useTD: false,
     apiV4: 'https://api-console.treasuredata.com/v4',
-    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers'},
-    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId; },
-    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId; }
+    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers' },
+    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId },
+    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId }
   },
   logoutUrl: '/',
   navbar: {
@@ -13,8 +13,8 @@ var DIGDAG_CONFIG = {
     brand: 'Digdag',
     className: 'navbar-inverse',
     style: {
-      backgroundColor: '#2B353F',
-    },
+      backgroundColor: '#2B353F'
+    }
   },
   auth: {
     title: 'Authentication',
@@ -25,13 +25,13 @@ var DIGDAG_CONFIG = {
         type: 'text',
         validate: function (args) {
           if (args.value && args.value.trim()) {
-            args.valid(args.key);
+            args.valid(args.key)
           } else {
-            args.invalid(args.key, args.key + ' must not be empty');
+            args.invalid(args.key, args.key + ' must not be empty')
           }
         },
         scrub: function (args) {
-          return args.value.trim();
+          return args.value.trim()
         }
       },
       {
@@ -40,18 +40,18 @@ var DIGDAG_CONFIG = {
         type: 'password',
         validate: function (args) {
           if (args.value && args.value.trim()) {
-            args.valid(args.key);
+            args.valid(args.key)
           } else {
-            args.invalid(args.key, args.key + ' must not be empty');
+            args.invalid(args.key, args.key + ' must not be empty')
           }
         },
         scrub: function (args) {
-          return args.value.trim();
+          return args.value.trim()
         }
       }
-    ],
+    ]
   },
   headers: function (args) {
-    return {};
+    return {}
   }
 }
