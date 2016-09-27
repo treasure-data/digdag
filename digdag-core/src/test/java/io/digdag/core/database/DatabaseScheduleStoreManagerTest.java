@@ -1,13 +1,10 @@
 package io.digdag.core.database;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Matchers;
-import org.skife.jdbi.v2.IDBI;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -300,7 +297,7 @@ public class DatabaseScheduleStoreManagerTest
 
         // Disable one of the schedules and verify that lockReadySchedules skips it
         schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
-            store.disableSchedule(schedule.getId(), Instant.now());
+            store.disableSchedule(schedule.getId());
             return schedule;
         });
         {

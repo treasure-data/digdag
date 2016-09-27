@@ -153,9 +153,9 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public boolean disableSchedule(int schedId, Instant timestamp)
+        public boolean disableSchedule(int schedId)
         {
-            int n = dao.disableSchedule(schedId, timestamp.getEpochSecond());
+            int n = dao.disableSchedule(schedId);
             return n > 0;
         }
 
@@ -164,6 +164,12 @@ public class DatabaseScheduleStoreManager
         {
             int n = dao.enableSchedule(schedId);
             return n > 0;
+        }
+
+        @Override
+        public StoredSchedule getSchedule(int schedId)
+        {
+            return dao.getScheduleByIdInternal(schedId);
         }
     }
 
@@ -219,9 +225,9 @@ public class DatabaseScheduleStoreManager
         int updateNextScheduleTime(@Bind("id") int id, @Bind("nextRunTime") long nextRunTime, @Bind("nextScheduleTime") long nextScheduleTime, @Bind("lastSessionTime") long lastSessionTime);
 
         @SqlUpdate("update schedules" +
-                " set disabled_at = :currentTime, updated_at = now()" +
+                " set disabled_at = now(), updated_at = now()" +
                 " where id = :id")
-        int disableSchedule(@Bind("id") int id, @Bind("currentTime") long currentTime);
+        int disableSchedule(@Bind("id") int id);
 
         @SqlUpdate("update schedules" +
                 " set disabled_at = null, updated_at = now()" +
@@ -252,7 +258,7 @@ public class DatabaseScheduleStoreManager
                 .workflowName(r.getString("name"))
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
-                .disabledAt(getOptionalLong(r, "disabled_at").transform(Instant::ofEpochSecond))
+                .disabledAt(getOptionalTimestampInstant(r, "disabled_at"))
                 .build();
         }
     }

@@ -153,11 +153,8 @@ public class ScheduleResource
 
         StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
-            Instant now = Instant.now();
-            lockedSched.disableSchedule(now);
-            return ImmutableStoredSchedule.builder().from(storedSchedule)
-                    .disabledAt(now)
-                    .build();
+            lockedSched.disableSchedule();
+            return lockedSched.get();
         });
 
         return RestModels.scheduleSummary(updated, timeZone);
@@ -176,9 +173,7 @@ public class ScheduleResource
         StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
             lockedSched.enableSchedule();
-            return ImmutableStoredSchedule.builder().from(storedSchedule)
-                    .disabledAt(Optional.absent())
-                    .build();
+            return lockedSched.get();
         });
 
         return RestModels.scheduleSummary(updated, timeZone);

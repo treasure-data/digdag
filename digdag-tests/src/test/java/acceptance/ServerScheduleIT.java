@@ -4,14 +4,12 @@ import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
-import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
