@@ -1,0 +1,7 @@
+int: "1"
+float: "0.2"
+#empty: null
+str: "a"
+array: "[1]"  # see also #25
+undefined_value: ""
+null_value: ""

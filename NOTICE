@@ -54,6 +54,10 @@ https://www.eclipse.org/jetty
 jDBI is licensed under Apache License, Version 2.0 by Brian McCallister.
 http://jdbi.org/
 
+Moment.js is licensed under MIT license by Tim Wood, Iskren Chernev,
+Moment.js contributors.
+http://momentjs.com/
+
 Guice is licensed under Apache License, Version 2.0 by Google Inc.
 https://github.com/google/guice
 

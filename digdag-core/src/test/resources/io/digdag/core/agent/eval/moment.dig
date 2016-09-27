@@ -1,0 +1,8 @@
+session_time: 2016-03-13T10:00:00Z
+default_format: ${moment(session_time).format()}
+tomorrow: ${moment(session_time).add(1, 'days').format()}
+yesterday: ${moment(session_time).add(-1, 'days').format()}
+hour_later: ${moment(session_time).add(1, 'hours').format()}
+hour_ago: ${moment(session_time).add(-1, 'hours').format()}
+utc: ${moment(session_time).utc().format()}
+format_sql_time: ${moment(session_time).format("YYYY-MM-DD HH:mm:ss Z")}
