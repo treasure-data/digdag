@@ -13,5 +13,5 @@ public interface ScheduleControlStore
 
     boolean enableSchedule(int schedId);
 
-    StoredSchedule getSchedule(int schedId);
+    StoredSchedule getScheduleById(int schedId);
 }

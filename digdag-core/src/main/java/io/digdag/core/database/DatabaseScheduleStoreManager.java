@@ -167,7 +167,7 @@ public class DatabaseScheduleStoreManager
         }
 
         @Override
-        public StoredSchedule getSchedule(int schedId)
+        public StoredSchedule getScheduleById(int schedId)
         {
             return dao.getScheduleByIdInternal(schedId);
         }

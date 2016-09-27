@@ -48,12 +48,12 @@ public class ScheduleControl
     public void enableSchedule()
     {
         store.enableSchedule(schedule.getId());
-        schedule = store.getSchedule(schedule.getId());
+        schedule = store.getScheduleById(schedule.getId());
     }
 
     public void disableSchedule()
     {
         store.disableSchedule(schedule.getId());
-        schedule = store.getSchedule(schedule.getId());
+        schedule = store.getScheduleById(schedule.getId());
     }
 }
