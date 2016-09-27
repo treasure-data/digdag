@@ -85,6 +85,31 @@ Name                                 Example (hourly schedule)  Example (daily s
 
 last_session_time is the timestamp of the last schedule. If the schedule is hourly, it's the last hour. If the schedule is daily, it's yesterday. It doesn't matter whether the last schedule actually ran or not. It's simply set to the last timestamp calculated from the current session time.
 
+Calculating variables
+----------------------------------
+
+You can use basic JavaScript scripts in ``${...}`` syntax to calculate variables.
+
+A common use case is formatting timestamp in different format. Digdag bundles `Moment.js <http://momentjs.com/>`_ for time calculation.
+
+.. code-block:: yaml
+
+  +format_session_time:
+    # "2016-09-24 00:00:00 -0700"
+    echo>: ${moment(session_time).format("YYYY-MM-DD HH:mm:ss Z")}
+
+  +format_in_utc:
+    # "2016-09-24 07:00:00"
+    echo>: ${moment(session_time).utc().format("YYYY-MM-DD HH:mm:ss")}
+
+  +format_tomorrow:
+    # "Sunday, September 25th 2016, 7:00:00 am"
+    echo>: ${moment(session_time).add(1, 'days').format("dddd, MMMM Do YYYY, h:mm:ss a")}
+
+  +get_execution_time:
+    # "2016-09-24 05:24:49 -0700"
+    echo>: ${moment().format("YYYY-MM-DD HH:mm:ss Z")}
+
 Defining variables
 ----------------------------------
 
