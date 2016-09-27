@@ -26,7 +26,7 @@ import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism.css'
 import {PrismCode} from 'react-prism'
 
-import type {
+import {
   HeadersProvider,
   ProjectArchive,
   Project,
@@ -35,9 +35,10 @@ import type {
   LogFileHandle,
   Credentials,
   Attempt,
-  Task
+  Task,
+  model,
+  setup as setupModel
 } from './model'
-import {model, setup as setupModel} from './model'
 
 type Scrubber = (args:{key: string, value: string}) => string;
 
@@ -98,6 +99,7 @@ type AuthItem = {
   scrub: Scrubber;
 }
 
+/* eslint-disable */
 type ConsoleConfig = {
   url: string;
   td: {
@@ -121,6 +123,7 @@ type ConsoleConfig = {
 }
 
 declare var DIGDAG_CONFIG:ConsoleConfig;
+/* eslint-enable */
 
 class CacheLoader extends React.Component {
   state = {
@@ -165,14 +168,14 @@ class ProjectListView extends React.Component {
       <div className='table-responsive'>
         <table className='table table-striped table-hover table-condensed'>
           <thead>
-          <tr>
-            <th>Name</th>
-            <th>Updated</th>
-            <th>Revision</th>
-          </tr>
+            <tr>
+              <th>Name</th>
+              <th>Updated</th>
+              <th>Revision</th>
+            </tr>
           </thead>
           <tbody>
-          {projectRows}
+            {projectRows}
           </tbody>
         </table>
       </div>
@@ -198,13 +201,13 @@ class WorkflowListView extends React.Component {
       <div className='table-responsive'>
         <table className='table table-striped table-hover table-condensed'>
           <thead>
-          <tr>
-            <th>Name</th>
-            <th>Revision</th>
-          </tr>
+            <tr>
+              <th>Name</th>
+              <th>Revision</th>
+            </tr>
           </thead>
           <tbody>
-          {rows}
+            {rows}
           </tbody>
         </table>
       </div>
@@ -310,17 +313,17 @@ class AttemptListView extends React.Component {
         <div className='table-responsive'>
           <table className='table table-striped table-hover table-condensed'>
             <thead>
-            <tr>
-              <th>ID</th>
-              <th>Workflow</th>
-              <th>Created</th>
-              <th>Session Time</th>
-              <th>Duration</th>
-              <th>Status</th>
-            </tr>
+              <tr>
+                <th>ID</th>
+                <th>Workflow</th>
+                <th>Created</th>
+                <th>Session Time</th>
+                <th>Duration</th>
+                <th>Status</th>
+              </tr>
             </thead>
             <tbody>
-            {rows}
+              {rows}
             </tbody>
           </table>
         </div>
@@ -355,19 +358,19 @@ class SessionListView extends React.Component {
       <div className='table-responsive'>
         <table className='table table-striped table-hover table-condensed'>
           <thead>
-          <tr>
-            <th>ID</th>
-            <th>Project</th>
-            <th>Workflow</th>
-            <th>Revision</th>
-            <th>Session Time</th>
-            <th>Last Attempt</th>
-            <th>Last Attempt Duration</th>
-            <th>Status</th>
-          </tr>
+            <tr>
+              <th>ID</th>
+              <th>Project</th>
+              <th>Workflow</th>
+              <th>Revision</th>
+              <th>Session Time</th>
+              <th>Last Attempt</th>
+              <th>Last Attempt Duration</th>
+              <th>Status</th>
+            </tr>
           </thead>
           <tbody>
-          {rows}
+            {rows}
           </tbody>
         </table>
       </div>
@@ -478,26 +481,26 @@ class ProjectView extends React.Component {
           <h2>Project</h2>
           <table className='table table-condensed'>
             <tbody>
-            <tr>
-              <td>ID</td>
-              <td>{project.id}</td>
-            </tr>
-            <tr>
-              <td>Name</td>
-              <td>{project.name}</td>
-            </tr>
-            <tr>
-              <td>Revision</td>
-              <td>{project.revision}</td>
-            </tr>
-            <tr>
-              <td>Created</td>
-              <td>{formatFullTimestamp(project.createdAt)}</td>
-            </tr>
-            <tr>
-              <td>Updated</td>
-              <td>{formatFullTimestamp(project.updatedAt)}</td>
-            </tr>
+              <tr>
+                <td>ID</td>
+                <td>{project.id}</td>
+              </tr>
+              <tr>
+                <td>Name</td>
+                <td>{project.name}</td>
+              </tr>
+              <tr>
+                <td>Revision</td>
+                <td>{project.revision}</td>
+              </tr>
+              <tr>
+                <td>Created</td>
+                <td>{formatFullTimestamp(project.createdAt)}</td>
+              </tr>
+              <tr>
+                <td>Updated</td>
+                <td>{formatFullTimestamp(project.updatedAt)}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -573,22 +576,22 @@ class WorkflowView extends React.Component {
           <h2>Workflow</h2>
           <table className='table table-condensed'>
             <tbody>
-            <tr>
-              <td>ID</td>
-              <td>{wf.id}</td>
-            </tr>
-            <tr>
-              <td>Name</td>
-              <td>{wf.name}</td>
-            </tr>
-            <tr>
-              <td>Project</td>
-              <td><Link to={`/projects/${wf.project.id}`}>{wf.project.name}</Link></td>
-            </tr>
-            <tr>
-              <td>Revision</td>
-              <td>{wf.revision}</td>
-            </tr>
+              <tr>
+                <td>ID</td>
+                <td>{wf.id}</td>
+              </tr>
+              <tr>
+                <td>Name</td>
+                <td>{wf.name}</td>
+              </tr>
+              <tr>
+                <td>Project</td>
+                <td><Link to={`/projects/${wf.project.id}`}>{wf.project.name}</Link></td>
+              </tr>
+              <tr>
+                <td>Revision</td>
+                <td>{wf.revision}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -656,7 +659,7 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
 }
 
 function enumerateTaskFiles (node:Object, files:Array<TaskFile>, projectArchive:ProjectArchive) {
-  if (node.constructor == Object) {
+  if (typeof node.constructor === 'object') {
     let {taskType, command} = task(node)
     const taskFile = resolveTaskFile(taskType, command, node, projectArchive)
     if (taskFile) {
@@ -750,38 +753,38 @@ class AttemptView extends React.Component {
         <h2>Attempt</h2>
         <table className='table table-condensed'>
           <tbody>
-          <tr>
-            <td>ID</td>
-            <td>{attempt.id}</td>
-          </tr>
-          <tr>
-            <td>Project</td>
-            <td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td>
-          </tr>
-          <tr>
-            <td>Workflow</td>
-            <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
-          </tr>
-          <tr>
-            <td>Session ID</td>
-            <td><Link to={`/sessions/${attempt.sessionId}`}>{attempt.sessionId}</Link></td>
-          </tr>
-          <tr>
-            <td>Session UUID</td>
-            <td>{formatSessionTime(attempt.sessionUuid)}</td>
-          </tr>
-          <tr>
-            <td>Session Time</td>
-            <td>{formatSessionTime(attempt.sessionTime)}</td>
-          </tr>
-          <tr>
-            <td>Created</td>
-            <td>{formatTimestamp(attempt.createdAt)}</td>
-          </tr>
-          <tr>
-            <td>Status</td>
-            <td>{attemptStatus(attempt)}</td>
-          </tr>
+            <tr>
+              <td>ID</td>
+              <td>{attempt.id}</td>
+            </tr>
+            <tr>
+              <td>Project</td>
+              <td><Link to={`/projects/${attempt.project.id}`}>{attempt.project.name}</Link></td>
+            </tr>
+            <tr>
+              <td>Workflow</td>
+              <td><Link to={`/workflows/${attempt.workflow.id}`}>{attempt.workflow.name}</Link></td>
+            </tr>
+            <tr>
+              <td>Session ID</td>
+              <td><Link to={`/sessions/${attempt.sessionId}`}>{attempt.sessionId}</Link></td>
+            </tr>
+            <tr>
+              <td>Session UUID</td>
+              <td>{formatSessionTime(attempt.sessionUuid)}</td>
+            </tr>
+            <tr>
+              <td>Session Time</td>
+              <td>{formatSessionTime(attempt.sessionTime)}</td>
+            </tr>
+            <tr>
+              <td>Created</td>
+              <td>{formatTimestamp(attempt.createdAt)}</td>
+            </tr>
+            <tr>
+              <td>Status</td>
+              <td>{attemptStatus(attempt)}</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -794,42 +797,42 @@ const SessionView = (props:{session: Session}) =>
     <h2>Session</h2>
     <table className='table table-condensed'>
       <tbody>
-      <tr>
-        <td>ID</td>
-        <td>{props.session.id}</td>
-      </tr>
-      <tr>
-        <td>Project</td>
-        <td><Link to={`/projects/${props.session.project.id}`}>{props.session.project.name}</Link></td>
-      </tr>
-      <tr>
-        <td>Workflow</td>
-        <td><Link to={`/workflows/${props.session.workflow.id}`}>{props.session.workflow.name}</Link></td>
-      </tr>
-      <tr>
-        <td>Revision</td>
-        <td><SessionRevisionView session={props.session} /></td>
-      </tr>
-      <tr>
-        <td>Session UUID</td>
-        <td>{props.session.sessionUuid}</td>
-      </tr>
-      <tr>
-        <td>Session Time</td>
-        <td>{formatSessionTime(props.session.sessionTime)}</td>
-      </tr>
-      <tr>
-        <td>Status</td>
-        <td><SessionStatusView session={props.session} /></td>
-      </tr>
-      <tr>
-        <td>Last Attempt</td>
-        <td>{props.session.lastAttempt ? formatFullTimestamp(props.session.lastAttempt.createdAt) : null}</td>
-      </tr>
-      <tr>
-        <td>Last Attempt Duration:</td>
-        <td>{props.session.lastAttempt ? formatDuration(props.session.lastAttempt.createdAt, props.session.lastAttempt.finishedAt) : null}</td>
-      </tr>
+        <tr>
+          <td>ID</td>
+          <td>{props.session.id}</td>
+        </tr>
+        <tr>
+          <td>Project</td>
+          <td><Link to={`/projects/${props.session.project.id}`}>{props.session.project.name}</Link></td>
+        </tr>
+        <tr>
+          <td>Workflow</td>
+          <td><Link to={`/workflows/${props.session.workflow.id}`}>{props.session.workflow.name}</Link></td>
+        </tr>
+        <tr>
+          <td>Revision</td>
+          <td><SessionRevisionView session={props.session} /></td>
+        </tr>
+        <tr>
+          <td>Session UUID</td>
+          <td>{props.session.sessionUuid}</td>
+        </tr>
+        <tr>
+          <td>Session Time</td>
+          <td>{formatSessionTime(props.session.sessionTime)}</td>
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td><SessionStatusView session={props.session} /></td>
+        </tr>
+        <tr>
+          <td>Last Attempt</td>
+          <td>{props.session.lastAttempt ? formatFullTimestamp(props.session.lastAttempt.createdAt) : null}</td>
+        </tr>
+        <tr>
+          <td>Last Attempt Duration:</td>
+          <td>{props.session.lastAttempt ? formatDuration(props.session.lastAttempt.createdAt, props.session.lastAttempt.finishedAt) : null}</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -923,34 +926,34 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
   <div className='table-responsive'>
     <table className='table table-striped table-hover table-condensed'>
       <thead>
-      <tr>
-        <th>ID</th>
-        <th>Job</th>
-        <th>Name</th>
-        <th>Parent ID</th>
-        <th>Updated</th>
-        <th>State</th>
-        <th>Retry</th>
-        <th>State Params</th>
-        <th>Store Params</th>
-      </tr>
+        <tr>
+          <th>ID</th>
+          <th>Job</th>
+          <th>Name</th>
+          <th>Parent ID</th>
+          <th>Updated</th>
+          <th>State</th>
+          <th>Retry</th>
+          <th>State Params</th>
+          <th>Store Params</th>
+        </tr>
       </thead>
       <tbody>
-      {
-        props.tasks.map(task =>
-          <tr key={task.id}>
-            <td>{task.id}</td>
-            <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
-            <td>{task.fullName}</td>
-            <td>{task.parentId}</td>
-            <td>{formatTimestamp(task.updatedAt)}</td>
-            <td>{formatTaskState(task.state)}</td>
-            <td>{formatTimestamp(task.retryAt)}</td>
-            <td><ParamsView params={task.stateParams} /></td>
-            <td><ParamsView params={task.storeParams} /></td>
-          </tr>
-        )
-      }
+        {
+          props.tasks.map(task =>
+            <tr key={task.id}>
+              <td>{task.id}</td>
+              <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
+              <td>{task.fullName}</td>
+              <td>{task.parentId}</td>
+              <td>{formatTimestamp(task.updatedAt)}</td>
+              <td>{formatTaskState(task.state)}</td>
+              <td>{formatTimestamp(task.retryAt)}</td>
+              <td><ParamsView params={task.stateParams} /></td>
+              <td><ParamsView params={task.storeParams} /></td>
+            </tr>
+          )
+        }
       </tbody>
     </table>
   </div>
@@ -1075,7 +1078,7 @@ class AttemptLogsView extends React.Component {
   }
 
   logFiles () {
-    if (this.state.files.length == 0) {
+    if (!this.state.files.length) {
       return <pre />
     }
     return this.state.files.map(file => {
@@ -1436,7 +1439,7 @@ class LoginPage extends React.Component {
   valid (credentials:Credentials, key:string, value:string) {
     return (key:string) => {
       credentials[key] = value
-      if (DIGDAG_CONFIG.auth.items.length == Object.keys(credentials).length) {
+      if (DIGDAG_CONFIG.auth.items.length === Object.keys(credentials).length) {
         this.props.onSubmit(credentials)
       }
     }
@@ -1571,7 +1574,7 @@ export default class Console extends React.Component {
 
   constructor (props:any) {
     super(props)
-    if (DIGDAG_CONFIG.auth.items.length == 0) {
+    if (!DIGDAG_CONFIG.auth.items.length) {
       this.state = {authenticated: true}
       this.setup({})
     } else {

@@ -55,3 +55,5 @@ var DIGDAG_CONFIG = {
     return {}
   }
 }
+
+window.DIGDAG_CONFIG = DIGDAG_CONFIG

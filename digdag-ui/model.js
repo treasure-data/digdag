@@ -113,7 +113,7 @@ export class ProjectArchive {
     for (let file of files) {
       // If the archive has a digdag.yml (which is now just a normal file and no longer interpreted as a project definition) we assume that
       // the archive might stem from that legacy era and also contain <workflow>.yml files.
-      if (file.name == 'digdag.yml') {
+      if (file.name === 'digdag.yml') {
         this.legacy = true
       }
       this.fileMap.set(file.name, file)
@@ -184,8 +184,9 @@ export class Model {
     }
     workflow = this.get(`workflows/${id}`)
     this.workflowCache.set(id, workflow)
-    workflow.catch(error => {
+    workflow.catch((error) => {
       this.workflowCache.delete(id)
+      throw error
     })
     return workflow
   }

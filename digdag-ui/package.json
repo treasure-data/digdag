@@ -61,6 +61,10 @@
     "webpack-dev-server": "1.14.1"
   },
   "standard": {
-    "parser": "babel-eslint"
+    "parser": "babel-eslint",
+    "global": [
+      "fetch",
+      "DIGDAG_CONFIG"
+    ]
   }
 }
