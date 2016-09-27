@@ -25,7 +25,9 @@ import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism.css'
 import {PrismCode} from 'react-prism'
 
-import {
+/* eslint-disable */
+// see https://github.com/gajus/eslint-plugin-flowtype/issues/72
+import type {
   Attempt,
   Credentials,
   HeadersProvider,
@@ -35,10 +37,14 @@ import {
   ProjectArchive,
   Session,
   Task,
-  Workflow,
+  Workflow
+} from './model'
+
+import {
   model,
   setup as setupModel
 } from './model'
+/* eslint-enable */
 
 type Scrubber = (args:{key: string, value: string}) => string
 
@@ -100,6 +106,7 @@ type AuthItem = {
 }
 
 /* eslint-disable */
+// because of the global type, this results in an eslint error (when it's not)
 type ConsoleConfig = {
   url: string;
   td: {
