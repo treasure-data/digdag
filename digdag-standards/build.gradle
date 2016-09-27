@@ -25,6 +25,18 @@ dependencies {
     // aws
     compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
 
+    // bigquery
+    compile 'com.google.cloud:google-cloud-bigquery:0.3.0'
+
+    // dependency conflict resolution
+    compile 'joda-time:joda-time:2.9.4'
+    compile 'com.google.auth:google-auth-library-credentials:0.4.0'
+    compile 'com.google.auth:google-auth-library-oauth2-http:0.4.0'
+    compile 'com.google.http-client:google-http-client:1.22.0'
+    compile 'com.google.http-client:google-http-client-jackson2:1.22.0'
+    compile 'com.google.oauth-client:google-oauth-client:1.22.0'
+    compile 'com.google.code.findbugs:jsr305:3.0.1'
+
     // Newer version of jetty-client with some important bugfixes.
     // jetty-client is used by td-client-java, and ideally we would bump the version there but
     // td-client-java still targets JDK 7 and jetty-client 9.3.x targets JDK 8.

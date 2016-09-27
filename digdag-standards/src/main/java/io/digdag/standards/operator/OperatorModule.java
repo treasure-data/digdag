@@ -5,30 +5,20 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.standards.operator.IfOperatorFactory;
-import io.digdag.standards.operator.FailOperatorFactory;
-import io.digdag.standards.operator.EchoOperatorFactory;
-import io.digdag.standards.operator.NopOperatorFactory;
-import io.digdag.standards.operator.PyOperatorFactory;
-import io.digdag.standards.operator.RbOperatorFactory;
-import io.digdag.standards.operator.ShOperatorFactory;
-import io.digdag.standards.operator.MailOperatorFactory;
-import io.digdag.standards.operator.LoopOperatorFactory;
-import io.digdag.standards.operator.ForEachOperatorFactory;
-import io.digdag.standards.operator.EmbulkOperatorFactory;
+import io.digdag.standards.operator.bq.BqOperatorFactory;
 import io.digdag.standards.operator.pg.PgOperatorFactory;
+import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
+import io.digdag.standards.operator.td.TdLoadOperatorFactory;
 import io.digdag.standards.operator.td.TdOperatorFactory;
 import io.digdag.standards.operator.td.TdPartialDeleteOperatorFactory;
 import io.digdag.standards.operator.td.TdRunOperatorFactory;
-import io.digdag.standards.operator.td.TdLoadOperatorFactory;
-import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdTableExportOperatorFactory;
 import io.digdag.standards.operator.td.TdWaitOperatorFactory;
 import io.digdag.standards.operator.td.TdWaitTableOperatorFactory;
 
 public class OperatorModule
-    implements Module
+        implements Module
 {
     @Override
     public void configure(Binder binder)
@@ -55,11 +45,12 @@ public class OperatorModule
         addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
         addStandardOperatorFactory(binder, PgOperatorFactory.class);
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
+        addStandardOperatorFactory(binder, BqOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)
     {
         Multibinder.newSetBinder(binder, OperatorFactory.class)
-            .addBinding().to(factory).in(Scopes.SINGLETON);
+                .addBinding().to(factory).in(Scopes.SINGLETON);
     }
 }
