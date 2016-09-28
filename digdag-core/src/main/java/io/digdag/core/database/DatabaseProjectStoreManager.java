@@ -536,13 +536,12 @@ public class DatabaseProjectStoreManager
                 " join (" +
                     // list id of active (non-deleted) latest revisions in this site.
                     // this is not efficient but gave up optimization on h2.
-                    "select project_id, max(id) as revision_id from revisions" +
-                    " where project_id in (" +
-                        "select id from projects" +
-                        " where site_id = :siteId" +
-                        " and deleted_at is null" +
-                        ")" +
-                    " group by project_id" +
+                    "select r.project_id, max(r.id) as revision_id" +
+                    " from revisions r" +
+                    " join projects p on r.project_id = p.id" +
+                    " where p.site_id = :siteId" +
+                    " and p.deleted_at is null" +
+                    " group by r.project_id" +
                 ") a on wd.revision_id = a.revision_id" +
                 " join revisions rev on a.revision_id = rev.id" +
                 " join projects proj on a.project_id = proj.id" +
@@ -574,14 +573,12 @@ public class DatabaseProjectStoreManager
                     "select * from workflow_definitions wf" +
                     " where wf.revision_id = any(array(" +
                         // list id of active (non-deleted) latest revisions in this site
-                        "select max(id) from revisions" +
-                        " where project_id = any(array(" +
-                            "select id from projects" +
-                            " where site_id = :siteId" +
-                            " and deleted_at is null" +
-                            "))" +
-                        " group by project_id" +
-                        "))" +
+                        "select max(r.id)" +
+                        " from revisions r" +
+                        " join projects p on r.project_id = p.id" +
+                        " where p.site_id = :siteId" +
+                        " and p.deleted_at is null" +
+                        " group by r.project_id" +
                     " and wf.id > :lastId" +
                     " order by wf.id" +
                     " limit :limit" +
