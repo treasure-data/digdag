@@ -4,9 +4,11 @@ import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
@@ -18,8 +20,12 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import javax.ws.rs.NotFoundException;
+
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.copyResource;
@@ -33,6 +39,9 @@ public class ServerScheduleIT
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     private Path config;
     private Path projectDir;
@@ -49,6 +58,13 @@ public class ServerScheduleIT
                 .host(server.host())
                 .port(server.port())
                 .build();
+    }
+
+    @After
+    public void shutdown()
+            throws Exception
+    {
+        client.close();
     }
 
     @Test
@@ -127,11 +143,11 @@ public class ServerScheduleIT
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
 
-        List<RestSchedule> projectSchedules = client.getSchedules(projectId);
+        List<RestSchedule> projectSchedules = client.getSchedules(projectId, Optional.absent());
         assertThat(projectSchedules, is(scheds));
 
-        List<RestSchedule> workflowSchedules = client.getSchedules(projectId, "schedule");
-        assertThat(workflowSchedules, is(scheds));
+        RestSchedule workflowSchedule = client.getSchedule(projectId, "schedule");
+        assertThat(workflowSchedule, is(sched));
 
         assertThat(sched.getProject().getName(), is("foobar"));
         assertThat(sched.getNextRunTime(), is(Instant.parse("2291-02-09T00:09:00Z")));  // updated to hourly
@@ -193,5 +209,55 @@ public class ServerScheduleIT
         assertThat(schedulesAfterPush.size(), is(1));
         assertThat(schedulesAfterPush.get(0).getId(), is(sched.getId()));
         assertThat(schedulesAfterPush.get(0).getDisabledAt(), is(disabled.getDisabledAt()));
+    }
+
+    @Test
+    public void deleteProjectAndLookupByProjectId()
+            throws Exception
+    {
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
+        int projectId = pushProject(server.endpoint(), projectDir);
+
+        // Delete project
+        client.deleteProject(projectId);
+
+        // Schedules are not available
+        assertThat(client.getSchedules().size(), is(0));
+
+        exception.expectMessage(containsString("HTTP 404 Not Found"));
+        exception.expect(NotFoundException.class);
+        client.getSchedules(projectId, Optional.absent());
+    }
+
+    @Test
+    public void deleteProjectAndLookByName()
+            throws Exception
+    {
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
+        int projectId = pushProject(server.endpoint(), projectDir);
+
+        // Delete project
+        client.deleteProject(projectId);
+
+        // Schedules are not available
+        exception.expectMessage(containsString("HTTP 404 Not Found"));
+        exception.expect(NotFoundException.class);
+        client.getSchedule(projectId, "schedule");
+    }
+
+    @Test
+    public void getScheduleByInvalidName()
+            throws Exception
+    {
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
+        int projectId = pushProject(server.endpoint(), projectDir);
+
+        exception.expectMessage(containsString("schedule not found in the latest revision"));
+        exception.expectMessage(not(containsString("HTTP 404 Not Found")));
+        exception.expect(NotFoundException.class);
+        client.getSchedule(projectId, "hieizanenryakuzi");
     }
 }

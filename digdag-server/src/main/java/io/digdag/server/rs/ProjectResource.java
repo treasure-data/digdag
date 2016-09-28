@@ -41,6 +41,7 @@ import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestRevision;
+import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSecretMetadata;
 import io.digdag.client.api.RestSession;
@@ -64,8 +65,10 @@ import io.digdag.core.repository.Revision;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.schedule.ScheduleStore;
 import io.digdag.core.schedule.ScheduleStoreManager;
 import io.digdag.core.schedule.SchedulerManager;
+import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
@@ -124,6 +127,8 @@ public class ProjectResource
     // GET  /api/projects/{id}/workflows?revision=<name> # list workflows of a past revision of a project
     // GET  /api/projects/{id}/workflows?name=<name>     # lookup a workflow of a project by name
     // GET  /api/projects/{id}/workflows/<name>          # lookup a workflow of a project by name
+    // GET  /api/projects/{id}/schedules?                # list schedules of the latest revision of a project
+    // GET  /api/projects/{id}/schedules?workflow={name} # get the schedule of the latest revision of a workflow in a project
     // GET  /api/projects/{id}/sessions                  # list sessions for a project
     // GET  /api/projects/{id}/sessions?workflow<name>   # list sessions for a workflow in the project
     // GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
@@ -326,6 +331,37 @@ public class ProjectResource
                 .map(def -> RestModels.workflowDefinition(proj, rev, def))
                 .collect(Collectors.toList());
         }
+    }
+
+    @GET
+    @Path("/api/projects/{id}/schedules")
+    public List<RestSchedule> getSchedules(
+            @PathParam("id") int projectId,
+            @QueryParam("workflow") String workflowName,
+            @QueryParam("last_id") Integer lastId)
+        throws ResourceNotFoundException
+    {
+        ProjectStore projectStore = rm.getProjectStore(getSiteId());
+        ScheduleStore scheduleStore = sm.getScheduleStore(getSiteId());
+
+        ensureNotDeletedProject(projectStore.getProjectById(projectId));
+
+        List<StoredSchedule> scheds;
+        if (workflowName != null) {
+            StoredSchedule sched;
+            try {
+                sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
+            }
+            catch (ResourceNotFoundException e) {
+                return ImmutableList.of();
+            }
+            scheds = ImmutableList.of(sched);
+        }
+        else {
+            scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
+        }
+
+        return ScheduleResource.restSchedules(projectStore, scheds);
     }
 
     @GET

@@ -398,23 +398,35 @@ public class DigdagClient implements AutoCloseable
                 target("/api/schedules"));
     }
 
-    public List<RestSchedule> getSchedules(int projectId)
+    public List<RestSchedule> getSchedules(Optional<Integer> lastId)
     {
-        return getSchedules(projectId, Optional.absent());
+        return doGet(new GenericType<List<RestSchedule>>() { },
+                target("/api/schedules")
+                .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSchedule> getSchedules(int projectId, String workflowName) {
-        return getSchedules(projectId, Optional.of(workflowName));
+    public List<RestSchedule> getSchedules(int projectId, Optional<Integer> lastId)
+    {
+        return doGet(new GenericType<List<RestSchedule>>() {},
+                target("/api/projects/{id}/schedules")
+                .resolveTemplate("id", projectId)
+                .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSchedule> getSchedules(int projectId, Optional<String> workflowName)
+    public RestSchedule getSchedule(int projectId, String workflowName)
     {
-        WebTarget target = target("/api/schedules")
-                .queryParam("project_id", projectId);
-        if (workflowName.isPresent()) {
-            target = target.queryParam("workflow", workflowName.get());
+        List<RestSchedule> scheds = doGet(new GenericType<List<RestSchedule>>() {},
+                target("/api/projects/{id}/schedules")
+                .resolveTemplate("id", projectId)
+                .queryParam("workflow", workflowName));
+        if (scheds.isEmpty()) {
+            throw new NotFoundException(String.format(ENGLISH,
+                        "schedule not found in the latest revision of project id = %d: %s",
+                        projectId, workflowName));
         }
-        return doGet(new GenericType<List<RestSchedule>>() {}, target);
+        else {
+            return scheds.get(0);
+        }
     }
 
     public RestSchedule getSchedule(long id)
@@ -727,9 +739,9 @@ public class DigdagClient implements AutoCloseable
 
     private void doDelete(WebTarget target)
     {
-        target.request("application/json")
-            .headers(headers.get())
-            .delete();
+        // must consume body to avoid this error from httpclient:
+        // "Make sure to release the connection before allocating another one."
+        doDelete(Object.class, target);
     }
 
     private <T> T doDelete(Class<T> type, WebTarget target)
