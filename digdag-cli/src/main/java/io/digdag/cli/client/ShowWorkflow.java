@@ -53,16 +53,14 @@ public class ShowWorkflow
             }
         }
         else {
-            for (RestProject proj : client.getProjects()) {
-                try {
-                    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(proj.getId());
-                    ln("  %s", proj.getName());
-                    for (RestWorkflowDefinition def : defs) {
-                        ln("    %s", def.getName());
-                    }
+            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions();
+            String lastProjName = null;
+            for (RestWorkflowDefinition def : defs) {
+                if (!def.getProject().getName().equals(lastProjName)) {
+                    ln("  %s", def.getProject().getName());
+                    lastProjName = def.getProject().getName();
                 }
-                catch (NotFoundException ex) {
-                }
+                ln("    %s", def.getName());
             }
         }
         ln("");

@@ -48,6 +48,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 public class WorkflowResource
     extends AuthenticatedResource
 {
+    // GET  /api/workflows                                   # list workflows of the latest revisions of active projects
     // GET  /api/workflows/{id}                              # get a workflow
     // GET  /api/workflows/{id}/truncated_session_time       # truncate a time based on timzeone of this workflow
     //
@@ -92,6 +93,20 @@ public class WorkflowResource
         }
         StoredWorkflowDefinition def = rs.getWorkflowDefinitionByName(rev.getId(), wfName);
         return RestModels.workflowDefinition(proj, rev, def);
+    }
+
+    @GET
+    @Path("/api/workflows")
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(
+            @QueryParam("last_id") Long lastId)
+        throws ResourceNotFoundException
+    {
+        List<StoredWorkflowDefinitionWithProject> defs =
+            rm.getProjectStore(getSiteId())
+            .getLatestActiveWorkflowDefinitions(100, Optional.fromNullable(lastId));
+        return defs.stream()
+            .map(def -> RestModels.workflowDefinition(def))
+            .collect(Collectors.toList());
     }
 
     @GET

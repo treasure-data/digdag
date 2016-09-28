@@ -150,6 +150,7 @@ public class DatabaseProjectStoreManagerTest
         StoredWorkflowDefinition wf3 = wfRefA.get();
         StoredWorkflowDefinition wf4 = wfRefB.get();
         StoredWorkflowDefinitionWithProject wfDetails3 = StoredWorkflowDefinitionWithProject.of(wf3, proj2, srcRev3);
+        StoredWorkflowDefinitionWithProject wfDetails4 = StoredWorkflowDefinitionWithProject.of(wf4, proj2, srcRev3);
 
         ProjectStore anotherSite = manager.getProjectStore(1);
 
@@ -197,6 +198,11 @@ public class DatabaseProjectStoreManagerTest
         assertEquals(ImmutableList.of(wf3), store.getWorkflowDefinitions(rev3.getId(), 1, Optional.absent()));
         assertEquals(ImmutableList.of(wf4), store.getWorkflowDefinitions(rev3.getId(), 100, Optional.of(wf3.getId())));
         assertEmpty(anotherSite.getWorkflowDefinitions(rev3.getId(), 100, Optional.absent()));
+
+        assertEquals(ImmutableList.of(wfDetails1, wfDetails3, wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
+        assertEquals(ImmutableList.of(wfDetails1), store.getLatestActiveWorkflowDefinitions(1, Optional.absent()));
+        assertEquals(ImmutableList.of(wfDetails4), store.getLatestActiveWorkflowDefinitions(100, Optional.of(wfDetails3.getId())));
+        assertEmpty(anotherSite.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
 
         ////
         // public simple getters
@@ -282,12 +288,17 @@ public class DatabaseProjectStoreManagerTest
     public void testDeleteProject()
         throws Exception
     {
+        WorkflowDefinition srcWf1 = createWorkflow("wf1");
+        AtomicReference<StoredWorkflowDefinition> wfRef = new AtomicReference<>();
+
         StoredRevision rev = store.putAndLockProject(
                 Project.of("proj1"),
                 (store, stored) -> {
                     ProjectControl lock = new ProjectControl(store, stored);
 
                     StoredRevision storedRev = lock.insertRevision(createRevision("rev1"));
+
+                    wfRef.set(lock.insertWorkflowDefinitions(storedRev, ImmutableList.of(srcWf1), sm, Instant.now()).get(0));
 
                     return storedRev;
                 });
@@ -303,10 +314,16 @@ public class DatabaseProjectStoreManagerTest
 
         // listing doesn't include deleted projects
         assertEquals(ImmutableList.of(), store.getProjects(100, Optional.absent()));
+        assertEquals(ImmutableList.of(), store.getLatestActiveWorkflowDefinitions(100, Optional.absent()));
 
-        // lookup by id succeeds and deletedAt is set
+        // lookup by project/revision id succeeds and deletedAt is set
         StoredProject deletedProj = store.getProjectById(deletingProject.getId());
         assertTrue(deletedProj.getDeletedAt().isPresent());
+
+        List<StoredWorkflowDefinition> defs = store.getWorkflowDefinitions(rev.getId(), 100, Optional.absent());
+        assertEquals(1, defs.size());
+        assertEquals(srcWf1, ImmutableWorkflowDefinition.builder().from(defs.get(0)).build());
+        assertEquals(rev.getId(), defs.get(0).getRevisionId());
 
         // reusing same name is allowed
         StoredProject sameName = store.putAndLockProject(

@@ -277,6 +277,19 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
+    public List<RestWorkflowDefinition> getWorkflowDefinitions()
+    {
+        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
+                target("/api/workflows"));
+    }
+
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(Optional<Long> lastId)
+    {
+        return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
+                target("/api/workflows")
+                .queryParam("last_id", lastId.orNull()));
+    }
+
     public List<RestWorkflowDefinition> getWorkflowDefinitions(int projId)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
