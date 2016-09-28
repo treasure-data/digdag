@@ -200,6 +200,13 @@ public class TestUtils
         return Long.parseLong(matcher.group(1));
     }
 
+    public static int getProjectId(CommandStatus pushStatus)
+    {
+        Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
+        assertThat(matcher.find(), is(true));
+        return Integer.parseInt(matcher.group(1));
+    }
+
     public static String getAttemptLogs(DigdagClient client, long attemptId)
             throws IOException
     {

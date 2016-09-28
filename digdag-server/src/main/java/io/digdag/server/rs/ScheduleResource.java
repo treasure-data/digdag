@@ -1,23 +1,40 @@
 package io.digdag.server.rs;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.time.ZoneId;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.GET;
-import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleBackfillRequest;
+import io.digdag.client.api.RestScheduleSkipRequest;
+import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.core.repository.ProjectMap;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.TimeZoneMap;
+import io.digdag.core.schedule.ScheduleControl;
+import io.digdag.core.schedule.ScheduleExecutor;
+import io.digdag.core.schedule.ScheduleStore;
+import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.StoredSchedule;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.client.api.*;
+
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/")
 @Produces("application/json")
@@ -28,6 +45,8 @@ public class ScheduleResource
     // GET  /api/schedules/{id}                              # show a particular schedule (which belongs to a workflow)
     // POST /api/schedules/{id}/skip                         # skips schedules forward to a future time
     // POST /api/schedules/{id}/backfill                     # run or re-run past schedules
+    // POST /api/schedules/{id}/disable                      # disable a schedule
+    // POST /api/schedules/{id}/enable                       # enable a schedule
 
     private final ProjectStoreManager rm;
     private final ScheduleStoreManager sm;
@@ -51,16 +70,21 @@ public class ScheduleResource
         List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
             .getSchedules(100, Optional.fromNullable(lastId));
 
-        ProjectMap projs = rm.getProjectStore(getSiteId())
-            .getProjectsByIdList(
-                    scheds.stream()
-                    .map(StoredSchedule::getProjectId)
-                    .collect(Collectors.toList()));
-        TimeZoneMap defTimeZones = rm.getProjectStore(getSiteId())
-            .getWorkflowTimeZonesByIdList(
-                    scheds.stream()
-                    .map(StoredSchedule::getWorkflowDefinitionId)
-                    .collect(Collectors.toList()));
+        return restSchedules(rm.getProjectStore(getSiteId()), scheds);
+    }
+
+    static List<RestSchedule> restSchedules(
+            ProjectStore projectStore,
+            List<StoredSchedule> scheds)
+    {
+        ProjectMap projs = projectStore.getProjectsByIdList(
+                scheds.stream()
+                .map(StoredSchedule::getProjectId)
+                .collect(Collectors.toList()));
+        TimeZoneMap defTimeZones = projectStore.getWorkflowTimeZonesByIdList(
+                scheds.stream()
+                .map(StoredSchedule::getWorkflowDefinitionId)
+                .collect(Collectors.toList()));
 
         return scheds.stream()
             .map(sched -> {
@@ -138,5 +162,43 @@ public class ScheduleResource
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
         return RestModels.attemptModels(rm, getSiteId(), attempts);
+    }
+
+    @POST
+    @Path("/api/schedules/{id}/disable")
+    public RestScheduleSummary disableSchedule(@PathParam("id") int id)
+            throws ResourceNotFoundException, ResourceConflictException
+    {
+        // TODO: this is racy
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                .getScheduleById(id);
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
+        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+            lockedSched.disableSchedule();
+            return lockedSched.get();
+        });
+
+        return RestModels.scheduleSummary(updated, timeZone);
+    }
+
+    @POST
+    @Path("/api/schedules/{id}/enable")
+    public RestScheduleSummary enableSchedule(@PathParam("id") int id)
+            throws ResourceNotFoundException, ResourceConflictException
+    {
+        // TODO: this is racy
+        StoredSchedule sched = sm.getScheduleStore(getSiteId())
+                .getScheduleById(id);
+        ZoneId timeZone = getTimeZoneOfSchedule(sched);
+
+        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+            ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
+            lockedSched.enableSchedule();
+            return lockedSched.get();
+        });
+
+        return RestModels.scheduleSummary(updated, timeZone);
     }
 }

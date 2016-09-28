@@ -27,6 +27,7 @@ public class DatabaseMigrator
 		new Migration_20160818043815_AddFinishedAtToSessionAttempts(),
 		new Migration_20160818220026_QueueUniqueName(),
 		new Migration_20160908175551_KeepSecretsUnique(),
+        new Migration_20160926123456_AddDisabledAtColumnToSchedules()
 	})
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());

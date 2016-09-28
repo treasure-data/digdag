@@ -8,6 +8,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
@@ -397,6 +398,37 @@ public class DigdagClient implements AutoCloseable
                 target("/api/schedules"));
     }
 
+    public List<RestSchedule> getSchedules(Optional<Integer> lastId)
+    {
+        return doGet(new GenericType<List<RestSchedule>>() { },
+                target("/api/schedules")
+                .queryParam("last_id", lastId.orNull()));
+    }
+
+    public List<RestSchedule> getSchedules(int projectId, Optional<Integer> lastId)
+    {
+        return doGet(new GenericType<List<RestSchedule>>() {},
+                target("/api/projects/{id}/schedules")
+                .resolveTemplate("id", projectId)
+                .queryParam("last_id", lastId.orNull()));
+    }
+
+    public RestSchedule getSchedule(int projectId, String workflowName)
+    {
+        List<RestSchedule> scheds = doGet(new GenericType<List<RestSchedule>>() {},
+                target("/api/projects/{id}/schedules")
+                .resolveTemplate("id", projectId)
+                .queryParam("workflow", workflowName));
+        if (scheds.isEmpty()) {
+            throw new NotFoundException(String.format(ENGLISH,
+                        "schedule not found in the latest revision of project id = %d: %s",
+                        projectId, workflowName));
+        }
+        else {
+            return scheds.get(0);
+        }
+    }
+
     public RestSchedule getSchedule(long id)
     {
         return doGet(RestSchedule.class,
@@ -600,6 +632,22 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", scheduleId));
     }
 
+    public RestScheduleSummary disableSchedule(int scheduleId)
+    {
+        return doPost(RestScheduleSummary.class,
+                ImmutableMap.of(),
+                target("/api/schedules/{id}/disable")
+                        .resolveTemplate("id", scheduleId));
+    }
+
+    public RestScheduleSummary enableSchedule(int scheduleId)
+    {
+        return doPost(RestScheduleSummary.class,
+                ImmutableMap.of(),
+                target("/api/schedules/{id}/enable")
+                        .resolveTemplate("id", scheduleId));
+    }
+
     public Map<String, Object> getVersion()
     {
         return doGet(new GenericType<Map<String, Object>>() {}, target("/api/version"));
@@ -691,9 +739,9 @@ public class DigdagClient implements AutoCloseable
 
     private void doDelete(WebTarget target)
     {
-        target.request("application/json")
-            .headers(headers.get())
-            .delete();
+        // must consume body to avoid this error from httpclient:
+        // "Make sure to release the connection before allocating another one."
+        doDelete(Object.class, target);
     }
 
     private <T> T doDelete(Class<T> type, WebTarget target)

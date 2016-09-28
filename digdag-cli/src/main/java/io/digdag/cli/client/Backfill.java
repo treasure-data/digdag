@@ -119,7 +119,7 @@ public class Backfill
     private static RestSchedule findScheduleByWorkflowName(DigdagClient client,
             String projName, String workflowName)
     {
-        for (RestSchedule sched : client.getSchedules()) {
+        for (RestSchedule sched : client.getSchedules(Optional.absent())) {  // TODO use pagination (last_id) to get all schedules
             if (projName.equals(sched.getProject().getName()) &&
                     workflowName.equals(sched.getWorkflow().getName())) {
                 return sched;

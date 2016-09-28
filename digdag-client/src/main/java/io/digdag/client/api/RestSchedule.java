@@ -23,6 +23,8 @@ public interface RestSchedule
 
     OffsetDateTime getNextScheduleTime();
 
+    Optional<Instant> getDisabledAt();
+
     static ImmutableRestSchedule.Builder builder()
     {
         return ImmutableRestSchedule.builder();

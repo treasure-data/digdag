@@ -1,5 +1,7 @@
 package io.digdag.cli.client;
 
+import com.google.common.base.Optional;
+
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -41,7 +43,7 @@ public class ShowSchedule
         DigdagClient client = buildClient();
         ln("Schedules:");
         int count = 0;
-        for (RestSchedule sched : client.getSchedules()) {
+        for (RestSchedule sched : client.getSchedules(Optional.absent())) {  // TODO use pagination (last_id) to get all schedules
             ln("  id: %d", sched.getId());
             ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());

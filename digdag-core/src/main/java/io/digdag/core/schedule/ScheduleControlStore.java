@@ -8,4 +8,10 @@ public interface ScheduleControlStore
     boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime, Instant lastSessionTime);
 
     boolean updateNextScheduleTime(int schedId, ScheduleTime nextTime);
+
+    boolean disableSchedule(int schedId);
+
+    boolean enableSchedule(int schedId);
+
+    StoredSchedule getScheduleById(int schedId);
 }

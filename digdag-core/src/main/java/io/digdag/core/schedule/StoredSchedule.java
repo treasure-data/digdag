@@ -21,4 +21,6 @@ public abstract class StoredSchedule
     public abstract Instant getCreatedAt();
 
     public abstract Instant getUpdatedAt();
+
+    public abstract Optional<Instant> getDisabledAt();
 }

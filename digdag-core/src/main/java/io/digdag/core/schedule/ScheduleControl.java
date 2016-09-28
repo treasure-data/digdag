@@ -44,4 +44,16 @@ public class ScheduleControl
     {
         return store.updateNextScheduleTime(schedule.getId(), nextTime, lastSessionTime);
     }
+
+    public void enableSchedule()
+    {
+        store.enableSchedule(schedule.getId());
+        schedule = store.getScheduleById(schedule.getId());
+    }
+
+    public void disableSchedule()
+    {
+        store.disableSchedule(schedule.getId());
+        schedule = store.getScheduleById(schedule.getId());
+    }
 }
