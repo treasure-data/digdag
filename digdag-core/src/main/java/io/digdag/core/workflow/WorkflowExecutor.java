@@ -98,7 +98,7 @@ import static java.util.Locale.ENGLISH;
  *       : ERROR with error
  *
  *   taskSucceeded:
- *     lockedTask.setRunningToPlannedSuccessful:
+ *     (if subtasks or check task exist) lockedTask.setRunningToPlannedSuccessful:
  *       : PLANNED
  *     lockedTask.setRunningToShortCircuitSuccess:
  *       : SUCCESS
