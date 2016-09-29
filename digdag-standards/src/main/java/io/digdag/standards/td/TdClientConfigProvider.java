@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Properties;
 
 public class TdClientConfigProvider
         implements Provider<TDClientConfig>
@@ -33,17 +34,27 @@ public class TdClientConfigProvider
             return null;
         }
 
-        ConfigLoader configLoader = new ConfigLoader();
-
         // XXX (dano): silence spam in TDClientConfig
         Logger logger = LoggerFactory.getLogger(TDClientConfig.class);
         if (logger instanceof ch.qos.logback.classic.Logger) {
             ((ch.qos.logback.classic.Logger) logger).setLevel(Level.WARN);
         }
 
-        configLoader.setProperties(TDClientConfig.readTDConf(tdConf.toFile()));
-
-        return configLoader.buildConfig();
+        try {
+            Properties props = TDClientConfig.readTDConf(tdConf.toFile());
+            ConfigLoader configLoader = new ConfigLoader();
+            configLoader.setProperties(props);
+            return configLoader.buildConfig();
+        }
+        catch (Exception e) {
+            if (logger.isDebugEnabled()) {
+                logger.warn("Failed to parse TD configuration file: {}", tdConf, e);
+            }
+            else {
+                logger.warn("Failed to parse TD configuration file: {}", tdConf);
+            }
+            return null;
+        }
     }
 
     private static Path configPath(Map<String, String> env)

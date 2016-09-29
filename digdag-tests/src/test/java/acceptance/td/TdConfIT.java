@@ -181,4 +181,32 @@ public class TdConfIT
             assertThat(request.headers().get(AUTHORIZATION), is("FOO " + MOCK_TD_API_KEY));
         }
     }
+
+    @Test
+    public void verifyCliIgnoresBrokenTdConf()
+            throws Exception
+    {
+        Files.write(tdConf, asList("endpoint=foo:bar"));
+
+        String proxyUrl = "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort();
+        Map<String, String> env = ImmutableMap.of(
+                "http_proxy", proxyUrl,
+                "TD_CONFIG_PATH", tdConf.toString()
+        );
+
+        Files.write(digdagConf, asList(
+                "client.http.endpoint = http://baz.quux:80",
+                "client.http.headers.authorization = FOO " + MOCK_TD_API_KEY
+        ));
+
+        main(env, "workflows",
+                "-c", digdagConf.toString(),
+                "--disable-version-check");
+
+        assertThat(requests.isEmpty(), is(false));
+        for (FullHttpRequest request : requests) {
+            assertThat(request.getUri(), is("http://baz.quux:80/api/workflows"));
+            assertThat(request.headers().get(AUTHORIZATION), is("FOO " + MOCK_TD_API_KEY));
+        }
+    }
 }
