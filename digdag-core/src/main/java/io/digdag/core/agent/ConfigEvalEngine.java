@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import java.util.List;
 import java.util.Map;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,16 +32,33 @@ public class ConfigEvalEngine
 {
     private static Logger logger = LoggerFactory.getLogger(ConfigEvalEngine.class);
 
-    private static final String DIGDAG_JS_RESOURCE_PATH = "/digdag/agent/digdag.js";
-    private static final String DIGDAG_JS;
+    private static final String DIGDAG_JS_RESOURCE_PATH = "/io/digdag/core/agent/digdag.js";
 
-    static {
-        try (InputStream in = ConfigEvalEngine.class.getResourceAsStream(DIGDAG_JS_RESOURCE_PATH)) {
-            DIGDAG_JS = CharStreams.toString(new InputStreamReader(in, UTF_8));
+    private static final String[] LIBRARY_JS_RESOURCE_PATHS = {
+        "/io/digdag/core/agent/moment.min.js"
+    };
+
+    private static final List<String> RUNTIME_JS_CONTENTS;
+
+    private static String readResource(String resourceName)
+    {
+        try (InputStream in = ConfigEvalEngine.class.getResourceAsStream(resourceName)) {
+            return CharStreams.toString(new InputStreamReader(in, UTF_8));
         }
         catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    static {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+
+        builder.add(readResource(DIGDAG_JS_RESOURCE_PATH));
+        for (String lib : LIBRARY_JS_RESOURCE_PATHS) {
+            builder.add(readResource(lib));
+        }
+
+        RUNTIME_JS_CONTENTS = builder.build();
     }
 
     private final ObjectMapper jsonMapper;
@@ -70,7 +88,9 @@ public class ConfigEvalEngine
             "-timezone=" + params.get("timezone", String.class),
         });
         try {
-            jsEngine.eval(DIGDAG_JS);
+            for (String runtimeJs : RUNTIME_JS_CONTENTS) {
+                jsEngine.eval(runtimeJs);
+            }
         }
         catch (ScriptException | ClassCastException ex) {
             throw new IllegalStateException("Unexpected script evaluation failure", ex);

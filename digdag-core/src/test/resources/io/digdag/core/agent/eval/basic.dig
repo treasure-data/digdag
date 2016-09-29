@@ -1,0 +1,6 @@
+a: ${timezone}
+b: ${a}
+c: ${a}${b}
+nested:
+  value: v
+ref: ${nested.value}
