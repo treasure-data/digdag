@@ -6,7 +6,7 @@ dependencies {
     compile project(':digdag-guice-rs-server')
 
     compile 'com.google.inject.extensions:guice-multibindings:4.0'
-    compile 'org.embulk:guice-bootstrap:0.2.0'
+    compile 'org.embulk:guice-bootstrap:0.2.1'
     compile "com.fasterxml.jackson.module:jackson-module-guice:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${project.ext.jacksonVersion}"
     compile 'org.jdbi:jdbi:2.75'
