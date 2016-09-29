@@ -226,7 +226,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.15
+    $ digdag selfupdate 0.8.16
 
 Server-mode commands
 ----------------------------------
