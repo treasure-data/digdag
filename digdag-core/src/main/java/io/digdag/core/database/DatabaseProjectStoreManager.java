@@ -282,6 +282,13 @@ public class DatabaseProjectStoreManager
         }
 
         @Override
+        public List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int pageSize, Optional<Long> lastId)
+            throws ResourceNotFoundException
+        {
+            return autoCommit((handle, dao) -> dao.getLatestActiveWorkflowDefinitions(siteId, pageSize, lastId.or(0L)));
+        }
+
+        @Override
         public List<StoredWorkflowDefinition> getWorkflowDefinitions(int revId, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getWorkflowDefinitions(siteId, revId, pageSize, lastId.or(0L)));
@@ -520,6 +527,29 @@ public class DatabaseProjectStoreManager
                 " key (site_id, name)" +
                 " values (:siteId, :name, coalesce((select created_at from projects where site_id = :siteId and name = :name), now()))")
         void upsertAndLockProject(@Bind("siteId") int siteId, @Bind("name") String name);
+
+        @Override
+        @SqlQuery("select wd.*, wc.config, wc.timezone," +
+                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from workflow_definitions wd" +
+                " join (" +
+                    // list id of active (non-deleted) latest revisions in this site.
+                    // this is not efficient but gave up optimization on h2.
+                    "select r.project_id, max(r.id) as revision_id" +
+                    " from revisions r" +
+                    " join projects p on r.project_id = p.id" +
+                    " where p.site_id = :siteId" +
+                    " and p.deleted_at is null" +
+                    " group by r.project_id" +
+                ") a on wd.revision_id = a.revision_id" +
+                " join revisions rev on a.revision_id = rev.id" +
+                " join projects proj on a.project_id = proj.id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " where wd.id > :lastId" +
+                " order by wd.id" +
+                " limit :limit")
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
     }
 
     public interface PgDao
@@ -533,6 +563,32 @@ public class DatabaseProjectStoreManager
                 // this query includes "set created_at = projects.created_at" because "do nothing"
                 // doesn't lock the row
         StoredProject upsertAndLockProject(@Bind("siteId") int siteId, @Bind("name") String name);
+
+        @Override
+        @SqlQuery("select wd.*, wc.config, wc.timezone," +
+                " proj.id as proj_id, proj.name as proj_name, proj.deleted_name as proj_deleted_name, proj.deleted_at as proj_deleted_at, proj.site_id, proj.created_at as proj_created_at," +
+                " rev.name as rev_name, rev.default_params as rev_default_params" +
+                " from (" +
+                    // order by id and limit before join
+                    "select * from workflow_definitions wf" +
+                    " where wf.revision_id = any(array(" +
+                        // list id of active (non-deleted) latest revisions in this site
+                        "select max(r.id)" +
+                        " from revisions r" +
+                        " join projects p on r.project_id = p.id" +
+                        " where p.site_id = :siteId" +
+                        " and p.deleted_at is null" +
+                        " group by r.project_id" +
+                    " )) " +
+                    " and wf.id > :lastId" +
+                    " order by wf.id" +
+                    " limit :limit" +
+                ") wd" +
+                " join revisions rev on rev.id = wd.revision_id" +
+                " join projects proj on proj.id = rev.project_id" +
+                " join workflow_configs wc on wc.id = wd.config_id" +
+                " order by wd.id")
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
     }
 
     public interface Dao
@@ -629,6 +685,8 @@ public class DatabaseProjectStoreManager
                 " and proj.site_id = :siteId" +
                 " limit 1")
         StoredWorkflowDefinitionWithProject getLatestWorkflowDefinitionByName(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("name") String name);
+
+        List<StoredWorkflowDefinitionWithProject> getLatestActiveWorkflowDefinitions(int siteId, int limit, long lastId);
 
         // getWorkflowDetailsById is same with getWorkflowDetailsByIdInternal
         // excepting site_id check

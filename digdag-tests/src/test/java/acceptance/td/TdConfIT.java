@@ -149,7 +149,7 @@ public class TdConfIT
 
         assertThat(requests.isEmpty(), is(false));
         for (FullHttpRequest request : requests) {
-            assertThat(request.getUri(), is("http://foo.baz.bar:80/api/projects"));
+            assertThat(request.getUri(), is("http://foo.baz.bar:80/api/workflows"));
             assertThat(request.headers().get(AUTHORIZATION), is("TD1 " + MOCK_TD_API_KEY));
         }
     }
@@ -177,7 +177,7 @@ public class TdConfIT
 
         assertThat(requests.isEmpty(), is(false));
         for (FullHttpRequest request : requests) {
-            assertThat(request.getUri(), is("http://baz.quux:80/api/projects"));
+            assertThat(request.getUri(), is("http://baz.quux:80/api/workflows"));
             assertThat(request.headers().get(AUTHORIZATION), is("FOO " + MOCK_TD_API_KEY));
         }
     }
