@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
 import io.digdag.core.Version;
@@ -13,14 +14,15 @@ import io.digdag.core.agent.WorkspaceManager;
 import io.digdag.core.archive.ProjectArchive;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.guice.rs.GuiceRsServerControl;
 import io.digdag.server.ServerBootstrap;
 import io.digdag.server.ServerConfig;
+import org.embulk.guice.Bootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+import javax.annotation.PostConstruct;
 
 import java.util.Properties;
 
@@ -73,7 +75,7 @@ public class Sched
     }
 
     private void startScheduler()
-            throws ServletException, Exception
+            throws Exception
     {
         Properties props;
 
@@ -100,34 +102,55 @@ public class Sched
             props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
         }
 
+        ConfigElement ce = PropertyUtils.toConfigElement(props);
+        ServerConfig serverConfig = ServerConfig.convertFrom(ce);
+
         // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
-        ServerBootstrap.startServer(version, props, SchedulerServerBootStrap.class);
+        ServerBootstrap.start(new SchedulerServerBootStrap(version, serverConfig));
     }
 
     public static class SchedulerServerBootStrap
             extends ServerBootstrap
     {
-        @Inject
-        public SchedulerServerBootStrap(GuiceRsServerControl control)
+        public SchedulerServerBootStrap(Version version, ServerConfig serverConfig)
         {
-            super(control);
+            super(version, serverConfig);
         }
 
         @Override
-        public Injector initialize(ServletContext context)
+        public Bootstrap bootstrap()
         {
-            Injector injector = super.initialize(context);
+            return super.bootstrap()
+                .addModules((binder) -> {
+                    binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
+                    binder.bind(RevisionAutoReloaderStarter.class).asEagerSingleton();
+                })
+                .overrideModulesWith((binder) -> {
+                    // overwrite server that uses ExtractArchiveManager
+                    binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
+                });
+        }
+    }
 
-            ConfigFactory cf = injector.getInstance(ConfigFactory.class);
-            RevisionAutoReloader autoReloader = injector.getInstance(RevisionAutoReloader.class);
-            ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
-            ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
+    private static class RevisionAutoReloaderStarter
+    {
+        private final String projectDirName;
+        private final Config overwriteParams;
+        private final ProjectArchiveLoader projectLoader;
+        private final RevisionAutoReloader autoReloader;
 
-            Config systemConfig = injector.getInstance(Config.class);
+        @Inject
+        public RevisionAutoReloaderStarter(Config systemConfig, ProjectArchiveLoader projectLoader, ConfigFactory cf, RevisionAutoReloader autoReloader)
+        {
+            this.projectDirName = systemConfig.get(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class);
+            this.overwriteParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, String.class));
+            this.projectLoader = projectLoader;
+            this.autoReloader = autoReloader;
+        }
 
-            String projectDirName = systemConfig.get(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class);
-            Config overwriteParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, String.class));
-
+        @PostConstruct
+        public void start()
+        {
             try {
                 ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
                 autoReloader.watch(project);
@@ -135,21 +158,6 @@ public class Sched
             catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
-
-            return injector;
-        }
-
-        @Override
-        protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
-        {
-            return super.bootstrap(bootstrap, serverConfig, version)
-                .addModules((binder) -> {
-                    binder.bind(RevisionAutoReloader.class).in(Scopes.SINGLETON);
-                })
-                .overrideModulesWith((binder) -> {
-                    // overwrite server that uses ExtractArchiveManager
-                    binder.bind(WorkspaceManager.class).to(LocalWorkspaceManager.class).in(Scopes.SINGLETON);
-                });
         }
     }
 }

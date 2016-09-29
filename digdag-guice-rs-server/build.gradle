@@ -1,0 +1,4 @@
+dependencies {
+    compile 'org.embulk:guice-bootstrap:0.2.0'
+    compile 'org.weakref:jmxutils:1.19'
+}

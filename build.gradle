@@ -71,6 +71,10 @@ subprojects {
         testCompile 'pl.pragmatists:JUnitParams:1.0.5'
     }
 
+    ext {
+        jacksonVersion = "2.6.7"
+    }
+
     tasks.withType(JavaCompile) {
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }

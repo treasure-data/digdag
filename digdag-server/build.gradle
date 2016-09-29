@@ -2,10 +2,5 @@
 dependencies {
     compile project(':digdag-core')
     compile project(':digdag-client')
-    compile project(':digdag-guice-rs')
-
-    compile 'io.undertow:undertow-servlet:1.4.0.Final'
-    compile 'org.jboss.logging:jboss-logging:3.3.0.Final'
+    compile project(':digdag-guice-rs-server-undertow')
 }
-
-
