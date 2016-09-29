@@ -579,6 +579,7 @@ public class DatabaseProjectStoreManager
                         " where p.site_id = :siteId" +
                         " and p.deleted_at is null" +
                         " group by r.project_id" +
+                    " )) " +
                     " and wf.id > :lastId" +
                     " order by wf.id" +
                     " limit :limit" +
