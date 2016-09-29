@@ -5,10 +5,12 @@ dependencies {
     compile project(':digdag-plugin-utils')
     compile project(':digdag-guice-rs-server')
 
-    compile("com.fasterxml.jackson.module:jackson-module-guice:${project.ext.jacksonVersion}") {
-        // avoid dependency confliction: jackson-module-guice -> guice 3.0
-        exclude group: 'com.google.inject'
-    }
+    // this dependency is here only to override dependency confliction of
+    // jackson-module-guice -> guice 3.0.
+    // https://github.com/FasterXML/jackson-modules-base/pull/22
+    compile 'org.embulk:guice-bootstrap:0.2.1'
+
+    compile "com.fasterxml.jackson.module:jackson-module-guice:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${project.ext.jacksonVersion}"
     compile 'org.jdbi:jdbi:2.75'
     compile 'com.zaxxer:HikariCP:2.4.7'
