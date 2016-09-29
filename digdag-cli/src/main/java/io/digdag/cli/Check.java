@@ -197,7 +197,7 @@ public class Check
         f.indent = "      ";
         f.ln(yamlMapper.toYaml(schedConfig));
         f.ln("first session time: %s", TimeUtil.formatTime(firstTime.getTime()));
-        f.ln("first runs at: %s (%s later)", TimeUtil.formatTime(firstTime.getRunTime()), formatTimeDiff(now, firstTime.getRunTime()));
+        f.ln("first scheduled to run at: %s", TimeUtil.formatTimeWithDiff(now, firstTime.getRunTime()));
         f.indent = "    ";
     }
 

@@ -31,6 +31,18 @@ public class TimeUtil
         return FORMATTER.withZone(ZoneId.systemDefault()).format(instant);
     }
 
+    public static String formatTimeWithDiff(Instant now, Instant instant)
+    {
+        String time = FORMATTER.withZone(ZoneId.systemDefault()).format(instant);
+        String diff = formatTimeDiff(now, instant);
+        boolean future = instant.isAfter(now);
+        if (future) {
+            return time + " (in " + diff + ")";
+        } else {
+            return time + " (" + diff + " ago)";
+        }
+    }
+
     public static String formatTime(OffsetDateTime time)
     {
         return FORMATTER.format(time);
@@ -44,13 +56,13 @@ public class TimeUtil
         long minutes = seconds / 60;
         seconds %= 60;
         if (hours > 0) {
-            return String.format("%2dh %2dm %2ds", hours, minutes, seconds);
+            return String.format("%dh %dm %ds", hours, minutes, seconds);
         }
         else if (minutes > 0) {
-            return String.format("    %2dm %2ds", minutes, seconds);
+            return String.format("%dm %ds", minutes, seconds);
         }
         else {
-            return String.format("        %2ds", seconds);
+            return String.format("%ds", seconds);
         }
     }
 

@@ -10,6 +10,7 @@ import io.digdag.client.api.RestScheduleSummary;
 import java.time.Instant;
 
 import static io.digdag.cli.SystemExitException.systemExit;
+import static io.digdag.cli.TimeUtil.formatTimeWithDiff;
 
 public class Reschedule
     extends ClientCommand
@@ -82,8 +83,9 @@ public class Reschedule
 
         ln("  id: %d", updated.getId());
         ln("  workflow: %s", updated.getWorkflow().getName());
+        ln("  disabled at: " + updated.getDisabledAt().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
         ln("  next session time: %s", TimeUtil.formatTime(updated.getNextScheduleTime()));
-        ln("  next runs at: %s (%s later)", TimeUtil.formatTime(updated.getNextRunTime()), TimeUtil.formatTimeDiff(now, updated.getNextRunTime()));
+        ln("  next scheduled to run at: %s", TimeUtil.formatTimeWithDiff(now, updated.getNextRunTime()));
         ln("");
 
         if (dryRun) {

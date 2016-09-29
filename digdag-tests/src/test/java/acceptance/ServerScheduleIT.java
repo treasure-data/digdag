@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.google.common.base.Optional;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
@@ -14,13 +15,13 @@ import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
+import javax.ws.rs.NotFoundException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
-
-import javax.ws.rs.NotFoundException;
 
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.containsString;
@@ -177,6 +178,16 @@ public class ServerScheduleIT
         assertThat(disabledSchedules.get(0).getId(), is(sched.getId()));
         assertThat(disabledSchedules.get(0).getDisabledAt(), is(disabled.getDisabledAt()));
 
+        // Check that the cli lists the schedule as disabled
+        {
+            CommandStatus schedulesStatus = main("schedules",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(schedulesStatus.errUtf8(), schedulesStatus.code(), is(0));
+            assertThat(schedulesStatus.outUtf8(), containsString("id: " + sched.getId()));
+            assertThat(schedulesStatus.outUtf8(), containsString("disabled at: " + TimeUtil.formatTime(disabled.getDisabledAt().get())));
+        }
+
         RestScheduleSummary enabled = client.enableSchedule(sched.getId());
         assertThat(enabled.getId(), is(sched.getId()));
         assertThat(enabled.getDisabledAt(), is(Optional.absent()));
@@ -184,6 +195,16 @@ public class ServerScheduleIT
         assertThat(enabledSchedules.size(), is(1));
         assertThat(enabledSchedules.get(0).getId(), is(sched.getId()));
         assertThat(enabledSchedules.get(0).getDisabledAt(), is(Optional.absent()));
+
+        // Check that the cli lists the schedule as enabled
+        {
+            CommandStatus schedulesStatus = main("schedules",
+                    "-c", config.toString(),
+                    "-e", server.endpoint());
+            assertThat(schedulesStatus.errUtf8(), schedulesStatus.code(), is(0));
+            assertThat(schedulesStatus.outUtf8(), containsString("id: " + sched.getId()));
+            assertThat(schedulesStatus.outUtf8(), not(containsString("next runs at: DISABLED")));
+        }
     }
 
     @Test
