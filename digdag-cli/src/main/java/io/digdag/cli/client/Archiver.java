@@ -65,8 +65,8 @@ class Archiver
                         try (InputStream in = Files.newInputStream(absPath)) {
                             ByteStreams.copy(in, tar);
                         }
-                        tar.closeArchiveEntry();
                     }
+                    tar.closeArchiveEntry();
                 }
             });
 
