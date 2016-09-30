@@ -5,6 +5,7 @@ import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,7 +24,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -35,6 +35,8 @@ import static utils.TestUtils.pushProject;
 
 public class ServerScheduleIT
 {
+    private static final String PROJECT_NAME = "foobar";
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -52,7 +54,7 @@ public class ServerScheduleIT
     public void setUp()
             throws Exception
     {
-        projectDir = folder.getRoot().toPath().resolve("foobar");
+        projectDir = folder.getRoot().toPath().resolve(PROJECT_NAME);
         config = folder.newFile().toPath();
 
         client = DigdagClient.builder()
@@ -125,7 +127,6 @@ public class ServerScheduleIT
                     "--schedule-from", "2291-02-06 10:00:00 +0000");
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
             projectId = TestUtils.getProjectId(pushStatus);
-
         }
 
         // Update the project that using hourly schedule
@@ -155,8 +156,91 @@ public class ServerScheduleIT
         assertThat(sched.getNextScheduleTime(), is(OffsetDateTime.parse("2291-02-09T00:00:00Z")));
     }
 
+    interface ScheduleModifier
+    {
+        void perform(DigdagClient client, String project, String workflow, int scheduleId);
+    }
+
     @Test
     public void disableEnable()
+            throws Exception
+    {
+        // Using client
+        testDisableEnable(
+                (client, project, workflow, scheduleId) ->
+                {
+                    client.disableSchedule(scheduleId);
+                },
+                (client, project, workflow, scheduleId) ->
+                {
+                    client.enableSchedule(scheduleId);
+                });
+
+        // Using cli and schedule id
+        testDisableEnable(
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus disableStatus = main("disable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            String.valueOf(scheduleId));
+                    assertThat(disableStatus.errUtf8(), disableStatus.code(), is(0));
+                    assertThat(disableStatus.outUtf8(), Matchers.containsString("Disabled schedule id: " + scheduleId));
+                },
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus enableStatus = main("enable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            String.valueOf(scheduleId));
+                    assertThat(enableStatus.errUtf8(), enableStatus.code(), is(0));
+                    assertThat(enableStatus.outUtf8(), Matchers.containsString("Enabled schedule id: " + scheduleId));
+                });
+
+        // Using cli and project name + workflow
+        testDisableEnable(
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus disableStatus = main("disable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            PROJECT_NAME, "schedule");
+                    assertThat(disableStatus.errUtf8(), disableStatus.code(), is(0));
+                    assertThat(disableStatus.outUtf8(), Matchers.containsString("Disabled schedule id: " + scheduleId));
+                },
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus enableStatus = main("enable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            PROJECT_NAME, "schedule");
+                    assertThat(enableStatus.errUtf8(), enableStatus.code(), is(0));
+                    assertThat(enableStatus.outUtf8(), Matchers.containsString("Enabled schedule id: " + scheduleId));
+                });
+
+        // Using cli and project name
+        testDisableEnable(
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus disableStatus = main("disable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            PROJECT_NAME);
+                    assertThat(disableStatus.errUtf8(), disableStatus.code(), is(0));
+                    assertThat(disableStatus.outUtf8(), Matchers.containsString("Disabled schedule id: " + scheduleId));
+                },
+                (client, project, workflow, scheduleId) ->
+                {
+                    CommandStatus enableStatus = main("enable",
+                            "-c", config.toString(),
+                            "-e", server.endpoint(),
+                            PROJECT_NAME);
+                    assertThat(enableStatus.errUtf8(), enableStatus.code(), is(0));
+                    assertThat(enableStatus.outUtf8(), Matchers.containsString("Enabled schedule id: " + scheduleId));
+                });
+    }
+
+    private void testDisableEnable(ScheduleModifier disable, ScheduleModifier enable)
             throws Exception
     {
         // Verify that a schedule an be disabled and enabled
@@ -169,9 +253,9 @@ public class ServerScheduleIT
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
 
-        RestScheduleSummary disabled = client.disableSchedule(sched.getId());
-        assertThat(disabled.getId(), is(sched.getId()));
-        assertThat((double) disabled.getDisabledAt().get().getEpochSecond(), is(closeTo(Instant.now().getEpochSecond(), 30)));
+        disable.perform(client, PROJECT_NAME, "schedule", sched.getId());
+
+        RestSchedule disabled = client.getSchedule(sched.getId());
 
         List<RestSchedule> disabledSchedules = client.getSchedules();
         assertThat(disabledSchedules.size(), is(1));
@@ -188,7 +272,10 @@ public class ServerScheduleIT
             assertThat(schedulesStatus.outUtf8(), containsString("disabled at: " + TimeUtil.formatTime(disabled.getDisabledAt().get())));
         }
 
-        RestScheduleSummary enabled = client.enableSchedule(sched.getId());
+        enable.perform(client, PROJECT_NAME, "schedule", sched.getId());
+
+        RestSchedule enabled = client.getSchedule(sched.getId());
+
         assertThat(enabled.getId(), is(sched.getId()));
         assertThat(enabled.getDisabledAt(), is(Optional.absent()));
         List<RestSchedule> enabledSchedules = client.getSchedules();
@@ -203,7 +290,7 @@ public class ServerScheduleIT
                     "-e", server.endpoint());
             assertThat(schedulesStatus.errUtf8(), schedulesStatus.code(), is(0));
             assertThat(schedulesStatus.outUtf8(), containsString("id: " + sched.getId()));
-            assertThat(schedulesStatus.outUtf8(), not(containsString("next runs at: DISABLED")));
+            assertThat(schedulesStatus.outUtf8(), containsString("disabled at: \n"));
         }
     }
 
