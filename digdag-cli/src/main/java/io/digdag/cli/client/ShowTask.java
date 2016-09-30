@@ -33,12 +33,12 @@ public class ShowTask
         DigdagClient client = buildClient();
 
         int count = 0;
-        for (RestTask task : client.getTasks(attemptId)) {
-            ln("   id: %d", task.getId());
+        for (RestTask task : client.getTasks(id(attemptId))) {
+            ln("   id: %s", task.getId());
             ln("   name: %s", task.getFullName());
             ln("   state: %s", task.getState());
             ln("   config: %s", task.getConfig());
-            ln("   parent: %d", task.getParentId().orNull());
+            ln("   parent: %s", task.getParentId().orNull());
             ln("   upstreams: %s", task.getUpstreams());
             ln("   export params: %s", task.getExportParams());
             ln("   store params: %s", task.getStoreParams());
@@ -48,7 +48,7 @@ public class ShowTask
         }
 
         if (count == 0) {
-            client.getSessionAttempt(attemptId);  // throws exception if attempt doesn't exist
+            client.getSessionAttempt(id(attemptId));  // throws exception if attempt doesn't exist
         }
         ln("%d entries.", count);
     }

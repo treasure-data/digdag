@@ -69,19 +69,19 @@ public class Reschedule
         DigdagClient client = buildClient();
         RestScheduleSummary updated;
         if (toTime != null) {
-            updated = client.skipSchedulesToTime(schedId,
+            updated = client.skipSchedulesToTime(id(schedId),
                     TimeUtil.parseTime(toTime, "-t, --skip-to"),
                     runAt,
                     dryRun);
         }
         else {
-            updated = client.skipSchedulesByCount(schedId,
+            updated = client.skipSchedulesByCount(id(schedId),
                     now, skipCount,
                     runAt,
                     dryRun);
         }
 
-        ln("  id: %d", updated.getId());
+        ln("  id: %s", updated.getId());
         ln("  workflow: %s", updated.getWorkflow().getName());
         ln("  disabled at: " + updated.getDisabledAt().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
         ln("  next session time: %s", TimeUtil.formatTime(updated.getNextScheduleTime()));

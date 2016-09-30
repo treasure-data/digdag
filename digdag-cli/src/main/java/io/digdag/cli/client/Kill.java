@@ -30,7 +30,7 @@ public class Kill
         throws Exception
     {
         DigdagClient client = buildClient();
-        client.killSessionAttempt(attemptId);
+        client.killSessionAttempt(id(attemptId));
         ln("Kill requirested session attempt " + attemptId);
     }
 }

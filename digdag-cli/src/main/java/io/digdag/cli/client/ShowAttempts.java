@@ -56,9 +56,9 @@ public class ShowAttempts
         List<RestSessionAttempt> attempts;
 
         if (sessionId == null) {
-            attempts = client.getSessionAttempts(Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(Optional.fromNullable(lastId).transform(s -> id(s)));
         } else {
-            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId));
+            attempts = client.getSessionAttempts(id(sessionId), Optional.fromNullable(lastId).transform(s -> id(s)));
         }
 
         ln("Session attempts:");
@@ -83,8 +83,8 @@ public class ShowAttempts
         else {
             status = "running";
         }
-        ln("  session id: %d", attempt.getSessionId());
-        ln("  attempt id: %d", attempt.getId());
+        ln("  session id: %s", attempt.getSessionId());
+        ln("  attempt id: %s", attempt.getId());
         ln("  uuid: %s", attempt.getSessionUuid());
         ln("  project: %s", attempt.getProject().getName());
         ln("  workflow: %s", attempt.getWorkflow().getName());

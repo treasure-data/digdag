@@ -9,6 +9,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
@@ -256,20 +257,20 @@ public class DigdagClient implements AutoCloseable
                 target("/api/projects"));
     }
 
-    public RestProject getProject(int projId)
+    public RestProject getProject(Id projId)
     {
         return doGet(RestProject.class,
                 target("/api/projects/{id}")
                 .resolveTemplate("id", projId));
     }
 
-    public void deleteProject(int projId)
+    public void deleteProject(Id projId)
     {
         doDelete(target("/api/projects/{id}")
                 .resolveTemplate("id", projId));
     }
 
-    public List<RestRevision> getRevisions(int projId, Optional<Integer> lastId)
+    public List<RestRevision> getRevisions(Id projId, Optional<Integer> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
                 target("/api/projects/{id}/revisions")
@@ -283,21 +284,21 @@ public class DigdagClient implements AutoCloseable
                 target("/api/workflows"));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(Optional<Long> lastId)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/workflows")
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(int projId)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(Id projId)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/projects/{id}/workflows")
                 .resolveTemplate("id", projId));
     }
 
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(int projId, String revision)
+    public List<RestWorkflowDefinition> getWorkflowDefinitions(Id projId, String revision)
     {
         return doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/projects/{id}/workflows")
@@ -305,7 +306,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("revision", revision));
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(int projId, String name)
+    public RestWorkflowDefinition getWorkflowDefinition(Id projId, String name)
     {
         List<RestWorkflowDefinition> defs = doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/projects/{id}/workflows")
@@ -321,7 +322,7 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(int projId, String name, String revision)
+    public RestWorkflowDefinition getWorkflowDefinition(Id projId, String name, String revision)
     {
         List<RestWorkflowDefinition> defs = doGet(new GenericType<List<RestWorkflowDefinition>>() { },
                 target("/api/projects/{id}/workflows")
@@ -338,14 +339,14 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public RestWorkflowDefinition getWorkflowDefinition(long workflowId)
+    public RestWorkflowDefinition getWorkflowDefinition(Id workflowId)
     {
         return doGet(RestWorkflowDefinition.class,
                 target("/api/workflows/{id}")
                 .resolveTemplate("id", workflowId));
     }
 
-    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time)
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(Id workflowId, LocalTimeOrInstant time)
     {
         return doGet(RestWorkflowSessionTime.class,
                 target("/api/workflows/{id}/truncated_session_time")
@@ -353,7 +354,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("session_time", time.toString()));
     }
 
-    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(long workflowId, LocalTimeOrInstant time, SessionTimeTruncate mode)
+    public RestWorkflowSessionTime getWorkflowTruncatedSessionTime(Id workflowId, LocalTimeOrInstant time, SessionTimeTruncate mode)
     {
         return doGet(RestWorkflowSessionTime.class,
                 target("/api/workflows/{id}/truncated_session_time")
@@ -393,7 +394,7 @@ public class DigdagClient implements AutoCloseable
     }
 
     // TODO getArchive with streaming
-    public InputStream getProjectArchive(int projId, String revision)
+    public InputStream getProjectArchive(Id projId, String revision)
     {
         Response res = target("/api/projects/{id}/archive")
             .resolveTemplate("id", projId)
@@ -418,7 +419,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSchedule> getSchedules(int projectId, Optional<Integer> lastId)
+    public List<RestSchedule> getSchedules(Id projectId, Optional<Integer> lastId)
     {
         return doGet(new GenericType<List<RestSchedule>>() {},
                 target("/api/projects/{id}/schedules")
@@ -426,7 +427,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public RestSchedule getSchedule(int projectId, String workflowName)
+    public RestSchedule getSchedule(Id projectId, String workflowName)
     {
         List<RestSchedule> scheds = doGet(new GenericType<List<RestSchedule>>() {},
                 target("/api/projects/{id}/schedules")
@@ -442,7 +443,7 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public RestSchedule getSchedule(long id)
+    public RestSchedule getSchedule(Id id)
     {
         return doGet(RestSchedule.class,
                 target("/api/schedules/{id}")
@@ -453,18 +454,18 @@ public class DigdagClient implements AutoCloseable
         return getSessions(Optional.absent());
     }
 
-    public List<RestSession> getSessions(Optional<Long> lastId)
+    public List<RestSession> getSessions(Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSession>>() {},
                 target("/api/sessions")
                         .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSession> getSessions(int projectId) {
+    public List<RestSession> getSessions(Id projectId) {
         return getSessions(projectId, Optional.absent());
     }
 
-    public List<RestSession> getSessions(int projectId, Optional<Long> lastId)
+    public List<RestSession> getSessions(Id projectId, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSession>>() {},
                 target("/api/projects/{projectId}/sessions")
@@ -472,11 +473,11 @@ public class DigdagClient implements AutoCloseable
                         .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSession> getSessions(int projectId, String workflowName) {
+    public List<RestSession> getSessions(Id projectId, String workflowName) {
         return getSessions(projectId, workflowName, Optional.absent());
     }
 
-    public List<RestSession> getSessions(int projectId, String workflowName, Optional<Long> lastId)
+    public List<RestSession> getSessions(Id projectId, String workflowName, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSession>>() {},
                 target("/api/projects/{projectId}/sessions")
@@ -485,14 +486,14 @@ public class DigdagClient implements AutoCloseable
                         .queryParam("last_id", lastId.orNull()));
     }
 
-    public RestSession getSession(long sessionId)
+    public RestSession getSession(Id sessionId)
     {
         return doGet(RestSession.class,
                 target("/api/sessions/{id}")
                         .resolveTemplate("id", sessionId));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(long sessionId, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(Id sessionId, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() {},
                 target("/api/sessions/{sessionId}/attempts")
@@ -500,14 +501,14 @@ public class DigdagClient implements AutoCloseable
                         .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String projName, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
@@ -515,7 +516,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSessionAttempt> getSessionAttempts(String projName, String workflowName, Optional<Long> lastId)
+    public List<RestSessionAttempt> getSessionAttempts(String projName, String workflowName, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSessionAttempt>>() { },
                 target("/api/attempts")
@@ -524,28 +525,28 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public RestSessionAttempt getSessionAttempt(long attemptId)
+    public RestSessionAttempt getSessionAttempt(Id attemptId)
     {
         return doGet(RestSessionAttempt.class,
                 target("/api/attempts/{id}")
                 .resolveTemplate("id", attemptId));
     }
 
-    public List<RestTask> getTasks(long attemptId)
+    public List<RestTask> getTasks(Id attemptId)
     {
         return doGet(new GenericType<List<RestTask>>() { },
                 target("/api/attempts/{id}/tasks")
                 .resolveTemplate("id", attemptId));
     }
 
-    public List<RestLogFileHandle> getLogFileHandlesOfAttempt(long attemptId)
+    public List<RestLogFileHandle> getLogFileHandlesOfAttempt(Id attemptId)
     {
         return doGet(new GenericType<List<RestLogFileHandle>>() { },
                 target("/api/logs/{id}/files")
                 .resolveTemplate("id", attemptId));
     }
 
-    public List<RestLogFileHandle> getLogFileHandlesOfTask(long attemptId, String taskName)
+    public List<RestLogFileHandle> getLogFileHandlesOfTask(Id attemptId, String taskName)
     {
         return doGet(new GenericType<List<RestLogFileHandle>>() { },
                 target("/api/logs/{id}/files")
@@ -553,7 +554,7 @@ public class DigdagClient implements AutoCloseable
                 .queryParam("task", taskName));
     }
 
-    public InputStream getLogFile(long attemptId, RestLogFileHandle handle)
+    public InputStream getLogFile(Id attemptId, RestLogFileHandle handle)
     {
         if (handle.getDirect().isPresent()) {
             Response res = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
@@ -567,7 +568,7 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public InputStream getLogFile(long attemptId, String fileName)
+    public InputStream getLogFile(Id attemptId, String fileName)
     {
         Response res = target("/api/logs/{id}/files/{fileName}")
             .resolveTemplate("id", attemptId)
@@ -587,7 +588,7 @@ public class DigdagClient implements AutoCloseable
                 target("/api/attempts"));
     }
 
-    public void killSessionAttempt(long attemptId)
+    public void killSessionAttempt(Id attemptId)
     {
         doPost(void.class,
                 new HashMap<String, String>(),
@@ -595,7 +596,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", attemptId));
     }
 
-    public RestScheduleSummary skipSchedulesToTime(int scheduleId, Instant untilTime, Optional<Instant> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(Id scheduleId, Instant untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
@@ -607,7 +608,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary skipSchedulesToTime(int scheduleId, LocalDateTime untilTime, Optional<Instant> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesToTime(Id scheduleId, LocalDateTime untilTime, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
@@ -619,7 +620,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary skipSchedulesByCount(int scheduleId, Instant fromTime, int count, Optional<Instant> runTime, boolean dryRun)
+    public RestScheduleSummary skipSchedulesByCount(Id scheduleId, Instant fromTime, int count, Optional<Instant> runTime, boolean dryRun)
     {
         return doPost(RestScheduleSummary.class,
                 RestScheduleSkipRequest.builder()
@@ -632,7 +633,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", scheduleId));
     }
 
-    public List<RestSessionAttempt> backfillSchedule(int scheduleId, Instant fromTime, String attemptName, Optional<Integer> count, boolean dryRun)
+    public List<RestSessionAttempt> backfillSchedule(Id scheduleId, Instant fromTime, String attemptName, Optional<Integer> count, boolean dryRun)
     {
         return doPost(new GenericType<List<RestSessionAttempt>>() { },
                 RestScheduleBackfillRequest.builder()
@@ -645,7 +646,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary disableSchedule(int scheduleId)
+    public RestScheduleSummary disableSchedule(Id scheduleId)
     {
         return doPost(RestScheduleSummary.class,
                 ImmutableMap.of(),
@@ -653,7 +654,7 @@ public class DigdagClient implements AutoCloseable
                         .resolveTemplate("id", scheduleId));
     }
 
-    public RestScheduleSummary enableSchedule(int scheduleId)
+    public RestScheduleSummary enableSchedule(Id scheduleId)
     {
         return doPost(RestScheduleSummary.class,
                 ImmutableMap.of(),
@@ -666,7 +667,7 @@ public class DigdagClient implements AutoCloseable
         return doGet(new GenericType<Map<String, Object>>() {}, target("/api/version"));
     }
 
-    public void setProjectSecret(int projectId, String key, String value)
+    public void setProjectSecret(Id projectId, String key, String value)
     {
         if (!SecretValidation.isValidSecret(key, value)) {
             throw new IllegalArgumentException();
@@ -683,7 +684,7 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public void deleteProjectSecret(int projectId, String key)
+    public void deleteProjectSecret(Id projectId, String key)
     {
         if (!SecretValidation.isValidSecretKey(key)) {
             throw new IllegalArgumentException();
@@ -701,7 +702,7 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    public RestSecretList listProjectSecrets(int projectId)
+    public RestSecretList listProjectSecrets(Id projectId)
     {
         return target("/api/projects/{id}/secrets")
                 .resolveTemplate("id", projectId)

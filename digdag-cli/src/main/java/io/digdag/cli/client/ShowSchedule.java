@@ -46,7 +46,7 @@ public class ShowSchedule
         ln("Schedules:");
         int count = 0;
         for (RestSchedule sched : client.getSchedules(Optional.absent())) {  // TODO use pagination (last_id) to get all schedules
-            ln("  id: %d", sched.getId());
+            ln("  id: %s", sched.getId());
             ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());
             ln("  disabled at: " + sched.getDisabledAt().transform(ts -> formatTimeWithDiff(now, ts)).or(""));

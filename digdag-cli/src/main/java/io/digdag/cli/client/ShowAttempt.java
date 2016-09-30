@@ -27,7 +27,7 @@ public class ShowAttempt
     private void showSessionAttempt(long attemptId) throws Exception {
         DigdagClient client = buildClient();
 
-        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+        RestSessionAttempt attempt = client.getSessionAttempt(id(attemptId));
         if (attempt == null) {
             throw systemExit("Attempt with id " + attemptId + " not found.");
         }
@@ -53,8 +53,8 @@ public class ShowAttempt
         else {
             status = "running";
         }
-        ln("  session id: %d", attempt.getSessionId());
-        ln("  attempt id: %d", attempt.getId());
+        ln("  session id: %s", attempt.getSessionId());
+        ln("  attempt id: %s", attempt.getId());
         ln("  uuid: %s", attempt.getSessionUuid());
         ln("  project: %s", attempt.getProject().getName());
         ln("  workflow: %s", attempt.getWorkflow().getName());

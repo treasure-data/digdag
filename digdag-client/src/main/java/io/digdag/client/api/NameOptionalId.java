@@ -1,20 +1,18 @@
 package io.digdag.client.api;
 
-import com.google.common.base.Optional;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableNameOptionalId.class)
 @JsonDeserialize(as = ImmutableNameOptionalId.class)
 public interface NameOptionalId
 {
     String getName();
 
-    Optional<Long> getId();
+    Optional<Id> getId();
 
-    static NameOptionalId of(String name, Optional<Long> id)
+    static NameOptionalId of(String name, Optional<Id> id)
     {
         return ImmutableNameOptionalId.builder()
             .name(name)

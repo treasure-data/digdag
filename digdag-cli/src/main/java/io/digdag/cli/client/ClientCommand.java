@@ -12,6 +12,7 @@ import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
@@ -191,6 +192,16 @@ public abstract class ClientCommand
         }
 
         return builder.build();
+    }
+
+    static Id id(int id)
+    {
+        return Id.of(Integer.toString(id));
+    }
+
+    static Id id(long id)
+    {
+        return Id.of(Long.toString(id));
     }
 
     public void showCommonOptions()

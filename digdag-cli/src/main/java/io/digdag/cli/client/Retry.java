@@ -6,6 +6,7 @@ import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
@@ -96,12 +97,12 @@ public class Retry
     {
         DigdagClient client = buildClient();
 
-        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+        RestSessionAttempt attempt = client.getSessionAttempt(id(attemptId));
 
-        long workflowId;
+        Id workflowId;
         if (keepRevision) {
             // use the same workflow id
-            Optional<Long> id = attempt.getWorkflow().getId();
+            Optional<Id> id = attempt.getWorkflow().getId();
             if (!id.isPresent()) {
                 throw systemExit("Session attempt " + attemptId + " is non-stored workflow. Retrying a non-stored workflow is not supported.");
             }
@@ -134,19 +135,19 @@ public class Retry
         if (resumeFrom != null) {
             request = RestSessionAttemptRequest.copyWithResume(
                     request,
-                    RestSessionAttemptRequest.ResumeFrom.of(attemptId, resumeFrom));
+                    RestSessionAttemptRequest.ResumeFrom.of(id(attemptId), resumeFrom));
         }
         else if (resume) {
             request = RestSessionAttemptRequest.copyWithResume(
                     request,
-                    RestSessionAttemptRequest.ResumeFailed.of(attemptId));
+                    RestSessionAttemptRequest.ResumeFailed.of(id(attemptId)));
         }
 
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
 
         ln("Started a session attempt:");
-        ln("  session id: %d", newAttempt.getSessionId());
-        ln("  attempt id: %d", newAttempt.getId());
+        ln("  session id: %s", newAttempt.getSessionId());
+        ln("  attempt id: %s", newAttempt.getId());
         ln("  uuid: %s", newAttempt.getSessionUuid());
         ln("  project: %s", newAttempt.getProject().getName());
         ln("  workflow: %s", newAttempt.getWorkflow().getName());
@@ -156,9 +157,9 @@ public class Retry
         ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
         ln("");
 
-        err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
+        err.printf("* Use `" + programName + " session %s` to show session status.%n", newAttempt.getSessionId());
         err.println(String.format(ENGLISH,
-                "* Use `" + programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
+                "* Use `" + programName + " task %s` and `" + programName + " log %s` to show task status and logs.",
                 newAttempt.getId(), newAttempt.getId()));
     }
 }
