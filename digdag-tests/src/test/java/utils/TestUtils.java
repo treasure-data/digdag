@@ -32,6 +32,9 @@ import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import org.subethamail.smtp.AuthenticationHandler;
+import org.subethamail.smtp.AuthenticationHandlerFactory;
+import org.subethamail.smtp.RejectException;
 import org.subethamail.wiser.Wiser;
 
 import java.io.ByteArrayInputStream;
@@ -42,12 +45,15 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +62,11 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
+import static com.google.common.primitives.Bytes.concat;
 import static io.digdag.core.Version.buildVersion;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -387,11 +396,23 @@ public class TestUtils
     public static void addWorkflow(Path project, String resource)
             throws IOException
     {
-        Path workflow = Paths.get(resource);
-        addWorkflow(project, resource, workflow.getFileName().toString());
+        addResource(project, resource);
+    }
+
+    public static void addResource(Path project, String resource)
+            throws IOException
+    {
+        Path path = Paths.get(resource);
+        addResource(project, resource, path.getFileName().toString());
     }
 
     public static void addWorkflow(Path project, String resource, String workflowName)
+            throws IOException
+    {
+        addResource(project, resource, workflowName);
+    }
+
+    public static void addResource(Path project, String resource, String workflowName)
             throws IOException
     {
         copyResource(resource, project.resolve(workflowName));
@@ -445,9 +466,67 @@ public class TestUtils
         return new ConfigFactory(objectMapper());
     }
 
-    public static Wiser startMailServer(String hostname)
+    public static Wiser startMailServer(String hostname, String user, String password)
+    {
+        AuthenticationHandlerFactory authenticationHandlerFactory = new AuthenticationHandlerFactory()
+        {
+            @Override
+            public List<String> getAuthenticationMechanisms()
+            {
+                return ImmutableList.of("PLAIN");
+            }
+
+            @Override
+            public AuthenticationHandler create()
+            {
+                return new AuthenticationHandler()
+                {
+
+                    private String identity;
+
+                    @Override
+                    public String auth(String clientInput)
+                            throws RejectException
+                    {
+                        String prefix = "AUTH PLAIN ";
+                        if (!clientInput.startsWith(prefix)) {
+                            throw new RejectException();
+                        }
+                        String credentialsBase64 = clientInput.substring(prefix.length());
+                        byte[] credentials = Base64.getDecoder().decode(credentialsBase64);
+
+                        // [authzid] UTF8NUL authcid UTF8NUL passwd
+                        byte[] expectedCredentials = concat(
+                                user.getBytes(UTF_8),
+                                new byte[] {0},
+                                user.getBytes(UTF_8),
+                                new byte[] {0},
+                                password.getBytes(UTF_8)
+                        );
+
+                        if (!Arrays.equals(credentials, expectedCredentials)) {
+                            throw new RejectException();
+                        }
+
+                        this.identity = user;
+                        return null;
+                    }
+
+                    @Override
+                    public Object getIdentity()
+                    {
+                        return identity;
+                    }
+                };
+            }
+        };
+        return startMailServer(hostname, authenticationHandlerFactory);
+    }
+
+    public static Wiser startMailServer(String hostname, AuthenticationHandlerFactory authenticationHandlerFactory)
     {
         Wiser server = new Wiser();
+        server.getServer().setAuthenticationHandlerFactory(authenticationHandlerFactory);
         server.setHostname(hostname);
         server.setPort(0);
         server.start();

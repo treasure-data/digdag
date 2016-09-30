@@ -16,10 +16,10 @@ import utils.TestUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static utils.TestUtils.startMailServer;
 
 public class ErrorServerMailIT
@@ -29,8 +29,10 @@ public class ErrorServerMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
+    private static final String SMTP_USER = "mail-user";
+    private static final String SMTP_PASS = "mail-pass";
 
-    private final Wiser mailServer = startMailServer(HOSTNAME);
+    private final Wiser mailServer = startMailServer(HOSTNAME, SMTP_USER, SMTP_PASS);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -41,8 +43,8 @@ public class ErrorServerMailIT
                     "config.mail.host=" + HOSTNAME,
                     "config.mail.port=" + mailServer.getServer().getPort(),
                     "config.mail.from=" + SENDER,
-                    "config.mail.username=mail-user",
-                    "config.mail.password=mail-pass",
+                    "config.mail.username=" + SMTP_USER,
+                    "config.mail.password=" + SMTP_PASS,
                     "config.mail.tls=false"
             )
             .build();

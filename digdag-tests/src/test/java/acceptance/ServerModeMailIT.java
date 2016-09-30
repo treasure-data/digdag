@@ -1,6 +1,9 @@
 package acceptance;
 
+import acceptance.td.Secrets;
+import io.digdag.client.DigdagClient;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -8,14 +11,16 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 
-import static utils.TestUtils.copyResource;
-import static utils.TestUtils.main;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static utils.TestUtils.copyResource;
+import static utils.TestUtils.main;
 import static utils.TestUtils.startMailServer;
 
 public class ServerModeMailIT
@@ -25,8 +30,10 @@ public class ServerModeMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
+    private static final String USERNAME = "test-smtp-user";
+    private static final String PASSWORD = "test-smtp-pass";
 
-    private final Wiser mailServer = startMailServer(HOSTNAME);
+    private Wiser mailServer = startMailServer(HOSTNAME, USERNAME, PASSWORD);
 
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
@@ -34,14 +41,26 @@ public class ServerModeMailIT
                     "params.mail.host=" + HOSTNAME,
                     "params.mail.port=" + mailServer.getServer().getPort(),
                     "params.mail.from=" + SENDER,
-                    "params.mail.username=mail-user",
-                    "params.mail.password=mail-pass",
+                    "params.mail.username=" + USERNAME,
                     "params.mail.tls=false"
             )
+            .withRandomSecretEncryptionKey()
             .build();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
+
+    private DigdagClient client;
+
+    @Before
+    public void setUp()
+            throws Exception
+    {
+        client = DigdagClient.builder()
+                .host(server.host())
+                .port(server.port())
+                .build();
+    }
 
     @After
     public void tearDown()
@@ -71,6 +90,9 @@ public class ServerModeMailIT
                 "-e", server.endpoint(),
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));
+
+        int projectId = TestUtils.getProjectId(pushStatus);
+        client.setProjectSecret(projectId, "mail.password", PASSWORD);
 
         // Start the workflow
         CommandStatus startStatus = main("start",
