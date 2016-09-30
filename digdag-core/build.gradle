@@ -5,7 +5,7 @@ dependencies {
     compile project(':digdag-plugin-utils')
     compile project(':digdag-guice-rs-server')
 
-    // this dependency is here only to override dependency confliction of
+    // this dependency is here only to override dependency conflict of
     // jackson-module-guice -> guice 3.0.
     // https://github.com/FasterXML/jackson-modules-base/pull/22
     compile 'org.embulk:guice-bootstrap:0.2.1'
