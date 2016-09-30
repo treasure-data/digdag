@@ -1,7 +1,7 @@
 package io.digdag.server.rs;
 
-import io.digdag.client.api.IdName;
-import io.digdag.client.api.NameLongId;
+import io.digdag.client.api.Id;
+import io.digdag.client.api.IdAndName;
 import io.digdag.client.api.NameOptionalId;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
@@ -47,7 +47,7 @@ public final class RestModels
     public static RestProject project(StoredProject proj, StoredRevision lastRevision)
     {
         return RestProject.builder()
-            .id(proj.getId())
+            .id(id(proj.getId()))
             .name(proj.getName())
             .revision(lastRevision.getName())
             .createdAt(proj.getCreatedAt())
@@ -84,9 +84,9 @@ public final class RestModels
             StoredWorkflowDefinition def)
     {
         return RestWorkflowDefinition.builder()
-            .id(def.getId())
+            .id(id(def.getId()))
             .name(def.getName())
-            .project(IdName.of(proj.getId(), proj.getName()))
+            .project(IdAndName.of(id(proj.getId()), proj.getName()))
             .revision(revName)
             .config(def.getConfig())
             .build();
@@ -98,7 +98,7 @@ public final class RestModels
     {
         StoredProject proj = def.getProject();
         return RestWorkflowSessionTime.builder()
-            .project(IdName.of(proj.getId(), proj.getName()))
+            .project(IdAndName.of(id(proj.getId()), proj.getName()))
             .revision(def.getRevisionName())
             .sessionTime(OffsetDateTime.ofInstant(sessionTime, timeZone))
             .timeZone(timeZone)
@@ -108,9 +108,9 @@ public final class RestModels
     public static RestSchedule schedule(StoredSchedule sched, StoredProject proj, ZoneId timeZone)
     {
         return RestSchedule.builder()
-            .id(sched.getId())
-            .project(IdName.of(proj.getId(), proj.getName()))
-            .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
+            .id(id(sched.getId()))
+            .project(IdAndName.of(id(proj.getId()), proj.getName()))
+            .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .disabledAt(sched.getDisabledAt())
@@ -120,8 +120,8 @@ public final class RestModels
     public static RestScheduleSummary scheduleSummary(StoredSchedule sched, ZoneId timeZone)
     {
         return RestScheduleSummary.builder()
-            .id(sched.getId())
-            .workflow(NameLongId.of(sched.getWorkflowName(), sched.getWorkflowDefinitionId()))
+            .id(id(sched.getId()))
+            .workflow(IdAndName.of(id(sched.getWorkflowDefinitionId()), sched.getWorkflowName()))
             .nextRunTime(sched.getNextRunTime())
             .nextScheduleTime(OffsetDateTime.ofInstant(sched.getNextScheduleTime(), timeZone))
             .createdAt(sched.getCreatedAt())
@@ -135,13 +135,13 @@ public final class RestModels
     {
         StoredSessionAttempt attempt = session.getLastAttempt();
         return RestSession.builder()
-                .id(session.getId())
-                .project(IdName.of(session.getProjectId(), projectName))
-                .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId()))
+                .id(id(session.getId()))
+                .project(IdAndName.of(id(session.getProjectId()), projectName))
+                .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId().transform(w -> id(w))))
                 .sessionUuid(session.getUuid())
                 .sessionTime(OffsetDateTime.ofInstant(session.getSessionTime(), attempt.getTimeZone()))
                 .lastAttempt(RestSession.Attempt.builder()
-                        .id(attempt.getId())
+                        .id(id(attempt.getId()))
                         .retryAttemptName(attempt.getRetryAttemptName())
                         .done(attempt.getStateFlags().isDone())
                         .success(attempt.getStateFlags().isSuccess())
@@ -166,10 +166,10 @@ public final class RestModels
     public static RestSessionAttempt attempt(UUID sessionUuid, Session session, StoredSessionAttempt attempt, String projectName)
     {
         return RestSessionAttempt.builder()
-            .id(attempt.getId())
-            .project(IdName.of(session.getProjectId(), projectName))
-            .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId()))
-            .sessionId(attempt.getSessionId())
+            .id(id(attempt.getId()))
+            .project(IdAndName.of(id(session.getProjectId()), projectName))
+            .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId().transform(w -> id(w))))
+            .sessionId(id(attempt.getSessionId()))
             .sessionUuid(sessionUuid)
             .sessionTime(OffsetDateTime.ofInstant(session.getSessionTime(), attempt.getTimeZone()))
             .retryAttemptName(attempt.getRetryAttemptName())
@@ -185,11 +185,13 @@ public final class RestModels
     public static RestTask task(ArchivedTask task)
     {
         return RestTask.builder()
-            .id(task.getId())
+            .id(id(task.getId()))
             .fullName(task.getFullName())
-            .parentId(task.getParentId())
+            .parentId(task.getParentId().transform(p -> id(p)))
             .config(task.getConfig().getNonValidated())
-            .upstreams(task.getUpstreams())
+            .upstreams(task.getUpstreams().stream()
+                    .map(u -> id(u))
+                    .collect(Collectors.toList()))
             .isGroup(task.getTaskType().isGroupingOnly())
             .state(task.getState().toString().toLowerCase())
             .exportParams(task.getConfig().getExport().deepCopy().merge(task.getExportParams()))
@@ -258,5 +260,30 @@ public final class RestModels
             })
             .filter(a -> a != null)
             .collect(Collectors.toList());
+    }
+
+    static Id id(int id)
+    {
+        return Id.of(Long.toString(id));
+    }
+
+    static Id id(long id)
+    {
+        return Id.of(Long.toString(id));
+    }
+
+    static int parseProjectId(Id id)
+    {
+        return Integer.parseInt(id.get());
+    }
+
+    static long parseWorkflowId(Id id)
+    {
+        return Long.parseLong(id.get());
+    }
+
+    static long parseAttemptId(Id id)
+    {
+        return Long.parseLong(id.get());
     }
 }

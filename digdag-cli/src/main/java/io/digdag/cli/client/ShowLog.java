@@ -83,10 +83,10 @@ public class ShowLog
     {
         List<RestLogFileHandle> handles;
         if (taskName.isPresent()) {
-            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get());
+            handles = client.getLogFileHandlesOfTask(id(attemptId), taskName.get());
         }
         else {
-            handles = client.getLogFileHandlesOfAttempt(attemptId);
+            handles = client.getLogFileHandlesOfAttempt(id(attemptId));
         }
 
         return watcher.update(handles);
@@ -95,11 +95,11 @@ public class ShowLog
     private boolean isFinished(DigdagClient client, long attemptId, Optional<String> taskName)
     {
         if (taskName.isPresent()) {
-            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            RestSessionAttempt attempt = client.getSessionAttempt(id(attemptId));
             if (attempt.getDone()) {
                 return true;
             }
-            for (RestTask task : client.getTasks(attemptId)) {
+            for (RestTask task : client.getTasks(id(attemptId))) {
                 if (task.getFullName().startsWith(taskName.get())) {
                     switch (task.getState()) {
                     case "blocked":
@@ -120,7 +120,7 @@ public class ShowLog
             return true;
         }
         else {
-            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            RestSessionAttempt attempt = client.getSessionAttempt(id(attemptId));
             return attempt.getDone();
         }
     }

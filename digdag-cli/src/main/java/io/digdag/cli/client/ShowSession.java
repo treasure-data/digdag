@@ -51,7 +51,7 @@ public class ShowSession
     {
         DigdagClient client = buildClient();
 
-        RestSession session = client.getSession(sessionId);
+        RestSession session = client.getSession(id(sessionId));
         if (session == null) {
             throw systemExit("Session with id " + sessionId + " not found.");
         }
@@ -78,14 +78,14 @@ public class ShowSession
         List<RestSession> sessions;
 
         if (projName == null) {
-            sessions = client.getSessions(Optional.fromNullable(lastId));
+            sessions = client.getSessions(Optional.fromNullable(lastId).transform(s -> id(s)));
         } else {
             RestProject project = client.getProject(projName);
             if (workflowName == null) {
-                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId));
+                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId).transform(s -> id(s)));
             }
             else {
-                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId));
+                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId).transform(s -> id(s)));
             }
         }
 
@@ -102,7 +102,7 @@ public class ShowSession
 
     private void printSession(RestSession session)
     {
-        ln("  session id: %d", session.getId());
+        ln("  session id: %s", session.getId());
         ln("  attempt id: %s", session.getLastAttempt().transform(a -> String.valueOf(a.getId())).or(""));
         ln("  uuid: %s", session.getSessionUuid());
         ln("  project: %s", session.getProject().getName());

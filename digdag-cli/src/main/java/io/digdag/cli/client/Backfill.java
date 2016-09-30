@@ -96,7 +96,7 @@ public class Backfill
 
         ln("Session attempts:");
         for (RestSessionAttempt attempt : attempts) {
-            ln("  id: %d", attempt.getId());
+            ln("  id: %s", attempt.getId());
             ln("  uuid: %s", attempt.getSessionUuid());
             ln("  project: %s", attempt.getProject().getName());
             ln("  workflow: %s", attempt.getWorkflow().getName());

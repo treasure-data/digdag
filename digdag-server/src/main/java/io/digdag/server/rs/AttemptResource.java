@@ -147,10 +147,11 @@ public class AttemptResource
     {
         ProjectStore rs = rm.getProjectStore(getSiteId());
 
-        StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(request.getWorkflowId());
+        StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(
+                RestModels.parseWorkflowId(request.getWorkflowId()));
 
         Optional<Long> resumingAttemptId = request.getResume()
-            .transform(r -> r.getAttemptId());
+            .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
         List<Long> resumingTasks = request.getResume()
             .transform(r -> collectResumingTasks(r))
             .or(ImmutableList.of());
@@ -181,10 +182,12 @@ public class AttemptResource
         switch (resume.getMode()) {
         case FAILED:
             return collectResumingTasksForResumeFailedMode(
-                    ((RestSessionAttemptRequest.ResumeFailed) resume).getAttemptId());
+                    RestModels.parseAttemptId(
+                        ((RestSessionAttemptRequest.ResumeFailed) resume).getAttemptId()));
         case FROM:
             return collectResumingTasksForResumeFromMode(
-                    ((RestSessionAttemptRequest.ResumeFrom) resume).getAttemptId(),
+                    RestModels.parseAttemptId(
+                        ((RestSessionAttemptRequest.ResumeFrom) resume).getAttemptId()),
                     ((RestSessionAttemptRequest.ResumeFrom) resume).getFromTaskNamePattern());
         default:
             throw new IllegalArgumentException("Unknown resuming mode: " + resume.getMode());

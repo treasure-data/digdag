@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSchedule;
 
@@ -78,7 +79,7 @@ public class EnableSchedule
         DigdagClient client = buildClient();
         RestProject project = client.getProject(projectName);
         List<RestSchedule> schedules;
-        Optional<Integer> lastId = Optional.absent();
+        Optional<Id> lastId = Optional.absent();
         while (true) {
             schedules = client.getSchedules(project.getId(), lastId);
             if (schedules.isEmpty()) {
@@ -96,7 +97,7 @@ public class EnableSchedule
             throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
-        client.enableSchedule(scheduleId);
+        client.enableSchedule(id(scheduleId));
         ln("Enabled schedule id: %d", scheduleId);
     }
 }

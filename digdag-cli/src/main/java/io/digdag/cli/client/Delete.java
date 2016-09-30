@@ -44,7 +44,7 @@ public class Delete
         RestProject proj = client.getProject(projName);
 
         ln("Project:");
-        ln("  id: %d", proj.getId());
+        ln("  id: %s", proj.getId());
         ln("  name: %s", proj.getName());
         ln("  latest revision: %s", proj.getRevision());
         ln("  created at: %s", TimeUtil.formatTime(proj.getCreatedAt()));
