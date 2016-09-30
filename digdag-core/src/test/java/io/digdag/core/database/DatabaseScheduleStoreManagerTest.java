@@ -318,7 +318,7 @@ public class DatabaseScheduleStoreManagerTest
         StoredSchedule sched2 = schedList1.get(1);
 
         // Verify that enabling a schedule that has not been disabled is a nop
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });
@@ -329,7 +329,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Disable one of the schedules and verify that lockReadySchedules skips it
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.disableSchedule(schedule.getId());
             return schedule;
         });
@@ -357,7 +357,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Re-enable the schedule and verify that lockReadySchedules processes it
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });
@@ -368,7 +368,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Verify that enabling is idempotent
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });
