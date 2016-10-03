@@ -8,6 +8,7 @@ import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.guice.rs.server.undertow.UndertowServerConfig;
 import org.immutables.value.Value;
 
 import java.util.Map;
@@ -20,25 +21,33 @@ import static java.util.stream.Collectors.toMap;
 @JsonSerialize(as = ImmutableServerConfig.class)
 @JsonDeserialize(as = ImmutableServerConfig.class)
 public interface ServerConfig
+    extends UndertowServerConfig
 {
     public static final int DEFAULT_PORT = 65432;
     public static final String DEFAULT_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
+    @Override
     public int getPort();
 
+    @Override
     public String getBind();
 
     public Optional<String> getServerRuntimeInfoPath();
 
+    @Override
     public Optional<String> getAccessLogPath();
 
+    @Override
     public Optional<Integer> getHttpIoThreads();
 
+    @Override
     public Optional<Integer> getHttpWorkerThreads();
 
+    @Override
     public Optional<Integer> getJmxPort();
 
+    @Override
     public String getAccessLogPattern();
 
     public boolean getExecutorEnabled();

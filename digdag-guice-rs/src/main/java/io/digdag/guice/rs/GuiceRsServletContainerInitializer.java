@@ -41,11 +41,6 @@ public class GuiceRsServletContainerInitializer
         ImmutableList.Builder<Module> modules = ImmutableList.builder();
         Module module;
 
-        module = GuiceRsCommandLineModule.fromInitParameter(context);
-        if (module != null) {
-            modules.add(module);
-        }
-
         module = GuiceRsServerControlModule.fromInitParameter(context);
         if (module != null) {
             modules.add(module);

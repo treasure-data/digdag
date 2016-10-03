@@ -1,8 +1,7 @@
-package io.digdag.server;
+package io.digdag.guice.rs.server;
 
-import java.util.Map;
 import java.util.HashMap;
-import io.undertow.server.HttpServerExchange;
+import java.util.Map;
 
 public class ThreadLocalAccessLogs
 {
@@ -10,7 +9,8 @@ public class ThreadLocalAccessLogs
         new ThreadLocal<Map<String, String>>()
         {
             @Override
-            protected Map<String, String> initialValue() {
+            protected Map<String, String> initialValue()
+            {
                 return new HashMap<>();
             }
         };

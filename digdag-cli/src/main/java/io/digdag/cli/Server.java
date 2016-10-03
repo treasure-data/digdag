@@ -3,10 +3,13 @@ package io.digdag.cli;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.config.ConfigLoaderManager;
+import io.digdag.core.config.PropertyUtils;
 import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.server.ServerBootstrap;
+import io.digdag.server.ServerConfig;
 
 import javax.servlet.ServletException;
 
@@ -107,7 +110,10 @@ public class Server
             throws ServletException, IOException
     {
         // this method doesn't block. it starts some non-daemon threads, setup shutdown handlers, and returns immediately
-        ServerBootstrap.startServer(version, buildServerProperties(), ServerBootstrap.class);
+        Properties props = buildServerProperties();
+        ConfigElement ce = PropertyUtils.toConfigElement(props);
+        ServerConfig serverConfig = ServerConfig.convertFrom(ce);
+        ServerBootstrap.start(new ServerBootstrap(version, serverConfig));
     }
 
     protected Properties buildServerProperties()

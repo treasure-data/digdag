@@ -139,10 +139,7 @@ public class DigdagEmbed
 
         private DigdagEmbed build(boolean destroyOnShutdownHook)
         {
-            final org.embulk.guice.Bootstrap bootstrap = new org.embulk.guice.Bootstrap()
-                .requireExplicitBindings(true)
-                .addModules(standardModules(systemConfig));
-            moduleOverrides.stream().forEach(override -> bootstrap.overrideModules(override));
+            org.embulk.guice.Bootstrap bootstrap = build();
 
             LifeCycleInjector injector;
             if (destroyOnShutdownHook) {
@@ -153,6 +150,15 @@ public class DigdagEmbed
             }
 
             return new DigdagEmbed(injector);
+        }
+
+        public org.embulk.guice.Bootstrap build()
+        {
+            org.embulk.guice.Bootstrap bootstrap = new org.embulk.guice.Bootstrap()
+                .requireExplicitBindings(true)
+                .addModules(standardModules(systemConfig));
+            moduleOverrides.stream().forEach(override -> bootstrap.overrideModules(override));
+            return bootstrap;
         }
 
         private List<Module> standardModules(ConfigElement systemConfig)
