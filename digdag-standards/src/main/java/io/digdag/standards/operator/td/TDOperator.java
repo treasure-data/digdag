@@ -7,6 +7,7 @@ import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.TDClientHttpUnauthorizedException;
 import com.treasuredata.client.model.TDJob;
@@ -15,11 +16,13 @@ import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Map;
@@ -31,6 +34,12 @@ import static io.digdag.util.RetryExecutor.retryExecutor;
 public class TDOperator
         implements Closeable
 {
+    private static final Logger logger = LoggerFactory.getLogger(TDOperator.class);
+
+    private static final int INITIAL_RETRY_WAIT = 100;
+    private static final int MAX_RETRY_WAIT = 500;
+    private static final int MAX_RETRY_LIMIT = 3;
+
     private static final Integer INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 30;
 
@@ -47,6 +56,9 @@ public class TDOperator
     }
 
     static final RetryExecutor defaultRetryExecutor = retryExecutor()
+            .withInitialRetryWait(INITIAL_RETRY_WAIT)
+            .withMaxRetryWait(MAX_RETRY_WAIT)
+            .withRetryLimit(MAX_RETRY_LIMIT)
             .retryIf((exception) -> !isDeterministicClientException(exception));
 
     public static String escapeHiveIdent(String ident)
@@ -167,10 +179,8 @@ public class TDOperator
         return client.existsTable(database, table);
     }
 
-    public String submitNewJob(TDJobRequest request)
+    private String submitNewJob(TDJobRequest request)
     {
-        // TODO retry with an unique id and ignore conflict
-
         String jobId;
         try {
             jobId = client.submit(request);
@@ -188,7 +198,7 @@ public class TDOperator
         return jobId;
     }
 
-    public String submitNewJob(Submitter submitter)
+    private String submitNewJob(Submitter submitter)
     {
         try {
             return submitter.submit(client);
@@ -252,40 +262,88 @@ public class TDOperator
 
         JobState jobState = state.get(key, JobState.class, JobState.empty());
 
-        // Generate and store domain key before starting the job
+        // 0. Generate and store domain key before starting the job
+
         Optional<String> domainKey = jobState.domainKey();
         if (!domainKey.isPresent()) {
             state.set(key, jobState.withDomainKey(UUID.randomUUID().toString()));
             throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
         }
 
-        // Start the job
+        // 1. Start the job
+
         Optional<String> jobId = jobState.jobId();
         if (!jobId.isPresent()) {
             assert domainKey.isPresent();
-            state.set(key, jobState.withJobId(starter.startJob(this, domainKey.get())));
+
+            String newJobId;
+            try {
+                newJobId = starter.startJob(this, domainKey.get());
+            }
+            catch (TDClientException e) {
+                logger.warn("failed to start job: domainKey={}", domainKey.get(), e);
+                throw errorPollingException(state, key, jobState);
+            }
+
+            // Reset error polling
+            jobState = jobState.withErrorPollIteration(Optional.absent());
+
+            state.set(key, jobState.withJobId(newJobId));
             throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
         }
 
-        // Check if the job is done
+        // 2. Check if the job is done
+
         TDJobOperator job = newJobOperator(jobId.get());
-        TDJobSummary status = job.checkStatus();
-        boolean done = status.getStatus().isFinished();
-        if (!done) {
-            int pollIteration = jobState.pollIteration().or(0);
-            int pollInterval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, pollIteration), MAX_POLL_INTERVAL);
-            state.set(key, jobState.withPollIteration(pollIteration + 1));
-            throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
+
+        TDJobSummary status;
+        try {
+            status = job.checkStatus();
+        }
+        catch (TDClientException e) {
+            logger.warn("failed to check job status: domainKey={}, jobId={}", domainKey.get(), jobId.get(), e);
+            throw errorPollingException(state, key, jobState);
         }
 
-        // Fail the task if the job failed
+        // Reset error polling
+        jobState = jobState.withErrorPollIteration(Optional.absent());
+
+        if (!status.getStatus().isFinished()) {
+            throw pollingException(state, key, jobState);
+        }
+
+        // 3. Fail the task if the job failed
+
         if (status.getStatus() != SUCCESS) {
-            TDJob jobInfo = job.getJobInfo();
+            TDJob jobInfo;
+            try {
+                jobInfo = job.getJobInfo();
+            }
+            catch (TDClientException e) {
+                logger.warn("failed to get job failure info: domainKey={}, jobId={}, status={}", domainKey.get(), jobId.get(), status.getStatus(), e);
+                throw errorPollingException(state, key, jobState);
+            }
             String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
             throw new TaskExecutionException(message, ConfigElement.empty());
         }
 
         return job;
+    }
+
+    private TaskExecutionException pollingException(Config state, String key, JobState jobState)
+    {
+        int iteration = jobState.pollIteration().or(0);
+        int interval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, iteration), MAX_POLL_INTERVAL);
+        state.set(key, jobState.withPollIteration(iteration + 1));
+        throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+    }
+
+    private TaskExecutionException errorPollingException(Config state, String key, JobState jobState)
+    {
+        int iteration = jobState.errorPollIteration().or(0);
+        int interval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, iteration), MAX_POLL_INTERVAL);
+        state.set(key, jobState.withErrorPollIteration(iteration + 1));
+        throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
     }
 
     static boolean isDeterministicClientException(Exception ex)
@@ -320,6 +378,7 @@ public class TDOperator
         Optional<String> jobId();
         Optional<String> domainKey();
         Optional<Integer> pollIteration();
+        Optional<Integer> errorPollIteration();
 
         JobState withJobId(String value);
         JobState withJobId(Optional<String> value);
@@ -327,6 +386,8 @@ public class TDOperator
         JobState withDomainKey(Optional<String> value);
         JobState withPollIteration(int value);
         JobState withPollIteration(Optional<Integer> value);
+        JobState withErrorPollIteration(int value);
+        JobState withErrorPollIteration(Optional<Integer> value);
 
         static JobState empty()
         {

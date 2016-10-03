@@ -213,7 +213,7 @@ public class TdOperatorFactory
             .setDomainKey(domainKey)
             .createTDJobRequest();
 
-        return op.submitNewJob(req);
+        return op.submitNewJobWithRetry(req);
     }
 
     static void downloadPreviewRows(TDJobOperator j, String description)

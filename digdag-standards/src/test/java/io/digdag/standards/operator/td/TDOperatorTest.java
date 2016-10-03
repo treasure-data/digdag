@@ -5,6 +5,9 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
+import com.treasuredata.client.TDClientException;
+import com.treasuredata.client.TDClientHttpConflictException;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.api.JacksonTimeModule;
@@ -24,6 +27,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -166,6 +172,142 @@ public class TDOperatorTest
         // 3. Check job status (SUCCESS)
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
         TDJobOperator jobOperator = operator.runJob(state3, jobStateKey, jobStarter);
+        assertThat(jobOperator.getJobId(), is(jobId));
+
+        verifyNoMoreInteractions(jobStarter);
+    }
+
+    @Test
+    public void verifyRetries()
+            throws Exception
+    {
+        TDOperator operator = new TDOperator(client, "foobar");
+
+        String jobStateKey = "fooJob";
+
+        Config state = configFactory.create();
+
+        // 1. Create domain key
+        String domainKey;
+        {
+            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+            verifyZeroInteractions(jobStarter);
+            state = e.getStateParams(configFactory).get();
+            assertThat(state.has(jobStateKey), is(true));
+            TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+            domainKey = jobState.domainKey().get();
+        }
+
+        int errorPollIteration = 0;
+
+        // 2. Start job with domain key created above
+
+        for (int i = 0; i < 7; i++) {
+
+            // 2.a. Failure: Netsplit
+            {
+                errorPollIteration++;
+                reset(jobStarter);
+                when(jobStarter.startJob(any(TDOperator.class), anyString()))
+                        .thenThrow(new TDClientException(TDClientException.ErrorType.EXECUTION_FAILURE, "Error"));
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                verify(jobStarter).startJob(operator, domainKey);
+                state = e.getStateParams(configFactory).get();
+                TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+                assertThat(jobState.domainKey(), is(Optional.of(domainKey)));
+                assertThat(jobState.pollIteration(), is(Optional.absent()));
+                assertThat(jobState.errorPollIteration(), is(Optional.of(errorPollIteration)));
+            }
+
+            // 2.b. Failure: 503
+            {
+                errorPollIteration++;
+                reset(jobStarter);
+                when(jobStarter.startJob(any(TDOperator.class), anyString()))
+                        .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                verify(jobStarter).startJob(operator, domainKey);
+                state = e.getStateParams(configFactory).get();
+                TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+                assertThat(jobState.domainKey(), is(Optional.of(domainKey)));
+                assertThat(jobState.pollIteration(), is(Optional.absent()));
+                assertThat(jobState.errorPollIteration(), is(Optional.of(errorPollIteration)));
+            }
+        }
+
+        // 2.c Successfully start job
+        String jobId = "badf00d4711";
+        {
+            errorPollIteration = 0;
+            reset(jobStarter);
+            when(jobStarter.startJob(any(TDOperator.class), anyString())).thenReturn(jobId);
+            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+            verify(jobStarter).startJob(operator, domainKey);
+            state = e.getStateParams(configFactory).get();
+            TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+            assertThat(jobState.pollIteration(), is(Optional.absent()));
+            assertThat(jobState.errorPollIteration(), is(Optional.absent()));
+            assertThat(jobState.jobId(), is(Optional.of(jobId)));
+        }
+
+        // 3. Check job status
+
+        Optional<Integer> pollIteration = Optional.absent();
+
+        TDJob.Status[] statuses = {TDJob.Status.QUEUED, TDJob.Status.RUNNING};
+        for (TDJob.Status status : statuses) {
+
+            for (int i = 0; i < 2; i++) {
+
+                // 3.a. Failure: Netsplit
+                {
+                    errorPollIteration++;
+                    reset(client);
+                    when(client.jobStatus(jobId))
+                            .thenThrow(new TDClientException(TDClientException.ErrorType.EXECUTION_FAILURE, "Error"));
+                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                    verify(client, times(4)).jobStatus(jobId);
+                    state = e.getStateParams(configFactory).get();
+                    TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+                    assertThat(jobState.domainKey(), is(Optional.of(domainKey)));
+                    assertThat(jobState.pollIteration(), is(pollIteration));
+                    assertThat(jobState.errorPollIteration(), is(Optional.of(errorPollIteration)));
+                }
+
+                // 3.b. Failure: 503
+                {
+                    errorPollIteration++;
+                    reset(client);
+                    when(client.jobStatus(jobId))
+                            .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
+                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                    verify(client, times(4)).jobStatus(jobId);
+                    state = e.getStateParams(configFactory).get();
+                    TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+                    assertThat(jobState.domainKey(), is(Optional.of(domainKey)));
+                    assertThat(jobState.pollIteration(), is(pollIteration));
+                    assertThat(jobState.errorPollIteration(), is(Optional.of(errorPollIteration)));
+                }
+            }
+
+            // 3.c. Successfully check status
+            {
+                pollIteration = pollIteration.transform(it -> it + 1).or(Optional.of(1));
+                errorPollIteration = 0;
+                reset(client);
+                when(client.jobStatus(jobId)).thenReturn(summary(jobId, status));
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                verify(client).jobStatus(jobId);
+                state = e.getStateParams(configFactory).get();
+                TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
+                assertThat(jobState.pollIteration(), is(pollIteration));
+            }
+        }
+
+
+        // 3.d Job SUCCESS
+        when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
+        TDJobOperator jobOperator = operator.runJob(state, jobStateKey, jobStarter);
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);

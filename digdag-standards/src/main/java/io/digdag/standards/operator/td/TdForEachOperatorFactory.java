@@ -121,7 +121,7 @@ public class TdForEachOperatorFactory
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
-            String jobId = op.submitNewJob(req);
+            String jobId = op.submitNewJobWithRetry(req);
             logger.info("Started {} job id={}:\n{}", engine, jobId, query);
 
             return jobId;
