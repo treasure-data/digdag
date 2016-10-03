@@ -282,6 +282,9 @@ public class TDOperator
             }
             catch (TDClientException e) {
                 logger.warn("failed to start job: domainKey={}", domainKey.get(), e);
+                if (isDeterministicClientException(e)) {
+                    throw e;
+                }
                 throw errorPollingException(state, key, jobState);
             }
 
@@ -302,6 +305,9 @@ public class TDOperator
         }
         catch (TDClientException e) {
             logger.warn("failed to check job status: domainKey={}, jobId={}", domainKey.get(), jobId.get(), e);
+            if (isDeterministicClientException(e)) {
+                throw e;
+            }
             throw errorPollingException(state, key, jobState);
         }
 
@@ -321,6 +327,9 @@ public class TDOperator
             }
             catch (TDClientException e) {
                 logger.warn("failed to get job failure info: domainKey={}, jobId={}, status={}", domainKey.get(), jobId.get(), status.getStatus(), e);
+                if (isDeterministicClientException(e)) {
+                    throw e;
+                }
                 throw errorPollingException(state, key, jobState);
             }
             String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();

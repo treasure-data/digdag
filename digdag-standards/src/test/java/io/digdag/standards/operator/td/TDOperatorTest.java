@@ -8,6 +8,8 @@ import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
 import com.treasuredata.client.TDClientHttpException;
+import com.treasuredata.client.TDClientHttpNotFoundException;
+import com.treasuredata.client.TDClientHttpUnauthorizedException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
 import io.digdag.client.api.JacksonTimeModule;
@@ -25,6 +27,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -311,6 +314,26 @@ public class TDOperatorTest
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);
+    }
+
+    @Test
+    public void verifyNoRetryOn404()
+            throws Exception
+    {
+        TDOperator operator = new TDOperator(client, "foobar");
+
+        String jobStateKey = "fooJob";
+
+        Config state = configFactory.create();
+
+        // Create domain key
+        runJobIteration(operator, state, jobStateKey, jobStarter);
+
+        // Start job: Fail with 404
+        when(jobStarter.startJob(any(TDOperator.class), anyString()))
+                .thenThrow(new TDClientHttpNotFoundException("Database Not Found"));
+        exception.expect(TDClientHttpNotFoundException.class);
+        operator.runJob(state, jobStateKey, jobStarter);
     }
 
     @Test
