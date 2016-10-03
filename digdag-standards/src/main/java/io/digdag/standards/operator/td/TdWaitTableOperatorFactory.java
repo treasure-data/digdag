@@ -98,6 +98,8 @@ public class TdWaitTableOperatorFactory
         @Override
         public TaskResult runTask(TaskExecutionContext ctx)
         {
+            // TODO: handle netsplits
+
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
                 // Check if table exists using rest api

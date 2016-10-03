@@ -65,6 +65,8 @@ public class TdDdlOperatorFactory
             List<String> createDatabaseList = params.getListOrEmpty("create_databases", String.class);
             List<String> emptyDatabaseList = params.getListOrEmpty("empty_databases", String.class);
 
+            // TODO: handle netsplits using polling exceptions
+
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
                 for (String d : Iterables.concat(dropDatabaseList, emptyDatabaseList)) {
                     logger.info("Deleting TD database {}.{}", d);

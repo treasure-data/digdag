@@ -134,6 +134,8 @@ public class TdWaitOperatorFactory
 
         private boolean fetchJobResult(TDJobOperator job)
         {
+            // TODO: handle netsplits
+
             Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
             // There must be at least one row in the result for the wait condition to be fulfilled.

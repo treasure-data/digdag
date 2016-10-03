@@ -129,6 +129,8 @@ public class TdForEachOperatorFactory
 
         private List<Config> fetchRows(TDJobOperator job)
         {
+            // TODO: handle netsplits
+
             List<String> columnNames = job.getResultColumnNames();
             return job.getResult(ite -> {
                 List<Config> rows = new ArrayList<>();
