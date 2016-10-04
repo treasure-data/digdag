@@ -305,7 +305,7 @@ public class Config
     }
 
     @SuppressWarnings("unchecked")
-    public <E> List<E> parseListOrEmpty(String key, Class<E> elementType)
+    public <E> List<E> parseListOrGetEmpty(String key, Class<E> elementType)
     {
         JsonNode parsed = tryParseNested(key);
         if (parsed == null) {
@@ -354,7 +354,7 @@ public class Config
         }
     }
 
-    public Config parseNestedOrEmpty(String key)
+    public Config parseNestedOrGetEmpty(String key)
     {
         JsonNode parsed = tryParseNested(key);
         if (parsed == null) {
@@ -370,8 +370,11 @@ public class Config
 
     private JsonNode tryParseNested(String key)
     {
-        JsonNode node = get(key, JsonNode.class);
-        if (node.isTextual()) {
+        JsonNode node = get(key, JsonNode.class, null);
+        if (node == null) {
+            return null;
+        }
+        else if (node.isTextual()) {
             try {
                 return mapper.readTree(node.textValue());
             }
