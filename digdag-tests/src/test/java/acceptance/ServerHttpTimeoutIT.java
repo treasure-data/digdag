@@ -25,9 +25,9 @@ public class ServerHttpTimeoutIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .inProcess(false)
             .configuration(
-                    "server.http.no-request-timeout=2000",
-                    "server.http.request-parse-timeout=2000",
-                    "server.http.io-idle-timeout=11000"
+                    "server.http.no-request-timeout=2",
+                    "server.http.request-parse-timeout=2",
+                    "server.http.io-idle-timeout=11"
                     )
             .build();
 
