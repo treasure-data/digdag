@@ -1,0 +1,6 @@
++for-a=1:
+  echo>: value is ${a}
+  _export: {a: 1}
++for-a=2:
+  echo>: value is ${a}
+  _export: {a: 2}
