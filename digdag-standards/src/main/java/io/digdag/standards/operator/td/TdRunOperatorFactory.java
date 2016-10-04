@@ -85,9 +85,8 @@ public class TdRunOperatorFactory
         @Override
         protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
         {
-            // TODO: handle netsplits
+            downloadJobResult(job, workspace, downloadFile, state);
 
-            downloadJobResult(job, workspace, downloadFile);
             if (preview) {
                 TdOperatorFactory.downloadPreviewRows(job, "job id " + job.getJobId());
             }
