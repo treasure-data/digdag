@@ -5,6 +5,8 @@ timezone: UTC
     data: |
       select 1;
   database: sample_datasets
+  preview: true
+  download_file: result.csv
 
 +post:
   sh>: touch ${outfile}
