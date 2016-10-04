@@ -3,6 +3,7 @@ package acceptance;
 import com.google.common.base.Optional;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
 import org.hamcrest.Matchers;
@@ -114,7 +115,7 @@ public class ServerScheduleIT
                 projectDir.toString());
         assertThat(initStatus.code(), is(0));
 
-        int projectId;
+        Id projectId;
 
         // Push a project that has daily schedule
         copyResource("acceptance/schedule/daily10.dig", projectDir.resolve("schedule.dig"));
@@ -158,7 +159,7 @@ public class ServerScheduleIT
 
     interface ScheduleModifier
     {
-        void perform(DigdagClient client, String project, String workflow, int scheduleId);
+        void perform(DigdagClient client, String project, String workflow, Id scheduleId);
     }
 
     @Test
@@ -325,7 +326,7 @@ public class ServerScheduleIT
     {
         Files.createDirectories(projectDir);
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
-        int projectId = pushProject(server.endpoint(), projectDir);
+        Id projectId = pushProject(server.endpoint(), projectDir);
 
         // Delete project
         client.deleteProject(projectId);
@@ -344,7 +345,7 @@ public class ServerScheduleIT
     {
         Files.createDirectories(projectDir);
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
-        int projectId = pushProject(server.endpoint(), projectDir);
+        Id projectId = pushProject(server.endpoint(), projectDir);
 
         // Delete project
         client.deleteProject(projectId);
@@ -361,7 +362,7 @@ public class ServerScheduleIT
     {
         Files.createDirectories(projectDir);
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
-        int projectId = pushProject(server.endpoint(), projectDir);
+        Id projectId = pushProject(server.endpoint(), projectDir);
 
         exception.expectMessage(containsString("schedule not found in the latest revision"));
         exception.expectMessage(not(containsString("HTTP 404 Not Found")));

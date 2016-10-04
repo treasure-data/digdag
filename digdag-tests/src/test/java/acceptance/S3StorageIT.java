@@ -2,6 +2,7 @@ package acceptance;
 
 import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
@@ -95,8 +96,8 @@ public class S3StorageIT
         }
 
         // Start the workflow
-        long sessionId;
-        long attemptId;
+        Id sessionId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),

@@ -2,6 +2,7 @@ package acceptance;
 
 import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
@@ -101,8 +102,8 @@ public class InitPushStartIT
                 .and(lessThan(now + error))));
 
         // Start the workflow
-        long sessionId;
-        long attemptId;
+        Id sessionId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -285,8 +286,8 @@ public class InitPushStartIT
         }
 
         // Start the workflow with session_time = 2016-01-01
-        long sessionId;
-        long attemptId;
+        Id sessionId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),

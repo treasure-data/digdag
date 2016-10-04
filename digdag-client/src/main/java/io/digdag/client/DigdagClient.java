@@ -270,7 +270,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", projId));
     }
 
-    public List<RestRevision> getRevisions(Id projId, Optional<Integer> lastId)
+    public List<RestRevision> getRevisions(Id projId, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
                 target("/api/projects/{id}/revisions")
@@ -412,14 +412,14 @@ public class DigdagClient implements AutoCloseable
                 target("/api/schedules"));
     }
 
-    public List<RestSchedule> getSchedules(Optional<Integer> lastId)
+    public List<RestSchedule> getSchedules(Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSchedule>>() { },
                 target("/api/schedules")
                 .queryParam("last_id", lastId.orNull()));
     }
 
-    public List<RestSchedule> getSchedules(Id projectId, Optional<Integer> lastId)
+    public List<RestSchedule> getSchedules(Id projectId, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestSchedule>>() {},
                 target("/api/projects/{id}/schedules")

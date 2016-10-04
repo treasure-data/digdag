@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.After;
 import org.junit.Before;
@@ -96,7 +97,7 @@ public class ErrorServerMailIT
                 "error", "error",
                 "--session", LOCAL_SESSION_TIME);
         assertThat(startStatus.code(), is(0));
-        long attemptId = TestUtils.getAttemptId(startStatus);
+        Id attemptId = TestUtils.getAttemptId(startStatus);
 
         // Wait for the attempt to fail
         RestSessionAttempt attempt = null;
