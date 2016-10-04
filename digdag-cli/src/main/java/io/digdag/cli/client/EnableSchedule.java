@@ -70,7 +70,7 @@ public class EnableSchedule
         RestProject project = client.getProject(projectName);
         RestSchedule schedule = client.getSchedule(project.getId(), workflowName);
         client.enableSchedule(schedule.getId());
-        ln("Enabled schedule id: %d", schedule.getId());
+        ln("Enabled schedule id: %s", schedule.getId());
     }
 
     private void enableProjectSchedules(String projectName)
@@ -87,7 +87,7 @@ public class EnableSchedule
             }
             for (RestSchedule schedule : schedules) {
                 client.enableSchedule(schedule.getId());
-                ln("Enabled schedule id: %d", schedule.getId());
+                ln("Enabled schedule id: %s", schedule.getId());
             }
             lastId = Optional.of(schedules.get(schedules.size() - 1).getId());
         }

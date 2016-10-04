@@ -270,7 +270,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("id", projId));
     }
 
-    public List<RestRevision> getRevisions(Id projId, Optional<Integer> lastId)
+    public List<RestRevision> getRevisions(Id projId, Optional<Id> lastId)
     {
         return doGet(new GenericType<List<RestRevision>>() { },
                 target("/api/projects/{id}/revisions")

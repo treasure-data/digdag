@@ -3,6 +3,7 @@ package acceptance.td;
 import com.google.common.collect.ImmutableMap;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import junitparams.custom.combined.CombinedParameters;
@@ -51,7 +52,7 @@ public class TdWaitIT
 
     protected Path projectDir;
     protected String projectName;
-    protected int projectId;
+    protected Id projectId;
 
     protected String tempDatabase;
 
@@ -154,7 +155,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_bad_query.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_bad_query", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_bad_query", ImmutableMap.<String, String>builder()
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
                     .build());
@@ -171,7 +172,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_defaults.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_defaults", ImmutableMap.<String, String>builder()
                     .put("wait_table", "nasdaq")
                     .put("wait_rows", "1")
                     .put("database", "sample_datasets")
@@ -189,7 +190,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/" + workflow, "workflow.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.<String, String>builder()
                     .put("wait_table", "nasdaq")
                     .put("wait_rows", "1")
                     .put("database", "sample_datasets")
@@ -209,7 +210,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                     .put("wait_poll_interval", "5s")
                     .put("wait_table", "nasdaq")
                     .put("wait_limit", "1")
@@ -233,7 +234,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_truthiness.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_truthiness", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_truthiness", ImmutableMap.<String, String>builder()
                     .put("wait_engine", engine)
                     .put("database", "sample_datasets")
                     .put("outfile", outfile.toString())
@@ -253,7 +254,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait_falsiness.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_falsiness", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait_falsiness", ImmutableMap.<String, String>builder()
                     .put("select_value", selectValue)
                     .put("wait_engine", engine)
                     .put("database", "sample_datasets")
@@ -320,7 +321,7 @@ public class TdWaitIT
         String table = "td_wait_test";
 
         addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+        Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                 .put("database", tempDatabase)
                 .put("wait_poll_interval", "5s")
                 .put("wait_table", table)
@@ -399,7 +400,7 @@ public class TdWaitIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/td/td_wait/td_wait.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_wait", ImmutableMap.<String, String>builder()
                     .put("wait_engine", "presto")
                     .put("wait_poll_interval", "1s")
                     .put("wait_table", "nasdaq")
@@ -413,7 +414,7 @@ public class TdWaitIT
             CommandStatus logStatus = main("log",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
-                    Long.toString(attemptId));
+                    String.valueOf(attemptId));
             assertThat(logStatus.errUtf8(), logStatus.code(), is(0));
             assertThat(logStatus.outUtf8(), containsString("poll interval must be at least"));
         }

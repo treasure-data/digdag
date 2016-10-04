@@ -1,5 +1,6 @@
 package acceptance;
 
+import io.digdag.client.api.Id;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -105,7 +106,7 @@ public class CallIT
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Start the workflow
-        long attemptId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),

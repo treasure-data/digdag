@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ObjectArrays;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -270,7 +271,7 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
 
-        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         DigdagClient digdagClient = DigdagClient.builder()
                 .host(server.host())
@@ -279,7 +280,7 @@ public class TdIT
 
         digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
 
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
+        Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
                 "td.use_ssl", "false"));
 
@@ -301,7 +302,7 @@ public class TdIT
         copyResource("acceptance/td/td/td.dig", projectDir.resolve("workflow.dig"));
         copyResource("acceptance/td/td/query.sql", projectDir.resolve("query.sql"));
 
-        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         DigdagClient digdagClient = DigdagClient.builder()
                 .host(server.host())
@@ -310,7 +311,7 @@ public class TdIT
 
         digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
 
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
+        Id attemptId = pushAndStart(server.endpoint(), projectDir, "workflow", ImmutableMap.of(
                 "outfile", outfile.toString(),
                 "td.use_ssl", "false"));
 

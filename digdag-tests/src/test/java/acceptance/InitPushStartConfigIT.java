@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
@@ -18,9 +19,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static utils.TestUtils.ATTEMPT_ID_PATTERN;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptLogs;
+import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.main;
 
 public class InitPushStartConfigIT
@@ -79,7 +80,7 @@ public class InitPushStartConfigIT
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Start the workflow
-        long attemptId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -87,9 +88,7 @@ public class InitPushStartConfigIT
                     "echo_params", "echo_params",
                     "--session", "now");
             assertThat(startStatus.code(), is(0));
-            Matcher startAttemptIdMatcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
-            assertThat(startAttemptIdMatcher.find(), is(true));
-            attemptId = Long.parseLong(startAttemptIdMatcher.group(1));
+            attemptId = getAttemptId(startStatus);
         }
 
         // Wait for the attempt to complete

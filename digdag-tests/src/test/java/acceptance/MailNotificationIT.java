@@ -1,5 +1,6 @@
 package acceptance;
 
+import io.digdag.client.api.Id;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -129,7 +130,7 @@ public class MailNotificationIT
     public void testSessionSuccess()
             throws Exception
     {
-        long attemptId = pushAndStart("acceptance/notification/success.dig");
+        Id attemptId = pushAndStart("acceptance/notification/success.dig");
         expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
         Thread.sleep(5000);
@@ -138,7 +139,7 @@ public class MailNotificationIT
         assertThat(mailServer.getMessages().size(), is(0));
     }
 
-    private long pushAndStart(String workflow)
+    private Id pushAndStart(String workflow)
             throws IOException
     {
         copyResource(workflow, projectDir.resolve(WORKFLOW_NAME + ".dig"));
