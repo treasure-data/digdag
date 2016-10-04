@@ -1,24 +1,29 @@
 package io.digdag.core.workflow;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Environment;
 import io.digdag.core.agent.ConfigEvalEngine;
 import io.digdag.core.agent.OperatorRegistry;
-import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.ImmutableTaskRequest;
+import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TemplateEngine;
 
+import java.util.Properties;
 import java.util.Map;
 import java.util.UUID;
 import java.time.Instant;
@@ -69,5 +74,59 @@ public class OperatorTestingUtils
             .localConfig(newConfig())
             .lastStateParams(newConfig())
             .build();
+    }
+
+    public static TestingTaskExecutionContext newContext()
+    {
+        return new TestingTaskExecutionContext(TestingSecretProvider.empty());
+    }
+
+    public static class TestingTaskExecutionContext
+            implements TaskExecutionContext
+    {
+        private final SecretProvider secrets;
+
+        public TestingTaskExecutionContext(SecretProvider secrets)
+        {
+            this.secrets = secrets;
+        }
+
+        @Override
+        public SecretProvider secrets()
+        {
+            return secrets;
+        }
+
+        public TestingTaskExecutionContext withSecrets(Properties secretsProps)
+        {
+            return new TestingTaskExecutionContext(
+                    TestingSecretProvider.fromProperties(secretsProps));
+        }
+    }
+
+    private static class TestingSecretProvider
+            implements SecretProvider
+    {
+        public static TestingSecretProvider empty()
+        {
+            return fromProperties(new Properties());
+        }
+
+        public static TestingSecretProvider fromProperties(Properties props)
+        {
+            return new TestingSecretProvider(props);
+        }
+
+        private final Properties props;
+
+        private TestingSecretProvider(Properties props)
+        {
+            this.props = props;
+        }
+
+        public Optional<String> getSecretOptional(String key)
+        {
+            return Optional.fromNullable(props.getProperty(key));
+        }
     }
 }
