@@ -1,0 +1,18 @@
+timezone: UTC
+
++prep:
+  td_ddl>:
+  create_tables: ["drop_table_1", "drop_table_2"]
+  create_databases: ["${drop_db_1}", "${drop_db_2}"]
+
++ddl:
+  td_ddl>:
+  create_tables: ["create_table_1", "create_table_2"]
+  empty_tables: ["empty_table_1", "empty_table_2"]
+  drop_tables: ["drop_table_1", "drop_table_2"]
+  create_databases: ["${create_db_1}", "${create_db_2}"]
+  drop_databases: ["${drop_db_1}", "${drop_db_2}"]
+  empty_databases: ["${empty_db_1}", "${empty_db_2}"]
+
++post:
+  sh>: touch ${outfile}

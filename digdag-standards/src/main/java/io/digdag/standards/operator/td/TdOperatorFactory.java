@@ -213,7 +213,7 @@ public class TdOperatorFactory
             .setDomainKey(domainKey)
             .createTDJobRequest();
 
-        return op.submitNewJob(req);
+        return op.submitNewJobWithRetry(req);
     }
 
     static void downloadPreviewRows(TDJobOperator j, String description)
@@ -296,6 +296,8 @@ public class TdOperatorFactory
 
     static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile)
     {
+        // TODO: handle netsplits
+
         if (downloadFile.isPresent()) {
             j.getResult(ite -> {
                 try (BufferedWriter out = workspace.newBufferedWriter(downloadFile.get(), UTF_8)) {

@@ -126,7 +126,7 @@ public class TdWaitOperatorFactory
                     .setDomainKey(domainKey)
                     .createTDJobRequest();
 
-            String jobId = op.submitNewJob(req);
+            String jobId = op.submitNewJobWithRetry(req);
             logger.info("Started {} job id={}:\n{}", engine, jobId, query);
 
             return jobId;
@@ -134,6 +134,8 @@ public class TdWaitOperatorFactory
 
         private boolean fetchJobResult(TDJobOperator job)
         {
+            // TODO: handle netsplits
+
             Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
 
             // There must be at least one row in the result for the wait condition to be fulfilled.

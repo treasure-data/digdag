@@ -122,7 +122,7 @@ public class TdForEachOperatorFactory
                     .setScheduledTime(request.getSessionTime().getEpochSecond())
                     .createTDJobRequest();
 
-            String jobId = op.submitNewJob(req);
+            String jobId = op.submitNewJobWithRetry(req);
             logger.info("Started {} job id={}:\n{}", engine, jobId, query);
 
             return jobId;
@@ -130,6 +130,8 @@ public class TdForEachOperatorFactory
 
         private List<Config> fetchRows(TDJobOperator job)
         {
+            // TODO: handle netsplits
+
             List<String> columnNames = job.getResultColumnNames();
             return job.getResult(ite -> {
                 List<Config> rows = new ArrayList<>();

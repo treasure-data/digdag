@@ -98,6 +98,8 @@ public class TdWaitTableOperatorFactory
         @Override
         public TaskResult runTask(TaskExecutionContext ctx)
         {
+            // TODO: handle netsplits
+
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
                 // Check if table exists using rest api
@@ -165,9 +167,10 @@ public class TdWaitTableOperatorFactory
                     .setQuery(query)
                     .setRetryLimit(jobRetry)
                     .setPriority(priority)
+                    .setDomainKey(domainKey)
                     .createTDJobRequest();
 
-            String jobId = op.submitNewJob(req);
+            String jobId = op.submitNewJobWithRetry(req);
             logger.info("Started {} job id={}:\n{}", engine, jobId, query);
             return jobId;
         }

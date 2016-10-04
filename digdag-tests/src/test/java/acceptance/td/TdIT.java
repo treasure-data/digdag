@@ -2,6 +2,7 @@ package acceptance.td;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
 import io.netty.channel.ChannelHandlerContext;
@@ -48,12 +49,14 @@ import java.util.stream.Collectors;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
 import static acceptance.td.Secrets.TD_API_KEY;
+import static com.google.common.collect.Iterables.concat;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -341,6 +344,7 @@ public class TdIT
         int failures = 3;
 
         List<FullHttpRequest> jobIssueRequests = Collections.synchronizedList(new ArrayList<>());
+        List<FullHttpRequest> jobStatusRequests = Collections.synchronizedList(new ArrayList<>());
 
         proxyServer = DefaultHttpProxyServer
                 .bootstrap()
@@ -363,14 +367,23 @@ public class TdIT
                             {
                                 assert httpObject instanceof FullHttpRequest;
                                 FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
+                                boolean fail;
                                 if (httpRequest.getUri().contains("/v3/job/issue")) {
                                     jobIssueRequests.add(fullHttpRequest.copy());
-                                    if (jobIssueRequests.size() < failures) {
-                                        logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", httpRequest);
-                                        DefaultFullHttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
-                                        response.headers().set(CONNECTION, CLOSE);
-                                        return response;
-                                    }
+                                    fail = jobIssueRequests.size() < failures;
+                                }
+                                else if (httpRequest.getUri().contains("/v3/job/status")) {
+                                    jobStatusRequests.add(fullHttpRequest.copy());
+                                    fail = jobStatusRequests.size() < failures;
+                                }
+                                else {
+                                    fail = false;
+                                }
+                                if (fail) {
+                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", httpRequest);
+                                    DefaultFullHttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
+                                    response.headers().set(CONNECTION, CLOSE);
+                                    return response;
                                 }
                                 logger.info("Passing request: {}", httpRequest);
                                 return null;
@@ -389,11 +402,12 @@ public class TdIT
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
         assertWorkflowRunsSuccessfully();
 
-        for (FullHttpRequest request : jobIssueRequests) {
+        for (FullHttpRequest request : concat(jobIssueRequests, jobStatusRequests)) {
             ReferenceCountUtil.releaseLater(request);
         }
 
-        assertThat(jobIssueRequests.size(), is(not(0)));
+        assertThat(jobIssueRequests, is(not(empty())));
+        assertThat(jobStatusRequests, is(not(empty())));
 
         // Verify that all job issue requests reuse the same domain key
         verifyDomainKeys(jobIssueRequests);
@@ -484,15 +498,15 @@ public class TdIT
         verifyDomainKeys(jobIssueRequests);
     }
 
-    private void verifyDomainKeys(List<FullHttpRequest> jobIssueRequests)
+    private void verifyDomainKeys(List<FullHttpRequest> requests)
             throws IOException
     {
         // Verify that all job issue requests reuse the same domain key
-        FullHttpRequest firstRequest = jobIssueRequests.get(0);
+        FullHttpRequest firstRequest = requests.get(0);
         String domainKey = domainKey(firstRequest);
 
-        for (int i = 0; i < jobIssueRequests.size(); i++) {
-            FullHttpRequest request = jobIssueRequests.get(i);
+        for (int i = 0; i < requests.size(); i++) {
+            FullHttpRequest request = requests.get(i);
             String requestDomainKey = domainKey(request);
             assertThat(requestDomainKey, is(domainKey));
         }
@@ -521,7 +535,8 @@ public class TdIT
     }
 
     private CommandStatus runWorkflow(String... params)
-    {List<String> args = new ArrayList<>();
+    {
+        List<String> args = new ArrayList<>();
         args.addAll(asList("run",
                 "-o", projectDir.toString(),
                 "--config", config.toString(),
