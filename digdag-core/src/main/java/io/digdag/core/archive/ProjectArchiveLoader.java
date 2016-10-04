@@ -26,7 +26,7 @@ public class ProjectArchiveLoader
     public ProjectArchive load(
             Path projectDirectory,
             WorkflowResourceMatcher matcher,
-            Config overwriteParams)
+            Config overrideParams)
         throws IOException
     {
         // toAbsolutePath is necessary because Paths.get("singleName").getParent() returns null instead of Paths.get("")
@@ -40,7 +40,7 @@ public class ProjectArchiveLoader
         listFiles(projectPath, (resourceName, path) -> {
             if (matcher.matches(resourceName, path)) {
                 try {
-                    WorkflowFile workflowFile = loadWorkflowFile(resourceName, path, overwriteParams);
+                    WorkflowFile workflowFile = loadWorkflowFile(resourceName, path, overrideParams);
                     defs.add(workflowFile.toWorkflowDefinition());
                 }
                 catch (IOException ex) {
@@ -65,24 +65,24 @@ public class ProjectArchiveLoader
 
         ArchiveMetadata metadata = ArchiveMetadata.of(
                 WorkflowDefinitionList.of(defs.build()),
-                overwriteParams);
+                overrideParams);
 
         return new ProjectArchive(projectPath, metadata);
     }
 
     private WorkflowFile loadWorkflowFile(String resourceName, Path path,
-            Config overwriteParams)
+            Config overrideParams)
         throws IOException
     {
         String workflowName = resourceNameToWorkflowName(resourceName);
 
         WorkflowFile workflowFile = WorkflowFile.fromConfig(workflowName,
-                configLoader.loadParameterizedFile(path.toFile(), overwriteParams));
+                configLoader.loadParameterizedFile(path.toFile(), overrideParams));
 
         int posSlash = workflowName.lastIndexOf('/');
         if (posSlash >= 0) {
             // workflow is in a subdirectory. set _workdir accordingly.
-            String workdir = overwriteParams.getOptional("_workdir", String.class)  // overwriteParams has higher priority
+            String workdir = overrideParams.getOptional("_workdir", String.class)  // overrideParams has higher priority
                 .or(workflowName.substring(0, posSlash));
             workflowFile.setBaseWorkdir(workdir);
         }
@@ -91,12 +91,12 @@ public class ProjectArchiveLoader
     }
 
     public WorkflowFile loadWorkflowFileFromPath(Path projectPath, Path workflowPath,
-            Config overwriteParams)
+            Config overrideParams)
         throws IOException
     {
         String resourceName = ProjectArchive.realPathToResourceName(
                 projectPath.normalize().toAbsolutePath(),
                 workflowPath.normalize().toAbsolutePath());
-        return loadWorkflowFile(resourceName, workflowPath, overwriteParams);
+        return loadWorkflowFile(resourceName, workflowPath, overrideParams);
     }
 }

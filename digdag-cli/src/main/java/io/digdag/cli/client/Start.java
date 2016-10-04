@@ -101,7 +101,7 @@ public class Start
         final ConfigFactory cf = injector.getInstance(ConfigFactory.class);
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         LocalTimeOrInstant time;
         SessionTimeTruncate mode;
@@ -147,7 +147,7 @@ public class Start
             .workflowId(def.getId())
             .sessionTime(truncatedTime.getSessionTime().toInstant())
             .retryAttemptName(Optional.fromNullable(retryAttemptName))
-            .params(overwriteParams)
+            .params(overrideParams)
             .build();
 
         if (dryRun) {

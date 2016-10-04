@@ -32,25 +32,25 @@ public class AttemptBuilder
     public AttemptRequest buildFromStoredWorkflow(
             StoredRevision rev,
             StoredWorkflowDefinition def,
-            Config overwriteParams,
+            Config overrideParams,
             ScheduleTime time)
     {
         return buildFromStoredWorkflow(
-                rev, def, overwriteParams, time,
+                rev, def, overrideParams, time,
                 Optional.absent(), Optional.absent(), ImmutableList.of());
     }
 
     public AttemptRequest buildFromStoredWorkflow(
             StoredRevision rev,
             StoredWorkflowDefinition def,
-            Config overwriteParams,
+            Config overrideParams,
             ScheduleTime time,
             Optional<String> retryAttemptName,
             Optional<Long> resumingAttemptId,
             List<Long> resumingTasks)
     {
         ZoneId timeZone = def.getTimeZone();
-        Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
+        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
             .workflowName(def.getName())
@@ -66,24 +66,24 @@ public class AttemptBuilder
 
     public AttemptRequest buildFromStoredWorkflow(
             StoredWorkflowDefinitionWithProject def,
-            Config overwriteParams,
+            Config overrideParams,
             ScheduleTime time)
     {
         return buildFromStoredWorkflow(
-                def, overwriteParams, time,
+                def, overrideParams, time,
                 Optional.absent(), Optional.absent(), ImmutableList.of());
     }
 
     public AttemptRequest buildFromStoredWorkflow(
             StoredWorkflowDefinitionWithProject def,
-            Config overwriteParams,
+            Config overrideParams,
             ScheduleTime time,
             Optional<String> retryAttemptName,
             Optional<Long> resumingAttemptId,
             List<Long> resumingTasks)
     {
         ZoneId timeZone = def.getTimeZone();
-        Config sessionParams = buildSessionParameters(overwriteParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
+        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
@@ -110,9 +110,9 @@ public class AttemptBuilder
         return monitors.build();
     }
 
-    private Config buildSessionParameters(Config overwriteParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone)
+    private Config buildSessionParameters(Config overrideParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone)
     {
-        Config params = overwriteParams.deepCopy();
+        Config params = overrideParams.deepCopy();
         if (sr.isPresent()) {
             Instant lastSessionTime = sr.get().lastScheduleTime(sessionTime).getTime();
             Instant nextSessionTime = sr.get().nextScheduleTime(sessionTime).getTime();
