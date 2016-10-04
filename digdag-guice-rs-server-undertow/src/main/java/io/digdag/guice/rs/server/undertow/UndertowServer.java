@@ -162,9 +162,9 @@ public class UndertowServer
             .setHandler(httpHandler)
             .setWorker(worker)
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
-            .setServerOption(UndertowOptions.NO_REQUEST_TIMEOUT, config.getHttpNoRequestTimeout().or(60 * 1000))
-            .setServerOption(UndertowOptions.REQUEST_PARSE_TIMEOUT, config.getHttpRequestParseTimeout().or(30 * 1000))
-            .setServerOption(UndertowOptions.IDLE_TIMEOUT, config.getHttpIoIdleTimeout().or(300 * 1000))
+            .setServerOption(UndertowOptions.NO_REQUEST_TIMEOUT, config.getHttpNoRequestTimeout().or(60) * 1000)
+            .setServerOption(UndertowOptions.REQUEST_PARSE_TIMEOUT, config.getHttpRequestParseTimeout().or(30) * 1000)
+            .setServerOption(UndertowOptions.IDLE_TIMEOUT, config.getHttpIoIdleTimeout().or(300) * 1000)
             .build();
         control.serverInitialized(server);
 
