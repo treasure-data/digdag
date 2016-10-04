@@ -194,38 +194,46 @@ public abstract class ClientCommand
         return builder.build();
     }
 
-    static Id id(int id)
-    {
-        return Id.of(Integer.toString(id));
-    }
-
-    static Id id(long id)
-    {
-        return Id.of(Long.toString(id));
-    }
-
     public void showCommonOptions()
     {
         err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
         Main.showCommonOptions(env, err);
     }
 
-    protected long parseLongOrUsage(String arg)
+    protected Id parseAttemptIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Long.toString(parseLongOrUsage(arg)));
+    }
+
+    protected Id parseSessionIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Long.toString(parseLongOrUsage(arg)));
+    }
+
+    protected Id parseScheduleIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Integer.toString(parseIntOrUsage(arg)));
+    }
+
+    private long parseLongOrUsage(String arg)
             throws SystemExitException
     {
         try {
-            return Long.parseLong(args.get(0));
+            return Long.parseLong(arg);
         }
         catch (NumberFormatException ex) {
             throw usage(ex.getMessage());
         }
     }
 
-    protected int parseIntOrUsage(String arg)
+    private int parseIntOrUsage(String arg)
             throws SystemExitException
     {
         try {
-            return Integer.parseInt(args.get(0));
+            return Integer.parseInt(arg);
         }
         catch (NumberFormatException ex) {
             throw usage(ex.getMessage());

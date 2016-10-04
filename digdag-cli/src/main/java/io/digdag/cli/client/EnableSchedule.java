@@ -35,7 +35,7 @@ public class EnableSchedule
     {
         if (args.size() == 1) {
             // Schedule id?
-            Integer scheduleId = tryParseInt(args.get(0));
+            Id scheduleId = tryParseScheduleId(args.get(0));
             if (scheduleId != null) {
                 enableSchedule(scheduleId);
             }
@@ -53,10 +53,10 @@ public class EnableSchedule
         }
     }
 
-    private static Integer tryParseInt(String s)
+    private static Id tryParseScheduleId(String s)
     {
         try {
-            return Integer.parseUnsignedInt(s);
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
         }
         catch (NumberFormatException ignore) {
             return null;

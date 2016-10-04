@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.EOFException;
 import com.google.common.base.Optional;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.core.log.LogLevel;
 import static java.util.Locale.ENGLISH;
@@ -30,12 +31,12 @@ class TaskLogWatcher
     private static final Pattern LEVEL_PATTERN = Pattern.compile("^[0-9\\:\\ \\-\\+\\.]*\\[([A-Za-z]+)\\]");
 
     private final DigdagClient client;
-    private final long attemptId;
+    private final Id attemptId;
     private final Map<String, TaskLogState> stateMap;
     private final LogLevel levelFilter;
     private final PrintStream out;
 
-    TaskLogWatcher(DigdagClient client, long attemptId, LogLevel levelFilterOrNull, PrintStream out)
+    TaskLogWatcher(DigdagClient client, Id attemptId, LogLevel levelFilterOrNull, PrintStream out)
     {
         this.client = client;
         this.attemptId = attemptId;
@@ -116,7 +117,7 @@ class TaskLogWatcher
         {
             int lines = 0;
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(ClientCommand.id(attemptId), handle)), UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(client.getLogFile(attemptId, handle)), UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     lines++;

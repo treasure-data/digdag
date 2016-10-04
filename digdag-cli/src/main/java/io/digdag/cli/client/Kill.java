@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -15,7 +16,7 @@ public class Kill
         if (args.size() != 1) {
             throw usage(null);
         }
-        kill(parseLongOrUsage(args.get(0)));
+        kill(parseAttemptIdOrUsage(args.get(0)));
     }
 
     public SystemExitException usage(String error)
@@ -26,7 +27,7 @@ public class Kill
         return systemExit(error);
     }
 
-    private void kill(long attemptId)
+    private void kill(Id attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();

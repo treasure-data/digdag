@@ -105,6 +105,7 @@ public class Main
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
+        jc.addConverterFactory(new IdConverterFactory());
         jc.setProgramName(programName);
 
         // TODO: Use a pojo instead to avoid guice overhead

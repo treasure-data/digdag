@@ -74,7 +74,7 @@ public class Retry
             throw usage("Setting --all, --resume, or --resume-from together is invalid.");
         }
 
-        retry(parseLongOrUsage(args.get(0)));
+        retry(parseAttemptIdOrUsage(args.get(0)));
     }
 
     public SystemExitException usage(String error)
@@ -92,12 +92,12 @@ public class Retry
         return systemExit(error);
     }
 
-    private void retry(long attemptId)
+    private void retry(Id attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();
 
-        RestSessionAttempt attempt = client.getSessionAttempt(id(attemptId));
+        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
 
         Id workflowId;
         if (keepRevision) {
@@ -135,12 +135,12 @@ public class Retry
         if (resumeFrom != null) {
             request = RestSessionAttemptRequest.copyWithResume(
                     request,
-                    RestSessionAttemptRequest.ResumeFrom.of(id(attemptId), resumeFrom));
+                    RestSessionAttemptRequest.ResumeFrom.of(attemptId, resumeFrom));
         }
         else if (resume) {
             request = RestSessionAttemptRequest.copyWithResume(
                     request,
-                    RestSessionAttemptRequest.ResumeFailed.of(id(attemptId)));
+                    RestSessionAttemptRequest.ResumeFailed.of(attemptId));
         }
 
         RestSessionAttempt newAttempt = client.startSessionAttempt(request);
