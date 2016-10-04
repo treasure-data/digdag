@@ -54,31 +54,39 @@ public class ForEachOperatorFactoryTest
     public void testBasic()
     {
         assertByResource(
-                "/io/digdag/standards/for_each/basic.yml",
-                "/io/digdag/standards/for_each/basic_expected.yml");
+                "/io/digdag/standards/operator/for_each/basic.yml",
+                "/io/digdag/standards/operator/for_each/basic_expected.yml");
     }
 
     @Test
     public void parallelComplex()
     {
         assertByResource(
-                "/io/digdag/standards/for_each/parallel_complex.yml",
-                "/io/digdag/standards/for_each/parallel_complex_expected.yml");
+                "/io/digdag/standards/operator/for_each/parallel_complex.yml",
+                "/io/digdag/standards/operator/for_each/parallel_complex_expected.yml");
     }
 
     @Test
     public void parseNestedMap()
     {
         assertByResource(
-                "/io/digdag/standards/for_each/parse_nested_map.yml",
-                "/io/digdag/standards/for_each/parse_nested_map_expected.yml");
+                "/io/digdag/standards/operator/for_each/parse_nested_map.yml",
+                "/io/digdag/standards/operator/for_each/parse_nested_map_expected.yml");
     }
 
     @Test
     public void parseNestedArrays()
     {
         assertByResource(
-                "/io/digdag/standards/for_each/parse_nested_arrays.yml",
-                "/io/digdag/standards/for_each/parse_nested_arrays_expected.yml");
+                "/io/digdag/standards/operator/for_each/parse_nested_arrays.yml",
+                "/io/digdag/standards/operator/for_each/parse_nested_arrays_expected.yml");
+    }
+
+    @Test
+    public void escapeValues()
+    {
+        assertByResource(
+                "/io/digdag/standards/operator/for_each/escape_values.yml",
+                "/io/digdag/standards/operator/for_each/escape_values_expected.yml");
     }
 }
