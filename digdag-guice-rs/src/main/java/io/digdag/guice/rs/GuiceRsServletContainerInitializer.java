@@ -2,6 +2,7 @@ package io.digdag.guice.rs;
 
 import java.util.Map;
 import java.util.Set;
+import java.io.IOException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -13,8 +14,12 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.annotation.HandlesTypes;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @HandlesTypes(GuiceRsBootstrap.class)
 public class GuiceRsServletContainerInitializer
@@ -63,6 +68,20 @@ public class GuiceRsServletContainerInitializer
             .stream()
             .map(binding -> binding.getProvider().get())
             .forEach(initializer -> initializer.register(injector, context));
+
+        // return 404 Not Found if all URL patterns don't match
+        context.addServlet("default", new DefaultServlet())
+            .addMapping("/");
+    }
+
+    private static class DefaultServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
+        {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
     private static class CloseableInjectorDestroyListener
