@@ -133,10 +133,8 @@ public class ConfigTest
             func.run();
             fail();
         }
-        catch (Exception ex) {
-            if (ex instanceof ConfigException) {
-                assertTrue(true);
-            }
+        catch (ConfigException ex) {
+            assertTrue(true);
         }
     }
 }
