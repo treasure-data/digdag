@@ -175,6 +175,7 @@ public class DatabaseScheduleStoreManager
             int n = dao.updateNextScheduleTime(schedId,
                     nextTime.getRunTime().getEpochSecond(),
                     nextTime.getTime().getEpochSecond());
+            assert n >= 0;
             if (n <= 0) {
                 throw new ResourceNotFoundException("schedule id=" + schedId);
             }
@@ -189,6 +190,7 @@ public class DatabaseScheduleStoreManager
                     nextTime.getRunTime().getEpochSecond(),
                     nextTime.getTime().getEpochSecond(),
                     lastSessionTime.getEpochSecond());
+            assert n >= 0;
             if (n <= 0) {
                 throw new ResourceNotFoundException("schedule id=" + schedId);
             }
