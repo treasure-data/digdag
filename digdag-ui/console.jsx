@@ -440,7 +440,7 @@ class ProjectView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
-    projectId: number;
+    projectId: string;
   };
 
   state = {
@@ -720,7 +720,7 @@ class AttemptView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
-    attemptId: number;
+    attemptId: string;
   };
 
   state = {
@@ -977,7 +977,7 @@ class AttemptTasksView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
-    attemptId: number;
+    attemptId: string;
   };
 
   state = {
@@ -1062,7 +1062,7 @@ class AttemptLogsView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
-    attemptId: number;
+    attemptId: string;
   };
 
   state = {
