@@ -69,8 +69,6 @@ public class ServerBootstrap
             logger.info("Shutdown completed");
         }, "shutdown"));
 
-        logger.info("Server started: " + control);
-
         return control;
     }
 }
