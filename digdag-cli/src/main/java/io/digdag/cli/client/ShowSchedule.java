@@ -45,7 +45,7 @@ public class ShowSchedule
         DigdagClient client = buildClient();
         ln("Schedules:");
         int count = 0;
-        for (RestSchedule sched : client.getSchedules(Optional.absent())) {  // TODO use pagination (last_id) to get all schedules
+        for (RestSchedule sched : client.getSchedules(Optional.absent()).getSchedules()) {  // TODO use pagination (last_id) to get all schedules
             ln("  id: %s", sched.getId());
             ln("  project: %s", sched.getProject().getName());
             ln("  workflow: %s", sched.getWorkflow().getName());

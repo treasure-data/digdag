@@ -98,7 +98,7 @@ public class LogResource
 
     @GET
     @Path("/api/logs/{attempt_id}/files")
-    public List<RestLogFileHandle> getFileHandles(
+    public RestLogFileHandleCollection getFileHandles(
             @PathParam("attempt_id") long attemptId,
             @QueryParam("task") String taskName)
         throws ResourceNotFoundException
@@ -106,9 +106,7 @@ public class LogResource
         LogFilePrefix prefix = getPrefix(attemptId);
         List<LogFileHandle> handles = logServer.getFileHandles(prefix, Optional.fromNullable(taskName));
 
-        return handles.stream()
-            .map(it -> RestModels.logFileHandle(it))
-            .collect(Collectors.toList());
+        return RestModels.logFileHandleCollection(handles);
     }
 
     @GET
