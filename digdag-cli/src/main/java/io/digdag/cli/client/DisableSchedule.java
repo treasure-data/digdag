@@ -35,9 +35,9 @@ public class DisableSchedule
     {
         if (args.size() == 1) {
             // Schedule id?
-            Integer scheduleId = tryParseInt(args.get(0));
+            Id scheduleId = tryParseScheduleId(args.get(0));
             if (scheduleId != null) {
-                disableSchedule(id(scheduleId));
+                disableSchedule(scheduleId);
             }
             else {
                 // Project name?
@@ -53,10 +53,10 @@ public class DisableSchedule
         }
     }
 
-    private static Integer tryParseInt(String s)
+    private static Id tryParseScheduleId(String s)
     {
         try {
-            return Integer.parseUnsignedInt(s);
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
         }
         catch (NumberFormatException ignore) {
             return null;

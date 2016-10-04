@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public class ShowAttempts
     extends ClientCommand
 {
     @Parameter(names = {"-i", "--last-id"})
-    Long lastId = null;
+    Id lastId = null;
 
     @Override
     public void mainWithClientException()
@@ -27,12 +28,8 @@ public class ShowAttempts
                 showAttempts(null);
                 break;
             case 1:
-                try {
-                    long sessionId = Long.parseUnsignedLong(args.get(0));
-                    showAttempts(sessionId);
-                } catch (NumberFormatException ignore) {
-                    throw usage("Invalid session id: " + args.get(0));
-                }
+                Id sessionId = parseSessionIdOrUsage(args.get(0));
+                showAttempts(sessionId);
                 break;
             default:
                 throw usage(null);
@@ -49,16 +46,16 @@ public class ShowAttempts
         return systemExit(error);
     }
 
-    private void showAttempts(Long sessionId)
+    private void showAttempts(Id sessionId)
             throws Exception
     {
         DigdagClient client = buildClient();
         List<RestSessionAttempt> attempts;
 
         if (sessionId == null) {
-            attempts = client.getSessionAttempts(Optional.fromNullable(lastId).transform(s -> id(s)));
+            attempts = client.getSessionAttempts(Optional.fromNullable(lastId));
         } else {
-            attempts = client.getSessionAttempts(id(sessionId), Optional.fromNullable(lastId).transform(s -> id(s)));
+            attempts = client.getSessionAttempts(sessionId, Optional.fromNullable(lastId));
         }
 
         ln("Session attempts:");

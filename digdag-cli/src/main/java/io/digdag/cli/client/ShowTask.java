@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestTask;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -16,7 +17,7 @@ public class ShowTask
         if (args.size() != 1) {
             throw usage(null);
         }
-        showTasks(parseLongOrUsage(args.get(0)));
+        showTasks(parseAttemptIdOrUsage(args.get(0)));
     }
 
     public SystemExitException usage(String error)
@@ -27,13 +28,13 @@ public class ShowTask
         return systemExit(error);
     }
 
-    private void showTasks(long attemptId)
+    private void showTasks(Id attemptId)
         throws Exception
     {
         DigdagClient client = buildClient();
 
         int count = 0;
-        for (RestTask task : client.getTasks(id(attemptId))) {
+        for (RestTask task : client.getTasks(attemptId)) {
             ln("   id: %s", task.getId());
             ln("   name: %s", task.getFullName());
             ln("   state: %s", task.getState());
@@ -48,7 +49,7 @@ public class ShowTask
         }
 
         if (count == 0) {
-            client.getSessionAttempt(id(attemptId));  // throws exception if attempt doesn't exist
+            client.getSessionAttempt(attemptId);  // throws exception if attempt doesn't exist
         }
         ln("%d entries.", count);
     }

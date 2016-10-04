@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 
@@ -17,7 +18,7 @@ public class ShowSession
         extends ClientCommand
 {
     @Parameter(names = {"-i", "--last-id"})
-    Long lastId = null;
+    Id lastId = null;
 
     @Override
     public void mainWithClientException()
@@ -28,15 +29,14 @@ public class ShowSession
                 showSessions(null, null);
                 break;
             case 1:
-                try {
-                    long sessionId = Long.parseUnsignedLong(args.get(0));
+                Id sessionId = tryParseSessionId(args.get(0));
+                if (sessionId == null) {
+                    // Not a session id
+                    showSessions(args.get(0), null);
+                }
+                else {
                     showSession(sessionId);
-                    break;
                 }
-                catch (NumberFormatException ignore) {
-                    // Not an attempt id
-                }
-                showSessions(args.get(0), null);
                 break;
             case 2:
                 showSessions(args.get(0), args.get(1));
@@ -46,12 +46,22 @@ public class ShowSession
         }
     }
 
-    private void showSession(long sessionId)
+    private static Id tryParseSessionId(String s)
+    {
+        try {
+            return Id.of(Long.toString(Long.parseUnsignedLong(s)));
+        }
+        catch (NumberFormatException ignore) {
+            return null;
+        }
+    }
+
+    private void showSession(Id sessionId)
             throws Exception
     {
         DigdagClient client = buildClient();
 
-        RestSession session = client.getSession(id(sessionId));
+        RestSession session = client.getSession(sessionId);
         if (session == null) {
             throw systemExit("Session with id " + sessionId + " not found.");
         }
@@ -78,14 +88,14 @@ public class ShowSession
         List<RestSession> sessions;
 
         if (projName == null) {
-            sessions = client.getSessions(Optional.fromNullable(lastId).transform(s -> id(s)));
+            sessions = client.getSessions(Optional.fromNullable(lastId));
         } else {
             RestProject project = client.getProject(projName);
             if (workflowName == null) {
-                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId).transform(s -> id(s)));
+                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId));
             }
             else {
-                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId).transform(s -> id(s)));
+                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId));
             }
         }
 
