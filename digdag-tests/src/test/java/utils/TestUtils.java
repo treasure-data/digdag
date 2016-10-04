@@ -17,6 +17,7 @@ import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Version;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
@@ -35,6 +36,8 @@ import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 import org.subethamail.smtp.AuthenticationHandler;
 import org.subethamail.smtp.AuthenticationHandlerFactory;
 import org.subethamail.smtp.RejectException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.subethamail.wiser.Wiser;
 
 import java.io.ByteArrayInputStream;
@@ -59,6 +62,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -68,6 +73,9 @@ import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
 import static io.digdag.core.Version.buildVersion;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
+import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
@@ -77,6 +85,8 @@ import static org.junit.Assert.fail;
 
 public class TestUtils
 {
+    private static final Logger logger = LoggerFactory.getLogger(TestUtils.class);
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     static {
@@ -224,7 +234,8 @@ public class TestUtils
         for (RestLogFileHandle handle : handles) {
             try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {
                 logs.append(new String(ByteStreams.toByteArray(s), UTF_8));
-            } catch (IOException ignore) {
+            }
+            catch (IOException ignore) {
                 // XXX: the digdag client can return empty streams
             }
         }
@@ -576,4 +587,58 @@ public class TestUtils
                 }).start();
     }
 
+    /**
+     * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
+     * <p>
+     * The proxy maintains a counter for each unique (method, uri) pair. When a request for a (method, uri) is observed,
+     * the associated counter is incremented and the request is failed. When a counter reached {@code failures}, a single successful
+     * request is passed and the counter is reset.
+     *
+     * @param failures How many requests to fail before passing a request for a unique (method, uri) pair.
+     */
+    public static HttpProxyServer startRequestFailingProxy(int failures)
+    {
+        Map<String, AtomicInteger> requests = new ConcurrentHashMap<>();
+
+        return DefaultHttpProxyServer
+                .bootstrap()
+                .withPort(0)
+                .withFiltersSource(new HttpFiltersSourceAdapter()
+                {
+                    @Override
+                    public int getMaximumRequestBufferSizeInBytes()
+                    {
+                        return 1024 * 1024;
+                    }
+
+                    @Override
+                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
+                    {
+                        return new HttpFiltersAdapter(httpRequest)
+                        {
+                            @Override
+                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
+                            {
+                                assert httpObject instanceof FullHttpRequest;
+                                FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
+                                String key = fullHttpRequest.getMethod() + " " + fullHttpRequest.getUri();
+                                AtomicInteger counter = requests.computeIfAbsent(key, uri -> new AtomicInteger());
+                                int n = counter.incrementAndGet();
+                                HttpResponse response;
+                                if (n < failures) {
+                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
+                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
+                                    response.headers().set(CONNECTION, CLOSE);
+                                    return response;
+                                }
+                                else {
+                                    counter.set(0);
+                                    logger.info("Passing request: {}", httpRequest);
+                                    return null;
+                                }
+                            }
+                        };
+                    }
+                }).start();
+    }
 }
