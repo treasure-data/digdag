@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import io.digdag.client.config.Config;
+import io.digdag.core.DigdagEmbed;
 import io.digdag.spi.Operator;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.ForEachOperatorFactory.ForEachOperator;
@@ -17,11 +18,14 @@ import io.digdag.standards.operator.ForEachOperatorFactory.ForEachOperator;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static io.digdag.client.config.ConfigUtils.newConfig;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.WorkflowTestingUtils.loadYamlResource;
+import static io.digdag.core.workflow.WorkflowTestingUtils.setupEmbed;
+import static io.digdag.core.workflow.WorkflowTestingUtils.runWorkflow;
 
 public class ForEachOperatorFactoryTest
 {
@@ -42,16 +46,26 @@ public class ForEachOperatorFactoryTest
     }
 
     private void assertByResource(String configResource, String expectedResource)
+        throws Exception
     {
         ForEachOperator op = factory.newOperator(tempPath, newTaskRequest().withConfig(
                     loadYamlResource(configResource)));
         TaskResult result = op.run(newContext());
-        assertThat(result.getSubtaskConfig(), is(
-                    loadYamlResource(expectedResource)));
+        Config subtasks = result.getSubtaskConfig();
+        assertThat(subtasks, is(loadYamlResource(expectedResource)));
+
+        try (DigdagEmbed embed = setupEmbed()) {
+            assertTrue(
+                    runWorkflow(embed.getLocalSite(), tempPath, "test", subtasks)
+                    .getStateFlags()
+                    .isSuccess()
+                    );
+        }
     }
 
     @Test
     public void testBasic()
+        throws Exception
     {
         assertByResource(
                 "/io/digdag/standards/operator/for_each/basic.yml",
@@ -60,6 +74,7 @@ public class ForEachOperatorFactoryTest
 
     @Test
     public void parallelComplex()
+        throws Exception
     {
         assertByResource(
                 "/io/digdag/standards/operator/for_each/parallel_complex.yml",
@@ -68,6 +83,7 @@ public class ForEachOperatorFactoryTest
 
     @Test
     public void parseNestedMap()
+        throws Exception
     {
         assertByResource(
                 "/io/digdag/standards/operator/for_each/parse_nested_map.yml",
@@ -76,6 +92,7 @@ public class ForEachOperatorFactoryTest
 
     @Test
     public void parseNestedArrays()
+        throws Exception
     {
         assertByResource(
                 "/io/digdag/standards/operator/for_each/parse_nested_arrays.yml",
@@ -84,6 +101,7 @@ public class ForEachOperatorFactoryTest
 
     @Test
     public void escapeValues()
+        throws Exception
     {
         assertByResource(
                 "/io/digdag/standards/operator/for_each/escape_values.yml",
