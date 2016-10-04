@@ -27,28 +27,7 @@ public interface ServerConfig
     public static final String DEFAULT_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
-    @Override
-    public int getPort();
-
-    @Override
-    public String getBind();
-
     public Optional<String> getServerRuntimeInfoPath();
-
-    @Override
-    public Optional<String> getAccessLogPath();
-
-    @Override
-    public Optional<Integer> getHttpIoThreads();
-
-    @Override
-    public Optional<Integer> getHttpWorkerThreads();
-
-    @Override
-    public Optional<Integer> getJmxPort();
-
-    @Override
-    public String getAccessLogPattern();
 
     public boolean getExecutorEnabled();
 
@@ -87,6 +66,9 @@ public interface ServerConfig
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
             .httpIoThreads(config.getOptional("server.http.io-threads", Integer.class))
             .httpWorkerThreads(config.getOptional("server.http.worker-threads", Integer.class))
+            .httpNoRequestTimeout(config.getOptional("server.http.no-request-timeout", Integer.class))
+            .httpRequestParseTimeout(config.getOptional("server.http.request-parse-timeout", Integer.class))
+            .httpIoIdleTimeout(config.getOptional("server.http.io-idle-timeout", Integer.class))
             .jmxPort(config.getOptional("server.jmx.port", Integer.class))
             .executorEnabled(config.get("server.executor.enabled", boolean.class, true))
             .headers(readPrefixed.apply("server.http.headers."))
