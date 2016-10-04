@@ -20,6 +20,7 @@ import io.digdag.spi.Scheduler;
 import io.digdag.core.BackgroundExecutor;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.workflow.AttemptLimitExceededException;
@@ -109,56 +110,65 @@ public class ScheduleExecutor
         }
     }
 
-    private boolean runSchedule(ScheduleControl lockedSched)
+    private void runSchedule(ScheduleControl lockedSched)
     {
         StoredSchedule sched = lockedSched.get();
 
         // TODO If a workflow has wait-until-last-schedule attribute, don't start
         //      new session and return a ScheduleTime with delayed nextRunTime and
         //      same nextScheduleTime
+
+        ScheduleTime nextSchedule;
+        Instant successfulSessionTime = null;
+
         try {
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
-
             Scheduler sr = srm.getScheduler(def);
-
             try {
-                ScheduleTime nextTime = startSchedule(sched, sr, def);
-                return lockedSched.tryUpdateNextScheduleTimeAndLastSessionTime(nextTime, sched.getNextScheduleTime());
+                nextSchedule = startSchedule(sched, sr, def);
+                successfulSessionTime = sched.getNextScheduleTime();
+            }
+            catch (ResourceLimitExceededException ex) {
+                logger.info("Number of attempts or tasks exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
+                nextSchedule = ScheduleTime.of(
+                        sched.getNextScheduleTime(),
+                        ScheduleTime.alignedNow().plusSeconds(600));
             }
             catch (ResourceConflictException ex) {
                 Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
                 logger.error("Database state error during scheduling. Skipping this schedule: {}", sched, error);
-                ScheduleTime nextTime = sr.nextScheduleTime(sched.getNextScheduleTime());
-                return lockedSched.tryUpdateNextScheduleTime(nextTime);
-            }
-            catch (AttemptLimitExceededException ex) {
-                logger.info("Number of attempts exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
-                ScheduleTime nextTime = ScheduleTime.of(
-                        sched.getNextScheduleTime(),
-                        ScheduleTime.alignedNow().plusSeconds(600));
-                return lockedSched.tryUpdateNextScheduleTime(nextTime);
-            }
-            catch (RuntimeException ex) {
-                logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
-                ScheduleTime nextTime = ScheduleTime.of(
-                        sched.getNextScheduleTime(),
-                        ScheduleTime.alignedNow().plusSeconds(3600));
-                return lockedSched.tryUpdateNextScheduleTime(nextTime);
+                nextSchedule = sr.nextScheduleTime(sched.getNextScheduleTime());
             }
         }
         catch (ResourceNotFoundException ex) {
-            Exception error = new IllegalStateException("Workflow for a schedule id=" + sched.getId() + " is scheduled but does not exist.", ex);
-            logger.error("Database state error during scheduling. Pending this schedule for 1 hour: {}", sched, error);
-            ScheduleTime nextTime = ScheduleTime.of(
+            logger.error("Database state error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
+            nextSchedule = ScheduleTime.of(
                     sched.getNextScheduleTime(),
                     sched.getNextRunTime().plusSeconds(3600));
-            return lockedSched.tryUpdateNextScheduleTime(nextTime);
+        }
+        catch (RuntimeException ex) {
+            logger.error("Error during scheduling. Pending this schedule for 1 hour: {}", sched, ex);
+            nextSchedule = ScheduleTime.of(
+                    sched.getNextScheduleTime(),
+                    ScheduleTime.alignedNow().plusSeconds(3600));
+        }
+
+        try {
+            if (successfulSessionTime != null) {
+                lockedSched.updateNextScheduleTimeAndLastSessionTime(nextSchedule, successfulSessionTime);
+            }
+            else {
+                lockedSched.updateNextScheduleTime(nextSchedule);
+            }
+        }
+        catch (ResourceNotFoundException ex) {
+            throw new IllegalStateException("Workflow for a schedule id=" + sched.getId() + " is scheduled but does not exist.", ex);
         }
     }
 
     private ScheduleTime startSchedule(StoredSchedule sched, Scheduler sr,
             StoredWorkflowDefinitionWithProject def)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         Instant scheduleTime = sched.getNextScheduleTime();
         Instant runTime = sched.getNextRunTime();
@@ -182,9 +192,7 @@ public class ScheduleExecutor
     public StoredSchedule skipScheduleToTime(int siteId, int schedId, Instant nextTime, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
-
-        return sm.lockScheduleById(schedId, (store, sched) -> {
+        return sm.getScheduleStore(siteId).updateScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             Scheduler sr = getSchedulerOfSchedule(sched);
@@ -196,18 +204,11 @@ public class ScheduleExecutor
                     alignedNextTime = ScheduleTime.of(alignedNextTime.getTime(), runTime.get());
                 }
 
-                if (dryRun) {
-                    sched = ImmutableStoredSchedule.builder()
-                        .from(sched)
-                        .nextRunTime(alignedNextTime.getRunTime())
-                        .nextScheduleTime(alignedNextTime.getTime())
-                        .build();
+                StoredSchedule updatedSched = copyWithUpdatedScheduleTime(sched, alignedNextTime);
+                if (!dryRun) {
+                    lockedSched.updateNextScheduleTime(alignedNextTime);
                 }
-                else {
-                    // TODO validate return value is true, otherwise throw ResourceConflictException
-                    sched = lockedSched.updateNextScheduleTime(alignedNextTime);
-                }
-                return sched;  // return updated StoredSchedule
+                return updatedSched;
             }
             else {
                 // NG
@@ -219,9 +220,7 @@ public class ScheduleExecutor
     public StoredSchedule skipScheduleByCount(int siteId, int schedId, Instant currentTime, int count, Optional<Instant> runTime, boolean dryRun)
         throws ResourceNotFoundException, ResourceConflictException
     {
-        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
-
-        return sm.lockScheduleById(schedId, (store, sched) -> {
+        return sm.getScheduleStore(siteId).updateScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             Scheduler sr = getSchedulerOfSchedule(sched);
@@ -236,24 +235,26 @@ public class ScheduleExecutor
                     time = ScheduleTime.of(time.getTime(), runTime.get());
                 }
 
-                if (dryRun) {
-                    sched = ImmutableStoredSchedule.builder()
-                        .from(sched)
-                        .nextRunTime(time.getRunTime())
-                        .nextScheduleTime(time.getTime())
-                        .build();
+                StoredSchedule updatedSched = copyWithUpdatedScheduleTime(sched, time);
+                if (!dryRun) {
+                    lockedSched.updateNextScheduleTime(time);
                 }
-                else {
-                    // TODO validate return value is true, otherwise throw ResourceConflictException
-                    sched = lockedSched.updateNextScheduleTime(time);
-                }
-                return sched;  // return updated StoredSchedule
+                return updatedSched;
             }
             else {
                 // NG
                 throw new ResourceConflictException("Specified time to skip schedules is already past");
             }
         });
+    }
+
+    private static StoredSchedule copyWithUpdatedScheduleTime(StoredSchedule sched, ScheduleTime nextTime)
+    {
+        return ImmutableStoredSchedule.builder()
+            .from(sched)
+            .nextRunTime(nextTime.getRunTime())
+            .nextScheduleTime(nextTime.getTime())
+            .build();
     }
 
     private Scheduler getSchedulerOfSchedule(StoredSchedule sched)
@@ -264,13 +265,11 @@ public class ScheduleExecutor
     }
 
     public List<StoredSessionAttemptWithSession> backfill(int siteId, int schedId, Instant fromTime, String attemptName, Optional<Integer> count, boolean dryRun)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
-        sm.getScheduleStore(siteId).getScheduleById(schedId); // validastes siteId
-
         SessionStore ss = sessionStoreManager.getSessionStore(siteId);
 
-        return sm.lockScheduleById(schedId, (store, sched) -> {
+        return sm.getScheduleStore(siteId).lockScheduleById(schedId, (store, sched) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, sched);
 
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
@@ -338,6 +337,7 @@ public class ScheduleExecutor
                                 ScheduleTime.of(instant, sched.getNextScheduleTime()),
                                 Optional.of(attemptName));
                         attempts.add(attempt);
+                        // TODO this may throw ResourceLimitExceededException. But some sessions are already committed. To be able to rollback everything, inserting all sessions needs to be in a single transaction.
                     }
                     catch (SessionAttemptConflictException ex) {
                         // ignore because above start already committed other attempts. here can't rollback.

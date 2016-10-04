@@ -13,6 +13,7 @@ import io.digdag.core.repository.ProjectMap;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.TimeZoneMap;
@@ -157,7 +158,7 @@ public class ScheduleResource
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
     public List<RestSessionAttempt> backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
-        throws ResourceNotFoundException, ResourceConflictException
+        throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
@@ -174,7 +175,7 @@ public class ScheduleResource
                 .getScheduleById(id);
         ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+        StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
             lockedSched.disableSchedule();
             return lockedSched.get();
@@ -193,7 +194,7 @@ public class ScheduleResource
                 .getScheduleById(id);
         ZoneId timeZone = getTimeZoneOfSchedule(sched);
 
-        StoredSchedule updated = sm.lockScheduleById(id, (store, storedSchedule) -> {
+        StoredSchedule updated = sm.getScheduleStore(getSiteId()).updateScheduleById(id, (store, storedSchedule) -> {
             ScheduleControl lockedSched = new ScheduleControl(store, storedSchedule);
             lockedSched.enableSchedule();
             return lockedSched.get();

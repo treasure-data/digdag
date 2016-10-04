@@ -17,13 +17,4 @@ public interface ScheduleStoreManager
     }
 
     void lockReadySchedules(Instant currentTime, ScheduleAction func);
-
-    interface ScheduleLockAction <T>
-    {
-        T call(ScheduleControlStore store, StoredSchedule storedSched)
-            throws ResourceNotFoundException, ResourceConflictException;
-    }
-
-    <T> T lockScheduleById(int schedId, ScheduleLockAction<T> func)
-        throws ResourceNotFoundException, ResourceConflictException;
 }

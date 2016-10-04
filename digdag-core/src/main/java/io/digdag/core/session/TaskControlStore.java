@@ -40,8 +40,11 @@ public interface TaskControlStore
 
     boolean setDoneState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
 
-    // planned to error
-    boolean setDoneStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error);
+    // running to success
+    boolean setSuccessStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result);
+
+    // running to error
+    boolean setErrorStateShortCircuit(long taskId, TaskStateCode beforeState, TaskStateCode afterState, Config error);
 
     // planned to success
     boolean setPlannedStateSuccessful(long taskId, TaskStateCode beforeState, TaskStateCode afterState, TaskResult result);

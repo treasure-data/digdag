@@ -196,9 +196,9 @@ public class DatabaseScheduleStoreManagerTest
         assertEquals(sched4, schedStore.getScheduleById(sched4.getId()));
 
         ////
-        // manager internal getters
+        // control actions
         //
-        assertEquals(sched4.getId(), (long) schedManager.lockScheduleById(sched4.getId(), (store, schedule) -> schedule.getId()));
+        assertEquals(sched4.getId(), (long) schedStore.lockScheduleById(sched4.getId(), (store, schedule) -> schedule.getId()));
 
         List<Integer> lockedByRuntime1 = new ArrayList<>();
         schedManager.lockReadySchedules(runTime1, (store, schedule) -> {
@@ -237,7 +237,12 @@ public class DatabaseScheduleStoreManagerTest
                     throw new RuntimeException();
                 }
                 else {
-                    store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3));
+                    try {
+                        store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime3, runTime3));
+                    }
+                    catch (ResourceNotFoundException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             });
             fail();
@@ -248,7 +253,12 @@ public class DatabaseScheduleStoreManagerTest
         List<Integer> updated = new ArrayList<>();
         schedManager.lockReadySchedules(runTime2, (store, schedule) -> {
             updated.add(schedule.getId());
-            store.updateNextScheduleTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
+            try {
+                store.updateNextScheduleTimeAndLastSessionTime(schedule.getId(), ScheduleTime.of(schedTime4, runTime4), schedTime1);
+            }
+            catch (ResourceNotFoundException ex) {
+                throw new RuntimeException(ex);
+            }
         });
         assertEquals(ImmutableList.of(sched1.getId()), updated);
 
@@ -308,7 +318,7 @@ public class DatabaseScheduleStoreManagerTest
         StoredSchedule sched2 = schedList1.get(1);
 
         // Verify that enabling a schedule that has not been disabled is a nop
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });
@@ -319,7 +329,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Disable one of the schedules and verify that lockReadySchedules skips it
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.disableSchedule(schedule.getId());
             return schedule;
         });
@@ -347,7 +357,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Re-enable the schedule and verify that lockReadySchedules processes it
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });
@@ -358,7 +368,7 @@ public class DatabaseScheduleStoreManagerTest
         }
 
         // Verify that enabling is idempotent
-        schedManager.lockScheduleById(sched1.getId(), (store, schedule) -> {
+        schedStore.updateScheduleById(sched1.getId(), (store, schedule) -> {
             store.enableSchedule(schedule.getId());
             return schedule;
         });

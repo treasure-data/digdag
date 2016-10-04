@@ -1,5 +1,7 @@
 package io.digdag.core.workflow;
 
+import io.digdag.core.repository.ResourceLimitExceededException;
+
 /**
  * An exception thrown when adding more attempts to a site than limit.
  *
@@ -7,10 +9,8 @@ package io.digdag.core.workflow;
  * attempts is based on a slight old transaction.
  */
 public class AttemptLimitExceededException
-        extends LimitExceededException
+        extends ResourceLimitExceededException
 {
-    // TODO (sada): should this be a checked exception?
-
     public AttemptLimitExceededException(String message)
     {
         super(message);

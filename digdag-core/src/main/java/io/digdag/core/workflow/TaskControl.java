@@ -53,7 +53,9 @@ public class TaskControl
     public static long addInitialTasksExceptingRootTask(
             TaskControlStore store, long attemptId, long rootTaskId,
             WorkflowTaskList tasks, List<ResumingTask> resumingTasks)
+        throws TaskLimitExceededException
     {
+        checkTaskLimit(store, attemptId, tasks);
         long taskId = addTasks(store, attemptId, rootTaskId,
                 tasks, ImmutableList.of(),
                 false, true, true,
@@ -64,11 +66,34 @@ public class TaskControl
 
     public long addGeneratedSubtasks(WorkflowTaskList tasks,
             List<Long> rootUpstreamIds, boolean cancelSiblings)
+        throws TaskLimitExceededException
+    {
+        checkTaskLimit(store, task.getAttemptId(), tasks);
+        return addTasks(store, task.getAttemptId(), task.getId(),
+                tasks, rootUpstreamIds,
+                cancelSiblings, false, false,
+                collectResumingTasks(task.getAttemptId(), tasks));
+    }
+
+    public long addGeneratedSubtasksWithoutLimit(WorkflowTaskList tasks,
+            List<Long> rootUpstreamIds, boolean cancelSiblings)
     {
         return addTasks(store, task.getAttemptId(), task.getId(),
                 tasks, rootUpstreamIds,
                 cancelSiblings, false, false,
                 collectResumingTasks(task.getAttemptId(), tasks));
+    }
+
+    private static void checkTaskLimit(TaskControlStore store, long attemptId,
+            WorkflowTaskList tasks)
+        throws TaskLimitExceededException
+    {
+        // Limit the total number of tasks in a session.
+        // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
+        long taskCount = store.getTaskCountOfAttempt(attemptId);
+        if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
+            throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
+        }
     }
 
     private static long addTasks(TaskControlStore store,
@@ -90,13 +115,6 @@ public class TaskControl
         Map<String, ResumingTask> resumingTaskMap = resumingTasks
             .stream()
             .collect(Collectors.toMap(t -> t.getFullName(), t -> t));
-
-        // Limit the total number of tasks in a session.
-        // Note: This is racy and should not be relied on to guarantee that the limit is not exceeded.
-        long taskCount = store.getTaskCountOfAttempt(attemptId);
-        if (taskCount + tasks.size() > Limits.maxWorkflowTasks()) {
-            throw new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks() + ", Current: " + taskCount + ", Adding: " + tasks.size());
-        }
 
         boolean firstTask = true;
         for (WorkflowTask wt : tasks) {
@@ -259,9 +277,10 @@ public class TaskControl
         return false;
     }
 
+    // setRunningToPlannedWithDelayedError + setPlannedToError
     public boolean setRunningToShortCircuitError(Config error)
     {
-        if (store.setDoneStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, error)) {
+        if (store.setErrorStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.ERROR, error)) {
             state = TaskStateCode.ERROR;
             return true;
         }
@@ -325,6 +344,16 @@ public class TaskControl
         }
         return false;
         // transitionToPlanned
+    }
+
+    // setRunningToPlannedSuccessful + setPlannedToSuccess
+    public boolean setRunningToShortCircuitSuccess(TaskResult result)
+    {
+        if (store.setSuccessStateShortCircuit(getId(), TaskStateCode.RUNNING, TaskStateCode.SUCCESS, result)) {
+            state = TaskStateCode.SUCCESS;
+            return true;
+        }
+        return false;
     }
 
     // to planned with error
