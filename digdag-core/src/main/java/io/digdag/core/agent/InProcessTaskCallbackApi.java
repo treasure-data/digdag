@@ -165,7 +165,7 @@ public class InProcessTaskCallbackApi
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
-            Config overwriteParams)
+            Config overrideParams)
         throws ResourceNotFoundException, ResourceLimitExceededException
     {
         ProjectStore projectStore = pm.getProjectStore(siteId);
@@ -176,7 +176,7 @@ public class InProcessTaskCallbackApi
         // use the HTTP request time as the runTime
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                 def,
-                overwriteParams,
+                overrideParams,
                 ScheduleTime.runNow(instant),
                 retryAttemptName,
                 Optional.absent(),
