@@ -34,7 +34,7 @@ public class ShowTask
         DigdagClient client = buildClient();
 
         int count = 0;
-        for (RestTask task : client.getTasks(attemptId)) {
+        for (RestTask task : client.getTasks(attemptId).getTasks()) {
             ln("   id: %s", task.getId());
             ln("   name: %s", task.getFullName());
             ln("   state: %s", task.getState());

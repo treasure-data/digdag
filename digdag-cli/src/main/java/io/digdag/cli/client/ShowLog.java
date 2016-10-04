@@ -84,10 +84,10 @@ public class ShowLog
     {
         List<RestLogFileHandle> handles;
         if (taskName.isPresent()) {
-            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get());
+            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get()).getFiles();
         }
         else {
-            handles = client.getLogFileHandlesOfAttempt(attemptId);
+            handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         }
 
         return watcher.update(handles);
@@ -100,7 +100,7 @@ public class ShowLog
             if (attempt.getDone()) {
                 return true;
             }
-            for (RestTask task : client.getTasks(attemptId)) {
+            for (RestTask task : client.getTasks(attemptId).getTasks()) {
                 if (task.getFullName().startsWith(taskName.get())) {
                     switch (task.getState()) {
                     case "blocked":
