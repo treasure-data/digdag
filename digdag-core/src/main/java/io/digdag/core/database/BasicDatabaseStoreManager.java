@@ -260,7 +260,7 @@ public abstract class BasicDatabaseStoreManager <D>
         // but the actual transaction is rolled back. Here checks state of the transaction by
         // calling org.postgresql.jdbc.PgConnection.isValid method.
         //
-        // Here assumes that HikariDB doesn't overwrite isValid.
+        // Here assumes that HikariDB doesn't override isValid.
         boolean isValid;
         try {
             isValid = handle.getConnection().isValid(30);
