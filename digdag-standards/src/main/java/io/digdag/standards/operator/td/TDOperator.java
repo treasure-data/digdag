@@ -36,8 +36,10 @@ public class TDOperator
 {
     private static final Logger logger = LoggerFactory.getLogger(TDOperator.class);
 
-    private static final int INITIAL_RETRY_WAIT = 100;
-    private static final int MAX_RETRY_WAIT = 500;
+    // TODO: adjust these retry intervals and limits when all td operators have persistent retry mechanisms implemented
+
+    private static final int INITIAL_RETRY_WAIT = 500;
+    private static final int MAX_RETRY_WAIT = 2000;
     private static final int MAX_RETRY_LIMIT = 3;
 
     private static final Integer INITIAL_POLL_INTERVAL = 1;
