@@ -4,7 +4,7 @@ timezone: UTC
   echo>: start ${session_time}
 
 +disp_current_date:
-  echo>: ${new Date().toUTCString()}
+  echo>: ${moment(session_time).utc().format('YYYY-MM-DD HH:mm:ss Z')}
 
 +repeat:
   for_each>:
