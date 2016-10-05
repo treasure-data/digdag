@@ -100,7 +100,7 @@ public class SelfUpdate
                         version, res.getStatus(), res.getStatusInfo(), res.readEntity(String.class)));
         }
 
-        Path path = Files.createTempFile("digdag-", ".jar");
+        Path path = Files.createTempFile("digdag-", ".bat");
         try (InputStream in = res.readEntity(InputStream.class)) {
             try (OutputStream out = Files.newOutputStream(path)) {
                 ByteStreams.copy(in, out);
