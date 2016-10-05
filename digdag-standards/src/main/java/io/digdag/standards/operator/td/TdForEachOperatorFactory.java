@@ -146,7 +146,7 @@ public class TdForEachOperatorFactory
 
             try {
                 List<String> columnNames = job.getResultColumnNames();
-                return job.getResult(ite -> {
+                List<Config> result = job.getResult(ite -> {
                     List<Config> rows = new ArrayList<>();
                     while (ite.hasNext()) {
                         rows.add(row(columnNames, ite.next().asArrayValue()));
@@ -157,6 +157,11 @@ public class TdForEachOperatorFactory
                     }
                     return rows;
                 });
+
+                // Clear retry state
+                resultState.remove(RETRY);
+
+                return result;
             }
             catch (UncheckedIOException | TDClientException e) {
                 if (isDeterministicClientException(e)) {

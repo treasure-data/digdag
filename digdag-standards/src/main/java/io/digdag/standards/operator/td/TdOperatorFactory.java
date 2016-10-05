@@ -327,6 +327,7 @@ public class TdOperatorFactory
                     while (ite.hasNext()) {
                         addCsvRow(out, ite.next().asArrayValue());
                     }
+                    downloadState.remove(RETRY);
                     downloadState.set(DONE, true);
                     return true;
                 }
