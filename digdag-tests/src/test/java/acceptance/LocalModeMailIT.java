@@ -26,8 +26,10 @@ public class LocalModeMailIT
     private static final String LOCAL_SESSION_TIME = "2016-01-02 03:04:05";
     private static final String SESSION_TIME_ISO = "2016-01-02T03:04:05+00:00";
     private static final String HOSTNAME = "127.0.0.1";
+    private static final String SMTP_USER = "mail-user";
+    private static final String SMTP_PASS = "mail-pass";
 
-    private final Wiser mailServer = startMailServer(HOSTNAME);
+    private final Wiser mailServer = startMailServer(HOSTNAME, SMTP_USER, SMTP_PASS);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -53,8 +55,8 @@ public class LocalModeMailIT
                 "params.mail.host=" + HOSTNAME,
                 "params.mail.port=" + mailServer.getServer().getPort(),
                 "params.mail.from=" + SENDER,
-                "params.mail.username=mail-user",
-                "params.mail.password=mail-pass",
+                "params.mail.username=" + SMTP_USER,
+                "secrets.mail.password=" + SMTP_PASS,
                 "params.mail.tls=false"
         ));
         Path configFile = configDir.resolve("config");

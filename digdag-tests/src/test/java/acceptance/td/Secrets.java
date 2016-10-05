@@ -1,8 +1,8 @@
 package acceptance.td;
 
-import com.amazonaws.util.Base64;
 import com.google.common.collect.ImmutableList;
 
+import java.util.Base64;
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -14,7 +14,7 @@ public class Secrets
         ThreadLocalRandom.current().nextBytes(ENCRYPTION_KEY_BYTES);
     }
 
-    static final String ENCRYPTION_KEY = Base64.encodeAsString(ENCRYPTION_KEY_BYTES);
+    static final String ENCRYPTION_KEY = Base64.getEncoder().encodeToString(ENCRYPTION_KEY_BYTES);
 
     static Collection<String> secretsServerConfiguration()
     {

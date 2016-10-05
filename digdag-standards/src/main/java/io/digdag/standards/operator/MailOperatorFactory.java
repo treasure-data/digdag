@@ -1,13 +1,16 @@
 package io.digdag.standards.operator;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -42,13 +45,18 @@ public class MailOperatorFactory
     private static Logger logger = LoggerFactory.getLogger(MailOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
-    private Config systemConfig;
+    private final MailDefaults mailDefaults;
+    private final Optional<SmtpConfig> systemSmtpConfig;
 
     @Inject
     public MailOperatorFactory(TemplateEngine templateEngine, Config systemConfig)
     {
         this.templateEngine = templateEngine;
-        this.systemConfig = systemConfig;
+        this.systemSmtpConfig = systemSmtpConfig(systemConfig);
+        this.mailDefaults = ImmutableMailDefaults.builder()
+                .from(systemConfig.getOptional("config.mail.from", String.class))
+                .subject(systemConfig.getOptional("config.mail.subject", String.class))
+                .build();
     }
 
     public String getType()
@@ -63,13 +71,33 @@ public class MailOperatorFactory
     }
 
     @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
     public interface AttachConfig
     {
-        public String getPath();
+        String getPath();
+        String getContentType();
+        String getFileName();
+    }
 
-        public String getContentType();
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    interface SmtpConfig
+    {
+        String host();
+        int port();
+        boolean startTls();
+        boolean ssl();
+        boolean debug();
+        Optional<String> username();
+        Optional<String> password();
+    }
 
-        public String getFileName();
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    interface MailDefaults
+    {
+        Optional<String> subject();
+        Optional<String> from();
     }
 
     private class MailOperator
@@ -91,23 +119,11 @@ public class MailOperatorFactory
         {
             SecretProvider secrets = ctx.secrets().getSecrets("mail");
 
-            Config bodyParams = request.getConfig().mergeDefault(
+            Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));
 
-            // Note: Do not include system mail config params in the body template params to
-            //       ensure that they are not accessible to the user.
-            String body = workspace.templateCommand(templateEngine, bodyParams, "body", UTF_8);
-
-            // Load system mail config params
-            Config params = bodyParams.deepCopy();
-            String configPrefix = "config.mail.";
-            systemConfig.getKeys().stream()
-                    .filter(key -> key.startsWith(configPrefix))
-                    .forEach(key -> params.setIfNotSet(
-                            key.substring(configPrefix.length()),
-                            systemConfig.get(key, String.class)));
-
-            String subject = params.get("subject", String.class);
+            String body = workspace.templateCommand(templateEngine, params, "body", UTF_8);
+            String subject = params.getOptional("subject", String.class).or(mailDefaults.subject()).or(() -> params.get("subject", String.class));
 
             List<String> toList;
             try {
@@ -119,72 +135,21 @@ public class MailOperatorFactory
 
             boolean isHtml = params.get("html", boolean.class, false);
 
-            List<AttachConfig> attachFiles = params.getListOrEmpty("attach_files", Config.class)
-                .stream()
-                .map((a) -> {
-                    String path = a.get("path", String.class);
-                    return ImmutableAttachConfig.builder()
-                        .path(path)
-                        .fileName(
-                                a.getOptional("filename", String.class)
-                                .or(path.substring(Math.max(path.lastIndexOf('/'), 0)))
-                            )
-                        .contentType(
-                                a.getOptional("content_type", String.class)
-                                .or("application/octet-stream")
-                            )
-                        .build();
-                })
-                .collect(Collectors.toList());
-
-            Properties props = new Properties();
-
-
-            props.setProperty("mail.smtp.host", secrets.getSecretOptional("host").or(params.get("host", String.class)));
-            props.setProperty("mail.smtp.port", secrets.getSecretOptional("port").or(params.get("port", String.class)));
-            props.put("mail.smtp.starttls.enable", secrets.getSecretOptional("tls").or(Boolean.toString(params.get("tls", boolean.class, true))));
-            if (secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false))) {
-                props.put("mail.smtp.socketFactory.port", secrets.getSecretOptional("port").or(params.get("port", String.class)));
-                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-                props.put("mail.smtp.socketFactory.fallback", "false");
-            }
-
-            props.setProperty("mail.debug", Boolean.toString((params.get("debug", boolean.class, false))));
-
-            props.setProperty("mail.smtp.connectiontimeout", "10000");
-            props.setProperty("mail.smtp.timeout", "60000");
-
-            Session session;
-            final String username = secrets.getSecretOptional("username").or(params.get("username", String.class, null));
-            if (username != null) {
-                props.setProperty("mail.smtp.auth", "true");
-                final String password = secrets.getSecretOptional("password").or("");
-                session = Session.getInstance(props,
-                        new Authenticator()
-                        {
-                            @Override
-                            public PasswordAuthentication getPasswordAuthentication() {
-                                return new PasswordAuthentication(username, password);
-                            }
-                        });
-            }
-            else {
-                session = Session.getInstance(props);
-            }
-
-            MimeMessage msg = new MimeMessage(session);
+            MimeMessage msg = new MimeMessage(createSession(secrets, params));
 
             try {
-                String from = getFlatOrNested(params, "from");
+                String from = params.getOptional("from", String.class).or(mailDefaults.from()).or(() -> params.get("from", String.class));
                 msg.setFrom(newAddress(from));
                 msg.setSender(newAddress(from));
 
                 msg.setRecipients(RecipientType.TO,
                         toList.stream()
-                        .map(it -> newAddress(it))
-                        .toArray(InternetAddress[]::new));
+                                .map(it -> newAddress(it))
+                                .toArray(InternetAddress[]::new));
 
                 msg.setSubject(subject);
+
+                List<AttachConfig> attachFiles = attachConfigs(params);
                 if (attachFiles.isEmpty()) {
                     msg.setText(body, "utf-8", isHtml ? "html" : "plain");
                 }
@@ -204,19 +169,81 @@ public class MailOperatorFactory
 
                     msg.setContent(multipart);
                 }
+
                 Transport.send(msg);
             }
             catch (MessagingException | IOException ex) {
-                throw new RuntimeException(ex);
+                throw new TaskExecutionException(ex, TaskExecutionException.buildExceptionErrorConfig(ex));
             }
 
             return TaskResult.empty(request);
         }
 
-        private String getFlatOrNested(Config config, String key)
+        private List<AttachConfig> attachConfigs(Config params)
         {
-            return config.getNestedOrGetEmpty("mail").getOptional(key, String.class)
-                .or(() -> config.get(key, String.class));
+            return params.getListOrEmpty("attach_files", Config.class)
+                    .stream()
+                    .map((a) -> {
+                        String path = a.get("path", String.class);
+                        return ImmutableAttachConfig.builder()
+                                .path(path)
+                                .fileName(
+                                        a.getOptional("filename", String.class)
+                                                .or(path.substring(Math.max(path.lastIndexOf('/'), 0)))
+                                )
+                                .contentType(
+                                        a.getOptional("content_type", String.class)
+                                                .or("application/octet-stream")
+                                )
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        private Session createSession(SecretProvider secrets, Config params)
+        {
+            // Use only _either_ user supplied smtp configuration _or_ system smtp configuration to avoid leaking credentials
+            // by e.g. connecting to a user controlled host and handing over user/password in base64 plaintext.
+            SmtpConfig smtpConfig = userSmtpConfig(secrets, params)
+                    .or(systemSmtpConfig)
+                    .orNull();
+
+            if (smtpConfig == null) {
+                throw new TaskExecutionException("Missing SMTP configuration", ConfigElement.empty());
+            }
+
+            Properties props = new Properties();
+            props.setProperty("mail.smtp.host", smtpConfig.host());
+            props.setProperty("mail.smtp.port", String.valueOf(smtpConfig.port()));
+            props.put("mail.smtp.starttls.enable", smtpConfig.startTls());
+            if (smtpConfig.ssl()) {
+                props.put("mail.smtp.socketFactory.port", smtpConfig.port());
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+                props.put("mail.smtp.socketFactory.fallback", "false");
+            }
+            props.setProperty("mail.debug", String.valueOf(smtpConfig.debug()));
+            props.setProperty("mail.smtp.connectiontimeout", "10000");
+            props.setProperty("mail.smtp.timeout", "60000");
+
+            Session session;
+            Optional<String> username = smtpConfig.username();
+            if (username.isPresent()) {
+                props.setProperty("mail.smtp.auth", "true");
+                String password = smtpConfig.password().or("");
+                session = Session.getInstance(props,
+                        new Authenticator()
+                        {
+                            @Override
+                            public PasswordAuthentication getPasswordAuthentication()
+                            {
+                                return new PasswordAuthentication(username.get(), password);
+                            }
+                        });
+            }
+            else {
+                session = Session.getInstance(props);
+            }
+            return session;
         }
 
         private InternetAddress newAddress(String str)
@@ -228,5 +255,45 @@ public class MailOperatorFactory
                 throw new ConfigException("Invalid address", ex);
             }
         }
+    }
+
+    private static Optional<SmtpConfig> systemSmtpConfig(Config systemConfig)
+    {
+        Optional<String> host = systemConfig.getOptional("config.mail.host", String.class);
+        if (!host.isPresent()) {
+            return Optional.absent();
+        }
+        SmtpConfig config = ImmutableSmtpConfig.builder()
+                .host(host.get())
+                .port(systemConfig.get("config.mail.port", int.class))
+                .startTls(systemConfig.get("config.mail.tls", boolean.class, true))
+                .ssl(systemConfig.get("config.mail.ssl", boolean.class, false))
+                .debug(systemConfig.get("config.mail.debug", boolean.class, false))
+                .username(systemConfig.getOptional("config.mail.username", String.class))
+                .password(systemConfig.getOptional("config.mail.password", String.class))
+                .build();
+        return Optional.of(config);
+    }
+
+    private static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
+    {
+        Optional<String> userHost = secrets.getSecretOptional("host").or(params.getOptional("host", String.class));
+        if (!userHost.isPresent()) {
+            return Optional.absent();
+        }
+        Optional<String> deprecatedPassword = params.getOptional("password", String.class);
+        if (deprecatedPassword.isPresent()) {
+            logger.warn("Unsecure 'password' parameter is deprecated.");
+        }
+        SmtpConfig config = ImmutableSmtpConfig.builder()
+                .host(userHost.get())
+                .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(params.get("port", int.class)))
+                .startTls(secrets.getSecretOptional("tls").transform(Boolean::parseBoolean).or(params.get("tls", boolean.class, true)))
+                .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false)))
+                .debug(params.get("debug", boolean.class, false))
+                .username(secrets.getSecretOptional("username").or(params.getOptional("username", String.class)))
+                .password(secrets.getSecretOptional("password"))
+                .build();
+        return Optional.of(config);
     }
 }

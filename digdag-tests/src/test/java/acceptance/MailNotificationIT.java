@@ -5,6 +5,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.subethamail.smtp.AuthenticationHandler;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 import utils.CommandStatus;
@@ -15,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 
+import static org.mockito.Mockito.when;
 import static utils.TestUtils.attemptSuccess;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.expect;
@@ -32,8 +37,10 @@ public class MailNotificationIT
     private static final String HOSTNAME = "127.0.0.1";
     private static final String SENDER = "digdag@foo.bar";
     private static final String RECEIVER = "alert@foo.bar";
+    private static final String SMTP_USER = "mail-user";
+    private static final String SMTP_PASS = "mail-pass";
 
-    private final Wiser mailServer = startMailServer(HOSTNAME);
+    private Wiser mailServer = startMailServer(HOSTNAME, SMTP_USER, SMTP_PASS);
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -46,8 +53,8 @@ public class MailNotificationIT
                     "notification.mail.from = " + SENDER,
                     "notification.mail.host= " + HOSTNAME,
                     "notification.mail.port=" + mailServer.getServer().getPort(),
-                    "notification.mail.username=mail-user",
-                    "notification.mail.password=mail-pass",
+                    "notification.mail.username=" + SMTP_USER,
+                    "notification.mail.password=" + SMTP_PASS,
                     "notification.mail.tls=false")
             .build();
 
