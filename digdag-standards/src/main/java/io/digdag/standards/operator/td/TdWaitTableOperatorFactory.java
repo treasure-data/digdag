@@ -128,11 +128,13 @@ public class TdWaitTableOperatorFactory
                 }
 
                 TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
-                state.remove(POLL_JOB);
 
                 // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
                 boolean done = fetchJobResult(rows, job);
+
+                // Remove the poll job state _after_ fetching the result so that the result fetch can be retried without resubmitting the job.
+                state.remove(POLL_JOB);
 
                 // Go back to sleep if the row count condition was not fulfilled
                 if (!done) {
