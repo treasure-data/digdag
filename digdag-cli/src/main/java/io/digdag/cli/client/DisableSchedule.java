@@ -81,7 +81,7 @@ public class DisableSchedule
         List<RestSchedule> schedules;
         Optional<Id> lastId = Optional.absent();
         while (true) {
-            schedules = client.getSchedules(project.getId(), lastId);
+            schedules = client.getSchedules(project.getId(), lastId).getSchedules();
             if (schedules.isEmpty()) {
                 return;
             }

@@ -48,12 +48,12 @@ public class ShowWorkflow
         if (projName != null) {
             RestProject proj = client.getProject(projName);
             ln("  %s", proj.getName());
-            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(proj.getId())) {
+            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(proj.getId()).getWorkflows()) {
                 ln("    %s", def.getName());
             }
         }
         else {
-            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions();
+            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions().getWorkflows();
             String lastProjName = null;
             for (RestWorkflowDefinition def : defs) {
                 if (!def.getProject().getName().equals(lastProjName)) {
@@ -79,7 +79,7 @@ public class ShowWorkflow
             ln("%s", yaml);
         }
         else {
-            for (RestProject proj : client.getProjects()) {
+            for (RestProject proj : client.getProjects().getProjects()) {
                 try {
                     RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
                     String yaml = yamlMapper().toYaml(def.getConfig());

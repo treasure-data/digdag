@@ -96,7 +96,7 @@ public class ServerGracefulShutdownIT
 
         // Wait for the task to start
         TestUtils.expect(Duration.ofMinutes(5), () -> {
-            RestTask checkerTask = client.getTasks(attemptId)
+            RestTask checkerTask = client.getTasks(attemptId).getTasks()
                 .stream()
                 .filter(it -> it.getFullName().endsWith("+start_checker"))
                 .findFirst()

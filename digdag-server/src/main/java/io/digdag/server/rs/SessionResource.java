@@ -3,7 +3,9 @@ package io.digdag.server.rs;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceNotFoundException;
@@ -23,8 +25,6 @@ import javax.ws.rs.QueryParam;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static io.digdag.server.rs.RestModels.attemptModels;
 
 @Path("/")
 @Produces("application/json")
@@ -49,7 +49,7 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions")
-    public List<RestSession> getSessions(@QueryParam("last_id") Long lastId)
+    public RestSessionCollection getSessions(@QueryParam("last_id") Long lastId)
             throws ResourceNotFoundException
     {
         ProjectStore rs = rm.getProjectStore(getSiteId());
@@ -57,7 +57,7 @@ public class SessionResource
 
         List<StoredSessionWithLastAttempt> sessions = ss.getSessions(100, Optional.fromNullable(lastId));
 
-        return RestModels.sessionModels(rs, sessions);
+        return RestModels.sessionCollection(rs, sessions);
     }
 
     @GET
@@ -76,7 +76,7 @@ public class SessionResource
 
     @GET
     @Path("/api/sessions/{id}/attempts")
-    public List<RestSessionAttempt> getSessionAttempts(
+    public RestSessionAttemptCollection getSessionAttempts(
             @PathParam("id") long id,
             @QueryParam("last_id") Long lastId)
             throws ResourceNotFoundException
@@ -89,8 +89,10 @@ public class SessionResource
         StoredProject project = rs.getProjectById(session.getProjectId());
         List<StoredSessionAttempt> attempts = ss.getAttemptsOfSession(id, 100, Optional.fromNullable(lastId));
 
-        return attempts.stream()
-                .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
-                .collect(Collectors.toList());
+        List<RestSessionAttempt> collection = attempts.stream()
+            .map(attempt -> RestModels.attempt(session, attempt, project.getName()))
+            .collect(Collectors.toList());
+
+        return RestModels.attemptCollection(collection);
     }
 }

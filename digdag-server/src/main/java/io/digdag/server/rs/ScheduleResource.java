@@ -5,18 +5,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
 import io.digdag.client.api.RestSessionAttempt;
-import io.digdag.core.repository.ProjectMap;
+import io.digdag.client.api.RestSessionAttemptCollection;
 import io.digdag.core.repository.ProjectStore;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
-import io.digdag.core.repository.TimeZoneMap;
 import io.digdag.core.schedule.ScheduleControl;
 import io.digdag.core.schedule.ScheduleExecutor;
 import io.digdag.core.schedule.ScheduleStore;
@@ -66,40 +66,12 @@ public class ScheduleResource
 
     @GET
     @Path("/api/schedules")
-    public List<RestSchedule> getSchedules(@QueryParam("last_id") Integer lastId)
+    public RestScheduleCollection getSchedules(@QueryParam("last_id") Integer lastId)
     {
         List<StoredSchedule> scheds = sm.getScheduleStore(getSiteId())
             .getSchedules(100, Optional.fromNullable(lastId));
 
-        return restSchedules(rm.getProjectStore(getSiteId()), scheds);
-    }
-
-    static List<RestSchedule> restSchedules(
-            ProjectStore projectStore,
-            List<StoredSchedule> scheds)
-    {
-        ProjectMap projs = projectStore.getProjectsByIdList(
-                scheds.stream()
-                .map(StoredSchedule::getProjectId)
-                .collect(Collectors.toList()));
-        TimeZoneMap defTimeZones = projectStore.getWorkflowTimeZonesByIdList(
-                scheds.stream()
-                .map(StoredSchedule::getWorkflowDefinitionId)
-                .collect(Collectors.toList()));
-
-        return scheds.stream()
-            .map(sched -> {
-                try {
-                    return RestModels.schedule(sched,
-                            projs.get(sched.getProjectId()),
-                            defTimeZones.get(sched.getWorkflowDefinitionId()));
-                }
-                catch (ResourceNotFoundException ex) {
-                    return null;
-                }
-            })
-            .filter(sched -> sched != null)
-            .collect(Collectors.toList());
+        return RestModels.scheduleCollection(rm.getProjectStore(getSiteId()), scheds);
     }
 
     @GET
@@ -157,12 +129,12 @@ public class ScheduleResource
     @POST
     @Consumes("application/json")
     @Path("/api/schedules/{id}/backfill")
-    public List<RestSessionAttempt> backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
+    public RestSessionAttemptCollection backfillSchedule(@PathParam("id") int id, RestScheduleBackfillRequest request)
         throws ResourceNotFoundException, ResourceConflictException, ResourceLimitExceededException
     {
         List<StoredSessionAttemptWithSession> attempts = exec.backfill(getSiteId(), id, request.getFromTime(), request.getAttemptName(), request.getCount(), request.getDryRun());
 
-        return RestModels.attemptModels(rm, getSiteId(), attempts);
+        return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
     }
 
     @POST

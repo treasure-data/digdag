@@ -116,7 +116,7 @@ public class InitPushStartIT
         }
 
         // Verify that the workflow is started
-        List<RestSession> sessions = client.getSessions();
+        List<RestSession> sessions = client.getSessions().getSessions();
         assertThat(sessions.size(), is(1));
         RestSession session = sessions.get(0);
         assertThat(session.getProject().getName(), is("foobar"));
@@ -128,15 +128,15 @@ public class InitPushStartIT
         {
             RestSession sessionById = client.getSession(sessionId);
             assertThat(sessionById, is(session));
-            List<RestSession> sessionsByProject = client.getSessions(project.getId());
+            List<RestSession> sessionsByProject = client.getSessions(project.getId()).getSessions();
             assertThat(sessionsByProject, contains(session));
-            List<RestSession> sessionsByWorkflowName = client.getSessions(project.getId(), "foobar");
+            List<RestSession> sessionsByWorkflowName = client.getSessions(project.getId(), "foobar").getSessions();
             assertThat(sessionsByWorkflowName, contains(session));
         }
 
         // Fetch attempt using client
         {
-            List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent());
+            List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent()).getAttempts();
             assertThat(attempts.size(), is(1));
             RestSessionAttempt attempt = attempts.get(0);
             assertThat(attempt.getProject().getName(), is("foobar"));

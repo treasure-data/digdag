@@ -88,14 +88,14 @@ public class ShowSession
         List<RestSession> sessions;
 
         if (projName == null) {
-            sessions = client.getSessions(Optional.fromNullable(lastId));
+            sessions = client.getSessions(Optional.fromNullable(lastId)).getSessions();
         } else {
             RestProject project = client.getProject(projName);
             if (workflowName == null) {
-                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId));
+                sessions = client.getSessions(project.getId(), Optional.fromNullable(lastId)).getSessions();
             }
             else {
-                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId));
+                sessions = client.getSessions(project.getId(), workflowName, Optional.fromNullable(lastId)).getSessions();
             }
         }
 
