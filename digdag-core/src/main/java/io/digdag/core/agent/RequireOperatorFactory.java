@@ -69,7 +69,7 @@ public class RequireOperatorFactory
             int projectId = config.get("project_id", int.class);
             Instant instant = config.get("session_time", Instant.class);
             Optional<String> retryAttemptName = config.getOptional("retry_attempt_name", String.class);
-            Config overwriteParams = config.getNestedOrGetEmpty("params");
+            Config overrideParams = config.getNestedOrGetEmpty("params");
             try {
                 AttemptStateFlags flags = callback.startSession(
                         request.getSiteId(),
@@ -77,7 +77,7 @@ public class RequireOperatorFactory
                         workflowName,
                         instant,
                         retryAttemptName,
-                        overwriteParams);
+                        overrideParams);
 
                 boolean isDone = flags.isDone();
                 if (isDone) {

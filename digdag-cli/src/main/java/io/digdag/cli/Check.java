@@ -106,11 +106,11 @@ public class Check
         final ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
         final ProjectArchiveLoader projectLoader = injector.getInstance(ProjectArchiveLoader.class);
 
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         showSystemDefaults();
 
-        ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
+        ProjectArchive project = loadProject(projectLoader, projectDirName, overrideParams);
 
         Optional<String> onlyWorkflow = Optional.fromNullable(workflowNameArg).transform(it -> normalizeWorkflowName(project, it));
 

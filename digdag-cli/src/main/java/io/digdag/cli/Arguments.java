@@ -37,26 +37,26 @@ public class Arguments
             String paramsFile, Map<String, String> params)
         throws IOException
     {
-        Config overwriteParams = cf.create();
+        Config overrideParams = cf.create();
 
         // ~/.config/digdag/config and JVM system properties
         for (String key : systemProps.stringPropertyNames()) {
             if (key.startsWith("params.")) {
-                setDotNestedKey(overwriteParams, key.substring("params.".length()), systemProps.getProperty(key));
+                setDotNestedKey(overrideParams, key.substring("params.".length()), systemProps.getProperty(key));
             }
         }
 
         // -P files
         if (paramsFile != null) {
-            overwriteParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
+            overrideParams.merge(loader.loadParameterizedFile(new File(paramsFile), cf.create()));
         }
 
         // -p options
         for (Map.Entry<String, String> pair : params.entrySet()) {
-            setDotNestedKey(overwriteParams, pair.getKey(), pair.getValue());
+            setDotNestedKey(overrideParams, pair.getKey(), pair.getValue());
         }
 
-        return overwriteParams;
+        return overrideParams;
     }
 
     private static void setDotNestedKey(Config dest, String key, String value)
@@ -79,7 +79,7 @@ public class Arguments
         nest.set(nestKeys[nestKeys.length - 1], value);
     }
 
-    public static ProjectArchive loadProject(ProjectArchiveLoader projectLoader, String projectDirName, Config overwriteParams)
+    public static ProjectArchive loadProject(ProjectArchiveLoader projectLoader, String projectDirName, Config overrideParams)
         throws IOException
     {
         Path currentDirectory = Paths.get("").toAbsolutePath();
@@ -91,13 +91,13 @@ public class Arguments
             projectPath = Paths.get(projectDirName).normalize().toAbsolutePath();
         }
 
-        // if projectPath is not current dir, set _project_path to overwriteParams
+        // if projectPath is not current dir, set _project_path to overrideParams
         if (!projectPath.equals(currentDirectory)) {
             logger.info("Setting project path to {}", projectPath);
-            overwriteParams.set(LocalWorkspaceManager.PROJECT_PATH, projectPath.toString());
+            overrideParams.set(LocalWorkspaceManager.PROJECT_PATH, projectPath.toString());
         }
 
-        return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
+        return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overrideParams);
     }
 
     public static String normalizeWorkflowName(ProjectArchive project, String workflowNameArg)

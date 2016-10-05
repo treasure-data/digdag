@@ -42,6 +42,6 @@ public interface TaskCallbackApi
             String workflowName,
             Instant instant,
             Optional<String> retryAttemptName,
-            Config overwriteParams)
+            Config overrideParams)
         throws ResourceNotFoundException, ResourceLimitExceededException;
 }
