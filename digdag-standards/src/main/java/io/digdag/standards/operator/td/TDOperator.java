@@ -178,7 +178,12 @@ public class TDOperator
 
     public boolean tableExists(String table)
     {
-        return client.existsTable(database, table);
+        try {
+            return defaultRetryExecutor.run(() -> client.existsTable(database, table));
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex.getCause());
+        }
     }
 
     private String submitNewJob(TDJobRequest request)
