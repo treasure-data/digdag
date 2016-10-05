@@ -17,6 +17,7 @@ import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ArrayValue;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -110,7 +111,7 @@ class TDJobOperator
                                         return unpacker.hasNext();
                                     }
                                     catch (IOException ex) {
-                                        throw Throwables.propagate(ex);
+                                        throw new UncheckedIOException(ex);
                                     }
                                 }
 
@@ -120,13 +121,13 @@ class TDJobOperator
                                         return unpacker.unpackValue().asArrayValue();
                                     }
                                     catch (IOException ex) {
-                                        throw Throwables.propagate(ex);
+                                        throw new UncheckedIOException(ex);
                                     }
                                 }
                             });
                         }
                         catch (IOException ex) {
-                            throw Throwables.propagate(ex);
+                            throw new UncheckedIOException(ex);
                         }
                     })
             );
