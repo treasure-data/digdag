@@ -229,7 +229,7 @@ public class TestUtils
     public static String getAttemptLogs(DigdagClient client, Id attemptId)
             throws IOException
     {
-        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
+        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         StringBuilder logs = new StringBuilder();
         for (RestLogFileHandle handle : handles) {
             try (InputStream s = new GZIPInputStream(client.getLogFile(attemptId, handle))) {

@@ -123,7 +123,7 @@ public class S3StorageIT
         }
 
         // Fetch archive
-        RestProject proj = client.getProjects().get(0);
+        RestProject proj = client.getProjects().getProjects().get(0);
         byte[] data;
         try (InputStream in = client.getProjectArchive(proj.getId(), proj.getRevision())) {
             data = ByteStreams.toByteArray(in);
@@ -133,7 +133,7 @@ public class S3StorageIT
         assertThat(data[1], is((byte) 0x8b));
 
         // Fetch logs
-        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
+        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         assertThat(handles.size(), is(not(0)));
 
         for (RestLogFileHandle handle : handles) {
