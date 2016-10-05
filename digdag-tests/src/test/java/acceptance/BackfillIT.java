@@ -82,7 +82,7 @@ public class BackfillIT
         }
 
         // Verify that 2 sessions are started
-        List<RestSession> sessions = client.getSessions();
+        List<RestSession> sessions = client.getSessions().getSessions();
         assertThat(sessions.size(), is(2));
 
         // sessions API return results in reversed order

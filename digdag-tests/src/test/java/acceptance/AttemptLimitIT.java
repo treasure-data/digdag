@@ -122,14 +122,14 @@ public class AttemptLimitIT
 
         // Wait until next run time becomes later than now
         expect(Duration.ofMinutes(5), () -> {
-            List<RestSchedule> scheds = client.getSchedules();
+            List<RestSchedule> scheds = client.getSchedules().getSchedules();
             return scheds.size() > 0 && scheds.get(0).getNextRunTime().isAfter(Instant.now());
         });
 
         // Number of actually submitted sessions should be 3 = maxAttempts
-        assertThat(client.getSessionAttempts(Optional.absent()).size(), is(3));
+        assertThat(client.getSessionAttempts(Optional.absent()).getAttempts().size(), is(3));
 
         // Although next run time > now, next schedule time is 3-attempt later than start time
-        assertThat(client.getSchedules().get(0).getNextScheduleTime().toInstant(), is(startTime.plus(Duration.ofHours(3))));
+        assertThat(client.getSchedules().getSchedules().get(0).getNextScheduleTime().toInstant(), is(startTime.plus(Duration.ofHours(3))));
     }
 }

@@ -95,7 +95,7 @@ public class ServerScheduleIT
                 assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
             }
 
-            List<RestSchedule> scheds = client.getSchedules();
+            List<RestSchedule> scheds = client.getSchedules().getSchedules();
             assertThat(scheds.size(), is(1));
             RestSchedule sched = scheds.get(0);
 
@@ -142,11 +142,11 @@ public class ServerScheduleIT
             assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         }
 
-        List<RestSchedule> scheds = client.getSchedules();
+        List<RestSchedule> scheds = client.getSchedules().getSchedules();
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
 
-        List<RestSchedule> projectSchedules = client.getSchedules(projectId, Optional.absent());
+        List<RestSchedule> projectSchedules = client.getSchedules(projectId, Optional.absent()).getSchedules();
         assertThat(projectSchedules, is(scheds));
 
         RestSchedule workflowSchedule = client.getSchedule(projectId, "schedule");
@@ -250,7 +250,7 @@ public class ServerScheduleIT
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
         pushProject(server.endpoint(), projectDir);
 
-        List<RestSchedule> scheds = client.getSchedules();
+        List<RestSchedule> scheds = client.getSchedules().getSchedules();
         assertThat(scheds.size(), is(1));
         RestSchedule sched = scheds.get(0);
 
@@ -258,7 +258,7 @@ public class ServerScheduleIT
 
         RestSchedule disabled = client.getSchedule(sched.getId());
 
-        List<RestSchedule> disabledSchedules = client.getSchedules();
+        List<RestSchedule> disabledSchedules = client.getSchedules().getSchedules();
         assertThat(disabledSchedules.size(), is(1));
         assertThat(disabledSchedules.get(0).getId(), is(sched.getId()));
         assertThat(disabledSchedules.get(0).getDisabledAt(), is(disabled.getDisabledAt()));
@@ -279,7 +279,7 @@ public class ServerScheduleIT
 
         assertThat(enabled.getId(), is(sched.getId()));
         assertThat(enabled.getDisabledAt(), is(Optional.absent()));
-        List<RestSchedule> enabledSchedules = client.getSchedules();
+        List<RestSchedule> enabledSchedules = client.getSchedules().getSchedules();
         assertThat(enabledSchedules.size(), is(1));
         assertThat(enabledSchedules.get(0).getId(), is(sched.getId()));
         assertThat(enabledSchedules.get(0).getDisabledAt(), is(Optional.absent()));
@@ -305,7 +305,7 @@ public class ServerScheduleIT
         addWorkflow(projectDir, "acceptance/schedule/daily10.dig", "schedule.dig");
         pushProject(server.endpoint(), projectDir);
 
-        List<RestSchedule> schedules = client.getSchedules();
+        List<RestSchedule> schedules = client.getSchedules().getSchedules();
         assertThat(schedules.size(), is(1));
         RestSchedule sched = schedules.get(0);
 
@@ -314,7 +314,7 @@ public class ServerScheduleIT
         addWorkflow(projectDir, "acceptance/schedule/hourly9.dig", "schedule.dig");
         pushProject(server.endpoint(), projectDir);
 
-        List<RestSchedule> schedulesAfterPush = client.getSchedules();
+        List<RestSchedule> schedulesAfterPush = client.getSchedules().getSchedules();
         assertThat(schedulesAfterPush.size(), is(1));
         assertThat(schedulesAfterPush.get(0).getId(), is(sched.getId()));
         assertThat(schedulesAfterPush.get(0).getDisabledAt(), is(disabled.getDisabledAt()));
@@ -332,7 +332,7 @@ public class ServerScheduleIT
         client.deleteProject(projectId);
 
         // Schedules are not available
-        assertThat(client.getSchedules().size(), is(0));
+        assertThat(client.getSchedules().getSchedules().size(), is(0));
 
         exception.expectMessage(containsString("HTTP 404 Not Found"));
         exception.expect(NotFoundException.class);
