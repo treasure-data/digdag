@@ -37,7 +37,7 @@ if "%optimize%" == "true" (
     set java_args=-XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
 )
 
-java %java_args% -jar %this% %args%
+java %java_args% -jar "%this%" %args%
 
 endlocal
 
