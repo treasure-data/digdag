@@ -7,5 +7,5 @@ timezone: UTC
       UNION
       select 'a2' as a, 'b2' as b;
   _do:
-    sh>: touch out-${td.each.a}-${td.each.b}
+    sh>: touch ${outdir}/out-${td.each.a}-${td.each.b}
   database: sample_datasets
