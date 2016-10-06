@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.ConfigPath;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +21,7 @@ class ConfigPathListMapper
     {
         String text = rs.getString(column);
         if (rs.wasNull()) {
-            return ImmutableList.of();
+            return new ArrayList<>();
         }
         else {
             return fromText(text);
