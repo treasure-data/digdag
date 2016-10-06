@@ -451,6 +451,12 @@ For example, if you run a query ``select email, name from users`` and the query 
         +show:
           echo>: found a user ${td.each.name} email ${td.each.email}
 
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
+
 Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -510,6 +516,15 @@ td_wait_table>: Waits for data arriving at Treasure Data table
 
     +step1:
       td>: queries/use_records.sql
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
+
+Parameters
+~~~~~~~~~~
 
 :command:`td_wait_table>: FILE.sql`
   Name of a table.
@@ -573,6 +588,12 @@ Example queries:
     select 1 from target_table where TD_TIME_RANGE(time, '${session_time}') limit 1
 
     select count(*) > 1000 from target_table where TD_TIME_RANGE(time, '${last_session_time}')
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
 
 Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -756,6 +777,15 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
       table: mytable
       from: 2016-01-01 00:00:00 +0800
       to:   2016-02-01 00:00:00 +0800
+
+Secrets
+~~~~~~~
+
+:command:`td.apikey: API_KEY`
+  The Treasure Data API key to use when running Treasure Data queries.
+
+Parameters
+~~~~~~~~~~
 
 :command:`database: NAME`
   Name of the database.
