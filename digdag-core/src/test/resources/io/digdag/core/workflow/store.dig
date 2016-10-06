@@ -3,7 +3,7 @@
     object: {override: old, old_data: true}
     merge: reset_me
   reset:
-    - object
+    - /object
 
 +verify1:
   store>:
@@ -15,7 +15,7 @@
     object: {override: new, new_data: nested}
     complex: {nested: {old_value: 1}, keep: kept}
   reset:
-    - merge
+    - /merge
 
 +verify2:
   store>:
@@ -29,8 +29,8 @@
     object: {reset: set}
     complex: {nested: {new_field: new}}
   reset:
-    - object
-    - complex.nested
+    - /object
+    - /complex/nested
 
 +verify3:
   store>:

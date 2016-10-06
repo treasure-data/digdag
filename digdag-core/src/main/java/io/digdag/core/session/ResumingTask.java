@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 import io.digdag.spi.TaskReport;
 import io.digdag.core.workflow.TaskConfig;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigPath;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableResumingTask.class)
@@ -26,7 +27,7 @@ public abstract class ResumingTask
 
     public abstract Config getExportParams();
 
-    public abstract List<ConfigKey> getResetStoreParams();
+    public abstract List<ConfigPath> getResetStoreParams();
 
     public abstract Config getStoreParams();
 
