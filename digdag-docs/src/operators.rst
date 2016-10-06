@@ -204,9 +204,10 @@ for_each>: Repeat tasks
         #    sh>: echo throw orange
 
 :command:`for_each>: VARIABLES`
-  Variables used for the loop in ``key: [value, value, ...]`` syntax.
+  Variables used for the loop in ``key: [value, value, ...]`` syntax. Variables can be an object or JSON string.
 
   * :command:`for_each>: {i: [1, 2, 3]}`
+  * or :command:`for_each>: {i: '[1, 2, 3]'}`
 
 :command:`_parallel: BOOLEAN`
   Runs the repeating tasks in parallel.

@@ -38,12 +38,12 @@ public class ForEachOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public ForEachOperator newOperator(Path projectPath, TaskRequest request)
     {
         return new ForEachOperator(request);
     }
 
-    private static class ForEachOperator
+    static class ForEachOperator
             implements Operator
     {
         private final TaskRequest request;
@@ -60,11 +60,11 @@ public class ForEachOperatorFactory
 
             Config doConfig = request.getConfig().getNested("_do");
 
-            Config map = params.getNested("_command");
+            Config map = params.parseNested("_command");
 
             LinkedHashMap<String, List<JsonNode>> entries = new LinkedHashMap<>();
             for (String key : map.getKeys()) {
-                entries.put(key, map.getList(key, JsonNode.class));
+                entries.put(key, map.parseList(key, JsonNode.class));
             }
 
             enforceTaskCountLimit(entries);

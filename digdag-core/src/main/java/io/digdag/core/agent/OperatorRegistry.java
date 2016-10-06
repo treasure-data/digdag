@@ -96,8 +96,8 @@ public class OperatorRegistry
     {
         Config params = request.getConfig()
             .mergeDefault(request.getConfig().getNestedOrGetEmpty("plugin"));
-        List<String> repositories = params.getList("repositories", String.class);
-        List<String> dependencies = params.getList("dependencies", String.class);
+        List<String> repositories = params.getListOrEmpty("repositories", String.class);
+        List<String> dependencies = params.getListOrEmpty("dependencies", String.class);
         return Spec.of(repositories, dependencies);
     }
 

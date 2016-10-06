@@ -97,12 +97,13 @@ public class WorkflowTestingUtils
         return localSite.submitWorkflow(ar, def);
     }
 
-    public static void runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
+    public static StoredSessionAttemptWithSession runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws InterruptedException
     {
         try {
             StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
             localSite.runUntilDone(attempt.getId());
+            return localSite.getSessionStore().getAttemptById(attempt.getId());
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
             throw Throwables.propagate(ex);
