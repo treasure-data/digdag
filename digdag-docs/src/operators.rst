@@ -361,7 +361,6 @@ Output parameters
 
   * :command:`{"path":"/index.html","count":1}`
 
-
 td_run>: Treasure Data saved queries
 ----------------------------------
 
@@ -466,7 +465,7 @@ Parameters
   * :command:`database: my_db`
 
 :command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+  API key. This must be set as a secret parameter.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -528,7 +527,7 @@ td_wait_table>: Waits for data arriving at Treasure Data table
   * :command:`database: my_db`
 
 :command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+  API key. This must be set as a secret parameter.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -589,7 +588,7 @@ Parameters
   * :command:`database: my_db`
 
 :command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+  API key. This must be set as a secret parameter.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
@@ -779,7 +778,7 @@ Time range needs to be hourly. Setting non-zero values to minutes or seconds wil
   * :command:`to: 2016-02-01 00:00:00 +0800`
 
 :command:`apikey: APIKEY`
-  API key. You can set this at command line using ``-p td.apikey=$TD_APIKEY`` argument.
+  API key. This must be set as a secret parameter.
 
   * :command:`apikey: 992314/abcdef0123456789abcdef0123456789`
 
