@@ -1,6 +1,6 @@
 package io.digdag.core.database;
 
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import java.sql.ResultSet;
 import java.util.List;
 import org.h2.tools.SimpleResultSet;
@@ -12,22 +12,22 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class ConfigPathListMapperTest
+public class ConfigKeyListMapperTest
 {
-    private ConfigPathListMapper mapper;
+    private ConfigKeyListMapper mapper;
 
     @Before
     public void setUp()
     {
-        mapper = new ConfigPathListMapper();
+        mapper = new ConfigKeyListMapper();
     }
 
     @Test
     public void verifyTextFormat()
             throws Exception
     {
-        List<ConfigPath> list = asList(ConfigPath.of("a", "b"), ConfigPath.of("c", "d"));
-        String text = "[\"/a/b\",\"/c/d\"]";
+        List<ConfigKey> list = asList(ConfigKey.of("a", "b"), ConfigKey.of("c", "d"));
+        String text = "[\"a.b\",\"c.d\"]";
         assertThat(
                 mapper.toBinding(list),
                 is(text));

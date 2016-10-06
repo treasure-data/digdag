@@ -2,7 +2,7 @@ package io.digdag.core.workflow;
 
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
@@ -44,7 +44,7 @@ public class StoreOperatorFactory
         {
             Config params = request.getConfig();
             Config storeParams = params.getNestedOrGetEmpty("_command");
-            List<ConfigPath> resetParams = params.getListOrEmpty("reset", ConfigPath.class);
+            List<ConfigKey> resetParams = params.getListOrEmpty("reset", ConfigKey.class);
 
             return TaskResult.defaultBuilder(request)
                 .resetStoreParams(resetParams)

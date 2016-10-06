@@ -2,37 +2,37 @@ package io.digdag.core.session;
 
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import java.util.List;
 
 public class ParameterUpdate
 {
-    private final List<ConfigPath> resetPaths;
+    private final List<ConfigKey> resetKeys;
     private final Config mergeParams;
 
-    public ParameterUpdate(List<ConfigPath> resetPaths, Config mergeParams)
+    public ParameterUpdate(List<ConfigKey> resetKeys, Config mergeParams)
     {
-        this.resetPaths = resetPaths;
+        this.resetKeys = resetKeys;
         this.mergeParams = mergeParams;
     }
 
     public void applyTo(Config config)
     {
-        for (ConfigPath resetPath : resetPaths) {
-            removeConfigPath(config, resetPath);
+        for (ConfigKey resetKey : resetKeys) {
+            removeConfigKey(config, resetKey);
         }
         config.merge(mergeParams);
     }
 
-    private static void removeConfigPath(Config config, ConfigPath path)
+    private static void removeConfigKey(Config config, ConfigKey key)
     {
-        for (String nestName : path.getNestNames()) {
+        for (String nestName : key.getNestNames()) {
             Optional<Config> nest = config.getOptionalNested(nestName);
             if (!nest.isPresent()) {
                 return;
             }
             config = nest.get();
         }
-        config.remove(path.getLastName());
+        config.remove(key.getLastName());
     }
 }

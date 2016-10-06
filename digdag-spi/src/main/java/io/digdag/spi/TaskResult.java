@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigFactory;
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface TaskResult
 
     Config getExportParams();
 
-    List<ConfigPath> getResetStoreParams();
+    List<ConfigKey> getResetStoreParams();
 
     Config getStoreParams();
 

@@ -9,46 +9,47 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class ConfigPath
+public class ConfigKey
 {
     // TODO sada: This class should be able to represent any possible keys
     //            such as config['']['k.e.y']['!?']. However, because there
     //            are no immediate demands for it, it's not implemented yet.
-    //            ConfigPath should implement escaping as documented in
-    //            RFC 6901 JSON Pointer, or a JSR 374 JSON-P 1.1 implementation
-    //            should replace ConfigPath.
+    //            Possible implementations to support symbols in ConfigKey are
+    //            json-compatible quoting with backslash escaping
+    //            (e.g. foo."k.e.y".bar."\"\\\""), backslash escaping without
+    //            quoting (e.g. foo.k\.e\.y.bar."\\\\"), etc.
 
-    // String representation of ConfigPath is also used on database
+    // String representation of ConfigKey is also used on database
     // (task_state_details.reset_store_params column)
 
     private static Pattern VALID_NAME = Pattern.compile("[a-zA-Z0-9_]+");
-    private static Pattern VALID_EXPRESSION = Pattern.compile("(/[a-zA-Z0-9_]+)+");
+    private static Pattern VALID_EXPRESSION = Pattern.compile("[a-zA-Z0-9_]+(\\.[a-zA-Z0-9_]+)*");
 
     @JsonCreator
-    public static ConfigPath parse(String expr)
+    public static ConfigKey parse(String expr)
     {
         if (!VALID_EXPRESSION.matcher(expr).matches()) {
             throw new IllegalArgumentException("Config key expression is invalid. Currently, only [a-zA-Z0-9_] characters are supported: " + expr);
         }
 
-        String[] names = expr.substring(1).split("/", -1);
+        String[] names = expr.split("\\.", -1);
 
         return of(names);
     }
 
-    public static ConfigPath of(String... names)
+    public static ConfigKey of(String... names)
     {
         return of(Arrays.asList(names));
     }
 
-    public static ConfigPath of(List<String> names)
+    public static ConfigKey of(List<String> names)
     {
-        return new ConfigPath(names);
+        return new ConfigKey(names);
     }
 
     private List<String> names;
 
-    private ConfigPath(List<String> names)
+    private ConfigKey(List<String> names)
     {
         Preconditions.checkArgument(names.size() >= 1, "Number of names must be larger than 1");
         for (String key : names) {
@@ -76,7 +77,7 @@ public class ConfigPath
     @JsonValue
     public String toString()
     {
-        return "/" + String.join("/", names);
+        return String.join(".", names);
     }
 
     @Override
@@ -85,10 +86,10 @@ public class ConfigPath
         if (this == other) {
             return true;
         }
-        if (!(other instanceof ConfigPath)) {
+        if (!(other instanceof ConfigKey)) {
             return false;
         }
-        ConfigPath o = (ConfigPath) other;
+        ConfigKey o = (ConfigKey) other;
         return Objects.equals(names, o.names);
     }
 

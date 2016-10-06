@@ -11,7 +11,7 @@ import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -405,10 +405,10 @@ public class TdOperatorFactory
         }
     }
 
-    static List<ConfigPath> buildResetStoreParams(boolean storeLastResults)
+    static List<ConfigKey> buildResetStoreParams(boolean storeLastResults)
     {
         if (storeLastResults) {
-            return ImmutableList.of(ConfigPath.of("td", "last_results"));
+            return ImmutableList.of(ConfigKey.of("td", "last_results"));
         }
         else {
             return ImmutableList.of();

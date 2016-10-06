@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 import io.digdag.spi.TaskReport;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.repository.ModelValidator;
 
 @Value.Immutable
@@ -22,7 +22,7 @@ public abstract class ArchivedTask
 
     public abstract Config getExportParams();
 
-    public abstract List<ConfigPath> getResetStoreParams();
+    public abstract List<ConfigKey> getResetStoreParams();
 
     public abstract Config getStoreParams();
 
