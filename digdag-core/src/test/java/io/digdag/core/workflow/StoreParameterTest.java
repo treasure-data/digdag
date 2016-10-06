@@ -53,9 +53,14 @@ public class StoreParameterTest
         throws Exception
     {
         StoredSessionAttemptWithSession attempt = runWorkflow(localSite, projectPath, "store", loadYamlResource("/io/digdag/core/workflow/store.dig"));
-        assertThat(attempt.getStateFlags().isSuccess(), is(true));
 
         List<ArchivedTask> tasks = localSite.getSessionStore().getTasksOfAttempt(attempt.getId());
+
+        for (ArchivedTask task : tasks) {
+            System.out.println("task : " + task);
+        }
+
+        assertThat(attempt.getStateFlags().isSuccess(), is(true));
 
         assertStoreParams(tasks, "+verify1", newConfig()
                 .set("verify1_text", "old")

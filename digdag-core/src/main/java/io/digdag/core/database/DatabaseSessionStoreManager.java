@@ -6,11 +6,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigPath;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.ConfigKey;
 import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.ImmutableArchivedTask;
 import io.digdag.core.session.ImmutableResumingTask;
@@ -117,7 +117,7 @@ public class DatabaseSessionStoreManager
 
     private final ObjectMapper mapper;
     private final ConfigFactory cf;
-    private final ResetKeysMapper rkm = new ResetKeysMapper();
+    private final ConfigPathListMapper cplm = new ConfigPathListMapper();
     private final ConfigMapper cfm;
     private final StoredTaskMapper stm;
     private final ArchivedTaskMapper atm;
@@ -129,8 +129,8 @@ public class DatabaseSessionStoreManager
         super(config.getType(), dao(config.getType()), dbi);
 
         dbi.registerMapper(new StoredTaskMapper(cfm));
-        dbi.registerMapper(new ArchivedTaskMapper(rkm, cfm));
-        dbi.registerMapper(new ResumingTaskMapper(rkm, cfm));
+        dbi.registerMapper(new ArchivedTaskMapper(cplm, cfm));
+        dbi.registerMapper(new ResumingTaskMapper(cplm, cfm));
         dbi.registerMapper(new StoredSessionMapper(cfm));
         dbi.registerMapper(new StoredSessionWithLastAttemptMapper(cfm));
         dbi.registerMapper(new StoredSessionAttemptMapper(cfm));
@@ -147,7 +147,7 @@ public class DatabaseSessionStoreManager
         this.cf = cf;
         this.cfm = cfm;
         this.stm = new StoredTaskMapper(cfm);
-        this.atm = new ArchivedTaskMapper(rkm, cfm);
+        this.atm = new ArchivedTaskMapper(cplm, cfm);
         this.tasm = new TaskAttemptSummaryMapper();
     }
 
@@ -480,7 +480,7 @@ public class DatabaseSessionStoreManager
                     " join task_state_details ts on ts.id = td.id" +
                     " where td.id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(rkm, null, cfm, "export_config", "export_params"))
+                .map(new IdConfigMapper(cplm, null, cfm, "export_config", "export_params"))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -498,7 +498,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(rkm, "reset_store_params", cfm, "store_params", null))
+                .map(new IdConfigMapper(cplm, "reset_store_params", cfm, "store_params", null))
                 .list()
             );
         return sortParameterUpdateListByIdList(idList, list);
@@ -516,7 +516,7 @@ public class DatabaseSessionStoreManager
                     " from task_state_details" +
                     " where id " + inLargeIdListExpression(idList)
                 )
-                .map(new IdConfigMapper(rkm, null, cfm, "error", null))
+                .map(new IdConfigMapper(cplm, null, cfm, "error", null))
                 .list()
             );
         return sortConfigListByIdList(idList, list);
@@ -543,7 +543,7 @@ public class DatabaseSessionStoreManager
     {
         Map<Long, ParameterUpdate> map = new HashMap<>();
         for (IdConfig idConfig : list) {
-            map.put(idConfig.id, new ParameterUpdate(idConfig.resetKeys, idConfig.config));
+            map.put(idConfig.id, new ParameterUpdate(idConfig.resetPaths, idConfig.config));
         }
         ImmutableList.Builder<ParameterUpdate> builder = ImmutableList.builder();
         for (long id : idList) {
@@ -749,7 +749,7 @@ public class DatabaseSessionStoreManager
                         task.getConfig().getExport(),
                         task.getSubtaskConfig(),
                         task.getExportParams(),
-                        rkm.toBinding(task.getResetStoreParams()),
+                        cplm.toBinding(task.getResetStoreParams()),
                         task.getStoreParams(),
                         taskReportToConfig(cf, task.getReport()),
                         task.getError());
@@ -886,9 +886,7 @@ public class DatabaseSessionStoreManager
                 dao.setSuccessfulReport(taskId,
                         result.getSubtaskConfig(),
                         result.getExportParams(),
-                        rkm.toBinding(result.getResetStoreParams()
-                            .stream().map(key -> ConfigKey.parse(key))
-                            .collect(Collectors.toList())),
+                        cplm.toBinding(result.getResetStoreParams()),
                         result.getStoreParams(),
                         cf.create());  // TODO create a class for stored report
                 return true;
@@ -903,9 +901,7 @@ public class DatabaseSessionStoreManager
                 dao.setSuccessfulReport(taskId,
                         result.getSubtaskConfig(),
                         result.getExportParams(),
-                        rkm.toBinding(result.getResetStoreParams()
-                            .stream().map(key -> ConfigKey.parse(key))
-                            .collect(Collectors.toList())),
+                        cplm.toBinding(result.getResetStoreParams()),
                         result.getStoreParams(),
                         cf.create());  // TODO create a class for stored report
                 return true;
@@ -1876,12 +1872,12 @@ public class DatabaseSessionStoreManager
     private static class ArchivedTaskMapper
             implements ResultSetMapper<ArchivedTask>
     {
-        private final ResetKeysMapper rkm;
+        private final ConfigPathListMapper cplm;
         private final ConfigMapper cfm;
 
-        public ArchivedTaskMapper(ResetKeysMapper rkm, ConfigMapper cfm)
+        public ArchivedTaskMapper(ConfigPathListMapper cplm, ConfigMapper cfm)
         {
-            this.rkm = rkm;
+            this.cplm = cplm;
             this.cfm = cfm;
         }
 
@@ -1910,7 +1906,7 @@ public class DatabaseSessionStoreManager
                 .stateFlags(TaskStateFlags.of(r.getInt("state_flags")))
                 .subtaskConfig(cfm.fromResultSetOrEmpty(r, "subtask_config"))
                 .exportParams(cfm.fromResultSetOrEmpty(r, "export_params"))
-                .resetStoreParams(rkm.fromResultSetOrEmpty(r, "reset_store_params"))
+                .resetStoreParams(cplm.fromResultSetOrEmpty(r, "reset_store_params"))
                 .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
                 .report(report)
                 .error(cfm.fromResultSetOrEmpty(r, "error"))
@@ -1922,12 +1918,12 @@ public class DatabaseSessionStoreManager
     private static class ResumingTaskMapper
             implements ResultSetMapper<ResumingTask>
     {
-        private final ResetKeysMapper rkm;
+        private final ConfigPathListMapper cplm;
         private final ConfigMapper cfm;
 
-        public ResumingTaskMapper(ResetKeysMapper rkm, ConfigMapper cfm)
+        public ResumingTaskMapper(ConfigPathListMapper cplm, ConfigMapper cfm)
         {
-            this.rkm = rkm;
+            this.cplm = cplm;
             this.cfm = cfm;
         }
 
@@ -1947,7 +1943,7 @@ public class DatabaseSessionStoreManager
                                 cfm.fromResultSetOrEmpty(r, "export_config")))
                 .subtaskConfig(cfm.fromResultSetOrEmpty(r, "subtask_config"))
                 .exportParams(cfm.fromResultSetOrEmpty(r, "export_params"))
-                .resetStoreParams(rkm.fromResultSetOrEmpty(r, "reset_store_params"))
+                .resetStoreParams(cplm.fromResultSetOrEmpty(r, "reset_store_params"))
                 .storeParams(cfm.fromResultSetOrEmpty(r, "store_params"))
                 .report(report)
                 .error(cfm.fromResultSetOrEmpty(r, "error"))
@@ -2031,12 +2027,12 @@ public class DatabaseSessionStoreManager
     {
         protected final long id;
         protected final Config config;
-        private final List<ConfigKey> resetKeys;
+        private final List<ConfigPath> resetPaths;
 
-        public IdConfig(long id, List<ConfigKey> resetKeys, Config config)
+        public IdConfig(long id, List<ConfigPath> resetPaths, Config config)
         {
             this.id = id;
-            this.resetKeys = resetKeys;
+            this.resetPaths = resetPaths;
             this.config = config;
         }
     }
@@ -2044,17 +2040,17 @@ public class DatabaseSessionStoreManager
     private static class IdConfigMapper
             implements ResultSetMapper<IdConfig>
     {
-        private final ResetKeysMapper rkm;
-        private final String resetKeysColumn;
+        private final ConfigPathListMapper cplm;
+        private final String resetPathsColumn;
         private final ConfigMapper cfm;
         private final String configColumn;
         private final String mergeColumn;
 
-        public IdConfigMapper(ResetKeysMapper rkm, String resetKeysColumn, ConfigMapper cfm, String configColumn, String mergeColumn)
+        public IdConfigMapper(ConfigPathListMapper cplm, String resetPathsColumn, ConfigMapper cfm, String configColumn, String mergeColumn)
         {
-            this.rkm = rkm;
+            this.cplm = cplm;
             this.cfm = cfm;
-            this.resetKeysColumn = resetKeysColumn;
+            this.resetPathsColumn = resetPathsColumn;
             this.configColumn = configColumn;
             this.mergeColumn = mergeColumn;
         }
@@ -2063,15 +2059,15 @@ public class DatabaseSessionStoreManager
         public IdConfig map(int index, ResultSet r, StatementContext ctx)
                 throws SQLException
         {
-            List<ConfigKey> resetKeys = null;
-            if (resetKeysColumn != null) {
-                resetKeys = rkm.fromResultSetOrEmpty(r, resetKeysColumn);
+            List<ConfigPath> resetPaths = null;
+            if (resetPathsColumn != null) {
+                resetPaths = cplm.fromResultSetOrEmpty(r, resetPathsColumn);
             }
             Config config = cfm.fromResultSetOrEmpty(r, configColumn);
             if (mergeColumn != null) {
                 config.merge(cfm.fromResultSetOrEmpty(r, mergeColumn));
             }
-            return new IdConfig(r.getLong("id"), resetKeys, config);
+            return new IdConfig(r.getLong("id"), resetPaths, config);
         }
     }
 
