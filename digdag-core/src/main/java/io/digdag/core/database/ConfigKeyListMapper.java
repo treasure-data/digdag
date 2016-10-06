@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-import io.digdag.client.config.ConfigPath;
+import io.digdag.client.config.ConfigKey;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,11 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-class ConfigPathListMapper
+class ConfigKeyListMapper
 {
     private final ObjectMapper jsonTreeMapper = new ObjectMapper();
 
-    public List<ConfigPath> fromResultSetOrEmpty(ResultSet rs, String column)
+    public List<ConfigKey> fromResultSetOrEmpty(ResultSet rs, String column)
         throws SQLException
     {
         String text = rs.getString(column);
@@ -29,33 +29,33 @@ class ConfigPathListMapper
     }
 
     @SuppressWarnings("unchecked")
-    private List<ConfigPath> fromText(String text)
+    private List<ConfigKey> fromText(String text)
     {
         try {
-            return (List<ConfigPath>) jsonTreeMapper.readValue(text, jsonTreeMapper.getTypeFactory().constructParametrizedType(List.class, List.class, ConfigPath.class));
+            return (List<ConfigKey>) jsonTreeMapper.readValue(text, jsonTreeMapper.getTypeFactory().constructParametrizedType(List.class, List.class, ConfigKey.class));
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    private String toText(List<ConfigPath> paths)
+    private String toText(List<ConfigKey> keys)
     {
         try {
-            return jsonTreeMapper.writeValueAsString(paths);
+            return jsonTreeMapper.writeValueAsString(keys);
         }
         catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
     }
 
-    public String toBinding(List<ConfigPath> paths)
+    public String toBinding(List<ConfigKey> keys)
     {
-        if (paths.isEmpty()) {
+        if (keys.isEmpty()) {
             return null;
         }
         else {
-            String text = toText(paths);
+            String text = toText(keys);
             if ("[]".equals(text)) {
                 return null;
             }
