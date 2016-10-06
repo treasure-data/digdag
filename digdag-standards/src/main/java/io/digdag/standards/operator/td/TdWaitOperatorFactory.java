@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -22,16 +23,24 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
+    private static final int INITIAL_RESULT_FETCH_RETRY_INTERVAL = 1;
+    private static final int MAX_RESULT_FETCH_RETRY_INTERVAL = 30;
+
+    private static final String RESULT = "result";
+    private static final String RETRY = "retry";
+
     private static Logger logger = LoggerFactory.getLogger(TdWaitOperatorFactory.class);
     
     private static final String POLL_JOB = "pollJob";
@@ -98,11 +107,13 @@ public class TdWaitOperatorFactory
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
                 TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
-                state.remove(POLL_JOB);
 
                 // Fetch the job output to see if the query condition has been fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
                 boolean done = fetchJobResult(job);
+
+                // Remove the poll job state _after_ fetching the result so that the result fetch can be retried without resubmitting the job.
+                state.remove(POLL_JOB);
 
                 // If the query condition was not fulfilled, go back to sleep.
                 if (!done) {
@@ -134,9 +145,24 @@ public class TdWaitOperatorFactory
 
         private boolean fetchJobResult(TDJobOperator job)
         {
-            // TODO: handle netsplits
+            Config resultState = state.getNestedOrSetEmpty(RESULT);
 
-            Optional<ArrayValue> firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
+            Optional<ArrayValue> firstRow;
+            try {
+                firstRow = job.getResult(ite -> ite.hasNext() ? Optional.of(ite.next()) : Optional.absent());
+            }
+            catch (UncheckedIOException | TDClientException e) {
+                if (isDeterministicClientException(e)) {
+                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                }
+                int retry = resultState.get(RETRY, int.class, 0);
+                resultState.set(RETRY, retry + 1);
+                int interval = (int) Math.min(INITIAL_RESULT_FETCH_RETRY_INTERVAL * Math.pow(2, retry), MAX_RESULT_FETCH_RETRY_INTERVAL);
+                logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
+                throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+            }
+
+            state.remove(RESULT);
 
             // There must be at least one row in the result for the wait condition to be fulfilled.
             if (!firstRow.isPresent()) {
