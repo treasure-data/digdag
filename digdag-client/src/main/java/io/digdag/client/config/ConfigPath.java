@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -32,15 +33,17 @@ public class ConfigPath
 
         String[] names = expr.substring(1).split("/", -1);
 
-        return new ConfigPath(ImmutableList.copyOf(names));
+        return of(names);
     }
 
-    private static ConfigPath get(String first, String... more)
+    public static ConfigPath of(String... names)
     {
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
-        builder.add(first);
-        builder.add(more);
-        return new ConfigPath(builder.build());
+        return of(Arrays.asList(names));
+    }
+
+    public static ConfigPath of(List<String> names)
+    {
+        return new ConfigPath(names);
     }
 
     private List<String> names;

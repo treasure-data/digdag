@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigPath;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -151,6 +153,7 @@ public class TdOperatorFactory
             Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, storeLastResults);
 
             return TaskResult.defaultBuilder(request)
+                    .resetStoreParams(buildResetStoreParams(storeLastResults))
                     .storeParams(storeParams)
                     .build();
         }
@@ -375,9 +378,9 @@ public class TdOperatorFactory
 
     static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults)
     {
-        Config td = cf.create();
-
         if (storeLastResults) {
+            Config td = cf.create();
+
             List<ArrayValue> results = downloadFirstResults(j, 1);
             Map<RawValue, Value> map = new LinkedHashMap<>();
             if (!results.isEmpty()) {
@@ -394,9 +397,22 @@ public class TdOperatorFactory
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
             }
-        }
 
-        return cf.create().set("td", td);
+            return cf.create().set("td", td);
+        }
+        else {
+            return cf.create();
+        }
+    }
+
+    static List<ConfigPath> buildResetStoreParams(boolean storeLastResults)
+    {
+        if (storeLastResults) {
+            return ImmutableList.of(ConfigPath.of("td", "last_results"));
+        }
+        else {
+            return ImmutableList.of();
+        }
     }
 
     private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max)

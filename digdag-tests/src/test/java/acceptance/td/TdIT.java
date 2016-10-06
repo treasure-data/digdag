@@ -186,6 +186,20 @@ public class TdIT
     }
 
     @Test
+    public void testStoreLastResultTwice()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_store_last_result_twice.dig", projectDir.resolve("workflow.dig"));
+        assertWorkflowRunsSuccessfully();
+        JsonNode result = objectMapper().readTree(outfile.toFile());
+        assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_results").isObject(), is(true));
+        assertThat(result.get("last_results").size(), is(2));
+        assertThat(result.get("last_results").get("a").textValue(), is("A2"));
+        assertThat(result.get("last_results").get("d").textValue(), is("D"));
+    }
+
+    @Test
     public void testRunQueryWithEnvProxy()
             throws Exception
     {
