@@ -1,11 +1,11 @@
 {
   "name": "digdag-ui",
   "version": "1.0.0",
-  "description": "",
+  "description": "DigDag UI",
   "main": "console.jsx",
   "scripts": {
-    "build": "NODE_ENV=production webpack -p --config webpack.production.config.js --progress --profile --colors",
-    "dev": "webpack-dev-server --progress --profile --colors --hot --port 9000",
+    "build": "NODE_ENV=production webpack --config webpack.build.js -p --bail",
+    "dev": "webpack-dashboard -- webpack-dev-server --hot --inline --progress",
     "flow": "flow; test $? -eq 0 -o $? -eq 2",
     "lint": "standard"
   },
@@ -46,9 +46,11 @@
     "bootstrap-loader": "1.0.10",
     "bootstrap-sass": "3.3.6",
     "css-loader": "0.23.1",
+    "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "0.8.5",
     "flow-bin": "^0.32.0",
     "flow-status-webpack-plugin": "0.1.4",
+    "html-webpack-plugin": "^2.22.0",
     "less": "2.7.1",
     "less-loader": "2.2.3",
     "node-sass": "^3.10.0",
