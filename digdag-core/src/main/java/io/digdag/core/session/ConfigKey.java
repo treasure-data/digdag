@@ -10,6 +10,16 @@ import java.util.regex.Pattern;
 
 public class ConfigKey
 {
+    // TODO sada: This class should be able to represent any possible keys
+    //            such as config['']['k.e.y']['!?']. However, because there
+    //            are no immediate demands for it, it's not implemented yet.
+    //            Future implements without breaking backward compatibility
+    //            are percent encoding, quoting with backslash escaping like
+    //            JSON path, etc.
+
+    // String representation of ConfigKey is also used on database
+    // (task_state_details.reset_store_params column)
+
     private static Pattern VALID_NAME = Pattern.compile("[a-zA-Z0-9_]+");
     private static Pattern VALID_EXPRESSION = Pattern.compile("[a-zA-Z0-9_]+(\\.[a-zA-Z0-9_]+)*");
 
