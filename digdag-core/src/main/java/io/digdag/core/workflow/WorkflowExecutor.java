@@ -17,7 +17,9 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredProject;
 import io.digdag.core.repository.StoredRevision;
 import io.digdag.core.repository.WorkflowDefinition;
+import io.digdag.core.session.ConfigKey;
 import io.digdag.core.session.ResumingTask;
+import io.digdag.core.session.ParameterUpdate;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionAttempt;
 import io.digdag.core.session.SessionMonitor;
@@ -591,7 +593,10 @@ public class WorkflowExecutor
                 try {
                     Optional<Long> errorTask = addErrorTasksIfAny(lockedTask,
                             true,
-                            (export) -> collectErrorParams(export, lockedTask.get()));
+                            (export) -> {
+                                collectErrorParams(export, lockedTask.get());
+                                return export;
+                            });
                     if (errorTask.isPresent()) {
                         errorTaskIds.add(errorTask.get());
                     }
@@ -627,7 +632,7 @@ public class WorkflowExecutor
         }
     }
 
-    private Config collectErrorParams(Config export, StoredTask task)
+    private void collectErrorParams(Config params, StoredTask task)
     {
         List<Long> childrenFromThis;
         {
@@ -635,6 +640,13 @@ public class WorkflowExecutor
             childrenFromThis = tree.getRecursiveChildrenIdList(task.getId());
         }
 
+        // merge store params to export params
+        List<ParameterUpdate> childrenStoreParams = sm.getStoreParams(childrenFromThis);
+        for (ParameterUpdate childStoreParams : childrenStoreParams) {
+            childStoreParams.applyTo(params);
+        }
+
+        // merge all error params
         Config error = cf.create();
         {
             List<Config> childrenErrors = sm.getErrors(childrenFromThis);
@@ -642,18 +654,7 @@ public class WorkflowExecutor
                 error.merge(childError);
             }
         }
-
-        Config storeParams = cf.create();
-        {
-            List<Config> childrenStoreParams = sm.getStoreParams(childrenFromThis);
-            for (Config childStoreParams : childrenStoreParams) {
-                storeParams.merge(childStoreParams);
-            }
-        }
-
-        return export
-            .merge(storeParams)
-            .set("error", error);
+        params.set("error", error);
     }
 
     private boolean propagateSessionArchive()
@@ -1246,9 +1247,9 @@ public class WorkflowExecutor
         // task merge order is:
         //   export < store < local
         List<Config> exports = sm.getExportParams(parentsFromRoot);
-        List<Config> stores = sm.getStoreParams(parentsUpstreamChildrenFromFar);
+        List<ParameterUpdate> stores = sm.getStoreParams(parentsUpstreamChildrenFromFar);
         for (int si=0; si < parentsUpstreamChildrenFromFar.size(); si++) {
-            Config stored = stores.get(si);
+            ParameterUpdate stored = stores.get(si);
             long taskId = parentsUpstreamChildrenFromFar.get(si);
             int ei = parentsFromRoot.indexOf(taskId);
             if (ei >= 0) {
@@ -1256,7 +1257,7 @@ public class WorkflowExecutor
                 Config exported = exports.get(ei);
                 params.merge(exported);
             }
-            params.merge(stored);
+            stored.applyTo(params);
         }
         params.merge(task.getConfig().getExport());
     }
