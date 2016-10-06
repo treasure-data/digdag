@@ -1,0 +1,42 @@
++store_from_younger_sibling:
+  store>:
+    object: {override: old, old_data: true}
+    merge: reset_me
+  reset:
+    - object
+
++verify1:
+  store>:
+    verify1_text: ${object.override}  # "old"
+
++store_to_merge:
+  store>:
+    new_value: merged
+    object: {override: new, new_data: nested}
+    complex: {nested: {old_value: 1}, keep: kept}
+  reset:
+    - merge
+
++verify2:
+  store>:
+    verify2_override: ${object.override} # "new"
+    verify2_merge: ${new_value}   # "merged"
+    verify2_merge_nested: ${object.new_data} # "nested"
+    verify2_reset: ${typeof merge == 'undefined'} # true
+
++reset_and_set:
+  store>:
+    object: {reset: set}
+    complex: {nested: {new_field: new}}
+  reset:
+    - object
+    - complex.nested
+
++verify3:
+  store>:
+    verify3_reset: ${object.override} # null
+    verify3_reset_set: ${object.reset} # "set"
+    verify3_keep_nested: ${complex.keep} # "kept"
+    verify3_reset_nested: ${complex.nested.old_value} # null
+    verify3_merge_nested: ${complex.nested.new_field} # "new"
+

@@ -21,6 +21,8 @@ public abstract class ArchivedTask
 
     public abstract Config getExportParams();
 
+    public abstract List<ConfigKey> getResetStoreParams();
+
     public abstract Config getStoreParams();
 
     public abstract Optional<TaskReport> getReport();

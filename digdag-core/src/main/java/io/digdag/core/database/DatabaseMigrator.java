@@ -29,6 +29,7 @@ public class DatabaseMigrator
 		new Migration_20160908175551_KeepSecretsUnique(),
         new Migration_20160926123456_AddDisabledAtColumnToSchedules(),
         new Migration_20160928203753_AddWorkflowOrderIndex(),
+        new Migration_20161005225356_AddResetParamsToTaskState(),
 	})
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());
