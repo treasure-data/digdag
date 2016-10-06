@@ -5,7 +5,7 @@ Client Changes
 --------------
 
 * The ``selfupdate`` command now works on windows.
-* Added ``enable`` and ``disabled`` commands that can be used to enable and disable scheduled workflow execution.
+* Added ``enable`` and ``disable`` commands that can be used to enable and disable scheduled workflow execution.
 
 
 Workflow Changes
