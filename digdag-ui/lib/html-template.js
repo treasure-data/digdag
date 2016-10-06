@@ -7,8 +7,7 @@ module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
   <meta charset='utf-8'>
   <link href='${data.API_ROOT}' rel='preconnect' crossorigin>
   <link href='${data.AUTH_ROOT}' rel='dns-prefetch'>
-  <meta name='viewport'
-    content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
+  <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'>
   <title>Loading...</title>
 </head>
 <body>
