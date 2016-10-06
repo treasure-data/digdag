@@ -388,7 +388,7 @@
 </div>
 <p>Updates the executable binary file to the latest version or specified version. Examples:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> digdag selfupdate
-<span class="gp">$</span> digdag selfupdate 0.8.16
+<span class="gp">$</span> digdag selfupdate 0.8.17
 </pre></div>
 </div>
 </div>
@@ -458,6 +458,9 @@
 <li>server.access-log.pattern (string, &#8220;json&#8221;, &#8220;combined&#8221; or &#8220;common&#8221;)</li>
 <li>server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)</li>
 <li>server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)</li>
+<li>server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)</li>
+<li>server.http.request-parse-timeout (maximum allowed time of reading a HTTP request in seconds. this doesn&#8217;t affect on reading request body. default: 30)</li>
+<li>server.http.io-idle-timeout (maximum allowed idle time of reading HTTP request and writing HTTP response in seconds. default: 300)</li>
 <li>server.http.headers.KEY = VALUE (HTTP header to set on API responses)</li>
 <li>database.type (enum, &#8220;h2&#8221; or &#8220;postgresql&#8221;)</li>
 <li>database.user (string)</li>
