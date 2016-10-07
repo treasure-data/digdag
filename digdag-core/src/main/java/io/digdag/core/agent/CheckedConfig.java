@@ -9,48 +9,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.digdag.client.config.Config;
 
-public class CheckedConfig
+class CheckedConfig
     extends Config
 {
-    private static class HashSetWithAllFlag<T>
-            extends HashSet<T>
+    static class UsedKeysSet
+            extends HashSet<String>
     {
         private boolean all = false;
 
-        public void setAll(boolean v)
+        public void setAllUsed(boolean v)
         {
             this.all = v;
         }
 
-        public boolean isAll()
+        public boolean isAllUsed()
         {
             return all;
         }
     }
 
-    private final HashSetWithAllFlag<String> usedKeys;
+    private final UsedKeysSet usedKeys;
 
-    public CheckedConfig(Config config)
-    {
-        this(config, new HashSetWithAllFlag<>());
-    }
-
-    private CheckedConfig(Config config, HashSetWithAllFlag<String> usedKeys)
+    CheckedConfig(Config config, UsedKeysSet usedKeys)
     {
         super(config);
         this.usedKeys = usedKeys;
-    }
-
-    public List<String> getUsedKeys()
-    {
-        List<String> keys = new ArrayList<>(usedKeys);
-        Collections.sort(keys);
-        return keys;
-    }
-
-    public boolean isAllUsed()
-    {
-        return usedKeys.isAll();
     }
 
     @Override
@@ -62,7 +45,7 @@ public class CheckedConfig
     @Override
     public ObjectNode getInternalObjectNode()
     {
-        this.usedKeys.setAll(true);
+        this.usedKeys.setAllUsed(true);
         return super.getInternalObjectNode();
     }
 
@@ -94,6 +77,6 @@ public class CheckedConfig
         super.set(key, value);
     }
 
-    // getKeys doesn't set usedKeys.setAll(true) because operator plugins
+    // getKeys doesn't set usedKeys.setAllUsed(true) because operator plugins
     // should call get(key) after getKeys().
 }

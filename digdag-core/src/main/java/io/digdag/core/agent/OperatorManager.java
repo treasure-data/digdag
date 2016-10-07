@@ -2,6 +2,7 @@ package io.digdag.core.agent;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
@@ -30,6 +31,7 @@ import javax.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -234,17 +236,27 @@ public class OperatorManager
             shouldBeUsedKeys.remove(operatorKey.get());
         }
 
-        CheckedConfig checkedConfig = new CheckedConfig(config);
+        // Now config is evaluated using JavaScript. Copy values from it
+        // to create evaluated localConfig (original localConfig is not
+        // evaluated).
+
+        Config localConfig = config.getFactory().create();
+        for (String localKey : request.getLocalConfig().getKeys()) {
+            localConfig.set(localKey, config.get(localKey, JsonNode.class).deepCopy());
+        }
+
+        // Track accessed keys using UsedKeysSet class
+        CheckedConfig.UsedKeysSet usedKeys = new CheckedConfig.UsedKeysSet();
 
         TaskRequest mergedRequest = TaskRequest.builder()
             .from(request)
-            .config(checkedConfig)
+            .localConfig(new CheckedConfig(localConfig, usedKeys))
+            .config(new CheckedConfig(config, usedKeys))
             .build();
 
         TaskResult result = callExecutor(projectPath, type, mergedRequest);
 
-        if (!checkedConfig.isAllUsed()) {
-            List<String> usedKeys = checkedConfig.getUsedKeys();
+        if (!usedKeys.isAllUsed()) {
             shouldBeUsedKeys.removeAll(usedKeys);
             if (!shouldBeUsedKeys.isEmpty()) {
                 warnUnusedKeys(request, shouldBeUsedKeys, usedKeys);
@@ -256,7 +268,7 @@ public class OperatorManager
                 result);
     }
 
-    private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, List<String> candidateKeys)
+    private void warnUnusedKeys(TaskRequest request, Set<String> shouldBeUsedButNotUsedKeys, Collection<String> candidateKeys)
     {
         for (String key : shouldBeUsedButNotUsedKeys) {
             logger.error("Parameter '{}' is not used at task {}.", key, request.getTaskName());
