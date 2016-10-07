@@ -26,7 +26,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 /**
- * A {@link SecretCrypto} implementation that encrypts secrets using AES in GCM mode, padding to hide the actual size of the secret.
+ * A {@link SecretCrypto} implementation that encrypts secrets using AES in GCM mode, padding up to the GCM tag length to obfuscate the actual size of the secret.
  *
  * <p>The encrypted record format is (offsets in bytes):</p>
  *
@@ -35,10 +35,10 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * +-----------------------------------------------------------------+
  * | "aesgcm" | version | term | nonce | encrypted payload | gcm tag |
  * +-----------------------------------------------------------------+
- *      6B        4B       4B      12B         2048B           16B
+ *      6B        4B       4B      12B         n x 16B         16B
  * </pre>
  *
- * <p>The encrypted payload contains a 32 bit length integer and 2044 Bytes of text + padding. Both the length and the text + padding is encrypted.</p>
+ * <p>The encrypted payload contains a 32 bit length integer and ((n x 16) - 4) Bytes of text + padding. Both the length and the text + padding is encrypted.</p>
  *
  */
 public class AESGCMSecretCrypto implements SecretCrypto
@@ -55,18 +55,19 @@ public class AESGCMSecretCrypto implements SecretCrypto
     private static final int GCM_TAG_LENGTH = 16;
 
     private static final int TERM = 1;
-    private static final int VERSION = 1;
+    private static final int VERSION_1 = 1;
+    private static final int VERSION_2 = 2;
 
-    private static final int MAX_PLAINTEXT_LENGTH = 1024;
+    private static final int RECORD_SIZE_ALIGNMENT = GCM_TAG_LENGTH;
 
-    private static final int RECORD_SIZE = 2048;
+    private static final int MAX_PLAINTEXT_LENGTH = 16 * 1024;
+
     private static final int LENGTH_SIZE = 4;
-    private static final int TEXT_SIZE = RECORD_SIZE - LENGTH_SIZE;
     private static final int NAME_SIZE = NAME_BYTES.length;
     private static final int TERM_SIZE = 4;
     private static final int VERSION_SIZE = 4;
-    private static final int OPAQUE_SIZE =
-            NAME_SIZE + VERSION_SIZE + TERM_SIZE + GCM_NONCE_LENGTH + RECORD_SIZE + GCM_TAG_LENGTH;
+    private static final int WRAPPING_SIZE =
+            NAME_SIZE + VERSION_SIZE + TERM_SIZE + GCM_NONCE_LENGTH;
 
     public AESGCMSecretCrypto(String sharedSecretBase64)
     {
@@ -92,7 +93,11 @@ public class AESGCMSecretCrypto implements SecretCrypto
             throw new IllegalArgumentException("Too long text");
         }
 
-        byte[] recordBytes = new byte[RECORD_SIZE];
+        int recordContentsLength = LENGTH_SIZE + plainTextBytes.length;
+
+        int recordLength = RECORD_SIZE_ALIGNMENT * ((recordContentsLength + RECORD_SIZE_ALIGNMENT - 1) / RECORD_SIZE_ALIGNMENT) + GCM_TAG_LENGTH;
+
+        byte[] recordBytes = new byte[recordLength];
         ByteBuffer recordBuffer = ByteBuffer.wrap(recordBytes);
         recordBuffer.putInt(plainTextBytes.length);
         recordBuffer.put(plainTextBytes);
@@ -105,13 +110,11 @@ public class AESGCMSecretCrypto implements SecretCrypto
             throw Throwables.propagate(e);
         }
 
-        assert cipherText.length == RECORD_SIZE + GCM_TAG_LENGTH;
-
-        byte[] opaque = new byte[OPAQUE_SIZE];
+        byte[] opaque = new byte[WRAPPING_SIZE + cipherText.length];
         ByteBuffer output = ByteBuffer.wrap(opaque);
 
         output.put(NAME_BYTES);
-        output.putInt(VERSION);
+        output.putInt(VERSION_2);
         output.putInt(TERM);
         output.put(nonce);
         output.put(cipherText);
@@ -125,7 +128,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
     public String decryptSecret(String encryptedBase64)
     {
         byte[] encrypted = Base64.getDecoder().decode(encryptedBase64);
-        Preconditions.checkArgument(encrypted.length == OPAQUE_SIZE, "Bad size");
+        Preconditions.checkArgument(encrypted.length >= WRAPPING_SIZE + GCM_TAG_LENGTH, "Bad size");
 
         ByteBuffer buffer = ByteBuffer.wrap(encrypted);
 
@@ -136,7 +139,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
         }
 
         int version = buffer.getInt();
-        if (version != VERSION) {
+        if (version != VERSION_1 && version != VERSION_2) {
             throw new IllegalArgumentException("Bad version");
         }
 
@@ -160,8 +163,6 @@ public class AESGCMSecretCrypto implements SecretCrypto
         catch (IllegalBlockSizeException | BadPaddingException e) {
             throw Throwables.propagate(e);
         }
-
-        assert recordBytes.length == RECORD_SIZE;
 
         ByteBuffer decryptedBuffer = ByteBuffer.wrap(recordBytes);
         int length = decryptedBuffer.getInt();
