@@ -6,7 +6,7 @@ const ManifestPlugin = require('./lib/ManifestPlugin')
 const getSha = require('./lib/git-sha1')
 
 module.exports = function buildWebpackConfig ({ build = false }) {
-  const sha = build ? getSha() : ''
+  const sha = build ? (process.env.SHA || getSha()) : ''
   const BUILD_PATH = path.resolve(__dirname, 'public')
   const OUTPUT_PATH = path.join(sha, '/')
   const timestamp = new Date().toISOString()
