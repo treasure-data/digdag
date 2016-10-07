@@ -51,9 +51,9 @@ public class ConfigKey
 
     private ConfigKey(List<String> names)
     {
-        Preconditions.checkArgument(names.size() >= 1, "Number of names must be larger than 1");
+        Preconditions.checkArgument(!names.isEmpty(), "Names must not be empty");
         for (String key : names) {
-            Preconditions.checkArgument(VALID_NAME.matcher(key).matches(), "Invalid name in keys");
+            Preconditions.checkArgument(VALID_NAME.matcher(key).matches(), "Invalid name");
         }
         this.names = ImmutableList.copyOf(names);
     }
