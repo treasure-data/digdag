@@ -8,6 +8,8 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.PrivilegedVariables;
+import io.digdag.spi.SecretAccessContext;
+import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
@@ -20,16 +22,20 @@ import java.util.function.Supplier;
 public class GrantedPrivilegedVariables
     implements PrivilegedVariables
 {
-    static SecretProvider privilegedSecretProvider(SecretStore secretStore, int projectId)
+    static SecretProvider privilegedSecretProvider(SecretAccessContext context, SecretAccessPolicy accessPolicy, SecretStore store)
     {
         return (key) -> {
-            Optional<String> projectSecret = secretStore.getSecret(projectId, SecretScopes.PROJECT, key);
+            if (!accessPolicy.isSecretAccessible(context, key)) {
+                return Optional.absent();
+            }
+
+            Optional<String> projectSecret = store.getSecret(context.projectId(), SecretScopes.PROJECT, key);
 
             if (projectSecret.isPresent()) {
                 return projectSecret;
             }
 
-            return secretStore.getSecret(projectId, SecretScopes.PROJECT_DEFAULT, key);
+            return store.getSecret(context.projectId(), SecretScopes.PROJECT_DEFAULT, key);
         };
     }
 

@@ -291,12 +291,6 @@ public class OperatorManager
 
         SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
 
-        PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
-                // _env must be local config
-                mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
-                mergedRequest.getConfig(),
-                GrantedPrivilegedVariables.privilegedSecretProvider(secretStore, mergedRequest.getProjectId()));
-
         Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
 
         SecretFilter operatorSecretFilter = SecretFilter.of(
@@ -313,6 +307,11 @@ public class OperatorManager
 
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
                 secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+
+        PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
+                mergedRequest.getConfig().getNestedOrGetEmpty("_env"),
+                mergedRequest.getConfig(),
+                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
 
         TaskExecutionContext taskExecutionContext = new DefaultTaskExecutionContext(
                 privilegedVariables, secretProvider);
