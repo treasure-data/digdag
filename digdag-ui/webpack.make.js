@@ -1,4 +1,3 @@
-const autoprefixer = require('autoprefixer')
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
@@ -38,7 +37,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       }, {
         test: /\.css$/,
         loader: ExtractTextPlugin.extract('style', 'css'),
-        include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public'),]
+        include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public')]
       }, {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
         loader: 'file'
@@ -62,7 +61,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         loader: 'url-loader?limit=10000&mimetype=image/png'
       }, {
         test: /\.less$/,
-        loader: ExtractTextPlugin.extract('style', 'css', 'less'),
+        loader: ExtractTextPlugin.extract('style', 'css', 'less')
       }, {
         test: /\.json$/,
         loader: 'json-loader'

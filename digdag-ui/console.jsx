@@ -24,7 +24,6 @@ import 'prismjs/components/prism-ruby'
 import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism.css'
 import {PrismCode} from 'react-prism'
-import './style.less'
 
 /* eslint-disable */
 // see https://github.com/gajus/eslint-plugin-flowtype/issues/72

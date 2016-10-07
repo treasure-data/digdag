@@ -1,5 +1,5 @@
 module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
-  const { files, options: { build, data } } = htmlWebpackPlugin
+  const { files } = htmlWebpackPlugin
   return `
     <!DOCTYPE html>
     <html lang='en'>
