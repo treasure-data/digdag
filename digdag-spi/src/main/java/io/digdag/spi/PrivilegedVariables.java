@@ -1,7 +1,6 @@
 package io.digdag.spi;
 
 import com.google.common.base.Optional;
-import io.digdag.spi.SecretNotFoundException;
 import java.util.List;
 
 public interface PrivilegedVariables
@@ -18,12 +17,7 @@ public interface PrivilegedVariables
     //     and runtime parameters don't include key
     //     => throw ConfigException
 
-    default String get(String key)
-    {
-        return getOptional(key).or(() -> {
-            throw new SecretNotFoundException(key);
-        });
-    }
+    String get(String key);
 
     Optional<String> getOptional(String key);
 

@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.PrivilegedVariables;
+import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
@@ -37,6 +38,11 @@ public class GrantedPrivilegedVariables
         String secret;
     }
 
+    private interface VariableAccessor
+    {
+        String get(boolean required);
+    }
+
     public static GrantedPrivilegedVariables empty()
     {
         return new GrantedPrivilegedVariables(new LinkedHashMap<>());
@@ -47,25 +53,31 @@ public class GrantedPrivilegedVariables
             Config params,
             SecretProvider secretProvider)
     {
-        Map<String, Supplier<String>> variables = new LinkedHashMap<>();
+        Map<String, VariableAccessor> variables = new LinkedHashMap<>();
         for (String key : grants.getKeys()) {
             variables.put(key, buildAccessor(grants, key, params, secretProvider));
         }
         return new GrantedPrivilegedVariables(variables);
     }
 
-    private static Supplier<String> buildAccessor(
+    private static VariableAccessor buildAccessor(
             Config grants, String key,
             Config params,
             SecretProvider secretProvider)
     {
         if (grants.get(key, JsonNode.class).isObject()) {
             String secretOnlyKey = grants.getNested(key).convert(SecretOnlyGrant.class).secret;
-            return () -> secretProvider.getSecretOptional(secretOnlyKey).orNull();
+            return (required) -> {
+                Optional<String> secret = secretProvider.getSecretOptional(secretOnlyKey);
+                if (required && !secret.isPresent()) {
+                    throw new SecretNotFoundException(secretOnlyKey);
+                }
+                return secret.orNull();
+            };
         }
         else {
             String secretSharedKey = grants.get(key, String.class);
-            return () -> {
+            return (required) -> {
                 Optional<String> secret = secretProvider.getSecretOptional(secretSharedKey);
                 if (secret.isPresent()) {
                     return secret.get();
@@ -81,28 +93,46 @@ public class GrantedPrivilegedVariables
 					}
 					config = nest.get();
                 }
-                return config.get(configKey.get(configKey.size() - 1), String.class);
+                String name = configKey.get(configKey.size() - 1);
+                if (required) {
+                    return config.get(name, String.class);
+                }
+                else {
+                    return config.get(name, String.class, null);
+                }
             };
         }
     }
 
-    private final Map<String, Supplier<String>> variables;
+    private final Map<String, VariableAccessor> variables;
 
     private GrantedPrivilegedVariables(
-            Map<String, Supplier<String>> variables)
+            Map<String, VariableAccessor> variables)
     {
         this.variables = variables;
     }
 
     @Override
+    public String get(String key)
+    {
+        VariableAccessor var = variables.get(key);
+        if (var == null) {
+            return null;
+        }
+        else {
+            return var.get(true);
+        }
+    }
+
+    @Override
     public Optional<String> getOptional(String key)
     {
-        Supplier<String> var = variables.get(key);
+        VariableAccessor var = variables.get(key);
         if (var == null) {
             return Optional.absent();
         }
         else {
-            return Optional.fromNullable(var.get());
+            return Optional.fromNullable(var.get(false));
         }
     }
 
