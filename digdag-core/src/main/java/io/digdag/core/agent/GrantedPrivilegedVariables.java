@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretNotFoundException;
@@ -35,7 +36,7 @@ public class GrantedPrivilegedVariables
     private static class SecretOnlyGrant
     {
         @JsonProperty
-        String secret;
+        ConfigKey secret;
     }
 
     private interface VariableAccessor
@@ -66,40 +67,41 @@ public class GrantedPrivilegedVariables
             SecretProvider secretProvider)
     {
         if (grants.get(key, JsonNode.class).isObject()) {
-            String secretOnlyKey = grants.getNested(key).convert(SecretOnlyGrant.class).secret;
+            ConfigKey secretOnlyKey = grants.getNested(key).convert(SecretOnlyGrant.class).secret;
             return (required) -> {
-                Optional<String> secret = secretProvider.getSecretOptional(secretOnlyKey);
+                Optional<String> secret = secretProvider.getSecretOptional(secretOnlyKey.toString());
                 if (required && !secret.isPresent()) {
-                    throw new SecretNotFoundException(secretOnlyKey);
+                    throw new SecretNotFoundException(secretOnlyKey.toString());
                 }
                 return secret.orNull();
             };
         }
         else {
-            String secretSharedKey = grants.get(key, String.class);
+            ConfigKey secretSharedKey = grants.get(key, ConfigKey.class);
             return (required) -> {
-                Optional<String> secret = secretProvider.getSecretOptional(secretSharedKey);
+                Optional<String> secret = secretProvider.getSecretOptional(secretSharedKey.toString());
                 if (secret.isPresent()) {
                     return secret.get();
                 }
 
-                // TODO use ConfigKey class added at #336 to access nested key
-                List<String> configKey = ImmutableList.copyOf(secretSharedKey.split("\\."));
-                Config config = params;
-                for (String nestName : configKey.subList(0, configKey.size() - 1)) {
-					Optional<Config> nest = config.getOptionalNested(nestName);
-					if (!nest.isPresent()) {
-                        break;
-					}
-					config = nest.get();
+                Config nested = params;
+                for (String nestName : secretSharedKey.getNestNames()) {
+					Optional<Config> optionalNested = nested.getOptionalNested(nestName);
+                    if (!optionalNested.isPresent()) {
+                        if (required) {
+                            throw new ConfigException("Nested object '" + nestName + "' out of " + secretSharedKey + " is required but not set");
+                        }
+                        else {
+                            return null;
+                        }
+                    }
+					nested = optionalNested.get();
                 }
-                String name = configKey.get(configKey.size() - 1);
-                if (required) {
-                    return config.get(name, String.class);
+                String value = nested.get(secretSharedKey.getLastName(), String.class, null);
+                if (required && value == null) {
+                    throw new ConfigException("Nested object '" + secretSharedKey.getLastName() + "' out of " + secretSharedKey + " is required but not set");
                 }
-                else {
-                    return config.get(name, String.class, null);
-                }
+                return value;
             };
         }
     }
