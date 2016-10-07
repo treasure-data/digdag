@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.TdOperatorFactory.buildResetStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
 
@@ -94,6 +96,7 @@ public class TdRunOperatorFactory
             Config storeParams = buildStoreParams(request.getConfig().getFactory(), job, storeLastResults);
 
             return TaskResult.defaultBuilder(request)
+                    .resetStoreParams(buildResetStoreParams(storeLastResults))
                     .storeParams(storeParams)
                     .build();
         }
