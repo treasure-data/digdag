@@ -3,13 +3,12 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
-//const digdagConfig = require('./config')
 const ManifestPlugin = require('./lib/ManifestPlugin')
 const getSha = require('./lib/git-sha1')
 
 module.exports = function buildWebpackConfig ({ build = false }) {
-  const sha = build ? getSha() : 'bundle'
-  const BUILD_PATH = path.resolve(__dirname, 'build')
+  const sha = build ? getSha() : ''
+  const BUILD_PATH = path.resolve(__dirname, 'public')
   const OUTPUT_PATH = path.join(sha, '/')
   const timestamp = new Date().toISOString()
   console.log('=== DigDag ===')
@@ -20,7 +19,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   console.log('Sha:', sha)
   const config = {
     entry: {
-      bootstrap: 'bootstrap-loader',
+      bootstrap: 'bootstrap-loader/extractStyles',
       app: './index.jsx'
     },
     output: {
@@ -38,8 +37,8 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         loaders: ['babel']
       }, {
         test: /\.css$/,
-        loader: ExtractTextPlugin.extract('style','css'),
-        include: [path.join(__dirname, 'node_modules')]
+        loader: ExtractTextPlugin.extract('style', 'css'),
+        include: [path.join(__dirname, 'node_modules'), path.join(__dirname, 'public'),]
       }, {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
         loader: 'file'
@@ -63,7 +62,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         loader: 'url-loader?limit=10000&mimetype=image/png'
       }, {
         test: /\.less$/,
-        loader: 'style!css!less'
+        loader: ExtractTextPlugin.extract('style', 'css', 'less'),
       }, {
         test: /\.json$/,
         loader: 'json-loader'
@@ -81,25 +80,14 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         allChunks: true,
         disable: !build
       }),
-      new webpack.NoErrorsPlugin(),
-      new webpack.optimize.DedupePlugin(),
-      new webpack.optimize.OccurenceOrderPlugin(),
       new webpack.ProvidePlugin({
         $: 'jquery',
         jQuery: 'jquery',
         'window.jQuery': 'jquery'
       }),
       new webpack.DefinePlugin({
-        'process.env': {
-          'NODE_ENV': JSON.stringify('production')
-        }
-      }),
-      new webpack.optimize.UglifyJsPlugin({
-        compress: {
-          warnings: false
-        }
-      }),
-      new ManifestPlugin({ sha, timestamp })
+        'process.env.NODE_ENV': `'${build ? 'production' : 'development'}'`
+      })
     ],
     devServer: {
       historyApiFallback: {
@@ -123,11 +111,6 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       new webpack.NoErrorsPlugin(),
       new webpack.optimize.DedupePlugin(),
       new webpack.optimize.OccurenceOrderPlugin(),
-      new webpack.ProvidePlugin({
-        $: 'jquery',
-        jQuery: 'jquery',
-        'window.jQuery': 'jquery'
-      }),
       new webpack.DefinePlugin({
         'process.env': {
           'NODE_ENV': JSON.stringify('production')
@@ -137,9 +120,9 @@ module.exports = function buildWebpackConfig ({ build = false }) {
         compress: {
           warnings: false
         }
-      })
+      }),
+      new ManifestPlugin({ sha, timestamp })
     )
-    config.entry.bootstrap = 'bootstrap-loader/extractStyles'
   }
 
   return config
@@ -156,7 +139,7 @@ function getHtmlPlugin ({ build, filename, sha, timestamp }) {
     filename,
     inject: false,
     minify: {
-      collapseWhitespace: false,
+      collapseWhitespace: true,
       keepClosingSlash: true,
       minifyCSS: true,
       minifyJS: true,
