@@ -438,9 +438,10 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </div>
 <dl class="docutils">
 <dt><strong class="command">for_each&gt;: VARIABLES</strong></dt>
-<dd><p class="first">Variables used for the loop in <code class="docutils literal"><span class="pre">key:</span> <span class="pre">[value,</span> <span class="pre">value,</span> <span class="pre">...]</span></code> syntax.</p>
+<dd><p class="first">Variables used for the loop in <code class="docutils literal"><span class="pre">key:</span> <span class="pre">[value,</span> <span class="pre">value,</span> <span class="pre">...]</span></code> syntax. Variables can be an object or JSON string.</p>
 <ul class="last simple">
 <li><strong class="command">for_each&gt;: {i: [1, 2, 3]}</strong></li>
+<li>or <strong class="command">for_each&gt;: {i: '[1, 2, 3]'}</strong></li>
 </ul>
 </dd>
 <dt><strong class="command">_parallel: BOOLEAN</strong></dt>
