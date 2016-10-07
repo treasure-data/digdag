@@ -38,6 +38,12 @@ public class ServerBootstrap
     @Override
     public Bootstrap bootstrap()
     {
+        return digdagBootstrap()
+                .build();
+    }
+
+    protected DigdagEmbed.Bootstrap digdagBootstrap()
+    {
         return new DigdagEmbed.Bootstrap()
             .setEnvironment(serverConfig.getEnvironment())
             .setSystemConfig(serverConfig.getSystemConfig())
@@ -54,8 +60,7 @@ public class ServerBootstrap
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
             })
-            .addModules(new ServerModule())
-            .build();
+            .addModules(new ServerModule());
     }
 
     public static GuiceRsServerControl start(ServerBootstrap bootstrap)
