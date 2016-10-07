@@ -13,7 +13,7 @@ public class SecretValidation
             "^(" + SECRET_KEY_SEGMENT + ")(\\.(" + SECRET_KEY_SEGMENT + "))*$");
 
     private static final int MAX_SECRET_KEY_LENGTH = 255;
-    private static final int MAX_SECRET_VALUE_LENGTH = 1024;
+    private static final int MAX_SECRET_VALUE_LENGTH = 16 * 1024;
 
     private SecretValidation()
     {
