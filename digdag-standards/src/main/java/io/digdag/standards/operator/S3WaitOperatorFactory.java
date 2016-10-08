@@ -26,7 +26,8 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
@@ -74,9 +75,9 @@ public class S3WaitOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new S3WaitOperator(request);
+        return new S3WaitOperator(context);
     }
 
     private class S3WaitOperator
@@ -84,11 +85,13 @@ public class S3WaitOperatorFactory
     {
         private final TaskRequest request;
         private final TaskState state;
+        private final SecretProvider secrets;
 
-        public S3WaitOperator(TaskRequest request)
+        public S3WaitOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getRequest();
             this.state = TaskState.of(request);
+            this.secrets = context.getSecrets();
         }
 
         @Override
@@ -98,7 +101,7 @@ public class S3WaitOperatorFactory
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("aws").getNestedOrGetEmpty("s3"))
@@ -125,7 +128,7 @@ public class S3WaitOperatorFactory
                 key = Optional.of(parts.get(1));
             }
 
-            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider awsSecrets = secrets.getSecrets("aws");
             SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
 
             Optional<String> endpoint = first(

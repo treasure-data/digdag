@@ -12,9 +12,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -80,7 +81,6 @@ public class S3WaitOperatorFactoryTest
     @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Mock TaskRequest taskRequest;
-    @Mock TaskExecutionContext taskExecutionContext;
     @Mock SecretProvider secretProvider;
     @Mock SecretProvider awsSecrets;
     @Mock SecretProvider s3Secrets;
@@ -120,7 +120,6 @@ public class S3WaitOperatorFactoryTest
         when(s3Secrets.getSecretOptional("secret-access-key")).thenReturn(Optional.of(SECRET_ACCESS_KEY));
 
         when(s3ClientFactory.create(any(AWSCredentials.class), any(ClientConfiguration.class))).thenReturn(s3Client);
-        when(taskExecutionContext.secrets()).thenReturn(secretProvider);
         projectPath = temporaryFolder.newFolder().toPath();
         factory = new S3WaitOperatorFactory(s3ClientFactory, environment);
     }
@@ -140,11 +139,11 @@ public class S3WaitOperatorFactoryTest
         objectMetadata.setContentLength(CONTENT_LENGTH);
         objectMetadata.setUserMetadata(USER_METADATA);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenReturn(objectMetadata);
 
-        TaskResult taskResult = operator.run(taskExecutionContext);
+        TaskResult taskResult = operator.run();
 
         verify(s3ClientFactory).create(credentialsCaptor.capture(), clientConfigurationCaptor.capture());
 
@@ -193,13 +192,13 @@ public class S3WaitOperatorFactoryTest
 
         when(s3Client.getObjectMetadata(any(GetObjectMetadataRequest.class))).thenThrow(NOT_FOUND_EXCEPTION);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         List<Integer> retryIntervals = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
             try {
-                operator.run(taskExecutionContext);
+                operator.run();
                 fail();
             }
             catch (TaskExecutionException e) {
@@ -233,10 +232,10 @@ public class S3WaitOperatorFactoryTest
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         try {
-            operator.run(taskExecutionContext);
+            operator.run();
             fail();
         }
         catch (TaskExecutionException ignore) {
@@ -262,10 +261,10 @@ public class S3WaitOperatorFactoryTest
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         try {
-            operator.run(taskExecutionContext);
+            operator.run();
             fail();
         }
         catch (TaskExecutionException ignore) {
@@ -288,10 +287,10 @@ public class S3WaitOperatorFactoryTest
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         try {
-            operator.run(taskExecutionContext);
+            operator.run();
             fail();
         }
         catch (TaskExecutionException ignore) {
@@ -317,10 +316,10 @@ public class S3WaitOperatorFactoryTest
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
 
         try {
-            operator.run(taskExecutionContext);
+            operator.run();
             fail();
         }
         catch (TaskExecutionException ignore) {
@@ -343,9 +342,9 @@ public class S3WaitOperatorFactoryTest
         environment.put("http_proxy", "http://foo:bar@1.2.3.4:4711");
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(newContext(projectPath, taskRequest));
         try {
-            operator.run(taskExecutionContext);
+            operator.run();
             fail();
         }
         catch (TaskExecutionException ignore) {
@@ -358,5 +357,35 @@ public class S3WaitOperatorFactoryTest
         assertThat(clientConfiguration.getProxyPort(), is(4711));
         assertThat(clientConfiguration.getProxyUsername(), is("foo"));
         assertThat(clientConfiguration.getProxyPassword(), is("bar"));
+    }
+
+    private OperatorContext newContext(final Path projectPath, final TaskRequest taskRequest)
+    {
+        return new OperatorContext()
+        {
+            @Override
+            public Path getProjectPath()
+            {
+                return projectPath;
+            }
+
+            @Override
+            public TaskRequest getTaskRequest()
+            {
+                return taskRequest;
+            }
+
+            @Override
+            public PrivilegedVariables getPrivilegedVariables()
+            {
+                return null;
+            }
+
+            @Override
+            public SecretProvider getSecrets()
+            {
+                return secretProvider;
+            }
+        };
     }
 }

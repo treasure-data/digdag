@@ -5,7 +5,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import java.nio.file.Path;
@@ -24,9 +24,9 @@ public class StoreOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new StoreOperator(request);
+        return new StoreOperator(context);
     }
 
     private static class StoreOperator
@@ -34,13 +34,13 @@ public class StoreOperatorFactory
     {
         private final TaskRequest request;
 
-        public StoreOperator(TaskRequest request)
+        public StoreOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
             Config storeParams = params.getNestedOrGetEmpty("_command");

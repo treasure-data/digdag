@@ -3,7 +3,7 @@ package io.digdag.core.workflow;
 import java.nio.file.Path;
 
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -23,9 +23,9 @@ public class FailOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new FailOperator(request);
+        return new FailOperator(context);
     }
 
     private static class FailOperator
@@ -33,13 +33,13 @@ public class FailOperatorFactory
     {
         private final TaskRequest request;
 
-        public FailOperator(TaskRequest request)
+        public FailOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
 

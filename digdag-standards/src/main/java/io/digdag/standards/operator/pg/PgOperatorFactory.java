@@ -3,6 +3,7 @@ package io.digdag.standards.operator.pg;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskRequest;
@@ -28,17 +29,17 @@ public class PgOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public PgOperator newOperator(OperatorContext context)
     {
-        return new PgOperator(projectPath, request, templateEngine);
+        return new PgOperator(context, templateEngine);
     }
 
     public static class PgOperator
         extends AbstractJdbcOperator<PgConnectionConfig>
     {
-        public PgOperator(Path projectPath, TaskRequest request, TemplateEngine templateEngine)
+        public PgOperator(OperatorContext context, TemplateEngine templateEngine)
         {
-            super(projectPath, request, templateEngine);
+            super(context, templateEngine);
         }
 
         @Override

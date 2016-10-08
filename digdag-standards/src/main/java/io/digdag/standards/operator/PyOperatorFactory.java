@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
@@ -66,21 +66,21 @@ public class PyOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new PyOperator(projectPath, request);
+        return new PyOperator(context);
     }
 
     private class PyOperator
             extends BaseOperator
     {
-        public PyOperator(Path projectPath, TaskRequest request)
+        public PyOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("py"))
@@ -88,7 +88,7 @@ public class PyOperatorFactory
 
             Config data;
             try {
-                data = runCode(params, ctx);
+                data = runCode(params);
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
@@ -101,7 +101,7 @@ public class PyOperatorFactory
                 .build();
         }
 
-        private Config runCode(Config params, TaskExecutionContext ctx)
+        private Config runCode(Config params)
                 throws IOException, InterruptedException
         {
             String inFile = workspace.createTempFile("digdag-py-in-", ".tmp");
@@ -135,7 +135,7 @@ public class PyOperatorFactory
 
             // Set up process environment according to env config. This can also refer to secrets.
             Map<String, String> env = pb.environment();
-            collectEnvironmentVariables(env, ctx.privilegedVariables());
+            collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             Process p = exec.start(workspace.getPath(), request, pb);
 

@@ -16,7 +16,8 @@ import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -79,9 +80,9 @@ public class TdOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdOperator(projectPath, request);
+        return new TdOperator(context);
     }
 
     private class TdOperator
@@ -99,9 +100,9 @@ public class TdOperatorFactory
         private final boolean storeLastResults;
         private final boolean preview;
 
-        private TdOperator(Path projectPath, TaskRequest request)
+        private TdOperator(OperatorContext context)
         {
-            super(projectPath, request, env, systemConfig);
+            super(context, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -133,7 +134,7 @@ public class TdOperatorFactory
         }
 
         @Override
-        protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator j)
+        protected TaskResult processJobResult(TDOperator op, TDJobOperator j)
         {
             downloadJobResult(j, workspace, downloadFile, state, retryInterval);
 
@@ -158,7 +159,7 @@ public class TdOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
             String stmt;
             switch(engine) {

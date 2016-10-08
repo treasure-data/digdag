@@ -14,7 +14,7 @@ import io.digdag.spi.CommandLogger;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.PrivilegedVariables;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
@@ -58,17 +58,17 @@ public class ShOperatorFactory
     }
 
     @Override
-    public ShOperator newOperator(Path projectPath, TaskRequest request)
+    public ShOperator newOperator(OperatorContext context)
     {
-        return new ShOperator(projectPath, request);
+        return new ShOperator(context);
     }
 
     class ShOperator
             extends BaseOperator
     {
-        public ShOperator(Path projectPath, TaskRequest request)
+        public ShOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
@@ -78,7 +78,7 @@ public class ShOperatorFactory
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
@@ -112,7 +112,7 @@ public class ShOperatorFactory
                 });
 
             // Set up process environment according to env config. This can also refer to secrets.
-            collectEnvironmentVariables(env, ctx.privilegedVariables());
+            collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");

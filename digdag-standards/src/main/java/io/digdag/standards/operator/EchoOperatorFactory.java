@@ -3,12 +3,10 @@ package io.digdag.standards.operator;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-
-import java.nio.file.Path;
 
 public class EchoOperatorFactory
         implements OperatorFactory
@@ -23,9 +21,9 @@ public class EchoOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new EchoOperator(request);
+        return new EchoOperator(context);
     }
 
     private static class EchoOperator
@@ -33,13 +31,13 @@ public class EchoOperatorFactory
     {
         private final TaskRequest request;
 
-        public EchoOperator(TaskRequest request)
+        public EchoOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
 

@@ -3,7 +3,7 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
@@ -26,9 +26,9 @@ abstract class BaseTdJobOperator
     protected final DurationInterval pollInterval;
     protected final DurationInterval retryInterval;
 
-    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env, Config systemConfig)
+    BaseTdJobOperator(OperatorContext context, Map<String, String> env, Config systemConfig)
     {
-        super(workspacePath, request);
+        super(context);
 
         this.params = request.getConfig().mergeDefault(
                 request.getConfig().getNestedOrGetEmpty("td"));
@@ -47,9 +47,9 @@ abstract class BaseTdJobOperator
     }
 
     @Override
-    public final TaskResult runTask(TaskExecutionContext ctx)
+    public final TaskResult runTask()
     {
-        try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
+        try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
 
             Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
@@ -62,7 +62,7 @@ abstract class BaseTdJobOperator
             }
 
             // Get the job results
-            TaskResult taskResult = processJobResult(ctx, op, job);
+            TaskResult taskResult = processJobResult(op, job);
 
             // Set last_job_id param
             taskResult.getStoreParams()
@@ -73,9 +73,9 @@ abstract class BaseTdJobOperator
         }
     }
 
-    protected abstract String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey);
+    protected abstract String startJob(TDOperator op, String domainKey);
 
-    protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
+    protected TaskResult processJobResult(TDOperator op, TDJobOperator job)
     {
         return TaskResult.empty(request);
     }

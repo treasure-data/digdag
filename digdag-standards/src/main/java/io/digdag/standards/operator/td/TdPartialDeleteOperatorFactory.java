@@ -6,7 +6,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.TimestampParam;
 import org.slf4j.Logger;
@@ -36,9 +36,9 @@ public class TdPartialDeleteOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdPartialDeleteOperator(projectPath, request);
+        return new TdPartialDeleteOperator(context);
     }
 
     private class TdPartialDeleteOperator
@@ -49,9 +49,9 @@ public class TdPartialDeleteOperatorFactory
         private final Instant from;
         private final Instant to;
 
-        private TdPartialDeleteOperator(Path projectPath, TaskRequest request)
+        private TdPartialDeleteOperator(OperatorContext context)
         {
-            super(projectPath, request, env, systemConfig);
+            super(context, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -66,7 +66,7 @@ public class TdPartialDeleteOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
             String jobId = op.submitNewJobWithRetry(client ->
                     client.partialDelete(op.getDatabase(), table, from.getEpochSecond(), to.getEpochSecond(), domainKey).getJobId());

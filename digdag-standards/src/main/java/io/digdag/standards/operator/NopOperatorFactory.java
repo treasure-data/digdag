@@ -3,7 +3,7 @@ package io.digdag.standards.operator;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
@@ -22,9 +22,9 @@ public class NopOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new NopOperator(request);
+        return new NopOperator(context);
     }
 
     private class NopOperator
@@ -32,13 +32,13 @@ public class NopOperatorFactory
     {
         private final TaskRequest request;
 
-        public NopOperator(TaskRequest request)
+        public NopOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("nop"));
