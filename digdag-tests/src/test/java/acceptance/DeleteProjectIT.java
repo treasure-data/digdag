@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,8 +70,8 @@ public class DeleteProjectIT
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Run the workflow once before deleting the project
-        long attemptId;
-        long sessionId;
+        Id attemptId;
+        Id sessionId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -87,15 +88,15 @@ public class DeleteProjectIT
         CommandStatus attempt = main("attempt",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                Long.toString(attemptId));
+                attemptId.toString());
         CommandStatus attempts = main("attempts",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                Long.toString(sessionId));
+                sessionId.toString());
         CommandStatus logs = main("logs",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                Long.toString(attemptId));
+                attemptId.toString());
 
         // Delete the project
         {
@@ -147,7 +148,7 @@ public class DeleteProjectIT
             CommandStatus status = main("attempt",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    Long.toString(attemptId));
+                    String.valueOf(attemptId));
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(status.outUtf8(), is(attempt.outUtf8()));
         }
@@ -155,7 +156,7 @@ public class DeleteProjectIT
             CommandStatus status = main("attempts",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    Long.toString(sessionId));
+                    String.valueOf(sessionId));
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(status.outUtf8(), is(attempts.outUtf8()));
         }
@@ -163,7 +164,7 @@ public class DeleteProjectIT
             CommandStatus status = main("logs",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    Long.toString(attemptId));
+                    String.valueOf(attemptId));
             assertThat(status.errUtf8(), status.code(), is(0));
             assertThat(status.outUtf8(), is(logs.outUtf8()));
         }

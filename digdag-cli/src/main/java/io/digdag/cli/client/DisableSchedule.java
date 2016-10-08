@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSchedule;
 
@@ -34,7 +35,7 @@ public class DisableSchedule
     {
         if (args.size() == 1) {
             // Schedule id?
-            Integer scheduleId = tryParseInt(args.get(0));
+            Id scheduleId = tryParseScheduleId(args.get(0));
             if (scheduleId != null) {
                 disableSchedule(scheduleId);
             }
@@ -52,10 +53,10 @@ public class DisableSchedule
         }
     }
 
-    private static Integer tryParseInt(String s)
+    private static Id tryParseScheduleId(String s)
     {
         try {
-            return Integer.parseUnsignedInt(s);
+            return Id.of(Integer.toString(Integer.parseUnsignedInt(s)));
         }
         catch (NumberFormatException ignore) {
             return null;
@@ -69,7 +70,7 @@ public class DisableSchedule
         RestProject project = client.getProject(projectName);
         RestSchedule schedule = client.getSchedule(project.getId(), workflowName);
         client.disableSchedule(schedule.getId());
-        ln("Disabled schedule id: %d", schedule.getId());
+        ln("Disabled schedule id: %s", schedule.getId());
     }
 
     private void disableProjectSchedules(String projectName)
@@ -78,7 +79,7 @@ public class DisableSchedule
         DigdagClient client = buildClient();
         RestProject project = client.getProject(projectName);
         List<RestSchedule> schedules;
-        Optional<Integer> lastId = Optional.absent();
+        Optional<Id> lastId = Optional.absent();
         while (true) {
             schedules = client.getSchedules(project.getId(), lastId);
             if (schedules.isEmpty()) {
@@ -86,17 +87,17 @@ public class DisableSchedule
             }
             for (RestSchedule schedule : schedules) {
                 client.disableSchedule(schedule.getId());
-                ln("Disabled schedule id: %d", schedule.getId());
+                ln("Disabled schedule id: %s", schedule.getId());
             }
             lastId = Optional.of(schedules.get(schedules.size() - 1).getId());
         }
     }
 
-    private void disableSchedule(int scheduleId)
+    private void disableSchedule(Id scheduleId)
             throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
         client.disableSchedule(scheduleId);
-        ln("Disabled schedule id: %d", scheduleId);
+        ln("Disabled schedule id: %s", scheduleId);
     }
 }

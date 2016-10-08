@@ -562,7 +562,10 @@ public class ProjectResource
                     });
 
             SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
+            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(
+                        RestModels.parseProjectId(restProject.getId()),
+                        SecretScopes.PROJECT_DEFAULT,
+                        k, v));
             return restProject;
         }
     }

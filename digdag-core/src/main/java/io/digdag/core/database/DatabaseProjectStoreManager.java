@@ -3,7 +3,6 @@ package io.digdag.core.database;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import io.digdag.client.api.IdName;
 import io.digdag.client.config.Config;
 import io.digdag.core.repository.ArchiveType;
 import io.digdag.core.repository.ImmutableStoredProject;

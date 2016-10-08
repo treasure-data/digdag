@@ -1,5 +1,6 @@
 package acceptance;
 
+import io.digdag.client.api.Id;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import org.junit.Before;
@@ -67,7 +68,7 @@ public class RequireIT
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
 
         // Start the workflow
-        long attemptId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),

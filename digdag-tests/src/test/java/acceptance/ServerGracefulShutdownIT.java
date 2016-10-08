@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
 import org.junit.After;
@@ -64,10 +65,10 @@ public class ServerGracefulShutdownIT
                 .build();
     }
 
-    private long startSleepTask()
+    private Id startSleepTask()
         throws Exception
     {
-        long attemptId;
+        Id attemptId;
         {
             CommandStatus initStatus = main("init",
                     "-c", config.toString(),
@@ -120,7 +121,7 @@ public class ServerGracefulShutdownIT
     public void gracefulShutdown()
             throws Exception
     {
-        long attemptId = startSleepTask();
+        Id attemptId = startSleepTask();
 
         server.terminateProcess();
 

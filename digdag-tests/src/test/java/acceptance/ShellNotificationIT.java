@@ -3,6 +3,7 @@ package acceptance;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Throwables;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.spi.Notification;
 import org.junit.Before;
@@ -89,7 +90,7 @@ public class ShellNotificationIT
         assertThat(notification.getMessage(), is("Workflow session attempt failed"));
     }
 
-    private long pushAndStart(String workflow)
+    private Id pushAndStart(String workflow)
             throws IOException
     {
         TestUtils.copyResource(workflow, projectDir.resolve(WORKFLOW_NAME + ".dig"));

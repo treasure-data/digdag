@@ -12,6 +12,7 @@ import com.google.common.io.Resources;
 import io.digdag.cli.Main;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.config.ConfigFactory;
@@ -205,28 +206,28 @@ public class TestUtils
         }
     }
 
-    public static long getSessionId(CommandStatus startStatus)
+    public static Id getSessionId(CommandStatus startStatus)
     {
         Matcher matcher = SESSION_ID_PATTERN.matcher(startStatus.outUtf8());
         assertThat(matcher.find(), is(true));
-        return Long.parseLong(matcher.group(1));
+        return Id.of(matcher.group(1));
     }
 
-    public static long getAttemptId(CommandStatus startStatus)
+    public static Id getAttemptId(CommandStatus startStatus)
     {
         Matcher matcher = ATTEMPT_ID_PATTERN.matcher(startStatus.outUtf8());
         assertThat(matcher.find(), is(true));
-        return Long.parseLong(matcher.group(1));
+        return Id.of(matcher.group(1));
     }
 
-    public static int getProjectId(CommandStatus pushStatus)
+    public static Id getProjectId(CommandStatus pushStatus)
     {
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
         assertThat(matcher.find(), is(true));
-        return Integer.parseInt(matcher.group(1));
+        return Id.of(matcher.group(1));
     }
 
-    public static String getAttemptLogs(DigdagClient client, long attemptId)
+    public static String getAttemptLogs(DigdagClient client, Id attemptId)
             throws IOException
     {
         List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
@@ -303,7 +304,7 @@ public class TestUtils
         throw new AssertionError("Timeout after: " + timeout);
     }
 
-    public static Callable<Boolean> attemptFailure(String endpoint, long attemptId)
+    public static Callable<Boolean> attemptFailure(String endpoint, Id attemptId)
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
@@ -318,7 +319,7 @@ public class TestUtils
         };
     }
 
-    public static Callable<Boolean> attemptSuccess(String endpoint, long attemptId)
+    public static Callable<Boolean> attemptSuccess(String endpoint, Id attemptId)
     {
         return () -> {
             CommandStatus attemptsStatus = attempts(endpoint, attemptId);
@@ -334,7 +335,7 @@ public class TestUtils
         };
     }
 
-    public static CommandStatus attempts(String endpoint, long attemptId)
+    public static CommandStatus attempts(String endpoint, Id attemptId)
     {
         return main("attempts",
                 "-c", "/dev/null",
@@ -350,13 +351,13 @@ public class TestUtils
         assertThat(initStatus.code(), is(0));
     }
 
-    public static long pushAndStart(String endpoint, Path project, String workflow)
+    public static Id pushAndStart(String endpoint, Path project, String workflow)
             throws IOException
     {
         return pushAndStart(endpoint, project, workflow, ImmutableMap.of());
     }
 
-    public static long pushAndStart(String endpoint, Path project, String workflow, Map<String, String> params)
+    public static Id pushAndStart(String endpoint, Path project, String workflow, Map<String, String> params)
             throws IOException
     {
         String projectName = project.getFileName().toString();
@@ -367,7 +368,7 @@ public class TestUtils
         return startWorkflow(endpoint, projectName, workflow, params);
     }
 
-    public static long startWorkflow(String endpoint, String projectName, String workflow, Map<String, String> params)
+    public static Id startWorkflow(String endpoint, String projectName, String workflow, Map<String, String> params)
     {
         List<String> startCommand = new ArrayList<>(asList("start",
                 "-c", "/dev/null",
@@ -384,13 +385,13 @@ public class TestUtils
         return getAttemptId(startStatus);
     }
 
-    public static int pushProject(String endpoint, Path project)
+    public static Id pushProject(String endpoint, Path project)
     {
         String projectName = project.getFileName().toString();
         return pushProject(endpoint, project, projectName);
     }
 
-    public static int pushProject(String endpoint, Path project, String projectName)
+    public static Id pushProject(String endpoint, Path project, String projectName)
     {
         CommandStatus pushStatus = main("push",
                 "--project", project.toString(),
@@ -401,7 +402,7 @@ public class TestUtils
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
         boolean found = matcher.find();
         assertThat(found, is(true));
-        return Integer.valueOf(matcher.group(1));
+        return Id.of(matcher.group(1));
     }
 
     public static void addWorkflow(Path project, String resource)
