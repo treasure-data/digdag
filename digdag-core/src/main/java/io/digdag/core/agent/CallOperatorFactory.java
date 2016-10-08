@@ -1,12 +1,12 @@
 package io.digdag.core.agent;
 
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.core.archive.ProjectArchiveLoader;
 import io.digdag.core.archive.WorkflowFile;
@@ -40,21 +40,21 @@ public class CallOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new CallOperator(projectPath, request);
+        return new CallOperator(context);
     }
 
     private class CallOperator
             extends BaseOperator
     {
-        public CallOperator(Path projectPath, TaskRequest request)
+        public CallOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config config = request.getConfig();
 

@@ -9,7 +9,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -46,17 +46,17 @@ public class TdDdlOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdDdlOperator(projectPath, request);
+        return new TdDdlOperator(context);
     }
 
     private class TdDdlOperator
             extends BaseOperator
     {
-        public TdDdlOperator(Path projectPath, TaskRequest request)
+        public TdDdlOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
@@ -66,7 +66,7 @@ public class TdDdlOperatorFactory
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -106,7 +106,7 @@ public class TdDdlOperatorFactory
                 });
             }
 
-            try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
                 Config state = request.getLastStateParams();
                 int operation = state.get("operation", int.class, 0);
                 for (int i = 0; i < operations.size(); i++) {

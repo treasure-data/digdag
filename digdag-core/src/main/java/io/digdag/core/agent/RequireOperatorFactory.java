@@ -10,8 +10,8 @@ import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -41,28 +41,26 @@ public class RequireOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new RequireOperator(projectPath, callback, request);
+        return new RequireOperator(context, callback);
     }
 
     private static class RequireOperator
             extends BaseOperator
     {
         private final TaskCallbackApi callback;
-        private final TaskRequest request;
         private ConfigFactory cf;
 
-        private RequireOperator(Path projectPath, TaskCallbackApi callback, TaskRequest request)
+        private RequireOperator(OperatorContext context, TaskCallbackApi callback)
         {
-            super(projectPath, request);
+            super(context);
             this.callback = callback;
-            this.request = request;
             this.cf = request.getConfig().getFactory();
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config config = request.getConfig();
             String workflowName = config.get("_command", String.class);

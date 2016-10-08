@@ -13,7 +13,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
@@ -48,9 +48,9 @@ public class TdLoadOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdLoadOperator(projectPath, request);
+        return new TdLoadOperator(context);
     }
 
     private class TdLoadOperator
@@ -64,9 +64,9 @@ public class TdLoadOperatorFactory
         private final Optional<String> sessionName;
         private final Optional<ObjectNode> embulkConfig;
 
-        protected TdLoadOperator(Path projectPath, TaskRequest request)
+        protected TdLoadOperator(OperatorContext context)
         {
-            super(projectPath, request, env);
+            super(context, env);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -107,7 +107,7 @@ public class TdLoadOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
             assert Stream.of(embulkConfig, sessionName).filter(Optional::isPresent).count() == 1;
 

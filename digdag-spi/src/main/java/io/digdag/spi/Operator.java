@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface Operator
 {
-    TaskResult run(TaskExecutionContext ctx);
+    TaskResult run();
 
     /**
      * Get a list of secret selectors that describe the namespace(s) of secret keys that this

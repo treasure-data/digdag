@@ -9,7 +9,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -65,9 +65,9 @@ public class MailOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new MailOperator(projectPath, request);
+        return new MailOperator(context);
     }
 
     @Value.Immutable
@@ -103,9 +103,9 @@ public class MailOperatorFactory
     private class MailOperator
             extends BaseOperator
     {
-        public MailOperator(Path projectPath, TaskRequest request)
+        public MailOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
@@ -115,9 +115,9 @@ public class MailOperatorFactory
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
-            SecretProvider secrets = ctx.secrets().getSecrets("mail");
+            SecretProvider secrets = context.getSecrets().getSecrets("mail");
 
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));

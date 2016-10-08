@@ -8,7 +8,7 @@ import io.digdag.spi.NotificationException;
 import io.digdag.spi.Notifier;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -34,9 +34,9 @@ public class NotifyOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new NotifyOperator(request, notifier);
+        return new NotifyOperator(context, notifier);
     }
 
     private static class NotifyOperator
@@ -45,14 +45,14 @@ public class NotifyOperatorFactory
         private final TaskRequest request;
         private final Notifier notifier;
 
-        public NotifyOperator(TaskRequest request, Notifier notifier)
+        public NotifyOperator(OperatorContext context, Notifier notifier)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
             this.notifier = notifier;
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
 

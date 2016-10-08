@@ -12,7 +12,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -63,9 +63,9 @@ public class TdWaitTableOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdWaitTableOperator(projectPath, request);
+        return new TdWaitTableOperator(context);
     }
 
     private class TdWaitTableOperator
@@ -81,9 +81,9 @@ public class TdWaitTableOperatorFactory
         private final int jobRetry;
         private final Config state;
 
-        private TdWaitTableOperator(Path projectPath, TaskRequest request)
+        private TdWaitTableOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -107,9 +107,9 @@ public class TdWaitTableOperatorFactory
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
+            try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
 
                 // Check if table exists using rest api
                 if (!state.get(TABLE_EXISTS, Boolean.class, false)) {

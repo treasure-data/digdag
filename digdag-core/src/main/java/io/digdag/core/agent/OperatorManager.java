@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,14 +13,15 @@ import io.digdag.core.log.TaskLogger;
 import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretAccessContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretSelector;
 import io.digdag.spi.SecretStore;
 import io.digdag.spi.SecretStoreManager;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -287,14 +289,12 @@ public class OperatorManager
             throw new ConfigException("Unknown task type: " + type);
         }
 
-        Operator operator = factory.newOperator(projectPath, mergedRequest);
-
         SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
 
         Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
 
-        SecretFilter operatorSecretFilter = SecretFilter.of(
-                operator.secretSelectors().stream().map(SecretSelector::of).collect(Collectors.toList()));
+        SecretAccessList secretAccessList = factory.getSecretAccessList();
+        final Set<String> declaredSecretKeys = ImmutableSet.copyOf(secretAccessList.getSecretKeys());
 
         SecretAccessContext secretContext = SecretAccessContext.builder()
                 .siteId(mergedRequest.getSiteId())
@@ -306,17 +306,19 @@ public class OperatorManager
                 .build();
 
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+                secretContext, secretAccessPolicy, grants, (key) -> declaredSecretKeys.contains(key), secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
                 mergedRequest.getConfig(),
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
 
-        TaskExecutionContext taskExecutionContext = new DefaultTaskExecutionContext(
-                privilegedVariables, secretProvider);
+        OperatorContext context = new DefaultOperatorContext(
+                projectPath, mergedRequest, secretProvider, privilegedVariables);
 
-        return operator.run(taskExecutionContext);
+        Operator operator = factory.newOperator(context);
+
+        return operator.run();
     }
 
     private void heartbeat()

@@ -10,7 +10,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +41,9 @@ public class TdTableExportOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new TdTableExportOperator(projectPath, request);
+        return new TdTableExportOperator(context);
     }
 
     private class TdTableExportOperator
@@ -59,9 +59,9 @@ public class TdTableExportOperatorFactory
             return ImmutableList.of("td.*", "aws.*");
         }
 
-        private TdTableExportOperator(Path projectPath, TaskRequest request)
+        private TdTableExportOperator(OperatorContext context)
         {
-            super(projectPath, request, env);
+            super(context, env);
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
@@ -78,9 +78,9 @@ public class TdTableExportOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
-            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider awsSecrets = context.getSecrets().getSecrets("aws");
             SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
 
             TDExportJobRequest req = TDExportJobRequest.builder()

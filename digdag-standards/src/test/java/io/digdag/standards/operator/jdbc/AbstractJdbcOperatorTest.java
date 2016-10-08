@@ -4,7 +4,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -39,14 +40,9 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AbstractJdbcOperatorTest
 {
-    @Mock TaskExecutionContext taskExecutionContext;
-
-    @Before
     public void setUp()
             throws Exception
     {
-        when(taskExecutionContext.secrets()).thenReturn(key -> Optional.absent());
-
     }
 
     private final JdbcOpTestHelper testHelper = new JdbcOpTestHelper();
@@ -81,9 +77,9 @@ public class AbstractJdbcOperatorTest
     public static class TestOperator
         extends AbstractJdbcOperator<TestConnectionConfig>
     {
-        public TestOperator(Path workspacePath, TaskRequest request, TemplateEngine templateEngine)
+        public TestOperator(OperatorContext context, TemplateEngine templateEngine)
         {
-            super(workspacePath, request, templateEngine);
+            super(context, templateEngine);
         }
 
         @Override
@@ -108,9 +104,38 @@ public class AbstractJdbcOperatorTest
     private TestOperator getJdbcOperator(Map<String, Object> configInput, Optional<Map<String, Object>> lastState)
             throws IOException
     {
-        TaskRequest taskRequest = testHelper.createTaskRequest(configInput, lastState);
+        final TaskRequest taskRequest = testHelper.createTaskRequest(configInput, lastState);
         TemplateEngine templateEngine = testHelper.injector().getInstance(TemplateEngine.class);
-        return Mockito.spy(new TestOperator(testHelper.projectPath(), taskRequest, templateEngine));
+        return Mockito.spy(new TestOperator(new OperatorContext() {
+            @Override
+            public Path getProjectPath()
+            {
+                try {
+                    return testHelper.projectPath();
+                }
+                catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+
+            @Override
+            public TaskRequest getTaskRequest()
+            {
+                return taskRequest;
+            }
+
+            @Override
+            public PrivilegedVariables getPrivilegedVariables()
+            {
+                return null;
+            }
+
+            @Override
+            public SecretProvider getSecrets()
+            {
+                return (key) -> Optional.absent();
+            }
+        }, templateEngine));
     }
 
     private void runTaskReadOnly(Map<String, Object> configInput, String sql)
@@ -121,7 +146,7 @@ public class AbstractJdbcOperatorTest
         TestConnection connection = Mockito.mock(TestConnection.class);
         when(operator.connect(any(TestConnectionConfig.class))).thenReturn(connection);
 
-        operator.runTask(taskExecutionContext);
+        operator.runTask();
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).executeReadOnlyQuery(eq(sql), anyObject());
@@ -137,7 +162,7 @@ public class AbstractJdbcOperatorTest
 
         UUID queryId = null;
         try {
-            operator.runTask(taskExecutionContext);
+            operator.runTask();
             assertTrue(false);
         }
         catch (TaskExecutionException e) {
@@ -150,7 +175,7 @@ public class AbstractJdbcOperatorTest
 
     private void runTaskWithQueryId(TestOperator operator)
     {
-        TaskResult taskResult = operator.runTask(taskExecutionContext);
+        TaskResult taskResult = operator.runTask();
         assertThat(taskResult, is(notNullValue()));
         assertThat(taskResult.getStoreParams().has("pollInterval"), is(false));
     }
@@ -364,7 +389,7 @@ public class AbstractJdbcOperatorTest
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
-                operator.runTask(taskExecutionContext);
+                operator.runTask();
                 assertTrue(false);
             }
             catch (TaskExecutionException e) {
@@ -383,7 +408,7 @@ public class AbstractJdbcOperatorTest
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
-                operator.runTask(taskExecutionContext);
+                operator.runTask();
                 assertTrue(false);
             }
             catch (TaskExecutionException e) {
@@ -402,7 +427,7 @@ public class AbstractJdbcOperatorTest
             when(txHelper.lockedTransaction(eq(queryId), anyObject())).thenThrow(new LockConflictException("foo bar"));
 
             try {
-                operator.runTask(taskExecutionContext);
+                operator.runTask();
                 assertTrue(false);
             }
             catch (TaskExecutionException e) {

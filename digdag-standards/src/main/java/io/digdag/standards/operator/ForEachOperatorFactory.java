@@ -9,7 +9,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
@@ -38,9 +38,9 @@ public class ForEachOperatorFactory
     }
 
     @Override
-    public ForEachOperator newOperator(Path projectPath, TaskRequest request)
+    public ForEachOperator newOperator(OperatorContext context)
     {
-        return new ForEachOperator(request);
+        return new ForEachOperator(context);
     }
 
     static class ForEachOperator
@@ -48,13 +48,13 @@ public class ForEachOperatorFactory
     {
         private final TaskRequest request;
 
-        public ForEachOperator(TaskRequest request)
+        public ForEachOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
 
