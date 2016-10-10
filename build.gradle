@@ -181,34 +181,40 @@ subprojects {
         testArtifacts testsJar
     }
 
+    def generateDependency = { String scope, xml, dep ->
+        def dependenciesNode = xml.dependencies[0] ?: xml.appendNode('dependencies')
+        def dependencyNode = dependenciesNode.appendNode('dependency')
+        dependencyNode.appendNode('groupId', dep.group)
+        dependencyNode.appendNode('artifactId', dep.name)
+        dependencyNode.appendNode('version', dep.version)
+        if (scope != 'compile') {
+            dependencyNode.appendNode('scope', scope)
+        }
+        if (dep.configuration == 'testArtifacts') {
+            dependencyNode.appendNode('classifier', 'tests')
+        }
+        dep.excludeRules.each { ExcludeRule rule ->
+            // apply exclusions
+            def xmlExclusions = dependencyNode.exclusions[0] ?: dependencyNode.appendNode('exclusions')
+            def xmlExclusion = xmlExclusions.appendNode('exclusion')
+            xmlExclusion.appendNode('groupId', rule.group)
+            xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+        }
+    }
+
     def pomXmlModifier = {
-        // gradle somehow uses 'runtime' as the default scope but 'compile' is desired.
-        // here recreates dependencies section.
         def xml = asNode()
+
+        // gradle somehow uses 'runtime' as the default scope but 'compile' is desired.
+        // gradle also makes transitive dependencies flat somehow but it's not desired.
+        // here recreates dependencies section.
         xml.remove(xml.dependencies)
 
-        def dependenciesNode = asNode().appendNode('dependencies')
-        configurations.compile.allDependencies.each {
-            def dependencyNode = dependenciesNode.appendNode('dependency')
-            dependencyNode.appendNode('groupId', it.group)
-            dependencyNode.appendNode('artifactId', it.name)
-            dependencyNode.appendNode('version', it.version)
-        }
-
-        // iterate over runtime dependency and apply exclusions
-        project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
-            it instanceof ModuleDependency && !it.excludeRules.isEmpty()
-        }.each { ModuleDependency dep ->
-            def xmlDep = xml.dependencies.dependency.find {
-                it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
-            }
-            def xmlExclusions = xmlDep.exclusions[0] ?: xmlDep.appendNode('exclusions')
-            dep.excludeRules.each { ExcludeRule rule ->
-                def xmlExclusion = xmlExclusions.appendNode('exclusion')
-                xmlExclusion.appendNode('groupId', rule.group)
-                xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
-            }
-        }
+        // configuration compile
+        configurations.compile.allDependencies.each(generateDependency.curry('compile', xml))
+        configurations.runtime.dependencies.each(generateDependency.curry('runtime', xml))
+        configurations.testCompile.dependencies.each(generateDependency.curry('test', xml))
+        configurations.testRuntime.dependencies.each(generateDependency.curry('test', xml))
     }
 
     // Generate maven manifests for sub-modules
