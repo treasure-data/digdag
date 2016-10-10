@@ -130,7 +130,8 @@ module.exports = function buildWebpackConfig ({ build = false }) {
 function getHtmlPlugin ({ build, filename, sha, timestamp }) {
   const data = {
     sha,
-    timestamp
+    timestamp,
+    title: process.env.CONSOLE_TITLE || 'DigDag'
   }
   return new HtmlWebpackPlugin({
     build,
