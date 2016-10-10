@@ -80,8 +80,8 @@ public class S3WaitOperatorFactory
     public SecretAccessList getSecretAccessList()
     {
         return ConfigSelector.builderOfScope("aws")
-            .addSecretOnlyAccess("access_key_id", "secret_access_key")
-            .addSecretOnlyAccess("s3.access_key_id", "s3.secret_access_key", "sse_c_key", "sse_c_key_algorithm", "sse_c_key_md5")
+            .addSecretOnlyAccess("access-key-id", "secret-access-key")
+            .addSecretOnlyAccess("s3.access-key-id", "s3.secret-access-key", "s3.sse-c-key", "s3.sse-c-key-algorithm", "s3.sse-c-key-md5")
             .addSecretSharedAccess("region")
             .addSecretSharedAccess("s3.region", "s3.endpoint")
             .build();
