@@ -1,5 +1,6 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.jfrog.bintray' version '1.7'
     id 'com.github.kt3k.coveralls' version '2.6.3'
 }
 
@@ -14,46 +15,55 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'java'
     apply plugin: 'jacoco'
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'maven-publish'
 
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url  "http://dl.bintray.com/digdag/maven"
+        }
     }
 
     jacoco {
         toolVersion = "0.7.7.201606060606"
     }
+
+    bintray {
+        user = System.getenv('BINTRAY_USER')
+        key = System.getenv('BINTRAY_KEY')
+
+        publications = ['mavenJava']
+
+        filesSpec {
+            // include digdag-<version>.jar built by 'cli' task
+            from "pkg/digdag-${project.version}.jar"
+            into "."
+        }
+
+        dryRun = false
+        publish = false  // TODO: once the first release worked well, this should be changed to true
+
+        pkg {
+            userOrg = 'digdag'
+            repo = 'maven'
+            name = 'digdag'
+            licenses = ['Apache-2.0']
+            publicDownloadNumbers = true
+
+            version {
+                name = project.version
+                released = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+                vcsTag = "v${project.version}"
+            }
+        }
+    }
 }
 
 subprojects {
     apply plugin: 'maven'
-    apply plugin: 'maven-publish'
     apply plugin: 'findbugs'
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                //groupId 'io.digdag'
-                //artifactId 'digdag'
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                name 's3Release'
-                if (project.version.endsWith('-SNAPSHOT')) {
-                    url 's3://digdag-beta-release/maven-snapshot'
-                }
-                else {
-                    url 's3://digdag-beta-release/maven'
-                }
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -175,6 +185,36 @@ subprojects {
     //    archives testsJar, sourcesJar, javadocJar
     //}
 
+    def pomXmlModifier = {
+        // gradle somehow uses 'runtime' as the default scope but 'compile' is desired.
+        // here recreates dependencies section.
+        def xml = asNode()
+        xml.remove(xml.dependencies)
+
+        def dependenciesNode = asNode().appendNode('dependencies')
+        configurations.compile.allDependencies.each {
+            def dependencyNode = dependenciesNode.appendNode('dependency')
+            dependencyNode.appendNode('groupId', it.group)
+            dependencyNode.appendNode('artifactId', it.name)
+            dependencyNode.appendNode('version', it.version)
+        }
+
+        // iterate over runtime dependency and apply exclusions
+        project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
+            it instanceof ModuleDependency && !it.excludeRules.isEmpty()
+        }.each { ModuleDependency dep ->
+            def xmlDep = xml.dependencies.dependency.find {
+                it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
+            }
+            def xmlExclusions = xmlDep.exclusions[0] ?: xmlDep.appendNode('exclusions')
+            dep.excludeRules.each { ExcludeRule rule ->
+                def xmlExclusion = xmlExclusions.appendNode('exclusion')
+                xmlExclusion.appendNode('groupId', rule.group)
+                xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+            }
+        }
+    }
+
     // Generate maven manifests for sub-modules
     task pom << {
         pom {
@@ -185,24 +225,24 @@ subprojects {
                     version project.version
                 }
             }
-        }.withXml {
-            project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
-                it instanceof ModuleDependency && !it.excludeRules.isEmpty()
-            }.each { ModuleDependency dep ->
-                def xmlDep = asNode().dependencies.dependency.find {
-                    it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
-                }
-                def xmlExclusions = xmlDep.exclusions[0]
-                if (!xmlExclusions) {
-                    xmlExclusions = xmlDep.appendNode('exclusions')
-                }
-                dep.excludeRules.each { ExcludeRule rule ->
-                    def xmlExclusion = xmlExclusions.appendNode('exclusion')
-                    xmlExclusion.appendNode('groupId', rule.group)
-                    xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+        }
+        .withXml(pomXmlModifier)
+        .writeTo("${delegate.project.projectDir}/pom.xml")
+    }
+
+    publishing {
+        publications {
+            if (![project(":digdag-docs")].contains(project)) {
+                mavenJava(MavenPublication) {
+                    from components.java
+                    artifact testsJar
+                    artifact sourcesJar
+                    artifact javadocJar
+
+                    pom.withXml(pomXmlModifier)
                 }
             }
-        }.writeTo("${delegate.project.projectDir}/pom.xml")
+        }
     }
 }
 
@@ -269,15 +309,6 @@ project(':digdag-cli') {
         from configurations.runtime + files("${project.libsDir}/${project.name}-${project.version}.jar")
         into dest
     }
-
-    //publishing {
-    //    publications {
-    //        shadowJar(MavenPublication) {
-    //            artifactId 'digdag'
-    //            artifact cliBuildFile
-    //        }
-    //    }
-    //}
 }
 
 def cliBuildFile = file("pkg/digdag-${project.version}.jar")
@@ -290,50 +321,7 @@ task cli(dependsOn: ':digdag-cli:shadowJar') << {
     cliBuildFile.setExecutable(true)
 }
 
-configurations {
-    releases
-    rootFiles
-}
-
-artifacts {
-    releases file: cliBuildFile, name: 'digdag', type: 'text', builtBy: cli
-    rootFiles file: file("digdag-core/src/main/resources/io/digdag/core/version.txt"), name: 'LATEST', type: 'text'
-}
-
-uploadReleases {
-    repositories {
-        if (!project.version.endsWith('-SNAPSHOT')) {
-            ivy {
-                name 's3PackageRelease'
-                artifactPattern 's3://digdag-beta-release/releases/[artifact]-[revision].[ext]'
-                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact]-[revision].[ext]'
-                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
-}
-
-uploadRootFiles {
-    repositories {
-        if (!project.version.endsWith('-SNAPSHOT')) {
-            ivy {
-                name 's3RootFiles'
-                artifactPattern 's3://digdag-beta-release/releases/[artifact].[ext]'
-                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact].[ext]'
-                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
-}
-uploadRootFiles.dependsOn(uploadReleases)
+bintrayUpload.dependsOn('cli')
 
 task classpath(dependsOn: [':digdag-cli:classpath']) << { }
 
@@ -344,8 +332,7 @@ clean {
 
 task release() {
     dependsOn subprojects.publish
-    dependsOn uploadReleases
-    dependsOn uploadRootFiles
+    dependsOn bintrayUpload
     doLast {
         println("done.")
     }
