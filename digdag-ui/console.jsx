@@ -1136,6 +1136,10 @@ class VersionView extends React.Component {
 }
 
 class Navbar extends React.Component {
+  static contextTypes = {
+    router: React.PropTypes.object,
+  }
+
   logout (e) {
     e.preventDefault()
     window.localStorage.removeItem('digdag.credentials')
@@ -1164,6 +1168,11 @@ class Navbar extends React.Component {
     return navbar && navbar.style ? navbar.style : {}
   }
 
+  isActiveClass(path) {
+    const { router } = this.context
+    return router.isActive(path) ? 'active' : ''
+  }
+
   render () {
     return (
       <nav className={`navbar ${this.className()} navbar-fixed-top`} style={this.style()}>
@@ -1181,7 +1190,8 @@ class Navbar extends React.Component {
           </div>
           <div id='navbar' className='collapse navbar-collapse'>
             <ul className='nav navbar-nav'>
-              <li className='active'><a href='/'>Projects</a></li>
+              <li className={this.isActiveClass('/')}><Link to='/'>Workflows</Link></li>
+              <li className={this.isActiveClass('/projects')}><Link to='/projects'>Projects</Link></li>
             </ul>
             <ul className='nav navbar-nav navbar-right'>
               <li><a href='/' onClick={this.logout}><span className='glyphicon glyphicon-log-out'
@@ -1197,14 +1207,18 @@ class Navbar extends React.Component {
 
 const ProjectsPage = (props:{}) =>
   <div className='container-fluid'>
-    <Navbar />
     <ProjectsView />
+    <SessionsView />
+  </div>
+
+const WorkflowsPage = () =>
+  <div className='container-fluid'>
+    <WorkflowsView />
     <SessionsView />
   </div>
 
 const ProjectPage = (props:{params: {projectId: string}}) =>
   <div className='container-fluid'>
-    <Navbar />
     <ProjectView projectId={parseInt(props.params.projectId)} />
   </div>
 
@@ -1259,7 +1273,6 @@ class WorkflowPage extends React.Component {
   render () {
     return (
       <div className='container-fluid'>
-        <Navbar />
         {this.workflow()}
       </div>
     )
@@ -1316,7 +1329,6 @@ class WorkflowRevisionPage extends React.Component {
   render () {
     return (
       <div className='container-fluid'>
-        <Navbar />
         {this.workflow()}
       </div>
     )
@@ -1325,7 +1337,6 @@ class WorkflowRevisionPage extends React.Component {
 
 const AttemptPage = (props:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
-    <Navbar />
     <AttemptView attemptId={parseInt(props.params.attemptId)} />
     <AttemptTasksView attemptId={parseInt(props.params.attemptId)} />
     <AttemptLogsView attemptId={parseInt(props.params.attemptId)} />
@@ -1410,7 +1421,6 @@ class SessionPage extends React.Component {
   render () {
     return (
       <div className='container-fluid'>
-        <Navbar />
         {this.session()}
         {this.tasks()}
         {this.logs()}
@@ -1499,12 +1509,33 @@ class LoginPage extends React.Component {
 
     return (
       <div className='container'>
-        <Navbar />
         <h1>{DIGDAG_CONFIG.auth.title}</h1>
         <form onSubmit={this.handleSubmit}>
           {authItems}
           <button type='submit' className='btn btn-default'>Submit</button>
         </form>
+      </div>
+    )
+  }
+}
+
+class WorkflowsView extends React.Component {
+
+  state = {
+    workflows: []
+  };
+
+  componentDidMount () {
+    model().fetchWorkflows().then(workflows => {
+      this.setState({workflows})
+    })
+  }
+
+  render () {
+    return (
+      <div className='workflows'>
+        <h2>Workflows</h2>
+        <WorkflowListView workflows={this.state.workflows} />
       </div>
     )
   }
@@ -1558,22 +1589,36 @@ class ParserTest extends React.Component {
   }
 }
 
+class AppWrapper extends React.Component {
+  render() {
+    return (
+      <div className='container-fluid'>
+        <Navbar />
+        {this.props.children}
+      </div>
+    )
+  }
+}
+
 class ConsolePage extends React.Component {
   render () {
     return (
       <div className='container-fluid'>
         <Router history={browserHistory}>
           <Route component={CacheLoader}>
-            <Route path='/' component={ProjectsPage} />
-            <Route path='/projects/:projectId' component={ProjectPage} />
-            <Route path='/projects/:projectId/workflows/:workflowName' component={WorkflowPage} />
-            <Route path='/workflows/:workflowId' component={WorkflowRevisionPage} />
-            <Route path='/sessions/:sessionId' component={SessionPage} />
-            <Route path='/attempts/:attemptId' component={AttemptPage} />
-            {isDevelopmentEnv &&
-              <Route path='/parser-test' component={ParserTest} />
-            }
-            <Route path='*' component={withRouter(NotFoundPage)} />
+            <Route component={AppWrapper}>
+              <Route path='/' component={WorkflowsPage} />
+              <Route path='/projects' component={ProjectsPage} />
+              <Route path='/projects/:projectId' component={ProjectPage} />
+              <Route path='/projects/:projectId/workflows/:workflowName' component={WorkflowPage} />
+              <Route path='/workflows/:workflowId' component={WorkflowRevisionPage} />
+              <Route path='/sessions/:sessionId' component={SessionPage} />
+              <Route path='/attempts/:attemptId' component={AttemptPage} />
+              {isDevelopmentEnv &&
+                <Route path='/parser-test' component={ParserTest} />
+              }
+              <Route path='*' component={withRouter(NotFoundPage)} />
+            </Route>
           </Route>
         </Router>
       </div>
