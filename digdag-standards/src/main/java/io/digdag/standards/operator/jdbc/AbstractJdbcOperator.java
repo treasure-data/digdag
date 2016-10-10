@@ -52,12 +52,6 @@ public abstract class AbstractJdbcOperator <C>
     protected abstract String type();
 
     @Override
-    public List<String> secretSelectors()
-    {
-        return ImmutableList.of(type() + ".*");
-    }
-
-    @Override
     public TaskResult runTask()
     {
         Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));

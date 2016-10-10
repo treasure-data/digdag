@@ -11,7 +11,9 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
+import io.digdag.util.ConfigSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.util.Locale.ENGLISH;
 
 public class TdTableExportOperatorFactory
@@ -41,6 +44,18 @@ public class TdTableExportOperatorFactory
     }
 
     @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return configSelectorBuilder()
+            .build()
+            .withExtraSecretAccessList(
+                    ConfigSelector.builderOfScope("aws")
+                    .addSecretOnlyAccess("access-key-id", "secret-access-key", "s3.access-key-id", "s3.secret-access-key")
+                    .build()
+            );
+    }
+
+    @Override
     public Operator newOperator(OperatorContext context)
     {
         return new TdTableExportOperator(context);
@@ -52,12 +67,6 @@ public class TdTableExportOperatorFactory
         private final String database;
         private final TableParam table;
         private final TDExportFileFormatType fileFormat;
-
-        @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("td.*", "aws.*");
-        }
 
         private TdTableExportOperator(OperatorContext context)
         {

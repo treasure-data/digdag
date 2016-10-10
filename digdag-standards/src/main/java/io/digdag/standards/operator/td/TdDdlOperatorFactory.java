@@ -60,12 +60,6 @@ public class TdDdlOperatorFactory
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("td.*");
-        }
-
-        @Override
         public TaskResult runTask()
         {
             Config params = request.getConfig().mergeDefault(

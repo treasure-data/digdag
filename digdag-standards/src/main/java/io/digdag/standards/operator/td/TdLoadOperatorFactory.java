@@ -14,6 +14,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdLoadOperatorFactory
@@ -45,6 +47,13 @@ public class TdLoadOperatorFactory
     public String getType()
     {
         return "td_load";
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return configSelectorBuilder()
+            .build();
     }
 
     @Override
