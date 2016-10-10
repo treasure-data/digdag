@@ -181,10 +181,6 @@ subprojects {
         testArtifacts testsJar
     }
 
-    //artifacts {
-    //    archives testsJar, sourcesJar, javadocJar
-    //}
-
     def pomXmlModifier = {
         // gradle somehow uses 'runtime' as the default scope but 'compile' is desired.
         // here recreates dependencies section.
@@ -232,7 +228,7 @@ subprojects {
 
     publishing {
         publications {
-            if (![project(":digdag-docs")].contains(project)) {
+            if (![project(":digdag-docs"), project(":digdag-tests")].contains(project)) {
                 mavenJava(MavenPublication) {
                     from components.java
                     artifact testsJar
