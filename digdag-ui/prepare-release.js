@@ -3,7 +3,7 @@ var path = require('path')
 const getSha = require('./lib/git-sha1')
 
 try {
-  const sha = getSha()
+  const sha = process.env.SHA || getSha()
   const publicPath = path.join(__dirname, 'public')
   const buildPath = path.join(publicPath, sha)
   const config = path.join(__dirname, 'config')
