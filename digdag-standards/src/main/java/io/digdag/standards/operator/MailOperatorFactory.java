@@ -10,11 +10,13 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigSelector;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,15 @@ public class MailOperatorFactory
     }
 
     @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return ConfigSelector.builderOfScope("mail")
+            .addSecretOnlyAccess("password")
+            .addSecretSharedAccess("host", "port", "tls", "ssl", "username")
+            .build();
+    }
+
+    @Override
     public Operator newOperator(OperatorContext context)
     {
         return new MailOperator(context);
@@ -106,12 +117,6 @@ public class MailOperatorFactory
         public MailOperator(OperatorContext context)
         {
             super(context);
-        }
-
-        @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("mail.*");
         }
 
         @Override

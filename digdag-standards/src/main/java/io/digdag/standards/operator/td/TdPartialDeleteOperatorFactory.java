@@ -7,6 +7,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.TimestampParam;
 import org.slf4j.Logger;
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
+
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 
 public class TdPartialDeleteOperatorFactory
         implements OperatorFactory
@@ -33,6 +36,13 @@ public class TdPartialDeleteOperatorFactory
     public String getType()
     {
         return "td_partial_delete";
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return configSelectorBuilder()
+            .build();
     }
 
     @Override

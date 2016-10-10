@@ -8,6 +8,11 @@ public interface OperatorFactory
 {
     String getType();
 
+    /**
+     * Get a list of secret secret keys that this intends to access.
+     * An attempt to access a secret using a key not covered by
+     * one of these keys will result in a {@link SecretAccessDeniedException}.
+     */
     default SecretAccessList getSecretAccessList()
     {
         return new SecretAccessList()

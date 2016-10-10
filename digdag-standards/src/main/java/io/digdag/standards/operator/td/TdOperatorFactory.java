@@ -17,6 +17,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -45,7 +46,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+<<<<<<< 7d06a63c70b431150588024874ad2e578b1cab69
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+=======
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
+>>>>>>> implemented OperatorFactory.getSecretAccessList
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
 import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -77,6 +82,13 @@ public class TdOperatorFactory
     public String getType()
     {
         return "td";
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return configSelectorBuilder()
+            .build();
     }
 
     @Override

@@ -84,7 +84,7 @@ public class ConfigSelector
             this.scope = scope;
         }
 
-        public Builder addSecretOnlyAccess(String key)
+        private Builder addSecretOnlyAccess(String key)
         {
             Preconditions.checkNotNull(key);
             secretOnlyAccessBuilder.add(scope + "." + key);
@@ -107,7 +107,7 @@ public class ConfigSelector
             return this;
         }
 
-        public Builder addSecretSharedAccess(String key)
+        private Builder addSecretSharedAccess(String key)
         {
             Preconditions.checkNotNull(key);
             secretSharedAccessBuilder.add(scope + "." + key);

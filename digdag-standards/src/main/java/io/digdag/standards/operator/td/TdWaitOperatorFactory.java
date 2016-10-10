@@ -12,6 +12,7 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
+import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
@@ -58,6 +61,13 @@ public class TdWaitOperatorFactory
     public String getType()
     {
         return "td_wait";
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return configSelectorBuilder()
+            .build();
     }
 
     @Override
@@ -92,12 +102,6 @@ public class TdWaitOperatorFactory
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
             this.state = TaskState.of(request);
-        }
-
-        @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("td.*");
         }
 
         @Override

@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskRequest;
@@ -26,6 +27,12 @@ public class PgOperatorFactory
     public String getType()
     {
         return OPERATOR_TYPE;
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return PgConnectionConfig.getSecretAccessList();
     }
 
     @Override

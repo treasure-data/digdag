@@ -27,12 +27,14 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.TaskState;
 import org.eclipse.jetty.http.HttpStatus;
+import io.digdag.util.ConfigSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +77,17 @@ public class S3WaitOperatorFactory
     }
 
     @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return ConfigSelector.builderOfScope("aws")
+            .addSecretOnlyAccess("access_key_id", "secret_access_key")
+            .addSecretOnlyAccess("s3.access_key_id", "s3.secret_access_key", "sse_c_key", "sse_c_key_algorithm", "sse_c_key_md5")
+            .addSecretSharedAccess("region")
+            .addSecretSharedAccess("s3.region", "s3.endpoint")
+            .build();
+    }
+
+    @Override
     public Operator newOperator(OperatorContext context)
     {
         return new S3WaitOperator(context);
@@ -92,12 +105,6 @@ public class S3WaitOperatorFactory
             this.request = context.getRequest();
             this.state = TaskState.of(request);
             this.secrets = context.getSecrets();
-        }
-
-        @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("aws.*");
         }
 
         @Override

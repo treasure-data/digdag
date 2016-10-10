@@ -9,6 +9,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigSelector;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -40,10 +41,11 @@ abstract class BaseTdJobOperator
         this.retryInterval = TDOperator.retryInterval(systemConfig);
     }
 
-    @Override
-    public List<String> secretSelectors()
+    static ConfigSelector.Builder configSelectorBuilder()
     {
-        return ImmutableList.of("td.*");
+        return ConfigSelector.builderOfScope("td")
+            .addSecretOnlyAccess("apikey")
+            .addSecretSharedAccess("use_ssl", "proxy.enabled", "proxy.host", "proxy.port", "proxy.user", "proxy.password", "proxy.use_ssl", "endpoint", "host", "port", "user", "database");
     }
 
     @Override

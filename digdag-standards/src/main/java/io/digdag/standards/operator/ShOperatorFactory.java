@@ -72,12 +72,6 @@ public class ShOperatorFactory
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of();
-        }
-
-        @Override
         public TaskResult runTask()
         {
             Config params = request.getConfig()
