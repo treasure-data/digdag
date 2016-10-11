@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
@@ -37,13 +38,13 @@ public class PollingRetryExecutor
 
     private PollingRetryExecutor(Config state, String stateKey, Duration minRetryInterval, Duration maxRetryInterval, Predicate<Exception> retryPredicate, String errorMessage, Object... errorMessageParameters)
     {
-        this.state = state;
-        this.stateKey = stateKey;
-        this.minRetryInterval = minRetryInterval;
-        this.maxRetryInterval = maxRetryInterval;
-        this.retryPredicate = retryPredicate;
-        this.errorMessage = errorMessage;
-        this.errorMessageParameters = errorMessageParameters;
+        this.state = Objects.requireNonNull(state, "state");
+        this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
+        this.minRetryInterval = Objects.requireNonNull(minRetryInterval, "minRetryInterval");
+        this.maxRetryInterval = Objects.requireNonNull(maxRetryInterval, "maxRetryInterval");
+        this.retryPredicate = Objects.requireNonNull(retryPredicate, "retryPredicate");
+        this.errorMessage = Objects.requireNonNull(errorMessage, "errorMessage");
+        this.errorMessageParameters = Objects.requireNonNull(errorMessageParameters, "errorMessageParameters");
     }
 
     public static PollingRetryExecutor pollingRetryExecutor(Config state, String stateKey)
