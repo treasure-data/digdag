@@ -17,6 +17,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
+import io.digdag.standards.operator.DurationInterval;
 import io.digdag.util.DurationParam;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
@@ -247,7 +248,7 @@ public class TDOperator
     /**
      * Run a TD job in a polling non-blocking fashion. Throws TaskExecutionException.ofNextPolling with the passed in state until the job is done.
      */
-    public TDJobOperator runJob(Config state, String key, PollingConfig pollingConfig, JobStarter starter)
+    public TDJobOperator runJob(Config state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter)
     {
         ///////////////////////////////////////////////////////////////////////////////////////////
         // TODO: remove this migration code
@@ -290,14 +291,14 @@ public class TDOperator
                 if (isDeterministicClientException(e)) {
                     throw e;
                 }
-                throw errorPollingException(state, key, jobState, pollingConfig);
+                throw errorPollingException(state, key, jobState, retryInterval);
             }
 
             // Reset error polling
             jobState = jobState.withErrorPollIteration(Optional.absent());
 
             state.set(key, jobState.withJobId(newJobId));
-            throw TaskExecutionException.ofNextPolling((int) pollingConfig.minPollInterval().getSeconds(), ConfigElement.copyOf(state));
+            throw TaskExecutionException.ofNextPolling((int) pollInterval.min().getSeconds(), ConfigElement.copyOf(state));
         }
 
         // 2. Check if the job is done
@@ -313,14 +314,14 @@ public class TDOperator
             if (isDeterministicClientException(e)) {
                 throw e;
             }
-            throw errorPollingException(state, key, jobState, pollingConfig);
+            throw errorPollingException(state, key, jobState, retryInterval);
         }
 
         // Reset error polling
         jobState = jobState.withErrorPollIteration(Optional.absent());
 
         if (!status.getStatus().isFinished()) {
-            throw pollingException(state, key, jobState, pollingConfig);
+            throw pollingException(state, key, jobState, pollInterval);
         }
 
         // 3. Fail the task if the job failed
@@ -335,7 +336,7 @@ public class TDOperator
                 if (isDeterministicClientException(e)) {
                     throw e;
                 }
-                throw errorPollingException(state, key, jobState, pollingConfig);
+                throw errorPollingException(state, key, jobState, retryInterval);
             }
             String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
             throw new TaskExecutionException(message, ConfigElement.empty());
@@ -344,20 +345,25 @@ public class TDOperator
         return job;
     }
 
-    private TaskExecutionException pollingException(Config state, String key, JobState jobState, PollingConfig pollingConfig)
+    private TaskExecutionException pollingException(Config state, String key, JobState jobState, DurationInterval pollInterval)
     {
         int iteration = jobState.pollIteration().or(0);
-        int interval = (int) Math.min(pollingConfig.minPollInterval().getSeconds() * Math.pow(2, iteration), pollingConfig.maxPollInterval().getSeconds());
+        int interval = exponentialBackoffInterval(pollInterval, iteration);
         state.set(key, jobState.withPollIteration(iteration + 1));
         throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
     }
 
-    private TaskExecutionException errorPollingException(Config state, String key, JobState jobState, PollingConfig pollingConfig)
+    private TaskExecutionException errorPollingException(Config state, String key, JobState jobState, DurationInterval retryInterval)
     {
         int iteration = jobState.errorPollIteration().or(0);
-        int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, iteration), pollingConfig.maxRetryInterval().getSeconds());
+        int interval = exponentialBackoffInterval(retryInterval, iteration);
         state.set(key, jobState.withErrorPollIteration(iteration + 1));
         throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+    }
+
+    private static int exponentialBackoffInterval(DurationInterval pollInterval, int iteration)
+    {
+        return (int) Math.min(pollInterval.min().getSeconds() * Math.pow(2, iteration), pollInterval.max().getSeconds());
     }
 
     static boolean isDeterministicClientException(Exception ex)
@@ -409,50 +415,26 @@ public class TDOperator
         }
     }
 
-    @Value.Immutable
-    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-    interface PollingConfig
+    static final Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(1);
+    static final Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofSeconds(30);
+    static final Duration DEFAULT_MIN_RETRY_INTERVAL = Duration.ofSeconds(1);
+    static final Duration DEFAULT_MAX_RETRY_INTERVAL = Duration.ofSeconds(30);
+
+    static DurationInterval pollInterval(Config systemConfig)
     {
-        Duration DEFAULT_MIN_POLL_INTERVAL = Duration.ofSeconds(1);
-        Duration DEFAULT_MAX_POLL_INTERVAL = Duration.ofSeconds(30);
-
-        Duration DEFAULT_MIN_RETRY_INTERVAL = Duration.ofSeconds(1);
-        Duration DEFAULT_MAX_RETRY_INTERVAL = Duration.ofSeconds(30);
-
-        /**
-         * The minimum interval when successfully polling for job status.
-         */
-        Duration minPollInterval();
-
-        /**
-         * The maximum interval when successfully polling for job status.
-         */
-        Duration maxPollInterval();
-
-        /**
-         * The minimum interval when retrying TD api requests.
-         */
-        Duration minRetryInterval();
-
-        /**
-         * The maximum interval when retrying TD api requests.
-         */
-        Duration maxRetryInterval();
-
-        static PollingConfig fromSystemConfig(Config systemConfig)
-        {
-            return ImmutablePollingConfig.builder()
-                    .minPollInterval(systemConfig.getOptional("config.td.min_poll_interval", DurationParam.class)
-                            .transform(DurationParam::getDuration).or(DEFAULT_MIN_POLL_INTERVAL))
-                    .maxPollInterval(systemConfig.getOptional("config.td.max_poll_interval", DurationParam.class)
-                            .transform(DurationParam::getDuration).or(DEFAULT_MAX_POLL_INTERVAL))
-                    .minRetryInterval(systemConfig.getOptional("config.td.min_retry_interval", DurationParam.class)
-                            .transform(DurationParam::getDuration).or(DEFAULT_MIN_RETRY_INTERVAL))
-                    .maxRetryInterval(systemConfig.getOptional("config.td.max_retry_interval", DurationParam.class)
-                            .transform(DurationParam::getDuration).or(DEFAULT_MAX_RETRY_INTERVAL))
-                    .build();
-        }
+        Duration min = systemConfig.getOptional("config.td.min_poll_interval", DurationParam.class)
+                .transform(DurationParam::getDuration).or(DEFAULT_MIN_POLL_INTERVAL);
+        Duration max = systemConfig.getOptional("config.td.max_poll_interval", DurationParam.class)
+                .transform(DurationParam::getDuration).or(DEFAULT_MAX_POLL_INTERVAL);
+        return DurationInterval.of(min, max);
     }
 
-
+    static DurationInterval retryInterval(Config systemConfig)
+    {
+        Duration min = systemConfig.getOptional("config.td.min_retry_interval", DurationParam.class)
+                .transform(DurationParam::getDuration).or(DEFAULT_MIN_RETRY_INTERVAL);
+        Duration max = systemConfig.getOptional("config.td.max_retry_interval", DurationParam.class)
+                .transform(DurationParam::getDuration).or(DEFAULT_MAX_RETRY_INTERVAL);
+        return DurationInterval.of(min, max);
+    }
 }

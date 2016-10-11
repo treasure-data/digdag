@@ -88,13 +88,13 @@ public class TdRunOperatorFactory
         @Override
         protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
         {
-            downloadJobResult(job, workspace, downloadFile, state, pollingConfig);
+            downloadJobResult(job, workspace, downloadFile, state, retryInterval);
 
             if (preview) {
-                TdOperatorFactory.downloadPreviewRows(job, "job id " + job.getJobId(), state, pollingConfig);
+                TdOperatorFactory.downloadPreviewRows(job, "job id " + job.getJobId(), state, retryInterval);
             }
 
-            Config storeParams = buildStoreParams(request.getConfig().getFactory(), job, storeLastResults, state, pollingConfig);
+            Config storeParams = buildStoreParams(request.getConfig().getFactory(), job, storeLastResults, state, retryInterval);
 
             return TaskResult.defaultBuilder(request)
                     .resetStoreParams(buildResetStoreParams(storeLastResults))

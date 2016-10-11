@@ -6,6 +6,7 @@ import io.digdag.client.config.Config;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.operator.DurationInterval;
 import io.digdag.util.BaseOperator;
 
 import java.nio.file.Path;
@@ -20,7 +21,9 @@ abstract class BaseTdJobOperator
     protected final Config state;
     protected final Config params;
     private final Map<String, String> env;
-    protected final TDOperator.PollingConfig pollingConfig;
+
+    protected final DurationInterval pollInterval;
+    protected final DurationInterval retryInterval;
 
     BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env, Config systemConfig)
     {
@@ -31,7 +34,9 @@ abstract class BaseTdJobOperator
 
         this.state = request.getLastStateParams().deepCopy();
         this.env = env;
-        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
+
+        this.pollInterval = TDOperator.pollInterval(systemConfig);
+        this.retryInterval = TDOperator.retryInterval(systemConfig);
     }
 
     @Override
@@ -48,7 +53,7 @@ abstract class BaseTdJobOperator
             Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {
-                job = op.runJob(state, "job", pollingConfig, (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
+                job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
                 state.set(DONE_JOB_ID, job.getJobId());
             }
             else {
