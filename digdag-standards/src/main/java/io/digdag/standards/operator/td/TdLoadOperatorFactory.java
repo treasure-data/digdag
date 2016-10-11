@@ -34,12 +34,14 @@ public class TdLoadOperatorFactory
 
     private final TemplateEngine templateEngine;
     private final Map<String, String> env;
+    private final Config systemConfig;
 
     @Inject
-    public TdLoadOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env)
+    public TdLoadOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env, Config systemConfig)
     {
         this.templateEngine = templateEngine;
         this.env = env;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -66,7 +68,7 @@ public class TdLoadOperatorFactory
 
         protected TdLoadOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
