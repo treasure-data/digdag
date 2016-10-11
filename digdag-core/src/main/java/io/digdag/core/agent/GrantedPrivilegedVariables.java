@@ -92,7 +92,7 @@ public class GrantedPrivilegedVariables
 
                 Config nested = params;
                 for (String nestName : secretSharedKey.getNestNames()) {
-					Optional<Config> optionalNested = nested.getOptionalNested(nestName);
+                    Optional<Config> optionalNested = nested.getOptionalNested(nestName);
                     if (!optionalNested.isPresent()) {
                         if (required) {
                             throw new ConfigException("Nested object '" + nestName + "' out of " + secretSharedKey + " is required but not set");
@@ -101,7 +101,7 @@ public class GrantedPrivilegedVariables
                             return null;
                         }
                     }
-					nested = optionalNested.get();
+                    nested = optionalNested.get();
                 }
                 String value = nested.get(secretSharedKey.getLastName(), String.class, null);
                 if (required && value == null) {
