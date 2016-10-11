@@ -1,57 +1,59 @@
-function readCookie(name) {
-  var cookies = document.cookie.split(';').reduce(function (cookies, cookieString) {
-    var cookie = cookieString.split('=');
-    cookies[cookie[0].trim()] = cookie[1];
-    return cookies;
-  }, {});
-  return cookies[name];
-}
-
 var DIGDAG_CONFIG = {
-  url: 'https://api-development-workflow.treasuredata.com/api/',
+  url: 'http://localhost:65432/api/',
   td: {
-    apiV4: 'https://api-development-console.treasuredata.com/v4',
-    connectorUrl: function (connectorName) { return 'https://console-development.treasuredata.com/connections/data-transfers'},
-    queryUrl: function (queryId) { return 'https://console-development.treasuredata.com/queries/' + queryId; },
-    jobUrl: function (jobId) { return 'https://console-development.treasuredata.com/jobs/' + jobId; }
+    useTD: false,
+    apiV4: 'https://api-console.treasuredata.com/v4',
+    connectorUrl: function (connectorName) { return 'https://console.treasuredata.com/connections/data-transfers' },
+    queryUrl: function (queryId) { return 'https://console.treasuredata.com/queries/' + queryId },
+    jobUrl: function (jobId) { return 'https://console.treasuredata.com/jobs/' + jobId }
   },
-  logoutUrl: 'https://workflows-development.treasuredata.com/users/sign_out',
+  logoutUrl: '/',
   navbar: {
     logo: '/logo.png',
-    brand: 'Treasure Workflow',
+    brand: 'Digdag',
+    className: 'navbar-inverse',
+    style: {
+      backgroundColor: '#2B353F'
+    }
   },
   auth: {
     title: 'Authentication',
-    items: [],
-  },
-  headers: function(args) {
-    if (!document.cookie) {
-      return {};
-    }
-    var headers = {};
-    if (window.sessionStorage) {
-      var accountOverride = window.sessionStorage.getItem('td.account-override');
-      if (accountOverride) {
-        console.log('Using TD Account override:', accountOverride)
-        headers['X-TD-Account-Override'] = accountOverride;
+    items: [
+      {
+        key: 'username',
+        name: 'Username',
+        type: 'text',
+        validate: function (args) {
+          if (args.value && args.value.trim()) {
+            args.valid(args.key)
+          } else {
+            args.invalid(args.key, args.key + ' must not be empty')
+          }
+        },
+        scrub: function (args) {
+          return args.value.trim()
+        }
+      },
+      {
+        key: 'password',
+        name: 'Password',
+        type: 'password',
+        validate: function (args) {
+          if (args.value && args.value.trim()) {
+            args.valid(args.key)
+          } else {
+            args.invalid(args.key, args.key + ' must not be empty')
+          }
+        },
+        scrub: function (args) {
+          return args.value.trim()
+        }
       }
-    }
-    headers['X-XSRF-TOKEN'] = readCookie('XSRF-TOKEN-DEVELOPMENT');
-    return headers;
+    ]
+  },
+  headers: function (args) {
+    return {}
   }
 }
 
-function DIGDAG_OVERRIDE_ACCOUNT(accountId) {
-  if (!window.sessionStorage) {
-    console.log("Please use a browser with session storage support");
-    return;
-  }
-  if (!accountId) {
-    window.sessionStorage.removeItem('td.account-override');
-    console.log('TD Account override disabled');
-  } else {
-    window.sessionStorage.setItem('td.account-override', accountId);
-    console.log('TD Account override set to:', accountId);
-  }
-  location.reload();
-}
+window.DIGDAG_CONFIG = DIGDAG_CONFIG
