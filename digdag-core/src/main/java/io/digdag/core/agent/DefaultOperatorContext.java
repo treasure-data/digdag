@@ -5,6 +5,7 @@ import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.OperatorContext;
+import static java.util.Objects.requireNonNull;
 
 class DefaultOperatorContext
         implements OperatorContext
@@ -20,10 +21,10 @@ class DefaultOperatorContext
             SecretProvider secretProvider,
             PrivilegedVariables privilegedVariables)
     {
-        this.projectPath = projectPath;
-        this.taskRequest = taskRequest;
-        this.secretProvider = secretProvider;
-        this.privilegedVariables = privilegedVariables;
+        this.projectPath = requireNonNull(projectPath, "projectPath");
+        this.taskRequest = requireNonNull(taskRequest, "taskRequest");
+        this.secretProvider = requireNonNull(secretProvider, "secretProvider");
+        this.privilegedVariables = requireNonNull(privilegedVariables, "privilegedVariables");
     }
 
     @Override
