@@ -209,6 +209,7 @@ class WorkflowListView extends React.Component {
           to={`/projects/${workflow.project.id}/workflows/${encodeURIComponent(workflow.name)}`}>{workflow.name}</Link>
         </td>
         <td>{workflow.revision}</td>
+        <td>{workflow.project.name}</td>
       </tr>
     )
     return (
@@ -218,6 +219,7 @@ class WorkflowListView extends React.Component {
             <tr>
               <th>Name</th>
               <th>Revision</th>
+              <th>Project</th>
             </tr>
           </thead>
           <tbody>
