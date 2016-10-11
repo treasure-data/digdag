@@ -107,17 +107,15 @@ public class TdDdlOperatorFactory
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
                 Config state = request.getLastStateParams();
                 int operation = state.get("operation", int.class, 0);
-                for (int i = 0; i < operations.size(); i++) {
-                    if (i < operation) {
-                        continue;
-                    }
+                for (int i = operation; i < operations.size(); i++) {
+                    state.set("operation", i);
                     Consumer<TDOperator> o = operations.get(i);
-
                     pollingRetryExecutor(state, "retry")
                             .retryUnless(TDOperator::isDeterministicClientException)
                             .withRetryInterval(retryInterval)
                             .withErrorMessage("DDL operation failed")
                             .run(() -> o.accept(op));
+
                 }
             }
 
