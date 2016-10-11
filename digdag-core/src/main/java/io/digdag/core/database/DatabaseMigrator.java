@@ -17,20 +17,20 @@ import io.digdag.core.database.migrate.*;
 public class DatabaseMigrator
 {
     private final List<Migration> migrations = Stream.of(new Migration[] {
-		new Migration_20151204221156_CreateTables(),
-		new Migration_20160602123456_SessionsOnProjectIdIndexToDesc(),
-		new Migration_20160602184025_CreateResumingTasks(),
-		new Migration_20160610154832_MakeProjectsDeletable(),
-		new Migration_20160623123456_AddUserInfoColumnToRevisions(),
-		new Migration_20160719172538_QueueRearchitecture(),
-		new Migration_20160817123456_AddSecretsTable(),
-		new Migration_20160818043815_AddFinishedAtToSessionAttempts(),
-		new Migration_20160818220026_QueueUniqueName(),
-		new Migration_20160908175551_KeepSecretsUnique(),
+        new Migration_20151204221156_CreateTables(),
+        new Migration_20160602123456_SessionsOnProjectIdIndexToDesc(),
+        new Migration_20160602184025_CreateResumingTasks(),
+        new Migration_20160610154832_MakeProjectsDeletable(),
+        new Migration_20160623123456_AddUserInfoColumnToRevisions(),
+        new Migration_20160719172538_QueueRearchitecture(),
+        new Migration_20160817123456_AddSecretsTable(),
+        new Migration_20160818043815_AddFinishedAtToSessionAttempts(),
+        new Migration_20160818220026_QueueUniqueName(),
+        new Migration_20160908175551_KeepSecretsUnique(),
         new Migration_20160926123456_AddDisabledAtColumnToSchedules(),
         new Migration_20160928203753_AddWorkflowOrderIndex(),
         new Migration_20161005225356_AddResetParamsToTaskState(),
-	})
+    })
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());
 

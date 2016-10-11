@@ -585,10 +585,10 @@ public class WorkflowExecutor
                 List<Long> errorTaskIds = new ArrayList<>();
 
                 // root task is always group-only task
-				boolean isRootTask = !lockedTask.get().getParentId().isPresent();
-				if (isRootTask) {
-					errorTaskIds.add(addAttemptFailureAlertTask(lockedTask));
-				}
+                boolean isRootTask = !lockedTask.get().getParentId().isPresent();
+                if (isRootTask) {
+                    errorTaskIds.add(addAttemptFailureAlertTask(lockedTask));
+                }
 
                 try {
                     Optional<Long> errorTask = addErrorTasksIfAny(lockedTask,
