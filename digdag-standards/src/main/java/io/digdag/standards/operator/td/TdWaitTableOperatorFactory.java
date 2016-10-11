@@ -38,9 +38,6 @@ public class TdWaitTableOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
-    private static final int INITIAL_RETRY_INTERVAL = 1;
-    private static final int MAX_RETRY_INTERVAL = 30;
-
     private static final String RESULT = "result";
     private static final String RETRY = "retry";
 
@@ -49,11 +46,13 @@ public class TdWaitTableOperatorFactory
     private static final String POLL_JOB = "pollJob";
 
     private final Map<String, String> env;
+    private final TDOperator.PollingConfig pollingConfig;
 
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
     {
         super(systemConfig);
+        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
         this.env = env;
     }
 
@@ -127,7 +126,7 @@ public class TdWaitTableOperatorFactory
                     state.set(TABLE_EXISTS, true);
                 }
 
-                TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
+                TDJobOperator job = op.runJob(state, POLL_JOB, pollingConfig, this::startJob);
 
                 // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
@@ -159,7 +158,7 @@ public class TdWaitTableOperatorFactory
                 }
                 int retry = state.get(TABLE_EXISTS_RETRY, int.class, 0);
                 state.set(TABLE_EXISTS_RETRY, retry + 1);
-                int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, retry), MAX_RETRY_INTERVAL);
+                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
                 logger.warn("Failed to check existence of table '{}.{}', retrying in {} seconds", op.getDatabase(), table.getTable(), interval, e);
                 throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
             }
@@ -184,7 +183,7 @@ public class TdWaitTableOperatorFactory
                 }
                 int retry = resultState.get(RETRY, int.class, 0);
                 resultState.set(RETRY, retry + 1);
-                int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, retry), MAX_RETRY_INTERVAL);
+                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
                 logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
                 throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
             }

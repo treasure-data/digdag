@@ -30,10 +30,14 @@ public class TdTableExportOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdTableExportOperatorFactory.class);
     private final Map<String, String> env;
+    private final Config systemConfig;
 
     @Inject
-    public TdTableExportOperatorFactory(@Environment Map<String, String> env)
-    { this.env = env;}
+    public TdTableExportOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
+    {
+        this.env = env;
+        this.systemConfig = systemConfig;
+    }
 
     public String getType()
     {
@@ -61,7 +65,7 @@ public class TdTableExportOperatorFactory
 
         private TdTableExportOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 

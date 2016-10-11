@@ -33,11 +33,11 @@ import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.AuthenticationHandler;
 import org.subethamail.smtp.AuthenticationHandlerFactory;
 import org.subethamail.smtp.RejectException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.wiser.Wiser;
 
 import java.io.ByteArrayInputStream;
@@ -48,7 +48,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,12 +62,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import static com.google.common.primitives.Bytes.concat;
@@ -589,17 +586,18 @@ public class TestUtils
 
     /**
      * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
-     * <p>
-     * The proxy maintains a counter for each unique (method, uri) pair. When a request for a (method, uri) is observed,
-     * the associated counter is incremented and the request is failed. When a counter reached {@code failures}, a single successful
-     * request is passed and the counter is reset.
-     *
-     * @param failures How many requests to fail before passing a request for a unique (method, uri) pair.
      */
     public static HttpProxyServer startRequestFailingProxy(int failures)
     {
-        Map<String, AtomicInteger> requests = new ConcurrentHashMap<>();
+        ConcurrentMap<String, List<FullHttpRequest>> requests = new ConcurrentHashMap<>();
+        return startRequestFailingProxy(failures, requests);
+    }
 
+    /**
+     * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
+     */
+    public static HttpProxyServer startRequestFailingProxy(final int failures, final ConcurrentMap<String, List<FullHttpRequest>> requests)
+    {
         return DefaultHttpProxyServer
                 .bootstrap()
                 .withPort(0)
@@ -622,18 +620,20 @@ public class TestUtils
                                 assert httpObject instanceof FullHttpRequest;
                                 FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
                                 String key = fullHttpRequest.getMethod() + " " + fullHttpRequest.getUri();
-                                AtomicInteger counter = requests.computeIfAbsent(key, uri -> new AtomicInteger());
-                                int n = counter.incrementAndGet();
-                                HttpResponse response;
-                                if (n < failures) {
+                                List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, k -> new ArrayList<>());
+                                int n;
+                                synchronized (keyedRequests) {
+                                    keyedRequests.add(fullHttpRequest.copy());
+                                    n = keyedRequests.size();
+                                }
+                                if (n % failures != 0) {
                                     logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
-                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
+                                    HttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
                                     response.headers().set(CONNECTION, CLOSE);
                                     return response;
                                 }
                                 else {
-                                    counter.set(0);
-                                    logger.info("Passing request: {}", httpRequest);
+                                    logger.info("Passing request: {}", key);
                                     return null;
                                 }
                             }

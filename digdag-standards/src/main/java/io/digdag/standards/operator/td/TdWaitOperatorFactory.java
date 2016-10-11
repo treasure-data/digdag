@@ -35,9 +35,6 @@ public class TdWaitOperatorFactory
         extends AbstractWaitOperatorFactory
         implements OperatorFactory
 {
-    private static final int INITIAL_RESULT_FETCH_RETRY_INTERVAL = 1;
-    private static final int MAX_RESULT_FETCH_RETRY_INTERVAL = 30;
-
     private static final String RESULT = "result";
     private static final String RETRY = "retry";
 
@@ -47,6 +44,7 @@ public class TdWaitOperatorFactory
 
     private final TemplateEngine templateEngine;
     private final Map<String, String> env;
+    private final TDOperator.PollingConfig pollingConfig;
 
     @Inject
     public TdWaitOperatorFactory(TemplateEngine templateEngine, Config systemConfig, @Environment Map<String, String> env)
@@ -54,6 +52,7 @@ public class TdWaitOperatorFactory
         super(systemConfig);
         this.templateEngine = templateEngine;
         this.env = env;
+        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
     }
 
     public String getType()
@@ -106,7 +105,7 @@ public class TdWaitOperatorFactory
         {
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
-                TDJobOperator job = op.runJob(state, POLL_JOB, this::startJob);
+                TDJobOperator job = op.runJob(state, POLL_JOB, pollingConfig, this::startJob);
 
                 // Fetch the job output to see if the query condition has been fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
@@ -157,7 +156,7 @@ public class TdWaitOperatorFactory
                 }
                 int retry = resultState.get(RETRY, int.class, 0);
                 resultState.set(RETRY, retry + 1);
-                int interval = (int) Math.min(INITIAL_RESULT_FETCH_RETRY_INTERVAL * Math.pow(2, retry), MAX_RESULT_FETCH_RETRY_INTERVAL);
+                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
                 logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
                 throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
             }

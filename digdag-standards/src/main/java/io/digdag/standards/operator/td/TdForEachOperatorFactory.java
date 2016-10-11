@@ -40,21 +40,21 @@ public class TdForEachOperatorFactory
 {
     private static final String RESULT = "result";
     private static final String RETRY = "retry";
-    private static final int INITIAL_RETRY_INTERVAL = 1;
-    private static final int MAX_RETRY_INTERVAL = 30;
 
     private static Logger logger = LoggerFactory.getLogger(TdForEachOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
     private final ConfigFactory configFactory;
     private final Map<String, String> env;
+    private final Config systemConfig;
 
     @Inject
-    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env)
+    public TdForEachOperatorFactory(TemplateEngine templateEngine, ConfigFactory configFactory, @Environment Map<String, String> env, Config systemConfig)
     {
         this.templateEngine = templateEngine;
         this.configFactory = configFactory;
         this.env = env;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -81,7 +81,7 @@ public class TdForEachOperatorFactory
 
         private TdForEachOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -169,7 +169,7 @@ public class TdForEachOperatorFactory
                 }
                 int retry = resultState.get(RETRY, int.class, 0);
                 resultState.set(RETRY, retry + 1);
-                int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, retry), MAX_RETRY_INTERVAL);
+                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
                 logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
                 throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
             }
