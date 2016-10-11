@@ -1,18 +1,16 @@
 package io.digdag.standards.operator.td;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
-import com.treasuredata.client.TDClientException;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.PollingRetryExecutor;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,19 +22,20 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.google.common.collect.Iterables.concat;
+import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
 
 public class TdDdlOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdDdlOperatorFactory.class);
     private final Map<String, String> env;
-    private final TDOperator.PollingConfig pollingConfig;
+    private final DurationInterval retryInterval;
 
     @Inject
     public TdDdlOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
     {
         this.env = env;
-        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
+        this.retryInterval = TDOperator.retryInterval(systemConfig);
     }
 
     public String getType()
@@ -113,20 +112,12 @@ public class TdDdlOperatorFactory
                         continue;
                     }
                     Consumer<TDOperator> o = operations.get(i);
-                    try {
-                        o.accept(op);
-                    }
-                    catch (TDClientException e) {
-                        if (TDOperator.isDeterministicClientException(e)) {
-                            throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                        }
-                        int retry = state.get("retry", int.class, 0);
-                        int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
-                        state.set("retry", retry + 1);
-                        state.set("operation", i);
-                        throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-                    }
-                    state.remove("retry");
+
+                    pollingRetryExecutor(state, "retry")
+                            .retryUnless(TDOperator::isDeterministicClientException)
+                            .withRetryInterval(retryInterval)
+                            .withErrorMessage("DDL operation failed")
+                            .run(() -> o.accept(op));
                 }
             }
 

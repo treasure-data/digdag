@@ -3,7 +3,6 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -16,6 +15,8 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.PollingRetryExecutor;
 import io.digdag.util.BaseOperator;
 import org.msgpack.core.MessageTypeCastException;
 import org.msgpack.value.ArrayValue;
@@ -24,13 +25,12 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
+import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
 
 public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
@@ -38,21 +38,22 @@ public class TdWaitTableOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdWaitTableOperatorFactory.class);
 
+    private static final String EXISTS = "exists";
     private static final String RESULT = "result";
-    private static final String RETRY = "retry";
 
     private static final String TABLE_EXISTS = "table_exists";
-    private static final String TABLE_EXISTS_RETRY = "table_exists_retry";
     private static final String POLL_JOB = "pollJob";
 
     private final Map<String, String> env;
-    private final TDOperator.PollingConfig pollingConfig;
+    private final DurationInterval pollInterval;
+    private final DurationInterval retryInterval;
 
     @Inject
     public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
     {
         super(systemConfig);
-        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
+        this.pollInterval = TDOperator.pollInterval(systemConfig);
+        this.retryInterval = TDOperator.retryInterval(systemConfig);
         this.env = env;
     }
 
@@ -72,7 +73,7 @@ public class TdWaitTableOperatorFactory
     {
         private final Config params;
         private final TableParam table;
-        private final int pollInterval;
+        private final int tablePollInterval;
         private final int tableExistencePollInterval;
         private final int rows;
         private final String engine;
@@ -87,8 +88,8 @@ public class TdWaitTableOperatorFactory
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
             this.table = params.get("_command", TableParam.class);
-            this.pollInterval = getPollInterval(params);
-            this.tableExistencePollInterval = Integer.min(pollInterval, TABLE_EXISTENCE_API_POLL_INTERVAL);
+            this.tablePollInterval = getPollInterval(params);
+            this.tableExistencePollInterval = Integer.min(tablePollInterval, TABLE_EXISTENCE_API_POLL_INTERVAL);
             this.rows = params.get("rows", int.class, 0);
             this.engine = params.get("engine", String.class, "presto");
             if (!engine.equals("presto") && !engine.equals("hive")) {
@@ -126,7 +127,7 @@ public class TdWaitTableOperatorFactory
                     state.set(TABLE_EXISTS, true);
                 }
 
-                TDJobOperator job = op.runJob(state, POLL_JOB, pollingConfig, this::startJob);
+                TDJobOperator job = op.runJob(state, POLL_JOB, pollInterval, retryInterval, this::startJob);
 
                 // Fetch the job output to see if the row count condition was fulfilled
                 logger.debug("fetching poll job result: {}", job.getJobId());
@@ -137,7 +138,7 @@ public class TdWaitTableOperatorFactory
 
                 // Go back to sleep if the row count condition was not fulfilled
                 if (!done) {
-                    throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
+                    throw TaskExecutionException.ofNextPolling(tablePollInterval, ConfigElement.copyOf(state));
                 }
 
                 // The row count condition was fulfilled. We're done.
@@ -147,48 +148,24 @@ public class TdWaitTableOperatorFactory
 
         private boolean tableExists(TDOperator op)
         {
-            boolean exists;
 
-            try {
-                exists = op.tableExists(table.getTable());
-            }
-            catch (TDClientException e) {
-                if (isDeterministicClientException(e)) {
-                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                }
-                int retry = state.get(TABLE_EXISTS_RETRY, int.class, 0);
-                state.set(TABLE_EXISTS_RETRY, retry + 1);
-                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
-                logger.warn("Failed to check existence of table '{}.{}', retrying in {} seconds", op.getDatabase(), table.getTable(), interval, e);
-                throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-            }
-
-            state.remove(TABLE_EXISTS_RETRY);
-            return exists;
+            return pollingRetryExecutor(state, EXISTS)
+                    .retryUnless(TDOperator::isDeterministicClientException)
+                    .withErrorMessage("Failed to check existence of table '%s.%s'", op.getDatabase(), table.getTable())
+                    .withRetryInterval(retryInterval)
+                    .run(() -> op.tableExists(table.getTable()));
         }
 
         private boolean fetchJobResult(int rows, TDJobOperator job)
         {
-            Config resultState = state.getNestedOrSetEmpty(RESULT);
-
-            Optional<ArrayValue> firstRow;
-            try {
-                firstRow = job.getResult(ite -> ite.hasNext()
-                        ? Optional.of(ite.next())
-                        : Optional.absent());
-            }
-            catch (UncheckedIOException | TDClientException e) {
-                if (isDeterministicClientException(e)) {
-                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                }
-                int retry = resultState.get(RETRY, int.class, 0);
-                resultState.set(RETRY, retry + 1);
-                int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
-                logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
-                throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-            }
-
-            state.remove(RESULT);
+            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, RESULT)
+                    .retryUnless(TDOperator::isDeterministicClientException)
+                    .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
+                    .withRetryInterval(retryInterval)
+                    .run(() -> job.getResult(
+                            ite -> ite.hasNext()
+                                    ? Optional.of(ite.next())
+                                    : Optional.absent()));
 
             if (!firstRow.isPresent()) {
                 throw new TaskExecutionException("Got unexpected empty result for count job: " + job.getJobId(), ConfigElement.empty());
