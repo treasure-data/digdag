@@ -18,12 +18,15 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.time.Duration;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -48,6 +51,8 @@ public class TDOperatorTest
     @Mock TDClient client;
     @Mock TDOperator.JobStarter jobStarter;
 
+    @Mock TDOperator.PollingConfig pollingConfig;
+
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new GuavaModule())
             .registerModule(new JacksonTimeModule());
@@ -57,6 +62,16 @@ public class TDOperatorTest
     private Config newConfig()
     {
         return configFactory.create();
+    }
+
+    @Before
+    public void setUp()
+            throws Exception
+    {
+        when(pollingConfig.minPollInterval()).thenReturn(Duration.ofSeconds(1));
+        when(pollingConfig.maxPollInterval()).thenReturn(Duration.ofSeconds(30));
+        when(pollingConfig.minRetryInterval()).thenReturn(Duration.ofSeconds(1));
+        when(pollingConfig.maxRetryInterval()).thenReturn(Duration.ofSeconds(30));
     }
 
     @Test
@@ -140,7 +155,7 @@ public class TDOperatorTest
         TDOperator.JobState jobState1;
         Config state1;
         {
-            TaskExecutionException e = runJobIteration(operator, state0, jobStateKey, jobStarter);
+            TaskExecutionException e = runJobIteration(operator, state0, jobStateKey, pollingConfig, jobStarter);
             verifyZeroInteractions(jobStarter);
             state1 = e.getStateParams(configFactory).get();
             assertThat(state1.has(jobStateKey), is(true));
@@ -154,7 +169,7 @@ public class TDOperatorTest
         TDOperator.JobState jobState2;
         {
             when(jobStarter.startJob(any(TDOperator.class), anyString())).thenReturn(jobId);
-            TaskExecutionException e = runJobIteration(operator, state1, jobStateKey, jobStarter);
+            TaskExecutionException e = runJobIteration(operator, state1, jobStateKey, pollingConfig, jobStarter);
             state2 = e.getStateParams(configFactory).get();
             verify(jobStarter).startJob(operator, jobState1.domainKey().get());
             jobState2 = state2.get(jobStateKey, TDOperator.JobState.class);
@@ -166,7 +181,7 @@ public class TDOperatorTest
         TDOperator.JobState jobState3;
         {
             when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.RUNNING));
-            TaskExecutionException e = runJobIteration(operator, state2, jobStateKey, jobStarter);
+            TaskExecutionException e = runJobIteration(operator, state2, jobStateKey, pollingConfig, jobStarter);
             state3 = e.getStateParams(configFactory).get();
             jobState3 = state3.get(jobStateKey, TDOperator.JobState.class);
             assertThat(jobState3.pollIteration(), is(Optional.of(1)));
@@ -174,7 +189,7 @@ public class TDOperatorTest
 
         // 3. Check job status (SUCCESS)
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
-        TDJobOperator jobOperator = operator.runJob(state3, jobStateKey, jobStarter);
+        TDJobOperator jobOperator = operator.runJob(state3, jobStateKey, pollingConfig, jobStarter);
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);
@@ -193,7 +208,7 @@ public class TDOperatorTest
         // 1. Create domain key
         String domainKey;
         {
-            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
             verifyZeroInteractions(jobStarter);
             state = e.getStateParams(configFactory).get();
             assertThat(state.has(jobStateKey), is(true));
@@ -213,7 +228,7 @@ public class TDOperatorTest
                 reset(jobStarter);
                 when(jobStarter.startJob(any(TDOperator.class), anyString()))
                         .thenThrow(new TDClientException(TDClientException.ErrorType.EXECUTION_FAILURE, "Error"));
-                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
                 verify(jobStarter).startJob(operator, domainKey);
                 state = e.getStateParams(configFactory).get();
                 TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -228,7 +243,7 @@ public class TDOperatorTest
                 reset(jobStarter);
                 when(jobStarter.startJob(any(TDOperator.class), anyString()))
                         .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
-                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
                 verify(jobStarter).startJob(operator, domainKey);
                 state = e.getStateParams(configFactory).get();
                 TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -244,7 +259,7 @@ public class TDOperatorTest
             errorPollIteration = 0;
             reset(jobStarter);
             when(jobStarter.startJob(any(TDOperator.class), anyString())).thenReturn(jobId);
-            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+            TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
             verify(jobStarter).startJob(operator, domainKey);
             state = e.getStateParams(configFactory).get();
             TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -268,7 +283,7 @@ public class TDOperatorTest
                     reset(client);
                     when(client.jobStatus(jobId))
                             .thenThrow(new TDClientException(TDClientException.ErrorType.EXECUTION_FAILURE, "Error"));
-                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
                     verify(client, times(4)).jobStatus(jobId);
                     state = e.getStateParams(configFactory).get();
                     TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -283,7 +298,7 @@ public class TDOperatorTest
                     reset(client);
                     when(client.jobStatus(jobId))
                             .thenThrow(new TDClientHttpException(TDClientException.ErrorType.SERVER_ERROR, "Service Unavailable", 503));
-                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                    TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
                     verify(client, times(4)).jobStatus(jobId);
                     state = e.getStateParams(configFactory).get();
                     TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -299,7 +314,7 @@ public class TDOperatorTest
                 errorPollIteration = 0;
                 reset(client);
                 when(client.jobStatus(jobId)).thenReturn(summary(jobId, status));
-                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, jobStarter);
+                TaskExecutionException e = runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
                 verify(client).jobStatus(jobId);
                 state = e.getStateParams(configFactory).get();
                 TDOperator.JobState jobState = state.get(jobStateKey, TDOperator.JobState.class);
@@ -310,7 +325,7 @@ public class TDOperatorTest
 
         // 3.d Job SUCCESS
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
-        TDJobOperator jobOperator = operator.runJob(state, jobStateKey, jobStarter);
+        TDJobOperator jobOperator = operator.runJob(state, jobStateKey, pollingConfig, jobStarter);
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);
@@ -327,13 +342,13 @@ public class TDOperatorTest
         Config state = configFactory.create();
 
         // Create domain key
-        runJobIteration(operator, state, jobStateKey, jobStarter);
+        runJobIteration(operator, state, jobStateKey, pollingConfig, jobStarter);
 
         // Start job: Fail with 404
         when(jobStarter.startJob(any(TDOperator.class), anyString()))
                 .thenThrow(new TDClientHttpNotFoundException("Database Not Found"));
         exception.expect(TDClientHttpNotFoundException.class);
-        operator.runJob(state, jobStateKey, jobStarter);
+        operator.runJob(state, jobStateKey, pollingConfig, jobStarter);
     }
 
     @Test
@@ -353,7 +368,7 @@ public class TDOperatorTest
         state0.set("pollIteration", pollIteration);
 
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.RUNNING));
-        TaskExecutionException e = runJobIteration(operator, state0, "foobar", jobStarter);
+        TaskExecutionException e = runJobIteration(operator, state0, "foobar", pollingConfig, jobStarter);
 
         Config state1 = e.getStateParams(configFactory).get();
         assertThat(state1.has("jobId"), is(false));
@@ -367,10 +382,10 @@ public class TDOperatorTest
 
     private TDJobSummary summary(String jobId, TDJob.Status status) {return new TDJobSummary(status, 0, 0, jobId, "", "", "", "");}
 
-    private static TaskExecutionException runJobIteration(TDOperator operator, Config state, String key, TDOperator.JobStarter jobStarter)
+    private static TaskExecutionException runJobIteration(TDOperator operator, Config state, String key, TDOperator.PollingConfig pollingConfig, TDOperator.JobStarter jobStarter)
     {
         try {
-            operator.runJob(state, key, jobStarter);
+            operator.runJob(state, key, pollingConfig, jobStarter);
         }
         catch (TaskExecutionException e) {
             assertThat(e.getRetryInterval().isPresent(), is(true));

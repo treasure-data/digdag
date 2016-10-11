@@ -20,8 +20,9 @@ abstract class BaseTdJobOperator
     protected final Config state;
     protected final Config params;
     private final Map<String, String> env;
+    protected final TDOperator.PollingConfig pollingConfig;
 
-    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env)
+    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env, Config systemConfig)
     {
         super(workspacePath, request);
 
@@ -30,6 +31,7 @@ abstract class BaseTdJobOperator
 
         this.state = request.getLastStateParams().deepCopy();
         this.env = env;
+        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
     }
 
     @Override
@@ -46,7 +48,7 @@ abstract class BaseTdJobOperator
             Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {
-                job = op.runJob(state, "job", (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
+                job = op.runJob(state, "job", pollingConfig, (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
                 state.set(DONE_JOB_ID, job.getJobId());
             }
             else {

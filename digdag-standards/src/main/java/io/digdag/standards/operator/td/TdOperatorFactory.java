@@ -11,10 +11,10 @@ import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -59,19 +59,19 @@ public class TdOperatorFactory
     private static final String DONE = "done";
     private static final String RETRY = "retry";
 
-    private static final int INITIAL_DOWNLOAD_RETRY_INTERVAL = 1;
-    private static final int MAX_DOWNLOAD_RETRY_INTERVAL = 30;
-
     private static final int PREVIEW_ROWS = 20;
 
     private final TemplateEngine templateEngine;
     private final Map<String, String> env;
 
+    private final Config systemConfig;
+
     @Inject
-    public TdOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env)
+    public TdOperatorFactory(TemplateEngine templateEngine, @Environment Map<String, String> env, Config systemConfig)
     {
         this.templateEngine = templateEngine;
         this.env = env;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -102,7 +102,7 @@ public class TdOperatorFactory
 
         private TdOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -136,21 +136,21 @@ public class TdOperatorFactory
         @Override
         protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator j)
         {
-            downloadJobResult(j, workspace, downloadFile, state);
+            downloadJobResult(j, workspace, downloadFile, state, pollingConfig);
 
             if (preview) {
                 if (insertInto.isPresent() || createTable.isPresent()) {
                     TableParam destTable = insertInto.isPresent() ? insertInto.get() : createTable.get();
-                    TDJobOperator jobOperator = op.runJob(state, "previewJob", (operator, domainKey) ->
+                    TDJobOperator jobOperator = op.runJob(state, "previewJob", pollingConfig, (operator, domainKey) ->
                             startSelectPreviewJob(operator, "job id " + j.getJobId(), destTable, domainKey));
-                    downloadPreviewRows(jobOperator, "table " + destTable.toString());
+                    downloadPreviewRows(jobOperator, "table " + destTable.toString(), state, pollingConfig);
                 }
                 else {
-                    downloadPreviewRows(j, "job id " + j.getJobId());
+                    downloadPreviewRows(j, "job id " + j.getJobId(), state, pollingConfig);
                 }
             }
 
-            Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, storeLastResults);
+            Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, storeLastResults, state, pollingConfig);
 
             return TaskResult.defaultBuilder(request)
                     .resetStoreParams(buildResetStoreParams(storeLastResults))
@@ -231,14 +231,14 @@ public class TdOperatorFactory
         return op.submitNewJobWithRetry(req);
     }
 
-    static void downloadPreviewRows(TDJobOperator j, String description)
+    static void downloadPreviewRows(TDJobOperator j, String description, Config state, TDOperator.PollingConfig pollingConfig)
     {
         StringWriter out = new StringWriter();
 
         try {
             addCsvHeader(out, j.getResultColumnNames());
 
-            List<ArrayValue> rows = downloadFirstResults(j, PREVIEW_ROWS);
+            List<ArrayValue> rows = downloadFirstResults(j, PREVIEW_ROWS, state, "preview", pollingConfig);
             if (rows.isEmpty()) {
                 logger.info("preview of {}: (no results)", description, j.getJobId());
                 return;
@@ -309,7 +309,7 @@ public class TdOperatorFactory
         }
     }
 
-    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile, Config state)
+    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile, Config state, TDOperator.PollingConfig pollingConfig)
     {
         if (!downloadFile.isPresent()) {
             return;
@@ -345,7 +345,7 @@ public class TdOperatorFactory
             }
             int retry = downloadState.get(RETRY, int.class, 0);
             downloadState.set(RETRY, retry + 1);
-            int interval = (int) Math.min(INITIAL_DOWNLOAD_RETRY_INTERVAL * Math.pow(2, retry), MAX_DOWNLOAD_RETRY_INTERVAL);
+            int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
             logger.warn("Failed to download result of job '{}', retrying in {} seconds", j.getJobId(), interval, e);
             throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
         }
@@ -376,12 +376,12 @@ public class TdOperatorFactory
         out.write("\r\n");
     }
 
-    static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults)
+    static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults, Config state, TDOperator.PollingConfig pollingConfig)
     {
         if (storeLastResults) {
             Config td = cf.create();
 
-            List<ArrayValue> results = downloadFirstResults(j, 1);
+            List<ArrayValue> results = downloadFirstResults(j, 1, state, "result", pollingConfig);
             Map<RawValue, Value> map = new LinkedHashMap<>();
             if (!results.isEmpty()) {
                 ArrayValue row = results.get(0);
@@ -415,9 +415,11 @@ public class TdOperatorFactory
         }
     }
 
-    private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max)
+    private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max, Config state, String stateKey, TDOperator.PollingConfig pollingConfig)
     {
-        List<ArrayValue> results = new ArrayList<ArrayValue>(max);
+        Config downloadState = state.getNestedOrSetEmpty(stateKey);
+
+        List<ArrayValue> results = new ArrayList<>(max);
         try {
             j.getResult(ite -> {
                 for (int i=0; i < max; i++) {
@@ -435,6 +437,20 @@ public class TdOperatorFactory
         catch (TDClientHttpNotFoundException ex) {
             // this happens if query is INSERT or CREATE. return empty results
         }
+        catch (UncheckedIOException | TDClientException e) {
+            if (isDeterministicClientException(e)) {
+                throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+            }
+            int retry = downloadState.get(RETRY, int.class, 0);
+            downloadState.set(RETRY, retry + 1);
+            int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
+            logger.warn("Failed to download result of job '{}', retrying in {} seconds", j.getJobId(), interval, e);
+            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+        }
+
+        // Clear retry state
+        state.remove(RETRY);
+
         return results;
     }
 

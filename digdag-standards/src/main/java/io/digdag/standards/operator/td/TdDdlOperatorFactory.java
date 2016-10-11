@@ -30,14 +30,13 @@ public class TdDdlOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdDdlOperatorFactory.class);
     private final Map<String, String> env;
-
-    private static final Integer INITIAL_RETRY_INTERVAL = 1;
-    private static final int MAX_RETRY_INTERVAL = 30;
+    private final TDOperator.PollingConfig pollingConfig;
 
     @Inject
-    public TdDdlOperatorFactory(@Environment Map<String, String> env)
+    public TdDdlOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
     {
         this.env = env;
+        this.pollingConfig = TDOperator.PollingConfig.fromSystemConfig(systemConfig);
     }
 
     public String getType()
@@ -122,7 +121,7 @@ public class TdDdlOperatorFactory
                             throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
                         }
                         int retry = state.get("retry", int.class, 0);
-                        int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, retry), MAX_RETRY_INTERVAL);
+                        int interval = (int) Math.min(pollingConfig.minRetryInterval().getSeconds() * Math.pow(2, retry), pollingConfig.maxRetryInterval().getSeconds());
                         state.set("retry", retry + 1);
                         state.set("operation", i);
                         throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
