@@ -97,7 +97,7 @@ class RevisionAutoReloader
     private class ReloadTarget
     {
         private final Path projectPath;
-        private final Config overwriteParams;
+        private final Config overrideParams;
         private ArchiveMetadata lastMetadata;
         private int lastRevId;
 
@@ -105,7 +105,7 @@ class RevisionAutoReloader
             throws ResourceConflictException, ResourceNotFoundException
         {
             this.projectPath = project.getProjectPath();
-            this.overwriteParams = project.getArchiveMetadata().getDefaultParams();
+            this.overrideParams = project.getArchiveMetadata().getDefaultParams();
             storeProject(project, 1);
         }
 
@@ -144,7 +144,7 @@ class RevisionAutoReloader
         private ProjectArchive readProject()
             throws IOException
         {
-            return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
+            return projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overrideParams);
         }
     }
 }

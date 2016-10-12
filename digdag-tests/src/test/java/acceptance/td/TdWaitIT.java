@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.littleshoot.proxy.HttpProxyServer;
 import utils.CommandStatus;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
@@ -46,11 +47,7 @@ public class TdWaitIT
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(secretsServerConfiguration())
-            .configuration("config.td.wait.min_poll_interval = 5s")
-            .build();
+    public TemporaryDigdagServer server;
 
     protected Path projectDir;
     protected String projectName;
@@ -63,11 +60,28 @@ public class TdWaitIT
 
     protected DigdagClient digdagClient;
 
+    private HttpProxyServer proxyServer;
+
     @Before
     public void setUp()
             throws Exception
     {
         assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+
+        proxyServer = TestUtils.startRequestFailingProxy(5);
+
+        server = TemporaryDigdagServer.builder()
+                .configuration(secretsServerConfiguration())
+                .configuration("config.td.wait.min_poll_interval = 5s")
+                .configuration(
+                        "params.td.use_ssl = false",
+                        "params.td.proxy.enabled = true",
+                        "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
+                        "params.td.proxy.port = " + proxyServer.getListenAddress().getPort()
+                )
+                .build();
+        server.start();
+
         projectDir = folder.getRoot().toPath();
         createProject(projectDir);
         projectName = projectDir.getFileName().toString();
@@ -89,6 +103,26 @@ public class TdWaitIT
     }
 
     @After
+    public void tearDownDigdagServer()
+            throws Exception
+    {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
+    }
+
+    @After
+    public void tearDownProxyServer()
+            throws Exception
+    {
+        if (proxyServer != null) {
+            proxyServer.stop();
+            proxyServer = null;
+        }
+    }
+
+    @After
     public void tearDown()
             throws Exception
     {
@@ -105,10 +139,10 @@ public class TdWaitIT
     private static Duration expectDuration(String kind)
     {
         switch (kind) {
-        case "hive":
-            return Duration.ofMinutes(15);
-        default:
-            return Duration.ofMinutes(5);
+            case "hive":
+                return Duration.ofMinutes(15);
+            default:
+                return Duration.ofMinutes(5);
         }
     }
 

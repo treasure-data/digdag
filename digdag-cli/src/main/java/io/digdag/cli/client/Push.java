@@ -100,7 +100,7 @@ public class Push
         ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         // read parameters
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         // schedule_from will be server's current time if not set
         Optional<Instant> scheduleFrom;
@@ -115,7 +115,7 @@ public class Push
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overwriteParams);
+        injector.getInstance(Archiver.class).createArchive(projectPath, archivePath, overrideParams);
 
         DigdagClient client = buildClient();
         if ("".equals(revision)) {

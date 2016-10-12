@@ -40,12 +40,12 @@ class Archiver
         this.yamlMapper = yamlMapper;
     }
 
-    void createArchive(Path projectPath, Path output, Config overwriteParams)
+    void createArchive(Path projectPath, Path output, Config overrideParams)
             throws IOException
     {
         out.println("Creating " + output + "...");
 
-        ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overwriteParams);
+        ProjectArchive project = projectLoader.load(projectPath, WorkflowResourceMatcher.defaultMatcher(), overrideParams);
         ArchiveMetadata meta = project.getArchiveMetadata();
 
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(output)))) {

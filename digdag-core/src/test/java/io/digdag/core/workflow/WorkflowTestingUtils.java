@@ -66,6 +66,7 @@ public class WorkflowTestingUtils
                 operatorFactoryBinder.addBinding().to(EchoOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(FailOperatorFactory.class).in(Scopes.SINGLETON);
                 operatorFactoryBinder.addBinding().to(LoopOperatorFactory.class).in(Scopes.SINGLETON);
+                operatorFactoryBinder.addBinding().to(StoreOperatorFactory.class).in(Scopes.SINGLETON);
             })
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
@@ -97,12 +98,13 @@ public class WorkflowTestingUtils
         return localSite.submitWorkflow(ar, def);
     }
 
-    public static void runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
+    public static StoredSessionAttemptWithSession runWorkflow(LocalSite localSite, Path projectPath, String workflowName, Config config)
         throws InterruptedException
     {
         try {
             StoredSessionAttemptWithSession attempt = submitWorkflow(localSite, projectPath, workflowName, config);
             localSite.runUntilDone(attempt.getId());
+            return localSite.getSessionStore().getAttemptById(attempt.getId());
         }
         catch (ResourceNotFoundException | ResourceConflictException | ResourceLimitExceededException ex) {
             throw Throwables.propagate(ex);

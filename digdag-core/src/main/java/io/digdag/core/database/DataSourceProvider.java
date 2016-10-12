@@ -87,7 +87,7 @@ public class DataSourceProvider
         hikari.setMaximumPoolSize(config.getMaximumPoolSize());
         hikari.setMinimumIdle(config.getMinimumPoolSize());
 
-        // Here should not set connectionTestQuery (that overwrites isValid) because
+        // Here should not set connectionTestQuery (that overrides isValid) because
         // BasicDatabaseStoreManager.validateTransactionAndCommit assumes that
         // Connection.isValid returns false when an error happened during a transaction.
 

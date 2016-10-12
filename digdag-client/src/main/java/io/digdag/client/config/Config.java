@@ -3,6 +3,7 @@ package io.digdag.client.config;
 import java.util.List;
 import java.util.Map;
 import java.util.Iterator;
+import java.io.IOException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.base.Optional;
@@ -292,6 +293,30 @@ public class Config
     }
 
     @SuppressWarnings("unchecked")
+    public <E> List<E> parseList(String key, Class<E> elementType)
+    {
+        JsonNode parsed = tryParseNested(key);
+        if (parsed == null) {
+            return getList(key, elementType);
+        }
+        else {
+            return (List<E>) readObject(mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), parsed, key);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <E> List<E> parseListOrGetEmpty(String key, Class<E> elementType)
+    {
+        JsonNode parsed = tryParseNested(key);
+        if (parsed == null) {
+            return getListOrEmpty(key, elementType);
+        }
+        else {
+            return (List<E>) readObject(mapper.getTypeFactory().constructParametrizedType(List.class, List.class, elementType), parsed, key);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     public <K, V> Map<K, V> getMap(String key, Class<K> keyType, Class<V> valueType)
     {
         return (Map<K, V>) get(key, mapper.getTypeFactory().constructParametrizedType(Map.class, Map.class, keyType, valueType));
@@ -313,6 +338,53 @@ public class Config
             throw new ConfigException("Parameter '"+key+"' must be an object");
         }
         return new Config(mapper, (ObjectNode) value);
+    }
+
+    public Config parseNested(String key)
+    {
+        JsonNode parsed = tryParseNested(key);
+        if (parsed == null) {
+            return getNested(key);
+        }
+        else {
+            if (!parsed.isObject()) {
+                throw new ConfigException("Parameter '"+key+"' must be an object");
+            }
+            return new Config(mapper, (ObjectNode) parsed);
+        }
+    }
+
+    public Config parseNestedOrGetEmpty(String key)
+    {
+        JsonNode parsed = tryParseNested(key);
+        if (parsed == null) {
+            return getNestedOrGetEmpty(key);
+        }
+        else {
+            if (!parsed.isObject()) {
+                throw new ConfigException("Parameter '"+key+"' must be an object");
+            }
+            return new Config(mapper, (ObjectNode) parsed);
+        }
+    }
+
+    private JsonNode tryParseNested(String key)
+    {
+        JsonNode node = get(key, JsonNode.class, null);
+        if (node == null) {
+            return null;
+        }
+        else if (node.isTextual()) {
+            try {
+                return mapper.readTree(node.textValue());
+            }
+            catch (IOException ex) {
+                throw new ConfigException(ex);
+            }
+        }
+        else {
+            return null;
+        }
     }
 
     public Config getNestedOrSetEmpty(String key)

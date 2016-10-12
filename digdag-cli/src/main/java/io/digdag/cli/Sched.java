@@ -36,7 +36,7 @@ public class Sched
     private static final Logger logger = LoggerFactory.getLogger(Sched.class);
 
     private static final String SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY = "scheduler.autoLoadLocalProject";
-    private static final String SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS = "scheduler.localOverwriteParams";
+    private static final String SYSTEM_CONFIG_LOCAL_OVERRIDE_PARAMS = "scheduler.localOverrideParams";
 
     @Parameter(names = {"--project"})
     String projectDirName = null;
@@ -89,7 +89,7 @@ public class Sched
             ConfigFactory cf = injector.getInstance(ConfigFactory.class);
             ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
-            Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+            Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
             props = buildServerProperties();
 
@@ -99,7 +99,7 @@ public class Sched
             }
 
             props.setProperty(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, projectDirName != null ? projectDirName : "");  // Properties can't store null
-            props.setProperty(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, overwriteParams.toString());
+            props.setProperty(SYSTEM_CONFIG_LOCAL_OVERRIDE_PARAMS, overrideParams.toString());
         }
 
         ConfigElement ce = PropertyUtils.toConfigElement(props);
@@ -135,7 +135,7 @@ public class Sched
     private static class RevisionAutoReloaderStarter
     {
         private final String projectDirName;
-        private final Config overwriteParams;
+        private final Config overrideParams;
         private final ProjectArchiveLoader projectLoader;
         private final RevisionAutoReloader autoReloader;
 
@@ -143,7 +143,7 @@ public class Sched
         public RevisionAutoReloaderStarter(Config systemConfig, ProjectArchiveLoader projectLoader, ConfigFactory cf, RevisionAutoReloader autoReloader)
         {
             this.projectDirName = systemConfig.get(SYSTEM_CONFIG_AUTO_LOAD_LOCAL_PROJECT_KEY, String.class);
-            this.overwriteParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERWRITE_PARAMS, String.class));
+            this.overrideParams = cf.fromJsonString(systemConfig.get(SYSTEM_CONFIG_LOCAL_OVERRIDE_PARAMS, String.class));
             this.projectLoader = projectLoader;
             this.autoReloader = autoReloader;
         }
@@ -152,7 +152,7 @@ public class Sched
         public void start()
         {
             try {
-                ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
+                ProjectArchive project = loadProject(projectLoader, projectDirName, overrideParams);
                 autoReloader.watch(project);
             }
             catch (Exception ex) {

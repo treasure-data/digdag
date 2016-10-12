@@ -87,13 +87,13 @@ public class Archive
         ConfigLoaderManager loader = injector.getInstance(ConfigLoaderManager.class);
 
         // read parameters
-        Config overwriteParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
+        Config overrideParams = loadParams(cf, loader, loadSystemProperties(), paramsFile, params);
 
         // load project
         Path projectPath = (projectDirName == null) ?
             Paths.get("").toAbsolutePath() :
             Paths.get(projectDirName).normalize().toAbsolutePath();
-        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overwriteParams);
+        injector.getInstance(Archiver.class).createArchive(projectPath, Paths.get(output), overrideParams);
 
         out.println("Created " + output + ".");
         out.println("Use `" + programName + " upload <path.tar.gz> <project> <revision>` to upload it a server.");

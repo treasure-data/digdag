@@ -247,10 +247,10 @@ public class Run
         final ResumeStateManager rsm = injector.getInstance(ResumeStateManager.class);
 
         // read parameters
-        Config overwriteParams = loadParams(cf, loader, systemProps, paramsFile, params);
+        Config overrideParams = loadParams(cf, loader, systemProps, paramsFile, params);
 
         // load workflow definitions
-        ProjectArchive project = loadProject(projectLoader, projectDirName, overwriteParams);
+        ProjectArchive project = loadProject(projectLoader, projectDirName, overrideParams);
 
         String workflowName = normalizeWorkflowName(project, workflowNameArg);
 
@@ -271,7 +271,7 @@ public class Run
         // submit workflow
         StoredSessionAttemptWithSession attempt = submitWorkflow(injector,
                 stored.getRevision(), stored.getWorkflowDefinitions(),
-                project, overwriteParams,
+                project, overrideParams,
                 workflowName, taskMatchPattern);
         // TODO catch error when workflowName doesn't exist and suggest to cd to another dir
 
@@ -340,7 +340,7 @@ public class Run
 
     private StoredSessionAttemptWithSession submitWorkflow(Injector injector,
             StoredRevision rev, List<StoredWorkflowDefinition> defs,
-            ProjectArchive project, Config overwriteParams,
+            ProjectArchive project, Config overrideParams,
             String workflowName, Optional<TaskMatchPattern> taskMatchPattern)
         throws SystemExitException, TaskMatchPattern.NoMatchException, TaskMatchPattern.MultipleTaskMatchException, ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
@@ -474,7 +474,7 @@ public class Run
             }
             else {
                 if (runTaskNames != null && !runTaskNames.contains(fullName)) {
-                    return TaskResult.empty(overwriteParams.getFactory());
+                    return TaskResult.empty(overrideParams.getFactory());
                 }
                 else if (resumeStateFileEnabledTaskNames == null || resumeStateFileEnabledTaskNames.contains(fullName)) {
                     return rsm.readSuccessfulTaskReport(resumeStatePath, fullName);
@@ -488,7 +488,7 @@ public class Run
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
                 rev,
                 def,
-                overwriteParams,
+                overrideParams,
                 ScheduleTime.runNow(sessionTime));
 
         StoredSessionAttemptWithSession attempt = executor.submitTasks(0, ar, tasks);

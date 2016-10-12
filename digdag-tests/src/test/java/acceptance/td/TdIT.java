@@ -3,6 +3,7 @@ package acceptance.td;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ObjectArrays;
 import com.treasuredata.client.TDClient;
 import io.digdag.client.DigdagClient;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,6 +46,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static acceptance.td.Secrets.ENCRYPTION_KEY;
@@ -53,9 +57,11 @@ import static com.google.common.collect.Iterables.concat;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -180,6 +186,20 @@ public class TdIT
     }
 
     @Test
+    public void testStoreLastResultTwice()
+            throws Exception
+    {
+        copyResource("acceptance/td/td/td_store_last_result_twice.dig", projectDir.resolve("workflow.dig"));
+        assertWorkflowRunsSuccessfully();
+        JsonNode result = objectMapper().readTree(outfile.toFile());
+        assertThat(result.get("last_job_id").asInt(), is(not(0)));
+        assertThat(result.get("last_results").isObject(), is(true));
+        assertThat(result.get("last_results").size(), is(2));
+        assertThat(result.get("last_results").get("a").textValue(), is("A2"));
+        assertThat(result.get("last_results").get("d").textValue(), is("D"));
+    }
+
+    @Test
     public void testRunQueryWithEnvProxy()
             throws Exception
     {
@@ -221,7 +241,7 @@ public class TdIT
         env.put("http_proxy", proxyUrl);
         env.put("TD_CONFIG_PATH", tdConf.toString());
         assertWorkflowRunsSuccessfully();
-        List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(Collectors.toList());
+        List<FullHttpRequest> issueRequests = requests.stream().filter(req -> req.getUri().contains("/v3/job/issue")).collect(toList());
         assertThat(issueRequests.size(), is(greaterThan(0)));
         for (FullHttpRequest request : issueRequests) {
             assertThat(request.headers().get(HttpHeaders.Names.AUTHORIZATION), is("TD1 " + TD_API_KEY));
@@ -341,10 +361,9 @@ public class TdIT
     public void testRetries()
             throws Exception
     {
-        int failures = 3;
+        int failures = 17;
 
-        List<FullHttpRequest> jobIssueRequests = Collections.synchronizedList(new ArrayList<>());
-        List<FullHttpRequest> jobStatusRequests = Collections.synchronizedList(new ArrayList<>());
+        Map<String, List<FullHttpRequest>> requests = new ConcurrentHashMap<>();
 
         proxyServer = DefaultHttpProxyServer
                 .bootstrap()
@@ -367,26 +386,19 @@ public class TdIT
                             {
                                 assert httpObject instanceof FullHttpRequest;
                                 FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
-                                boolean fail;
-                                if (httpRequest.getUri().contains("/v3/job/issue")) {
-                                    jobIssueRequests.add(fullHttpRequest.copy());
-                                    fail = jobIssueRequests.size() < failures;
-                                }
-                                else if (httpRequest.getUri().contains("/v3/job/status")) {
-                                    jobStatusRequests.add(fullHttpRequest.copy());
-                                    fail = jobStatusRequests.size() < failures;
-                                }
-                                else {
-                                    fail = false;
-                                }
-                                if (fail) {
-                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", httpRequest);
-                                    DefaultFullHttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
+                                String key = fullHttpRequest.getMethod() + " " + fullHttpRequest.getUri();
+                                List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, uri -> new CopyOnWriteArrayList<>());
+                                keyedRequests.add(fullHttpRequest.copy());
+                                HttpResponse response;
+                                if (keyedRequests.size() < failures) {
+                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
+                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
                                     response.headers().set(CONNECTION, CLOSE);
                                     return response;
+                                } else {
+                                    logger.info("Passing request: {}", httpRequest);
+                                    return null;
                                 }
-                                logger.info("Passing request: {}", httpRequest);
-                                return null;
                             }
                         };
                     }
@@ -402,14 +414,26 @@ public class TdIT
         copyResource("acceptance/td/td/td_inline.dig", projectDir.resolve("workflow.dig"));
         assertWorkflowRunsSuccessfully();
 
-        for (FullHttpRequest request : concat(jobIssueRequests, jobStatusRequests)) {
-            ReferenceCountUtil.releaseLater(request);
+        for (Map.Entry<String, List<FullHttpRequest>> entry : requests.entrySet()) {
+            System.err.println(entry.getKey() + ": " + entry.getValue().size());
         }
 
-        assertThat(jobIssueRequests, is(not(empty())));
-        assertThat(jobStatusRequests, is(not(empty())));
+        for (List<FullHttpRequest> reqs : requests.values()) {
+            reqs.forEach(ReferenceCountUtil::releaseLater);
+        }
+
+        // Verify that all requests were retried
+        for (Map.Entry<String, List<FullHttpRequest>> entry : requests.entrySet()) {
+            String key = entry.getKey();
+            List<FullHttpRequest> keyedRequests = entry.getValue();
+            assertThat(key, keyedRequests.size(), Matchers.is(Matchers.greaterThanOrEqualTo(failures)));
+        }
 
         // Verify that all job issue requests reuse the same domain key
+        List<FullHttpRequest> jobIssueRequests = Iterables.getOnlyElement(requests.entrySet().stream()
+                .filter(e -> e.getKey().contains("/v3/job/issue"))
+                .map(e -> e.getValue())
+                .collect(toList()));
         verifyDomainKeys(jobIssueRequests);
     }
 

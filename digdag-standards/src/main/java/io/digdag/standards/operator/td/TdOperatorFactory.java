@@ -4,17 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigKey;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -30,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -41,12 +47,20 @@ import java.util.regex.Pattern;
 
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
 import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
+import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdOperatorFactory.class);
+
+    private static final String DOWNLOAD = "download";
+    private static final String DONE = "done";
+    private static final String RETRY = "retry";
+
+    private static final int INITIAL_DOWNLOAD_RETRY_INTERVAL = 1;
+    private static final int MAX_DOWNLOAD_RETRY_INTERVAL = 30;
 
     private static final int PREVIEW_ROWS = 20;
 
@@ -122,7 +136,7 @@ public class TdOperatorFactory
         @Override
         protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator j)
         {
-            downloadJobResult(j, workspace, downloadFile);
+            downloadJobResult(j, workspace, downloadFile, state);
 
             if (preview) {
                 if (insertInto.isPresent() || createTable.isPresent()) {
@@ -139,6 +153,7 @@ public class TdOperatorFactory
             Config storeParams = buildStoreParams(request.getConfig().getFactory(), j, storeLastResults);
 
             return TaskResult.defaultBuilder(request)
+                    .resetStoreParams(buildResetStoreParams(storeLastResults))
                     .storeParams(storeParams)
                     .build();
         }
@@ -294,26 +309,48 @@ public class TdOperatorFactory
         }
     }
 
-    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile)
+    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile, Config state)
     {
-        // TODO: handle netsplits
+        if (!downloadFile.isPresent()) {
+            return;
+        }
 
-        if (downloadFile.isPresent()) {
+        Config downloadState = state.getNestedOrSetEmpty(DOWNLOAD);
+
+        boolean done = downloadState.get(DONE, boolean.class, false);
+
+        if (done) {
+            return;
+        }
+
+        try {
             j.getResult(ite -> {
                 try (BufferedWriter out = workspace.newBufferedWriter(downloadFile.get(), UTF_8)) {
                     addCsvHeader(out, j.getResultColumnNames());
-
                     while (ite.hasNext()) {
                         addCsvRow(out, ite.next().asArrayValue());
                     }
+                    downloadState.remove(RETRY);
+                    downloadState.set(DONE, true);
                     return true;
                 }
                 catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                    throw new UncheckedIOException(ex);
                 }
             });
         }
+        catch (UncheckedIOException | TDClientException e) {
+            if (isDeterministicClientException(e)) {
+                throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+            }
+            int retry = downloadState.get(RETRY, int.class, 0);
+            downloadState.set(RETRY, retry + 1);
+            int interval = (int) Math.min(INITIAL_DOWNLOAD_RETRY_INTERVAL * Math.pow(2, retry), MAX_DOWNLOAD_RETRY_INTERVAL);
+            logger.warn("Failed to download result of job '{}', retrying in {} seconds", j.getJobId(), interval, e);
+            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+        }
     }
+
 
     private static void addCsvHeader(Writer out, List<String> columnNames)
         throws IOException
@@ -341,9 +378,9 @@ public class TdOperatorFactory
 
     static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults)
     {
-        Config td = cf.create();
-
         if (storeLastResults) {
+            Config td = cf.create();
+
             List<ArrayValue> results = downloadFirstResults(j, 1);
             Map<RawValue, Value> map = new LinkedHashMap<>();
             if (!results.isEmpty()) {
@@ -360,9 +397,22 @@ public class TdOperatorFactory
             catch (IOException ex) {
                 throw Throwables.propagate(ex);
             }
-        }
 
-        return cf.create().set("td", td);
+            return cf.create().set("td", td);
+        }
+        else {
+            return cf.create();
+        }
+    }
+
+    static List<ConfigKey> buildResetStoreParams(boolean storeLastResults)
+    {
+        if (storeLastResults) {
+            return ImmutableList.of(ConfigKey.of("td", "last_results"));
+        }
+        else {
+            return ImmutableList.of();
+        }
     }
 
     private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max)

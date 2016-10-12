@@ -1,0 +1,16 @@
+timezone: UTC
+
++run1:
+  td>:
+    data: SELECT 'A1' as a, 'B' as b
+  database: sample_datasets
+  store_last_results: true
+
++run2:
+  td>:
+    data: SELECT 'A2' as a, 'D' as d
+  database: sample_datasets
+  store_last_results: true
+
++post:
+  sh>: echo '${td}' > ${outfile}

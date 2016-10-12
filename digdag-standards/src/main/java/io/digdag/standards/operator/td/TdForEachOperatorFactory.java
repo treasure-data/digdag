@@ -1,9 +1,11 @@
 package io.digdag.standards.operator.td;
 
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Environment;
@@ -12,6 +14,7 @@ import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
@@ -21,16 +24,25 @@ import org.msgpack.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdForEachOperatorFactory
         implements OperatorFactory
 {
+    private static final String RESULT = "result";
+    private static final String RETRY = "retry";
+    private static final int INITIAL_RETRY_INTERVAL = 1;
+    private static final int MAX_RETRY_INTERVAL = 30;
+
     private static Logger logger = LoggerFactory.getLogger(TdForEachOperatorFactory.class);
 
     private final TemplateEngine templateEngine;
@@ -130,20 +142,37 @@ public class TdForEachOperatorFactory
 
         private List<Config> fetchRows(TDJobOperator job)
         {
-            // TODO: handle netsplits
+            Config resultState = state.getNestedOrSetEmpty(RESULT);
 
-            List<String> columnNames = job.getResultColumnNames();
-            return job.getResult(ite -> {
-                List<Config> rows = new ArrayList<>();
-                while (ite.hasNext()) {
-                    rows.add(row(columnNames, ite.next().asArrayValue()));
-                    if (rows.size() > Limits.maxWorkflowTasks()) {
-                        TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
-                        throw new TaskExecutionException(cause, TaskExecutionException.buildExceptionErrorConfig(cause));
+            try {
+                List<String> columnNames = job.getResultColumnNames();
+                List<Config> result = job.getResult(ite -> {
+                    List<Config> rows = new ArrayList<>();
+                    while (ite.hasNext()) {
+                        rows.add(row(columnNames, ite.next().asArrayValue()));
+                        if (rows.size() > Limits.maxWorkflowTasks()) {
+                            TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
+                            throw new TaskExecutionException(cause, TaskExecutionException.buildExceptionErrorConfig(cause));
+                        }
                     }
+                    return rows;
+                });
+
+                // Clear retry state
+                resultState.remove(RETRY);
+
+                return result;
+            }
+            catch (UncheckedIOException | TDClientException e) {
+                if (isDeterministicClientException(e)) {
+                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
                 }
-                return rows;
-            });
+                int retry = resultState.get(RETRY, int.class, 0);
+                resultState.set(RETRY, retry + 1);
+                int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, retry), MAX_RETRY_INTERVAL);
+                logger.warn("Failed to download result of job '{}', retrying in {} seconds", job.getJobId(), interval, e);
+                throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+            }
         }
 
         private Config row(List<String> keys, ArrayValue values)

@@ -226,7 +226,7 @@ Updates the executable binary file to the latest version or specified version. E
 .. code-block:: console
 
     $ digdag selfupdate
-    $ digdag selfupdate 0.8.16
+    $ digdag selfupdate 0.8.17
 
 Server-mode commands
 ----------------------------------
@@ -309,6 +309,9 @@ In the config file, following parameters are available
 * server.access-log.pattern (string, "json", "combined" or "common")
 * server.http.io-threads (number of HTTP IO threads in integer. default: available CPU cores * 2)
 * server.http.worker-threads (number of HTTP worker threads in integer. default: server.http.io-threads * 8)
+* server.http.no-request-timeout (maximum allowed time for clients to keep a connection open without sending requests or receiving responses in seconds. default: 60)
+* server.http.request-parse-timeout (maximum allowed time of reading a HTTP request in seconds. this doesn't affect on reading request body. default: 30)
+* server.http.io-idle-timeout (maximum allowed idle time of reading HTTP request and writing HTTP response in seconds. default: 300)
 * server.http.headers.KEY = VALUE (HTTP header to set on API responses)
 * database.type (enum, "h2" or "postgresql")
 * database.user (string)
@@ -323,6 +326,73 @@ In the config file, following parameters are available
 * database.idleTimeout (seconds in integer, default: 600)
 * database.validationTimeout (seconds in integer, default: 5)
 * database.maximumPoolSize (integer, default: available CPU cores * 32)
+* digdag.secret-access-policy-file (filename)
+* digdag.secret-encryption-key = (base64 encoded 128-bit AES encryption key)
+
+Secret Access Policy File
+*************************
+
+The secret access policy specifies which secrets operators can access by default, without needing to explicitly grant secret access in the workflow definition file.
+
+Example:
+
+.. code-block:: none
+
+  digdag.secret-access-policy-file = secret-access-policy.yaml
+
+.. code-block:: yaml
+
+  # secret-access-policy.yaml
+  operators:
+    mail:
+      secrets:
+        - mail.*
+    pg:
+      secrets:
+        - pg.*
+    s3_wait:
+      secrets:
+        - aws.*
+    td:
+      secrets:
+        - td.*
+    td_load:
+      secrets:
+        - td.*
+    td_for_each:
+      secrets:
+        - td.*
+    td_run:
+      secrets:
+        - td.*
+    td_ddl:
+      secrets:
+        - td.*
+    td_partial_delete:
+      secrets:
+        - td.*
+    td_table_export:
+      secrets:
+        - td.*
+        - aws.*
+    td_wait:
+      secrets:
+        - td.*
+    td_wait_table:
+      secrets:
+        - td.*
+
+
+Secret Encryption Key
+*********************
+
+The secret encryption key is used to encrypt secrets when they are stored in the digdag server database. It must be a valid 128-bit AES key, base64 encoded.
+
+Example:
+
+.. code-block:: none
+
+  digdag.secret-encryption-key = MDEyMzQ1Njc4OTAxMjM0NQ==
 
 
 Client-mode commands

@@ -17,7 +17,7 @@ import org.skife.jdbi.v2.tweak.ArgumentFactory;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 
-public class ConfigMapper
+class ConfigMapper
 {
     private final ObjectMapper jsonTreeMapper;
     private final ConfigFactory cf;

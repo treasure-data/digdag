@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
@@ -208,6 +209,7 @@ public class S3WaitOperatorFactory
             }
 
             return TaskResult.defaultBuilder(request)
+                    .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
                     .storeParams(storeParams(objectMetadata))
                     .build();
         }
