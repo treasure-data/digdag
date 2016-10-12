@@ -764,13 +764,13 @@ To use Gmail SMTP server, you need to do either of:
 
     +step2:
       mail>:
-      body: this is email body in string
+        data: this is email body embedded in a .dig file
       subject: workflow started
       to: [me@example.com]
 
     +step3:
       sh>: this_task_might_fail.sh
-      error:
+      _error:
         mail>: body.txt
         subject: this workflow failed
         to: [me@example.com]
@@ -813,18 +813,15 @@ Parameters
 
 :command:`mail>: FILE`
   Path to a mail body template file. This file can contain ``${...}`` syntax to embed variables.
+  Alternatively, you can set ``{data: TEXT}`` to embed body text in the .dig file.
 
   * :command:`mail>: mail_body.txt`
+  * or :command:`mail>: {body: Hello, this is from Digdag}`
 
 :command:`subject: SUBJECT`
   Subject of the email.
 
   * :command:`subject: Mail From Digdag`
-
-:command:`body: TEXT`
-  Email body if tempalte file path is not set.
-
-  * :command:`body: Hello, this is from Digdag`
 
 :command:`to: [ADDR1, ADDR2, ...]`
   To addresses.
