@@ -1,7 +1,7 @@
 package io.digdag.standards.operator;
 
-import autovalue.shaded.com.google.common.common.base.Throwables;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
