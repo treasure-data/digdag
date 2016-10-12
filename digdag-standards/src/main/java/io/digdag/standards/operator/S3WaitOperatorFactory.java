@@ -185,12 +185,10 @@ public class S3WaitOperatorFactory
                 req.setSSECustomerKey(sseKey);
             }
 
-            Config state = request.getLastStateParams().deepCopy();
-
-            ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
+            ObjectMetadata objectMetadata = pollingWaiter(request.getLastStateParams().deepCopy(), "EXISTS")
                     .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
-                    .await(() -> pollingRetryExecutor(state, "POLL")
+                    .await(state -> pollingRetryExecutor(state, "POLL")
                             .run(() -> {
                                 try {
                                     return Optional.of(s3Client.getObjectMetadata(req));

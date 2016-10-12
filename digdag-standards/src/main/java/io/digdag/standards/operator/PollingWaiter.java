@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 public class PollingWaiter
 {
@@ -25,6 +25,7 @@ public class PollingWaiter
 
     private static final String RESULT = "result";
     private static final String ITERATION = "iteration";
+    private static final String TASK = "task";
 
     private final Config state;
     private final String stateKey;
@@ -75,7 +76,7 @@ public class PollingWaiter
         return withPollInterval(minPollInterval, maxPollInterval);
     }
 
-    public <T> T awaitOnce(Class<T> type, Callable<Optional<T>> f)
+    public <T> T awaitOnce(Class<T> type, Function<Config, Optional<T>> f)
     {
         Config pollState = state.getNestedOrSetEmpty(stateKey);
         T result = pollState.get(RESULT, type, null);
@@ -87,14 +88,16 @@ public class PollingWaiter
         return result;
     }
 
-    public <T> T await(Callable<Optional<T>> f)
+    public <T> T await(Function<Config, Optional<T>> f)
     {
         Config pollState = state.getNestedOrSetEmpty(stateKey);
+
+        Config taskState = pollState.getNestedOrSetEmpty(TASK);
 
         Optional<T> result;
 
         try {
-            result = f.call();
+            result = f.apply(taskState);
         }
         catch (Exception e) {
             throw Throwables.propagate(e);
@@ -109,6 +112,7 @@ public class PollingWaiter
             throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
         }
 
+        pollState.remove(TASK);
         pollState.remove(ITERATION);
 
         return result.get();
