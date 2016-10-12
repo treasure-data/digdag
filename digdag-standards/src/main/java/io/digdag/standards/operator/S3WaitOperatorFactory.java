@@ -188,6 +188,7 @@ public class S3WaitOperatorFactory
             Config state = request.getLastStateParams().deepCopy();
 
             ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
+                    .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                     .await(() -> pollingRetryExecutor(state, "POLL")
                             .run(() -> {
