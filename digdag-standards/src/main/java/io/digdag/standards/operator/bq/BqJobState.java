@@ -13,20 +13,8 @@ interface BqJobState
 {
     Optional<String> jobId();
 
-    Optional<Integer> pollIteration();
-
-    Optional<Integer> retryIteration();
-
-    Optional<Boolean> started();
-
     BqJobState withJobId(String value);
     BqJobState withJobId(Optional<String> value);
-    BqJobState withPollIteration(int value);
-    BqJobState withPollIteration(Optional<Integer> value);
-    BqJobState withRetryIteration(int value);
-    BqJobState withRetryIteration(Optional<Integer> value);
-    BqJobState withStarted(boolean value);
-    BqJobState withStarted(Optional<Boolean> value);
 
     static BqJobState empty()
     {

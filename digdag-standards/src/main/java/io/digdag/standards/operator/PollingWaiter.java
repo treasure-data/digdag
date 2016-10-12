@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.function.Function;
 
 public class PollingWaiter
 {
@@ -76,7 +75,7 @@ public class PollingWaiter
         return withPollInterval(minPollInterval, maxPollInterval);
     }
 
-    public <T> T awaitOnce(Class<T> type, Function<Config, Optional<T>> f)
+    public <T> T awaitOnce(Class<T> type, ThrowingFunction<Config, Optional<T>> f)
     {
         Config pollState = state.getNestedOrSetEmpty(stateKey);
         T result = pollState.get(RESULT, type, null);
@@ -88,7 +87,7 @@ public class PollingWaiter
         return result;
     }
 
-    public <T> T await(Function<Config, Optional<T>> f)
+    public <T> T await(ThrowingFunction<Config, Optional<T>> f)
     {
         Config pollState = state.getNestedOrSetEmpty(stateKey);
 
@@ -99,7 +98,7 @@ public class PollingWaiter
         try {
             result = f.apply(taskState);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             throw Throwables.propagate(e);
         }
 
@@ -116,5 +115,12 @@ public class PollingWaiter
         pollState.remove(ITERATION);
 
         return result.get();
+    }
+
+    @FunctionalInterface
+    public static interface ThrowingFunction<T, R>
+    {
+        R apply(T t)
+                throws Exception;
     }
 }

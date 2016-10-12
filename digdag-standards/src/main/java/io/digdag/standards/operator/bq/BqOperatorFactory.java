@@ -19,13 +19,13 @@ import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.common.base.Optional;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -48,25 +48,22 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.PollingWaiter.pollingWaiter;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class BqOperatorFactory
         implements OperatorFactory
 {
     private static final int MAX_JOB_ID_LENGTH = 1024;
 
-    private static final Integer INITIAL_POLL_INTERVAL = 1;
-    private static final int MAX_POLL_INTERVAL = 30;
-
-    private static final Integer INITIAL_RETRY_INTERVAL = 5;
-    private static final int MAX_RETRY_INTERVAL = (int) MINUTES.toSeconds(5);
-
-    private static final String JOB_STATE = "job";
+    private static final String JOB_ID = "jobId";
+    private static final String START = "start";
+    private static final String RUNNING = "running";
+    private static final String CHECK = "check";
 
     private static Logger logger = LoggerFactory.getLogger(BqOperatorFactory.class);
 
@@ -126,155 +123,122 @@ public class BqOperatorFactory
             Bigquery bigquery = bigqueryClient(ctx);
 
             // Generate job id
-            BqJobState jobState = state.get(JOB_STATE, BqJobState.class, BqJobState.empty());
-            if (!jobState.jobId().isPresent()) {
-                state.set(JOB_STATE, jobState.withJobId(uniqueJobId()));
+            Optional<String> jobId = state.getOptional(JOB_ID, String.class);
+            if (!jobId.isPresent()) {
+                state.set(JOB_ID, uniqueJobId());
                 throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
             }
-
-            String jobId = jobState.jobId().get();
-            String canonicalJobId = projectId + ":" + jobId;
+            String canonicalJobId = projectId + ":" + jobId.get();
 
             // Start job
-            if (!jobState.started().or(false)) {
-                JobConfigurationQuery queryConfig = new JobConfigurationQuery()
-                        .setQuery(query);
+            pollingRetryExecutor(state, START)
+                    .withErrorMessage("BigQuery job submission failed: %s", canonicalJobId)
+                    .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
+                    .runOnce(() -> {
+                        Job job = jobRequest(projectId, jobId.get());
+                        logger.info("Submitting BigQuery job: {}", canonicalJobId);
+                        try {
+                            bigquery.jobs()
+                                    .insert(projectId, job)
+                                    .execute();
+                        }
+                        catch (GoogleJsonResponseException e) {
+                            if (e.getStatusCode() == 409) {
+                                // Already started
+                                logger.debug("BigQuery job already started: {}", canonicalJobId, e);
+                                return;
+                            }
+                            throw e;
+                        }
+                    });
 
-                configure(params, "allow_large_results", Boolean.class, queryConfig::setAllowLargeResults);
-                configure(params, "use_legacy_sql", Boolean.class, queryConfig::setUseLegacySql);
-                configure(params, "use_query_cache", Boolean.class, queryConfig::setUseQueryCache);
-                configure(params, "create_disposition", String.class, queryConfig::setCreateDisposition);
-                configure(params, "write_disposition", String.class, queryConfig::setWriteDisposition);
-                configure(params, "flatten_results", Boolean.class, queryConfig::setFlattenResults);
-                configure(params, "maximum_billing_tier", Integer.class, queryConfig::setMaximumBillingTier);
-                configure(params, "preserve_nulls", Boolean.class, queryConfig::setPreserveNulls);
-                configure(params, "priority", String.class, queryConfig::setPriority);
+            // Wait for job to complete
+            Job completed = pollingWaiter(state, RUNNING)
+                    .withWaitMessage("BigQuery job still running: %s", jobId)
+                    .awaitOnce(Job.class, pollState -> {
 
-                // TODO
+                        // Check job status
+                        Job job = pollingRetryExecutor(pollState, CHECK)
+                                .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
+                                .withErrorMessage("BigQuery job status check failed: %s", canonicalJobId)
+                                .run(() -> {
+                                    logger.info("Checking BigQuery job status: {}", canonicalJobId);
+                                    return bigquery.jobs()
+                                            .get(projectId, jobId.get())
+                                            .execute();
+                                });
 
-                configure(params, "default_dataset", DatasetReference.class, queryConfig::setDefaultDataset);
-                configure(params, "destination_table", TableReference.class, queryConfig::setDestinationTable);
+                        // Done yet?
+                        JobStatus status = job.getStatus();
+                        switch (status.getState()) {
+                            case "DONE":
+                                return Optional.of(job);
+                            case "PENDING":
+                            case "RUNNING":
+                                return Optional.absent();
+                            default:
+                                throw new TaskExecutionException("Unknown job state: " + canonicalJobId + ": " + status.getState(), ConfigElement.empty());
+                        }
+                    });
 
-                // TODO
+            // Check job result
+            JobStatus status = completed.getStatus();
+            if (status.getErrorResult() != null) {
+                // Failed
+                logger.error("BigQuery job failed: {}", canonicalJobId);
+                for (ErrorProto error : status.getErrors()) {
+                    String errorString;
+                    try {
+                        errorString = error.toPrettyString();
+                    }
+                    catch (IOException e) {
+                        errorString = "<json error>";
+                    }
+                    logger.error("{}", errorString);
+                }
+            }
+            else {
+                // Success
+                logger.info("BigQuery job successfully done: {}", canonicalJobId);
+            }
+            return result(completed);
+        }
+
+        private Job jobRequest(String projectId, String jobId)
+        {
+            JobConfigurationQuery queryConfig = new JobConfigurationQuery()
+                    .setQuery(query);
+
+            configure(params, "allow_large_results", Boolean.class, queryConfig::setAllowLargeResults);
+            configure(params, "use_legacy_sql", Boolean.class, queryConfig::setUseLegacySql);
+            configure(params, "use_query_cache", Boolean.class, queryConfig::setUseQueryCache);
+            configure(params, "create_disposition", String.class, queryConfig::setCreateDisposition);
+            configure(params, "write_disposition", String.class, queryConfig::setWriteDisposition);
+            configure(params, "flatten_results", Boolean.class, queryConfig::setFlattenResults);
+            configure(params, "maximum_billing_tier", Integer.class, queryConfig::setMaximumBillingTier);
+            configure(params, "preserve_nulls", Boolean.class, queryConfig::setPreserveNulls);
+            configure(params, "priority", String.class, queryConfig::setPriority);
+
+            // TODO
+
+            configure(params, "default_dataset", DatasetReference.class, queryConfig::setDefaultDataset);
+            configure(params, "destination_table", TableReference.class, queryConfig::setDestinationTable);
+
+            // TODO
 
 //                tableDefinitions
 //                userDefinedFunctionResources
 
-                JobConfiguration jobConfig = new JobConfiguration()
-                        .setQuery(queryConfig);
+            JobConfiguration jobConfig = new JobConfiguration()
+                    .setQuery(queryConfig);
 
-                JobReference reference = new JobReference()
-                        .setProjectId(projectId)
-                        .setJobId(jobId);
+            JobReference reference = new JobReference()
+                    .setProjectId(projectId)
+                    .setJobId(jobId);
 
-                Job job = new Job()
-                        .setJobReference(reference)
-                        .setConfiguration(jobConfig);
-
-                logger.info("Submitting BigQuery job: {}", job);
-
-                Job inserted;
-                try {
-                    inserted = bigquery.jobs()
-                            .insert(projectId, job)
-                            .execute();
-                }
-                catch (IOException e) {
-                    if (e instanceof GoogleJsonResponseException) {
-                        GoogleJsonResponseException re = (GoogleJsonResponseException) e;
-                        if (re.getStatusCode() == 409) {
-                            // Already started, store job started state and start polling job status
-                            logger.debug("BigQuery job already started: {}", canonicalJobId, e);
-                            state.set(JOB_STATE, jobState.withStarted(true));
-                            throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
-                        }
-                        else if (re.getStatusCode() / 100 == 4) {
-                            // Permanent error, do not retry
-                            logger.error("BigQuery job submission failed: {}", canonicalJobId, e);
-                            throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
-                        }
-                    }
-                    int iteration = jobState.retryIteration().or(0);
-                    int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, iteration), MAX_RETRY_INTERVAL);
-                    logger.error("BigQuery job submission failed, retrying in {} seconds: {}", interval, canonicalJobId, e);
-                    state.set(JOB_STATE, jobState.withRetryIteration(iteration + 1));
-                    throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-                }
-
-                // Clear retry state
-                jobState = jobState.withRetryIteration(Optional.absent());
-
-                // Verify that the job id was correctly set
-                if (!canonicalJobId.equals(inserted.getId())) {
-                    throw new AssertionError("BigQuery job ID mismatch: " + canonicalJobId + " != " + inserted.getId());
-                }
-
-                // Store job started state and start polling job status
-                state.set(JOB_STATE, jobState.withStarted(true));
-                throw TaskExecutionException.ofNextPolling(INITIAL_POLL_INTERVAL, ConfigElement.copyOf(state));
-            }
-
-            // Check job status
-            logger.info("Checking BigQuery job status: {}", canonicalJobId);
-
-            Job job;
-            try {
-                job = bigquery.jobs()
-                        .get(projectId, jobId)
-                        .execute();
-            }
-            catch (IOException e) {
-                if (e instanceof GoogleJsonResponseException) {
-                    GoogleJsonResponseException re = (GoogleJsonResponseException) e;
-                    if (re.getStatusCode() / 100 == 4) {
-                        logger.error("BigQuery job status check failed: {}", canonicalJobId, e);
-                        throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
-                    }
-                }
-
-                int iteration = jobState.retryIteration().or(0);
-                int interval = (int) Math.min(INITIAL_RETRY_INTERVAL * Math.pow(2, iteration), MAX_RETRY_INTERVAL);
-                logger.error("BigQuery job submission failed, retrying in {} seconds: {}", interval, canonicalJobId, e);
-                state.set(JOB_STATE, jobState.withRetryIteration(iteration + 1));
-                throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-            }
-
-            // Clear retry state
-            jobState = jobState.withRetryIteration(Optional.absent());
-
-            JobStatus status = job.getStatus();
-
-            switch (status.getState()) {
-                case "DONE":
-                    if (status.getErrorResult() != null) {
-                        // Failed
-                        logger.error("BigQuery job failed: {}", canonicalJobId);
-                        for (ErrorProto error : status.getErrors()) {
-                            String errorString;
-                            try {
-                                errorString = error.toPrettyString();
-                            }
-                            catch (IOException e) {
-                                errorString = "<json error>";
-                            }
-                            logger.error("{}", errorString);
-                        }
-                    }
-                    else {
-                        // Success
-                        logger.error("BigQuery job successfully done: {}", canonicalJobId);
-                    }
-                    return result(job);
-                case "PENDING":
-                case "RUNNING":
-                    int iteration = jobState.pollIteration().or(0);
-                    int interval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, iteration), MAX_POLL_INTERVAL);
-                    state.set(JOB_STATE, jobState.withPollIteration(iteration + 1));
-                    logger.info("BigQuery job {}, checking again in {} seconds: {}", status.getState(), interval, canonicalJobId);
-                    throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
-                default:
-                    throw new TaskExecutionException("Unknown job state: " + canonicalJobId + ": " + status.getState(), ConfigElement.empty());
-            }
+            return new Job()
+                    .setJobReference(reference)
+                    .setConfiguration(jobConfig);
         }
 
         private TaskResult result(Job job)
@@ -283,8 +247,10 @@ public class BqOperatorFactory
             Config result = cf.create();
             Config bq = result.getNestedOrSetEmpty("bq");
             bq.set("last_jobid", job.getId());
-//            job.get
-            return null;
+            return TaskResult.defaultBuilder(request)
+                    .storeParams(result)
+                    .addResetStoreParams(ConfigKey.of("bq", "last_jobid"))
+                    .build();
         }
 
         private String projectId(TaskExecutionContext ctx)

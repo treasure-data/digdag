@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
@@ -7,21 +8,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 public class PollingRetryExecutor
 {
+    private static Logger logger = LoggerFactory.getLogger(PollingRetryExecutor.class);
+
     private static final Duration DEFAULT_MIN_INTERVAL = Duration.ofSeconds(1);
     private static final Duration DEFAULT_MAX_INTERVAL = Duration.ofSeconds(30);
 
     private static final String DEFAULT_ERROR_MESSAGE = "Operation failed";
     private static final Object[] DEFAULT_ERROR_MESSAGE_PARAMETERS = {};
-    private static final Predicate<Exception> DEAFULT_RETRY_PREDICATE = e -> true;
+    private static final List<Predicate<Exception>> DEAFULT_RETRY_PREDICATES = ImmutableList.of();
 
-    private static Logger logger = LoggerFactory.getLogger(PollingRetryExecutor.class);
-
+    private static final String RESULT = "result";
     private static final String DONE = "done";
     private static final String RETRY = "retry";
 
@@ -31,30 +34,51 @@ public class PollingRetryExecutor
     private final Duration minRetryInterval;
     private final Duration maxRetryInterval;
 
-    private final Predicate<Exception> retryPredicate;
+    private final List<Predicate<Exception>> retryPredicates;
 
     private final String errorMessage;
     private final Object[] errorMessageParameters;
 
-    private PollingRetryExecutor(Config state, String stateKey, Duration minRetryInterval, Duration maxRetryInterval, Predicate<Exception> retryPredicate, String errorMessage, Object... errorMessageParameters)
+    private PollingRetryExecutor(
+            Config state,
+            String stateKey,
+            Duration minRetryInterval,
+            Duration maxRetryInterval,
+            List<Predicate<Exception>> retryPredicates,
+            String errorMessage,
+            Object... errorMessageParameters)
     {
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.minRetryInterval = Objects.requireNonNull(minRetryInterval, "minRetryInterval");
         this.maxRetryInterval = Objects.requireNonNull(maxRetryInterval, "maxRetryInterval");
-        this.retryPredicate = Objects.requireNonNull(retryPredicate, "retryPredicate");
+        this.retryPredicates = Objects.requireNonNull(retryPredicates, "retryPredicates");
         this.errorMessage = Objects.requireNonNull(errorMessage, "errorMessage");
         this.errorMessageParameters = Objects.requireNonNull(errorMessageParameters, "errorMessageParameters");
     }
 
     public static PollingRetryExecutor pollingRetryExecutor(Config state, String stateKey)
     {
-        return new PollingRetryExecutor(state, stateKey, DEFAULT_MIN_INTERVAL, DEFAULT_MAX_INTERVAL, DEAFULT_RETRY_PREDICATE, DEFAULT_ERROR_MESSAGE, DEFAULT_ERROR_MESSAGE_PARAMETERS);
+        return new PollingRetryExecutor(
+                state,
+                stateKey,
+                DEFAULT_MIN_INTERVAL,
+                DEFAULT_MAX_INTERVAL,
+                DEAFULT_RETRY_PREDICATES,
+                DEFAULT_ERROR_MESSAGE,
+                DEFAULT_ERROR_MESSAGE_PARAMETERS);
     }
 
     public PollingRetryExecutor withErrorMessage(String errorMessage, Object... errorMessageParameters)
     {
-        return new PollingRetryExecutor(state, stateKey, minRetryInterval, maxRetryInterval, retryPredicate, errorMessage, errorMessageParameters);
+        return new PollingRetryExecutor(
+                state,
+                stateKey,
+                minRetryInterval,
+                maxRetryInterval,
+                retryPredicates,
+                errorMessage,
+                errorMessageParameters);
     }
 
     public PollingRetryExecutor retryUnless(Predicate<Exception> predicate)
@@ -62,9 +86,30 @@ public class PollingRetryExecutor
         return retryIf(e -> !predicate.test(e));
     }
 
-    private PollingRetryExecutor retryIf(Predicate<Exception> retryPredicate)
+    public <T extends Exception> PollingRetryExecutor retryUnless(Class<T> exceptionClass, Predicate<T> retryPredicate)
     {
-        return new PollingRetryExecutor(state, stateKey, minRetryInterval, maxRetryInterval, retryPredicate, errorMessage, errorMessageParameters);
+        return retryUnless(e -> (exceptionClass.isInstance(e) && retryPredicate.test(exceptionClass.cast(e))));
+    }
+
+    public <T extends Exception> PollingRetryExecutor retryIf(Class<T> exceptionClass, Predicate<T> retryPredicate)
+    {
+        return retryIf(e -> (exceptionClass.isInstance(e) && retryPredicate.test(exceptionClass.cast(e))));
+    }
+
+    public PollingRetryExecutor retryIf(Predicate<Exception> retryPredicate)
+    {
+        List<Predicate<Exception>> newRetryPredicates = ImmutableList.<Predicate<Exception>>builder()
+                .addAll(retryPredicates)
+                .add(retryPredicate)
+                .build();
+        return new PollingRetryExecutor(
+                state,
+                stateKey,
+                minRetryInterval,
+                maxRetryInterval,
+                newRetryPredicates,
+                errorMessage,
+                errorMessageParameters);
     }
 
     public PollingRetryExecutor withRetryInterval(Duration minRetryInterval, Duration maxRetryInterval)
@@ -74,7 +119,14 @@ public class PollingRetryExecutor
 
     public PollingRetryExecutor withRetryInterval(DurationInterval retryInterval)
     {
-        return new PollingRetryExecutor(state, stateKey, retryInterval.min(), retryInterval.max(), retryPredicate, errorMessage, errorMessageParameters);
+        return new PollingRetryExecutor(
+                state,
+                stateKey,
+                retryInterval.min(),
+                retryInterval.max(),
+                retryPredicates,
+                errorMessage,
+                errorMessageParameters);
     }
 
     public PollingRetryExecutor withMinRetryInterval(Duration minRetryInterval)
@@ -87,25 +139,35 @@ public class PollingRetryExecutor
         return withRetryInterval(minRetryInterval, maxRetryInterval);
     }
 
-    public void runOnce(Runnable f)
+    public void runOnce(Action f)
+    {
+        runOnce(Void.class, () -> {
+            f.run();
+            return null;
+        });
+    }
+
+    public <T> T runOnce(Class<T> type, Callable<T> f)
     {
         Config retryState = state.getNestedOrSetEmpty(stateKey);
 
         boolean done = retryState.get(DONE, boolean.class, false);
 
+        T result = retryState.get(RESULT, type, null);
+
         if (done) {
-            return;
+            return result;
         }
 
-        run(() -> {
-            f.run();
-            return null;
-        });
+        result = run(f);
 
+        retryState.set(RESULT, result);
         retryState.set(DONE, true);
+
+        return result;
     }
 
-    public void run(Runnable f)
+    public void run(Action f)
     {
         run(() -> {
             f.run();
@@ -122,15 +184,20 @@ public class PollingRetryExecutor
         try {
             result = f.call();
         }
+        catch (TaskExecutionException e) {
+            throw e;
+        }
         catch (Exception e) {
-            if (!retryPredicate.test(e)) {
+            String formattedErrorMessage = String.format(errorMessage, errorMessageParameters);
+
+            if (!retry(e)) {
+                logger.warn("{}: giving up", formattedErrorMessage, e);
                 throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
             }
 
-            int retry = retryState.get(RETRY, int.class, 0);
-            retryState.set(RETRY, retry + 1);
-            int interval = (int) Math.min(minRetryInterval.getSeconds() * Math.pow(2, retry), maxRetryInterval.getSeconds());
-            String formattedErrorMessage = String.format(errorMessage, errorMessageParameters);
+            int retryIteration = retryState.get(RETRY, int.class, 0);
+            retryState.set(RETRY, retryIteration + 1);
+            int interval = (int) Math.min(minRetryInterval.getSeconds() * Math.pow(2, retryIteration), maxRetryInterval.getSeconds());
             logger.warn("{}: retrying in {} seconds", formattedErrorMessage, interval, e);
             throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
         }
@@ -139,5 +206,24 @@ public class PollingRetryExecutor
         retryState.remove(RETRY);
 
         return result;
+    }
+
+    private boolean retry(Exception e)
+    {
+        if (retryPredicates.isEmpty()) {
+            return true;
+        }
+        for (Predicate<Exception> retryPredicate : retryPredicates) {
+            if (retryPredicate.test(e)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static interface Action
+    {
+        void run()
+                throws Exception;
     }
 }
