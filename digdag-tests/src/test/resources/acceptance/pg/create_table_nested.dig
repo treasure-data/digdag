@@ -1,0 +1,12 @@
+timezone: UTC
+
+_export:
+  schema: {"this should be": "ignored"}
+  pg:
+    host: localhost
+    database: ${pg_database}
+    user: digdag_test
+    create_table: dest_tbl
+
++run:
+  pg>: select_table.sql
