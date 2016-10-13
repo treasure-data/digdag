@@ -180,12 +180,12 @@ public class Start
                     catch (Exception readEntityError) {
                         throw systemExit(String.format(ENGLISH,
                                     "A session for the requested session_time already exists (session_time=%s)" +
-                                    "\nhint: use `" + programName + " retry <attempt-id> --latest-revision` command to run the session again for the same session_time",
+                                    "\nhint: use `" + programName + " retry <attempt-id> --latest-revision --all` command to run the session again for the same session_time",
                                     truncatedTime.getSessionTime()));
                     }
                     throw systemExit(String.format(ENGLISH,
                                 "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
-                                "\nhint: use `" + programName + " retry %d --latest-revision` command to run the session again for the same session_time",
+                                "\nhint: use `" + programName + " retry %d --latest-revision --all` command to run the session again for the same session_time",
                                 conflictedAttempt.getSessionId(),
                                 conflictedAttempt.getId(),
                                 truncatedTime.getSessionTime(),

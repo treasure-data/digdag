@@ -59,7 +59,7 @@ public class Retry
             error += "--keep-revision, --latest-revision, or --revision <name> option is required. ";
         }
         if (!all && !resume && resumeFrom == null) {
-            error += "--all, --resume, or --resume-from <name> option is required. ";
+            error += "--all, --resume, or --resume-from <+name> option is required. ";
         }
         if (!error.isEmpty()) {
             throw usage(error);
