@@ -1,5 +1,5 @@
-GIT_SHOW = $(shell git show --pretty=format:'%H-%ad' --date 'format:%Y%m%dT%H%M%S' | head -n 1)
-GIT_STATUS = $(shell git status --porcelain --ignore-submodules=dirty 2> /dev/null | tail -n1)
+GIT_SHOW = $(shell git log -n 1 --pretty=format:%ad-%H --date format-local:%Y%m%dT%H%M%S)
+GIT_STATUS = $(shell git status --porcelain --ignore-submodules=dirty 2> /dev/null | tail -n 1)
 
 ifeq ($(strip $(GIT_STATUS)),)
 	IMAGE_TAG = $(GIT_SHOW)
