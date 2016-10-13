@@ -1,0 +1,1 @@
+SELECT '${session_time}' AS session_time

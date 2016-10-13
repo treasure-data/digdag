@@ -1,5 +1,8 @@
 timezone: UTC
 
+_export:
+  schema: {"this should be": "ignored"}
+
 +run:
   pg>: select_table.sql
   host: localhost
