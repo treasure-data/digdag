@@ -8,6 +8,7 @@ timezone: UTC
       FROM
        publicdata:samples.natality
       ORDER BY weight_pounds DESC LIMIT 10;
+  default_dataset: publicdata:samples
 
 +post:
   sh>: touch ${outfile}

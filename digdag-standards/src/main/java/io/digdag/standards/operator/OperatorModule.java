@@ -45,7 +45,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
         addStandardOperatorFactory(binder, PgOperatorFactory.class);
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
-        addStandardOperatorFactory(binder, BqOperatorFactory.class);
+//        addStandardOperatorFactory(binder, BqOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)
