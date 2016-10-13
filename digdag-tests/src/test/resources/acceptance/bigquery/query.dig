@@ -6,9 +6,9 @@ timezone: UTC
       SELECT
        weight_pounds, state, year, gestation_weeks
       FROM
-       publicdata:samples.natality
+       natality
       ORDER BY weight_pounds DESC LIMIT 10;
-  default_dataset: publicdata:samples
+  dataset: publicdata:samples
 
 +post:
   sh>: touch ${outfile}

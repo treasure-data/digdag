@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  bq_load>: gs://bucket/object
+  schema: schema.yaml
+  destination_table: foo.bar
+
++post:
+  sh>: touch ${outfile}

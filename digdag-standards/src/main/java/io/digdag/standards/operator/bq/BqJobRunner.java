@@ -75,7 +75,9 @@ class BqJobRunner
                 .build();
         String credential = ctx.secrets().getSecret("gcp.credential");
         this.client = client(credential, transport);
-        this.projectId = projectId(ctx);
+        this.projectId = request.getLocalConfig().getOptional("project", String.class)
+                .or(request.getConfig().getNestedOrGetEmpty("bq").getOptional("project", String.class))
+                .or(projectId(credential, ctx));
     }
 
     @Override
@@ -194,21 +196,21 @@ class BqJobRunner
         }
     }
 
-    private String projectId(TaskExecutionContext ctx)
+    private String projectId(String credential, TaskExecutionContext ctx)
     {
-        String gcsCredential = ctx.secrets().getSecret("gcp.credential");
-        JsonNode gcsCredentialJson;
+        JsonNode credentialJson;
         try {
-            gcsCredentialJson = objectMapper.readTree(gcsCredential);
+            credentialJson = objectMapper.readTree(credential);
         }
         catch (IOException e) {
             throw new TaskExecutionException("Unable to parse 'gcp.credential' secret", TaskExecutionException.buildExceptionErrorConfig(e));
         }
-        JsonNode projectIdJson = gcsCredentialJson.get("project_id");
 
-        return ctx.secrets().getSecretOptional("gcp.project_id").or(() -> {
+        JsonNode projectIdJson = credentialJson.get("project_id");
+
+        return ctx.secrets().getSecretOptional("gcp.project").or(() -> {
             if (projectIdJson == null || !projectIdJson.isTextual()) {
-                throw new TaskExecutionException("Missing 'gcp.project_id' secret", ConfigElement.empty());
+                throw new TaskExecutionException("Missing 'gcp.project' secret", ConfigElement.empty());
             }
             return projectIdJson.asText();
         });

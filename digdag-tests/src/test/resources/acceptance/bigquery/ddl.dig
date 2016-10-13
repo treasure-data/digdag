@@ -1,0 +1,29 @@
+timezone: UTC
+
++run:
+  bq_ddl>:
+  dataset: foo
+  create_datasets:
+    - foo
+    - bar
+  drop_datasets:
+    - foo
+    - bar
+  empty_datasets:
+    - foo
+    - bar
+  create_tables:
+    - foo.a
+    - bar.b
+    - c
+  drop_tables:
+    - foo.a
+    - bar.b
+    - c
+  empty_tables:
+    - foo.a
+    - bar.b
+    - c
+
++post:
+  sh>: touch ${outfile}

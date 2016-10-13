@@ -100,8 +100,8 @@ public class BigQueryIT
     public void testQuery()
             throws Exception
     {
-        addWorkflow(projectDir, "acceptance/bigquery/bigquery.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "bigquery", ImmutableMap.of("outfile", outfile.toString()));
+        addWorkflow(projectDir, "acceptance/bigquery/query.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "query", ImmutableMap.of("outfile", outfile.toString()));
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
         assertThat(Files.exists(outfile), is(true));
     }

@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.bq;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.bigquery.model.ExternalDataConfiguration;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
@@ -13,7 +12,6 @@ import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
-import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
@@ -21,8 +19,6 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -36,24 +32,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class BqOperatorFactory
         implements OperatorFactory
 {
-    private static Logger logger = LoggerFactory.getLogger(BqOperatorFactory.class);
-
     private final TemplateEngine templateEngine;
-    private final ObjectMapper objectMapper;
     private final BqJobRunner.Factory bqJobFactory;
-
-    private final Map<String, String> environment;
 
     @Inject
     public BqOperatorFactory(
-            @Environment Map<String, String> environment,
             TemplateEngine templateEngine,
-            ObjectMapper objectMapper,
             BqJobRunner.Factory bqJobFactory)
     {
-        this.environment = environment;
         this.templateEngine = templateEngine;
-        this.objectMapper = objectMapper;
         this.bqJobFactory = bqJobFactory;
     }
 
@@ -91,7 +78,6 @@ public class BqOperatorFactory
         @Override
         public TaskResult run(TaskExecutionContext ctx)
         {
-//            try (BqJobRunner bqJob = new BqJobRunner(request, ctx, objectMapper, environment)) {
             try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
                 return result(bqJobRunner.runJob(queryJobConfig(bqJobRunner.projectId())));
             }
@@ -117,7 +103,7 @@ public class BqOperatorFactory
             configure(params, "table_definitions", new TypeReference<Map<String, ExternalDataConfiguration>>() {}, queryConfig::setTableDefinitions);
             configure(params, "user_defined_function_resources", new TypeReference<List<UserDefinedFunctionResource>>() {}, queryConfig::setUserDefinedFunctionResources);
 
-            Optional<String> defaultDataset = params.getOptional("default_dataset", String.class);
+            Optional<String> defaultDataset = params.getOptional("dataset", String.class);
             if (defaultDataset.isPresent()) {
                 queryConfig.setDefaultDataset(datasetReference(defaultDataset.get()));
             }
