@@ -10,7 +10,6 @@ services:
 
 cache:
   directories:
-    - $HOME/docker
     - $HOME/.gradle
     - $HOME/.m2
 
@@ -18,6 +17,7 @@ env:
   global:
     - TERM=dumb
     - CI_NODE_TOTAL=8
+    - BUILD_IMAGE=digdag/digdag-build:20161013T141605-f8d5da01d91a536c8f3d3cc322b2ef2f116ec09a
   matrix:
     - CI_NODE_INDEX=0
     - CI_NODE_INDEX=1
@@ -29,20 +29,19 @@ env:
     - CI_NODE_INDEX=7
 
 before_install:
-  - sudo docker/setup.sh
   - |
     docker run \
     -w /digdag \
     -v `pwd`/:/digdag \
     -v $HOME/.gradle:/root/.gradle \
-    digdag-build \
+    $BUILD_IMAGE \
     ./gradlew testClasses
   - ci/validate.sh
 
 install: true
 
 before_cache:
-  - sudo chown `id -u`:`id -g` -R $HOME/docker $HOME/.gradle $HOME/.m2  # make them cachable
+  - sudo chown `id -u`:`id -g` -R $HOME/.gradle $HOME/.m2  # make them cachable
 
 script:
   - ci/run_test.sh

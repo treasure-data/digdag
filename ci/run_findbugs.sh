@@ -3,5 +3,5 @@ docker run \
 -w /digdag \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \
-digdag-build \
+$BUILD_IMAGE \
 ./gradlew findbugsMain findbugsTest --info --no-daemon

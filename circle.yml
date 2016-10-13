@@ -4,6 +4,7 @@ machine:
     version: oraclejdk8
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
+    BUILD_IMAGE: digdag/digdag-build:20161013T141605-f8d5da01d91a536c8f3d3cc322b2ef2f116ec09a
   services:
     - docker
 
@@ -13,13 +14,12 @@ dependencies:
     - "~/.gradle"
     - "~/.m2"
   override:
-    - docker/setup.sh
     - | # download and cache dependencies
       docker run \
       -w /digdag \
       -v `pwd`/:/digdag \
       -v ~/.gradle:/root/.gradle \
-      digdag-build \
+      $BUILD_IMAGE \
       ./gradlew testClasses
 
 test:
