@@ -29,6 +29,8 @@ $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 
 ### Releasing a new version
 
+You need to set Bintray user name and API key in `BINTRAY_USER` and `BINTRAY_KEY` environment variables.
+
 1. run `./gradlew setVersion -Pto=<version>` command.
 2. add `releases/release-<version>` line to [digdag-docs/src/releases.rst](digdag-docs/src/releases.rst) (setVersion should do this automatically but not implemented yet).
 3. write release notes to `releases/release-<version>.rst` file. It must include at least version (the first line) and release date (the last line).
