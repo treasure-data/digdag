@@ -4,5 +4,5 @@ import Console from './console'
 
 ReactDOM.render(
   <Console />,
-  document.getElementById('root')
+  document.getElementById('app')
 )
