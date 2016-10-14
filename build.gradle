@@ -16,7 +16,7 @@ allprojects {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
         if (project.hasProperty("snapshotVersion")) {
             if (isSnapshotRelease) {
-                project.version = project.version.replaceAll(/-SNAPSHOT$/, project.snapshotVersion)
+                project.version = project.version.replaceAll(/-SNAPSHOT$/, "-${project.snapshotVersion}")
             }
             else {
                 throw new GradleException("-PsnapshotVersion is set but current version is not -SNAPSHOT")
