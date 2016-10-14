@@ -8,31 +8,19 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'idea'
 apply plugin: 'maven'
 
-def getGitHash = { ->
-    try {
-        def stdout = new ByteArrayOutputStream()
-        exec {
-            commandLine 'git log -n 1 --pretty=format:%ad-%H --date format-local:%Y%m%dT%H%M%S'.split(' ')
-            environment 'TZ', 'UTC'
-            standardOutput = stdout
-        }
-        return stdout.toString().trim()
-    }
-    catch (Exception ex) {
-        return "${new Date().format("yyyyMMdd'T'HHmmss", TimeZone.getTimeZone("UTC"))}-unknown"
-    }
-}
-def gitHash = getGitHash()
-
 allprojects {
     group = 'io.digdag'
     version = '0.8.18-SNAPSHOT'
 
     ext {
         isSnapshotRelease = version.endsWith('-SNAPSHOT')
-        if (isSnapshotRelease) {
-            // bintray doesn't allow creating snapshot releases
-            project.version = project.version.replaceAll(/-SNAPSHOT$/, "-${gitHash}")
+        if (project.hasProperty("snapshotVersion")) {
+            if (isSnapshotRelease) {
+                project.version = project.version.replaceAll(/-SNAPSHOT$/, project.snapshotVersion)
+            }
+            else {
+                throw new GradleException("-PsnapshotVersion is set but current version is not -SNAPSHOT")
+            }
         }
     }
 
@@ -433,6 +421,22 @@ task releaseCheck << {
         // TODO check git-ls-files includes release-<version>.rst file
         println "Ready. Run 'release' task."
     }
+}
+
+// Utility task to release a snapshot version with a fixed version number.
+// Bintray doesn't allow releasing -SNAPSHOT version.
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git log -n 1 --pretty=format:%ad-%H --date format-local:%Y%m%dT%H%M%S'.split(' ')
+        environment 'TZ', 'UTC'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+task snapshotRelease(type: Exec) {
+    commandLine "./gradlew", "-PsnapshotVersion=${getGitHash()}", "release"
 }
 
 // Generate parent maven manifest

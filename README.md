@@ -38,6 +38,13 @@ $ export DIGDAG_TEST_POSTGRESQL="$(cat config/test_postgresql.properties)"
 If major version is incremented, update `version =` and `release =` at [digdag-docs/src/conf.py](digdag-docs/src/conf.py).
 
 
+### Releasing a SNAPSHOT version
+
+```
+./gradlew releaseSnapshot
+```
+
+
 ### Building digdag-ui
 
 ```
