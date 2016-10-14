@@ -4,5 +4,5 @@ docker run \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \
 -e GITHUB_TOKEN \
-digdag-build \
+$BUILD_IMAGE \
 ci/push_gh_pages.sh

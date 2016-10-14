@@ -5,7 +5,7 @@ docker run \
 -v ~/.gradle:/root/.gradle \
 -v ~/.m2:/root/.m2 \
 -i \
-digdag-build \
+$BUILD_IMAGE \
 bash -ex <<EOF
 
 # Verify that gradle can generate a working maven pom and generate a dependency tree

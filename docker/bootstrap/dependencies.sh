@@ -1,14 +1,6 @@
 #!/bin/bash -ex
 apt-get -y update
-apt-get -y install software-properties-common apt-transport-https wget git
-
-# Oracle JDK8
-add-apt-repository ppa:webupd8team/java
-echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-apt-get -y update
-apt-get -y install oracle-java8-installer
-apt-get -y install oracle-java8-set-default
-rm -rf /var/cache/oracle-jdk8-installer
+apt-get -y install software-properties-common apt-transport-https wget git sudo
 
 # Maven
 apt-get -y install maven
