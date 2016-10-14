@@ -24,7 +24,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     output: {
       path: path.join(BUILD_PATH, OUTPUT_PATH),
       pathinfo: !build,
-      publicPath: OUTPUT_PATH,
+      publicPath: path.join('/', OUTPUT_PATH),
       filename: '[name].js'
     },
     target: 'web',
