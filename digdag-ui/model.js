@@ -172,6 +172,10 @@ export class Model {
     return this.get(`projects/`)
   }
 
+  fetchWorkflows (): Promise<Array<Project>> {
+    return this.get(`workflows/`)
+  }
+
   fetchProject (projectId: number): Promise<Project> {
     return this.get(`projects/${projectId}`)
   }

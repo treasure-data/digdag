@@ -9,6 +9,7 @@
     "build:copy": "node prepare-release.js",
     "build": "npm run clean && npm run build:js && npm run build:copy",
     "dev": "NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000",
+    "dev:https": "NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000 --https",
     "flow": "flow; test $? -eq 0 -o $? -eq 2",
     "lint": "standard"
   },

@@ -39,4 +39,3 @@
     verify3_keep_nested: ${complex.keep} # "kept"
     verify3_reset_nested: ${complex.nested.old_value} # null
     verify3_merge_nested: ${complex.nested.new_field} # "new"
-
