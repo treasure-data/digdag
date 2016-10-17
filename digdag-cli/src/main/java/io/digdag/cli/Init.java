@@ -157,10 +157,10 @@ public class Init
             throws IOException
         {
             out.println("  Creating " + dest);
-            String normalizedSrc = Paths.get(sourcePrefix).resolve(src).normalize().toString();
-            try (InputStream in = getClass().getResourceAsStream(normalizedSrc)) {
+            String absSrc = sourcePrefix + src;
+            try (InputStream in = getClass().getResourceAsStream(absSrc)) {
                 if (in == null) {
-                    throw new RuntimeException("Resource not exists: " + normalizedSrc);
+                    throw new RuntimeException("Resource does not exist: " + absSrc);
                 }
                 try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
