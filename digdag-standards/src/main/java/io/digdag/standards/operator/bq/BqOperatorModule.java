@@ -14,6 +14,7 @@ public class BqOperatorModule
     {
         binder.bind(BqJobRunner.Factory.class);
         addStandardOperatorFactory(binder, BqOperatorFactory.class);
+        addStandardOperatorFactory(binder, BqLoadOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)

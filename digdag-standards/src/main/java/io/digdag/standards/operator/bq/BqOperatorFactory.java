@@ -28,7 +28,7 @@ import static io.digdag.standards.operator.bq.Bq.datasetReference;
 import static io.digdag.standards.operator.bq.Bq.tableReference;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class BqOperatorFactory
+class BqOperatorFactory
         implements OperatorFactory
 {
     private final TemplateEngine templateEngine;

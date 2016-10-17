@@ -33,7 +33,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -168,6 +167,10 @@ class BqJobRunner
         JobStatus status = completed.getStatus();
         if (status.getErrorResult() != null) {
             // Failed
+            logger.error("BigQuery job failed: {}", canonicalJobId);
+            for (ErrorProto error : status.getErrors()) {
+                logger.error(toPrettyString(error));
+            }
             throw new TaskExecutionException("BigQuery job failed: " + canonicalJobId, errorConfig(status.getErrors()));
         }
 
@@ -247,8 +250,7 @@ class BqJobRunner
         JsonFactory jsonFactory = new JacksonFactory();
 
         if (credential.createScopedRequired()) {
-            Collection<String> bigqueryScopes = BigqueryScopes.all();
-            credential = credential.createScoped(bigqueryScopes);
+            credential = credential.createScoped(BigqueryScopes.all());
         }
 
         return new Bigquery.Builder(transport, jsonFactory, credential)
