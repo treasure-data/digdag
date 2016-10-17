@@ -13,12 +13,17 @@ import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.DatasetList;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
+import com.google.api.services.bigquery.model.TableDataInsertAllRequest;
+import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableSchema;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
 import org.junit.After;
@@ -31,6 +36,7 @@ import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -243,7 +249,7 @@ public class BigQueryIT
                 .execute();
 
         // Create output dataset
-        String datasetId = BQ_TAG + "_loadtest";
+        String datasetId = BQ_TAG + "_load_test";
         Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
                 .setProjectId(gcpProjectId)
                 .setDatasetId(datasetId));
@@ -265,6 +271,64 @@ public class BigQueryIT
         // Check that destination table was created
         Table destinationTable = bq.tables().get(gcpProjectId, datasetId, tableId).execute();
         assertThat(destinationTable.getId(), is(tableId));
+    }
+
+    @Test
+    public void testExtract()
+            throws Exception
+    {
+        assumeThat(GCS_TEST_BUCKET, not(isEmptyOrNullString()));
+
+        // Create source table
+        String tableId = "data";
+        String datasetId = BQ_TAG + "_extract_test";
+        Dataset dataset = new Dataset().setDatasetReference(new DatasetReference()
+                .setProjectId(gcpProjectId)
+                .setDatasetId(datasetId));
+        bq.datasets().insert(gcpProjectId, dataset)
+                .execute();
+        Table table = new Table().setTableReference(new TableReference()
+                .setProjectId(gcpProjectId)
+                .setTableId(tableId))
+                .setSchema(new TableSchema()
+                        .setFields(ImmutableList.of(
+                                new TableFieldSchema().setName("foo").setType("STRING"),
+                                new TableFieldSchema().setName("bar").setType("STRING")
+                        )));
+        bq.tables().insert(gcpProjectId, datasetId, table)
+                .execute();
+
+        // Populate source table
+        TableDataInsertAllRequest content = new TableDataInsertAllRequest()
+                .setRows(ImmutableList.of(
+                        new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                "foo", "a",
+                                "bar", "b")),
+                        new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of(
+                                "foo", "c",
+                                "bar", "d"))));
+        bq.tabledata().insertAll(gcpProjectId, datasetId, tableId, content)
+                .execute();
+
+        // Run extract
+        String objectName = GCS_PREFIX + "test.csv";
+        addWorkflow(projectDir, "acceptance/bigquery/extract.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "extract", ImmutableMap.of(
+                "src_dataset", datasetId,
+                "src_table", tableId,
+                "dst_bucket", GCS_TEST_BUCKET,
+                "dst_object", objectName,
+                "outfile", outfile.toString()));
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+        assertThat(Files.exists(outfile), is(true));
+
+        // Check that destination file was created
+        StorageObject metadata = gcs.objects().get(GCS_TEST_BUCKET, objectName)
+                .execute();
+        assertThat(metadata.getName(), is(objectName));
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        gcs.objects().get(GCS_TEST_BUCKET, objectName)
+                .executeMediaAndDownloadTo(data);
     }
 
     private static List<TableList.Tables> listAllTables(Bigquery bq, String projectId, String datasetId, Predicate<TableList.Tables> needle)

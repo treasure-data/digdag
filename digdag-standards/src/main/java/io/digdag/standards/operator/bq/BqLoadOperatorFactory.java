@@ -144,7 +144,6 @@ class BqLoadOperatorFactory
 
             String fileName = params.get("schema", String.class);
             try {
-
                 String schemaYaml = workspace.templateFile(templateEngine, fileName, UTF_8, params);
                 ObjectNode schemaJson = new YamlLoader().loadString(schemaYaml);
                 return objectMapper.readValue(schemaJson.traverse(), TableSchema.class);
