@@ -23,7 +23,6 @@ import io.digdag.util.BaseOperator;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static io.digdag.standards.operator.bq.Bq.datasetReference;
 import static io.digdag.standards.operator.bq.Bq.tableReference;
@@ -85,35 +84,32 @@ public class BqOperatorFactory
 
         private JobConfiguration queryJobConfig(String projectId)
         {
-            // TODO: This could perhaps just be: params.get("config", JobConfigurationQuery.class);
-            //       Then we could just refer to the BigQuery documentation for the config param
-
-            JobConfigurationQuery queryConfig = new JobConfigurationQuery()
+            JobConfigurationQuery cfg = new JobConfigurationQuery()
                     .setQuery(query);
 
-            configure(params, "allow_large_results", Boolean.class, queryConfig::setAllowLargeResults);
-            configure(params, "use_legacy_sql", Boolean.class, queryConfig::setUseLegacySql);
-            configure(params, "use_query_cache", Boolean.class, queryConfig::setUseQueryCache);
-            configure(params, "create_disposition", String.class, queryConfig::setCreateDisposition);
-            configure(params, "write_disposition", String.class, queryConfig::setWriteDisposition);
-            configure(params, "flatten_results", Boolean.class, queryConfig::setFlattenResults);
-            configure(params, "maximum_billing_tier", Integer.class, queryConfig::setMaximumBillingTier);
-            configure(params, "preserve_nulls", Boolean.class, queryConfig::setPreserveNulls);
-            configure(params, "priority", String.class, queryConfig::setPriority);
-            configure(params, "table_definitions", new TypeReference<Map<String, ExternalDataConfiguration>>() {}, queryConfig::setTableDefinitions);
-            configure(params, "user_defined_function_resources", new TypeReference<List<UserDefinedFunctionResource>>() {}, queryConfig::setUserDefinedFunctionResources);
+            cfg.setUseLegacySql(params.get("use_legacy_sql", boolean.class, false));
+
+            params.getOptional("allow_large_results", boolean.class).transform(cfg::setAllowLargeResults);
+            params.getOptional("use_query_cache", Boolean.class).transform(cfg::setUseQueryCache);
+            params.getOptional("create_disposition", String.class).transform(cfg::setCreateDisposition);
+            params.getOptional("write_disposition", String.class).transform(cfg::setWriteDisposition);
+            params.getOptional("flatten_results", Boolean.class).transform(cfg::setFlattenResults);
+            params.getOptional("maximum_billing_tier", Integer.class).transform(cfg::setMaximumBillingTier);
+            params.getOptional("priority", String.class).transform(cfg::setPriority);
+
+            params.getOptional("table_definitions", new TypeReference<Map<String, ExternalDataConfiguration>>() {})
+                    .transform(cfg::setTableDefinitions);
+            params.getOptional("user_defined_function_resources", new TypeReference<List<UserDefinedFunctionResource>>() {})
+                    .transform(cfg::setUserDefinedFunctionResources);
 
             Optional<String> defaultDataset = params.getOptional("dataset", String.class);
-            if (defaultDataset.isPresent()) {
-                queryConfig.setDefaultDataset(datasetReference(defaultDataset.get()));
-            }
-            Optional<String> destinationTable = params.getOptional("destination_table", String.class);
-            if (destinationTable.isPresent()) {
-                queryConfig.setDestinationTable(tableReference(projectId, defaultDataset, destinationTable.get()));
-            }
+            defaultDataset.transform(s -> cfg.setDefaultDataset(datasetReference(s)));
+
+            params.getOptional("destination_table", String.class)
+                    .transform(s -> cfg.setDestinationTable(tableReference(projectId, defaultDataset, s)));
 
             return new JobConfiguration()
-                    .setQuery(queryConfig);
+                    .setQuery(cfg);
         }
 
         private TaskResult result(Job job)
@@ -126,22 +122,6 @@ public class BqOperatorFactory
                     .storeParams(result)
                     .addResetStoreParams(ConfigKey.of("bq", "last_jobid"))
                     .build();
-        }
-    }
-
-    private static <T> void configure(Config params, String key, Class<T> cls, Consumer<T> action)
-    {
-        Optional<T> value = params.getOptional(key, cls);
-        if (value.isPresent()) {
-            action.accept(value.get());
-        }
-    }
-
-    private static <T> void configure(Config params, String key, TypeReference<T> type, Consumer<T> action)
-    {
-        Optional<T> value = params.getOptional(key, type);
-        if (value.isPresent()) {
-            action.accept(value.get());
         }
     }
 }
