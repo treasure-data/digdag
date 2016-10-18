@@ -584,6 +584,11 @@ Starts sessions of a schedule for past session times.
 
   Example: --from '2016-01-01'
 
+:command:`--count N`
+  Starts given number of sessions. By default, this command starts all sessions until current time.
+
+  Example: --count 5
+
 :command:`--name NAME`
   Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.
 

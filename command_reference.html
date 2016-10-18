@@ -695,6 +695,10 @@
 <dd><p class="first">Timestamp to start backfill from (required). Sessions from this time (including this time) until current time will be started.</p>
 <p class="last">Example: &#8211;from &#8216;2016-01-01&#8217;</p>
 </dd>
+<dt><strong class="command">--count N</strong></dt>
+<dd><p class="first">Starts given number of sessions. By default, this command starts all sessions until current time.</p>
+<p class="last">Example: &#8211;count 5</p>
+</dd>
 <dt><strong class="command">--name NAME</strong></dt>
 <dd><p class="first">Unique name of the new attempts (required). This name is used not to run backfill sessions twice accidentally.</p>
 <p class="last">Example: &#8211;name backfill1</p>
