@@ -1,50 +1,46 @@
 package io.digdag.standards.operator.bq;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.api.services.bigquery.model.Job;
-import com.google.api.services.bigquery.model.JobConfiguration;
-import com.google.api.services.bigquery.model.JobConfigurationLoad;
-import com.google.api.services.bigquery.model.TableSchema;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.services.bigquery.model.Dataset;
+import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.TemplateException;
-import io.digdag.standards.operator.td.YamlLoader;
 import io.digdag.util.BaseOperator;
+import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import static io.digdag.standards.operator.bq.Bq.tableReference;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Locale.ENGLISH;
+import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.bq.Bq.datasetReference;
 
 class BqDdlOperatorFactory
         implements OperatorFactory
 {
     private final ObjectMapper objectMapper;
-    private final TemplateEngine templateEngine;
+    private final BqJobRunner.Factory bqJobFactory;
 
     @Inject
-    public BqDdlOperatorFactory(
+    BqDdlOperatorFactory(
             ObjectMapper objectMapper,
-            TemplateEngine templateEngine)
+            BqJobRunner.Factory bqJobFactory)
     {
         this.objectMapper = objectMapper;
-        this.templateEngine = templateEngine;
+        this.bqJobFactory = bqJobFactory;
     }
 
     public String getType()
@@ -55,32 +51,89 @@ class BqDdlOperatorFactory
     @Override
     public Operator newOperator(Path projectPath, TaskRequest request)
     {
-        return new BqLoadOperator(projectPath, request);
+        return new BqDdlOperator(projectPath, request);
     }
 
-    private class BqLoadOperator
+    private class BqDdlOperator
             extends BaseOperator
     {
         private final Config params;
-        private final List<String> sourceUris;
+        private final Config state;
+        private final List<BqOperation> operations;
 
-        BqLoadOperator(Path projectPath, TaskRequest request)
+        BqDdlOperator(Path projectPath, TaskRequest request)
         {
             super(projectPath, request);
             this.params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
+            this.state = request.getLastStateParams().deepCopy();
 
-            this.sourceUris = sourceUris(params);
+            this.operations = new ArrayList<>();
+
+            params.getListOrEmpty("delete_datasets", JsonNode.class).stream()
+                    .map(this::deleteDataset)
+                    .forEach(operations::add);
+
+            params.getListOrEmpty("empty_datasets", JsonNode.class).stream()
+                    .map(this::emptyDataset)
+                    .forEach(operations::add);
+
+            params.getListOrEmpty("create_datasets", JsonNode.class).stream()
+                    .map(this::createDataset)
+                    .forEach(operations::add);
         }
 
-        private List<String> sourceUris(Config params)
+        private BqOperation createDataset(JsonNode config)
         {
-            try {
-                return params.getList("_command", String.class);
+            return bq -> bq.createDataset(dataset(config));
+        }
+
+        private BqOperation emptyDataset(JsonNode config)
+        {
+            return bq -> bq.emptyDataset(dataset(config));
+        }
+
+        private BqOperation deleteDataset(JsonNode config)
+        {
+            if (!config.isTextual()) {
+                throw new ConfigException("Bad dataset reference: " + config);
             }
-            catch (ConfigException ignore) {
-                return ImmutableList.of(params.get("_command", String.class));
+            DatasetReference datasetReference = datasetReference(config.asText());
+            return bq -> {
+                String projectId = Optional.fromNullable(datasetReference.getProjectId()).or(bq.projectId());
+                bq.deleteDataset(projectId, datasetReference.getDatasetId());
+            };
+        }
+
+        private Dataset dataset(JsonNode node)
+        {
+            if (node.isTextual()) {
+                return new Dataset()
+                        .setDatasetReference(datasetReference(node.asText()));
             }
+            else {
+                DatasetConfig config;
+                try {
+                    config = objectMapper.readValue(node.traverse(), DatasetConfig.class);
+                }
+                catch (IOException e) {
+                    throw new ConfigException("Invalid dataset reference or configuration: " + node, e);
+                }
+                return dataset(config);
+            }
+        }
+
+        private Dataset dataset(DatasetConfig config)
+        {
+            return new Dataset()
+                    .setDatasetReference(new DatasetReference()
+                            .setProjectId(config.project().orNull())
+                            .setDatasetId(config.id()))
+                    .setFriendlyName(config.friendly_name().orNull())
+                    .setDefaultTableExpirationMs(config.default_table_expiration_ms().orNull())
+                    .setLocation(config.location().orNull())
+                    .setAccess(config.access().orNull())
+                    .setLabels(config.labels().orNull());
         }
 
         @Override
@@ -93,78 +146,49 @@ class BqDdlOperatorFactory
         public TaskResult run(TaskExecutionContext ctx)
         {
             try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
-                return result(bqJobRunner.runJob(loadJobConfig(bqJobRunner.projectId())));
+                int operation = state.get("operation", int.class, 0);
+                for (int i = operation; i < operations.size(); i++) {
+                    state.set("operation", i);
+                    BqOperation o = operations.get(i);
+                    pollingRetryExecutor(state, "retry")
+                            .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
+                            .withErrorMessage("BiqQuery DDL operation failed")
+                            .run(() -> o.perform(bqJobRunner));
+                }
             }
+
+            return TaskResult.empty(request);
         }
+    }
 
-        private JobConfiguration loadJobConfig(String projectId)
-        {
-            JobConfigurationLoad cfg = new JobConfigurationLoad()
-                    .setSourceUris(sourceUris);
+    private static boolean isDeterministicException(GoogleJsonResponseException e)
+    {
+        return e.getStatusCode() / 100 == 4;
+    }
 
-            if (params.has("schema")) {
-                cfg.setSchema(tableSchema(params));
-            }
+    private interface BqOperation
+    {
+        void perform(BqJobRunner bqJobRunner)
+                throws IOException;
+    }
 
-            Optional<String> defaultDataset = params.getOptional("dataset", String.class);
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonDeserialize(as = ImmutableDatasetConfig.class)
+    interface DatasetConfig
+    {
+        String id();
 
-            String destinationTable = params.get("destination_table", String.class);
-            cfg.setDestinationTable(tableReference(projectId, defaultDataset, destinationTable));
+        Optional<String> project();
 
-            params.getOptional("create_disposition", String.class).transform(cfg::setCreateDisposition);
-            params.getOptional("write_disposition", String.class).transform(cfg::setWriteDisposition);
+        Optional<String> friendly_name();
 
-            params.getOptional("source_format", String.class).transform(cfg::setSourceFormat);
-            params.getOptional("field_delimiter", String.class).transform(cfg::setFieldDelimiter);
-            params.getOptional("skip_leading_rows", int.class).transform(cfg::setSkipLeadingRows);
-            params.getOptional("encoding", String.class).transform(cfg::setEncoding);
-            params.getOptional("quote", String.class).transform(cfg::setQuote);
-            params.getOptional("max_bad_records", int.class).transform(cfg::setMaxBadRecords);
-            params.getOptional("allow_quoted_newlines", boolean.class).transform(cfg::setAllowQuotedNewlines);
-            params.getOptional("allow_jagged_rows", boolean.class).transform(cfg::setAllowJaggedRows);
-            params.getOptional("ignore_unknown_values", boolean.class).transform(cfg::setIgnoreUnknownValues);
-            params.getOptional("projection_fields", new TypeReference<List<String>>() {}).transform(cfg::setProjectionFields);
-            params.getOptional("autodetect", boolean.class).transform(cfg::setAutodetect);
-            params.getOptional("schema_update_options", new TypeReference<List<String>>() {}).transform(cfg::setSchemaUpdateOptions);
+        Optional<Long> default_table_expiration_ms();
 
-            return new JobConfiguration()
-                    .setLoad(cfg);
-        }
+        Optional<String> location();
 
-        private TableSchema tableSchema(Config params)
-        {
-            try {
-                return params.get("schema", TableSchema.class);
-            }
-            catch (ConfigException ignore) {
-            }
+        Optional<List<Dataset.Access>> access();
 
-            String fileName = params.get("schema", String.class);
-            try {
-                String schemaYaml = workspace.templateFile(templateEngine, fileName, UTF_8, params);
-                ObjectNode schemaJson = new YamlLoader().loadString(schemaYaml);
-                return objectMapper.readValue(schemaJson.traverse(), TableSchema.class);
-            }
-            catch (IOException ex) {
-                throw workspace.propagateIoException(ex, fileName, ConfigException::new);
-            }
-            catch (TemplateException ex) {
-                throw new ConfigException(
-                        String.format(ENGLISH, "%s in %s", ex.getMessage(), fileName),
-                        ex);
-            }
-        }
-
-        private TaskResult result(Job job)
-        {
-            ConfigFactory cf = request.getConfig().getFactory();
-            Config result = cf.create();
-            Config bq_load = result.getNestedOrSetEmpty("bq_load");
-            bq_load.set("last_jobid", job.getId());
-            return TaskResult.defaultBuilder(request)
-                    .storeParams(result)
-                    .addResetStoreParams(ConfigKey.of("bq_load", "last_jobid"))
-                    .build();
-        }
+        Optional<Map<String, String>> labels();
     }
 }

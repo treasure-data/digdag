@@ -4,6 +4,8 @@ import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import io.digdag.client.config.ConfigException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

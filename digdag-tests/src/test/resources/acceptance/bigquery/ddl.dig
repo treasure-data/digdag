@@ -6,7 +6,7 @@ timezone: UTC
   create_datasets:
     - foo
     - id: bar
-      friendlyName: a bar table
+      friendly_name: a bar table
       location: US
       access:
         - domain: example.com

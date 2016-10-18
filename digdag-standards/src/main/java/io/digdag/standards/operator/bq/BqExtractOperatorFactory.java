@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static io.digdag.standards.operator.bq.Bq.tableReference;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 class BqExtractOperatorFactory
         implements OperatorFactory

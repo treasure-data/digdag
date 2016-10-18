@@ -4,17 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
+import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
+import com.google.api.services.bigquery.model.TableList;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -31,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
@@ -88,6 +92,11 @@ class BqJobRunner
         catch (IOException e) {
             logger.warn("Error shutting down BigQuery client", e);
         }
+    }
+
+    Bigquery client()
+    {
+        return client;
     }
 
     String projectId()
@@ -282,6 +291,107 @@ class BqJobRunner
     private static String truncate(String s, int n)
     {
         return s.substring(0, Math.min(s.length(), n));
+    }
+
+    void createDataset(Dataset dataset)
+            throws IOException
+    {
+        try {
+            client.datasets().insert(projectId, dataset)
+                    .execute();
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_CONFLICT) {
+                logger.info("Dataset already exists: {}:{}", dataset.getDatasetReference());
+            }
+            else {
+                throw e;
+            }
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    void emptyDataset(Dataset dataset)
+            throws IOException
+    {
+        String projectId = Optional.fromNullable(dataset.getDatasetReference().getProjectId()).or(projectId());
+        String datasetId = dataset.getDatasetReference().getDatasetId();
+        deleteDataset(projectId, datasetId);
+        createDataset(dataset);
+    }
+
+    void patchDataset(String projectId, String datasetId, Dataset dataset)
+            throws IOException
+    {
+        client.datasets().patch(projectId, datasetId, dataset);
+    }
+
+    void deleteTables(String projectId, String datasetId)
+            throws IOException
+    {
+        Bigquery.Tables.List list = client.tables().list(projectId, datasetId);
+        TableList tableList;
+        do {
+            tableList = list.execute();
+            List<TableList.Tables> tables = tableList.getTables();
+            if (tables != null) {
+                for (TableList.Tables table : tables) {
+                    deleteTable(projectId, datasetId, table.getTableReference().getTableId());
+                }
+            }
+        }
+        while (tableList.getNextPageToken() != null);
+    }
+
+    void deleteTable(String projectId, String datasetId, String tableId)
+            throws IOException
+    {
+        try {
+            client.tables().delete(projectId, datasetId, tableId).execute();
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
+                // Already deleted
+                return;
+            }
+            throw e;
+        }
+    }
+
+    boolean datasetExists(String projectId, String datasetId)
+            throws IOException
+    {
+        try {
+            client.datasets().get(projectId, datasetId).execute();
+            return true;
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
+    public void deleteDataset(String projectId, String datasetId)
+            throws IOException
+    {
+        if (datasetExists(projectId, datasetId)) {
+            deleteTables(projectId, datasetId);
+
+            try {
+                client.datasets().delete(projectId, datasetId).execute();
+            }
+            catch (GoogleJsonResponseException e) {
+                if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
+                    // Already deleted
+                    return;
+                }
+                throw e;
+            }
+        }
     }
 
     static class Factory
