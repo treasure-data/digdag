@@ -5,7 +5,19 @@ timezone: UTC
   dataset: foo
   create_datasets:
     - foo
-    - bar
+    - id: bar
+      friendlyName: a bar table
+      location: US
+      access:
+        - domain: example.com
+        - role: READER
+        - specialGroup: projectOwners
+        - userByEmail: foo@example.com
+      default_table_expiration: 2d
+      labels:
+        l1: v1
+        l2: v2
+
   drop_datasets:
     - foo
     - bar
