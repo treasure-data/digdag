@@ -23,6 +23,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Init
     extends Command
 {
+    private static final String EXAMPLES_RESOURCE_PREFIX = "/digdag/cli/init_examples/";
+
     private static final Map<String, ExampleProjectGenerator> TYPES_TABLE = ImmutableMap.<String, ExampleProjectGenerator>builder()
             .put("echo", (gen) -> {})
             .put("sh", (gen) -> {
@@ -50,6 +52,7 @@ public class Init
                 gen.cp("queries/summarize_src_table.sql", "queries/summarize_src_table.sql");
             })
             .build();
+
     @Parameter(names = {"-t", "--type"})
     String exampleType = "echo";
 
@@ -100,7 +103,8 @@ public class Init
 
         String workflowFileName = workflowName + WORKFLOW_FILE_SUFFIX;
 
-        ResourceGenerator gen = new ResourceGenerator(String.format("/digdag/cli/init_examples/%s/", exampleType), destDir);
+        String sourcePrefix = EXAMPLES_RESOURCE_PREFIX + exampleType + "/";
+        ResourceGenerator gen = new ResourceGenerator(sourcePrefix, destDir);
 
         gen.mkdir(".");  // creates destDir itself
 
@@ -111,7 +115,7 @@ public class Init
             TYPES_TABLE.get(exampleType).generate(gen);
             gen.cp("workflow.dig", workflowFileName);
             if (!gen.exists(".gitignore")) {
-                gen.cp("../gitignore", ".gitignore");
+                gen.cpAbsoluteSource(EXAMPLES_RESOURCE_PREFIX + "gitignore", ".gitignore");
             }
             if (exampleType.equals("td")) {
                 if (isCurrentDirectory) {
@@ -156,11 +160,16 @@ public class Init
         private void cpAbsoluteDest(String src, Path dest)
             throws IOException
         {
+            cpAbsoluteSourceDest(sourcePrefix + src, dest);
+        }
+
+        private void cpAbsoluteSourceDest(String src, Path dest)
+                throws IOException
+        {
             out.println("  Creating " + dest);
-            String normalizedSrc = Paths.get(sourcePrefix).resolve(src).normalize().toString();
-            try (InputStream in = getClass().getResourceAsStream(normalizedSrc)) {
+            try (InputStream in = getClass().getResourceAsStream(src)) {
                 if (in == null) {
-                    throw new RuntimeException("Resource not exists: " + normalizedSrc);
+                    throw new RuntimeException("Resource does not exist: " + src);
                 }
                 try (OutputStream out = Files.newOutputStream(dest)) {
                     ByteStreams.copy(in, out);
@@ -168,16 +177,10 @@ public class Init
             }
         }
 
-        public void cpAbsoluteSource(Path file, String name)
+        public void cpAbsoluteSource(String src, String name)
             throws IOException
         {
-            Path dest = path(name);
-            out.println("  Creating " + dest);
-            try (InputStream in = Files.newInputStream(file)) {
-                try (OutputStream out = Files.newOutputStream(dest)) {
-                    ByteStreams.copy(in, out);
-                }
-            }
+            cpAbsoluteSourceDest(src, path(name));
         }
 
         private void cp(String src, String name)
