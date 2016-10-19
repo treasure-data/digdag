@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.bq;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.ExternalDataConfiguration;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
@@ -102,8 +103,9 @@ class BqOperatorFactory
             params.getOptional("user_defined_function_resources", new TypeReference<List<UserDefinedFunctionResource>>() {})
                     .transform(cfg::setUserDefinedFunctionResources);
 
-            Optional<String> defaultDataset = params.getOptional("dataset", String.class);
-            defaultDataset.transform(s -> cfg.setDefaultDataset(datasetReference(s)));
+            Optional<DatasetReference> defaultDataset = params.getOptional("dataset", String.class)
+                    .transform(Bq::datasetReference);
+            defaultDataset.transform(cfg::setDefaultDataset);
 
             params.getOptional("destination_table", String.class)
                     .transform(s -> cfg.setDestinationTable(tableReference(projectId, defaultDataset, s)));

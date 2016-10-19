@@ -15,19 +15,22 @@ class Bq
     private static final Pattern TABLE_REFERENCE_PATTERN = Pattern.compile("^(?:(?<project>[^:]+):)?(?:(?<dataset>[^.]+)\\.)?(?<table>[a-zA-Z0-9_]{1,1024})$");
 
     @VisibleForTesting
-    static TableReference tableReference(String defaultProjectId, Optional<String> defaultDataset, String s)
+    static TableReference tableReference(String defaultProjectId, Optional<DatasetReference> defaultDataset, String s)
     {
         Matcher matcher = TABLE_REFERENCE_PATTERN.matcher(s);
         if (!matcher.matches()) {
             throw new IllegalArgumentException("Bad table reference: " + s);
         }
 
-        String project = Optional.fromNullable(matcher.group("project")).or(defaultProjectId);
-        Optional<String> dataset = Optional.fromNullable(matcher.group("dataset")).or(defaultDataset);
+        String project = Optional.fromNullable(matcher.group("project"))
+                .or(defaultDataset.transform(DatasetReference::getProjectId))
+                .or(defaultProjectId);
+        Optional<String> dataset = Optional.fromNullable(matcher.group("dataset"))
+                .or(defaultDataset.transform(DatasetReference::getDatasetId));
         String table = matcher.group("table");
 
         if (!dataset.isPresent()) {
-            throw new IllegalArgumentException("Bad table reference. Either configure 'default_dataset' or include dataset name in table reference: " + s);
+            throw new IllegalArgumentException("Bad table reference. Either configure 'dataset' or include dataset name in table reference: " + s);
         }
 
         return new TableReference()

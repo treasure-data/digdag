@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.bq;
 
+import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationExtract;
@@ -86,7 +87,8 @@ class BqExtractOperatorFactory
                 cfg.setDestinationUri(params.get("destination", String.class));
             }
 
-            Optional<String> defaultDataset = params.getOptional("dataset", String.class);
+            Optional<DatasetReference> defaultDataset = params.getOptional("dataset", String.class)
+                    .transform(Bq::datasetReference);
             String sourceTable = params.get("_command", String.class);
             cfg.setSourceTable(tableReference(projectId, defaultDataset, sourceTable));
 

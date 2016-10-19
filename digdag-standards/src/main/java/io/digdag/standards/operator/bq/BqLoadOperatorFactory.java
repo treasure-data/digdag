@@ -3,6 +3,7 @@ package io.digdag.standards.operator.bq;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationLoad;
@@ -109,7 +110,8 @@ class BqLoadOperatorFactory
                 cfg.setSchema(tableSchema(params));
             }
 
-            Optional<String> defaultDataset = params.getOptional("dataset", String.class);
+            Optional<DatasetReference> defaultDataset = params.getOptional("dataset", String.class)
+                    .transform(Bq::datasetReference);
 
             String destinationTable = params.get("destination_table", String.class);
             cfg.setDestinationTable(tableReference(projectId, defaultDataset, destinationTable));

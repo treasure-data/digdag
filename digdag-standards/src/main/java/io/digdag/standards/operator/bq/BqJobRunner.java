@@ -17,6 +17,7 @@ import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
+import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -302,14 +303,11 @@ class BqJobRunner
         }
         catch (GoogleJsonResponseException e) {
             if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_CONFLICT) {
-                logger.info("Dataset already exists: {}:{}", dataset.getDatasetReference());
+                logger.debug("Dataset already exists: {}:{}", dataset.getDatasetReference());
             }
             else {
                 throw e;
             }
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
@@ -320,12 +318,6 @@ class BqJobRunner
         String datasetId = dataset.getDatasetReference().getDatasetId();
         deleteDataset(projectId, datasetId);
         createDataset(dataset);
-    }
-
-    void patchDataset(String projectId, String datasetId, Dataset dataset)
-            throws IOException
-    {
-        client.datasets().patch(projectId, datasetId, dataset);
     }
 
     void deleteTables(String projectId, String datasetId)
@@ -375,7 +367,7 @@ class BqJobRunner
         }
     }
 
-    public void deleteDataset(String projectId, String datasetId)
+    void deleteDataset(String projectId, String datasetId)
             throws IOException
     {
         if (datasetExists(projectId, datasetId)) {
@@ -389,6 +381,24 @@ class BqJobRunner
                     // Already deleted
                     return;
                 }
+                throw e;
+            }
+        }
+    }
+
+    void createTable(Table table)
+            throws IOException
+    {
+        String datasetId = table.getTableReference().getDatasetId();
+        try {
+            client.tables().insert(projectId, datasetId, table)
+                    .execute();
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_CONFLICT) {
+                logger.debug("Table already exists: {}:{}.{}", projectId, datasetId, table.getTableReference().getTableId());
+            }
+            else {
                 throw e;
             }
         }
