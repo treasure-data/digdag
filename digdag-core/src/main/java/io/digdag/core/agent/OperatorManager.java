@@ -309,7 +309,7 @@ public class OperatorManager
                 secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
-                mergedRequest.getConfig().getNestedOrGetEmpty("_env"),
+                mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
                 mergedRequest.getConfig(),
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
 
