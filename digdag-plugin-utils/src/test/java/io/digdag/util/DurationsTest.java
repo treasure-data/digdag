@@ -34,15 +34,37 @@ public class DurationsTest
         assertThat(formatDuration(parseDuration(" 21h 13m 17s ")), is("21h 13m 17s"));
         assertThat(formatDuration(parseDuration("21H13M17S")), is("21h 13m 17s"));
         assertThat(formatDuration(parseDuration(" 21 H 13 M 17 S ")), is("21h 13m 17s"));
+
+        assertThat(formatDuration(parseDuration("3d21h13m17s")), is("3d 21h 13m 17s"));
+        assertThat(formatDuration(parseDuration("3d 21h 13m 17s ")), is("3d 21h 13m 17s"));
+        assertThat(formatDuration(parseDuration("3D21H13M17S")), is("3d 21h 13m 17s"));
+        assertThat(formatDuration(parseDuration("3 D 21 H 13 M 17 S ")), is("3d 21h 13m 17s"));
     }
 
     @Test
     public void testValidDurations()
             throws Exception
     {
+        assertThat(parseDuration("17d"), is(Duration.ZERO.plusDays(17)));
+        assertThat(parseDuration("17D"), is(Duration.ZERO.plusDays(17)));
+        assertThat(parseDuration(" 17 d "), is(Duration.ZERO.plusDays(17)));
+
+        assertThat(parseDuration("17h"), is(Duration.ZERO.plusHours(17)));
+        assertThat(parseDuration("17H"), is(Duration.ZERO.plusHours(17)));
+        assertThat(parseDuration(" 17 h "), is(Duration.ZERO.plusHours(17)));
+
+        assertThat(parseDuration("17m"), is(Duration.ZERO.plusMinutes(17)));
+        assertThat(parseDuration("17M"), is(Duration.ZERO.plusMinutes(17)));
+        assertThat(parseDuration(" 17 m "), is(Duration.ZERO.plusMinutes(17)));
+
         assertThat(parseDuration("17s"), is(Duration.ZERO.plusSeconds(17)));
         assertThat(parseDuration("17S"), is(Duration.ZERO.plusSeconds(17)));
         assertThat(parseDuration(" 17 s "), is(Duration.ZERO.plusSeconds(17)));
+
+        assertThat(parseDuration("17s"), is(Duration.ZERO.plusSeconds(17)));
+        assertThat(parseDuration("17S"), is(Duration.ZERO.plusSeconds(17)));
+        assertThat(parseDuration(" 17 s "), is(Duration.ZERO.plusSeconds(17)));
+
         assertThat(parseDuration("13m17s"), is(Duration.ZERO.plusMinutes(13).plusSeconds(17)));
         assertThat(parseDuration(" 13 m 17 s "), is(Duration.ZERO.plusMinutes(13).plusSeconds(17)));
         assertThat(parseDuration(" 13 m 17 s "), is(Duration.ZERO.plusMinutes(13).plusSeconds(17)));
@@ -53,6 +75,10 @@ public class DurationsTest
         assertThat(parseDuration(" 21h 13m 17s "), is(Duration.ZERO.plusHours(21).plusMinutes(13).plusSeconds(17)));
         assertThat(parseDuration("21H13M17S"), is(Duration.ZERO.plusHours(21).plusMinutes(13).plusSeconds(17)));
         assertThat(parseDuration(" 21 H 13 M 17 S "), is(Duration.ZERO.plusHours(21).plusMinutes(13).plusSeconds(17)));
+        assertThat(parseDuration("3d21h13m17s"), is(Duration.ZERO.plusDays(3).plusHours(21).plusMinutes(13).plusSeconds(17)));
+        assertThat(parseDuration("3d 21h 13m 17s "), is(Duration.ZERO.plusDays(3).plusHours(21).plusMinutes(13).plusSeconds(17)));
+        assertThat(parseDuration("3D21H13M17S"), is(Duration.ZERO.plusDays(3).plusHours(21).plusMinutes(13).plusSeconds(17)));
+        assertThat(parseDuration("3 D 21 H 13 M 17 S "), is(Duration.ZERO.plusDays(3).plusHours(21).plusMinutes(13).plusSeconds(17)));
     }
 
     @Test
@@ -60,8 +86,8 @@ public class DurationsTest
             throws Exception
     {
         assertThrows(() -> parseDuration(""), DateTimeParseException.class);
+        assertThrows(() -> parseDuration("17"), DateTimeParseException.class);
         assertThrows(() -> parseDuration("1 7s"), DateTimeParseException.class);
-        assertThrows(() -> parseDuration("17d"), DateTimeParseException.class);
         assertThrows(() -> parseDuration("-4s"), DateTimeParseException.class);
         assertThrows(() -> parseDuration("foobar"), DateTimeParseException.class);
     }
