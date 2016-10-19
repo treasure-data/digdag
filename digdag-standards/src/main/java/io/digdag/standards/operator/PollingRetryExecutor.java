@@ -28,6 +28,7 @@ public class PollingRetryExecutor
     private static final String DONE = "done";
     private static final String RETRY = "retry";
 
+    private final Config root;
     private final Config state;
     private final String stateKey;
 
@@ -40,6 +41,7 @@ public class PollingRetryExecutor
     private final Object[] errorMessageParameters;
 
     private PollingRetryExecutor(
+            Config root,
             Config state,
             String stateKey,
             Duration minRetryInterval,
@@ -48,6 +50,7 @@ public class PollingRetryExecutor
             String errorMessage,
             Object... errorMessageParameters)
     {
+        this.root = Objects.requireNonNull(root, "root");
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.minRetryInterval = Objects.requireNonNull(minRetryInterval, "minRetryInterval");
@@ -57,9 +60,10 @@ public class PollingRetryExecutor
         this.errorMessageParameters = Objects.requireNonNull(errorMessageParameters, "errorMessageParameters");
     }
 
-    public static PollingRetryExecutor pollingRetryExecutor(Config state, String stateKey)
+    public static PollingRetryExecutor pollingRetryExecutor(Config root, Config state, String stateKey)
     {
         return new PollingRetryExecutor(
+                root,
                 state,
                 stateKey,
                 DEFAULT_MIN_INTERVAL,
@@ -72,6 +76,7 @@ public class PollingRetryExecutor
     public PollingRetryExecutor withErrorMessage(String errorMessage, Object... errorMessageParameters)
     {
         return new PollingRetryExecutor(
+                root,
                 state,
                 stateKey,
                 minRetryInterval,
@@ -103,6 +108,7 @@ public class PollingRetryExecutor
                 .add(retryPredicate)
                 .build();
         return new PollingRetryExecutor(
+                root,
                 state,
                 stateKey,
                 minRetryInterval,
@@ -120,6 +126,7 @@ public class PollingRetryExecutor
     public PollingRetryExecutor withRetryInterval(DurationInterval retryInterval)
     {
         return new PollingRetryExecutor(
+                root,
                 state,
                 stateKey,
                 retryInterval.min(),
@@ -199,7 +206,7 @@ public class PollingRetryExecutor
             retryState.set(RETRY, retryIteration + 1);
             int interval = (int) Math.min(minRetryInterval.getSeconds() * Math.pow(2, retryIteration), maxRetryInterval.getSeconds());
             logger.warn("{}: retrying in {} seconds", formattedErrorMessage, interval, e);
-            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(root));
         }
 
         // Clear retry state

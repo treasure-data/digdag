@@ -135,7 +135,7 @@ public class TdForEachOperatorFactory
 
         private List<Config> fetchRows(TDJobOperator job)
         {
-            return PollingRetryExecutor.pollingRetryExecutor(state, RESULT)
+            return PollingRetryExecutor.pollingRetryExecutor(state, state, RESULT)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
                     .run(() -> {

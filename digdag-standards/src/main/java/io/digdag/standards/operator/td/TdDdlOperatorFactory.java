@@ -110,7 +110,7 @@ public class TdDdlOperatorFactory
                 for (int i = operation; i < operations.size(); i++) {
                     state.set("operation", i);
                     Consumer<TDOperator> o = operations.get(i);
-                    pollingRetryExecutor(state, "retry")
+                    pollingRetryExecutor(state, state, "retry")
                             .retryUnless(TDOperator::isDeterministicClientException)
                             .withRetryInterval(retryInterval)
                             .withErrorMessage("DDL operation failed")

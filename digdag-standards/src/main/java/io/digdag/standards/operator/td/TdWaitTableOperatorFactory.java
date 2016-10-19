@@ -16,7 +16,6 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
-import io.digdag.standards.operator.PollingRetryExecutor;
 import io.digdag.util.BaseOperator;
 import org.msgpack.core.MessageTypeCastException;
 import org.msgpack.value.ArrayValue;
@@ -149,7 +148,7 @@ public class TdWaitTableOperatorFactory
         private boolean tableExists(TDOperator op)
         {
 
-            return pollingRetryExecutor(state, EXISTS)
+            return pollingRetryExecutor(state, state, EXISTS)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to check existence of table '%s.%s'", op.getDatabase(), table.getTable())
                     .withRetryInterval(retryInterval)
@@ -158,7 +157,7 @@ public class TdWaitTableOperatorFactory
 
         private boolean fetchJobResult(int rows, TDJobOperator job)
         {
-            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, RESULT)
+            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, state, RESULT)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
                     .withRetryInterval(retryInterval)

@@ -143,7 +143,7 @@ public class TdWaitOperatorFactory
 
         private boolean fetchJobResult(TDJobOperator job)
         {
-            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, RESULT)
+            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, state, RESULT)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
                     .run(() -> job.getResult(

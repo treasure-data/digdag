@@ -26,6 +26,7 @@ public class PollingWaiter
     private static final String ITERATION = "iteration";
     private static final String TASK = "task";
 
+    private final Config root;
     private final Config state;
     private final String stateKey;
 
@@ -35,8 +36,9 @@ public class PollingWaiter
     private final String waitMessage;
     private final Object[] waitMessageParameters;
 
-    private PollingWaiter(Config state, String stateKey, Duration minPollInterval, Duration maxPollInterval, String waitMessage, Object... waitMessageParameters)
+    private PollingWaiter(Config root, Config state, String stateKey, Duration minPollInterval, Duration maxPollInterval, String waitMessage, Object... waitMessageParameters)
     {
+        this.root = Objects.requireNonNull(root, "root");
         this.state = Objects.requireNonNull(state, "state");
         this.stateKey = Objects.requireNonNull(stateKey, "stateKey");
         this.minPollInterval = Objects.requireNonNull(minPollInterval, "minPollInterval");
@@ -45,14 +47,14 @@ public class PollingWaiter
         this.waitMessageParameters = Objects.requireNonNull(waitMessageParameters, "waitMessageParameters");
     }
 
-    public static PollingWaiter pollingWaiter(Config state, String stateKey)
+    public static PollingWaiter pollingWaiter(Config root, Config state, String stateKey)
     {
-        return new PollingWaiter(state, stateKey, DEFAULT_MIN_INTERVAL, DEFAULT_MAX_INTERVAL, DEFAULT_ERROR_MESSAGE, DEFAULT_ERROR_MESSAGE_PARAMETERS);
+        return new PollingWaiter(root, state, stateKey, DEFAULT_MIN_INTERVAL, DEFAULT_MAX_INTERVAL, DEFAULT_ERROR_MESSAGE, DEFAULT_ERROR_MESSAGE_PARAMETERS);
     }
 
     public PollingWaiter withWaitMessage(String waitMessage, Object... waitMessageParameters)
     {
-        return new PollingWaiter(state, stateKey, minPollInterval, maxPollInterval, waitMessage, waitMessageParameters);
+        return new PollingWaiter(root, state, stateKey, minPollInterval, maxPollInterval, waitMessage, waitMessageParameters);
     }
 
     public PollingWaiter withPollInterval(Duration minPollInterval, Duration maxPollInterval)
@@ -62,7 +64,7 @@ public class PollingWaiter
 
     public PollingWaiter withPollInterval(DurationInterval retryInterval)
     {
-        return new PollingWaiter(state, stateKey, retryInterval.min(), retryInterval.max(), waitMessage, waitMessageParameters);
+        return new PollingWaiter(root, state, stateKey, retryInterval.min(), retryInterval.max(), waitMessage, waitMessageParameters);
     }
 
     public PollingWaiter withMinPollInterval(Duration minPollInterval)
@@ -108,7 +110,7 @@ public class PollingWaiter
             int interval = (int) Math.min(minPollInterval.getSeconds() * Math.pow(2, iteration), maxPollInterval.getSeconds());
             String formattedErrorMessage = String.format(waitMessage, waitMessageParameters);
             logger.info("{}: checking again in {}", formattedErrorMessage, Durations.formatDuration(Duration.ofSeconds(interval)));
-            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+            throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(root));
         }
 
         pollState.remove(TASK);

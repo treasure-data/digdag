@@ -313,7 +313,7 @@ public class TdOperatorFactory
             return;
         }
 
-        pollingRetryExecutor(state, DOWNLOAD)
+        pollingRetryExecutor(state, state, DOWNLOAD)
                 .retryUnless(TDOperator::isDeterministicClientException)
                 .withRetryInterval(retryInterval)
                 .withErrorMessage("Failed to download result of job '%s'", j.getJobId())
@@ -397,7 +397,7 @@ public class TdOperatorFactory
 
     private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max, Config state, String stateKey, DurationInterval retryInterval)
     {
-        return pollingRetryExecutor(state, stateKey)
+        return pollingRetryExecutor(state, state, stateKey)
                 .retryUnless(TDOperator::isDeterministicClientException)
                 .withRetryInterval(retryInterval)
                 .withErrorMessage("Failed to download result of job '%s'", j.getJobId())

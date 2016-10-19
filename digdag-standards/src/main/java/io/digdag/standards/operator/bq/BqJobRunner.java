@@ -120,7 +120,7 @@ class BqJobRunner
                 .setJobId(jobId.get());
 
         // Start job
-        pollingRetryExecutor(state, START)
+        pollingRetryExecutor(state, state, START)
                 .withErrorMessage("BigQuery job submission failed: %s", canonicalJobId)
                 .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
                 .runOnce(() -> {
@@ -145,12 +145,12 @@ class BqJobRunner
                 });
 
         // Wait for job to complete
-        Job completed = pollingWaiter(state, RUNNING)
+        Job completed = pollingWaiter(state, state, RUNNING)
                 .withWaitMessage("BigQuery job still running: %s", jobId)
                 .awaitOnce(Job.class, pollState -> {
 
                     // Check job status
-                    Job job = pollingRetryExecutor(pollState, CHECK)
+                    Job job = pollingRetryExecutor(state, pollState, CHECK)
                             .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
                             .withErrorMessage("BigQuery job status check failed: %s", canonicalJobId)
                             .run(() -> {
