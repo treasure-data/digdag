@@ -83,19 +83,19 @@ public class GrantedPrivilegedVariables
             };
         }
         else {
-            ConfigKey secretSharedKey = grants.get(key, ConfigKey.class);
+            ConfigKey secretKey = grants.get(key, ConfigKey.class);
             return (required) -> {
-                Optional<String> secret = secretProvider.getSecretOptional(secretSharedKey.toString());
+                Optional<String> secret = secretProvider.getSecretOptional(secretKey.toString());
                 if (secret.isPresent()) {
                     return secret.get();
                 }
 
                 Config nested = params;
-                for (String nestName : secretSharedKey.getNestNames()) {
+                for (String nestName : secretKey.getNestNames()) {
                     Optional<Config> optionalNested = nested.getOptionalNested(nestName);
                     if (!optionalNested.isPresent()) {
                         if (required) {
-                            throw new ConfigException("Nested object '" + nestName + "' out of " + secretSharedKey + " is required but not set");
+                            throw new ConfigException("Nested object '" + nestName + "' out of " + secretKey + " is required but not set");
                         }
                         else {
                             return null;
@@ -103,9 +103,9 @@ public class GrantedPrivilegedVariables
                     }
                     nested = optionalNested.get();
                 }
-                String value = nested.get(secretSharedKey.getLastName(), String.class, null);
+                String value = nested.get(secretKey.getLastName(), String.class, null);
                 if (required && value == null) {
-                    throw new ConfigException("Nested object '" + secretSharedKey.getLastName() + "' out of " + secretSharedKey + " is required but not set");
+                    throw new ConfigException("Nested object '" + secretKey.getLastName() + "' out of " + secretKey + " is required but not set");
                 }
                 return value;
             };

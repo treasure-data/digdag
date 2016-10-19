@@ -36,8 +36,9 @@ abstract class BaseTdJobOperator
     static ConfigSelector.Builder configSelectorBuilder()
     {
         return ConfigSelector.builderOfScope("td")
+            .addSecretAccess("use_ssl", "proxy.enabled", "proxy.host", "proxy.port", "proxy.user", "proxy.password", "proxy.use_ssl", "endpoint", "host", "port", "user", "database")
             .addSecretOnlyAccess("apikey")
-            .addSecretSharedAccess("use_ssl", "proxy.enabled", "proxy.host", "proxy.port", "proxy.user", "proxy.password", "proxy.use_ssl", "endpoint", "host", "port", "user", "database");
+            ;
     }
 
     @Override

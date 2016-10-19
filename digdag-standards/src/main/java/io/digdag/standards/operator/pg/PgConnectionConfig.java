@@ -21,8 +21,8 @@ public abstract class PgConnectionConfig
     static ConfigSelector getSecretAccessList()
     {
         return ConfigSelector.builderOfScope("pg")
+            .addSecretAccess("user", "host", "port", "database", "ssl", "connect_timeout", "socket_timeout", "schema")
             .addSecretOnlyAccess("password")
-            .addSecretSharedAccess("user", "host", "port", "database", "ssl", "connect_timeout", "socket_timeout", "schema")
             .build();
     }
 

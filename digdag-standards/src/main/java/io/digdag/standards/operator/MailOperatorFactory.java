@@ -70,8 +70,8 @@ public class MailOperatorFactory
     public SecretAccessList getSecretAccessList()
     {
         return ConfigSelector.builderOfScope("mail")
+            .addSecretAccess("host", "port", "tls", "ssl", "username")
             .addSecretOnlyAccess("password")
-            .addSecretSharedAccess("host", "port", "tls", "ssl", "username")
             .build();
     }
 
