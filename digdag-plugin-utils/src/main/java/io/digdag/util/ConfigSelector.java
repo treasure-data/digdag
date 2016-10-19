@@ -11,17 +11,17 @@ public class ConfigSelector
     implements SecretAccessList
 {
     private final List<String> scopes;
+    private final Set<String> secretAccessKeys;
     private final Set<String> secretOnlyAccessKeys;
-    private final Set<String> secretSharedAccessKeys;
 
     private ConfigSelector(
             List<String> scopes,
-            Set<String> secretOnlyAccessKeys,
-            Set<String> secretSharedAccessKeys)
+            Set<String> secretAccessKeys,
+            Set<String> secretOnlyAccessKeys)
     {
         this.scopes = scopes;
+        this.secretAccessKeys = secretAccessKeys;
         this.secretOnlyAccessKeys = secretOnlyAccessKeys;
-        this.secretSharedAccessKeys = secretSharedAccessKeys;
     }
 
     public String getPrimaryScope()
@@ -33,9 +33,14 @@ public class ConfigSelector
     public Set<String> getSecretKeys()
     {
         ImmutableSet.Builder<String> set = ImmutableSet.builder();
+        set.addAll(secretAccessKeys);
         set.addAll(secretOnlyAccessKeys);
-        set.addAll(secretSharedAccessKeys);
         return set.build();
+    }
+
+    public Set<String> getSecretAccessList()
+    {
+        return secretAccessKeys;
     }
 
     public Set<String> getSecretOnlyAccessList()
@@ -43,29 +48,24 @@ public class ConfigSelector
         return secretOnlyAccessKeys;
     }
 
-    public Set<String> getSecretSharedAccessList()
-    {
-        return secretSharedAccessKeys;
-    }
-
     public ConfigSelector withExtraSecretAccessList(ConfigSelector another)
     {
         ImmutableList.Builder<String> scopeBuilder = ImmutableList.builder();
+        ImmutableSet.Builder<String> secretAccessBuilder = ImmutableSet.builder();
         ImmutableSet.Builder<String> secretOnlyAccessBuilder = ImmutableSet.builder();
-        ImmutableSet.Builder<String> secretSharedAccessBuilder = ImmutableSet.builder();
 
         scopeBuilder.addAll(scopes);
+        secretAccessBuilder.addAll(secretAccessKeys);
         secretOnlyAccessBuilder.addAll(secretOnlyAccessKeys);
-        secretSharedAccessBuilder.addAll(secretSharedAccessKeys);
 
         scopeBuilder.addAll(another.scopes);
+        secretAccessBuilder.addAll(another.secretAccessKeys);
         secretOnlyAccessBuilder.addAll(another.secretOnlyAccessKeys);
-        secretSharedAccessBuilder.addAll(another.secretSharedAccessKeys);
 
         return new ConfigSelector(
                 scopeBuilder.build(),
-                secretOnlyAccessBuilder.build(),
-                secretSharedAccessBuilder.build());
+                secretAccessBuilder.build(),
+                secretOnlyAccessBuilder.build());
     }
 
     public static Builder builderOfScope(String scope)
@@ -76,12 +76,35 @@ public class ConfigSelector
     public static class Builder
     {
         private final String scope;
+        private ImmutableSet.Builder<String> secretAccessBuilder = ImmutableSet.builder();
         private ImmutableSet.Builder<String> secretOnlyAccessBuilder = ImmutableSet.builder();
-        private ImmutableSet.Builder<String> secretSharedAccessBuilder = ImmutableSet.builder();
 
         private Builder(String scope)
         {
             this.scope = scope;
+        }
+
+        private Builder addSecretAccess(String key)
+        {
+            Preconditions.checkNotNull(key);
+            secretAccessBuilder.add(scope + "." + key);
+            return this;
+        }
+
+        public Builder addSecretAccess(String... keys)
+        {
+            for (String key : keys) {
+                addSecretAccess(key);
+            }
+            return this;
+        }
+
+        public Builder addAllSecretAccess(Iterable<? extends String> keys)
+        {
+            for (String key : keys) {
+                addSecretAccess(key);
+            }
+            return this;
         }
 
         private Builder addSecretOnlyAccess(String key)
@@ -107,35 +130,12 @@ public class ConfigSelector
             return this;
         }
 
-        private Builder addSecretSharedAccess(String key)
-        {
-            Preconditions.checkNotNull(key);
-            secretSharedAccessBuilder.add(scope + "." + key);
-            return this;
-        }
-
-        public Builder addSecretSharedAccess(String... keys)
-        {
-            for (String key : keys) {
-                addSecretSharedAccess(key);
-            }
-            return this;
-        }
-
-        public Builder addAllSecretSharedAccess(Iterable<? extends String> keys)
-        {
-            for (String key : keys) {
-                addSecretSharedAccess(key);
-            }
-            return this;
-        }
-
         public ConfigSelector build()
         {
             return new ConfigSelector(
                     ImmutableList.of(scope),
-                    secretOnlyAccessBuilder.build(),
-                    secretSharedAccessBuilder.build());
+                    secretAccessBuilder.build(),
+                    secretOnlyAccessBuilder.build());
         }
     }
 }
