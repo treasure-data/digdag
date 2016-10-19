@@ -2,40 +2,64 @@ timezone: UTC
 
 +run:
   bq_ddl>:
-  dataset: foo
+  dataset: ${test_default_dataset}
+
   create_datasets:
-    - foo
-    - id: bar
-      friendly_name: a bar table
+    - ${test_create_dataset_1}
+    - id: ${test_create_dataset_2}
+      friendly_name: create dataset 2
       location: US
-      access:
-        - domain: example.com
-        - role: READER
-        - specialGroup: projectOwners
-        - userByEmail: foo@example.com
-      default_table_expiration: 2d
+      default_table_expiration: 7d
       labels:
         l1: v1
         l2: v2
+    - ${test_create_table_3_create_dataset}
+    - ${test_empty_table_3_create_dataset}
 
-  drop_datasets:
-    - foo
-    - bar
+  delete_datasets:
+    - ${test_delete_dataset_1}
+    - ${test_delete_dataset_2}
+
   empty_datasets:
-    - foo
-    - bar
+    - ${test_empty_dataset_1}
+    - id: ${test_empty_dataset_2}
+      friendly_name: empty dataset 2
+      location: US
+      default_table_expiration: 7d
+      labels:
+        l1: v1
+        l2: v2
+    - ${test_create_table_2_empty_dataset}
+    - ${test_empty_table_2_empty_dataset}
+
   create_tables:
-    - foo.a
-    - bar.b
-    - c
-  drop_tables:
-    - foo.a
-    - bar.b
-    - c
+    - ${test_create_table_1}
+    - ${test_create_table_2_empty_dataset}.${test_create_table_2}
+    - ${test_create_table_3_create_dataset}.${test_create_table_3}
+    - ${test_create_table_4_existing_dataset}.${test_create_table_4}
+    - id: ${test_create_table_5}
+      friendly_name: create table 5
+      schema:
+        fields:
+          - {name: f1, type: STRING}
+          - {name: f2, type: STRING}
+
+  delete_tables:
+    - ${test_delete_table_1}
+    - ${test_delete_table_2_dataset}.${test_delete_table_2}
+    - non_existent_table
+
   empty_tables:
-    - foo.a
-    - bar.b
-    - c
+    - ${test_empty_table_1}
+    - ${test_empty_table_2_empty_dataset}.${test_empty_table_2}
+    - ${test_empty_table_3_create_dataset}.${test_empty_table_3}
+    - ${test_empty_table_4_existing_dataset}.${test_empty_table_4}
+    - id: ${test_empty_table_5}
+      friendly_name: empty table 5
+      schema:
+        fields:
+          - {name: f1, type: STRING}
+          - {name: f2, type: STRING}
 
 +post:
   sh>: touch ${outfile}

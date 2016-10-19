@@ -16,6 +16,7 @@ public class BqOperatorModule
         addStandardOperatorFactory(binder, BqOperatorFactory.class);
         addStandardOperatorFactory(binder, BqLoadOperatorFactory.class);
         addStandardOperatorFactory(binder, BqExtractOperatorFactory.class);
+        addStandardOperatorFactory(binder, BqDdlOperatorFactory.class);
     }
 
     protected void addStandardOperatorFactory(Binder binder, Class<? extends OperatorFactory> factory)

@@ -22,11 +22,18 @@ class Bq
             throw new IllegalArgumentException("Bad table reference: " + s);
         }
 
-        String project = Optional.fromNullable(matcher.group("project"))
-                .or(defaultDataset.transform(DatasetReference::getProjectId))
-                .or(defaultProjectId);
+        String project = matcher.group("project");
+        if (project == null) {
+            if (defaultDataset.isPresent() && defaultDataset.get().getProjectId() != null) {
+                project = defaultDataset.get().getProjectId();
+            } else {
+                project = defaultProjectId;
+            }
+        }
+
         Optional<String> dataset = Optional.fromNullable(matcher.group("dataset"))
                 .or(defaultDataset.transform(DatasetReference::getDatasetId));
+
         String table = matcher.group("table");
 
         if (!dataset.isPresent()) {
@@ -42,14 +49,23 @@ class Bq
     private static final Pattern DATASET_REFERENCE_PATTERN = Pattern.compile("^(?:(?<project>[^:]+):)?(?<dataset>[^.]+)$");
 
     @VisibleForTesting
-    static DatasetReference datasetReference(String s)
+    static DatasetReference datasetReference(String s) {
+        return datasetReference(Optional.absent(), s);
+    }
+
+    static DatasetReference datasetReference(String defaultProjectId, String s) {
+        return datasetReference(Optional.of(defaultProjectId), s);
+    }
+
+    @VisibleForTesting
+    static DatasetReference datasetReference(Optional<String> defaultProjectId, String s)
     {
         Matcher matcher = DATASET_REFERENCE_PATTERN.matcher(s);
         if (!matcher.matches()) {
             throw new IllegalArgumentException("Bad dataset reference: " + s);
         }
         return new DatasetReference()
-                .setProjectId(matcher.group("project"))
+                .setProjectId(Optional.fromNullable(matcher.group("project")).or(defaultProjectId).orNull())
                 .setDatasetId(matcher.group("dataset"));
     }
 }

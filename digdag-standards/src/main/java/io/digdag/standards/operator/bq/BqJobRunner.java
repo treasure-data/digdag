@@ -19,6 +19,7 @@ import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableList;
+import com.google.api.services.bigquery.model.TableReference;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
@@ -93,11 +93,6 @@ class BqJobRunner
         catch (IOException e) {
             logger.warn("Error shutting down BigQuery client", e);
         }
-    }
-
-    Bigquery client()
-    {
-        return client;
     }
 
     String projectId()
@@ -320,7 +315,7 @@ class BqJobRunner
         createDataset(dataset);
     }
 
-    void deleteTables(String projectId, String datasetId)
+    private void deleteTables(String projectId, String datasetId)
             throws IOException
     {
         Bigquery.Tables.List list = client.tables().list(projectId, datasetId);
@@ -402,6 +397,14 @@ class BqJobRunner
                 throw e;
             }
         }
+    }
+
+    public void emptyTable(Table table)
+            throws IOException
+    {
+        TableReference r = table.getTableReference();
+        deleteTable(r.getProjectId(), r.getDatasetId(), r.getTableId());
+        createTable(table);
     }
 
     static class Factory

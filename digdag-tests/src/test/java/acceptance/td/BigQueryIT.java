@@ -3,6 +3,8 @@ package acceptance.td;
 import com.amazonaws.util.StringInputStream;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
@@ -14,6 +16,7 @@ import com.google.api.services.bigquery.model.DatasetList;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableDataInsertAllRequest;
+import com.google.api.services.bigquery.model.TableDataList;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
@@ -38,6 +41,7 @@ import utils.TestUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -47,6 +51,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
@@ -93,7 +98,7 @@ public class BigQueryIT
     {
         assumeThat(GCP_CREDENTIAL, not(isEmptyOrNullString()));
 
-        proxyServer = TestUtils.startRequestFailingProxy(1);
+        proxyServer = TestUtils.startRequestFailingProxy(2);
 
         server = TemporaryDigdagServer.builder()
                 .environment(ImmutableMap.of(
@@ -205,7 +210,7 @@ public class BigQueryIT
         if (bq == null) {
             return;
         }
-        List<DatasetList.Datasets> datasets = listAllDatasets(
+        List<DatasetList.Datasets> datasets = listDatasets(
                 bq, gcpProjectId, ds -> ds.getDatasetReference().getDatasetId().contains(BQ_TAG));
         for (DatasetList.Datasets dataset : datasets) {
             deleteDataset(bq, gcpProjectId, dataset.getDatasetReference().getDatasetId());
@@ -331,7 +336,206 @@ public class BigQueryIT
                 .executeMediaAndDownloadTo(data);
     }
 
-    private static List<TableList.Tables> listAllTables(Bigquery bq, String projectId, String datasetId, Predicate<TableList.Tables> needle)
+    @Test
+    public void testDdl()
+            throws Exception
+    {
+        String testCreateDataset1 = BQ_TAG + "_create_dataset_1";
+        String testCreateDataset2 = BQ_TAG + "_create_dataset_2";
+        String testDeleteDataset1 = BQ_TAG + "_delete_dataset_1";
+        String testDeleteDataset2 = BQ_TAG + "_delete_dataset_2";
+        String testEmptyDataset1 = BQ_TAG + "_empty_dataset_1";
+        String testEmptyDataset2 = BQ_TAG + "_empty_dataset_2";
+        String testDeleteDataset1Table1 = "test_delete_dataset_1_table_1";
+        String testEmptyDataset1Table1 = "test_empty_dataset_1_table_1";
+        String testDefaultDataset = BQ_TAG + "_default_dataset";
+        String testDeleteTable2ExistingDataset = BQ_TAG + "_delete_table_2_existing_dataset";
+        String testCreateTable2EmptyDataset = BQ_TAG + "_create_table_2_empty_dataset";
+        String testCreateTable3CreateDataset = BQ_TAG + "_create_table_3_create_dataset";
+        String testCreateTable4ExistingDataset = BQ_TAG + "_create_table_4_existing_dataset";
+        String testCreateTable1 = "test_create_table_1";
+        String testCreateTable2 = "test_create_table_2";
+        String testCreateTable3 = "test_create_table_3";
+        String testCreateTable4 = "test_create_table_4";
+        String testCreateTable5 = "test_create_table_5";
+        String testDeleteTable1 = "test_delete_table_1";
+        String testDeleteTable2 = "test_delete_table_2";
+        String testEmptyTable2EmptyDataset = BQ_TAG + "_empty_table_2_empty_dataset";
+        String testEmptyTable3CreateDataset = BQ_TAG + "_empty_table_3_create_dataset";
+        String testEmptyTable4ExistingDataset = BQ_TAG + "_empty_table_4_existing_dataset";
+        String testEmptyTable1 = "test_empty_table_1";
+        String testEmptyTable2 = "test_empty_table_2";
+        String testEmptyTable3 = "test_empty_table_3";
+        String testEmptyTable4 = "test_empty_table_4";
+        String testEmptyTable5 = "test_empty_table_5";
+
+        createDataset(bq, gcpProjectId, testDefaultDataset);
+        createDataset(bq, gcpProjectId, testDeleteDataset1);
+        createDataset(bq, gcpProjectId, testEmptyDataset1);
+        createDataset(bq, gcpProjectId, testCreateTable4ExistingDataset);
+        createDataset(bq, gcpProjectId, testEmptyTable4ExistingDataset);
+        createDataset(bq, gcpProjectId, testDeleteTable2ExistingDataset);
+
+        createTable(bq, gcpProjectId, testDeleteDataset1, testDeleteDataset1Table1);
+        createTable(bq, gcpProjectId, testEmptyDataset1, testEmptyDataset1Table1);
+        createTable(bq, gcpProjectId, testDefaultDataset, testDeleteTable1);
+        createTable(bq, gcpProjectId, testDeleteTable2ExistingDataset, testDeleteTable2);
+
+        createTable(bq, gcpProjectId, testDefaultDataset, new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId(gcpProjectId)
+                        .setDatasetId(testDefaultDataset)
+                        .setTableId(testEmptyTable5))
+                .setSchema(new TableSchema()
+                        .setFields(ImmutableList.of(
+                                new TableFieldSchema().setName("f1").setType("STRING"),
+                                new TableFieldSchema().setName("f2").setType("STRING")
+                        ))));
+
+        bq.tabledata().insertAll(gcpProjectId, testDefaultDataset, testEmptyTable5, new TableDataInsertAllRequest()
+                .setRows(ImmutableList.of(
+                        new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1a", "f2", "v2a")),
+                        new TableDataInsertAllRequest.Rows().setJson(ImmutableMap.of("f1", "v1b", "f2", "v2b"))
+                        )
+                ));
+
+        addWorkflow(projectDir, "acceptance/bigquery/ddl.dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, "ddl", ImmutableMap.<String, String>builder()
+                .put("test_default_dataset", testDefaultDataset)
+                .put("test_create_dataset_1", testCreateDataset1)
+                .put("test_create_dataset_2", testCreateDataset2)
+                .put("test_delete_dataset_1", testDeleteDataset1)
+                .put("test_delete_dataset_2", testDeleteDataset2)
+                .put("test_empty_dataset_1", testEmptyDataset1)
+                .put("test_empty_dataset_2", testEmptyDataset2)
+                .put("test_create_table_1", testCreateTable1)
+                .put("test_create_table_2", testCreateTable2)
+                .put("test_create_table_3", testCreateTable3)
+                .put("test_create_table_4", testCreateTable4)
+                .put("test_create_table_5", testCreateTable5)
+                .put("test_create_table_2_empty_dataset", testCreateTable2EmptyDataset)
+                .put("test_create_table_3_create_dataset", testCreateTable3CreateDataset)
+                .put("test_create_table_4_existing_dataset", testCreateTable4ExistingDataset)
+                .put("test_delete_table_2_dataset", testDeleteTable2ExistingDataset)
+                .put("test_delete_table_1", testDeleteTable1)
+                .put("test_delete_table_2", testDeleteTable2)
+                .put("test_empty_table_2_empty_dataset", testEmptyTable2EmptyDataset)
+                .put("test_empty_table_3_create_dataset", testEmptyTable3CreateDataset)
+                .put("test_empty_table_4_existing_dataset", testEmptyTable4ExistingDataset)
+                .put("test_empty_table_1", testEmptyTable1)
+                .put("test_empty_table_2", testEmptyTable2)
+                .put("test_empty_table_3", testEmptyTable3)
+                .put("test_empty_table_4", testEmptyTable4)
+                .put("test_empty_table_5", testEmptyTable5)
+                .put("outfile", outfile.toString())
+                .build());
+
+        expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
+
+        assertThat(Files.exists(outfile), is(true));
+
+        assertThat(datasetExists(bq, gcpProjectId, testCreateDataset1), is(true));
+        assertThat(datasetExists(bq, gcpProjectId, testCreateDataset2), is(true));
+        assertThat(datasetExists(bq, gcpProjectId, testEmptyDataset1), is(true));
+        assertThat(datasetExists(bq, gcpProjectId, testEmptyDataset2), is(true));
+        assertThat(datasetExists(bq, gcpProjectId, testDeleteDataset1), is(false));
+        assertThat(datasetExists(bq, gcpProjectId, testDeleteDataset2), is(false));
+
+        assertThat(listTables(bq, gcpProjectId, testEmptyDataset1), is(empty()));
+        assertThat(listTables(bq, gcpProjectId, testEmptyDataset2), is(empty()));
+
+        assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testCreateTable1), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testCreateTable2EmptyDataset, testCreateTable2), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testCreateTable3CreateDataset, testCreateTable3), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testCreateTable4ExistingDataset, testCreateTable4), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testCreateTable5), is(true));
+
+        assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testDeleteTable1), is(false));
+        assertThat(tableExists(bq, gcpProjectId, testDeleteTable2ExistingDataset, testDeleteTable2), is(false));
+
+        assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testEmptyTable1), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testEmptyTable2EmptyDataset, testEmptyTable2), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testEmptyTable3CreateDataset, testEmptyTable3), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testEmptyTable4ExistingDataset, testEmptyTable4), is(true));
+        assertThat(tableExists(bq, gcpProjectId, testDefaultDataset, testEmptyTable5), is(true));
+
+        Table emptyTable5 = bq.tables().get(gcpProjectId, testDefaultDataset, testEmptyTable5).execute();
+        assertThat(emptyTable5.getNumRows(), is(BigInteger.ZERO));
+    }
+
+    private static Table createTable(Bigquery bq, String projectId, String datasetId, String tableId)
+            throws IOException
+    {
+        Table table = new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId(projectId)
+                        .setDatasetId(datasetId)
+                        .setTableId(tableId));
+        Table created = createTable(bq, projectId, datasetId, table);
+        assertThat(tableExists(bq, projectId, datasetId, tableId), is(true));
+        return created;
+    }
+
+    private static boolean tableExists(Bigquery bq, String projectId, String datasetId, String tableId)
+            throws IOException
+    {
+        try {
+            bq.tables().get(projectId, datasetId, tableId).execute();
+            return true;
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
+    private static Table createTable(Bigquery bq, String projectId, String datasetId, Table table)
+            throws IOException
+    {
+        return bq.tables().insert(projectId, datasetId, table).execute();
+    }
+
+    private static Dataset createDataset(Bigquery bq, String projectId, String datasetId)
+            throws IOException
+    {
+        Dataset dataset = new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setDatasetId(datasetId));
+        Dataset created = createDataset(bq, projectId, dataset);
+        assertThat(datasetExists(bq, projectId, datasetId), is(true));
+        return created;
+    }
+
+    private static Dataset createDataset(Bigquery bq, String projectId, Dataset dataset)
+            throws IOException
+    {
+        return bq.datasets().insert(projectId, dataset).execute();
+    }
+
+    private static boolean datasetExists(Bigquery bq, String projectId, String datasetId)
+            throws IOException
+    {
+        try {
+            bq.datasets().get(projectId, datasetId).execute();
+            return true;
+        }
+        catch (GoogleJsonResponseException e) {
+            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
+    private static List<TableList.Tables> listTables(Bigquery bq, String projectId, String datasetId)
+            throws IOException
+    {
+        return listTables(bq, projectId, datasetId, t -> true);
+    }
+
+    private static List<TableList.Tables> listTables(Bigquery bq, String projectId, String datasetId, Predicate<TableList.Tables> needle)
             throws IOException
     {
         List<TableList.Tables> tables = new ArrayList<>();
@@ -348,7 +552,13 @@ public class BigQueryIT
         return tables;
     }
 
-    private static List<DatasetList.Datasets> listAllDatasets(Bigquery bq, String projectId, Predicate<DatasetList.Datasets> needle)
+    private static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId)
+            throws IOException
+    {
+        return listDatasets(bq, projectId, ds -> true);
+    }
+
+    private static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId, Predicate<DatasetList.Datasets> needle)
             throws IOException
     {
         List<DatasetList.Datasets> datasets = new ArrayList<>();
@@ -371,7 +581,7 @@ public class BigQueryIT
             throws IOException
     {
         // Delete tables
-        List<TableList.Tables> tables = listAllTables(bq, gcpProjectId, datasetId, table -> true);
+        List<TableList.Tables> tables = listTables(bq, gcpProjectId, datasetId, table -> true);
         for (TableList.Tables table : tables) {
             String tableId = table.getTableReference().getTableId();
             try {

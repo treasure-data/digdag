@@ -3,6 +3,10 @@ package io.digdag.standards.operator.bq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.DatasetReference;
+import com.google.api.services.bigquery.model.Table;
+import com.google.api.services.bigquery.model.TableFieldSchema;
+import com.google.api.services.bigquery.model.TableReference;
+import com.google.api.services.bigquery.model.TableSchema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
@@ -25,13 +29,16 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -50,10 +57,12 @@ public class BqDdlOperatorFactoryTest
     @Mock BqJobRunner bqJobRunner;
     @Mock BqJobRunner.Factory bqJobRunnerFactory;
 
-    @Captor ArgumentCaptor<Dataset> datasetCaptor;
-
+    @Captor ArgumentCaptor<Dataset> createDatasetCaptor;
+    @Captor ArgumentCaptor<Dataset> emptyDatasetCaptor;
     @Captor ArgumentCaptor<String> projectIdCaptor;
     @Captor ArgumentCaptor<String> datasetIdCaptor;
+    @Captor ArgumentCaptor<Table> createTableCaptor;
+    @Captor ArgumentCaptor<Table> emptyTableCaptor;
 
     private BqDdlOperatorFactory factory;
     private Path projectPath;
@@ -71,20 +80,54 @@ public class BqDdlOperatorFactoryTest
     }
 
     @Test
-    public void testDatasets()
+    public void testEmptyBqDdl()
+    {
+        Config config = newConfig();
+        config.set("_command", "");
+        when(taskRequest.getConfig()).thenReturn(config);
+        Operator operator = factory.newOperator(projectPath, taskRequest);
+        operator.run(taskExecutionContext);
+        verify(bqJobRunner).close();
+        verifyNoMoreInteractions(bqJobRunner);
+    }
+
+    @Test
+    public void testEmptyBqDdl2()
+    {
+        Config config = newConfig();
+        config.set("_command", "");
+        config.set("create_datasets", ImmutableList.of());
+        config.set("empty_datasets", ImmutableList.of());
+        config.set("delete_datasets", ImmutableList.of());
+        config.set("create_tables", ImmutableList.of());
+        config.set("empty_tables", ImmutableList.of());
+        config.set("delete_tables", ImmutableList.of());
+        when(taskRequest.getConfig()).thenReturn(config);
+        Operator operator = factory.newOperator(projectPath, taskRequest);
+        operator.run(taskExecutionContext);
+        verify(bqJobRunner).close();
+        verifyNoMoreInteractions(bqJobRunner);
+    }
+
+    @Test
+    public void testBqDdl()
             throws Exception
     {
         Config config = newConfig();
 
         config.set("_command", "");
 
+        config.set("dataset", "the_default_dataset");
+
         config.set("create_datasets", ImmutableList.of(
-                "create-foo",
-                "bar-project:create-bar",
+                "create_dataset_1",
+                "project_2:create_dataset_2",
+                ImmutableMap.of("id", "create_dataset_3"),
                 ImmutableMap.of(
-                        "id", "create-baz",
-                        "friendly_name", "a baz table",
-                        "default_table_expiration_ms", Long.toString(TimeUnit.DAYS.toMillis(1)),
+                        "project", "project_4",
+                        "id", "create_dataset_4",
+                        "friendly_name", "create dataset 4",
+                        "default_table_expiration", "1d",
                         "labels", ImmutableMap.of(
                                 "l1", "v1",
                                 "l2", "v2"
@@ -92,12 +135,14 @@ public class BqDdlOperatorFactoryTest
                 )));
 
         config.set("empty_datasets", ImmutableList.of(
-                "empty-foo",
-                "bar-project:empty-bar",
+                "empty_dataset_1",
+                "project_2:empty_dataset_2",
+                ImmutableMap.of("id", "empty_dataset_3"),
                 ImmutableMap.of(
-                        "id", "empty-baz",
-                        "friendly_name", "a baz table",
-                        "default_table_expiration_ms", Long.toString(TimeUnit.DAYS.toMillis(1)),
+                        "project", "project_4",
+                        "id", "empty_dataset_4",
+                        "friendly_name", "empty dataset 4",
+                        "default_table_expiration", "1d",
                         "labels", ImmutableMap.of(
                                 "l1", "v1",
                                 "l2", "v2"
@@ -105,8 +150,67 @@ public class BqDdlOperatorFactoryTest
                 )));
 
         config.set("delete_datasets", ImmutableList.of(
-                "delete-foo",
-                "bar-project:delete-bar"));
+                "delete_dataset_1",
+                "project_2:delete_dataset_2"));
+
+        config.set("create_tables", ImmutableList.of(
+                "create_table_1",
+                "dataset_2.create_table_2",
+                "project_3:create_table_3",
+                "project_4:dataset_4.create_table_4",
+                ImmutableMap.of("id", "create_table_5"),
+                ImmutableMap.of(
+                        "id", "create_table_6",
+                        "friendly_name", "create table 6",
+                        "expiration_time", "2017-01-02T01:02:03Z",
+                        "schema", ImmutableMap.of(
+                                "fields", ImmutableList.of(
+                                        ImmutableMap.of(
+                                                "name", "f1",
+                                                "type", "STRING"
+                                        ),
+                                        ImmutableMap.of(
+                                                "name", "f2",
+                                                "type", "STRING"
+                                        )
+                                )
+                        )
+                )
+        ));
+
+        config.set("empty_tables", ImmutableList.of(
+                "empty_table_1",
+                "dataset_2.empty_table_2",
+                "project_3:empty_table_3",
+                "project_4:dataset_4.empty_table_4",
+                ImmutableMap.of("id", "empty_table_5"),
+                ImmutableMap.<String, Object>builder()
+                        .put("project", "project_6")
+                        .put("dataset", "dataset_6")
+                        .put("id", "empty_table_6")
+                        .put("friendly_name", "empty table 6")
+                        .put("expiration_time", "2017-01-02T01:02:03Z")
+                        .put("schema", ImmutableMap.of(
+                                "fields", ImmutableList.of(
+                                        ImmutableMap.of(
+                                                "name", "f1",
+                                                "type", "STRING"
+                                        ),
+                                        ImmutableMap.of(
+                                                "name", "f2",
+                                                "type", "STRING"
+                                        )
+                                )
+                        )).build()
+                )
+        );
+
+        config.set("delete_tables", ImmutableList.of(
+                "delete_table_1",
+                "dataset_2.delete_table_2",
+                "project_3:delete_table_3",
+                "project_4:dataset_4.delete_table_4"
+        ));
 
         when(taskRequest.getConfig()).thenReturn(config);
 
@@ -116,53 +220,131 @@ public class BqDdlOperatorFactoryTest
 
         InOrder inOrder = Mockito.inOrder(bqJobRunner);
 
-        inOrder.verify(bqJobRunner).deleteDataset(PROJECT_ID, "delete-foo");
-        inOrder.verify(bqJobRunner).deleteDataset("bar-project", "delete-bar");
-        inOrder.verify(bqJobRunner, times(3)).emptyDataset(datasetCaptor.capture());
-        inOrder.verify(bqJobRunner, times(3)).createDataset(datasetCaptor.capture());
+        inOrder.verify(bqJobRunner).deleteDataset(PROJECT_ID, "delete_dataset_1");
+        inOrder.verify(bqJobRunner).deleteDataset("project_2", "delete_dataset_2");
+        inOrder.verify(bqJobRunner, times(4)).emptyDataset(emptyDatasetCaptor.capture());
+        inOrder.verify(bqJobRunner, times(4)).createDataset(createDatasetCaptor.capture());
 
-        // Empty + Create
+        inOrder.verify(bqJobRunner).deleteTable(PROJECT_ID, "the_default_dataset", "delete_table_1");
+        inOrder.verify(bqJobRunner).deleteTable(PROJECT_ID, "dataset_2", "delete_table_2");
+        inOrder.verify(bqJobRunner).deleteTable("project_3", "the_default_dataset", "delete_table_3");
+        inOrder.verify(bqJobRunner).deleteTable("project_4", "dataset_4", "delete_table_4");
+        inOrder.verify(bqJobRunner, times(6)).emptyTable(emptyTableCaptor.capture());
+        inOrder.verify(bqJobRunner, times(6)).createTable(createTableCaptor.capture());
 
-        List<Dataset> datasets = datasetCaptor.getAllValues();
+        // Datasets
 
-        assertThat(datasets.size(), is(6));
+        List<Dataset> emptyDatasets = emptyDatasetCaptor.getAllValues();
 
-        assertThat(datasets.get(0), is(new Dataset()
+        assertThat(emptyDatasets.size(), is(4));
+
+        assertThat(emptyDatasets.get(0), is(new Dataset()
                 .setDatasetReference(new DatasetReference()
-                        .setDatasetId("empty-foo"))));
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("empty_dataset_1"))));
 
-        assertThat(datasets.get(1), is(new Dataset()
+        assertThat(emptyDatasets.get(1), is(new Dataset()
                 .setDatasetReference(new DatasetReference()
-                        .setProjectId("bar-project")
-                        .setDatasetId("empty-bar"))));
+                        .setProjectId("project_2")
+                        .setDatasetId("empty_dataset_2"))));
 
-        assertThat(datasets.get(2), is(new Dataset()
+        assertThat(emptyDatasets.get(2), is(new Dataset()
                 .setDatasetReference(new DatasetReference()
-                        .setDatasetId("empty-baz"))
-                .setFriendlyName("a baz table")
-                .setDefaultTableExpirationMs(TimeUnit.DAYS.toMillis(1))
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("empty_dataset_3"))));
+
+        assertThat(emptyDatasets.get(3), is(new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setProjectId("project_4")
+                        .setDatasetId("empty_dataset_4"))
+                .setFriendlyName("empty dataset 4")
+                .setDefaultTableExpirationMs(DAYS.toMillis(1))
                 .setLabels(ImmutableMap.of(
                         "l1", "v1",
                         "l2", "v2"
                 ))));
 
-        assertThat(datasets.get(3), is(new Dataset()
-                .setDatasetReference(new DatasetReference()
-                        .setDatasetId("create-foo"))));
+        List<Dataset> createDatasets = createDatasetCaptor.getAllValues();
 
-        assertThat(datasets.get(4), is(new Dataset()
-                .setDatasetReference(new DatasetReference()
-                        .setProjectId("bar-project")
-                        .setDatasetId("create-bar"))));
+        assertThat(createDatasets.size(), is(4));
 
-        assertThat(datasets.get(5), is(new Dataset()
+        assertThat(createDatasets.get(0), is(new Dataset()
                 .setDatasetReference(new DatasetReference()
-                        .setDatasetId("create-baz"))
-                .setFriendlyName("a baz table")
-                .setDefaultTableExpirationMs(TimeUnit.DAYS.toMillis(1))
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("create_dataset_1"))));
+
+        assertThat(createDatasets.get(1), is(new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setProjectId("project_2")
+                        .setDatasetId("create_dataset_2"))));
+
+        assertThat(createDatasets.get(2), is(new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("create_dataset_3"))));
+
+        assertThat(createDatasets.get(3), is(new Dataset()
+                .setDatasetReference(new DatasetReference()
+                        .setProjectId("project_4")
+                        .setDatasetId("create_dataset_4"))
+                .setFriendlyName("create dataset 4")
+                .setDefaultTableExpirationMs(DAYS.toMillis(1))
                 .setLabels(ImmutableMap.of(
                         "l1", "v1",
                         "l2", "v2"
                 ))));
+
+        // Tables
+
+        List<Table> emptyTables = emptyTableCaptor.getAllValues();
+
+        assertThat(emptyTables.size(), is(6));
+
+        assertThat(emptyTables.get(0), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("the_default_dataset")
+                        .setTableId("empty_table_1"))));
+
+        assertThat(emptyTables.get(1), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("dataset_2")
+                        .setTableId("empty_table_2"))));
+
+        assertThat(emptyTables.get(2), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId("project_3")
+                        .setDatasetId("the_default_dataset")
+                        .setTableId("empty_table_3"))));
+
+        assertThat(emptyTables.get(3), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId("project_4")
+                        .setDatasetId("dataset_4")
+                        .setTableId("empty_table_4"))));
+
+        assertThat(emptyTables.get(4), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId(PROJECT_ID)
+                        .setDatasetId("the_default_dataset")
+                        .setTableId("empty_table_5"))));
+
+        assertThat(emptyTables.get(5), is(new Table()
+                .setTableReference(new TableReference()
+                        .setProjectId("project_6")
+                        .setDatasetId("dataset_6")
+                        .setTableId("empty_table_6"))
+                .setFriendlyName("empty table 6")
+                .setExpirationTime(Instant.parse("2017-01-02T01:02:03Z").toEpochMilli())
+                .setSchema(new TableSchema()
+                        .setFields(ImmutableList.of(
+                                new TableFieldSchema()
+                                        .setName("f1")
+                                        .setType("STRING"),
+                                new TableFieldSchema()
+                                        .setName("f2")
+                                        .setType("STRING")
+                        )))));
     }
 }

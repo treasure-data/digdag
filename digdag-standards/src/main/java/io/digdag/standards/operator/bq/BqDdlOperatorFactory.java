@@ -9,7 +9,6 @@ import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
-import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.api.services.bigquery.model.ViewDefinition;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -28,9 +27,10 @@ import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.bq.Bq.datasetReference;
@@ -52,7 +52,7 @@ class BqDdlOperatorFactory
 
     public String getType()
     {
-        return "bq_load";
+        return "bq_ddl";
     }
 
     @Override
@@ -78,31 +78,35 @@ class BqDdlOperatorFactory
                     .transform(Bq::datasetReference);
         }
 
-        private BqOperation createTable(JsonNode jsonNode)
+        private BqOperation createTable(JsonNode config)
         {
+            return bq -> bq.createTable(table(bq.projectId(), defaultDataset, config));
+        }
+
+        private BqOperation emptyTable(JsonNode config)
+        {
+            return bq -> bq.emptyTable(table(bq.projectId(), defaultDataset, config));
+        }
+
+        private BqOperation deleteTable(JsonNode config)
+        {
+            if (!config.isTextual()) {
+                throw new ConfigException("Bad table reference: " + config);
+            }
             return bq -> {
-                bq.createTable(table(bq.projectId(), defaultDataset, jsonNode));
+                TableReference r = Bq.tableReference(bq.projectId(), defaultDataset, config.asText());
+                bq.deleteTable(r.getProjectId(), r.getDatasetId(), r.getTableId());
             };
-        }
-
-        private BqOperation emptyTable(JsonNode jsonNode)
-        {
-            return null;
-        }
-
-        private BqOperation deleteTable(JsonNode jsonNode)
-        {
-            return null;
         }
 
         private BqOperation createDataset(JsonNode config)
         {
-            return bq -> bq.createDataset(dataset(config));
+            return bq -> bq.createDataset(dataset(bq.projectId(), config));
         }
 
         private BqOperation emptyDataset(JsonNode config)
         {
-            return bq -> bq.emptyDataset(dataset(config));
+            return bq -> bq.emptyDataset(dataset(bq.projectId(), config));
         }
 
         private BqOperation deleteDataset(JsonNode config)
@@ -110,18 +114,17 @@ class BqDdlOperatorFactory
             if (!config.isTextual()) {
                 throw new ConfigException("Bad dataset reference: " + config);
             }
-            DatasetReference datasetReference = datasetReference(config.asText());
             return bq -> {
-                String projectId = Optional.fromNullable(datasetReference.getProjectId()).or(bq.projectId());
-                bq.deleteDataset(projectId, datasetReference.getDatasetId());
+                DatasetReference r = datasetReference(bq.projectId(), config.asText());
+                bq.deleteDataset(r.getProjectId(), r.getDatasetId());
             };
         }
 
-        private Dataset dataset(JsonNode node)
+        private Dataset dataset(String defaultProjectId, JsonNode node)
         {
             if (node.isTextual()) {
                 return new Dataset()
-                        .setDatasetReference(datasetReference(node.asText()));
+                        .setDatasetReference(datasetReference(defaultProjectId, node.asText()));
             }
             else {
                 DatasetConfig config;
@@ -131,15 +134,15 @@ class BqDdlOperatorFactory
                 catch (IOException e) {
                     throw new ConfigException("Invalid dataset reference or configuration: " + node, e);
                 }
-                return dataset(config);
+                return dataset(defaultProjectId, config);
             }
         }
 
-        private Dataset dataset(DatasetConfig config)
+        private Dataset dataset(String defaultProjectId, DatasetConfig config)
         {
             return new Dataset()
                     .setDatasetReference(new DatasetReference()
-                            .setProjectId(config.project().orNull())
+                            .setProjectId(config.project().or(defaultProjectId))
                             .setDatasetId(config.id()))
                     .setFriendlyName(config.friendly_name().orNull())
                     .setDefaultTableExpirationMs(config.default_table_expiration().transform(d -> d.getDuration().toMillis()).orNull())
@@ -181,7 +184,7 @@ class BqDdlOperatorFactory
                     .setFriendlyName(config.friendly_name().orNull())
                     .setExpirationTime(config.expiration_time()
                             .transform(p -> p.getTimestamp().toInstant(request.getTimeZone()).toEpochMilli()).orNull())
-                    .setTimePartitioning(config.time_partitioning().orNull())
+//                    .setTimePartitioning(config.time_partitioning().orNull())
                     .setView(config.view().orNull());
         }
 
@@ -194,31 +197,15 @@ class BqDdlOperatorFactory
         @Override
         public TaskResult run(TaskExecutionContext ctx)
         {
-            List<BqOperation> operations = new ArrayList<>();
-
-            params.getListOrEmpty("delete_datasets", JsonNode.class).stream()
-                    .map(this::deleteDataset)
-                    .forEach(operations::add);
-
-            params.getListOrEmpty("empty_datasets", JsonNode.class).stream()
-                    .map(this::emptyDataset)
-                    .forEach(operations::add);
-
-            params.getListOrEmpty("create_datasets", JsonNode.class).stream()
-                    .map(this::createDataset)
-                    .forEach(operations::add);
-
-            params.getListOrEmpty("delete_tables", JsonNode.class).stream()
-                    .map(this::deleteTable)
-                    .forEach(operations::add);
-
-            params.getListOrEmpty("empty_tables", JsonNode.class).stream()
-                    .map(this::emptyTable)
-                    .forEach(operations::add);
-
-            params.getListOrEmpty("create_tables", JsonNode.class).stream()
-                    .map(this::createTable)
-                    .forEach(operations::add);
+            List<BqOperation> operations = Stream.of(
+                    params.getListOrEmpty("delete_datasets", JsonNode.class).stream().map(this::deleteDataset),
+                    params.getListOrEmpty("empty_datasets", JsonNode.class).stream().map(this::emptyDataset),
+                    params.getListOrEmpty("create_datasets", JsonNode.class).stream().map(this::createDataset),
+                    params.getListOrEmpty("delete_tables", JsonNode.class).stream().map(this::deleteTable),
+                    params.getListOrEmpty("empty_tables", JsonNode.class).stream().map(this::emptyTable),
+                    params.getListOrEmpty("create_tables", JsonNode.class).stream().map(this::createTable))
+                    .flatMap(s -> s)
+                    .collect(Collectors.toList());
 
             try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
 
@@ -226,7 +213,7 @@ class BqDdlOperatorFactory
                 for (int i = operation; i < operations.size(); i++) {
                     state.set("operation", i);
                     BqOperation o = operations.get(i);
-                    pollingRetryExecutor(state, "retry")
+                    pollingRetryExecutor(state, state, "retry")
                             .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
                             .withErrorMessage("BiqQuery DDL operation failed")
                             .run(() -> o.perform(bqJobRunner));
@@ -270,7 +257,7 @@ class BqDdlOperatorFactory
 
     @Value.Immutable
     @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-    @JsonDeserialize(as = ImmutableDatasetConfig.class)
+    @JsonDeserialize(as = ImmutableTableConfig.class)
     interface TableConfig
     {
         String id();
@@ -283,11 +270,13 @@ class BqDdlOperatorFactory
 
         Optional<String> description();
 
+        // TODO: parse local / human-friendly timestamps
         Optional<TimestampParam> expiration_time();
 
         Optional<TableSchema> schema();
 
-        Optional<TimePartitioning> time_partitioning();
+        // TODO
+//        Optional<TimePartitioning> time_partitioning();
 
         Optional<ViewDefinition> view();
 
