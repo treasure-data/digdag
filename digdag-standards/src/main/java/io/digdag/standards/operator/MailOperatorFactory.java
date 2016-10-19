@@ -16,6 +16,8 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigContext;
+import io.digdag.util.ConfigScope;
 import io.digdag.util.ConfigSelector;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -67,7 +69,7 @@ public class MailOperatorFactory
     }
 
     @Override
-    public SecretAccessList getSecretAccessList()
+    public ConfigSelector getSecretAccessList()
     {
         return ConfigSelector.builderOfScope("mail")
             .addSecretAccess("host", "port", "tls", "ssl", "username")
@@ -124,21 +126,20 @@ public class MailOperatorFactory
         {
             SecretProvider secrets = context.getSecrets().getSecrets("mail");
 
-            Config params = request.getConfig().mergeDefault(
-                    request.getConfig().getNestedOrGetEmpty("mail"));
+            ConfigScope params = ConfigContext.of(context).configScope(getSecretAccessList());
 
-            String body = workspace.templateCommand(templateEngine, params, "body", UTF_8);
+            String body = workspace.templateCommand(templateEngine, params.getTemplateParams(), "body", UTF_8);
             String subject = params.getOptional("subject", String.class).or(mailDefaults.subject()).or(() -> params.get("subject", String.class));
 
             List<String> toList;
             try {
-                toList = params.getList("to", String.class);
+                toList = params.getScopedConfig().getList("to", String.class);
             }
             catch (ConfigException ex) {
                 toList = ImmutableList.of(params.get("to", String.class));
             }
 
-            boolean isHtml = params.get("html", boolean.class, false);
+            boolean isHtml = params.getOptional("html", boolean.class).or(false);
 
             MimeMessage msg = new MimeMessage(createSession(secrets, params));
 
@@ -184,9 +185,9 @@ public class MailOperatorFactory
             return TaskResult.empty(request);
         }
 
-        private List<AttachConfig> attachConfigs(Config params)
+        private List<AttachConfig> attachConfigs(ConfigScope params)
         {
-            return params.getListOrEmpty("attach_files", Config.class)
+            return params.getScopedConfig().getListOrEmpty("attach_files", Config.class)
                     .stream()
                     .map((a) -> {
                         String path = a.get("path", String.class);
@@ -205,7 +206,7 @@ public class MailOperatorFactory
                     .collect(Collectors.toList());
         }
 
-        private Session createSession(SecretProvider secrets, Config params)
+        private Session createSession(SecretProvider secrets, ConfigScope params)
         {
             // Use only _either_ user supplied smtp configuration _or_ system smtp configuration to avoid leaking credentials
             // by e.g. connecting to a user controlled host and handing over user/password in base64 plaintext.
@@ -271,18 +272,18 @@ public class MailOperatorFactory
         SmtpConfig config = ImmutableSmtpConfig.builder()
                 .host(host.get())
                 .port(systemConfig.get("config.mail.port", int.class))
-                .startTls(systemConfig.get("config.mail.tls", boolean.class, true))
-                .ssl(systemConfig.get("config.mail.ssl", boolean.class, false))
-                .debug(systemConfig.get("config.mail.debug", boolean.class, false))
+                .startTls(systemConfig.getOptional("config.mail.tls", boolean.class).or(true))
+                .ssl(systemConfig.getOptional("config.mail.ssl", boolean.class).or(false))
+                .debug(systemConfig.getOptional("config.mail.debug", boolean.class).or(false))
                 .username(systemConfig.getOptional("config.mail.username", String.class))
                 .password(systemConfig.getOptional("config.mail.password", String.class))
                 .build();
         return Optional.of(config);
     }
 
-    private static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, Config params)
+    private static Optional<SmtpConfig> userSmtpConfig(SecretProvider secrets, ConfigScope params)
     {
-        Optional<String> userHost = secrets.getSecretOptional("host").or(params.getOptional("host", String.class));
+        Optional<String> userHost = params.getOptional("host", String.class);
         if (!userHost.isPresent()) {
             return Optional.absent();
         }
@@ -292,12 +293,12 @@ public class MailOperatorFactory
         }
         SmtpConfig config = ImmutableSmtpConfig.builder()
                 .host(userHost.get())
-                .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(params.get("port", int.class)))
-                .startTls(secrets.getSecretOptional("tls").transform(Boolean::parseBoolean).or(params.get("tls", boolean.class, true)))
-                .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(params.get("ssl", boolean.class, false)))
-                .debug(params.get("debug", boolean.class, false))
-                .username(secrets.getSecretOptional("username").or(params.getOptional("username", String.class)))
-                .password(secrets.getSecretOptional("password"))
+                .port(params.get("port", int.class))
+                .startTls(params.getOptional("tls", boolean.class).or(true))
+                .ssl(params.getOptional("ssl", boolean.class).or(false))
+                .debug(params.getOptional("debug", boolean.class).or(false))
+                .username(params.getOptional("username", String.class))
+                .password(params.getOptional("password", String.class))
                 .build();
         return Optional.of(config);
     }
