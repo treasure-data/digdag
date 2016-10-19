@@ -21,7 +21,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.operator.td.TimestampParam;
+import io.digdag.standards.operator.TimestampParam;
 import io.digdag.util.BaseOperator;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;

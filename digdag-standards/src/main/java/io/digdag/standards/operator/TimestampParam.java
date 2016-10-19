@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.td;
+package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
