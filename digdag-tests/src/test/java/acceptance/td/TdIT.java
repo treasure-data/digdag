@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -361,50 +362,15 @@ public class TdIT
     public void testRetries()
             throws Exception
     {
-        int failures = 17;
+        int failures = 7;
 
-        Map<String, List<FullHttpRequest>> requests = new ConcurrentHashMap<>();
+        ConcurrentMap<String, List<FullHttpRequest>> requests = new ConcurrentHashMap<>();
 
-        proxyServer = DefaultHttpProxyServer
-                .bootstrap()
-                .withPort(0)
-                .withFiltersSource(new HttpFiltersSourceAdapter()
-                {
-                    @Override
-                    public int getMaximumRequestBufferSizeInBytes()
-                    {
-                        return 1024 * 1024;
-                    }
-
-                    @Override
-                    public HttpFilters filterRequest(HttpRequest httpRequest, ChannelHandlerContext channelHandlerContext)
-                    {
-                        return new HttpFiltersAdapter(httpRequest)
-                        {
-                            @Override
-                            public HttpResponse clientToProxyRequest(HttpObject httpObject)
-                            {
-                                assert httpObject instanceof FullHttpRequest;
-                                FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
-                                String key = fullHttpRequest.getMethod() + " " + fullHttpRequest.getUri();
-                                List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, uri -> new CopyOnWriteArrayList<>());
-                                keyedRequests.add(fullHttpRequest.copy());
-                                HttpResponse response;
-                                if (keyedRequests.size() < failures) {
-                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
-                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
-                                    response.headers().set(CONNECTION, CLOSE);
-                                    return response;
-                                } else {
-                                    logger.info("Passing request: {}", httpRequest);
-                                    return null;
-                                }
-                            }
-                        };
-                    }
-                }).start();
+        proxyServer = TestUtils.startRequestFailingProxy(failures, requests);
 
         Files.write(config, asList(
+                "config.td.min_retry_interval = 1s",
+                "config.td.max_retry_interval = 1s",
                 "params.td.use_ssl = false",
                 "params.td.proxy.enabled = true",
                 "params.td.proxy.host = " + proxyServer.getListenAddress().getHostString(),
