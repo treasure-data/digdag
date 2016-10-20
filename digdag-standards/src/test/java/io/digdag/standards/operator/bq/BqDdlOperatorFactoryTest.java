@@ -1,12 +1,14 @@
 package io.digdag.standards.operator.bq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
@@ -36,6 +38,7 @@ import static io.digdag.client.config.ConfigUtils.newConfig;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -52,10 +55,14 @@ public class BqDdlOperatorFactoryTest
     @Mock TemplateEngine templateEngine;
     @Mock TaskRequest taskRequest;
     @Mock TaskExecutionContext taskExecutionContext;
-    @Mock SecretProvider secretProvider;
+    @Mock SecretProvider secrets;
 
-    @Mock BqJobRunner bqJobRunner;
-    @Mock BqJobRunner.Factory bqJobRunnerFactory;
+    @Mock BqClient bqClient;
+    @Mock BqClient.Factory bqClientFactory;
+
+    @Mock GoogleCredential googleCredential;
+    @Mock GcpCredential gcpCredential;
+    @Mock GcpCredentialProvider gcpCredentialProvider;
 
     @Captor ArgumentCaptor<Dataset> createDatasetCaptor;
     @Captor ArgumentCaptor<Dataset> emptyDatasetCaptor;
@@ -71,12 +78,18 @@ public class BqDdlOperatorFactoryTest
     public void setUp()
             throws Exception
     {
-        when(bqJobRunner.projectId()).thenReturn(PROJECT_ID);
-        when(bqJobRunnerFactory.create(taskRequest, taskExecutionContext)).thenReturn(bqJobRunner);
+        when(gcpCredential.credential()).thenReturn(googleCredential);
+        when(gcpCredential.projectId()).thenReturn(Optional.of(PROJECT_ID));
+        when(gcpCredentialProvider.credential(secrets)).thenReturn(gcpCredential);
+
+        when(taskExecutionContext.secrets()).thenReturn(secrets);
+        when(secrets.getSecretOptional("gcp.project")).thenReturn(Optional.of(PROJECT_ID));
+
+        when(bqClientFactory.create(googleCredential)).thenReturn(bqClient);
         when(taskRequest.getLastStateParams()).thenReturn(newConfig());
 
         projectPath = temporaryFolder.newFolder().toPath();
-        factory = new BqDdlOperatorFactory(OBJECT_MAPPER, bqJobRunnerFactory);
+        factory = new BqDdlOperatorFactory(OBJECT_MAPPER, bqClientFactory, gcpCredentialProvider);
     }
 
     @Test
@@ -87,8 +100,8 @@ public class BqDdlOperatorFactoryTest
         when(taskRequest.getConfig()).thenReturn(config);
         Operator operator = factory.newOperator(projectPath, taskRequest);
         operator.run(taskExecutionContext);
-        verify(bqJobRunner).close();
-        verifyNoMoreInteractions(bqJobRunner);
+        verify(bqClient).close();
+        verifyNoMoreInteractions(bqClient);
     }
 
     @Test
@@ -105,8 +118,8 @@ public class BqDdlOperatorFactoryTest
         when(taskRequest.getConfig()).thenReturn(config);
         Operator operator = factory.newOperator(projectPath, taskRequest);
         operator.run(taskExecutionContext);
-        verify(bqJobRunner).close();
-        verifyNoMoreInteractions(bqJobRunner);
+        verify(bqClient).close();
+        verifyNoMoreInteractions(bqClient);
     }
 
     @Test
@@ -218,19 +231,19 @@ public class BqDdlOperatorFactoryTest
 
         operator.run(taskExecutionContext);
 
-        InOrder inOrder = Mockito.inOrder(bqJobRunner);
+        InOrder inOrder = Mockito.inOrder(bqClient);
 
-        inOrder.verify(bqJobRunner).deleteDataset(PROJECT_ID, "delete_dataset_1");
-        inOrder.verify(bqJobRunner).deleteDataset("project_2", "delete_dataset_2");
-        inOrder.verify(bqJobRunner, times(4)).emptyDataset(emptyDatasetCaptor.capture());
-        inOrder.verify(bqJobRunner, times(4)).createDataset(createDatasetCaptor.capture());
+        inOrder.verify(bqClient).deleteDataset(PROJECT_ID, "delete_dataset_1");
+        inOrder.verify(bqClient).deleteDataset("project_2", "delete_dataset_2");
+        inOrder.verify(bqClient, times(4)).emptyDataset(eq(PROJECT_ID), emptyDatasetCaptor.capture());
+        inOrder.verify(bqClient, times(4)).createDataset(eq(PROJECT_ID), createDatasetCaptor.capture());
 
-        inOrder.verify(bqJobRunner).deleteTable(PROJECT_ID, "the_default_dataset", "delete_table_1");
-        inOrder.verify(bqJobRunner).deleteTable(PROJECT_ID, "dataset_2", "delete_table_2");
-        inOrder.verify(bqJobRunner).deleteTable("project_3", "the_default_dataset", "delete_table_3");
-        inOrder.verify(bqJobRunner).deleteTable("project_4", "dataset_4", "delete_table_4");
-        inOrder.verify(bqJobRunner, times(6)).emptyTable(emptyTableCaptor.capture());
-        inOrder.verify(bqJobRunner, times(6)).createTable(createTableCaptor.capture());
+        inOrder.verify(bqClient).deleteTable(PROJECT_ID, "the_default_dataset", "delete_table_1");
+        inOrder.verify(bqClient).deleteTable(PROJECT_ID, "dataset_2", "delete_table_2");
+        inOrder.verify(bqClient).deleteTable("project_3", "the_default_dataset", "delete_table_3");
+        inOrder.verify(bqClient).deleteTable("project_4", "dataset_4", "delete_table_4");
+        inOrder.verify(bqClient, times(6)).emptyTable(eq(PROJECT_ID), emptyTableCaptor.capture());
+        inOrder.verify(bqClient, times(6)).createTable(eq(PROJECT_ID), createTableCaptor.capture());
 
         // Datasets
 

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.services.bigquery.model.DatasetReference;
-import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationLoad;
 import com.google.api.services.bigquery.model.TableSchema;
@@ -13,17 +12,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.td.YamlLoader;
-import io.digdag.util.BaseOperator;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,17 +32,20 @@ class BqLoadOperatorFactory
 {
     private final ObjectMapper objectMapper;
     private final TemplateEngine templateEngine;
-    private final BqJobRunner.Factory bqJobFactory;
+    private final BqClient.Factory clientFactory;
+    private final GcpCredentialProvider credentialProvider;
 
     @Inject
     public BqLoadOperatorFactory(
             ObjectMapper objectMapper,
             TemplateEngine templateEngine,
-            BqJobRunner.Factory bqJobFactory)
+            BqClient.Factory clientFactory,
+            GcpCredentialProvider credentialProvider)
     {
         this.objectMapper = objectMapper;
         this.templateEngine = templateEngine;
-        this.bqJobFactory = bqJobFactory;
+        this.clientFactory = clientFactory;
+        this.credentialProvider = credentialProvider;
     }
 
     public String getType()
@@ -63,48 +60,18 @@ class BqLoadOperatorFactory
     }
 
     private class BqLoadOperator
-            extends BaseOperator
+            extends BaseBqJobOperator
     {
-        private final Config params;
-        private final List<String> sourceUris;
-
         BqLoadOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request);
-            this.params = request.getConfig()
-                    .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
-
-            this.sourceUris = sourceUris(params);
-        }
-
-        private List<String> sourceUris(Config params)
-        {
-            try {
-                return params.getList("_command", String.class);
-            }
-            catch (ConfigException ignore) {
-                return ImmutableList.of(params.get("_command", String.class));
-            }
+            super(projectPath, request, clientFactory, credentialProvider);
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("gcp.*");
-        }
-
-        @Override
-        public TaskResult run(TaskExecutionContext ctx)
-        {
-            try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
-                return result(bqJobRunner.runJob(loadJobConfig(bqJobRunner.projectId())));
-            }
-        }
-
-        private JobConfiguration loadJobConfig(String projectId)
+        protected JobConfiguration jobConfiguration(String projectId)
         {
             JobConfigurationLoad cfg = new JobConfigurationLoad()
-                    .setSourceUris(sourceUris);
+                    .setSourceUris(sourceUris(params));
 
             if (params.has("schema")) {
                 cfg.setSchema(tableSchema(params));
@@ -136,6 +103,16 @@ class BqLoadOperatorFactory
                     .setLoad(cfg);
         }
 
+        private List<String> sourceUris(Config params)
+        {
+            try {
+                return params.getList("_command", String.class);
+            }
+            catch (ConfigException ignore) {
+                return ImmutableList.of(params.get("_command", String.class));
+            }
+        }
+
         private TableSchema tableSchema(Config params)
         {
             try {
@@ -158,18 +135,6 @@ class BqLoadOperatorFactory
                         String.format(ENGLISH, "%s in %s", ex.getMessage(), fileName),
                         ex);
             }
-        }
-
-        private TaskResult result(Job job)
-        {
-            ConfigFactory cf = request.getConfig().getFactory();
-            Config result = cf.create();
-            Config bq_load = result.getNestedOrSetEmpty("bq_load");
-            bq_load.set("last_jobid", job.getId());
-            return TaskResult.defaultBuilder(request)
-                    .storeParams(result)
-                    .addResetStoreParams(ConfigKey.of("bq_load", "last_jobid"))
-                    .build();
         }
     }
 }

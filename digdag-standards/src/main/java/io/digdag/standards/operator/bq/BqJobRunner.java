@@ -1,56 +1,31 @@
 package io.digdag.standards.operator.bq;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpStatusCodes;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.bigquery.Bigquery;
-import com.google.api.services.bigquery.BigqueryScopes;
-import com.google.api.services.bigquery.model.Dataset;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
-import com.google.api.services.bigquery.model.Table;
-import com.google.api.services.bigquery.model.TableList;
-import com.google.api.services.bigquery.model.TableReference;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
-import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.core.Environment;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
-import io.digdag.standards.Proxies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.PollingWaiter.pollingWaiter;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 class BqJobRunner
-        implements AutoCloseable
 {
     private static Logger logger = LoggerFactory.getLogger(BqJobRunner.class);
 
@@ -62,42 +37,16 @@ class BqJobRunner
     private static final String CHECK = "check";
 
     private final TaskRequest request;
+    private final BqClient bq;
     private final Config state;
-    private final ObjectMapper objectMapper;
-    private final Bigquery client;
-    private final NetHttpTransport transport;
     private final String projectId;
 
-    BqJobRunner(TaskRequest request, TaskExecutionContext ctx, ObjectMapper objectMapper, Map<String, String> environment)
+    BqJobRunner(TaskRequest request, BqClient bq, String projectId)
     {
         this.request = Objects.requireNonNull(request, "request");
-        Objects.requireNonNull(ctx, "ctx");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
+        this.bq = Objects.requireNonNull(bq, "bq");
         this.state = request.getLastStateParams().deepCopy();
-        this.transport = new NetHttpTransport.Builder()
-                .setProxy(proxy(environment))
-                .build();
-        String credential = ctx.secrets().getSecret("gcp.credential");
-        this.client = client(credential, transport);
-        this.projectId = request.getLocalConfig().getOptional("project", String.class)
-                .or(request.getConfig().getNestedOrGetEmpty("bq").getOptional("project", String.class))
-                .or(projectId(credential, ctx));
-    }
-
-    @Override
-    public void close()
-    {
-        try {
-            transport.shutdown();
-        }
-        catch (IOException e) {
-            logger.warn("Error shutting down BigQuery client", e);
-        }
-    }
-
-    String projectId()
-    {
-        return projectId;
+        this.projectId = Objects.requireNonNull(projectId, "projectId");
     }
 
     Job runJob(JobConfiguration config)
@@ -125,9 +74,7 @@ class BqJobRunner
                             .setConfiguration(config);
 
                     try {
-                        client.jobs()
-                                .insert(projectId, job)
-                                .execute();
+                        bq.submitJob(projectId, job);
                     }
                     catch (GoogleJsonResponseException e) {
                         if (e.getStatusCode() == 409) {
@@ -141,7 +88,7 @@ class BqJobRunner
 
         // Wait for job to complete
         Job completed = pollingWaiter(state, state, RUNNING)
-                .withWaitMessage("BigQuery job still running: %s", jobId)
+                .withWaitMessage("BigQuery job still running: %s", jobId.get())
                 .awaitOnce(Job.class, pollState -> {
 
                     // Check job status
@@ -150,9 +97,7 @@ class BqJobRunner
                             .withErrorMessage("BigQuery job status check failed: %s", canonicalJobId)
                             .run(() -> {
                                 logger.info("Checking BigQuery job status: {}", canonicalJobId);
-                                return client.jobs()
-                                        .get(projectId, jobId.get())
-                                        .execute();
+                                return bq.jobStatus(projectId, jobId.get());
                             });
 
                     // Done yet?
@@ -189,7 +134,7 @@ class BqJobRunner
     {
         Map<String, String> map = ImmutableMap.of(
                 "errors", errors.stream()
-                        .map(error -> toPrettyString(error))
+                        .map(BqJobRunner::toPrettyString)
                         .collect(Collectors.joining(", ")));
         return ConfigElement.ofMap(map);
     }
@@ -202,26 +147,6 @@ class BqJobRunner
         catch (IOException e) {
             return "<json error>";
         }
-    }
-
-    private String projectId(String credential, TaskExecutionContext ctx)
-    {
-        JsonNode credentialJson;
-        try {
-            credentialJson = objectMapper.readTree(credential);
-        }
-        catch (IOException e) {
-            throw new TaskExecutionException("Unable to parse 'gcp.credential' secret", TaskExecutionException.buildExceptionErrorConfig(e));
-        }
-
-        JsonNode projectIdJson = credentialJson.get("project_id");
-
-        return ctx.secrets().getSecretOptional("gcp.project").or(() -> {
-            if (projectIdJson == null || !projectIdJson.isTextual()) {
-                throw new TaskExecutionException("Missing 'gcp.project' secret", ConfigElement.empty());
-            }
-            return projectIdJson.asText();
-        });
     }
 
     private String uniqueJobId()
@@ -237,191 +162,8 @@ class BqJobRunner
         return truncate(prefix, maxPrefixLength) + suffix;
     }
 
-    private static Bigquery client(String credentialJson, HttpTransport transport)
-    {
-        GoogleCredential credential;
-        try {
-            credential = GoogleCredential.fromStream(new ByteArrayInputStream(credentialJson.getBytes(UTF_8)));
-            return client(credential, transport);
-        }
-        catch (IOException e) {
-            throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
-        }
-    }
-
-    private static Bigquery client(GoogleCredential credential, HttpTransport transport)
-            throws IOException
-    {
-        JsonFactory jsonFactory = new JacksonFactory();
-
-        if (credential.createScopedRequired()) {
-            credential = credential.createScoped(BigqueryScopes.all());
-        }
-
-        return new Bigquery.Builder(transport, jsonFactory, credential)
-                .setApplicationName("Digdag")
-                .build();
-    }
-
-    private static Proxy proxy(Map<String, String> environment)
-    {
-        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv("https", environment);
-        if (!proxyConfig.isPresent()) {
-            return Proxy.NO_PROXY;
-        }
-
-        ProxyConfig cfg = proxyConfig.get();
-        InetSocketAddress address = new InetSocketAddress(cfg.getHost(), cfg.getPort());
-        Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
-
-        // TODO: support authenticated proxying
-        Optional<String> user = cfg.getUser();
-        Optional<String> password = cfg.getPassword();
-        if (user.isPresent() || password.isPresent()) {
-            logger.warn("Authenticated proxy is not supported");
-        }
-
-        return proxy;
-    }
-
     private static String truncate(String s, int n)
     {
         return s.substring(0, Math.min(s.length(), n));
-    }
-
-    void createDataset(Dataset dataset)
-            throws IOException
-    {
-        try {
-            client.datasets().insert(projectId, dataset)
-                    .execute();
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_CONFLICT) {
-                logger.debug("Dataset already exists: {}:{}", dataset.getDatasetReference());
-            }
-            else {
-                throw e;
-            }
-        }
-    }
-
-    void emptyDataset(Dataset dataset)
-            throws IOException
-    {
-        String projectId = Optional.fromNullable(dataset.getDatasetReference().getProjectId()).or(projectId());
-        String datasetId = dataset.getDatasetReference().getDatasetId();
-        deleteDataset(projectId, datasetId);
-        createDataset(dataset);
-    }
-
-    private void deleteTables(String projectId, String datasetId)
-            throws IOException
-    {
-        Bigquery.Tables.List list = client.tables().list(projectId, datasetId);
-        TableList tableList;
-        do {
-            tableList = list.execute();
-            List<TableList.Tables> tables = tableList.getTables();
-            if (tables != null) {
-                for (TableList.Tables table : tables) {
-                    deleteTable(projectId, datasetId, table.getTableReference().getTableId());
-                }
-            }
-        }
-        while (tableList.getNextPageToken() != null);
-    }
-
-    void deleteTable(String projectId, String datasetId, String tableId)
-            throws IOException
-    {
-        try {
-            client.tables().delete(projectId, datasetId, tableId).execute();
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
-                // Already deleted
-                return;
-            }
-            throw e;
-        }
-    }
-
-    boolean datasetExists(String projectId, String datasetId)
-            throws IOException
-    {
-        try {
-            client.datasets().get(projectId, datasetId).execute();
-            return true;
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
-                return false;
-            }
-            throw e;
-        }
-    }
-
-    void deleteDataset(String projectId, String datasetId)
-            throws IOException
-    {
-        if (datasetExists(projectId, datasetId)) {
-            deleteTables(projectId, datasetId);
-
-            try {
-                client.datasets().delete(projectId, datasetId).execute();
-            }
-            catch (GoogleJsonResponseException e) {
-                if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
-                    // Already deleted
-                    return;
-                }
-                throw e;
-            }
-        }
-    }
-
-    void createTable(Table table)
-            throws IOException
-    {
-        String datasetId = table.getTableReference().getDatasetId();
-        try {
-            client.tables().insert(projectId, datasetId, table)
-                    .execute();
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_CONFLICT) {
-                logger.debug("Table already exists: {}:{}.{}", projectId, datasetId, table.getTableReference().getTableId());
-            }
-            else {
-                throw e;
-            }
-        }
-    }
-
-    public void emptyTable(Table table)
-            throws IOException
-    {
-        TableReference r = table.getTableReference();
-        deleteTable(r.getProjectId(), r.getDatasetId(), r.getTableId());
-        createTable(table);
-    }
-
-    static class Factory
-    {
-        private final ObjectMapper objectMapper;
-        private final Map<String, String> environment;
-
-        @Inject
-        public Factory(ObjectMapper objectMapper, @Environment Map<String, String> environment)
-        {
-            this.objectMapper = objectMapper;
-            this.environment = environment;
-        }
-
-        BqJobRunner create(TaskRequest request, TaskExecutionContext ctx)
-        {
-            return new BqJobRunner(request, ctx, objectMapper, environment);
-        }
     }
 }

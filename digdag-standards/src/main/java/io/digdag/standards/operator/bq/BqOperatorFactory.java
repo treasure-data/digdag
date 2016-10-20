@@ -3,29 +3,20 @@ package io.digdag.standards.operator.bq;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.ExternalDataConfiguration;
-import com.google.api.services.bigquery.model.Job;
 import com.google.api.services.bigquery.model.JobConfiguration;
 import com.google.api.services.bigquery.model.JobConfigurationQuery;
 import com.google.api.services.bigquery.model.UserDefinedFunctionResource;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigFactory;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
-import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.util.BaseOperator;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.standards.operator.bq.Bq.datasetReference;
 import static io.digdag.standards.operator.bq.Bq.tableReference;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -33,15 +24,18 @@ class BqOperatorFactory
         implements OperatorFactory
 {
     private final TemplateEngine templateEngine;
-    private final BqJobRunner.Factory bqJobFactory;
+    private final BqClient.Factory clientFactory;
+    private final GcpCredentialProvider credentialProvider;
 
     @Inject
     public BqOperatorFactory(
             TemplateEngine templateEngine,
-            BqJobRunner.Factory bqJobFactory)
+            BqClient.Factory clientFactory,
+            GcpCredentialProvider credentialProvider)
     {
         this.templateEngine = templateEngine;
-        this.bqJobFactory = bqJobFactory;
+        this.clientFactory = clientFactory;
+        this.credentialProvider = credentialProvider;
     }
 
     public String getType()
@@ -56,34 +50,18 @@ class BqOperatorFactory
     }
 
     private class BqOperator
-            extends BaseOperator
+            extends BaseBqJobOperator
     {
-        private final Config params;
         private final String query;
 
         BqOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request);
-            this.params = request.getConfig()
-                    .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
+            super(projectPath, request, clientFactory, credentialProvider);
             this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("gcp.*");
-        }
-
-        @Override
-        public TaskResult run(TaskExecutionContext ctx)
-        {
-            try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
-                return result(bqJobRunner.runJob(queryJobConfig(bqJobRunner.projectId())));
-            }
-        }
-
-        private JobConfiguration queryJobConfig(String projectId)
+        protected JobConfiguration jobConfiguration(String projectId)
         {
             JobConfigurationQuery cfg = new JobConfigurationQuery()
                     .setQuery(query);
@@ -112,18 +90,6 @@ class BqOperatorFactory
 
             return new JobConfiguration()
                     .setQuery(cfg);
-        }
-
-        private TaskResult result(Job job)
-        {
-            ConfigFactory cf = request.getConfig().getFactory();
-            Config result = cf.create();
-            Config bq = result.getNestedOrSetEmpty("bq");
-            bq.set("last_jobid", job.getId());
-            return TaskResult.defaultBuilder(request)
-                    .storeParams(result)
-                    .addResetStoreParams(ConfigKey.of("bq", "last_jobid"))
-                    .build();
         }
     }
 }

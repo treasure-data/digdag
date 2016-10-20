@@ -21,7 +21,6 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.TimestampParam;
-import io.digdag.util.BaseOperator;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
@@ -39,15 +38,18 @@ class BqDdlOperatorFactory
         implements OperatorFactory
 {
     private final ObjectMapper objectMapper;
-    private final BqJobRunner.Factory bqJobFactory;
+    private final BqClient.Factory clientFactory;
+    private final GcpCredentialProvider credentialProvider;
 
     @Inject
     BqDdlOperatorFactory(
             ObjectMapper objectMapper,
-            BqJobRunner.Factory bqJobFactory)
+            BqClient.Factory clientFactory,
+            GcpCredentialProvider credentialProvider)
     {
         this.objectMapper = objectMapper;
-        this.bqJobFactory = bqJobFactory;
+        this.clientFactory = clientFactory;
+        this.credentialProvider = credentialProvider;
     }
 
     public String getType()
@@ -62,17 +64,14 @@ class BqDdlOperatorFactory
     }
 
     private class BqDdlOperator
-            extends BaseOperator
+            extends BaseBqOperator
     {
-        private final Config params;
         private final Config state;
         private final Optional<DatasetReference> defaultDataset;
 
         BqDdlOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request);
-            this.params = request.getConfig()
-                    .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
+            super(projectPath, request, clientFactory, credentialProvider);
             this.state = request.getLastStateParams().deepCopy();
             this.defaultDataset = params.getOptional("dataset", String.class)
                     .transform(Bq::datasetReference);
@@ -80,12 +79,12 @@ class BqDdlOperatorFactory
 
         private BqOperation createTable(JsonNode config)
         {
-            return bq -> bq.createTable(table(bq.projectId(), defaultDataset, config));
+            return (bq, projectId) -> bq.createTable(projectId, table(projectId, defaultDataset, config));
         }
 
         private BqOperation emptyTable(JsonNode config)
         {
-            return bq -> bq.emptyTable(table(bq.projectId(), defaultDataset, config));
+            return (bq, projectId) -> bq.emptyTable(projectId, table(projectId, defaultDataset, config));
         }
 
         private BqOperation deleteTable(JsonNode config)
@@ -93,20 +92,20 @@ class BqDdlOperatorFactory
             if (!config.isTextual()) {
                 throw new ConfigException("Bad table reference: " + config);
             }
-            return bq -> {
-                TableReference r = Bq.tableReference(bq.projectId(), defaultDataset, config.asText());
+            return (bq, projectId) -> {
+                TableReference r = Bq.tableReference(projectId, defaultDataset, config.asText());
                 bq.deleteTable(r.getProjectId(), r.getDatasetId(), r.getTableId());
             };
         }
 
         private BqOperation createDataset(JsonNode config)
         {
-            return bq -> bq.createDataset(dataset(bq.projectId(), config));
+            return (bq, projectId) -> bq.createDataset(projectId, dataset(projectId, config));
         }
 
         private BqOperation emptyDataset(JsonNode config)
         {
-            return bq -> bq.emptyDataset(dataset(bq.projectId(), config));
+            return (bq, projectId) -> bq.emptyDataset(projectId, dataset(projectId, config));
         }
 
         private BqOperation deleteDataset(JsonNode config)
@@ -114,8 +113,8 @@ class BqDdlOperatorFactory
             if (!config.isTextual()) {
                 throw new ConfigException("Bad dataset reference: " + config);
             }
-            return bq -> {
-                DatasetReference r = datasetReference(bq.projectId(), config.asText());
+            return (bq, projectId) -> {
+                DatasetReference r = datasetReference(projectId, config.asText());
                 bq.deleteDataset(r.getProjectId(), r.getDatasetId());
             };
         }
@@ -195,7 +194,8 @@ class BqDdlOperatorFactory
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        protected TaskResult run(TaskExecutionContext ctx, BqClient bq, String projectId)
+
         {
             List<BqOperation> operations = Stream.of(
                     params.getListOrEmpty("delete_datasets", JsonNode.class).stream().map(this::deleteDataset),
@@ -207,17 +207,14 @@ class BqDdlOperatorFactory
                     .flatMap(s -> s)
                     .collect(Collectors.toList());
 
-            try (BqJobRunner bqJobRunner = bqJobFactory.create(request, ctx)) {
-
-                int operation = state.get("operation", int.class, 0);
-                for (int i = operation; i < operations.size(); i++) {
-                    state.set("operation", i);
-                    BqOperation o = operations.get(i);
-                    pollingRetryExecutor(state, state, "retry")
-                            .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
-                            .withErrorMessage("BiqQuery DDL operation failed")
-                            .run(() -> o.perform(bqJobRunner));
-                }
+            int operation = state.get("operation", int.class, 0);
+            for (int i = operation; i < operations.size(); i++) {
+                state.set("operation", i);
+                BqOperation o = operations.get(i);
+                pollingRetryExecutor(state, state, "retry")
+                        .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
+                        .withErrorMessage("BiqQuery DDL operation failed")
+                        .run(() -> o.perform(bq, projectId));
             }
 
             return TaskResult.empty(request);
@@ -231,7 +228,7 @@ class BqDdlOperatorFactory
 
     private interface BqOperation
     {
-        void perform(BqJobRunner bqJobRunner)
+        void perform(BqClient bq, String projectId)
                 throws IOException;
     }
 

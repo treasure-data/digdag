@@ -2,10 +2,7 @@ package io.digdag.standards.operator.bq;
 
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import io.digdag.client.config.ConfigException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,7 +11,6 @@ class Bq
 {
     private static final Pattern TABLE_REFERENCE_PATTERN = Pattern.compile("^(?:(?<project>[^:]+):)?(?:(?<dataset>[^.]+)\\.)?(?<table>[a-zA-Z0-9_]{1,1024})$");
 
-    @VisibleForTesting
     static TableReference tableReference(String defaultProjectId, Optional<DatasetReference> defaultDataset, String s)
     {
         Matcher matcher = TABLE_REFERENCE_PATTERN.matcher(s);
@@ -26,7 +22,8 @@ class Bq
         if (project == null) {
             if (defaultDataset.isPresent() && defaultDataset.get().getProjectId() != null) {
                 project = defaultDataset.get().getProjectId();
-            } else {
+            }
+            else {
                 project = defaultProjectId;
             }
         }
@@ -48,16 +45,16 @@ class Bq
 
     private static final Pattern DATASET_REFERENCE_PATTERN = Pattern.compile("^(?:(?<project>[^:]+):)?(?<dataset>[^.]+)$");
 
-    @VisibleForTesting
-    static DatasetReference datasetReference(String s) {
+    static DatasetReference datasetReference(String s)
+    {
         return datasetReference(Optional.absent(), s);
     }
 
-    static DatasetReference datasetReference(String defaultProjectId, String s) {
+    static DatasetReference datasetReference(String defaultProjectId, String s)
+    {
         return datasetReference(Optional.of(defaultProjectId), s);
     }
 
-    @VisibleForTesting
     static DatasetReference datasetReference(Optional<String> defaultProjectId, String s)
     {
         Matcher matcher = DATASET_REFERENCE_PATTERN.matcher(s);

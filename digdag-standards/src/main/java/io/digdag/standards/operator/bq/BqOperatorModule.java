@@ -12,7 +12,8 @@ public class BqOperatorModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(BqJobRunner.Factory.class);
+        binder.bind(BqClient.Factory.class);
+        binder.bind(GcpCredentialProvider.class);
         addStandardOperatorFactory(binder, BqOperatorFactory.class);
         addStandardOperatorFactory(binder, BqLoadOperatorFactory.class);
         addStandardOperatorFactory(binder, BqExtractOperatorFactory.class);
