@@ -6,6 +6,8 @@ import io.digdag.client.config.Config;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
 
 import java.nio.file.Path;
@@ -17,19 +19,25 @@ abstract class BaseTdJobOperator
 {
     private static final String DONE_JOB_ID = "doneJobId";
 
-    protected final Config state;
+    protected final TaskState state;
     protected final Config params;
     private final Map<String, String> env;
 
-    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env)
+    protected final DurationInterval pollInterval;
+    protected final DurationInterval retryInterval;
+
+    BaseTdJobOperator(Path workspacePath, TaskRequest request, Map<String, String> env, Config systemConfig)
     {
         super(workspacePath, request);
 
         this.params = request.getConfig().mergeDefault(
                 request.getConfig().getNestedOrGetEmpty("td"));
 
-        this.state = request.getLastStateParams().deepCopy();
+        this.state = TaskState.of(request);
         this.env = env;
+
+        this.pollInterval = TDOperator.pollInterval(systemConfig);
+        this.retryInterval = TDOperator.retryInterval(systemConfig);
     }
 
     @Override
@@ -43,11 +51,11 @@ abstract class BaseTdJobOperator
     {
         try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
 
-            Optional<String> doneJobId = state.getOptional(DONE_JOB_ID, String.class);
+            Optional<String> doneJobId = state.params().getOptional(DONE_JOB_ID, String.class);
             TDJobOperator job;
             if (!doneJobId.isPresent()) {
-                job = op.runJob(state, "job", (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
-                state.set(DONE_JOB_ID, job.getJobId());
+                job = op.runJob(state, "job", pollInterval, retryInterval, (jobOperator, domainKey) -> startJob(ctx, jobOperator, domainKey));
+                state.params().set(DONE_JOB_ID, job.getJobId());
             }
             else {
                 job = op.newJobOperator(doneJobId.get());

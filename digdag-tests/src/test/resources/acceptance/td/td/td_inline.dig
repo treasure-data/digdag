@@ -7,6 +7,7 @@ timezone: UTC
   database: sample_datasets
   preview: true
   download_file: result.csv
+  store_last_results: true
 
 +post:
   sh>: touch ${outfile}

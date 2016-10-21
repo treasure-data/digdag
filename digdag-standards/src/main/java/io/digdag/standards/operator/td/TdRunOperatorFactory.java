@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -28,11 +27,13 @@ public class TdRunOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdRunOperatorFactory.class);
     private final Map<String, String> env;
+    private final Config systemConfig;
 
     @Inject
-    public TdRunOperatorFactory(@Environment Map<String, String> env)
+    public TdRunOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
     {
         this.env = env;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -58,7 +59,7 @@ public class TdRunOperatorFactory
 
         private TdRunOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -87,13 +88,13 @@ public class TdRunOperatorFactory
         @Override
         protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
         {
-            downloadJobResult(job, workspace, downloadFile, state);
+            downloadJobResult(job, workspace, downloadFile, state, retryInterval);
 
             if (preview) {
-                TdOperatorFactory.downloadPreviewRows(job, "job id " + job.getJobId());
+                TdOperatorFactory.downloadPreviewRows(job, "job id " + job.getJobId(), state, retryInterval);
             }
 
-            Config storeParams = buildStoreParams(request.getConfig().getFactory(), job, storeLastResults);
+            Config storeParams = buildStoreParams(request.getConfig().getFactory(), job, storeLastResults, state, retryInterval);
 
             return TaskResult.defaultBuilder(request)
                     .resetStoreParams(buildResetStoreParams(storeLastResults))

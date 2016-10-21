@@ -1,0 +1,14 @@
+timezone: UTC
+
++run:
+  bq_load>: gs://${source_bucket}/${source_object}
+  schema:
+    fields:
+      - name: foo
+        type: STRING
+      - name: bar
+        type: STRING
+  destination_table: ${target_dataset}.${target_table}
+
++post:
+  sh>: touch ${outfile}

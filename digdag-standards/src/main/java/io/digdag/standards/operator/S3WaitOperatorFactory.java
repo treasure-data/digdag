@@ -1,6 +1,5 @@
 package io.digdag.standards.operator;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -20,34 +19,34 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionContext;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
+import io.digdag.standards.operator.state.TaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
 
 public class S3WaitOperatorFactory
         implements OperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(S3WaitOperatorFactory.class);
 
-    private static final Integer INITIAL_POLL_INTERVAL = 5;
-    private static final int MAX_POLL_INTERVAL = 300;
+    private static final DurationInterval POLL_INTERVAL = DurationInterval.of(Duration.ofSeconds(5), Duration.ofMinutes(5));
 
     private final AmazonS3ClientFactory s3ClientFactory;
     private final Map<String, String> environment;
@@ -82,10 +81,12 @@ public class S3WaitOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final TaskState state;
 
         public S3WaitOperator(TaskRequest request)
         {
             this.request = request;
+            this.state = TaskState.of(request);
         }
 
         @Override
@@ -187,26 +188,21 @@ public class S3WaitOperatorFactory
                 req.setSSECustomerKey(sseKey);
             }
 
-            ObjectMetadata objectMetadata;
-            try {
-                objectMetadata = s3Client.getObjectMetadata(req);
-            }
-            catch (AmazonS3Exception e) {
-                if (e.getStatusCode() == 404) {
-                    // Keep waiting
-                    Config state = request.getLastStateParams().deepCopy();
-                    int pollIteration = state.get("pollIteration", Integer.class, 0);
-                    int pollInterval = (int) Math.min(INITIAL_POLL_INTERVAL * Math.pow(2, pollIteration), MAX_POLL_INTERVAL);
-                    state.set("pollIteration", pollIteration + 1);
-                    throw TaskExecutionException.ofNextPolling(pollInterval, ConfigElement.copyOf(state));
-                }
-                else {
-                    throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
-                }
-            }
-            catch (AmazonClientException e) {
-                throw new TaskExecutionException(e, buildExceptionErrorConfig(e));
-            }
+            ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
+                    .withPollInterval(POLL_INTERVAL)
+                    .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
+                    .await(pollState -> pollingRetryExecutor(pollState, "POLL")
+                            .run(s -> {
+                                try {
+                                    return Optional.of(s3Client.getObjectMetadata(req));
+                                }
+                                catch (AmazonS3Exception e) {
+                                    if (e.getStatusCode() == 404) {
+                                        return Optional.absent();
+                                    }
+                                    throw e;
+                                }
+                            }));
 
             return TaskResult.defaultBuilder(request)
                     .resetStoreParams(ImmutableList.of(ConfigKey.of("s3", "last_object")))
