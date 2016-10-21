@@ -31,7 +31,7 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * <p>The encrypted record format is (offsets in bytes):</p>
  *
  * <pre>
- * 0          6         10     14      26                  2074      2090
+ * 0          6         10     14      26                  
  * +-----------------------------------------------------------------+
  * | "aesgcm" | version | term | nonce | encrypted payload | gcm tag |
  * +-----------------------------------------------------------------+
