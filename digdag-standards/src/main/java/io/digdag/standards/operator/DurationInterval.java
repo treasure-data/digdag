@@ -11,6 +11,9 @@ public interface DurationInterval
     Duration min();
     Duration max();
 
+    DurationInterval withMin(Duration min);
+    DurationInterval withMax(Duration max);
+
     static DurationInterval of(Duration min, Duration max)
     {
         return ImmutableDurationInterval.builder()

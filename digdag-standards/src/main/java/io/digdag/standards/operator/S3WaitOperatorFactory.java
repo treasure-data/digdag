@@ -29,6 +29,7 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
+import io.digdag.standards.operator.state.TaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +38,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
-import static io.digdag.standards.operator.PollingWaiter.pollingWaiter;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
 
 public class S3WaitOperatorFactory
         implements OperatorFactory
@@ -80,10 +81,12 @@ public class S3WaitOperatorFactory
             implements Operator
     {
         private final TaskRequest request;
+        private final TaskState state;
 
         public S3WaitOperator(TaskRequest request)
         {
             this.request = request;
+            this.state = TaskState.of(request);
         }
 
         @Override
@@ -185,12 +188,11 @@ public class S3WaitOperatorFactory
                 req.setSSECustomerKey(sseKey);
             }
 
-            Config state = request.getLastStateParams().deepCopy();
-            ObjectMetadata objectMetadata = pollingWaiter(state, state, "EXISTS")
+            ObjectMetadata objectMetadata = pollingWaiter(state, "EXISTS")
                     .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
-                    .await(pollState -> pollingRetryExecutor(state, pollState, "POLL")
-                            .run(() -> {
+                    .await(pollState -> pollingRetryExecutor(pollState, "POLL")
+                            .run(s -> {
                                 try {
                                     return Optional.of(s3Client.getObjectMetadata(req));
                                 }

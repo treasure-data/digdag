@@ -12,6 +12,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
+import io.digdag.standards.operator.state.TaskState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
-import static io.digdag.standards.operator.PollingWaiter.pollingWaiter;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
 
 class BqJobRunner
 {
@@ -38,24 +39,24 @@ class BqJobRunner
 
     private final TaskRequest request;
     private final BqClient bq;
-    private final Config state;
+    private final TaskState state;
     private final String projectId;
 
     BqJobRunner(TaskRequest request, BqClient bq, String projectId)
     {
         this.request = Objects.requireNonNull(request, "request");
         this.bq = Objects.requireNonNull(bq, "bq");
-        this.state = request.getLastStateParams().deepCopy();
+        this.state = TaskState.of(request);
         this.projectId = Objects.requireNonNull(projectId, "projectId");
     }
 
     Job runJob(JobConfiguration config)
     {
         // Generate job id
-        Optional<String> jobId = state.getOptional(JOB_ID, String.class);
+        Optional<String> jobId = state.params().getOptional(JOB_ID, String.class);
         if (!jobId.isPresent()) {
-            state.set(JOB_ID, uniqueJobId());
-            throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+            state.params().set(JOB_ID, uniqueJobId());
+            throw state.pollingTaskExecutionException(0);
         }
         String canonicalJobId = projectId + ":" + jobId.get();
 
@@ -64,10 +65,10 @@ class BqJobRunner
                 .setJobId(jobId.get());
 
         // Start job
-        pollingRetryExecutor(state, state, START)
+        pollingRetryExecutor(state, START)
                 .withErrorMessage("BigQuery job submission failed: %s", canonicalJobId)
                 .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
-                .runOnce(() -> {
+                .runOnce((TaskState state) -> {
                     logger.info("Submitting BigQuery job: {}", canonicalJobId);
                     Job job = new Job()
                             .setJobReference(reference)
@@ -87,15 +88,15 @@ class BqJobRunner
                 });
 
         // Wait for job to complete
-        Job completed = pollingWaiter(state, state, RUNNING)
+        Job completed = pollingWaiter(state, RUNNING)
                 .withWaitMessage("BigQuery job still running: %s", jobId.get())
                 .awaitOnce(Job.class, pollState -> {
 
                     // Check job status
-                    Job job = pollingRetryExecutor(state, pollState, CHECK)
+                    Job job = pollingRetryExecutor(pollState, CHECK)
                             .retryUnless(GoogleJsonResponseException.class, e -> e.getStatusCode() / 100 == 4)
                             .withErrorMessage("BigQuery job status check failed: %s", canonicalJobId)
-                            .run(() -> {
+                            .run(s -> {
                                 logger.info("Checking BigQuery job status: {}", canonicalJobId);
                                 return bq.jobStatus(projectId, jobId.get());
                             });

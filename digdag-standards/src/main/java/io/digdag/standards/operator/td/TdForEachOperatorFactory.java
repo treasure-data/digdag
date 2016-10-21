@@ -16,7 +16,7 @@ import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.PollingRetryExecutor;
+import io.digdag.standards.operator.state.PollingRetryExecutor;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
 import org.slf4j.Logger;
@@ -135,10 +135,10 @@ public class TdForEachOperatorFactory
 
         private List<Config> fetchRows(TDJobOperator job)
         {
-            return PollingRetryExecutor.pollingRetryExecutor(state, state, RESULT)
+            return PollingRetryExecutor.pollingRetryExecutor(state, RESULT)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
-                    .run(() -> {
+                    .run(s -> {
                         List<String> columnNames = job.getResultColumnNames();
                         List<Config> result = job.getResult(ite -> {
                             List<Config> rows = new ArrayList<>();

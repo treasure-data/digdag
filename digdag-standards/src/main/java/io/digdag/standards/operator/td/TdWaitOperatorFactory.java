@@ -17,6 +17,7 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.Value;
@@ -27,7 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdWaitOperatorFactory
@@ -74,7 +75,7 @@ public class TdWaitOperatorFactory
         private final String engine;
         private final int priority;
         private final int jobRetry;
-        private final Config state;
+        private final TaskState state;
 
         private TdWaitOperator(Path projectPath, TaskRequest request)
         {
@@ -90,7 +91,7 @@ public class TdWaitOperatorFactory
             }
             this.priority = params.get("priority", int.class, 0);  // TODO this should accept string (VERY_LOW, LOW, NORMAL, HIGH VERY_HIGH)
             this.jobRetry = params.get("job_retry", int.class, 0);
-            this.state = request.getLastStateParams().deepCopy();
+            this.state = TaskState.of(request);
         }
 
         @Override
@@ -111,11 +112,11 @@ public class TdWaitOperatorFactory
                 boolean done = fetchJobResult(job);
 
                 // Remove the poll job state _after_ fetching the result so that the result fetch can be retried without resubmitting the job.
-                state.remove(POLL_JOB);
+                state.params().remove(POLL_JOB);
 
                 // If the query condition was not fulfilled, go back to sleep.
                 if (!done) {
-                    throw TaskExecutionException.ofNextPolling(queryPollInterval, ConfigElement.copyOf(state));
+                    throw state.pollingTaskExecutionException(queryPollInterval);
                 }
 
                 // The query condition was fulfilled, we're done.
@@ -143,10 +144,10 @@ public class TdWaitOperatorFactory
 
         private boolean fetchJobResult(TDJobOperator job)
         {
-            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, state, RESULT)
+            Optional<ArrayValue> firstRow = pollingRetryExecutor(state, RESULT)
                     .retryUnless(TDOperator::isDeterministicClientException)
                     .withErrorMessage("Failed to download result of job '%s'", job.getJobId())
-                    .run(() -> job.getResult(
+                    .run(s -> job.getResult(
                             ite -> ite.hasNext()
                                     ? Optional.of(ite.next())
                                     : Optional.absent()));

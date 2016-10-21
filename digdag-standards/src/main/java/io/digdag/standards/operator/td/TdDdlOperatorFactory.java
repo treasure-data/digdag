@@ -10,7 +10,7 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.DurationInterval;
-import io.digdag.standards.operator.PollingRetryExecutor;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.google.common.collect.Iterables.concat;
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
 public class TdDdlOperatorFactory
         implements OperatorFactory
@@ -52,9 +52,12 @@ public class TdDdlOperatorFactory
     private class TdDdlOperator
             extends BaseOperator
     {
+        private final TaskState state;
+
         public TdDdlOperator(Path projectPath, TaskRequest request)
         {
             super(projectPath, request);
+            this.state = TaskState.of(request);
         }
 
         @Override
@@ -105,16 +108,15 @@ public class TdDdlOperatorFactory
             }
 
             try (TDOperator op = TDOperator.fromConfig(env, params, ctx.secrets().getSecrets("td"))) {
-                Config state = request.getLastStateParams();
-                int operation = state.get("operation", int.class, 0);
+                int operation = state.params().get("operation", int.class, 0);
                 for (int i = operation; i < operations.size(); i++) {
-                    state.set("operation", i);
+                    state.params().set("operation", i);
                     Consumer<TDOperator> o = operations.get(i);
-                    pollingRetryExecutor(state, state, "retry")
+                    pollingRetryExecutor(state, "retry")
                             .retryUnless(TDOperator::isDeterministicClientException)
                             .withRetryInterval(retryInterval)
                             .withErrorMessage("DDL operation failed")
-                            .run(() -> o.accept(op));
+                            .runAction(s -> o.accept(op));
 
                 }
             }

@@ -21,6 +21,7 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.Workspace;
 import org.msgpack.value.ArrayValue;
 import org.msgpack.value.MapValue;
@@ -43,7 +44,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
 import static io.digdag.standards.operator.td.TDOperator.escapePrestoIdent;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -229,7 +230,7 @@ public class TdOperatorFactory
         return op.submitNewJobWithRetry(req);
     }
 
-    static void downloadPreviewRows(TDJobOperator j, String description, Config state, DurationInterval retryInterval)
+    static void downloadPreviewRows(TDJobOperator j, String description, TaskState state, DurationInterval retryInterval)
     {
         StringWriter out = new StringWriter();
 
@@ -307,17 +308,17 @@ public class TdOperatorFactory
         }
     }
 
-    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile, Config state, DurationInterval retryInterval)
+    static void downloadJobResult(TDJobOperator j, Workspace workspace, Optional<String> downloadFile, TaskState state, DurationInterval retryInterval)
     {
         if (!downloadFile.isPresent()) {
             return;
         }
 
-        pollingRetryExecutor(state, state, DOWNLOAD)
+        pollingRetryExecutor(state, DOWNLOAD)
                 .retryUnless(TDOperator::isDeterministicClientException)
                 .withRetryInterval(retryInterval)
                 .withErrorMessage("Failed to download result of job '%s'", j.getJobId())
-                .runOnce(() -> j.getResult(ite -> {
+                .runOnce(s -> j.getResult(ite -> {
                     try (BufferedWriter out = workspace.newBufferedWriter(downloadFile.get(), UTF_8)) {
                         addCsvHeader(out, j.getResultColumnNames());
                         while (ite.hasNext()) {
@@ -356,7 +357,7 @@ public class TdOperatorFactory
         out.write("\r\n");
     }
 
-    static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults, Config state, DurationInterval retryInterval)
+    static Config buildStoreParams(ConfigFactory cf, TDJobOperator j, boolean storeLastResults, TaskState state, DurationInterval retryInterval)
     {
         if (storeLastResults) {
             Config td = cf.create();
@@ -395,13 +396,13 @@ public class TdOperatorFactory
         }
     }
 
-    private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max, Config state, String stateKey, DurationInterval retryInterval)
+    private static List<ArrayValue> downloadFirstResults(TDJobOperator j, int max, TaskState state, String stateKey, DurationInterval retryInterval)
     {
-        return pollingRetryExecutor(state, state, stateKey)
+        return pollingRetryExecutor(state, stateKey)
                 .retryUnless(TDOperator::isDeterministicClientException)
                 .withRetryInterval(retryInterval)
                 .withErrorMessage("Failed to download result of job '%s'", j.getJobId())
-                .run(() -> {
+                .run(s -> {
                     try {
                         return j.getResult(ite -> {
                             List<ArrayValue> results = new ArrayList<>(max);

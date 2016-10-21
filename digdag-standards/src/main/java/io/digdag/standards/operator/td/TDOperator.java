@@ -18,6 +18,7 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
@@ -248,32 +249,32 @@ public class TDOperator
     /**
      * Run a TD job in a polling non-blocking fashion. Throws TaskExecutionException.ofNextPolling with the passed in state until the job is done.
      */
-    public TDJobOperator runJob(Config state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter)
+    public TDJobOperator runJob(TaskState state, String key, DurationInterval pollInterval, DurationInterval retryInterval, JobStarter starter)
     {
         ///////////////////////////////////////////////////////////////////////////////////////////
         // TODO: remove this migration code
-        if (state.has("jobId")) {
-            Config jobState = state.getNestedOrSetEmpty(key);
+        if (state.params().has("jobId")) {
+            Config jobState = state.params().getNestedOrSetEmpty(key);
             if (!jobState.isEmpty()) {
                 throw new AssertionError();
             }
-            jobState.setOptional("jobId", state.getOptional("jobId", String.class));
-            jobState.setOptional("domainKey", state.getOptional("domainKey", String.class));
-            jobState.setOptional("pollIteration", state.getOptional("pollIteration", Integer.class));
-            state.remove("jobId");
-            state.remove("domainKey");
-            state.remove("pollIteration");
+            jobState.setOptional("jobId", state.params().getOptional("jobId", String.class));
+            jobState.setOptional("domainKey", state.params().getOptional("domainKey", String.class));
+            jobState.setOptional("pollIteration", state.params().getOptional("pollIteration", Integer.class));
+            state.params().remove("jobId");
+            state.params().remove("domainKey");
+            state.params().remove("pollIteration");
         }
         ///////////////////////////////////////////////////////////////////////////////////////////
 
-        JobState jobState = state.get(key, JobState.class, JobState.empty());
+        JobState jobState = state.params().get(key, JobState.class, JobState.empty());
 
         // 0. Generate and store domain key before starting the job
 
         Optional<String> domainKey = jobState.domainKey();
         if (!domainKey.isPresent()) {
-            state.set(key, jobState.withDomainKey(UUID.randomUUID().toString()));
-            throw TaskExecutionException.ofNextPolling(0, ConfigElement.copyOf(state));
+            state.params().set(key, jobState.withDomainKey(UUID.randomUUID().toString()));
+            throw state.pollingTaskExecutionException(0);
         }
 
         // 1. Start the job
@@ -294,11 +295,11 @@ public class TDOperator
                 throw errorPollingException(state, key, jobState, retryInterval);
             }
 
-            // Reset error polling
+            // Reset error state
             jobState = jobState.withErrorPollIteration(Optional.absent());
 
-            state.set(key, jobState.withJobId(newJobId));
-            throw TaskExecutionException.ofNextPolling((int) pollInterval.min().getSeconds(), ConfigElement.copyOf(state));
+            state.params().set(key, jobState.withJobId(newJobId));
+            throw state.pollingTaskExecutionException((int) pollInterval.min().getSeconds());
         }
 
         // 2. Check if the job is done
@@ -317,7 +318,7 @@ public class TDOperator
             throw errorPollingException(state, key, jobState, retryInterval);
         }
 
-        // Reset error polling
+        // Reset error state
         jobState = jobState.withErrorPollIteration(Optional.absent());
 
         if (!status.getStatus().isFinished()) {
@@ -345,20 +346,20 @@ public class TDOperator
         return job;
     }
 
-    private TaskExecutionException pollingException(Config state, String key, JobState jobState, DurationInterval pollInterval)
+    private TaskExecutionException pollingException(TaskState state, String key, JobState jobState, DurationInterval pollInterval)
     {
         int iteration = jobState.pollIteration().or(0);
         int interval = exponentialBackoffInterval(pollInterval, iteration);
-        state.set(key, jobState.withPollIteration(iteration + 1));
-        throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+        state.params().set(key, jobState.withPollIteration(iteration + 1));
+        throw state.pollingTaskExecutionException(interval);
     }
 
-    private TaskExecutionException errorPollingException(Config state, String key, JobState jobState, DurationInterval retryInterval)
+    private TaskExecutionException errorPollingException(TaskState state, String key, JobState jobState, DurationInterval retryInterval)
     {
         int iteration = jobState.errorPollIteration().or(0);
         int interval = exponentialBackoffInterval(retryInterval, iteration);
-        state.set(key, jobState.withErrorPollIteration(iteration + 1));
-        throw TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(state));
+        state.params().set(key, jobState.withErrorPollIteration(iteration + 1));
+        throw state.pollingTaskExecutionException(interval);
     }
 
     private static int exponentialBackoffInterval(DurationInterval pollInterval, int iteration)

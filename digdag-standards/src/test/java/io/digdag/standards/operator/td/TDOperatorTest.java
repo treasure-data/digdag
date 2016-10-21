@@ -19,6 +19,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.TaskState;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,8 +53,8 @@ public class TDOperatorTest
     @Mock TDClient client;
     @Mock TDOperator.JobStarter jobStarter;
 
-    DurationInterval pollInterval = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
-    DurationInterval retryInterval = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
+    private final DurationInterval pollInterval = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
+    private final DurationInterval retryInterval = DurationInterval.of(Duration.ofSeconds(1), Duration.ofSeconds(30));
 
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new GuavaModule())
@@ -181,7 +182,7 @@ public class TDOperatorTest
 
         // 3. Check job status (SUCCESS)
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
-        TDJobOperator jobOperator = operator.runJob(state3, jobStateKey, pollInterval, retryInterval, jobStarter);
+        TDJobOperator jobOperator = operator.runJob(TaskState.of(state3), jobStateKey, pollInterval, retryInterval, jobStarter);
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);
@@ -317,7 +318,7 @@ public class TDOperatorTest
 
         // 3.d Job SUCCESS
         when(client.jobStatus(jobId)).thenReturn(summary(jobId, TDJob.Status.SUCCESS));
-        TDJobOperator jobOperator = operator.runJob(state, jobStateKey, pollInterval, retryInterval, jobStarter);
+        TDJobOperator jobOperator = operator.runJob(TaskState.of(state), jobStateKey, pollInterval, retryInterval, jobStarter);
         assertThat(jobOperator.getJobId(), is(jobId));
 
         verifyNoMoreInteractions(jobStarter);
@@ -340,7 +341,7 @@ public class TDOperatorTest
         when(jobStarter.startJob(any(TDOperator.class), anyString()))
                 .thenThrow(new TDClientHttpNotFoundException("Database Not Found"));
         exception.expect(TDClientHttpNotFoundException.class);
-        operator.runJob(state, jobStateKey, pollInterval, retryInterval, jobStarter);
+        operator.runJob(TaskState.of(state), jobStateKey, pollInterval, retryInterval, jobStarter);
     }
 
     @Test
@@ -379,7 +380,7 @@ public class TDOperatorTest
     private static TaskExecutionException runJobIteration(TDOperator operator, Config state, String key, DurationInterval pollInterval, DurationInterval retryInterval, TDOperator.JobStarter jobStarter)
     {
         try {
-            operator.runJob(state, key, pollInterval, retryInterval, jobStarter);
+            operator.runJob(TaskState.of(state), key, pollInterval, retryInterval, jobStarter);
         }
         catch (TaskExecutionException e) {
             assertThat(e.getRetryInterval().isPresent(), is(true));

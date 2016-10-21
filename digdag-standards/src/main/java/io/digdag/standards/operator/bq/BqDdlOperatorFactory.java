@@ -21,6 +21,7 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.TimestampParam;
+import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
@@ -31,7 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.digdag.standards.operator.PollingRetryExecutor.pollingRetryExecutor;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.bq.Bq.datasetReference;
 
 class BqDdlOperatorFactory
@@ -66,13 +67,13 @@ class BqDdlOperatorFactory
     private class BqDdlOperator
             extends BaseBqOperator
     {
-        private final Config state;
+        private final TaskState state;
         private final Optional<DatasetReference> defaultDataset;
 
         BqDdlOperator(Path projectPath, TaskRequest request)
         {
             super(projectPath, request, clientFactory, credentialProvider);
-            this.state = request.getLastStateParams().deepCopy();
+            this.state = TaskState.of(request);
             this.defaultDataset = params.getOptional("dataset", String.class)
                     .transform(Bq::datasetReference);
         }
@@ -207,14 +208,14 @@ class BqDdlOperatorFactory
                     .flatMap(s -> s)
                     .collect(Collectors.toList());
 
-            int operation = state.get("operation", int.class, 0);
+            int operation = state.params().get("operation", int.class, 0);
             for (int i = operation; i < operations.size(); i++) {
-                state.set("operation", i);
+                state.params().set("operation", i);
                 BqOperation o = operations.get(i);
-                pollingRetryExecutor(state, state, "retry")
+                pollingRetryExecutor(state, "retry")
                         .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
                         .withErrorMessage("BiqQuery DDL operation failed")
-                        .run(() -> o.perform(bq, projectId));
+                        .runAction(s -> o.perform(bq, projectId));
             }
 
             return TaskResult.empty(request);
