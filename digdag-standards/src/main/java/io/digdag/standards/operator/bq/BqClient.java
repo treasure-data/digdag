@@ -218,7 +218,7 @@ class BqClient
                 .execute();
     }
 
-    public Job jobStatus(String projectId, String jobId)
+    Job jobStatus(String projectId, String jobId)
             throws IOException
     {
         return client.jobs()
