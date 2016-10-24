@@ -9,11 +9,11 @@ import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
+import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.api.services.bigquery.model.ViewDefinition;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.bq.Bq.datasetReference;
+import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
 class BqDdlOperatorFactory
         implements OperatorFactory
@@ -184,7 +184,7 @@ class BqDdlOperatorFactory
                     .setFriendlyName(config.friendly_name().orNull())
                     .setExpirationTime(config.expiration_time()
                             .transform(p -> p.getTimestamp().toInstant(request.getTimeZone()).toEpochMilli()).orNull())
-//                    .setTimePartitioning(config.time_partitioning().orNull())
+                    .setTimePartitioning(config.time_partitioning().orNull())
                     .setView(config.view().orNull());
         }
 
@@ -273,8 +273,7 @@ class BqDdlOperatorFactory
 
         Optional<TableSchema> schema();
 
-        // TODO
-//        Optional<TimePartitioning> time_partitioning();
+        Optional<TimePartitioning> time_partitioning();
 
         Optional<ViewDefinition> view();
 
