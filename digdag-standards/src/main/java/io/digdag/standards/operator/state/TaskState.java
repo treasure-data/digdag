@@ -55,7 +55,8 @@ public interface TaskState
     /**
      * Create a new {@link TaskExecutionException} with using the root task state.
      */
-    default TaskExecutionException pollingTaskExecutionException(int interval) {
+    default TaskExecutionException pollingTaskExecutionException(int interval)
+    {
         return TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(root()));
     }
 }
