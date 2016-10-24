@@ -95,7 +95,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
 
         int recordContentsLength = LENGTH_SIZE + plainTextBytes.length;
 
-        int recordLength = RECORD_SIZE_ALIGNMENT * ((recordContentsLength + RECORD_SIZE_ALIGNMENT - 1) / RECORD_SIZE_ALIGNMENT) + GCM_TAG_LENGTH;
+        int recordLength = RECORD_SIZE_ALIGNMENT * ((recordContentsLength + RECORD_SIZE_ALIGNMENT - 1) / RECORD_SIZE_ALIGNMENT);
 
         byte[] recordBytes = new byte[recordLength];
         ByteBuffer recordBuffer = ByteBuffer.wrap(recordBytes);
