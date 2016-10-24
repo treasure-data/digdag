@@ -212,7 +212,7 @@ class BqDdlOperatorFactory
             for (int i = operation; i < operations.size(); i++) {
                 state.params().set("operation", i);
                 BqOperation o = operations.get(i);
-                pollingRetryExecutor(state, "retry")
+                pollingRetryExecutor(state, "request")
                         .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
                         .withErrorMessage("BiqQuery DDL operation failed")
                         .runAction(s -> o.perform(bq, projectId));
