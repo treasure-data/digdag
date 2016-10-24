@@ -35,6 +35,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.littleshoot.proxy.HttpProxyServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
@@ -66,6 +68,8 @@ import static utils.TestUtils.pushProject;
 
 public class BigQueryIT
 {
+    private static final Logger logger = LoggerFactory.getLogger(BigQueryIT.class);
+
     private static final String GCP_CREDENTIAL = System.getenv().getOrDefault("GCP_CREDENTIAL", "");
     private static final String GCS_TEST_BUCKET = System.getenv().getOrDefault("GCS_TEST_BUCKET", "");
 
@@ -193,7 +197,7 @@ public class BigQueryIT
                             gcs.objects().delete(GCS_TEST_BUCKET, object.getName()).execute();
                         }
                         catch (IOException e) {
-                            e.printStackTrace();
+                            logger.warn("Failed to delete test gcs bucket: {}", object.getName(), e);
                         }
                     }
                 }
