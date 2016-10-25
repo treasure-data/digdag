@@ -1,5 +1,6 @@
 plugins {
     id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.jfrog.bintray' version '1.7'
     id 'com.github.kt3k.coveralls' version '2.6.3'
 }
 
@@ -11,49 +12,79 @@ allprojects {
     group = 'io.digdag'
     version = '0.8.18-SNAPSHOT'
 
+    ext {
+        isSnapshotRelease = version.endsWith('-SNAPSHOT')
+        if (project.hasProperty("snapshotVersion")) {
+            if (isSnapshotRelease) {
+                project.version = project.version.replaceAll(/-SNAPSHOT$/, "-${project.snapshotVersion}")
+            }
+            else {
+                throw new GradleException("-PsnapshotVersion is set but current version is not -SNAPSHOT")
+            }
+        }
+    }
+
     apply plugin: 'idea'
     apply plugin: 'java'
     apply plugin: 'jacoco'
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'maven-publish'
 
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url  "http://dl.bintray.com/digdag/maven"
+        }
+        maven {
+            url  "http://dl.bintray.com/digdag/maven-snapshots"
+        }
     }
 
     jacoco {
         toolVersion = "0.7.7.201606060606"
     }
+
+    bintray {
+        user = System.getenv('BINTRAY_USER')
+        key = System.getenv('BINTRAY_KEY')
+
+        publications = ['mavenJava']
+
+        filesSpec {
+            // include digdag-<version>.jar built by 'cli' task
+            from "pkg/digdag-${project.version}.jar"
+            into "."
+        }
+
+        dryRun = false
+        publish = false  // TODO: once the first release worked well, this should be changed to true
+
+        pkg {
+            userOrg = 'digdag'
+            if (project.ext.isSnapshotRelease) {
+                repo = 'maven-snapshots'
+                name = 'digdag-snapshots'
+            }
+            else {
+                repo = 'maven'
+                name = 'digdag'
+            }
+            licenses = ['Apache-2.0']
+            publicDownloadNumbers = true
+
+            version {
+                name = project.version
+                released = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+                vcsTag = "v${project.version}"
+            }
+        }
+    }
 }
 
 subprojects {
     apply plugin: 'maven'
-    apply plugin: 'maven-publish'
     apply plugin: 'findbugs'
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                //groupId 'io.digdag'
-                //artifactId 'digdag'
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                name 's3Release'
-                if (project.version.endsWith('-SNAPSHOT')) {
-                    url 's3://digdag-beta-release/maven-snapshot'
-                }
-                else {
-                    url 's3://digdag-beta-release/maven'
-                }
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -171,9 +202,41 @@ subprojects {
         testArtifacts testsJar
     }
 
-    //artifacts {
-    //    archives testsJar, sourcesJar, javadocJar
-    //}
+    def generateDependency = { String scope, xml, dep ->
+        def dependenciesNode = xml.dependencies[0] ?: xml.appendNode('dependencies')
+        def dependencyNode = dependenciesNode.appendNode('dependency')
+        dependencyNode.appendNode('groupId', dep.group)
+        dependencyNode.appendNode('artifactId', dep.name)
+        dependencyNode.appendNode('version', dep.version)
+        if (scope != 'compile') {
+            dependencyNode.appendNode('scope', scope)
+        }
+        if (dep.configuration == 'testArtifacts') {
+            dependencyNode.appendNode('classifier', 'tests')
+        }
+        dep.excludeRules.each { ExcludeRule rule ->
+            // apply exclusions
+            def xmlExclusions = dependencyNode.exclusions[0] ?: dependencyNode.appendNode('exclusions')
+            def xmlExclusion = xmlExclusions.appendNode('exclusion')
+            xmlExclusion.appendNode('groupId', rule.group)
+            xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+        }
+    }
+
+    def pomXmlModifier = {
+        def xml = asNode()
+
+        // gradle somehow uses 'runtime' as the default scope but 'compile' is desired.
+        // gradle also makes transitive dependencies flat somehow but it's not desired.
+        // here recreates dependencies section.
+        xml.remove(xml.dependencies)
+
+        // configuration compile
+        configurations.compile.allDependencies.each(generateDependency.curry('compile', xml))
+        configurations.runtime.dependencies.each(generateDependency.curry('runtime', xml))
+        configurations.testCompile.dependencies.each(generateDependency.curry('test', xml))
+        configurations.testRuntime.dependencies.each(generateDependency.curry('test', xml))
+    }
 
     // Generate maven manifests for sub-modules
     task pom << {
@@ -185,24 +248,24 @@ subprojects {
                     version project.version
                 }
             }
-        }.withXml {
-            project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME].allDependencies.findAll {
-                it instanceof ModuleDependency && !it.excludeRules.isEmpty()
-            }.each { ModuleDependency dep ->
-                def xmlDep = asNode().dependencies.dependency.find {
-                    it.groupId[0].text() == dep.group && it.artifactId[0].text() == dep.name
-                }
-                def xmlExclusions = xmlDep.exclusions[0]
-                if (!xmlExclusions) {
-                    xmlExclusions = xmlDep.appendNode('exclusions')
-                }
-                dep.excludeRules.each { ExcludeRule rule ->
-                    def xmlExclusion = xmlExclusions.appendNode('exclusion')
-                    xmlExclusion.appendNode('groupId', rule.group)
-                    xmlExclusion.appendNode('artifactId', rule.module == null ? '*' : rule.module)
+        }
+        .withXml(pomXmlModifier)
+        .writeTo("${delegate.project.projectDir}/pom.xml")
+    }
+
+    publishing {
+        publications {
+            if (![project(":digdag-docs"), project(":digdag-tests")].contains(project)) {
+                mavenJava(MavenPublication) {
+                    from components.java
+                    artifact testsJar
+                    artifact sourcesJar
+                    artifact javadocJar
+
+                    pom.withXml(pomXmlModifier)
                 }
             }
-        }.writeTo("${delegate.project.projectDir}/pom.xml")
+        }
     }
 }
 
@@ -269,15 +332,6 @@ project(':digdag-cli') {
         from configurations.runtime + files("${project.libsDir}/${project.name}-${project.version}.jar")
         into dest
     }
-
-    //publishing {
-    //    publications {
-    //        shadowJar(MavenPublication) {
-    //            artifactId 'digdag'
-    //            artifact cliBuildFile
-    //        }
-    //    }
-    //}
 }
 
 def cliBuildFile = file("pkg/digdag-${project.version}.jar")
@@ -290,50 +344,7 @@ task cli(dependsOn: ':digdag-cli:shadowJar') << {
     cliBuildFile.setExecutable(true)
 }
 
-configurations {
-    releases
-    rootFiles
-}
-
-artifacts {
-    releases file: cliBuildFile, name: 'digdag', type: 'text', builtBy: cli
-    rootFiles file: file("digdag-core/src/main/resources/io/digdag/core/version.txt"), name: 'LATEST', type: 'text'
-}
-
-uploadReleases {
-    repositories {
-        if (!project.version.endsWith('-SNAPSHOT')) {
-            ivy {
-                name 's3PackageRelease'
-                artifactPattern 's3://digdag-beta-release/releases/[artifact]-[revision].[ext]'
-                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact]-[revision].[ext]'
-                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
-}
-
-uploadRootFiles {
-    repositories {
-        if (!project.version.endsWith('-SNAPSHOT')) {
-            ivy {
-                name 's3RootFiles'
-                artifactPattern 's3://digdag-beta-release/releases/[artifact].[ext]'
-                ivyPattern 's3://digdag-beta-release/releases/metadata/[artifact].[ext]'
-                //credentials = project(':digdag-cli').publishing.repositories.s3Release.getCredentials(AwsCredentials)
-                credentials(AwsCredentials) {
-                    accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-                    secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-                }
-            }
-        }
-    }
-}
-uploadRootFiles.dependsOn(uploadReleases)
+bintrayUpload.dependsOn('cli')
 
 task classpath(dependsOn: [':digdag-cli:classpath']) << { }
 
@@ -344,8 +355,7 @@ clean {
 
 task release() {
     dependsOn subprojects.publish
-    dependsOn uploadReleases
-    dependsOn uploadRootFiles
+    dependsOn bintrayUpload
     doLast {
         println("done.")
     }
@@ -391,7 +401,7 @@ task setVersion << {
 }
 
 task releaseCheck << {
-    if (project.version.endsWith('-SNAPSHOT')) {
+    if (project.ext.isSnapshotRelease) {
         println "Releasing a SNAPSHOT version."
     }
     else {
@@ -411,6 +421,12 @@ task releaseCheck << {
         // TODO check git-ls-files includes release-<version>.rst file
         println "Ready. Run 'release' task."
     }
+}
+
+// Utility task to release a snapshot version with a fixed version number.
+// Bintray doesn't allow releasing -SNAPSHOT version.
+task snapshotRelease(type: Exec) {
+    commandLine "bash", "-c", "echo ./gradlew -PsnapshotVersion=\$(TZ=UTC git log -n 1 --pretty='format:%ad-%H' --date 'format-local:%Y%m%dT%H%M%S') release"
 }
 
 // Generate parent maven manifest
