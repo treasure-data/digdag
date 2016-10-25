@@ -1090,7 +1090,7 @@ Parameters
   Whether to flatten nested and repeated fields in the query results. *Default*: ``true``. Requires ``use_legacy_sql`` to be true.
 
 :command:`use_legacy_sql: BOOLEAN`
-  Whether to use legacy BigQuery SQL. Default: ``false``.
+  Whether to use legacy BigQuery SQL. *Default*: ``false``.
 
 :command:`maximum_billing_tier: INTEGER`
   Limit the billing tier for this query.
@@ -1397,22 +1397,22 @@ Parameters
       - gs://my_bucket/my_export_2.csv
 
 :command:`print_header: BOOLEAN`
-  Whether to print out a header row in the results. Default: ``true``.
+  Whether to print out a header row in the results. *Default*: ``true``.
 
 :command:`field_delimiter: CHARACTER`
-  A delimiter to use between fields in the output. Default: ``,``.
+  A delimiter to use between fields in the output. *Default*: ``,``.
 
   * :command:`field_delimiter: '\\t'`
 
 :command:`destination_format: CSV | NEWLINE_DELIMITED_JSON | AVRO`
-  The format of the destination export file. Default: ``CSV``.
+  The format of the destination export file. *Default*: ``CSV``.
 
   * :command:`destination_format: CSV`
   * :command:`destination_format: NEWLINE_DELIMITED_JSON`
   * :command:`destination_format: AVRO`
 
 :command:`compression: GZIP | NONE`
-  The compression to use for the export file. Default: ``NONE``.
+  The compression to use for the export file. *Default*: ``NONE``.
 
   * :command:`compression: NONE`
   * :command:`compression: GZIP`
@@ -1494,7 +1494,7 @@ Parameters
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
 
 :command:`source_format: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP`
-  The format of the files to be imported. Default: ``CSV``.
+  The format of the files to be imported. *Default*: ``CSV``.
 
   * :command:`source_format: CSV`
   * :command:`source_format: NEWLINE_DELIMITED_JSON`
@@ -1502,7 +1502,7 @@ Parameters
   * :command:`source_format: DATASTORE_BACKUP`
 
 :command:`field_delimiter: CHARACTER`
-  The separator used between fields in CSV files to be imported. Default: ``,``.
+  The separator used between fields in CSV files to be imported. *Default*: ``,``.
 
   * :command:`field_delimiter: '\\t'`
 
@@ -1531,40 +1531,40 @@ Parameters
   * :command:`write_disposition: WRITE_EMPTY`
 
 :command:`skip_leading_rows: INTEGER`
-  The number of leading rows to skip in CSV files to import. Default: ``0``.
+  The number of leading rows to skip in CSV files to import. *Default*: ``0``.
 
   * :command:`skip_leading_rows: 1`
 
 :command:`encoding: UTF-8 | ISO-8859-1`
-  The character encoding of the data in the files to import. Default: ``UTF-8``.
+  The character encoding of the data in the files to import. *Default*: ``UTF-8``.
 
   * :command:`encoding: ISO-8859-1`
 
 :command:`quote: CHARACTER`
-  The character quote of the data in the files to import. Default: ``'"'``.
+  The character quote of the data in the files to import. *Default*: ``'"'``.
 
   * :command:`quote: ''`
   * :command:`quote: "'"`
 
 :command:`max_bad_records: INTEGER`
-  The maximum number of bad records to ignore before failing the import. Default: ``0``.
+  The maximum number of bad records to ignore before failing the import. *Default*: ``0``.
 
   * :command:`max_bad_records: 100`
 
 :command:`allow_quoted_newlines: BOOLEAN`
-  Whether to allow quoted data sections that contain newline characters in a CSV file. Default: ``false``.
+  Whether to allow quoted data sections that contain newline characters in a CSV file. *Default*: ``false``.
 
 :command:`allow_jagged_rows: BOOLEAN`
-  Whether to accept rows that are missing trailing optional columns in CSV files. Default: ``false``.
+  Whether to accept rows that are missing trailing optional columns in CSV files. *Default*: ``false``.
 
 :command:`ignore_unknown_values: BOOLEAN`
-  Whether to ignore extra values in data that are not represented in the table schema. Default: ``false``.
+  Whether to ignore extra values in data that are not represented in the table schema. *Default*: ``false``.
 
 :command:`projection_fields: LIST`
   A list of names of Cloud Datastore entity properties to load. Requires ``source_format: DATASTORE_BACKUP``.
 
 :command:`autodetect: BOOLEAN`
-  Whether to automatically infer options and schema for CSV and JSON sources. Default: ``false``.
+  Whether to automatically infer options and schema for CSV and JSON sources. *Default*: ``false``.
 
 :command:`schema_update_options: LIST`
   A list of destination table schema updates that may be automatically performed when performing the import.
