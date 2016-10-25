@@ -1047,7 +1047,7 @@ Parameters
   * :command:`dataset: other_project:other_dataset`
 
 :command:`destination_table: NAME`
-  Specifies the table to store the query results in. If not specified, a new table will be automatically created to store the results.
+  Specifies a table to store the query results in.
 
   * :command:`destination_table: my_result_table`
   * :command:`destination_table: some_dataset.some_table`
