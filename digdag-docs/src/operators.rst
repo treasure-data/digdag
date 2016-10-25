@@ -1483,6 +1483,13 @@ Parameters
   * :command:`dataset>: my_dataset`
   * :command:`dataset>: my_project:my_dataset`
 
+:command:`destination_table: NAME`
+  The table to store the imported data in.
+
+  * :command:`destination_table: my_result_table`
+  * :command:`destination_table: some_dataset.some_table`
+  * :command:`destination_table: some_project:some_dataset.some_table`
+
 :command:`project: NAME`
   The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
 
