@@ -1021,6 +1021,8 @@ The **bq>:** operator can be used to run a query on Google BigQuery.
 Secrets
 ~~~~~~~
 
+.. _gcp_credential:
+
 :command:`gcp.credential: CREDENTIAL`
   The `Google Cloud Platform account <https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>`_ credential private key to use, in JSON format.
 
@@ -1141,15 +1143,7 @@ Secrets
 ~~~~~~~
 
 :command:`gcp.credential: CREDENTIAL`
-  The `Google Cloud Platform account <https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>`_ credential private key to use, in JSON format.
-
-  For information on how to generate a service account key, see the `Google Cloud Platform Documentation <https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_.
-
-  Upload the private key JSON file to the digdag server using the ``secrets`` client command:
-
-  .. code-block:: none
-
-    digdag secrets --project my_project --set gcp.credential=@my-svc-account-b4df00d.json
+  See gcp_credential_.
 
 Parameters
 ~~~~~~~~~~
@@ -1361,15 +1355,7 @@ Secrets
 ~~~~~~~
 
 :command:`gcp.credential: CREDENTIAL`
-  The `Google Cloud Platform account <https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>`_ credential private key to use, in JSON format.
-
-  For information on how to generate a service account key, see the `Google Cloud Platform Documentation <https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_.
-
-  Upload the private key JSON file to the digdag server using the ``secrets`` client command:
-
-  .. code-block:: none
-
-    digdag secrets --project my_project --set gcp.credential=@my-svc-account-b4df00d.json
+  See gcp_credential_.
 
 Parameters
 ~~~~~~~~~~
@@ -1448,15 +1434,7 @@ Secrets
 ~~~~~~~
 
 :command:`gcp.credential: CREDENTIAL`
-  The `Google Cloud Platform account <https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>`_ credential private key to use, in JSON format.
-
-  For information on how to generate a service account key, see the `Google Cloud Platform Documentation <https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_.
-
-  Upload the private key JSON file to the digdag server using the ``secrets`` client command:
-
-  .. code-block:: none
-
-    digdag secrets --project my_project --set gcp.credential=@my-svc-account-b4df00d.json
+  See gcp_credential_.
 
 Parameters
 ~~~~~~~~~~
