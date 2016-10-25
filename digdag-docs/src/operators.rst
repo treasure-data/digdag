@@ -1461,7 +1461,7 @@ Secrets
 Parameters
 ~~~~~~~~~~
 
-:command:`bq_load>: TABLE | LIST`
+:command:`bq_load>: URI | LIST`
   A URI or list of URIs identifying files in GCS to import.
 
   Examples:
