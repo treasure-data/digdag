@@ -103,6 +103,8 @@ public class S3WaitOperatorFactoryTest
     public void setUp()
             throws Exception
     {
+        when(taskRequest.getLastStateParams()).thenReturn(newConfig());
+
         when(s3Secrets.getSecret(anyString())).then(i -> {
             throw new SecretNotFoundException(i.getArgumentAt(0, String.class));
         });
@@ -195,7 +197,6 @@ public class S3WaitOperatorFactoryTest
 
         List<Integer> retryIntervals = new ArrayList<>();
 
-        when(taskRequest.getLastStateParams()).thenReturn(newConfig());
         for (int i = 0; i < 10; i++) {
             try {
                 operator.run(taskExecutionContext);
@@ -238,7 +239,7 @@ public class S3WaitOperatorFactoryTest
             operator.run(taskExecutionContext);
             fail();
         }
-        catch (Exception ignore) {
+        catch (TaskExecutionException ignore) {
         }
 
         verify(s3Client).setS3ClientOptions(s3ClientOptionsCaptor.capture());
@@ -267,7 +268,7 @@ public class S3WaitOperatorFactoryTest
             operator.run(taskExecutionContext);
             fail();
         }
-        catch (Exception ignore) {
+        catch (TaskExecutionException ignore) {
         }
 
         GetObjectMetadataRequest objectMetadataRequest = objectMetadataRequestCaptor.getValue();
@@ -293,7 +294,7 @@ public class S3WaitOperatorFactoryTest
             operator.run(taskExecutionContext);
             fail();
         }
-        catch (Exception ignore) {
+        catch (TaskExecutionException ignore) {
         }
 
         GetObjectMetadataRequest objectMetadataRequest = objectMetadataRequestCaptor.getValue();
@@ -322,7 +323,7 @@ public class S3WaitOperatorFactoryTest
             operator.run(taskExecutionContext);
             fail();
         }
-        catch (Exception ignore) {
+        catch (TaskExecutionException ignore) {
         }
 
         GetObjectMetadataRequest objectMetadataRequest = objectMetadataRequestCaptor.getValue();
@@ -347,7 +348,7 @@ public class S3WaitOperatorFactoryTest
             operator.run(taskExecutionContext);
             fail();
         }
-        catch (Exception ignore) {
+        catch (TaskExecutionException ignore) {
         }
 
         verify(s3ClientFactory).create(any(AWSCredentials.class), clientConfigurationCaptor.capture());

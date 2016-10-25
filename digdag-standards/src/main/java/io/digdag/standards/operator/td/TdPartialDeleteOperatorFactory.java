@@ -8,6 +8,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
+import io.digdag.standards.operator.TimestampParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +21,13 @@ public class TdPartialDeleteOperatorFactory
 {
     private static Logger logger = LoggerFactory.getLogger(TdPartialDeleteOperatorFactory.class);
     private final Map<String, String> env;
+    private final Config systemConfig;
 
     @Inject
-    public TdPartialDeleteOperatorFactory(@Environment Map<String, String> env)
+    public TdPartialDeleteOperatorFactory(@Environment Map<String, String> env, Config systemConfig)
     {
         this.env = env;
+        this.systemConfig = systemConfig;
     }
 
     public String getType()
@@ -48,7 +51,7 @@ public class TdPartialDeleteOperatorFactory
 
         private TdPartialDeleteOperator(Path projectPath, TaskRequest request)
         {
-            super(projectPath, request, env);
+            super(projectPath, request, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));

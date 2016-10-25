@@ -43,9 +43,9 @@ public class SecretValidationTest
         assertThat(SecretValidation.isValidSecretValue("foobar"), is(true));
         assertThat(SecretValidation.isValidSecretValue("\uD83D\uDCA9"), is(true));
         assertThat(SecretValidation.isValidSecretValue("r\u00e4ksm\u00f6rg\u00e5s"), is(true));
-        assertThat(SecretValidation.isValidSecretValue(Strings.repeat(".", 1024)), is(true));
+        assertThat(SecretValidation.isValidSecretValue(Strings.repeat(".", 16 * 1024)), is(true));
 
-        assertThat(SecretValidation.isValidSecretValue(Strings.repeat(".", 1025)), is(false));
-        assertThat(SecretValidation.isValidSecretValue(Strings.repeat("\u2603", 342)), is(false));
+        assertThat(SecretValidation.isValidSecretValue(Strings.repeat(".", 16 * 1024 + 1)), is(false));
+        assertThat(SecretValidation.isValidSecretValue(Strings.repeat("\u2603", 16 * 1024 / 3 + 1)), is(false));
     }
 }
