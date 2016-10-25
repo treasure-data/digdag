@@ -3,6 +3,7 @@ package acceptance;
 import com.amazonaws.util.Base64;
 import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.http.FullHttpRequest;
+import okhttp3.Headers;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
@@ -19,8 +20,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -42,7 +45,6 @@ public class HttpIT
     {
         mockWebServer = startMockWebServer();
         requests = new ConcurrentHashMap<>();
-        proxy = TestUtils.startRequestFailingProxy(3, requests);
     }
 
     @After
@@ -76,6 +78,7 @@ public class HttpIT
     public void testSystemProxy()
             throws Exception
     {
+        proxy = TestUtils.startRequestFailingProxy(3, requests);
         String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
@@ -94,6 +97,7 @@ public class HttpIT
     public void testUserProxy()
             throws Exception
     {
+        proxy = TestUtils.startRequestFailingProxy(3, requests);
         String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
@@ -111,6 +115,7 @@ public class HttpIT
     public void testDisableUserProxy()
             throws Exception
     {
+        proxy = TestUtils.startRequestFailingProxy(3, requests);
         String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
@@ -137,7 +142,7 @@ public class HttpIT
         assertThat(mockWebServer.getRequestCount(), is(1));
         RecordedRequest request = mockWebServer.takeRequest();
 
-        assertThat(request.getHeader(AUTHORIZATION.name()), is("Basic " + Base64.encodeAsString("test-user:test-pass".getBytes(UTF_8))));
+        assertThat(request.getHeader(AUTHORIZATION.asString()), is("Basic " + Base64.encodeAsString("test-user:test-pass".getBytes(UTF_8))));
     }
 
     @Test
@@ -150,6 +155,57 @@ public class HttpIT
         assertThat(mockWebServer.getRequestCount(), is(1));
         RecordedRequest request = mockWebServer.takeRequest();
 
-        assertThat(request.getHeader(AUTHORIZATION.name()), is("Bearer badf00d"));
+        assertThat(request.getHeader(AUTHORIZATION.asString()), is("Bearer badf00d"));
+    }
+
+    @Test
+    public void testPost()
+            throws Exception
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of(
+                        "test_uri", uri,
+                        "http.method", "POST",
+                        "http.content", "test-content",
+                        "http.content_type", "text/plain"
+                ));
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = mockWebServer.takeRequest();
+
+        assertThat(request.getMethod(), is("POST"));
+        assertThat(request.getBody().readUtf8(), is("test-content"));
+        assertThat(request.getHeader(CONTENT_TYPE.asString()), is("text/plain"));
+    }
+
+    @Test
+    public void testCustomHeaders()
+            throws Exception
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http/http_headers.dig",
+                ImmutableMap.of(
+                        "test_uri", uri
+                ));
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = mockWebServer.takeRequest();
+
+        Headers h = request.getHeaders();
+
+        // Find first "foo" header
+        int i = 0;
+        for (; i < h.size() && !h.name(i).equals("foo"); i++) {
+        }
+        assertThat(i, is(lessThan(h.size())));
+
+        // Verify header ordering
+        assertThat(h.name(i), is("foo"));
+        assertThat(h.value(i), is("foo-value-1"));
+
+        assertThat(h.name(i + 1), is("bar"));
+        assertThat(h.value(i + 1), is("bar-value"));
+
+        assertThat(h.name(i + 2), is("foo"));
+        assertThat(h.value(i + 2), is("foo-value-2"));
     }
 }

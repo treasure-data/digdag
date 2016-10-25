@@ -1,6 +1,7 @@
 package io.digdag.standards.operator;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -9,6 +10,7 @@ import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
@@ -156,18 +158,15 @@ public class HttpOperatorFactory
             Optional<String> content = params.getOptional("content", String.class);
             Optional<String> contentType = params.getOptional("content_type", String.class);
 
-            Optional<LinkedHashMultimap<String, String>> headers = params.getOptional("headers", new TypeReference<LinkedHashMultimap<String, String>>() {});
-
             if (content.isPresent()) {
                 // TODO: support POST url encoded key/val and JSON encoding nested objects, files on disk etc
                 ContentProvider contentProvider = new StringContentProvider(content.get());
                 request.content(contentProvider, contentType.orNull());
             }
 
-            if (headers.isPresent()) {
-                for (Map.Entry<String, String> header : headers.get().entries()) {
-                    request.header(header.getKey(), header.getValue());
-                }
+            LinkedHashMultimap<String, String> headers = headers();
+            for (Map.Entry<String, String> header : headers.entries()) {
+                request.header(header.getKey(), header.getValue());
             }
 
             ContentResponse response = PollingRetryExecutor.pollingRetryExecutor(state, "request")
@@ -175,6 +174,26 @@ public class HttpOperatorFactory
                     .run(s -> execute(request));
 
             return result(response);
+        }
+
+        private LinkedHashMultimap<String, String> headers()
+        {
+            List<JsonNode> entries = params.getListOrEmpty("headers", JsonNode.class);
+            LinkedHashMultimap headers = LinkedHashMultimap.create();
+            for (JsonNode entry : entries) {
+                if (!entry.isObject()) {
+                    throw new ConfigException("Invalid header: " + entry);
+                }
+                ObjectNode o = (ObjectNode) entry;
+                if (o.size() != 1) {
+                    throw new ConfigException("Invalid header: " + entry);
+                }
+                String name = o.fieldNames().next();
+                String value = o.get(name).asText();
+                headers.put(name, value);
+            }
+
+            return headers;
         }
 
         private ContentResponse execute(Request req)
