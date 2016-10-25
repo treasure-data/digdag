@@ -1081,7 +1081,7 @@ Parameters
   Specifies the priority to use for this query. *Default*: ``INTERACTIVE``.
 
 :command:`use_query_cache: BOOLEAN`
-  Whether to use BigQuery query result caching.
+  Whether to use BigQuery query result caching. *Default*: ``true``.
 
 :command:`allow_large_results: BOOLEAN`
   Whether to allow arbitrarily large result tables. Requires ``destination_table`` to be set and ``use_legacy_sql`` to be true.
@@ -1093,7 +1093,7 @@ Parameters
   Whether to use legacy BigQuery SQL. *Default*: ``false``.
 
 :command:`maximum_billing_tier: INTEGER`
-  Limit the billing tier for this query.
+  Limit the billing tier for this query. *Default*: The project default.
 
 :command:`table_definitions: OBJECT`
   Describes external data sources that are accessed in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions>`_.
