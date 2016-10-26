@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.digdag.standards.operator.bq.Bq.datasetReference;
+import static io.digdag.standards.operator.gcp.Bq.datasetReference;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
 class BqDdlOperatorFactory

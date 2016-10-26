@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -18,20 +18,15 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.core.Environment;
-import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.Proxies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.List;
 import java.util.Map;
-
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 class BqClient
         implements AutoCloseable

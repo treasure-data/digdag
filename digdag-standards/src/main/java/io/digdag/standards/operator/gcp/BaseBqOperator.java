@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;

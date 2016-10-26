@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;

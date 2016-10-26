@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.bigquery.model.ErrorProto;
@@ -8,7 +8,6 @@ import com.google.api.services.bigquery.model.JobReference;
 import com.google.api.services.bigquery.model.JobStatus;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
