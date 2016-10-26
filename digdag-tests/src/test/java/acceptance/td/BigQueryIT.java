@@ -16,7 +16,6 @@ import com.google.api.services.bigquery.model.DatasetList;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableDataInsertAllRequest;
-import com.google.api.services.bigquery.model.TableDataList;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
@@ -279,7 +278,7 @@ public class BigQueryIT
 
         // Check that destination table was created
         Table destinationTable = bq.tables().get(gcpProjectId, datasetId, tableId).execute();
-        assertThat(destinationTable.getId(), is(tableId));
+        assertThat(destinationTable.getTableReference().getTableId(), is(tableId));
     }
 
     @Test

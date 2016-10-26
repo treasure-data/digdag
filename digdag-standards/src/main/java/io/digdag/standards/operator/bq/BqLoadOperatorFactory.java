@@ -106,7 +106,7 @@ class BqLoadOperatorFactory
         private List<String> sourceUris(Config params)
         {
             try {
-                return params.getList("_command", String.class);
+                return params.parseList("_command", String.class);
             }
             catch (ConfigException ignore) {
                 return ImmutableList.of(params.get("_command", String.class));
