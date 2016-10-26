@@ -7,8 +7,8 @@ import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
-import com.treasuredata.client.TDClientHttpUnauthorizedException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
@@ -369,9 +369,11 @@ public class TDOperator
 
     static boolean isDeterministicClientException(Exception ex)
     {
-        return ex instanceof TDClientHttpNotFoundException ||
-                ex instanceof TDClientHttpConflictException ||
-                ex instanceof TDClientHttpUnauthorizedException;
+        if (ex instanceof TDClientHttpException) {
+            int statusCode = ((TDClientHttpException) ex).getStatusCode();
+            return statusCode >= 400 && statusCode < 500;
+        }
+        return false;
     }
 
     @Override
