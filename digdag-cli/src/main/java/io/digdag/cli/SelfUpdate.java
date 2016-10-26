@@ -107,6 +107,7 @@ public class SelfUpdate
             }
         }
         path.toFile().setExecutable(true, false);
+        path.toFile().setReadable(true, false);
 
         out.println("Verifying...");
         verify(path, version);
