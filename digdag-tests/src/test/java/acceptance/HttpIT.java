@@ -1,10 +1,14 @@
 package acceptance;
 
 import com.amazonaws.util.Base64;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.DigdagClient;
 import io.netty.handler.codec.http.FullHttpRequest;
 import okhttp3.Headers;
+import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.After;
 import org.junit.Before;
@@ -207,5 +211,18 @@ public class HttpIT
 
         assertThat(h.name(i + 2), is("foo"));
         assertThat(h.value(i + 2), is("foo-value-2"));
+    }
+
+    @Test
+    public void testForEach()
+            throws Exception
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/";
+        mockWebServer.setDispatcher(new QueueDispatcher());
+        String content = DigdagClient.objectMapper().writeValueAsString(
+                ImmutableList.of("foo", "bar", "baz"));
+        mockWebServer.enqueue(new MockResponse().setBody(content));
+        runWorkflow(folder, "acceptance/http/http_for_each.dig", ImmutableMap.of("test_uri", uri));
+        assertThat(mockWebServer.getRequestCount(), is(1));
     }
 }

@@ -15,6 +15,7 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.core.Version;
+import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
@@ -63,6 +64,7 @@ public class HttpOperatorFactory
     private final boolean allowUserProxy;
     private final int maxRedirects;
     private final String userAgent;
+    private final int maxStoredResponseContentSize;
 
     @Inject
     public HttpOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
@@ -70,6 +72,7 @@ public class HttpOperatorFactory
         this.allowUserProxy = systemConfig.get("config.http.allow_user_proxy", boolean.class, true);
         this.systemProxy = systemProxy(systemConfig);
         this.maxRedirects = systemConfig.get("config.http.max_redirects", int.class, 8);
+        this.maxStoredResponseContentSize = systemConfig.get("config.http.max_stored_response_content_size", int.class, 64 * 1024);
         this.env = env;
         this.userAgent = systemConfig.get("config.http.user_agent", String.class, "Digdag/" + Version.buildVersion());
     }
@@ -157,6 +160,7 @@ public class HttpOperatorFactory
 
             Optional<String> content = params.getOptional("content", String.class);
             Optional<String> contentType = params.getOptional("content_type", String.class);
+            boolean storeContent = params.get("store_content", boolean.class, false);
 
             if (content.isPresent()) {
                 // TODO: support POST url encoded key/val and JSON encoding nested objects, files on disk etc
@@ -173,7 +177,7 @@ public class HttpOperatorFactory
                     .withErrorMessage("HTTP request failed")
                     .run(s -> execute(request));
 
-            return result(response);
+            return result(response, storeContent);
         }
 
         private LinkedHashMultimap<String, String> headers()
@@ -269,15 +273,27 @@ public class HttpOperatorFactory
             return safeUri;
         }
 
-        private TaskResult result(ContentResponse response)
+        private TaskResult result(ContentResponse response, boolean storeContent)
         {
             ConfigFactory cf = request.getConfig().getFactory();
             Config result = cf.create();
-            Config bq = result.getNestedOrSetEmpty("http");
-            bq.set("last_status", response.getStatus());
-            return TaskResult.defaultBuilder(request)
+            Config http = result.getNestedOrSetEmpty("http");
+            http.set("last_status", response.getStatus());
+
+            ImmutableTaskResult.Builder builder = TaskResult.defaultBuilder(request)
+                    .addResetStoreParams(ConfigKey.of("http", "last_status"));
+
+            if (storeContent) {
+                String content = response.getContentAsString();
+                if (content.length() > maxStoredResponseContentSize) {
+                    throw new TaskExecutionException("Response content too large: " + content.length() + " > " + maxStoredResponseContentSize, ConfigElement.empty());
+                }
+                http.set("last_content", content);
+                builder.addResetStoreParams(ConfigKey.of("http", "last_content"));
+            }
+
+            return builder
                     .storeParams(result)
-                    .addResetStoreParams(ConfigKey.of("http", "last_status"))
                     .build();
         }
 
