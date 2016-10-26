@@ -4,9 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
 import com.google.api.services.bigquery.model.Dataset;
@@ -18,47 +16,26 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.ProxyConfig;
 import io.digdag.core.Environment;
-import io.digdag.standards.Proxies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.util.List;
 import java.util.Map;
 
 class BqClient
-        implements AutoCloseable
+        extends BaseGcpClient<Bigquery>
 {
-    private static Logger logger = LoggerFactory.getLogger(BqClient.class);
-
-    private final Bigquery client;
-    private final NetHttpTransport transport;
+    private static final Logger logger = LoggerFactory.getLogger(BqClient.class);
 
     BqClient(GoogleCredential credential, Optional<ProxyConfig> proxyConfig)
     {
-        this.transport = new NetHttpTransport.Builder()
-                .setProxy(proxy(proxyConfig))
-                .build();
-        this.client = client(credential, transport);
+        super(credential, proxyConfig);
     }
 
     @Override
-    public void close()
+    protected Bigquery client(GoogleCredential credential, HttpTransport transport, JsonFactory jsonFactory)
     {
-        try {
-            transport.shutdown();
-        }
-        catch (IOException e) {
-            logger.warn("Error shutting down BigQuery client", e);
-        }
-    }
-
-    private static Bigquery client(GoogleCredential credential, HttpTransport transport)
-    {
-        JsonFactory jsonFactory = new JacksonFactory();
-
         if (credential.createScopedRequired()) {
             credential = credential.createScoped(BigqueryScopes.all());
         }
@@ -66,26 +43,6 @@ class BqClient
         return new Bigquery.Builder(transport, jsonFactory, credential)
                 .setApplicationName("Digdag")
                 .build();
-    }
-
-    private static Proxy proxy(Optional<ProxyConfig> proxyConfig)
-    {
-        if (!proxyConfig.isPresent()) {
-            return Proxy.NO_PROXY;
-        }
-
-        ProxyConfig cfg = proxyConfig.get();
-        InetSocketAddress address = new InetSocketAddress(cfg.getHost(), cfg.getPort());
-        Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
-
-        // TODO: support authenticated proxying
-        Optional<String> user = cfg.getUser();
-        Optional<String> password = cfg.getPassword();
-        if (user.isPresent() || password.isPresent()) {
-            logger.warn("Authenticated proxy is not supported");
-        }
-
-        return proxy;
     }
 
     void createDataset(String projectId, Dataset dataset)
@@ -222,13 +179,12 @@ class BqClient
     }
 
     static class Factory
+            extends BaseGcpClient.Factory
     {
-        private final Optional<ProxyConfig> proxyConfig;
-
         @Inject
         public Factory(@Environment Map<String, String> environment)
         {
-            this.proxyConfig = Proxies.proxyConfigFromEnv("https", environment);
+            super(environment);
         }
 
         BqClient create(GoogleCredential credential)

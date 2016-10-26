@@ -7,28 +7,28 @@ import io.digdag.spi.TaskResult;
 
 import java.nio.file.Path;
 
-abstract class BaseBqOperator
+abstract class BaseGcsOperator
         extends BaseGcpOperator
 {
-    private final BqClient.Factory clientFactory;
+    private final GcsClient.Factory clientFactory;
 
     protected final Config params;
 
-    protected BaseBqOperator(Path projectPath, TaskRequest request, BqClient.Factory clientFactory, GcpCredentialProvider credentialProvider)
+    protected BaseGcsOperator(Path projectPath, TaskRequest request, GcsClient.Factory clientFactory, GcpCredentialProvider credentialProvider)
     {
         super(projectPath, request, credentialProvider);
         this.clientFactory = clientFactory;
         this.params = request.getConfig()
-                .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
+                .mergeDefault(request.getConfig().getNestedOrGetEmpty("gcs"));
     }
 
     @Override
     protected TaskResult run(TaskExecutionContext ctx, GcpCredential credential, String projectId)
     {
-        try (BqClient bq = clientFactory.create(credential.credential())) {
+        try (GcsClient bq = clientFactory.create(credential.credential())) {
             return run(ctx, bq, projectId);
         }
     }
 
-    protected abstract TaskResult run(TaskExecutionContext ctx, BqClient bq, String projectId);
+    protected abstract TaskResult run(TaskExecutionContext ctx, GcsClient gcs, String projectId);
 }

@@ -1,0 +1,6 @@
+
++wait:
+  gcs_wait>: ${test_bucket}/${test_object}
+
++end:
+  sh>: echo '${gcs_wait.last_object}' > '${outfile}'
