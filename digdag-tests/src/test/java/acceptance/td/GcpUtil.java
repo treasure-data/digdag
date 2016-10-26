@@ -37,7 +37,12 @@ public class GcpUtil
 
     static {
         try {
-            GCP_PROJECT_ID = DigdagClient.objectMapper().readTree(GCP_CREDENTIAL).get("project_id").asText();
+            if (!GCP_CREDENTIAL.isEmpty()) {
+                GCP_PROJECT_ID = DigdagClient.objectMapper().readTree(GCP_CREDENTIAL).get("project_id").asText();
+            }
+            else {
+                GCP_PROJECT_ID = "";
+            }
         }
         catch (IOException e) {
             throw Throwables.propagate(e);
