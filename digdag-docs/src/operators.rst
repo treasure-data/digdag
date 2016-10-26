@@ -997,3 +997,565 @@ Output Parameters
 .. note:: The **s3_wait>:** operator makes use of polling with *exponential backoff*.
 As such there might be some time interval between a file being created and the **s3_wait>:** operator detecting it.
 
+bq>: Running Google BigQuery queries
+------------------------------------
+
+The **bq>:** operator can be used to run a query on Google BigQuery.
+
+
+.. code-block:: yaml
+
+    _export:
+      bq:
+        dataset: my_dataset
+
+    +step1:
+      bq>: queries/step1.sql
+    +step2:
+      bq>: queries/step2.sql
+      destination_table: result_table
+    +step3:
+      td>: queries/step3.sql
+      destination_table: other_project:other_dataset.other_table
+
+Secrets
+~~~~~~~
+
+.. _gcp_credential:
+
+:command:`gcp.credential: CREDENTIAL`
+  The `Google Cloud Platform account <https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts>`_ credential private key to use, in JSON format.
+
+  For information on how to generate a service account key, see the `Google Cloud Platform Documentation <https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_.
+
+  Upload the private key JSON file to the digdag server using the ``secrets`` client command:
+
+  .. code-block:: none
+
+    digdag secrets --project my_project --set gcp.credential=@my-svc-account-b4df00d.json
+
+Parameters
+~~~~~~~~~~
+
+:command:`bq>: query.sql`
+  Path to a query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`bq>: queries/step1.sql`
+
+:command:`dataset: NAME`
+  Specifies the default dataset to use in the query and in the ``destination_table`` parameter.
+
+  * :command:`dataset: my_dataset`
+  * :command:`dataset: other_project:other_dataset`
+
+:command:`destination_table: NAME`
+  Specifies a table to store the query results in.
+
+  * :command:`destination_table: my_result_table`
+  * :command:`destination_table: some_dataset.some_table`
+  * :command:`destination_table: some_project:some_dataset.some_table`
+
+:command:`create_disposition: CREATE_IF_NEEDED | CREATE_NEVER`
+  Specifies whether the destination table should be automatically created when executing the query.
+
+  - ``CREATE_IF_NEEDED``: *(default)* The destination table is created if it does not already exist.
+  - ``CREATE_NEVER``: The destination table must already exist, otherwise the query will fail.
+
+  Examples:
+
+  * :command:`create_disposition: CREATE_IF_NEEDED`
+  * :command:`create_disposition: CREATE_NEVER`
+
+:command:`write_disposition: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY`
+  Specifies whether to permit writing of data to an already existing destination table.
+
+  - ``WRITE_TRUNCATE``: If the destination table already exists, any data in it will be overwritten.
+  - ``WRITE_APPEND``: If the destination table already exists, any data in it will be appended to.
+  - ``WRITE_EMPTY``: *(default)* The query fails if the destination table already exists and is not empty.
+
+  Examples:
+
+  * :command:`write_disposition: WRITE_TRUNCATE`
+  * :command:`write_disposition: WRITE_APPEND`
+  * :command:`write_disposition: WRITE_EMPTY`
+
+:command:`priority: INTERACTIVE | BATCH`
+  Specifies the priority to use for this query. *Default*: ``INTERACTIVE``.
+
+:command:`use_query_cache: BOOLEAN`
+  Whether to use BigQuery query result caching. *Default*: ``true``.
+
+:command:`allow_large_results: BOOLEAN`
+  Whether to allow arbitrarily large result tables. Requires ``destination_table`` to be set and ``use_legacy_sql`` to be true.
+
+:command:`flatten_results: BOOLEAN`
+  Whether to flatten nested and repeated fields in the query results. *Default*: ``true``. Requires ``use_legacy_sql`` to be true.
+
+:command:`use_legacy_sql: BOOLEAN`
+  Whether to use legacy BigQuery SQL. *Default*: ``false``.
+
+:command:`maximum_billing_tier: INTEGER`
+  Limit the billing tier for this query. *Default*: The project default.
+
+:command:`table_definitions: OBJECT`
+  Describes external data sources that are accessed in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.tableDefinitions>`_.
+
+:command:`user_defined_function_resources: LIST`
+  Describes user-defined function resources used in the query. For more information see `BigQuery documentation <https://cloud.google.com/bigquery/docs/reference/v2/jobs#configuration.query.userDefinedFunctionResources>`_.
+
+
+Output parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`bq.last_job_id`
+  The id of the BigQuery job that executed this query.
+
+
+bq_ddl>: Managing Google BigQuery Datasets and Tables
+-----------------------------------------------------
+
+The **bq_ddl>:** operator can be used to create, delete and clear Google BigQuery Datasets and Tables.
+
+
+.. code-block:: yaml
+
+    _export:
+      bq:
+        dataset: my_dataset
+
+    +prepare:
+      bq_ddl>:
+        create_datasets:
+          - my_dataset_${session_date_compact}
+        empty_datasets:
+          - my_dataset_${session_date_compact}
+        delete_datasets:
+          - my_dataset_${last_session_date_compact}
+        create_tables:
+          - my_table_${session_date_compact}
+        empty_tables:
+          - my_table_${session_date_compact}
+        delete_tables:
+          - my_table_${last_session_date_compact}
+
+
+Secrets
+~~~~~~~
+
+:command:`gcp.credential: CREDENTIAL`
+  See gcp_credential_.
+
+Parameters
+~~~~~~~~~~
+
+:command:`create_datasets: LIST`
+  Create new datasets.
+
+  For detailed information about dataset configuration parameters, see the `Google BigQuery Datasets Documentation <https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource>`_.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    create_datasets:
+      - foo
+      - other_project:bar
+
+  .. code-block:: yaml
+
+    create_datasets:
+      - foo_dataset_${session_date_compact}
+      - id: bar_dataset_${session_date_compact}
+        project: other_project
+        friendly_name: Bar dataset ${session_date_compact}
+        description: Bar dataset for ${session_date}
+        default_table_expiration: 7d
+        location: EU
+        labels:
+          foo: bar
+          quux: 17
+        access:
+          - domain: example.com
+            role: READER
+          - userByEmail: ingest@example.com
+            role: WRITER
+          - groupByEmail: administrators@example.com
+            role: OWNER
+
+:command:`empty_datasets: LIST`
+  Create new datasets, deleting them first if they already exist. Any tables in the datasets will also be deleted.
+
+  For detailed information about dataset configuration parameters, see the `Google BigQuery Datasets Documentation <https://cloud.google.com/bigquery/docs/reference/v2/datasets#resource>`_.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    empty_datasets:
+      - foo
+      - other_project:bar
+
+  .. code-block:: yaml
+
+    empty_datasets:
+      - foo_dataset_${session_date_compact}
+      - id: bar_dataset_${session_date_compact}
+        project: other_project
+        friendly_name: Bar dataset ${session_date_compact}
+        description: Bar dataset for ${session_date}
+        default_table_expiration: 7d
+        location: EU
+        labels:
+          foo: bar
+          quux: 17
+        access:
+          - domain: example.com
+            role: READER
+          - userByEmail: ingest@example.com
+            role: WRITER
+          - groupByEmail: administrators@example.com
+            role: OWNER
+
+:command:`delete_datasets: LIST`
+  Delete datasets, if they exist.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    delete_datasets:
+      - foo
+      - other_project:bar
+
+  .. code-block:: yaml
+
+    delete_datasets:
+      - foo_dataset_${last_session_date_compact}
+      - other_project:bar_dataset_${last_session_date_compact}
+
+:command:`create_tables: LIST`
+  Create new tables.
+
+  For detailed information about table configuration parameters, see the `Google BigQuery Tables Documentation <https://cloud.google.com/bigquery/docs/reference/v2/tables#resource>`_.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    create_tables:
+      - foo
+      - other_dataset.bar
+      - other_project:yet_another_dataset.baz
+
+  .. code-block:: yaml
+
+    create_tables:
+      - foo_dataset_${session_date_compact}
+      - id: bar_dataset_${session_date_compact}
+        project: other_project
+        dataset: other_dataset
+        friendly_name: Bar dataset ${session_date_compact}
+        description: Bar dataset for ${session_date}
+        expiration_time: 2016-11-01-T01:02:03Z
+        schema:
+          fields:
+            - {name: foo, type: STRING}
+            - {name: bar, type: INTEGER}
+        labels:
+          foo: bar
+          quux: 17
+        access:
+          - domain: example.com
+            role: READER
+          - userByEmail: ingest@example.com
+            role: WRITER
+          - groupByEmail: administrators@example.com
+            role: OWNER
+
+:command:`empty_tables: LIST`
+  Create new tables, deleting them first if they already exist.
+
+  For detailed information about table configuration parameters, see the `Google BigQuery Tables Documentation <https://cloud.google.com/bigquery/docs/reference/v2/tables#resource>`_.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    empty_tables:
+      - foo
+      - other_dataset.bar
+      - other_project:yet_another_dataset.baz
+
+  .. code-block:: yaml
+
+    empty_tables:
+      - foo_table_${session_date_compact}
+      - id: bar_table_${session_date_compact}
+        project: other_project
+        dataset: other_dataset
+        friendly_name: Bar dataset ${session_date_compact}
+        description: Bar dataset for ${session_date}
+        expiration_time: 2016-11-01-T01:02:03Z
+        schema:
+          fields:
+            - {name: foo, type: STRING}
+            - {name: bar, type: INTEGER}
+        labels:
+          foo: bar
+          quux: 17
+        access:
+          - domain: example.com
+            role: READER
+          - userByEmail: ingest@example.com
+            role: WRITER
+          - groupByEmail: administrators@example.com
+            role: OWNER
+
+:command:`delete_tables: LIST`
+  Delete tables, if they exist.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    delete_tables:
+      - foo
+      - other_dataset.bar
+      - other_project:yet_another_dataset.baz
+
+  .. code-block:: yaml
+
+    delete_tables:
+      - foo_table_${last_session_date_compact}
+      - bar_table_${last_session_date_compact}
+
+
+bq_extract>: Exporting Data from Google BigQuery
+------------------------------------------------
+
+The **bq_extract>:** operator can be used to export data from Google BigQuery tables.
+
+
+.. code-block:: yaml
+
+    _export:
+      bq:
+        dataset: my_dataset
+
+    +process:
+      bq>: queries/analyze.sql
+      destination_table: result
+
+    +export:
+      bq_extract>: result
+      destination: gs://my_bucket/result.csv.gz
+      compression: GZIP
+
+Secrets
+~~~~~~~
+
+:command:`gcp.credential: CREDENTIAL`
+  See gcp_credential_.
+
+Parameters
+~~~~~~~~~~
+
+:command:`bq_extract>: TABLE`
+  A reference to the table that should be exported.
+
+  * :command:`bq_extract>: my_table`
+  * :command:`bq_extract>: my_dataset.my_table`
+  * :command:`bq_extract>: my_project:my_dataset.my_table`
+
+:command:`destination: URI | LIST`
+  A URI or list of URIs with the location of the destination export files. These must be Google Cloud Storage URIs.
+
+  Examples:
+
+  .. code-block:: none
+
+    destination>: gs://my_bucket/my_export.csv
+
+  .. code-block:: none
+
+    destination>:
+      - gs://my_bucket/my_export_1.csv
+      - gs://my_bucket/my_export_2.csv
+
+:command:`print_header: BOOLEAN`
+  Whether to print out a header row in the results. *Default*: ``true``.
+
+:command:`field_delimiter: CHARACTER`
+  A delimiter to use between fields in the output. *Default*: ``,``.
+
+  * :command:`field_delimiter: '\\t'`
+
+:command:`destination_format: CSV | NEWLINE_DELIMITED_JSON | AVRO`
+  The format of the destination export file. *Default*: ``CSV``.
+
+  * :command:`destination_format: CSV`
+  * :command:`destination_format: NEWLINE_DELIMITED_JSON`
+  * :command:`destination_format: AVRO`
+
+:command:`compression: GZIP | NONE`
+  The compression to use for the export file. *Default*: ``NONE``.
+
+  * :command:`compression: NONE`
+  * :command:`compression: GZIP`
+
+Output parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`bq.last_job_id`
+  The id of the BigQuery job that performed this export.
+
+
+bq_load>: Importing Data into Google BigQuery
+---------------------------------------------
+
+The **bq_load>:** operator can be used to import data into Google BigQuery tables.
+
+
+.. code-block:: yaml
+
+    _export:
+      bq:
+        dataset: my_dataset
+
+    +ingest:
+      bq_load>: gs://my_bucket/data.csv
+      destination_table: my_data
+
+    +process:
+      bq>: queries/process.sql
+      destination_table: my_result
+
+Secrets
+~~~~~~~
+
+:command:`gcp.credential: CREDENTIAL`
+  See gcp_credential_.
+
+Parameters
+~~~~~~~~~~
+
+:command:`bq_load>: URI | LIST`
+  A URI or list of URIs identifying files in GCS to import.
+
+  Examples:
+
+  .. code-block:: yaml
+
+    bq_load>: gs://my_bucket/data.csv
+
+
+  .. code-block:: yaml
+
+    bq_load>:
+      - gs://my_bucket/data1.csv.gz
+      - gs://my_bucket/data2_*.csv.gz
+
+:command:`dataset: NAME`
+  The dataset that the destination table is located in or should be created in. Can also be specified directly in the table reference.
+
+  * :command:`dataset>: my_dataset`
+  * :command:`dataset>: my_project:my_dataset`
+
+:command:`destination_table: NAME`
+  The table to store the imported data in.
+
+  * :command:`destination_table: my_result_table`
+  * :command:`destination_table: some_dataset.some_table`
+  * :command:`destination_table: some_project:some_dataset.some_table`
+
+:command:`project: NAME`
+  The project that the table is located in or should be created in. Can also be specified directly in the table reference or the dataset parameter.
+
+:command:`source_format: CSV | NEWLINE_DELIMITED_JSON | AVRO | DATASTORE_BACKUP`
+  The format of the files to be imported. *Default*: ``CSV``.
+
+  * :command:`source_format: CSV`
+  * :command:`source_format: NEWLINE_DELIMITED_JSON`
+  * :command:`source_format: AVRO`
+  * :command:`source_format: DATASTORE_BACKUP`
+
+:command:`field_delimiter: CHARACTER`
+  The separator used between fields in CSV files to be imported. *Default*: ``,``.
+
+  * :command:`field_delimiter: '\\t'`
+
+:command:`create_disposition: CREATE_IF_NEEDED | CREATE_NEVER`
+  Specifies whether the destination table should be automatically created when performing the import.
+
+  - ``CREATE_IF_NEEDED``: *(default)* The destination table is created if it does not already exist.
+  - ``CREATE_NEVER``: The destination table must already exist, otherwise the import will fail.
+
+  Examples:
+
+  * :command:`create_disposition: CREATE_IF_NEEDED`
+  * :command:`create_disposition: CREATE_NEVER`
+
+:command:`write_disposition: WRITE_TRUNCATE | WRITE_APPEND | WRITE_EMPTY`
+  Specifies whether to permit importing data to an already existing destination table.
+
+  - ``WRITE_TRUNCATE``: If the destination table already exists, any data in it will be overwritten.
+  - ``WRITE_APPEND``: If the destination table already exists, any data in it will be appended to.
+  - ``WRITE_EMPTY``: *(default)* The import fails if the destination table already exists and is not empty.
+
+  Examples:
+
+  * :command:`write_disposition: WRITE_TRUNCATE`
+  * :command:`write_disposition: WRITE_APPEND`
+  * :command:`write_disposition: WRITE_EMPTY`
+
+:command:`skip_leading_rows: INTEGER`
+  The number of leading rows to skip in CSV files to import. *Default*: ``0``.
+
+  * :command:`skip_leading_rows: 1`
+
+:command:`encoding: UTF-8 | ISO-8859-1`
+  The character encoding of the data in the files to import. *Default*: ``UTF-8``.
+
+  * :command:`encoding: ISO-8859-1`
+
+:command:`quote: CHARACTER`
+  The character quote of the data in the files to import. *Default*: ``'"'``.
+
+  * :command:`quote: ''`
+  * :command:`quote: "'"`
+
+:command:`max_bad_records: INTEGER`
+  The maximum number of bad records to ignore before failing the import. *Default*: ``0``.
+
+  * :command:`max_bad_records: 100`
+
+:command:`allow_quoted_newlines: BOOLEAN`
+  Whether to allow quoted data sections that contain newline characters in a CSV file. *Default*: ``false``.
+
+:command:`allow_jagged_rows: BOOLEAN`
+  Whether to accept rows that are missing trailing optional columns in CSV files. *Default*: ``false``.
+
+:command:`ignore_unknown_values: BOOLEAN`
+  Whether to ignore extra values in data that are not represented in the table schema. *Default*: ``false``.
+
+:command:`projection_fields: LIST`
+  A list of names of Cloud Datastore entity properties to load. Requires ``source_format: DATASTORE_BACKUP``.
+
+:command:`autodetect: BOOLEAN`
+  Whether to automatically infer options and schema for CSV and JSON sources. *Default*: ``false``.
+
+:command:`schema_update_options: LIST`
+  A list of destination table schema updates that may be automatically performed when performing the import.
+
+  .. code-block:: yaml
+
+    schema_update_options:
+      - ALLOW_FIELD_ADDITION
+      - ALLOW_FIELD_RELAXATION
+
+Output parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`bq.last_job_id`
+  The id of the BigQuery job that performed this import.
+
