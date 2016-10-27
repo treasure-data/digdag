@@ -1,5 +1,6 @@
 package io.digdag.core.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -229,10 +230,10 @@ public class OperatorManager
                 return;
             }
             type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
-            Object file = config.get(operatorKey.get(), Object.class);
+            Object command = config.get(operatorKey.get(), Object.class);
             config.set("_type", type);
-            config.set("_command", file);
-            logger.info("{}>: {}", type, file);
+            config.set("_command", command);
+            logger.info("{}>: {}", type, Optional.fromNullable(command).or(""));
             shouldBeUsedKeys.remove(operatorKey.get());
         }
 
