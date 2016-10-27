@@ -7,8 +7,8 @@ import com.google.common.base.Throwables;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.TDClientHttpConflictException;
+import com.treasuredata.client.TDClientHttpException;
 import com.treasuredata.client.TDClientHttpNotFoundException;
-import com.treasuredata.client.TDClientHttpUnauthorizedException;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
@@ -22,6 +22,7 @@ import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -369,9 +370,17 @@ public class TDOperator
 
     static boolean isDeterministicClientException(Exception ex)
     {
-        return ex instanceof TDClientHttpNotFoundException ||
-                ex instanceof TDClientHttpConflictException ||
-                ex instanceof TDClientHttpUnauthorizedException;
+        if (ex instanceof TDClientHttpException) {
+            int statusCode = ((TDClientHttpException) ex).getStatusCode();
+            switch (statusCode) {
+                case HttpStatus.TOO_MANY_REQUESTS_429:
+                case HttpStatus.REQUEST_TIMEOUT_408:
+                    return false;
+                default:
+                    return statusCode >= 400 && statusCode < 500;
+            }
+        }
+        return false;
     }
 
     @Override
