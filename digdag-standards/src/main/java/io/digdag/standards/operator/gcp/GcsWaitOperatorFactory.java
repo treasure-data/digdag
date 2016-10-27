@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.gcp;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
@@ -88,6 +89,7 @@ class GcsWaitOperatorFactory
             StorageObject metadata = pollingWaiter(state, "exists")
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket, object)
                     .await(pollState -> pollingRetryExecutor(pollState, "poll")
+                            .retryUnless(GoogleJsonResponseException.class, Gcp::isDeterministicException)
                             .run(s -> gcs.stat(bucket, object)));
 
             return TaskResult.defaultBuilder(request)
