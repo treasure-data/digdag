@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;

@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.digdag.standards.operator.bq.Bq.datasetReference;
+import static io.digdag.standards.operator.gcp.Bq.datasetReference;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 
 class BqDdlOperatorFactory
@@ -213,18 +213,13 @@ class BqDdlOperatorFactory
                 state.params().set("operation", i);
                 BqOperation o = operations.get(i);
                 pollingRetryExecutor(state, "request")
-                        .retryUnless(GoogleJsonResponseException.class, BqDdlOperatorFactory::isDeterministicException)
+                        .retryUnless(GoogleJsonResponseException.class, Gcp::isDeterministicException)
                         .withErrorMessage("BiqQuery DDL operation failed")
                         .runAction(s -> o.perform(bq, projectId));
             }
 
             return TaskResult.empty(request);
         }
-    }
-
-    private static boolean isDeterministicException(GoogleJsonResponseException e)
-    {
-        return e.getStatusCode() / 100 == 4;
     }
 
     private interface BqOperation

@@ -3,8 +3,6 @@ package acceptance.td;
 import com.amazonaws.util.StringInputStream;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpStatusCodes;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
@@ -12,17 +10,14 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
 import com.google.api.services.bigquery.model.Dataset;
-import com.google.api.services.bigquery.model.DatasetList;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.Table;
 import com.google.api.services.bigquery.model.TableDataInsertAllRequest;
 import com.google.api.services.bigquery.model.TableFieldSchema;
-import com.google.api.services.bigquery.model.TableList;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
-import com.google.api.services.storage.model.Objects;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -34,23 +29,25 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.littleshoot.proxy.HttpProxyServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Predicate;
 
+import static acceptance.td.GcpUtil.BQ_TAG;
+import static acceptance.td.GcpUtil.GCP_CREDENTIAL;
+import static acceptance.td.GcpUtil.GCS_PREFIX;
+import static acceptance.td.GcpUtil.GCS_TEST_BUCKET;
+import static acceptance.td.GcpUtil.createDataset;
+import static acceptance.td.GcpUtil.createTable;
+import static acceptance.td.GcpUtil.datasetExists;
+import static acceptance.td.GcpUtil.listTables;
+import static acceptance.td.GcpUtil.tableExists;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -67,14 +64,6 @@ import static utils.TestUtils.pushProject;
 
 public class BigQueryIT
 {
-    private static final Logger logger = LoggerFactory.getLogger(BigQueryIT.class);
-
-    private static final String GCP_CREDENTIAL = System.getenv().getOrDefault("GCP_CREDENTIAL", "");
-    private static final String GCS_TEST_BUCKET = System.getenv().getOrDefault("GCS_TEST_BUCKET", "");
-
-    private static final String GCS_PREFIX = "test/" + UUID.randomUUID().toString().replace('-', '_') + '/';
-    private static final String BQ_TAG = "test_" + UUID.randomUUID().toString().replace('-', '_');
-
     @Rule public TemporaryFolder folder = new TemporaryFolder();
 
     public TemporaryDigdagServer server;
@@ -93,7 +82,7 @@ public class BigQueryIT
     private HttpTransport transport;
     private Storage gcs;
     private Bigquery bq;
-    private String gcpProjectId;
+    private String gcpProjectId = GcpUtil.GCP_PROJECT_ID;
 
     @Before
     public void setUp()
@@ -127,7 +116,6 @@ public class BigQueryIT
 
         gcpCredential = GoogleCredential.fromStream(new StringInputStream(GCP_CREDENTIAL));
 
-        gcpProjectId = DigdagClient.objectMapper().readTree(GCP_CREDENTIAL).get("project_id").asText();
         assertThat(gcpProjectId, not(isEmptyOrNullString()));
 
         jsonFactory = new JacksonFactory();
@@ -180,44 +168,14 @@ public class BigQueryIT
     public void cleanupGcs()
             throws Exception
     {
-        if (gcs == null) {
-            return;
-        }
-
-        Storage.Objects.List req = gcs.objects().list(GCS_TEST_BUCKET);
-        Objects objects;
-        do {
-            objects = req.execute();
-            List<StorageObject> items = objects.getItems();
-            if (items != null) {
-                for (StorageObject object : items) {
-                    if (object.getName().startsWith(GCS_PREFIX)) {
-                        try {
-                            gcs.objects().delete(GCS_TEST_BUCKET, object.getName()).execute();
-                        }
-                        catch (IOException e) {
-                            logger.warn("Failed to delete test gcs bucket: {}", object.getName(), e);
-                        }
-                    }
-                }
-            }
-            req.setPageToken(objects.getNextPageToken());
-        }
-        while (null != objects.getNextPageToken());
+        GcpUtil.cleanupGcs(gcs);
     }
 
     @After
     public void cleanupBq()
             throws Exception
     {
-        if (bq == null) {
-            return;
-        }
-        List<DatasetList.Datasets> datasets = listDatasets(
-                bq, gcpProjectId, ds -> ds.getDatasetReference().getDatasetId().contains(BQ_TAG));
-        for (DatasetList.Datasets dataset : datasets) {
-            deleteDataset(bq, gcpProjectId, dataset.getDatasetReference().getDatasetId());
-        }
+        GcpUtil.cleanupBq(bq, gcpProjectId);
     }
 
     @After
@@ -464,143 +422,5 @@ public class BigQueryIT
 
         Table emptyTable5 = bq.tables().get(gcpProjectId, testDefaultDataset, testEmptyTable5).execute();
         assertThat(emptyTable5.getNumRows(), is(BigInteger.ZERO));
-    }
-
-    private static Table createTable(Bigquery bq, String projectId, String datasetId, String tableId)
-            throws IOException
-    {
-        Table table = new Table()
-                .setTableReference(new TableReference()
-                        .setProjectId(projectId)
-                        .setDatasetId(datasetId)
-                        .setTableId(tableId));
-        Table created = createTable(bq, projectId, datasetId, table);
-        assertThat(tableExists(bq, projectId, datasetId, tableId), is(true));
-        return created;
-    }
-
-    private static boolean tableExists(Bigquery bq, String projectId, String datasetId, String tableId)
-            throws IOException
-    {
-        try {
-            bq.tables().get(projectId, datasetId, tableId).execute();
-            return true;
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
-                return false;
-            }
-            throw e;
-        }
-    }
-
-    private static Table createTable(Bigquery bq, String projectId, String datasetId, Table table)
-            throws IOException
-    {
-        return bq.tables().insert(projectId, datasetId, table).execute();
-    }
-
-    private static Dataset createDataset(Bigquery bq, String projectId, String datasetId)
-            throws IOException
-    {
-        Dataset dataset = new Dataset()
-                .setDatasetReference(new DatasetReference()
-                        .setDatasetId(datasetId));
-        Dataset created = createDataset(bq, projectId, dataset);
-        assertThat(datasetExists(bq, projectId, datasetId), is(true));
-        return created;
-    }
-
-    private static Dataset createDataset(Bigquery bq, String projectId, Dataset dataset)
-            throws IOException
-    {
-        return bq.datasets().insert(projectId, dataset).execute();
-    }
-
-    private static boolean datasetExists(Bigquery bq, String projectId, String datasetId)
-            throws IOException
-    {
-        try {
-            bq.datasets().get(projectId, datasetId).execute();
-            return true;
-        }
-        catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == HttpStatusCodes.STATUS_CODE_NOT_FOUND) {
-                return false;
-            }
-            throw e;
-        }
-    }
-
-    private static List<TableList.Tables> listTables(Bigquery bq, String projectId, String datasetId)
-            throws IOException
-    {
-        return listTables(bq, projectId, datasetId, t -> true);
-    }
-
-    private static List<TableList.Tables> listTables(Bigquery bq, String projectId, String datasetId, Predicate<TableList.Tables> needle)
-            throws IOException
-    {
-        List<TableList.Tables> tables = new ArrayList<>();
-        Bigquery.Tables.List req = bq.tables().list(projectId, datasetId);
-        TableList tableList;
-        do {
-            tableList = req.execute();
-            if (tableList.getTables() != null) {
-                tableList.getTables().stream().filter(needle).forEach(tables::add);
-            }
-            req.setPageToken(tableList.getNextPageToken());
-        }
-        while (null != tableList.getNextPageToken());
-        return tables;
-    }
-
-    private static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId)
-            throws IOException
-    {
-        return listDatasets(bq, projectId, ds -> true);
-    }
-
-    private static List<DatasetList.Datasets> listDatasets(Bigquery bq, String projectId, Predicate<DatasetList.Datasets> needle)
-            throws IOException
-    {
-        List<DatasetList.Datasets> datasets = new ArrayList<>();
-        Bigquery.Datasets.List req = bq.datasets().list(projectId);
-        DatasetList datasetList;
-        do {
-            datasetList = req.execute();
-            if (datasetList.getDatasets() != null) {
-                datasetList.getDatasets().stream()
-                        .filter(needle)
-                        .forEach(datasets::add);
-            }
-            req.setPageToken(datasetList.getNextPageToken());
-        }
-        while (null != datasetList.getNextPageToken());
-        return datasets;
-    }
-
-    private static void deleteDataset(Bigquery bq, String gcpProjectId, String datasetId)
-            throws IOException
-    {
-        // Delete tables
-        List<TableList.Tables> tables = listTables(bq, gcpProjectId, datasetId, table -> true);
-        for (TableList.Tables table : tables) {
-            String tableId = table.getTableReference().getTableId();
-            try {
-                bq.tables().delete(gcpProjectId, datasetId, tableId).execute();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Delete dataset
-        try {
-            bq.datasets().delete(gcpProjectId, datasetId).execute();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

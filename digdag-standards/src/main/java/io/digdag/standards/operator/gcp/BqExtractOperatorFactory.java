@@ -1,4 +1,4 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.JobConfiguration;
@@ -12,7 +12,7 @@ import io.digdag.spi.TaskRequest;
 
 import java.nio.file.Path;
 
-import static io.digdag.standards.operator.bq.Bq.tableReference;
+import static io.digdag.standards.operator.gcp.Bq.tableReference;
 
 class BqExtractOperatorFactory
         implements OperatorFactory

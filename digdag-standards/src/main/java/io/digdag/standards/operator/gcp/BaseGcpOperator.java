@@ -1,8 +1,7 @@
-package io.digdag.standards.operator.bq;
+package io.digdag.standards.operator.gcp;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
@@ -13,21 +12,14 @@ import io.digdag.util.BaseOperator;
 import java.nio.file.Path;
 import java.util.List;
 
-abstract class BaseBqOperator
+abstract class BaseGcpOperator
         extends BaseOperator
 {
-    private final BqClient.Factory clientFactory;
     private final GcpCredentialProvider credentialProvider;
 
-    protected final Config params;
-
-    protected BaseBqOperator(Path projectPath, TaskRequest request, BqClient.Factory clientFactory, GcpCredentialProvider credentialProvider)
+    protected BaseGcpOperator(Path projectPath, TaskRequest request, GcpCredentialProvider credentialProvider)
     {
         super(projectPath, request);
-        this.clientFactory = clientFactory;
-        this.params = request.getConfig()
-                .mergeDefault(request.getConfig().getNestedOrGetEmpty("bq"));
-
         this.credentialProvider = credentialProvider;
     }
 
@@ -42,10 +34,10 @@ abstract class BaseBqOperator
     {
         GcpCredential credential = credentialProvider.credential(ctx.secrets());
         String projectId = projectId(ctx, credential);
-        try (BqClient bq = clientFactory.create(credential.credential())) {
-            return run(ctx, bq, projectId);
-        }
+        return run(ctx, credential, projectId);
     }
+
+    protected abstract TaskResult run(TaskExecutionContext ctx, GcpCredential credential, String projectId);
 
     private String projectId(TaskExecutionContext ctx, GcpCredential credential)
     {
@@ -57,6 +49,4 @@ abstract class BaseBqOperator
 
         return projectId.get();
     }
-
-    protected abstract TaskResult run(TaskExecutionContext ctx, BqClient bq, String projectId);
 }
