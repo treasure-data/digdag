@@ -15,8 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-abstract class BaseGcpClient<
-        CLIENT extends AbstractGoogleJsonClient>
+abstract class BaseGcpClient<CLIENT extends AbstractGoogleJsonClient>
         implements AutoCloseable
 {
     private static Logger logger = LoggerFactory.getLogger(BaseGcpClient.class);
