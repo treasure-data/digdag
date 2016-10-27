@@ -30,6 +30,9 @@ public interface SessionStoreManager
     // for WorkflowExecutor.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);
 
+    // for AttemptTimeoutEnforcer.enforceAttemptTTLs
+    List<StoredSessionAttempt> findAttemptsCreatedBeforeWithState(Instant creationDeadline, int state, long lastId, int limit);
+
     interface AttemptLockAction <T>
     {
         T call(SessionAttemptControlStore store, SessionAttemptSummary summary);

@@ -56,6 +56,7 @@ public class ServerBootstrap
                 binder.bind(ServerRuntimeInfoWriter.class).asEagerSingleton();
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
                 binder.bind(WorkflowExecutorLoop.class).asEagerSingleton();
+                binder.bind(AttemptTimeoutEnforcer.class).asEagerSingleton();
 
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();
