@@ -22,6 +22,7 @@ import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.DurationParam;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -371,7 +372,13 @@ public class TDOperator
     {
         if (ex instanceof TDClientHttpException) {
             int statusCode = ((TDClientHttpException) ex).getStatusCode();
-            return statusCode >= 400 && statusCode < 500;
+            switch (statusCode) {
+                case HttpStatus.TOO_MANY_REQUESTS_429:
+                case HttpStatus.REQUEST_TIMEOUT_408:
+                    return false;
+                default:
+                    return statusCode >= 400 && statusCode < 500;
+            }
         }
         return false;
     }
