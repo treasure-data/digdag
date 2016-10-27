@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.function.BiFunction;
 
 import static acceptance.td.GcpUtil.GCP_CREDENTIAL;
 import static acceptance.td.GcpUtil.GCS_PREFIX;
@@ -166,11 +167,24 @@ public class GcsWaitIT
     public void testGcsWait()
             throws Exception
     {
+        testGcsWait("gcs_wait", (bucket, object) -> "gcs_wait>: " + bucket + "/" + object);
+    }
+
+    @Test
+    public void testGcsWaitBucketObject()
+            throws Exception
+    {
+        testGcsWait("gcs_wait_bucket_object", (bucket, object) -> "gcs_wait>: ");
+    }
+
+    private void testGcsWait(String workflow, BiFunction<String, String, String> logNeedle)
+            throws Exception
+    {
         String objectName = GCS_PREFIX + "data.csv";
 
         // Start waiting
-        addWorkflow(projectDir, "acceptance/gcs_wait/gcs_wait.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "gcs_wait", ImmutableMap.of(
+        addWorkflow(projectDir, "acceptance/gcs_wait/" + workflow + ".dig");
+        long attemptId = pushAndStart(server.endpoint(), projectDir, workflow, ImmutableMap.of(
                 "test_bucket", GCS_TEST_BUCKET,
                 "test_object", objectName,
                 "outfile", outfile.toString()));
@@ -178,7 +192,7 @@ public class GcsWaitIT
         // Wait for gcs_wait polling to show up in logs
         expect(Duration.ofSeconds(30), () -> {
             String attemptLogs = TestUtils.getAttemptLogs(client, attemptId);
-            return attemptLogs.contains("gcs_wait>: " + GCS_TEST_BUCKET + "/" + objectName);
+            return attemptLogs.contains(logNeedle.apply(GCS_TEST_BUCKET, objectName));
         });
 
         // Verify that the dependent task has not been executed
