@@ -5,6 +5,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.common.base.Optional;
 import com.treasuredata.client.ProxyConfig;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,13 @@ class Gcp
 
     static boolean isDeterministicException(GoogleJsonResponseException e)
     {
-        return e.getStatusCode() / 100 == 4;
+        int statusCode = e.getStatusCode();
+        switch (statusCode) {
+            case HttpStatus.TOO_MANY_REQUESTS_429:
+            case HttpStatus.REQUEST_TIMEOUT_408:
+                return false;
+            default:
+                return statusCode >= 400 && statusCode < 500;
+        }
     }
 }
