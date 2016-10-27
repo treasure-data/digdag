@@ -17,7 +17,7 @@ public interface TaskState
     Config root();
 
     /**
-     * Get the raw params {@link Config} for this {@link TaskState}. This should be used when mutating (nested) task state but <b><not/b> when
+     * Get the raw params {@link Config} for this {@link TaskState}. This should be used when mutating (nested) task state but <b>not</b> when
      * throwing a polling {@link io.digdag.spi.TaskExecutionException}.
      */
     Config params();
