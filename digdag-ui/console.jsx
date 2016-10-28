@@ -830,7 +830,7 @@ const SessionView = withRouter(
     };
 
     state = {
-      loading: null,
+      loading: false,
       canRetry: true
     };
 

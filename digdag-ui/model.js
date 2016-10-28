@@ -298,9 +298,10 @@ export class Model {
   }
 
   retrySession (session: Session) {
+    const { lastAttempt } = session
     return this.put('attempts', {
       workflowId: session.workflow.id,
-      params: session.lastAttempt.params,
+      params: lastAttempt && lastAttempt.params,
       sessionTime: session.sessionTime
     })
   }
