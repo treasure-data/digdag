@@ -7,7 +7,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import utils.TemporaryDigdagServer;
-import utils.TestUtils;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -15,7 +14,6 @@ import java.time.Duration;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.addWorkflow;
-import static utils.TestUtils.attemptFailure;
 import static utils.TestUtils.expect;
 import static utils.TestUtils.pushAndStart;
 
@@ -27,7 +25,7 @@ public class AttemptTimeoutIT
     @Rule
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
-                    "executor.attempt_ttl = 5s",
+                    "executor.attempt_ttl = 10s",
                     "executor.attempt_reaping_interval = 1s"
             )
             .build();
@@ -53,9 +51,16 @@ public class AttemptTimeoutIT
     {
         addWorkflow(projectDir, "acceptance/attempt_timeout/attempt_timeout.dig");
         long attemptId = pushAndStart(server.endpoint(), projectDir, "attempt_timeout");
-        expect(Duration.ofSeconds(30), attemptFailure(server.endpoint(), attemptId));
+
+        // Expect the attempt to get canceled
+        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+
+        // And then the attempt should be done pretty soon
+        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getDone());
 
         RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+        assertThat(attempt.getDone(), is(true));
         assertThat(attempt.getCancelRequested(), is(true));
+        assertThat(attempt.getSuccess(), is(false));
     }
 }
