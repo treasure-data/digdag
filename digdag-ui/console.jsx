@@ -848,7 +848,7 @@ const SessionView = withRouter(
     }
 
     render () {
-      const { loading, canRetryLabel } = this.state
+      const { loading } = this.state
       const { session } = this.props
       const { lastAttempt, project, workflow } = session
       const canRetry = attemptCanRetry(lastAttempt)
@@ -1197,7 +1197,7 @@ class VersionView extends React.Component {
 
 class Navbar extends React.Component {
   static contextTypes = {
-    router: React.PropTypes.object,
+    router: React.PropTypes.object
   }
 
   logout (e) {
@@ -1228,7 +1228,7 @@ class Navbar extends React.Component {
     return navbar && navbar.style ? navbar.style : {}
   }
 
-  isActiveClass(path) {
+  isActiveClass (path) {
     const { router } = this.context
     return router.isActive(path) ? 'active' : ''
   }
@@ -1650,7 +1650,7 @@ class ParserTest extends React.Component {
 }
 
 class AppWrapper extends React.Component {
-  render() {
+  render () {
     return (
       <div className='container-fluid'>
         <Navbar />
