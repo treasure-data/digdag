@@ -414,7 +414,7 @@ class ScheduleListView extends React.Component {
   render () {
     const { schedules } = this.state || {}
     const rows = (schedules || []).map(schedule => {
-      const button = false ? (
+      const statusButton = false ? (
         <button
           className='btn btn-sm btn-secondary pull-right'
         >
@@ -435,7 +435,7 @@ class ScheduleListView extends React.Component {
           <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
           <td>{schedule.nextRunTime}</td>
           <td>{schedule.nextScheduleTime}</td>
-          <td style={{ width: 60 }}>{button}</td>
+          <td style={{ width: 60 }}>{statusButton}</td>
         </tr>
       )
     })
@@ -1211,7 +1211,7 @@ class VersionView extends React.Component {
 
 class Navbar extends React.Component {
   static contextTypes = {
-    router: React.PropTypes.object,
+    router: React.PropTypes.object
   }
 
   logout (e) {
@@ -1242,7 +1242,7 @@ class Navbar extends React.Component {
     return navbar && navbar.style ? navbar.style : {}
   }
 
-  isActiveClass(path) {
+  isActiveClass (path) {
     const { router } = this.context
     return router.isActive(path) ? 'active' : ''
   }
