@@ -297,6 +297,10 @@ export class Model {
     })
   }
 
+  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
+    return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
+  }
+
   getTDQueryIdFromName (queryName: string) : string {
     const query = this.queriesCache.get(queryName, null)
     if (!query) {

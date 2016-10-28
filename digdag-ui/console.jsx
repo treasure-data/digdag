@@ -394,6 +394,74 @@ class SessionListView extends React.Component {
   }
 }
 
+class ScheduleListView extends React.Component {
+
+  props:{
+    workflowName: string;
+    projectId: number;
+  };
+
+  state: {
+    schedules: []
+  };
+
+  componentDidMount () {
+    model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(schedules => {
+      this.setState({schedules})
+    })
+  }
+
+  render () {
+    const { schedules } = this.state || {}
+    const rows = (schedules || []).map(schedule => {
+      const button = false ? (
+        <button
+          className='btn btn-sm btn-secondary pull-right'
+        >
+          PAUSE
+        </button>
+      ) : (
+        <button
+          className='btn btn-sm btn-success pull-right'
+        >
+          RESUME
+        </button>
+      )
+      return (
+        <tr key={schedule.id}>
+          <td>{schedule.id}</td>
+          <td>{schedule.revision}</td>
+          <td><Link to={`/projects/${schedule.project.id}`}>{schedule.project.name}</Link></td>
+          <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
+          <td>{schedule.nextRunTime}</td>
+          <td>{schedule.nextScheduleTime}</td>
+          <td style={{ width: 60 }}>{button}</td>
+        </tr>
+      )
+    })
+    return (
+      <div className='table-responsive'>
+        <table className='table table-striped table-hover table-condensed'>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Revision</th>
+              <th>Project</th>
+              <th>Workflow</th>
+              <th>Next Run Time</th>
+              <th>Next Schedule Time</th>
+              <th style={{ textAlign: 'center' }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+}
+
 class ProjectsView extends React.Component {
 
   state = {
@@ -610,6 +678,10 @@ class WorkflowView extends React.Component {
               </tr>
             </tbody>
           </table>
+        </div>
+        <div className='row'>
+          <h2>Scheduling</h2>
+          <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
         </div>
         <div className='row'>
           <h2>Definition</h2>
