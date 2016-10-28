@@ -1,5 +1,6 @@
 module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
   const { files, options: { build, data } } = htmlWebpackPlugin
+  const configPath = build ? '' : '/config'
   return `
     <!DOCTYPE html>
     <html lang='en'>
@@ -10,7 +11,7 @@ module.exports = function htmlTemplate ({ htmlWebpackPlugin }) {
     </head>
     <body>
       <div id='app'></div>
-      <script src='/config.js' type='text/javascript'></script>
+      <script src='${configPath}/config.js' type='text/javascript'></script>
       <script src='${files.chunks.bootstrap.entry}'></script>
       <script src='${files.chunks.app.entry}'></script>
       ${[...files.css].map((css) => `

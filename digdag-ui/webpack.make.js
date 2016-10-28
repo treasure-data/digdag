@@ -92,7 +92,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
       historyApiFallback: {
         index: OUTPUT_PATH
       },
-      contentBase: BUILD_PATH,
+      contentBase: build ? BUILD_PATH : './',
       port: 9000,
       quiet: false,
       stats: {
