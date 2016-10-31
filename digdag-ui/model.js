@@ -301,11 +301,11 @@ export class Model {
     return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
   }
 
-  enableSchedule(scheduleId: number) : Promise<*> {
+  enableSchedule (scheduleId: number) : Promise<*> {
     return this.post(`schedules/${scheduleId}/enable`)
   }
 
-  disableSchedule(scheduleId: number) : Promise<*> {
+  disableSchedule (scheduleId: number) : Promise<*> {
     return this.post(`schedules/${scheduleId}/disable`)
   }
 
@@ -356,7 +356,6 @@ export class Model {
       return response.json()
     })
   }
-
 
   headers (): Headers {
     return this.config.headers({credentials: this.config.credentials})

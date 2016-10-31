@@ -438,7 +438,6 @@ class ScheduleListView extends React.Component {
       .then(() => this.fetchSchedule())
   }
 
-
   render () {
     const { schedules, loading } = this.state || {}
     const rows = (schedules || []).map(schedule => {
@@ -1697,7 +1696,7 @@ class ParserTest extends React.Component {
 }
 
 class AppWrapper extends React.Component {
-  render() {
+  render () {
     return (
       <div className='container-fluid'>
         <Navbar />
