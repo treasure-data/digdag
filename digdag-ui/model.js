@@ -344,7 +344,7 @@ export class Model {
     return this.http(url, 'POST')
   }
 
-  http (url: string, method: string = 'GET'): Promise<*> {
+  http (url: string, method: MethodType): Promise<*> {
     return fetch(this.config.url + url, {
       credentials: 'include',
       method,

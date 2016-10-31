@@ -403,8 +403,16 @@ class ScheduleListView extends React.Component {
 
   state: {
     schedules: [],
-    loading: false
+    loading: boolean
   };
+
+  constructor(props) {
+    super(props)
+    this.state = {
+      schedules: [],
+      loading: false
+    }
+  }
 
   componentDidMount () {
     this.fetchSchedule()
