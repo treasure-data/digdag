@@ -301,6 +301,14 @@ export class Model {
     return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
   }
 
+  enableSchedule(scheduleId: number) : Promise<*> {
+    return this.post(`schedules/${scheduleId}/enable`)
+  }
+
+  disableSchedule(scheduleId: number) : Promise<*> {
+    return this.post(`schedules/${scheduleId}/disable`)
+  }
+
   getTDQueryIdFromName (queryName: string) : string {
     const query = this.queriesCache.get(queryName, null)
     if (!query) {
@@ -329,8 +337,17 @@ export class Model {
   }
 
   get (url: string): Promise<*> {
+    return this.http(url, 'GET')
+  }
+
+  post (url: string): Promise<*> {
+    return this.http(url, 'POST')
+  }
+
+  http (url: string, method: string = 'GET'): Promise<*> {
     return fetch(this.config.url + url, {
       credentials: 'include',
+      method,
       headers: this.headers()
     }).then(response => {
       if (!response.ok) {
@@ -339,6 +356,7 @@ export class Model {
       return response.json()
     })
   }
+
 
   headers (): Headers {
     return this.config.headers({credentials: this.config.credentials})

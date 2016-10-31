@@ -402,31 +402,46 @@ class ScheduleListView extends React.Component {
   };
 
   state: {
-    schedules: []
+    schedules: [],
+    loading: false
   };
 
   componentDidMount () {
+    this.fetchSchedule()
+  }
+
+  fetchSchedule () {
+    this.setState({loading: true})
     model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(schedules => {
-      this.setState({schedules})
+      this.setState({
+        schedules,
+        loading: false
+      })
     })
   }
 
-  render () {
+  disableSchedule () {
     const { schedules } = this.state || {}
+    this.setState({loading: true})
+    model()
+      .disableSchedule(schedules[0].id)
+      .then(() => this.setState({loading: false}))
+      .then(() => this.fetchSchedule())
+  }
+
+  enableSchedule () {
+    const schedule = this.state.schedules[0]
+    this.setState({loading: true})
+    model()
+      .enableSchedule(schedule.id)
+      .then(() => this.setState({loading: false}))
+      .then(() => this.fetchSchedule())
+  }
+
+
+  render () {
+    const { schedules, loading } = this.state || {}
     const rows = (schedules || []).map(schedule => {
-      const statusButton = false ? (
-        <button
-          className='btn btn-sm btn-secondary pull-right'
-        >
-          PAUSE
-        </button>
-      ) : (
-        <button
-          className='btn btn-sm btn-success pull-right'
-        >
-          RESUME
-        </button>
-      )
       return (
         <tr key={schedule.id}>
           <td>{schedule.id}</td>
@@ -439,24 +454,45 @@ class ScheduleListView extends React.Component {
         </tr>
       )
     })
+    const statusButton = (schedules && schedules.length) ? (
+      <button
+        className='btn btn-sm btn-secondary pull-right'
+        onClick={this.disableSchedule.bind(this)}
+      >
+        PAUSE
+      </button>
+    ) : (
+      <button
+        className='btn btn-sm btn-success pull-right'
+        onClick={this.enableSchedule.bind(this)}
+      >
+        RESUME
+      </button>
+    )
+    const loadingLabel = <span className='label label-info pull-right'>Loading ...</span>
     return (
-      <div className='table-responsive'>
-        <table className='table table-striped table-hover table-condensed'>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Revision</th>
-              <th>Project</th>
-              <th>Workflow</th>
-              <th>Next Run Time</th>
-              <th>Next Schedule Time</th>
-              <th style={{ textAlign: 'center' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows}
-          </tbody>
-        </table>
+      <div className='row'>
+        <h2>
+          Scheduling
+          {loading ? loadingLabel : statusButton}
+        </h2>
+        <div className='table-responsive'>
+          <table className='table table-striped table-hover table-condensed'>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Revision</th>
+                <th>Project</th>
+                <th>Workflow</th>
+                <th>Next Run Time</th>
+                <th>Next Schedule Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows}
+            </tbody>
+          </table>
+        </div>
       </div>
     )
   }
@@ -679,10 +715,7 @@ class WorkflowView extends React.Component {
             </tbody>
           </table>
         </div>
-        <div className='row'>
-          <h2>Scheduling</h2>
-          <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
-        </div>
+        <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
         <div className='row'>
           <h2>Definition</h2>
           <pre><PrismCode className='language-digdag'>{this.definition()}</PrismCode></pre>
