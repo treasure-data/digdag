@@ -425,8 +425,8 @@ task releaseCheck << {
 
 // Utility task to release a snapshot version with a fixed version number.
 // Bintray doesn't allow releasing -SNAPSHOT version.
-task snapshotRelease(type: Exec) {
-    commandLine "bash", "-c", "echo ./gradlew -PsnapshotVersion=\$(TZ=UTC git log -n 1 --pretty='format:%ad-%H' --date 'format-local:%Y%m%dT%H%M%S') release"
+task releaseSnapshot(type: Exec) {
+    commandLine "bash", "-c", "./gradlew -PsnapshotVersion=\$(TZ=UTC git log -n 1 --pretty='format:%ad-%H' --date 'format-local:%Y%m%dT%H%M%S') release"
 }
 
 // Generate parent maven manifest
