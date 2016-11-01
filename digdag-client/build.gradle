@@ -7,6 +7,8 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${project.ext.jacksonVersion}"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-guava:${project.ext.jacksonVersion}"
 
+    compile "com.github.rholder:guava-retrying:2.0.0"
+
     compile 'org.jboss.resteasy:resteasy-client:3.0.13.Final'
     compile 'org.apache.commons:commons-compress:1.10'
     compile 'io.jsonwebtoken:jjwt:0.6.0'
