@@ -27,6 +27,7 @@
     "lodash": "^4.15.0",
     "lru-cache": "4.0.1",
     "moment": "2.13.0",
+    "node-uuid": "^1.4.7",
     "pako": "1.0.1",
     "path": "0.12.7",
     "prismjs": "1.5.0",

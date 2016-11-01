@@ -13,6 +13,7 @@ import pako from 'pako'
 import path from 'path'
 import yaml from 'js-yaml'
 import Duration from 'duration'
+import uuid from 'node-uuid'
 
 // noinspection ES6UnusedImports
 import Prism from 'prismjs'
@@ -830,21 +831,15 @@ const SessionView = withRouter(
     };
 
     state = {
-      loading: false,
-      canRetry: true
+      loading: false
     };
 
     retrySession () {
       const { session, router } = this.props
       this.setState({ loading: true })
       model()
-        .retrySession(session)
-        .then(() => {
-          router.push('/sessions')
-        }).catch((err) => {
-          router.push('/sessions')
-          console.error(err)
-        })
+        .retrySession(session, uuid.v4())
+        .then(() => router.push('/sessions'))
     }
 
     render () {
