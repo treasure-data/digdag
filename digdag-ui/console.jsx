@@ -406,7 +406,7 @@ class ScheduleListView extends React.Component {
     loading: boolean
   };
 
-  constructor(props) {
+  constructor (props) {
     super(props)
     this.state = {
       schedules: [],
@@ -448,6 +448,7 @@ class ScheduleListView extends React.Component {
 
   render () {
     const { schedules, loading } = this.state || {}
+    const canPause = schedules && schedules.length && !schedules[0].disabledAt
     const rows = (schedules || []).map(schedule => {
       return (
         <tr key={schedule.id}>
@@ -461,7 +462,7 @@ class ScheduleListView extends React.Component {
         </tr>
       )
     })
-    const statusButton = (schedules && schedules.length) ? (
+    const statusButton = canPause ? (
       <button
         className='btn btn-sm btn-secondary pull-right'
         onClick={this.disableSchedule.bind(this)}
@@ -476,7 +477,7 @@ class ScheduleListView extends React.Component {
         RESUME
       </button>
     )
-    const loadingLabel = <span className='label label-info pull-right'>Loading ...</span>
+    const loadingLabel = <button disabled className='btn btn-sm btn-info pull-right'>LOADING ...</button>
     return (
       <div className='row'>
         <h2>

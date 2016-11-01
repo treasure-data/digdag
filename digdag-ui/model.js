@@ -7,6 +7,7 @@ import LRU from 'lru-cache'
 
 export type Credentials = {[key: string]: string};
 export type Headers = {[key: string]: string};
+export type MethodType = 'GET' | 'POST' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'PUT' | 'PATCH'
 
 export type LogFileHandle = {
   fileName: string;
