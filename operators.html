@@ -1341,6 +1341,10 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
   <span class="l l-Scalar l-Scalar-Plain">destination_table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">other_project:other_dataset.other_table</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <strong>bq&gt;:</strong> operator uses <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/index">standard SQL</a> by default, whereas the default in the BigQuery console is <a class="reference external" href="https://cloud.google.com/bigquery/query-reference">legacy SQL</a>. To run <em>legacy</em> SQL queries, please set <code class="docutils literal"><span class="pre">use_legacy_sql:</span> <span class="pre">true</span></code>. For more information about <em>standard</em> SQL on BigQuery, see <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql">Migrating from legacy SQL</a>.</p>
+</div>
 <div class="section" id="id19">
 <h3><a class="toc-backref" href="#id76">Secrets</a><a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils" id="gcp-credential">
