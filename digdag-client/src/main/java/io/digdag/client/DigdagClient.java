@@ -5,9 +5,14 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
@@ -31,11 +36,13 @@ import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.ClientInvocation;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -51,13 +58,23 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
+import static com.github.rholder.retry.WaitStrategies.exponentialWait;
+import static com.google.common.base.Predicates.not;
 import static java.util.Locale.ENGLISH;
+import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
+import static org.jboss.resteasy.client.jaxrs.internal.ClientInvocation.handleErrorStatus;
 
 public class DigdagClient implements AutoCloseable
 {
+    private static final int TOO_MANY_REQUESTS_429 = 429;
+    private static final int REQUEST_TIMEOUT_408 = 408;
+
     public static class Builder
     {
         private String host = null;
@@ -556,11 +573,10 @@ public class DigdagClient implements AutoCloseable
     public InputStream getLogFile(long attemptId, RestLogFileHandle handle)
     {
         if (handle.getDirect().isPresent()) {
-            Response res = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
+            Invocation request = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
                     .request()
-                    .get();
-            // TODO check status code
-            return res.readEntity(InputStream.class);
+                    .buildGet();
+            return getLogFile(request);
         }
         else {
             return getLogFile(attemptId, handle.getFileName());
@@ -569,14 +585,62 @@ public class DigdagClient implements AutoCloseable
 
     public InputStream getLogFile(long attemptId, String fileName)
     {
-        Response res = target("/api/logs/{id}/files/{fileName}")
-            .resolveTemplate("id", attemptId)
-            .resolveTemplate("fileName", fileName)
-            .request()
-            .headers(headers.get())
-            .get();
-        // TODO check status code
-        return res.readEntity(InputStream.class);
+        Invocation request = target("/api/logs/{id}/files/{fileName}")
+                .resolveTemplate("id", attemptId)
+                .resolveTemplate("fileName", fileName)
+                .request()
+                .headers(this.headers.get())
+                .buildGet();
+
+        return getLogFile(request);
+    }
+
+    private InputStream getLogFile(Invocation request)
+    {
+        Retryer<InputStream> retryer = RetryerBuilder.<InputStream>newBuilder()
+                .retryIfException(not(DigdagClient::isDeterministicError))
+                .withWaitStrategy(exponentialWait())
+                .withStopStrategy(stopAfterAttempt(10))
+                .build();
+
+        try {
+            return retryer.call(() -> {
+                Response res = request.invoke();
+                if (res.getStatusInfo().getFamily() != SUCCESSFUL) {
+                    res.close();
+                    return handleErrorStatus(res);
+                }
+                return res.readEntity(InputStream.class);
+            });
+        }
+        catch (ExecutionException | RetryException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private static boolean isDeterministicError(Throwable ex)
+    {
+        return ex instanceof WebApplicationException &&
+                isDeterministicError(((WebApplicationException) ex).getResponse());
+    }
+
+    private static boolean isDeterministicError(Response res)
+    {
+        return isDeterministicError(res.getStatus());
+    }
+
+    private static boolean isDeterministicError(int status)
+    {
+        if (status >= 400 && status < 500) {
+            switch (status) {
+                case TOO_MANY_REQUESTS_429:
+                case REQUEST_TIMEOUT_408:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+        return false;
     }
 
     public RestSessionAttempt startSessionAttempt(RestSessionAttemptRequest request)
@@ -678,7 +742,7 @@ public class DigdagClient implements AutoCloseable
                 .request()
                 .headers(headers.get())
                 .put(Entity.entity(RestSetSecretRequest.of(value), "application/json"));
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+        if (response.getStatusInfo().getFamily() != SUCCESSFUL) {
             throw new WebApplicationException("Failed to set project secret: " + response.getStatusInfo());
         }
     }
@@ -696,7 +760,7 @@ public class DigdagClient implements AutoCloseable
                 .headers(headers.get())
                 .delete();
 
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+        if (response.getStatusInfo().getFamily() != SUCCESSFUL) {
             throw new WebApplicationException("Failed to delete project secret: " + response.getStatusInfo());
         }
     }
