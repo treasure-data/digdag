@@ -1017,6 +1017,9 @@ The **bq>:** operator can be used to run a query on Google BigQuery.
       td>: queries/step3.sql
       destination_table: other_project:other_dataset.other_table
 
+
+.. note:: The **bq>:** operator uses `standard SQL <https://cloud.google.com/bigquery/sql-reference/index>`_ by default, whereas the default in the BigQuery console is `legacy SQL <https://cloud.google.com/bigquery/query-reference>`_. To run *legacy* SQL queries, please set ``use_legacy_sql: true``. For more information about *standard* SQL on BigQuery, see `Migrating from legacy SQL <https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql>`_.
+
 Secrets
 ~~~~~~~
 
