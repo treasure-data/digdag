@@ -37,6 +37,8 @@ if ! git show | grep -E '^[+-]' | grep -Ev '^\+\+\+ ' | grep -Ev '^--- ' | grep 
     exit 0
 fi
 
+set +x
+
 git config credential.helper "store --file=$HOME/.git_credentials"
 
 echo "https://$GITHUB_TOKEN:@github.com" > "$HOME/.git_credentials"
