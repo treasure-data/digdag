@@ -27,6 +27,8 @@ import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -44,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -177,11 +180,34 @@ public class HttpOperatorFactory
                 request.header(header.getKey(), header.getValue());
             }
 
+            configureQueryParameters(request);
+
             ContentResponse response = PollingRetryExecutor.pollingRetryExecutor(state, "request")
                     .withErrorMessage("HTTP request failed")
                     .run(s -> execute(request));
 
             return result(response, storeContent);
+        }
+
+        private void configureQueryParameters(Request request)
+        {
+            // TODO: allow secret query parameters
+
+            try {
+                Config queryParameters = params.parseNestedOrGetEmpty("query");
+                for (String name : queryParameters.getKeys()) {
+                    request.param(name, queryParameters.get(name, String.class));
+                }
+            }
+            catch (ConfigException e) {
+                Optional<String> query = params.getOptional("query", String.class);
+                if (query.isPresent()) {
+                    List<NameValuePair> parameters = URLEncodedUtils.parse(query.get(), StandardCharsets.UTF_8);
+                    for (NameValuePair parameter : parameters) {
+                        request.param(parameter.getName(), parameter.getValue());
+                    }
+                }
+            }
         }
 
         private LinkedHashMultimap<String, String> headers()

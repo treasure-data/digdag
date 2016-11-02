@@ -10,6 +10,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Before;
@@ -193,6 +194,21 @@ public class HttpIT
         assertThat(request.getMethod(), is("POST"));
         assertThat(request.getBody().readUtf8(), is("test-content"));
         assertThat(request.getHeader(CONTENT_TYPE.asString()), is("text/plain"));
+    }
+
+    @Test
+    public void testQueryParameters()
+            throws Exception
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of(
+                        "test_uri", uri,
+                        "http.query", "{\"n1\":\"v1\",\"n2\":\"v &?2\"}"
+                ));
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(request.getPath(), is("/test?n1=v1&n2=v+%26%3F2"));
     }
 
     @Test
