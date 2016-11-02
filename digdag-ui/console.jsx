@@ -13,6 +13,7 @@ import pako from 'pako'
 import path from 'path'
 import yaml from 'js-yaml'
 import Duration from 'duration'
+import uuid from 'node-uuid'
 
 // noinspection ES6UnusedImports
 import Prism from 'prismjs'
@@ -245,6 +246,19 @@ function attemptStatus (attempt) {
       return <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
     }
   }
+}
+
+function attemptCanRetry (attempt) {
+  if (!attempt) {
+    return false
+  }
+  if (
+    (attempt.done && !attempt.success) ||
+    attempt.cancelRequested
+  ) {
+    return true
+  }
+  return false
 }
 
 const SessionStatusView = (props:{session: Session}) => {
@@ -921,51 +935,90 @@ class AttemptView extends React.Component {
   }
 }
 
-const SessionView = (props:{session: Session}) =>
-  <div className='row'>
-    <h2>Session</h2>
-    <table className='table table-condensed'>
-      <tbody>
-        <tr>
-          <td>ID</td>
-          <td>{props.session.id}</td>
-        </tr>
-        <tr>
-          <td>Project</td>
-          <td><Link to={`/projects/${props.session.project.id}`}>{props.session.project.name}</Link></td>
-        </tr>
-        <tr>
-          <td>Workflow</td>
-          <td><MaybeWorkflowLink workflow={props.session.workflow} /></td>
-        </tr>
-        <tr>
-          <td>Revision</td>
-          <td><SessionRevisionView session={props.session} /></td>
-        </tr>
-        <tr>
-          <td>Session UUID</td>
-          <td>{props.session.sessionUuid}</td>
-        </tr>
-        <tr>
-          <td>Session Time</td>
-          <td>{formatSessionTime(props.session.sessionTime)}</td>
-        </tr>
-        <tr>
-          <td>Status</td>
-          <td><SessionStatusView session={props.session} /></td>
-        </tr>
-        <tr>
-          <td>Last Attempt</td>
-          <td>{props.session.lastAttempt ? formatFullTimestamp(props.session.lastAttempt.createdAt) : null}</td>
-        </tr>
-        <tr>
-          <td>Last Attempt Duration:</td>
-          <td>{props.session.lastAttempt ? formatDuration(props.session.lastAttempt.createdAt, props.session.lastAttempt.finishedAt) : null}</td>
-        </tr>
+const SessionView = withRouter(
+  class PlainSessionView extends React.Component {
 
-      </tbody>
-    </table>
-  </div>
+    props:{
+      router: any;
+      session: Session;
+    };
+
+    state = {
+      loading: false
+    };
+
+    retrySession () {
+      const { session, router } = this.props
+      this.setState({ loading: true })
+      model()
+        .retrySession(session, uuid.v4())
+        .then(() => router.push('/sessions'))
+    }
+
+    render () {
+      const { loading } = this.state
+      const { session } = this.props
+      const { lastAttempt, project, workflow } = session
+      const canRetry = attemptCanRetry(lastAttempt)
+      return (
+        <div className='row'>
+          <h2>
+            Session
+            {canRetry &&
+              <button
+                className='btn btn-primary pull-right'
+                disabled={loading}
+                onClick={this.retrySession.bind(this)}
+              >
+                RETRY
+              </button>
+            }
+          </h2>
+          <table className='table table-condensed'>
+            <tbody>
+              <tr>
+                <td>ID</td>
+                <td>{session.id}</td>
+              </tr>
+              <tr>
+                <td>Project</td>
+                <td><Link to={`/projects/${project.id}`}>{project.name}</Link></td>
+              </tr>
+              <tr>
+                <td>Workflow</td>
+                <td><MaybeWorkflowLink workflow={workflow} /></td>
+              </tr>
+              <tr>
+                <td>Revision</td>
+                <td><SessionRevisionView session={session} /></td>
+              </tr>
+              <tr>
+                <td>Session UUID</td>
+                <td>{session.sessionUuid}</td>
+              </tr>
+              <tr>
+                <td>Session Time</td>
+                <td>{formatSessionTime(session.sessionTime)}</td>
+              </tr>
+              <tr>
+                <td>Status</td>
+                <td><SessionStatusView session={session} /></td>
+              </tr>
+              <tr>
+                <td>Last Attempt</td>
+                <td>{lastAttempt ? formatFullTimestamp(lastAttempt.createdAt) : null}</td>
+              </tr>
+              <tr>
+                <td>Last Attempt Duration:</td>
+                <td>{lastAttempt ? formatDuration(lastAttempt.createdAt, lastAttempt.finishedAt) : null}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  }
+)
 
 function formatSessionTime (t) {
   if (!t) {

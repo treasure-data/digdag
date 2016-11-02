@@ -298,6 +298,16 @@ export class Model {
     })
   }
 
+  retrySession (session: Session, sessionUUID: string) {
+    const { lastAttempt } = session
+    return this.put('attempts', {
+      workflowId: session.workflow.id,
+      params: lastAttempt && lastAttempt.params,
+      sessionTime: session.sessionTime,
+      retryAttemptName: sessionUUID
+    })
+  }
+
   fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
     return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
   }
@@ -350,6 +360,22 @@ export class Model {
       credentials: 'include',
       method,
       headers: this.headers()
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.json()
+    })
+  }
+
+  put (url: string, body: any): Promise<*> {
+    return fetch(this.config.url + url, {
+      credentials: 'include',
+      headers: Object.assign({}, this.headers(), {
+        'Content-Type': 'application/json'
+      }),
+      method: 'PUT',
+      body: JSON.stringify(body)
     }).then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)
