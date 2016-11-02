@@ -163,21 +163,29 @@ public class GcsWaitIT
         }
     }
 
-    @Test
-    public void testGcsWait()
-            throws Exception
+    public static class CommandIT
+            extends GcsWaitIT
     {
-        testGcsWait("gcs_wait", (bucket, object) -> "gcs_wait>: " + bucket + "/" + object);
+        @Test
+        public void testGcsWait()
+                throws Exception
+        {
+            testGcsWait("gcs_wait", (bucket, object) -> "gcs_wait>: " + bucket + "/" + object);
+        }
     }
 
-    @Test
-    public void testGcsWaitBucketObject()
-            throws Exception
+    public static class ParamIT
+            extends GcsWaitIT
     {
-        testGcsWait("gcs_wait_bucket_object", (bucket, object) -> "gcs_wait>: ");
+        @Test
+        public void testGcsWaitBucketObject()
+                throws Exception
+        {
+            testGcsWait("gcs_wait_bucket_object", (bucket, object) -> "gcs_wait>: ");
+        }
     }
 
-    private void testGcsWait(String workflow, BiFunction<String, String, String> logNeedle)
+    protected void testGcsWait(String workflow, BiFunction<String, String, String> logNeedle)
             throws Exception
     {
         String objectName = GCS_PREFIX + "data.csv";
