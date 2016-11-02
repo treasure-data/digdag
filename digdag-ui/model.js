@@ -7,6 +7,7 @@ import LRU from 'lru-cache'
 
 export type Credentials = {[key: string]: string};
 export type Headers = {[key: string]: string};
+export type MethodType = 'GET' | 'POST' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'PUT' | 'PATCH'
 
 export type LogFileHandle = {
   fileName: string;
@@ -297,6 +298,18 @@ export class Model {
     })
   }
 
+  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
+    return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
+  }
+
+  enableSchedule (scheduleId: number) : Promise<*> {
+    return this.post(`schedules/${scheduleId}/enable`)
+  }
+
+  disableSchedule (scheduleId: number) : Promise<*> {
+    return this.post(`schedules/${scheduleId}/disable`)
+  }
+
   getTDQueryIdFromName (queryName: string) : string {
     const query = this.queriesCache.get(queryName, null)
     if (!query) {
@@ -325,8 +338,17 @@ export class Model {
   }
 
   get (url: string): Promise<*> {
+    return this.http(url, 'GET')
+  }
+
+  post (url: string): Promise<*> {
+    return this.http(url, 'POST')
+  }
+
+  http (url: string, method: MethodType): Promise<*> {
     return fetch(this.config.url + url, {
       credentials: 'include',
+      method,
       headers: this.headers()
     }).then(response => {
       if (!response.ok) {

@@ -394,6 +394,118 @@ class SessionListView extends React.Component {
   }
 }
 
+class ScheduleListView extends React.Component {
+
+  props:{
+    workflowName: string;
+    projectId: number;
+  };
+
+  state: {
+    schedules: [],
+    loading: boolean
+  };
+
+  constructor (props) {
+    super(props)
+    this.state = {
+      schedules: [],
+      loading: false
+    }
+  }
+
+  componentDidMount () {
+    this.fetchSchedule()
+  }
+
+  fetchSchedule () {
+    this.setState({loading: true})
+    model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(schedules => {
+      this.setState({
+        schedules,
+        loading: false
+      })
+    })
+  }
+
+  disableSchedule () {
+    const { schedules } = this.state || {}
+    this.setState({loading: true})
+    model()
+      .disableSchedule(schedules[0].id)
+      .then(() => this.setState({loading: false}))
+      .then(() => this.fetchSchedule())
+  }
+
+  enableSchedule () {
+    const schedule = this.state.schedules[0]
+    this.setState({loading: true})
+    model()
+      .enableSchedule(schedule.id)
+      .then(() => this.setState({loading: false}))
+      .then(() => this.fetchSchedule())
+  }
+
+  render () {
+    const { schedules, loading } = this.state || {}
+    const canPause = schedules && schedules.length && !schedules[0].disabledAt
+    const rows = (schedules || []).map(schedule => {
+      return (
+        <tr key={schedule.id}>
+          <td>{schedule.id}</td>
+          <td>{schedule.revision}</td>
+          <td><Link to={`/projects/${schedule.project.id}`}>{schedule.project.name}</Link></td>
+          <td><Link to={`/workflows/${schedule.workflow.id}`}>{schedule.workflow.name}</Link></td>
+          <td>{schedule.nextRunTime}</td>
+          <td>{schedule.nextScheduleTime}</td>
+          <td style={{ width: 60 }}>{statusButton}</td>
+        </tr>
+      )
+    })
+    const statusButton = canPause ? (
+      <button
+        className='btn btn-sm btn-secondary pull-right'
+        onClick={this.disableSchedule.bind(this)}
+      >
+        PAUSE
+      </button>
+    ) : (
+      <button
+        className='btn btn-sm btn-success pull-right'
+        onClick={this.enableSchedule.bind(this)}
+      >
+        RESUME
+      </button>
+    )
+    const loadingLabel = <button disabled className='btn btn-sm btn-info pull-right'>LOADING ...</button>
+    return (
+      <div className='row'>
+        <h2>
+          Scheduling
+          {loading ? loadingLabel : statusButton}
+        </h2>
+        <div className='table-responsive'>
+          <table className='table table-striped table-hover table-condensed'>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Revision</th>
+                <th>Project</th>
+                <th>Workflow</th>
+                <th>Next Run Time</th>
+                <th>Next Schedule Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+}
+
 class ProjectsView extends React.Component {
 
   state = {
@@ -611,6 +723,7 @@ class WorkflowView extends React.Component {
             </tbody>
           </table>
         </div>
+        <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
         <div className='row'>
           <h2>Definition</h2>
           <pre><PrismCode className='language-digdag'>{this.definition()}</PrismCode></pre>
@@ -1139,7 +1252,7 @@ class VersionView extends React.Component {
 
 class Navbar extends React.Component {
   static contextTypes = {
-    router: React.PropTypes.object,
+    router: React.PropTypes.object
   }
 
   logout (e) {
@@ -1170,7 +1283,7 @@ class Navbar extends React.Component {
     return navbar && navbar.style ? navbar.style : {}
   }
 
-  isActiveClass(path) {
+  isActiveClass (path) {
     const { router } = this.context
     return router.isActive(path) ? 'active' : ''
   }
@@ -1592,7 +1705,7 @@ class ParserTest extends React.Component {
 }
 
 class AppWrapper extends React.Component {
-  render() {
+  render () {
     return (
       <div className='container-fluid'>
         <Navbar />
