@@ -107,6 +107,8 @@ public class HttpOperatorFactory
     {
         private final TaskState state;
         private final Config params;
+        private final String method;
+        private final boolean retry;
 
         private HttpOperator(Path projectPath, TaskRequest request)
         {
@@ -114,6 +116,9 @@ public class HttpOperatorFactory
             this.state = TaskState.of(request);
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("http"));
+            this.method = params.get("method", String.class, "GET").toUpperCase();
+            this.retry = params.getOptional("retry", boolean.class)
+                    .or(defaultRetry(method));
         }
 
         @Override
@@ -141,7 +146,6 @@ public class HttpOperatorFactory
             SecretProvider httpSecrets = ctx.secrets().getSecrets("http");
 
             URI uri = URI.create(httpSecrets.getSecretOptional("uri").or(() -> params.get("_command", String.class)));
-            String method = params.get("method", String.class, "GET");
 
             Optional<String> user = httpSecrets.getSecretOptional("user");
             Optional<String> authorization = httpSecrets.getSecretOptional("authorization");
@@ -202,9 +206,11 @@ public class HttpOperatorFactory
 
         private ContentResponse execute(Request req)
         {
-            logger.debug("Sending HTTP request: {} {}", req.getMethod(), safeUri(req));
+            URI safeUri = safeUri(req);
+
+            logger.debug("Sending HTTP request: {} {}", req.getMethod(), safeUri);
             ContentResponse res = send(req);
-            logger.debug("Received HTTP response: {} {}: {}", req.getMethod(), safeUri(req), res);
+            logger.debug("Received HTTP response: {} {}: {}", req.getMethod(), safeUri, res);
 
             if (HttpStatus.isSuccess(res.getStatus())) {
                 // 2xx: Success, we're done.
@@ -215,16 +221,36 @@ public class HttpOperatorFactory
                 return res;
             }
             else if (HttpStatus.isClientError(res.getStatus())) {
-                // 4xx: The request is invalid for this resource. Fail hard without retrying.
-                throw new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res), ConfigElement.empty());
+                switch (res.getStatus()) {
+                    case HttpStatus.REQUEST_TIMEOUT_408:
+                    case HttpStatus.TOO_MANY_REQUESTS_429:
+                        // Retry these.
+                        throw new RuntimeException("Failed HTTP request: " + requestStatus(req, res));
+                    default:
+                        // 4xx: The request is invalid for this resource. Fail hard without retrying.
+                        throw new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res), ConfigElement.empty());
+                }
             }
             else if (res.getStatus() >= 500 && res.getStatus() < 600) {
-                // 5xx: Server Error. This is hopefully ephemeral so retry.
-                throw new RuntimeException("HTTP 5XX Server Error: " + requestStatus(req, res));
+                // 5xx: Server Error. This is hopefully ephemeral.
+                throw ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res));
             }
             else {
                 // Unknown status code. Treat as an ephemeral error.
-                throw new RuntimeException("Unexpected HTTP status: " + requestStatus(req, res));
+                throw ephemeralError("Unexpected HTTP status: " + requestStatus(req, res));
+            }
+        }
+
+        private RuntimeException ephemeralError(String message)
+        {
+            // Safe to retry ephemeral errors for this request?
+            if (retry) {
+                // Yes. Retry this request.
+                return new RuntimeException(message);
+            }
+            else {
+                // No, so fail hard.
+                return new TaskExecutionException(message, ConfigElement.empty());
             }
         }
 
@@ -357,6 +383,19 @@ public class HttpOperatorFactory
             catch (Exception e) {
                 logger.warn("Failed to stop http client", e);
             }
+        }
+    }
+
+    private static boolean defaultRetry(String method)
+    {
+        switch (method) {
+            case "GET":
+            case "HEAD":
+            case "OPTIONS":
+            case "TRACE":
+                return true;
+            default:
+                return false;
         }
     }
 

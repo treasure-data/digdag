@@ -10,6 +10,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -18,13 +19,22 @@ import org.junit.rules.TemporaryFolder;
 import org.littleshoot.proxy.HttpProxyServer;
 import utils.TestUtils;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.eclipse.jetty.http.HttpMethod.DELETE;
+import static org.eclipse.jetty.http.HttpMethod.GET;
+import static org.eclipse.jetty.http.HttpMethod.HEAD;
+import static org.eclipse.jetty.http.HttpMethod.OPTIONS;
+import static org.eclipse.jetty.http.HttpMethod.POST;
+import static org.eclipse.jetty.http.HttpMethod.PUT;
+import static org.eclipse.jetty.http.HttpMethod.TRACE;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -36,13 +46,16 @@ import static utils.TestUtils.startMockWebServer;
 
 public class HttpIT
 {
+    private static final HttpMethod[] METHODS = {GET, POST, HEAD, PUT, OPTIONS, DELETE, TRACE};
+    private static final HttpMethod[] SAFE_METHODS = {GET, OPTIONS, HEAD, TRACE};
+    private static final HttpMethod[] UNSAFE_METHODS = {POST, PUT, DELETE};
+
     private MockWebServer mockWebServer;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
     private HttpProxyServer proxy;
     private ConcurrentMap<String, List<FullHttpRequest>> requests;
-
     @Before
     public void setUp()
             throws Exception
@@ -82,7 +95,7 @@ public class HttpIT
     public void testSystemProxy()
             throws Exception
     {
-        proxy = TestUtils.startRequestFailingProxy(3, requests);
+        proxy = TestUtils.startRequestFailingProxy(1, requests);
         String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
@@ -101,7 +114,7 @@ public class HttpIT
     public void testUserProxy()
             throws Exception
     {
-        proxy = TestUtils.startRequestFailingProxy(3, requests);
+        proxy = TestUtils.startRequestFailingProxy(1, requests);
         String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
@@ -180,6 +193,79 @@ public class HttpIT
         assertThat(request.getMethod(), is("POST"));
         assertThat(request.getBody().readUtf8(), is("test-content"));
         assertThat(request.getHeader(CONTENT_TYPE.asString()), is("text/plain"));
+    }
+
+    @Test
+    public void testEphemeralErrorsAreRetriedByDefaultForSafeMethods()
+            throws Exception
+    {
+        verifyEphemeralErrorsAreRetried(SAFE_METHODS, ImmutableMap.of());
+    }
+
+    @Test
+    public void testEphemeralErrorsAreNotRetriedByDefaultForUnsafeMethods()
+            throws Exception
+    {
+        verifyEphemeralErrorsAreNotRetried(UNSAFE_METHODS, ImmutableMap.of());
+    }
+
+    @Test
+    public void verifyEphemeralErrorsAreNotRetriedIfRetryIsDisabled()
+            throws Exception
+    {
+        verifyEphemeralErrorsAreNotRetried(METHODS, ImmutableMap.of("http.retry", "false"));
+    }
+
+    @Test
+    public void verifyEphemeralErrorsAreRetriedIfRetryIsEnabled()
+            throws Exception
+    {
+        verifyEphemeralErrorsAreRetried(METHODS, ImmutableMap.of("http.retry", "true"));
+    }
+
+    private void verifyEphemeralErrorsAreNotRetried(HttpMethod[] methods, Map<String, String> params)
+            throws IOException
+    {
+        proxy = TestUtils.startRequestFailingProxy(3, requests);
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        for (HttpMethod method : methods) {
+            runWorkflow(folder, "acceptance/http/http.dig",
+                    ImmutableMap.<String, String>builder()
+                            .putAll(params)
+                            .put("test_uri", uri)
+                            .put("http.method", method.asString())
+                            .put("http.proxy.enabled", "true")
+                            .put("http.proxy.host", "localhost")
+                            .put("http.proxy.port", Integer.toString(proxy.getListenAddress().getPort()))
+                            .build(),
+                    ImmutableMap.of(),
+                    1);
+            assertThat(requests.keySet().stream().anyMatch(k -> k.startsWith(method.asString())), is(true));
+        }
+        assertThat(mockWebServer.getRequestCount(), is(0));
+    }
+
+    private void verifyEphemeralErrorsAreRetried(HttpMethod[] methods, Map<String, String> params)
+            throws IOException
+    {
+        proxy = TestUtils.startRequestFailingProxy(3, requests);
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        for (HttpMethod method : methods) {
+            runWorkflow(folder, "acceptance/http/http.dig",
+                    ImmutableMap.<String, String>builder()
+                            .putAll(params)
+                            .put("test_uri", uri)
+                            .put("http.method", method.asString())
+                            .put("http.proxy.enabled", "true")
+                            .put("http.proxy.host", "localhost")
+                            .put("http.proxy.port", Integer.toString(proxy.getListenAddress().getPort()))
+                            .build(),
+                    ImmutableMap.of(),
+                    0);
+            assertThat(requests.keySet().stream().anyMatch(k -> k.startsWith(method.asString())), is(true));
+        }
+        assertThat(requests.size(), is(methods.length));
+        assertThat(mockWebServer.getRequestCount(), is(methods.length));
     }
 
     @Test
