@@ -212,6 +212,21 @@ public class HttpIT
     }
 
     @Test
+    public void testQueryString()
+            throws Exception
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of(
+                        "test_uri", uri,
+                        "http.query", "n1=v1&n2=v+%26%3F2"
+                ));
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(request.getPath(), is("/test?n1=v1&n2=v+%26%3F2"));
+    }
+
+    @Test
     public void testEphemeralErrorsAreRetriedByDefaultForSafeMethods()
             throws Exception
     {
