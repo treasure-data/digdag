@@ -1635,3 +1635,53 @@ Output parameters
         }
 
 .. note:: The **gcs_wait>:** operator makes use of polling with *exponential backoff*. As such there might be some time interval between a file being created and the **gcs_wait>:** operator detecting it.
+
+
+http>: Making HTTP requests
+---------------------------
+
+The **http>:** operator can be used to make HTTP requests.
+
+.. code-block:: yaml
+
+    +fetch:
+      http>: https://api.example.com/foobars
+      store_content: true
+
+    +process:
+      for_each>:
+        foobar: ${http.last_content}
+      _do:
+        bq>: query.sql
+
+.. code-block:: yaml
+
+    +notify:
+      http>: https://api.example.com/data/sessions/{$session_uuid}
+      method: POST
+      content:
+        status: RUNNING
+        time: ${session_time}
+
+Secrets
+~~~~~~~
+
+:command:`http.authorization: STRING`
+  A string that should be included in the HTTP request as the value of the ``Authorization`` header. This can be used to authenticate using e.g. Oauth bearer tokens.
+
+:command:`http.user: STRING`
+  A user that should be used to authenticate using *Basic Authentication*.
+
+:command:`http.password: STRING`
+  A password that should be used to authenticate using *Basic Authentication*.
+
+Parameters
+~~~~~~~~~~
+
+:command:`http>: URI`
+  The URI of the HTTP request.
+
+  .. code-block:: yaml
+
+  * :command:`http>: https://api.example.com/foobar`
+  * :command:`http>: https://api.example.com/data/sessions/{$session_uuid}`
