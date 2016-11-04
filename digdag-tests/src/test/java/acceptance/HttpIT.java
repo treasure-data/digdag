@@ -1,8 +1,11 @@
 package acceptance;
 
 import com.amazonaws.util.Base64;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.netty.handler.codec.http.FullHttpRequest;
 import okhttp3.Headers;
@@ -10,8 +13,8 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.http.HttpMethod;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
@@ -51,12 +55,15 @@ public class HttpIT
     private static final HttpMethod[] SAFE_METHODS = {GET, OPTIONS, HEAD, TRACE};
     private static final HttpMethod[] UNSAFE_METHODS = {POST, PUT, DELETE};
 
+    private static final ObjectMapper OBJECT_MAPPER = DigdagClient.objectMapper();
+
     private MockWebServer mockWebServer;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
     private HttpProxyServer proxy;
     private ConcurrentMap<String, List<FullHttpRequest>> requests;
+
     @Before
     public void setUp()
             throws Exception
@@ -90,6 +97,63 @@ public class HttpIT
         String uri = "http://localhost:" + mockWebServer.getPort() + "/";
         runWorkflow(folder, "acceptance/http/http.dig", ImmutableMap.of("test_uri", uri));
         assertThat(mockWebServer.getRequestCount(), is(1));
+    }
+
+    @Test
+    public void testContentJsonObject()
+            throws Exception
+    {
+        verifyJsonContent("object.json", testRequest("http_content_object.dig"));
+    }
+
+    @Test
+    public void testContentJsonArray()
+            throws Exception
+    {
+        verifyJsonContent("array.json", testRequest("http_content_array.dig"));
+    }
+
+    @Test
+    public void testContentFormObject()
+            throws Exception
+    {
+        verifyFormContent("flat_object.form", testRequest("http_content_flat_object.dig"));
+    }
+
+    @Test
+    public void testContentScalar()
+            throws Exception
+    {
+        RecordedRequest recordedRequest = testRequest("http_content_scalar.dig");
+        assertThat(recordedRequest.getHeader("content-type"), is("plain/text"));
+        assertThat(recordedRequest.getBody().readUtf8(), is("hello world"));
+    }
+
+    private void verifyFormContent(String expectedContent, RecordedRequest request)
+            throws IOException
+    {
+        assertThat(request.getHeader("content-type"), is(Matchers.equalToIgnoringCase("application/x-www-form-urlencoded")));
+        String expectedString = Resources.toString(getResource("acceptance/http/" + expectedContent), UTF_8);
+        assertThat(request.getBody().readUtf8(), is(expectedString));
+    }
+
+    private void verifyJsonContent(String expectedContent, RecordedRequest request)
+            throws IOException
+    {
+        assertThat(request.getHeader("content-type"), is(Matchers.equalToIgnoringCase("application/json")));
+        String body = request.getBody().readUtf8();
+        JsonNode bodyJson = OBJECT_MAPPER.readTree(body);
+        JsonNode expectedJson = OBJECT_MAPPER.readTree(getResource("acceptance/http/" + expectedContent));
+        assertThat(bodyJson, is(expectedJson));
+    }
+
+    private RecordedRequest testRequest(String workflow)
+            throws IOException, InterruptedException
+    {
+        String uri = "http://localhost:" + mockWebServer.getPort() + "/";
+        runWorkflow(folder, "acceptance/http/" + workflow, ImmutableMap.of("test_uri", uri));
+        assertThat(mockWebServer.getRequestCount(), is(1));
+        return mockWebServer.takeRequest();
     }
 
     @Test

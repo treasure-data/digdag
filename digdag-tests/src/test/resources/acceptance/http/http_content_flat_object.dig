@@ -1,0 +1,9 @@
++http:
+  http>: ${test_uri}
+  method: POST
+  content:
+    a: foo
+    b&foo: 4711
+    c?bar: qu=ux
+  content_format: form
+

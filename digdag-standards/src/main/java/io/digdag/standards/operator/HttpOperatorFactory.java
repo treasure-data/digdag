@@ -37,9 +37,11 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.USER_AGENT;
@@ -165,14 +168,14 @@ public class HttpOperatorFactory
                 httpClient.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(uri, user.get(), password.or("")));
             }
 
-            Optional<String> content = params.getOptional("content", String.class);
+            Optional<JsonNode> content = params.getOptional("content", JsonNode.class);
+            Optional<String> contentFormat = params.getOptional("content_format", String.class).transform(String::toLowerCase);
             Optional<String> contentType = params.getOptional("content_type", String.class);
             boolean storeContent = params.get("store_content", boolean.class, false);
 
             if (content.isPresent()) {
-                // TODO: support POST url encoded key/val and JSON encoding nested objects, files on disk etc
-                ContentProvider contentProvider = new StringContentProvider(content.get());
-                request.content(contentProvider, contentType.orNull());
+                // TODO: support files on disk etc
+                request.content(contentProvider(content.get(), contentFormat, contentType));
             }
 
             LinkedHashMultimap<String, String> headers = headers();
@@ -202,7 +205,7 @@ public class HttpOperatorFactory
             catch (ConfigException e) {
                 Optional<String> query = params.getOptional("query", String.class);
                 if (query.isPresent()) {
-                    List<NameValuePair> parameters = URLEncodedUtils.parse(query.get(), StandardCharsets.UTF_8);
+                    List<NameValuePair> parameters = URLEncodedUtils.parse(query.get(), UTF_8);
                     for (NameValuePair parameter : parameters) {
                         request.param(parameter.getName(), parameter.getValue());
                     }
@@ -423,6 +426,73 @@ public class HttpOperatorFactory
             default:
                 return false;
         }
+    }
+
+    private static ContentProvider contentProvider(JsonNode content, Optional<String> contentFormat, Optional<String> contentType)
+    {
+        // content-type can be inferred from the actual content and content_format parameters.
+
+        // TODO: also infer format is from content-type?
+
+        // content format  format' content-type'                           comment
+        // --------------------------------------------------------------------------------------------------------------
+        // scalar  -       text    text/plain                              Raw value as text. Strings are not hyphenated.
+        // scalar  text    text    text/plain                              Raw value as text. Strings are not hyphenated.
+        // scalar  json    json    application/json
+        // scalar  form    form    application/x-www-form-urlencoded       Raw value url encoded
+        // ary/obj -       json    application/json
+        // ary/obj json    json    application/json
+        // ary/obj text                                                    ERROR
+        // array   form                                                    ERROR
+        // object  form    form    application/x-www-form-urlencoded
+
+        String nodeType = content.getNodeType().name().toLowerCase();
+
+        if (content.isContainerNode()) {
+            // Object or Array
+            String format = contentFormat.or("json");
+            switch (format) {
+                case "json":
+                    return new StringContentProvider(contentType.or("application/json"), content.toString(), UTF_8);
+                case "form":
+                    if (content.isArray()) {
+                        throw invalidContentFormat(format, nodeType);
+                    } else {
+                        return new FormContentProvider(formFields((ObjectNode) content));
+                    }
+                default:
+                    throw invalidContentFormat(format, nodeType);
+            }
+        }
+        else {
+            // Scalar
+            String format = contentFormat.or("text");
+            switch (format) {
+                case "text":
+                    return new StringContentProvider(contentType.or("plain/text"), content.asText(), UTF_8);
+                case "json":
+                    return new StringContentProvider(contentType.or("application/json"), content.toString(), UTF_8);
+                default:
+                    throw invalidContentFormat(format, nodeType);
+            }
+        }
+    }
+
+    private static ConfigException invalidContentFormat(String format, String nodeType)
+    {
+        return new ConfigException("Invalid content format for " + nodeType + "s: '" + format + "'");
+    }
+
+    private static Fields formFields(ObjectNode content)
+    {
+        Fields fields = new Fields();
+        content.fields().forEachRemaining(f -> {
+            if (f.getValue().isContainerNode()) {
+                throw new ConfigException("Invalid form content field value: " + f.getValue().toString());
+            }
+            fields.add(f.getKey(), f.getValue().asText());
+        });
+        return fields;
     }
 
     private void configureEnvProxy(String scheme, List<ProxyConfiguration.Proxy> proxies)
