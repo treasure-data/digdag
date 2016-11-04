@@ -140,6 +140,58 @@ function MaybeWorkflowLink ({ workflow } : { workflow: NameOptionalId }) {
   return <span>{workflow.name}</span>
 }
 
+class CodeViewer extends React.Component {
+  constructor (props) {
+    super(props)
+    // Uses ace 1.1.9.
+    const Ace = require('brace')
+    require('brace/ext/language_tools')
+    require('brace/mode/json')
+    require('brace/mode/sql')
+    Ace.acequire('ace/ext/language_tools')
+  }
+
+  componentDidMount () {
+    const Ace = require('brace')
+    this._editor = Ace.edit(this.editor)
+    this._editor.setOptions({
+      readOnly: true,
+      showPrintMargin: false,
+      tabSize: 2,
+      useSoftTabs: true,
+      wrap: true,
+      mode: 'sql'
+    })
+    this._updateEditor(this.props.value)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (nextProps.value !== this.props.value) {
+      this._updateEditor(nextProps.value)
+    }
+  }
+
+  componentWillUnmount () {
+    this._editor.destroy()
+  }
+
+  _updateEditor (value) {
+    const DOCUMENT_END = 1
+    this._editor.setValue(value, DOCUMENT_END)
+  }
+
+  render () {
+    const { className, props } = this.props
+    return (
+      <div
+        className={className}
+        key='editor'
+        ref={(value) => this.editor = value}
+      />
+    )
+  }
+}
+
 class CacheLoader extends React.Component {
   state = {
     hasCache: false
@@ -1768,6 +1820,26 @@ class AppWrapper extends React.Component {
   }
 }
 
+export class CodeViewerTest extends React.Component {
+  exampleSQL () {
+    return `
+      SELECT EmployeeID, FirstName, LastName, HireDate, City
+      FROM Employees
+      WHERE FirstName = 'Daniele'
+    `
+  }
+  render () {
+    return (
+      <div className='container-fluid'>
+        <CodeViewer
+          className='large-editor'
+          language='sql'
+          value={this.exampleSQL()} />
+      </div>
+    )
+  }
+}
+
 class ConsolePage extends React.Component {
   render () {
     return (
@@ -1783,7 +1855,10 @@ class ConsolePage extends React.Component {
               <Route path='/sessions/:sessionId' component={SessionPage} />
               <Route path='/attempts/:attemptId' component={AttemptPage} />
               {isDevelopmentEnv &&
-                <Route path='/parser-test' component={ParserTest} />
+                <Route>
+                  <Route path='/parser-test' component={ParserTest} />
+                  <Route path='/codeviewer' component={CodeViewerTest} />
+                </Route>
               }
               <Route path='*' component={withRouter(NotFoundPage)} />
             </Route>
