@@ -1376,11 +1376,11 @@ Parameters
 
   .. code-block:: none
 
-    destination>: gs://my_bucket/my_export.csv
+    destination: gs://my_bucket/my_export.csv
 
   .. code-block:: none
 
-    destination>:
+    destination:
       - gs://my_bucket/my_export_1.csv
       - gs://my_bucket/my_export_2.csv
 
