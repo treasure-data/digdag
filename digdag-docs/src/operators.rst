@@ -1572,6 +1572,9 @@ The **gcs_wait>:** operator can be used to wait for file to appear in Google Clo
     +wait:
       gcs_wait>: my_bucket/some/file
 
+    +wait:
+      gcs_wait>: gs://my_bucket/some/file
+
 Secrets
 ~~~~~~~
 
@@ -1581,17 +1584,17 @@ Secrets
 Parameters
 ~~~~~~~~~~
 
-:command:`gcs_wait>: BUCKET/OBJECT`
-  Path to the file in Google Cloud Storage to wait for.
+:command:`gcs_wait>: URI | BUCKET/OBJECT`
+  Google Cloud Storage URI or path of the file to wait for.
 
-  * :command:`gcs_wait>: my-bucket/my-data.gz`
-  * :command:`gcs_wait>: my-bucket/file/in/a/directory`
+  * :command:`gcs_wait>: my-bucket/my-directory/my-data.gz`
+  * :command:`gcs_wait>: gs://my-bucket/my-directory/my-data.gz`
 
 :command:`bucket: NAME`
-  The GCS bucket where the file is located. Can be used together with the `object` parameter instead of putting the path on the operator line.
+  The GCS bucket where the file is located. Can be used together with the `object` parameter instead of putting the path on the operator command line.
 
 :command:`object: PATH`
-  The GCS path of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator line.
+  The GCS path of the file. Can be used together with the `bucket` parameter instead of putting the path on the operator command line.
 
 
 Output parameters

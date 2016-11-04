@@ -18,6 +18,8 @@ import io.digdag.standards.operator.state.TaskState;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
@@ -48,6 +50,8 @@ class GcsWaitOperatorFactory
         return new GcsWaitOperator(projectPath, request);
     }
 
+    private static final Pattern URI_PATTERN = Pattern.compile("(?:gs://)?(?<bucket>[^/]+)/(?<object>.+)");
+
     private class GcsWaitOperator
             extends BaseGcsOperator
     {
@@ -73,12 +77,12 @@ class GcsWaitOperatorFactory
             }
 
             if (command.isPresent()) {
-                List<String> parts = Splitter.on('/').limit(2).splitToList(command.get());
-                if (parts.size() != 2) {
-                    throw new ConfigException("Illegal GCS path: " + command.get());
+                Matcher m = URI_PATTERN.matcher(command.get());
+                if (!m.matches()) {
+                    throw new ConfigException("Illegal GCS URI or path: " + command.get());
                 }
-                bucket = Optional.of(parts.get(0));
-                object = Optional.of(parts.get(1));
+                bucket = Optional.of(m.group("bucket"));
+                object = Optional.of(m.group("object"));
             }
 
             return await(gcs, bucket.get(), object.get());
