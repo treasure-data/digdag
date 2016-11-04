@@ -163,14 +163,25 @@ public class GcsWaitIT
         }
     }
 
-    public static class CommandIT
+    public static class CommandPathIT
             extends GcsWaitIT
     {
         @Test
-        public void testGcsWait()
+        public void testGcsWaitPath()
                 throws Exception
         {
-            testGcsWait("gcs_wait", (bucket, object) -> "gcs_wait>: " + bucket + "/" + object);
+            testGcsWait("gcs_wait_path", (bucket, object) -> "gcs_wait>: " + bucket + "/" + object);
+        }
+    }
+
+    public static class CommandUriIT
+            extends GcsWaitIT
+    {
+        @Test
+        public void testGcsWaitUri()
+                throws Exception
+        {
+            testGcsWait("gcs_wait_uri", (bucket, object) -> "gcs_wait>: gs://" + bucket + "/" + object);
         }
     }
 
