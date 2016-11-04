@@ -1863,6 +1863,9 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <p>The <strong>gcs_wait&gt;:</strong> operator can be used to wait for file to appear in Google Cloud Storage.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+wait</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">gcs_wait&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_bucket/some/file</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+wait</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">gcs_wait&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">gs://my_bucket/some/file</span>
 </pre></div>
 </div>
 <div class="section" id="id33">
@@ -1875,17 +1878,17 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <div class="section" id="id34">
 <h3><a class="toc-backref" href="#id92">Parameters</a><a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
-<dt><strong class="command">gcs_wait&gt;: BUCKET/OBJECT</strong></dt>
-<dd><p class="first">Path to the file in Google Cloud Storage to wait for.</p>
+<dt><strong class="command">gcs_wait&gt;: URI | BUCKET/OBJECT</strong></dt>
+<dd><p class="first">Google Cloud Storage URI or path of the file to wait for.</p>
 <ul class="last simple">
-<li><strong class="command">gcs_wait&gt;: my-bucket/my-data.gz</strong></li>
-<li><strong class="command">gcs_wait&gt;: my-bucket/file/in/a/directory</strong></li>
+<li><strong class="command">gcs_wait&gt;: my-bucket/my-directory/my-data.gz</strong></li>
+<li><strong class="command">gcs_wait&gt;: gs://my-bucket/my-directory/my-data.gz</strong></li>
 </ul>
 </dd>
 <dt><strong class="command">bucket: NAME</strong></dt>
-<dd>The GCS bucket where the file is located. Can be used together with the <cite>object</cite> parameter instead of putting the path on the operator line.</dd>
+<dd>The GCS bucket where the file is located. Can be used together with the <cite>object</cite> parameter instead of putting the path on the operator command line.</dd>
 <dt><strong class="command">object: PATH</strong></dt>
-<dd>The GCS path of the file. Can be used together with the <cite>bucket</cite> parameter instead of putting the path on the operator line.</dd>
+<dd>The GCS path of the file. Can be used together with the <cite>bucket</cite> parameter instead of putting the path on the operator command line.</dd>
 </dl>
 </div>
 <div class="section" id="id35">
