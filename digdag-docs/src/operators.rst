@@ -1675,13 +1675,40 @@ Secrets
 :command:`http.password: STRING`
   A password that should be used to authenticate using *Basic Authentication*.
 
+:command:`http.uri: URI`
+  The URI of the HTTP request. This can be used instead of putting the URI on the operator command line in case the URI contains sensitive information.
+
 Parameters
 ~~~~~~~~~~
 
 :command:`http>: URI`
   The URI of the HTTP request.
 
-  .. code-block:: yaml
-
   * :command:`http>: https://api.example.com/foobar`
   * :command:`http>: https://api.example.com/data/sessions/{$session_uuid}`
+
+:command:`method: STRING`
+  The method of the HTTP request. *Default:* ``GET``.
+
+  * :command:`method: POST`
+  * :command:`method: DELETE`
+
+:command:`content: STRING | INTEGER | BOOLEAN | OBJECT | ARRAY`
+  The content of the HTTP request. *Default:* No content.
+
+  Scalars (i.e. strings, integers, booleans, etc) will by default be sent as plain text. Objects and arrays will by default be JSON serialized. The ``content_format`` parameter can be used to control the content serialization format.
+
+  .. code-block:: yaml
+
+    content: 'hello world'
+
+  .. code-block:: yaml
+
+    content: '${session_time}'
+
+  .. code-block:: yaml
+
+    content:
+      status: RUNNING
+      time: ${session_time}
+
