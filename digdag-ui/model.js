@@ -309,7 +309,7 @@ export class Model {
   }
 
   fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
-    return this.get(`schedules?project_id=${projectId}&workflow=${workflowName}`)
+    return this.get(`projects/${projectId}/schedules?project_id=${projectId}&workflow=${workflowName}`)
   }
 
   enableSchedule (scheduleId: number) : Promise<*> {
