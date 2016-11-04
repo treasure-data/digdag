@@ -1337,7 +1337,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
   <span class="l l-Scalar l-Scalar-Plain">bq&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step2.sql</span>
   <span class="l l-Scalar l-Scalar-Plain">destination_table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">result_table</span>
 <span class="l l-Scalar l-Scalar-Plain">+step3</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">td&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step3.sql</span>
+  <span class="l l-Scalar l-Scalar-Plain">bq&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">queries/step3.sql</span>
   <span class="l l-Scalar l-Scalar-Plain">destination_table</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">other_project:other_dataset.other_table</span>
 </pre></div>
 </div>
@@ -1750,8 +1750,8 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <dt><strong class="command">dataset: NAME</strong></dt>
 <dd><p class="first">The dataset that the destination table is located in or should be created in. Can also be specified directly in the table reference.</p>
 <ul class="last simple">
-<li><strong class="command">dataset&gt;: my_dataset</strong></li>
-<li><strong class="command">dataset&gt;: my_project:my_dataset</strong></li>
+<li><strong class="command">dataset: my_dataset</strong></li>
+<li><strong class="command">dataset: my_project:my_dataset</strong></li>
 </ul>
 </dd>
 <dt><strong class="command">destination_table: NAME</strong></dt>

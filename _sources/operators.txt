@@ -1014,7 +1014,7 @@ The **bq>:** operator can be used to run a query on Google BigQuery.
       bq>: queries/step2.sql
       destination_table: result_table
     +step3:
-      td>: queries/step3.sql
+      bq>: queries/step3.sql
       destination_table: other_project:other_dataset.other_table
 
 
@@ -1460,8 +1460,8 @@ Parameters
 :command:`dataset: NAME`
   The dataset that the destination table is located in or should be created in. Can also be specified directly in the table reference.
 
-  * :command:`dataset>: my_dataset`
-  * :command:`dataset>: my_project:my_dataset`
+  * :command:`dataset: my_dataset`
+  * :command:`dataset: my_project:my_dataset`
 
 :command:`destination_table: NAME`
   The table to store the imported data in.
