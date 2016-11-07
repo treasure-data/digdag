@@ -1712,3 +1712,55 @@ Parameters
       status: RUNNING
       time: ${session_time}
 
+:command:`content_format: text | json | form`
+  The serialization format of the content of the HTTP request. *Default:* Inferred from the ``content`` parameter value type. Objects and arrays use ``json`` by default. Other value types default to ``text``.
+
+  - ``text``: Send raw content as ``Content-Type: text/plain``. *Note*: This requires that the ``content`` parameter is _not_ array or an object.
+  - ``json``: Serialize the content as `JSON <http://json.org/>`_ and send it as ``Content-Type: application/json``. This format can handle any ``content`` parameter value type.
+  - ``form``: Encode content as an HTML form and send it as ``Content-Type: application/x-www-form-urlencoded``. *Note*: This requires the ``content`` parameter value to be an object.
+
+  .. code-block:: yaml
+
+    content: 'hello world @ ${session_time}'
+    content_format: text
+
+  .. code-block:: yaml
+
+    content:
+      status: RUNNING
+      time: ${session_time}
+    content_format: json
+
+  .. code-block:: yaml
+
+    content:
+      status: RUNNING
+      time: ${session_time}
+    content_format: form
+
+:command:`content_type: STRING`
+  Override the inferred ``Content-Type`` header.
+
+  .. code-block:: yaml
+
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <notification>
+        <status>RUNNING</status>
+        <time>${session_time}</time>
+      </notification>
+    content_format: text
+    content_type: application/xml
+
+:command:`store_content: BOOLEAN`
+  Whether to store the content of the response. *Default*: ``false``.
+
+:command:`headers: LIST OF KEY-VALUE PAIRS`
+  Additional custom headers to send with the HTTP request.
+
+  .. code-block:: yaml
+
+    headers:
+      - Accept: application/json
+      - X-Foo: bar
+      - Baz: quux
