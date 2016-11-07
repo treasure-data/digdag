@@ -15,15 +15,20 @@ global.ace.define('ace/mode/digdag_rules', [
     this.$rules.start = [
       {
         token: 'td-load',
-        regex:  'td_load>:'
-      },
-      {
+        regex:  /^\s*td_load>:/,
+        next: 'td-load-value'
+      }, {
         token: 'td-run',
-        regex:  'td_run>:'
+        regex:  /^\s*td_run>:/
       },
       ...this.$rules.start
     ]
-    this.normalizeRules()
+    this.$rules['td-load-value'] = [
+      {
+        token: 'td-load',
+        regex:  /(\s*).*/
+      }
+    ]
   }
   oop.inherits(DigdagRules, YamlMODE)
   exports.DigdagRules = DigdagRules

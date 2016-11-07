@@ -1836,6 +1836,7 @@ export class CodeViewerTest extends React.Component {
     return `
       td_load>: imports/facebook_ads_reporting.yml
       td_run>: dan_test
+      foo: bar
     `
   }
   render () {
