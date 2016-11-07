@@ -154,6 +154,7 @@ class CodeViewer extends React.Component {
 
   componentDidMount () {
     const Ace = require('brace')
+    require('./ace-digdag')
     this._editor = Ace.edit(this.editor)
     this._editor.setOptions({
       readOnly: true,
@@ -1864,7 +1865,7 @@ export class CodeViewerTest extends React.Component {
           value={this.exampleSQL()} />
         <CodeViewer
           className='large-editor'
-          language='yaml'
+          language='digdag'
           value={this.exampleYAML()} />
       </div>
     )
