@@ -1189,6 +1189,7 @@ class LogFileView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
+    attemptId: number;
     file: LogFileHandle;
   };
 
@@ -1212,7 +1213,7 @@ class LogFileView extends React.Component {
   }
 
   fetchFile () {
-    model().fetchLogFile(this.props.file).then(data => {
+    model().fetchLogFile(this.props.attemptId, this.props.file).then(data => {
       if (!this.ignoreLastFetch) {
         this.setState({data})
       }
@@ -1265,7 +1266,7 @@ class AttemptLogsView extends React.Component {
       return <pre />
     }
     return this.state.files.map(file => {
-      return <LogFileView key={file.fileName} file={file} />
+      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId}/>
     })
   }
 
