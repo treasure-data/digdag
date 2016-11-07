@@ -254,15 +254,9 @@ export class Model {
 
   fetchLogFile (attemptId: number, file: LogFileHandle) {
     if (!file.direct) {
-      file.direct = this.config.url + `logs/${attemptId}/files/${file.fileName}`
+      return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${file.fileName}`)
     }
-
-    return fetch(file.direct).then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      }
-      return response.arrayBuffer()
-    })
+    return this.fetchArrayBuffer(file.direct)
   }
 
   fetchProjectArchiveLatest (projectId: number): Promise<ProjectArchive> {
@@ -380,6 +374,15 @@ export class Model {
         throw new Error(response.statusText)
       }
       return response.json()
+    })
+  }
+
+  fetchArrayBuffer (url: string) {
+    return fetch(url).then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.arrayBuffer()
     })
   }
 
