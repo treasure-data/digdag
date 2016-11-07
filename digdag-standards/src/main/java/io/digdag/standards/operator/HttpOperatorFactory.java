@@ -51,6 +51,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -169,7 +170,7 @@ public class HttpOperatorFactory
             }
 
             Optional<JsonNode> content = params.getOptional("content", JsonNode.class);
-            Optional<String> contentFormat = params.getOptional("content_format", String.class).transform(String::toLowerCase);
+            Optional<String> contentFormat = params.getOptional("content_format", String.class).transform(s -> s.toLowerCase(Locale.ROOT));
             Optional<String> contentType = params.getOptional("content_type", String.class);
             boolean storeContent = params.get("store_content", boolean.class, false);
 
@@ -441,7 +442,7 @@ public class HttpOperatorFactory
         // array   form                                                    ERROR
         // object  form    form    application/x-www-form-urlencoded
 
-        String nodeType = content.getNodeType().name().toLowerCase();
+        String nodeType = content.getNodeType().name().toLowerCase(Locale.ROOT);
 
         if (content.isContainerNode()) {
             // Object or Array
