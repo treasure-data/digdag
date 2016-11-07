@@ -57,7 +57,8 @@ public class HttpIT
 
     private static final ObjectMapper OBJECT_MAPPER = DigdagClient.objectMapper();
 
-    private MockWebServer mockWebServer;
+    private MockWebServer httpMockWebServer;
+    private MockWebServer httpsMockWebServer;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -68,7 +69,8 @@ public class HttpIT
     public void setUp()
             throws Exception
     {
-        mockWebServer = startMockWebServer();
+        httpMockWebServer = startMockWebServer();
+        httpsMockWebServer = startMockWebServer(true);
         requests = new ConcurrentHashMap<>();
     }
 
@@ -82,21 +84,41 @@ public class HttpIT
     }
 
     @After
-    public void tearDownWebServer()
+    public void tearDownHttpServer()
             throws Exception
     {
-        if (mockWebServer != null) {
-            mockWebServer.shutdown();
+        if (httpMockWebServer != null) {
+            httpMockWebServer.shutdown();
+        }
+    }
+
+    @After
+    public void tearDownHttpsServer()
+            throws Exception
+    {
+        if (httpsMockWebServer != null) {
+            httpsMockWebServer.shutdown();
         }
     }
 
     @Test
-    public void testSimple()
+    public void testHttp()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/";
         runWorkflow(folder, "acceptance/http/http.dig", ImmutableMap.of("test_uri", uri));
-        assertThat(mockWebServer.getRequestCount(), is(1));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+    }
+
+    @Test
+    public void testHttps()
+            throws Exception
+    {
+        String uri = "https://localhost:" + httpsMockWebServer.getPort() + "/";
+        runWorkflow(folder, "acceptance/http/http.dig", ImmutableMap.of(
+                "test_uri", uri,
+                "http.insecure", "true"));
+        assertThat(httpsMockWebServer.getRequestCount(), is(1));
     }
 
     @Test
@@ -150,10 +172,10 @@ public class HttpIT
     private RecordedRequest testRequest(String workflow)
             throws IOException, InterruptedException
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/";
         runWorkflow(folder, "acceptance/http/" + workflow, ImmutableMap.of("test_uri", uri));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        return mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        return httpMockWebServer.takeRequest();
     }
 
     @Test
@@ -161,7 +183,7 @@ public class HttpIT
             throws Exception
     {
         proxy = TestUtils.startRequestFailingProxy(1, requests);
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri
@@ -171,7 +193,7 @@ public class HttpIT
                         "config.http.proxy.host", "localhost",
                         "config.http.proxy.port", Integer.toString(proxy.getListenAddress().getPort())
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
         assertThat(requests.get(uri), is(not(empty())));
     }
 
@@ -180,7 +202,7 @@ public class HttpIT
             throws Exception
     {
         proxy = TestUtils.startRequestFailingProxy(1, requests);
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri,
@@ -188,7 +210,7 @@ public class HttpIT
                         "http.proxy.host", "localhost",
                         "http.proxy.port", Integer.toString(proxy.getListenAddress().getPort())
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
         assertThat(requests.get("GET " + uri), is(not(nullValue())));
         assertThat(requests.get("GET " + uri), is(not(empty())));
     }
@@ -198,7 +220,7 @@ public class HttpIT
             throws Exception
     {
         proxy = TestUtils.startRequestFailingProxy(3, requests);
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri,
@@ -209,7 +231,7 @@ public class HttpIT
                 ImmutableMap.of(
                         "config.http.allow_user_proxy", "false"
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
         assertThat(requests.entrySet(), is(empty()));
     }
 
@@ -217,12 +239,12 @@ public class HttpIT
     public void testBasicAuth()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig", ImmutableMap.of("test_uri", uri), ImmutableMap.of(
                 "secrets.http.user", "test-user",
                 "secrets.http.password", "test-pass"));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
 
         assertThat(request.getHeader(AUTHORIZATION.asString()), is("Basic " + Base64.encodeAsString("test-user:test-pass".getBytes(UTF_8))));
     }
@@ -231,11 +253,11 @@ public class HttpIT
     public void testCustomAuth()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig", ImmutableMap.of("test_uri", uri), ImmutableMap.of(
                 "secrets.http.authorization", "Bearer badf00d"));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
 
         assertThat(request.getHeader(AUTHORIZATION.asString()), is("Bearer badf00d"));
     }
@@ -244,7 +266,7 @@ public class HttpIT
     public void testPost()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri,
@@ -252,8 +274,8 @@ public class HttpIT
                         "http.content", "test-content",
                         "http.content_type", "text/plain"
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
 
         assertThat(request.getMethod(), is("POST"));
         assertThat(request.getBody().readUtf8(), is("test-content"));
@@ -264,14 +286,14 @@ public class HttpIT
     public void testQueryParameters()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri,
                         "http.query", "{\"n1\":\"v1\",\"n2\":\"v &?2\"}"
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
         assertThat(request.getPath(), is("/test?n1=v1&n2=v+%26%3F2"));
     }
 
@@ -279,14 +301,14 @@ public class HttpIT
     public void testQueryString()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
                         "test_uri", uri,
                         "http.query", "n1=v1&n2=v+%26%3F2"
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
         assertThat(request.getPath(), is("/test?n1=v1&n2=v+%26%3F2"));
     }
 
@@ -322,7 +344,7 @@ public class HttpIT
             throws IOException
     {
         proxy = TestUtils.startRequestFailingProxy(3, requests);
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         for (HttpMethod method : methods) {
             runWorkflow(folder, "acceptance/http/http.dig",
                     ImmutableMap.<String, String>builder()
@@ -337,14 +359,14 @@ public class HttpIT
                     1);
             assertThat(requests.keySet().stream().anyMatch(k -> k.startsWith(method.asString())), is(true));
         }
-        assertThat(mockWebServer.getRequestCount(), is(0));
+        assertThat(httpMockWebServer.getRequestCount(), is(0));
     }
 
     private void verifyEphemeralErrorsAreRetried(HttpMethod[] methods, Map<String, String> params)
             throws IOException
     {
         proxy = TestUtils.startRequestFailingProxy(3, requests);
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         for (HttpMethod method : methods) {
             runWorkflow(folder, "acceptance/http/http.dig",
                     ImmutableMap.<String, String>builder()
@@ -360,20 +382,20 @@ public class HttpIT
             assertThat(requests.keySet().stream().anyMatch(k -> k.startsWith(method.asString())), is(true));
         }
         assertThat(requests.size(), is(methods.length));
-        assertThat(mockWebServer.getRequestCount(), is(methods.length));
+        assertThat(httpMockWebServer.getRequestCount(), is(methods.length));
     }
 
     @Test
     public void testCustomHeaders()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/test";
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/test";
         runWorkflow(folder, "acceptance/http/http_headers.dig",
                 ImmutableMap.of(
                         "test_uri", uri
                 ));
-        assertThat(mockWebServer.getRequestCount(), is(1));
-        RecordedRequest request = mockWebServer.takeRequest();
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
+        RecordedRequest request = httpMockWebServer.takeRequest();
 
         Headers h = request.getHeaders();
 
@@ -398,12 +420,12 @@ public class HttpIT
     public void testForEach()
             throws Exception
     {
-        String uri = "http://localhost:" + mockWebServer.getPort() + "/";
-        mockWebServer.setDispatcher(new QueueDispatcher());
+        String uri = "http://localhost:" + httpMockWebServer.getPort() + "/";
+        httpMockWebServer.setDispatcher(new QueueDispatcher());
         String content = DigdagClient.objectMapper().writeValueAsString(
                 ImmutableList.of("foo", "bar", "baz"));
-        mockWebServer.enqueue(new MockResponse().setBody(content));
+        httpMockWebServer.enqueue(new MockResponse().setBody(content));
         runWorkflow(folder, "acceptance/http/http_for_each.dig", ImmutableMap.of("test_uri", uri));
-        assertThat(mockWebServer.getRequestCount(), is(1));
+        assertThat(httpMockWebServer.getRequestCount(), is(1));
     }
 }

@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
@@ -549,8 +550,16 @@ public class TestUtils
 
     public static MockWebServer startMockWebServer()
     {
+        return startMockWebServer(false);
+    }
+
+    public static MockWebServer startMockWebServer(boolean https)
+    {
         MockWebServer server = new MockWebServer();
         server.setDispatcher(new NopDispatcher());
+        if (https) {
+            server.useHttps(SslClient.localhost().socketFactory, false);
+        }
         try {
             server.start(0);
         }

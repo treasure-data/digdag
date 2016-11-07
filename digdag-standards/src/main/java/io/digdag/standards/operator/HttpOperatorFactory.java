@@ -354,14 +354,9 @@ public class HttpOperatorFactory
 
         private HttpClient client()
         {
-            SslContextFactory sslContextFactory = null;
+            boolean insecure = params.get("insecure", boolean.class, false);
 
-            Optional<Boolean> insecure = params.getOptional("insecure", boolean.class);
-            if (insecure.isPresent()) {
-                sslContextFactory = new SslContextFactory(insecure.get());
-            }
-
-            HttpClient httpClient = new HttpClient(sslContextFactory);
+            HttpClient httpClient = new HttpClient(new SslContextFactory(insecure));
 
             configureProxy(httpClient);
 
