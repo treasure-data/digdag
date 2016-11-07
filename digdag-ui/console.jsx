@@ -148,6 +148,7 @@ class CodeViewer extends React.Component {
     require('brace/ext/language_tools')
     require('brace/mode/json')
     require('brace/mode/sql')
+    require('brace/mode/yaml')
     Ace.acequire('ace/ext/language_tools')
   }
 
@@ -157,10 +158,10 @@ class CodeViewer extends React.Component {
     this._editor.setOptions({
       readOnly: true,
       showPrintMargin: false,
+      highlightActiveLine: false,
       tabSize: 2,
       useSoftTabs: true,
-      wrap: true,
-      mode: 'sql'
+      wrap: true
     })
     this._updateEditor(this.props.value)
   }
@@ -177,7 +178,9 @@ class CodeViewer extends React.Component {
 
   _updateEditor (value) {
     const DOCUMENT_END = 1
+    const language = this.props.language
     this._editor.setValue(value, DOCUMENT_END)
+    this._editor.session.setMode(`ace/mode/${language}`)
   }
 
   render () {
@@ -1828,6 +1831,30 @@ export class CodeViewerTest extends React.Component {
       WHERE FirstName = 'Daniele'
     `
   }
+  exampleYAML () {
+    return `
+      timezone: UTC
+
+      schedule:
+        daily>: "07:00:00"
+
+      _export:
+        td:
+          database: se379
+          table: fbtest
+        reload_window: 10
+        start_from: "\${session_unixtime - (86400 * (reload_window - 1))}"
+
+      +delete_records:
+        td_partial_delete>: \${td.table}
+        to: "\${session_time}"
+        from: "\${start_from}"
+
+      +import_from_facebook:
+        td_load>: imports/facebook_ads_reporting.yml
+        table: \${td.table}
+    `
+  }
   render () {
     return (
       <div className='container-fluid'>
@@ -1835,6 +1862,10 @@ export class CodeViewerTest extends React.Component {
           className='large-editor'
           language='sql'
           value={this.exampleSQL()} />
+        <CodeViewer
+          className='large-editor'
+          language='yaml'
+          value={this.exampleYAML()} />
       </div>
     )
   }
