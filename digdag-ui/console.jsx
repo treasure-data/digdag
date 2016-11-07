@@ -1834,26 +1834,8 @@ export class CodeViewerTest extends React.Component {
   }
   exampleYAML () {
     return `
-      timezone: UTC
-
-      schedule:
-        daily>: "07:00:00"
-
-      _export:
-        td:
-          database: se379
-          table: fbtest
-        reload_window: 10
-        start_from: "\${session_unixtime - (86400 * (reload_window - 1))}"
-
-      +delete_records:
-        td_partial_delete>: \${td.table}
-        to: "\${session_time}"
-        from: "\${start_from}"
-
-      +import_from_facebook:
-        td_load>: imports/facebook_ads_reporting.yml
-        table: \${td.table}
+      td_load>: imports/facebook_ads_reporting.yml
+      td_run>: dan_test
     `
   }
   render () {

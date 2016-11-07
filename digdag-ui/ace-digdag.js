@@ -11,14 +11,18 @@ global.ace.define('ace/mode/digdag_rules', [
   const oop = require('ace/lib/oop')
   const YamlMODE = require('ace/mode/yaml_highlight_rules').YamlHighlightRules
   const DigdagRules = function() {
-    this.$rules = {
-      start: [
-        {
-          token: 'comment',
-          regex: '--.*$'
-        }
-      ]
-    }
+    this.$rules = new YamlMODE().getRules()
+    this.$rules.start = [
+      {
+        token: 'td-load',
+        regex:  'td_load>:'
+      },
+      {
+        token: 'td-run',
+        regex:  'td_run>:'
+      },
+      ...this.$rules.start
+    ]
     this.normalizeRules()
   }
   oop.inherits(DigdagRules, YamlMODE)
