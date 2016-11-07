@@ -955,6 +955,14 @@ const SessionView = withRouter(
         .then(() => router.push('/sessions'))
     }
 
+    retrySessionWithLatestRevision () {
+      const { session, router } = this.props
+      this.setState({ loading: true })
+      model()
+        .retrySessionWithLatestRevision(session, uuid.v4())
+        .then(() => router.push('/sessions'))
+    }
+
     render () {
       const { loading } = this.state
       const { session } = this.props
@@ -971,6 +979,15 @@ const SessionView = withRouter(
                 onClick={this.retrySession.bind(this)}
               >
                 RETRY
+              </button>
+            }
+            {canRetry &&
+              <button
+                className='btn btn-success pull-right'
+                disabled={loading}
+                onClick={this.retrySessionWithLatestRevision.bind(this)}
+              >
+                RETRY_LATEST
               </button>
             }
           </h2>
