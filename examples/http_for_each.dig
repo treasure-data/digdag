@@ -1,0 +1,11 @@
+timezone: UTC
+
++fetch:
+  http>: https://jsonplaceholder.typicode.com/users
+  store_content: true
+
++process:
+  for_each>:
+    user: ${http.last_content}
+  _do:
+    echo>: Hello ${user.name} @ ${user.company.name}!
