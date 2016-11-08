@@ -1,6 +1,7 @@
 package io.digdag.server;
 
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -14,6 +15,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
 
 @Provider
+@PreMatching
 public class AuthRequestFilter
     implements ContainerRequestFilter
 {
