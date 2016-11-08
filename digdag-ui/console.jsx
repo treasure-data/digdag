@@ -1273,7 +1273,8 @@ class AttemptLogsView extends React.Component {
   fetchLogs () {
     model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
       if (!this.ignoreLastFetch) {
-        this.setState({files})
+        const sortedFiles = _.sortBy(files, 'fileTime');
+        this.setState({ files: sortedFiles });
       }
     })
   }
