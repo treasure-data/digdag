@@ -12,6 +12,7 @@ import io.digdag.guice.rs.server.undertow.UndertowServerConfig;
 import org.immutables.value.Value;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -24,7 +25,9 @@ public interface ServerConfig
     extends UndertowServerConfig
 {
     public static final int DEFAULT_PORT = 65432;
+    public static final int DEFAULT_ADMIN_PORT = 65433;
     public static final String DEFAULT_BIND = "127.0.0.1";
+    public static final String DEFAULT_ADMIN_BIND = "127.0.0.1";
     public static final String DEFAULT_ACCESS_LOG_PATTERN = "json";
 
     public Optional<String> getServerRuntimeInfoPath();
@@ -61,6 +64,8 @@ public interface ServerConfig
         return defaultBuilder()
             .port(config.get("server.port", int.class, DEFAULT_PORT))
             .bind(config.get("server.bind", String.class, DEFAULT_BIND))
+            .adminPort(config.get("server.admin.port", int.class, DEFAULT_ADMIN_PORT))
+            .adminBind(config.get("server.admin.bind", String.class, DEFAULT_ADMIN_BIND))
             .serverRuntimeInfoPath(config.getOptional("server.runtime-info.path", String.class))
             .accessLogPath(config.getOptional("server.access-log.path", String.class))
             .accessLogPattern(config.get("server.access-log.pattern", String.class, DEFAULT_ACCESS_LOG_PATTERN))
@@ -85,4 +90,7 @@ public interface ServerConfig
                 );
         return convertFrom(configElement.toConfig(cf));
     }
+
+    Set<Integer> getAdminSites();
+
 }

@@ -710,6 +710,12 @@ public class DigdagClient implements AutoCloseable
                 .get(RestSecretList.class);
     }
 
+    public Config adminGetAttemptUserInfo(long attemptId) {
+        return doGet(Config.class,
+                target("/api/admin/attempts/{id}/userinfo")
+                        .resolveTemplate("id", attemptId));
+    }
+
     private WebTarget target(String path)
     {
         return client.target(UriBuilder.fromUri(endpoint + path));

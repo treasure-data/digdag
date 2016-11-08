@@ -58,6 +58,12 @@ public class UndertowBootstrap
                 {
                     return control.getLocalAddresses();
                 }
+
+                @Override
+                public List<InetSocketAddress> getLocalAdminAddresses()
+                {
+                    return control.getLocalAdminAddresses();
+                }
             });
         });
 

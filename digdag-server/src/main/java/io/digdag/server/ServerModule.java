@@ -15,6 +15,9 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.guice.rs.GuiceRsModule;
+import io.digdag.guice.rs.server.undertow.UndertowServerInfo;
+import io.digdag.server.rs.AdminResource;
+import io.digdag.server.rs.AdminRestricted;
 import io.digdag.server.rs.AttemptResource;
 import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
@@ -27,10 +30,15 @@ import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretStoreManager;
 import io.digdag.spi.StorageFileNotFoundException;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
@@ -48,6 +56,7 @@ public class ServerModule
             .addProvider(JacksonJsonProvider.class, JsonProviderProvider.class)
             .addProvider(AuthRequestFilter.class)
             .addProvider(CustomHeaderFilter.class)
+            .addProvider(AdminRestrictedFilter.class)
             ;
         bindResources(builder);
         bindAuthenticator();
@@ -72,7 +81,8 @@ public class ServerModule
                 SessionResource.class,
                 AttemptResource.class,
                 LogResource.class,
-                VersionResource.class
+                VersionResource.class,
+                AdminResource.class
             );
     }
 
@@ -148,6 +158,41 @@ public class ServerModule
                 ContainerResponseContext response)
         {
             headers.forEach(response.getHeaders()::add);
+        }
+    }
+
+    @Provider
+    @AdminRestricted
+    public static class AdminRestrictedFilter
+            implements ContainerRequestFilter
+    {
+        private final UndertowServerInfo serverInfo;
+        @Context
+        private HttpServletRequest httpServletRequest;
+
+
+        @Inject
+        public AdminRestrictedFilter(UndertowServerInfo serverInfo)
+        {
+            this.serverInfo = serverInfo;
+        }
+
+        @Override
+        public void filter(ContainerRequestContext requestContext)
+                throws IOException
+        {
+            // Only allow requests on the admin interfaces
+            if (!serverInfo.getLocalAdminAddresses().stream().anyMatch(a ->
+                            a.getPort() == httpServletRequest.getLocalPort() &&
+                            a.getAddress().getHostAddress().equals(httpServletRequest.getLocalAddr()))) {
+                throw new NotFoundException();
+            }
+
+            // Only allow admin users
+            Boolean admin = (Boolean) httpServletRequest.getAttribute("admin");
+            if (admin == null || !admin) {
+                throw new ForbiddenException();
+            }
         }
     }
 }

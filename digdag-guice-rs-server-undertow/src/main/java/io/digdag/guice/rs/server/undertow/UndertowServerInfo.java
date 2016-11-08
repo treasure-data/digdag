@@ -8,4 +8,6 @@ public interface UndertowServerInfo
     boolean isStarted();
 
     List<InetSocketAddress> getLocalAddresses();
+
+    List<InetSocketAddress> getLocalAdminAddresses();
 }

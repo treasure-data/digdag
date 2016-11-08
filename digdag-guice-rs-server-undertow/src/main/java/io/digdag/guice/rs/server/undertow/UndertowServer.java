@@ -3,23 +3,33 @@ package io.digdag.guice.rs.server.undertow;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.digdag.guice.rs.GuiceRsBootstrap;
 import io.digdag.guice.rs.GuiceRsServletContainerInitializer;
 import io.digdag.guice.rs.server.ServerBootstrap;
-
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.OpenListener;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
+import io.undertow.server.protocol.http.HttpOpenListener;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletContainerInitializerInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import org.xnio.StreamConnection;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
+import org.xnio.channels.AcceptingChannel;
+
+import javax.servlet.ServletException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -32,19 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import javax.servlet.ServletException;
-
-import org.embulk.guice.Bootstrap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.xnio.OptionMap;
-import org.xnio.Options;
-import org.xnio.StreamConnection;
-import org.xnio.Xnio;
-import org.xnio.XnioWorker;
-import org.xnio.channels.AcceptingChannel;
 
 public class UndertowServer
 {
@@ -156,10 +153,13 @@ public class UndertowServer
         }
         control.workerInitialized(worker);
 
+        HttpHandler apiHandler = exchange -> httpHandler.handleRequest(exchange);
+        HttpHandler adminHandler = exchange -> httpHandler.handleRequest(exchange);
+
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
         Undertow server = Undertow.builder()
-            .addHttpListener(config.getPort(), config.getBind())
-            .setHandler(httpHandler)
+            .addHttpListener(config.getPort(), config.getBind(), apiHandler)
+            .addHttpListener(config.getAdminPort(), config.getAdminBind(), adminHandler)
             .setWorker(worker)
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)  // required to enable reqtime:%T in access log
             .setServerOption(UndertowOptions.NO_REQUEST_TIMEOUT, config.getHttpNoRequestTimeout().or(60) * 1000)
@@ -170,29 +170,48 @@ public class UndertowServer
 
         server.start();  // HTTP server starts here
 
-        // XXX (dano): Hack to get the system-assigned port when starting server with port 0
         List<InetSocketAddress> localAddresses = new ArrayList<>();
-        try {
-            Field channelsField = Undertow.class.getDeclaredField("channels");
-            channelsField.setAccessible(true);
-            @SuppressWarnings("unchecked") List<AcceptingChannel<? extends StreamConnection>> channels = (List<AcceptingChannel<? extends StreamConnection>>) channelsField.get(server);
-            for (AcceptingChannel<? extends StreamConnection> channel : channels) {
-                SocketAddress localAddress = channel.getLocalAddress();
-                logger.info("Bound on {}", localAddress);
-                if (localAddress instanceof InetSocketAddress) {
-                    localAddresses.add((InetSocketAddress) localAddress);
+        List<InetSocketAddress> localAdminAddresses = new ArrayList<>();
+
+        for (Undertow.ListenerInfo listenerInfo : server.getListenerInfo()) {
+            OpenListener listener = listener(listenerInfo);
+            if (listener instanceof HttpOpenListener) {
+                HttpHandler rootHandler = listener.getRootHandler();
+                if (!(listenerInfo.getAddress() instanceof InetSocketAddress)) {
+                    continue;
+                }
+                InetSocketAddress address = (InetSocketAddress) listenerInfo.getAddress();
+                if (rootHandler == apiHandler) {
+                    logger.info("Bound api on {}", address);
+                    localAddresses.add(address);
+                }
+                else if (rootHandler == adminHandler) {
+                    logger.info("Bound admin api on {}", address);
+                    localAdminAddresses.add(address);
+                } else {
+                    logger.warn("Unknown listener {} bound on {}", listenerInfo, address);
                 }
             }
         }
-        catch (ReflectiveOperationException e) {
-            logger.warn("Failed to get bind addresses", e);
-        }
 
-        control.serverStarted(localAddresses);
+        control.serverStarted(localAddresses, localAdminAddresses);
 
         control.postStart();
 
         return control;
+    }
+
+    private static OpenListener listener(Undertow.ListenerInfo listenerInfo)
+    {
+        try {
+            Field listenerField = Undertow.ListenerInfo.class.getDeclaredField("openListener");
+            listenerField.setAccessible(true);
+            return (OpenListener) listenerField.get(listenerInfo);
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            logger.warn("Failed to get local address", e);
+            return null;
+        }
     }
 
     private static HttpHandler buildAccessLogHandler(UndertowServerConfig config, HttpHandler nextHandler)
