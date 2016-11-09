@@ -1014,6 +1014,14 @@ const SessionView = withRouter(
         .then(() => router.push('/sessions'))
     }
 
+    retrySessionWithLatestRevision () {
+      const { session, router } = this.props
+      this.setState({ loading: true })
+      model()
+        .retrySessionWithLatestRevision(session, uuid.v4())
+        .then(() => router.push('/sessions'))
+    }
+
     render () {
       const { loading } = this.state
       const { session } = this.props
@@ -1030,6 +1038,15 @@ const SessionView = withRouter(
                 onClick={this.retrySession.bind(this)}
               >
                 RETRY
+              </button>
+            }
+            {canRetry &&
+              <button
+                className='btn btn-success pull-right'
+                disabled={loading}
+                onClick={this.retrySessionWithLatestRevision.bind(this)}
+              >
+                RETRY_LATEST
               </button>
             }
           </h2>
@@ -1248,6 +1265,7 @@ class LogFileView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
+    attemptId: number;
     file: LogFileHandle;
   };
 
@@ -1271,7 +1289,7 @@ class LogFileView extends React.Component {
   }
 
   fetchFile () {
-    model().fetchLogFile(this.props.file).then(data => {
+    model().fetchLogFile(this.props.attemptId, this.props.file).then(data => {
       if (!this.ignoreLastFetch) {
         this.setState({data})
       }
@@ -1314,7 +1332,8 @@ class AttemptLogsView extends React.Component {
   fetchLogs () {
     model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
       if (!this.ignoreLastFetch) {
-        this.setState({files})
+        const sortedFiles = _.sortBy(files, 'fileTime');
+        this.setState({ files: sortedFiles });
       }
     })
   }
@@ -1324,7 +1343,7 @@ class AttemptLogsView extends React.Component {
       return <pre />
     }
     return this.state.files.map(file => {
-      return <LogFileView key={file.fileName} file={file} />
+      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId}/>
     })
   }
 
