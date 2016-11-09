@@ -167,9 +167,9 @@ public class ServerModule
             implements ContainerRequestFilter
     {
         private final UndertowServerInfo serverInfo;
+
         @Context
         private HttpServletRequest httpServletRequest;
-
 
         @Inject
         public AdminRestrictedFilter(UndertowServerInfo serverInfo)
