@@ -1332,8 +1332,8 @@ class AttemptLogsView extends React.Component {
   fetchLogs () {
     model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
       if (!this.ignoreLastFetch) {
-        const sortedFiles = _.sortBy(files, 'fileTime');
-        this.setState({ files: sortedFiles });
+        const sortedFiles = _.sortBy(files, 'fileTime')
+        this.setState({ files: sortedFiles })
       }
     })
   }
@@ -1342,9 +1342,9 @@ class AttemptLogsView extends React.Component {
     if (!this.state.files.length) {
       return <pre />
     }
-    return this.state.files.map(file => {
-      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId}/>
-    })
+    return this.state.files.map(file =>
+      <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} />
+    )
   }
 
   render () {
