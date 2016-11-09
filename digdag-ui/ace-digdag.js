@@ -1,6 +1,11 @@
 // Make sure brace is loaded and global.ace is added
 require('brace')
 
+export const TD_LOAD_TOKEN = 'td-load'
+export const TD_RUN_TOKEN = 'td-run'
+export const TD_RUN_VALUE_TOKEN = 'td-run-value'
+export const TD_LOAD_VALUE_TOKEN = 'td-load-value'
+
 global.ace.define('ace/mode/digdag_rules', [
   'require',
   'exports',
@@ -14,19 +19,28 @@ global.ace.define('ace/mode/digdag_rules', [
     this.$rules = new YamlMODE().getRules()
     this.$rules.start = [
       {
-        token: 'td-load',
+        token: TD_LOAD_TOKEN,
         regex:  /^\s*td_load>:/,
         next: 'td-load-value'
       }, {
-        token: 'td-run',
-        regex:  /^\s*td_run>:/
+        token: TD_RUN_TOKEN,
+        regex:  /^\s*td_run>:/,
+        next: 'td-run-value'
       },
       ...this.$rules.start
     ]
     this.$rules['td-load-value'] = [
       {
-        token: 'td-load',
-        regex:  /(\s*).*/
+        token: 'td-load-value',
+        regex: '\\S+',
+        next: 'start'
+      }
+    ]
+    this.$rules['td-run-value'] = [
+      {
+        token: 'td-run-value',
+        regex: '\\S+',
+        next: 'start'
       }
     ]
   }
