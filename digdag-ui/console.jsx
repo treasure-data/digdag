@@ -93,9 +93,16 @@ function MaybeWorkflowLink ({ workflow } : { workflow: NameOptionalId }) {
 
 class CodeViewer extends React.Component {
   props: {
-    value: string;
+    className: ?string;
     language: string;
+    value: string;
   }
+
+  /* eslint-disable */
+  editor: HTMLElement; // standard does not have definition of flow.dom.HTMLElement
+  /* eslint-enable */
+
+  _editor: any; // we have no definition for AceEditor
 
   constructor (props) {
     super(props)
@@ -1829,7 +1836,7 @@ class ParserTest extends React.Component {
   render () {
     return (
       <div className='container'>
-        <CodeViewer language='digdag' value={this.definition()} />
+        <CodeViewer className='definition' language='digdag' value={this.definition()} />
       </div>
     )
   }
