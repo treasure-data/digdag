@@ -1,5 +1,6 @@
 package io.digdag.standards.operator;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -30,6 +31,7 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.TaskState;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,6 +194,7 @@ public class S3WaitOperatorFactory
                     .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                     .await(pollState -> pollingRetryExecutor(pollState, "POLL")
+                            .retryUnless(AmazonServiceException.class, S3WaitOperatorFactory::isDeterministicException)
                             .run(s -> {
                                 try {
                                     return Optional.of(s3Client.getObjectMetadata(req));
@@ -217,6 +220,18 @@ public class S3WaitOperatorFactory
             object.set("metadata", objectMetadata.getRawMetadata());
             object.set("user_metadata", objectMetadata.getUserMetadata());
             return params;
+        }
+    }
+
+    private static boolean isDeterministicException(AmazonServiceException ex)
+    {
+        int statusCode = ex.getStatusCode();
+        switch (statusCode) {
+            case HttpStatus.TOO_MANY_REQUESTS_429:
+            case HttpStatus.REQUEST_TIMEOUT_408:
+                return false;
+            default:
+                return statusCode >= 400 && statusCode < 500;
         }
     }
 
