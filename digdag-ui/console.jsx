@@ -7,7 +7,8 @@ import 'whatwg-fetch'
 import _ from 'lodash'
 
 import React from 'react'
-import {Router, Link, Route, browserHistory, withRouter} from 'react-router'
+import { Router, Link, Route, browserHistory, withRouter } from 'react-router'
+import Measure from 'react-measure'
 import moment from 'moment'
 import pako from 'pako'
 import path from 'path'
@@ -16,15 +17,7 @@ import Duration from 'duration'
 import uuid from 'node-uuid'
 
 // noinspection ES6UnusedImports
-import Prism from 'prismjs'
-import 'prismjs/components/prism-yaml'
-import 'prismjs/components/prism-sql'
-import 'prismjs/components/prism-bash'
-import 'prismjs/components/prism-python'
-import 'prismjs/components/prism-ruby'
-import 'prismjs/components/prism-javascript'
-import 'prismjs/themes/prism.css'
-import {PrismCode} from 'react-prism'
+import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
 
 /* eslint-disable */
 // see https://github.com/gajus/eslint-plugin-flowtype/issues/72
@@ -50,48 +43,6 @@ import {
 type Scrubber = (args:{key: string, value: string}) => string
 
 const isDevelopmentEnv = process.env.NODE_ENV !== 'production'
-
-Prism.languages.digdag = Prism.languages.extend('yaml', {})
-
-Prism.languages.insertBefore('digdag', 'scalar', { // scalar is the first token in yaml file
-  'td-run': {
-    pattern: /td_run>:.*/,
-    inside: {
-      atrule: /td_run>/,
-      punctuation: /:/,
-      'td-run-value': {
-        pattern: /(\s*).*/,
-        lookbehind: true
-      }
-    }
-  },
-  'td-load': {
-    pattern: /td_load>:.*/,
-    inside: {
-      atrule: /td_load>/,
-      punctuation: /:/,
-      'td-load-value': {
-        pattern: /(\s*).*/,
-        lookbehind: true
-      }
-    }
-  }
-})
-
-Prism.hooks.add('wrap', (env) => {
-  if (env.type === 'td-run-value') {
-    const queryId = model().getTDQueryIdFromName(env.content)
-    if (queryId) {
-      env.tag = 'a'
-      env.attributes.target = '_blank'
-      env.attributes.href = DIGDAG_CONFIG.td.queryUrl(queryId)
-    }
-  } else if (env.type === 'td-load-value') {
-    env.tag = 'a'
-    env.attributes.target = '_blank'
-    env.attributes.href = DIGDAG_CONFIG.td.connectorUrl(env.con)
-  }
-})
 
 type AuthItem = {
   key: string;
@@ -138,6 +89,99 @@ function MaybeWorkflowLink ({ workflow } : { workflow: NameOptionalId }) {
     return <Link to={`/workflows/${workflow.id}`}>{workflow.name}</Link>
   }
   return <span>{workflow.name}</span>
+}
+
+class CodeViewer extends React.Component {
+  props: {
+    className: ?string;
+    language: string;
+    value: string;
+  }
+
+  /* eslint-disable */
+  editor: HTMLElement; // standard does not have definition of flow.dom.HTMLElement
+  /* eslint-enable */
+
+  _editor: any; // we have no definition for AceEditor
+
+  constructor (props) {
+    super(props)
+    // Uses ace 1.1.9.
+    const Ace = require('brace')
+    require('brace/ext/language_tools')
+    require('brace/ext/linking')
+    require('brace/mode/json')
+    require('brace/mode/sql')
+    require('brace/mode/yaml')
+    Ace.acequire('ace/ext/language_tools')
+    Ace.acequire('ace/ext/linking')
+  }
+
+  componentDidMount () {
+    const Ace = require('brace')
+    require('./ace-digdag')
+    this._editor = Ace.edit(this.editor)
+    this._editor.setOptions({
+      enableLinking: true,
+      highlightActiveLine: false,
+      readOnly: true,
+      showLineNumbers: false,
+      showGutter: false,
+      showPrintMargin: false,
+      tabSize: 2,
+      useSoftTabs: true
+    })
+    this._editor.on('click', this.editorClick.bind(this))
+    this._updateEditor(this.props)
+  }
+
+  editorClick (event) {
+    const editor = event.editor
+    const docPos = event.getDocumentPosition()
+    const session = editor.session
+    const token = session.getTokenAt(docPos.row, docPos.column)
+    const openTab = (url) => window.open(url)
+    if (token && token.type === TD_LOAD_VALUE_TOKEN) {
+      const queryId = model().getTDQueryIdFromName(token.valuke)
+      if (queryId) {
+        openTab(DIGDAG_CONFIG.td.queryUrl(queryId))
+      }
+    } else if (token && token.type === TD_RUN_VALUE_TOKEN) {
+      openTab(DIGDAG_CONFIG.td.connectorUrl(token.value))
+    }
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (nextProps.value !== this.props.value) {
+      this._updateEditor(nextProps)
+    }
+  }
+
+  componentWillUnmount () {
+    this._editor.destroy()
+  }
+
+  _updateEditor (props) {
+    const DOCUMENT_END = 1
+    const {
+      language,
+      value
+     } = props
+    this._editor.setValue(value, DOCUMENT_END)
+    this._editor.session.setMode(`ace/mode/${language}`)
+    this._editor.resize(true)
+  }
+
+  render () {
+    const { className } = this.props
+    return (
+      <div
+        className={className}
+        key='editor'
+        ref={(value) => { this.editor = value }}
+      />
+    )
+  }
 }
 
 class CacheLoader extends React.Component {
@@ -740,7 +784,18 @@ class WorkflowView extends React.Component {
         <ScheduleListView workflowName={wf.name} projectId={wf.project.id} />
         <div className='row'>
           <h2>Definition</h2>
-          <pre><PrismCode className='language-digdag'>{this.definition()}</PrismCode></pre>
+          <pre>
+            <Measure>
+              { ({ width }) =>
+                <CodeViewer
+                  className='definition'
+                  language='digdag'
+                  value={this.definition()}
+                  style={{ width }}
+                />
+              }
+            </Measure>
+          </pre>
         </div>
         <div className='row'>
           <h2>Sessions</h2>
@@ -835,7 +890,18 @@ function fileString (file:string, projectArchive:?ProjectArchive) {
 const FileView = (props:{file: string, fileType: string, contents: string}) =>
   <div>
     <h4>{props.file}</h4>
-    <pre><PrismCode className={`language-${props.fileType}`}>{props.contents}</PrismCode></pre>
+    <pre>
+      <Measure>
+        { ({ width }) =>
+          <CodeViewer
+            className='definition'
+            language={props.fileType}
+            value={props.contents}
+            style={{ width }}
+          />
+        }
+      </Measure>
+    </pre>
   </div>
 
 const WorkflowFilesView = (props:{workflow: Workflow, projectArchive: ?ProjectArchive}) =>
@@ -1071,7 +1137,7 @@ function formatDuration (startTime: ?string, endTime: ?string) {
 const ParamsView = (props:{params: Object}) =>
   _.isEmpty(props.params)
     ? null
-    : <pre><PrismCode className='language-yaml'>{yaml.safeDump(props.params, {sortKeys: true})}</PrismCode></pre>
+    : <CodeViewer className='params-view' language='yaml' value={yaml.safeDump(props.params, {sortKeys: true})} />
 
 function formatTaskState (state) {
   switch (state) {
@@ -1273,8 +1339,8 @@ class AttemptLogsView extends React.Component {
   fetchLogs () {
     model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
       if (!this.ignoreLastFetch) {
-        const sortedFiles = _.sortBy(files, 'fileTime');
-        this.setState({ files: sortedFiles });
+        const sortedFiles = _.sortBy(files, 'fileTime')
+        this.setState({ files: sortedFiles })
       }
     })
   }
@@ -1283,9 +1349,9 @@ class AttemptLogsView extends React.Component {
     if (!this.state.files.length) {
       return <pre />
     }
-    return this.state.files.map(file => {
-      return <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId}/>
-    })
+    return this.state.files.map(file =>
+      <LogFileView key={file.fileName} file={file} attemptId={this.props.attemptId} />
+    )
   }
 
   render () {
@@ -1770,7 +1836,7 @@ class ParserTest extends React.Component {
   render () {
     return (
       <div className='container'>
-        <pre><PrismCode className='language-digdag'>{this.definition()}</PrismCode></pre>
+        <CodeViewer className='definition' language='digdag' value={this.definition()} />
       </div>
     )
   }
@@ -1782,6 +1848,37 @@ class AppWrapper extends React.Component {
       <div className='container-fluid'>
         <Navbar />
         {this.props.children}
+      </div>
+    )
+  }
+}
+
+export class CodeViewerTest extends React.Component {
+  exampleSQL () {
+    return `
+      SELECT EmployeeID, FirstName, LastName, HireDate, City
+      FROM Employees
+      WHERE FirstName = 'Daniele'
+    `
+  }
+  exampleYAML () {
+    return `
+      td_load>: imports/facebook_ads_reporting.yml
+      td_run>: dan_test
+      foo: bar
+    `
+  }
+  render () {
+    return (
+      <div className='container-fluid'>
+        <CodeViewer
+          className='large-editor'
+          language='sql'
+          value={this.exampleSQL()} />
+        <CodeViewer
+          className='large-editor'
+          language='digdag'
+          value={this.exampleYAML()} />
       </div>
     )
   }
@@ -1802,7 +1899,10 @@ class ConsolePage extends React.Component {
               <Route path='/sessions/:sessionId' component={SessionPage} />
               <Route path='/attempts/:attemptId' component={AttemptPage} />
               {isDevelopmentEnv &&
-                <Route path='/parser-test' component={ParserTest} />
+                <Route>
+                  <Route path='/parser-test' component={ParserTest} />
+                  <Route path='/codeviewer' component={CodeViewerTest} />
+                </Route>
               }
               <Route path='*' component={withRouter(NotFoundPage)} />
             </Route>

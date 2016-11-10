@@ -304,14 +304,14 @@ export class Model {
   retrySessionWithLatestRevision (session: Session, sessionUUID: string) {
     const { lastAttempt, project, workflow } = session
     const model = this
-    return this.fetchProjectWorkflow (project.id, workflow.name).then(function(result){
-      return model.put('attempts', {
+    return this.fetchProjectWorkflow(project.id, workflow.name).then((result) =>
+      model.put('attempts', {
         workflowId: result.id,
         params: lastAttempt && lastAttempt.params,
         sessionTime: session.sessionTime,
         retryAttemptName: sessionUUID
       })
-    })  
+    )
   }
 
   fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {

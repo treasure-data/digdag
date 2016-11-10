@@ -9,12 +9,6 @@ body {
   height: 100%;
 }
 
-a.td-run-value,
-a.td-load-value {
-  cursor: pointer;
-  text-decoration: underline;
-}
-
 code,
 pre {
   tab-size: 2 !important;
@@ -52,4 +46,39 @@ pre {
 
 .label-sm {
   font-size: 12px;
+}
+
+.large-editor {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 40rem;
+}
+
+.ace_cursor {
+  display: none;
+}
+
+.ace-tm {
+  background: transparent !important;
+}
+
+.ace_td-run,
+.ace_td-load {
+  color: rgb(0, 22, 142);
+}
+
+.ace_td-run-value,
+.ace_td-load-value {
+  text-decoration: underline;
+  cursor: pointer !important;
+  pointer-events: auto;
+}
+
+.params-view {
+  width: 190px;
+  height: 130px;
+}
+
+.definition {
+  height: 300px;
 }
