@@ -293,6 +293,32 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
+    public List<TaskAttemptSummary> findTasksStartedBeforeWithStateAndType(TaskType type, TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                    "select id, attempt_id, state" +
+                    " from tasks" +
+                    " where task_type = :type " +
+                    " and state in (" +
+                    Stream.of(states)
+                            .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                    " and started_at < :startedBefore" +
+                    " and id > :lastId" +
+                    " order by id asc" +
+                    " limit :limit"
+                )
+                    .bind("startedBefore", sqlTimestampOf(startedBefore))
+                    .bind("type", type.get())
+                    .bind("lastId", lastId)
+                    .bind("limit", limit)
+                    .map(tasm)
+                    .list()
+        );
+    }
+
+
+    @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
     {
         return transaction((handle, dao) -> {
@@ -858,6 +884,13 @@ public class DatabaseSessionStoreManager
         public boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
+            return n > 0;
+        }
+
+        @Override
+        public boolean setStartedState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
+        {
+            long n = dao.setStartedState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
@@ -1610,6 +1643,12 @@ public class DatabaseSessionStoreManager
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks" +
+                " set started_at = coalesce(started_at, now()), updated_at = now(), state = :newState" +
+                " where id = :id" +
+                " and state = :oldState")
+        long setStartedState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+
+        @SqlUpdate("update tasks" +
                 " set updated_at = now(), state = :newState, state_params = NULL" +  // always set state_params = NULL
                 " where id = :id" +
                 " and state = :oldState")
@@ -1859,6 +1898,7 @@ public class DatabaseSessionStoreManager
                 .upstreams(getLongIdList(r, "upstream_ids"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
+                .startedAt(getOptionalTimestampInstant(r, "started_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
                 .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))

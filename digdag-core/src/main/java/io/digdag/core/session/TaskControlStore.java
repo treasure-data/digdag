@@ -38,6 +38,8 @@ public interface TaskControlStore
 
     boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
 
+    boolean setStartedState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
+
     boolean setDoneState(long taskId, TaskStateCode beforeState, TaskStateCode afterState);
 
     // running to success

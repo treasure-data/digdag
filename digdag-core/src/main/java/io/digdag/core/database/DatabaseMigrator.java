@@ -31,6 +31,7 @@ public class DatabaseMigrator
         new Migration_20160928203753_AddWorkflowOrderIndex(),
         new Migration_20161005225356_AddResetParamsToTaskState(),
         new Migration_20161028112233_AddStateFlagsAndCreatedAtIndexToSessionAttempts(),
+        new Migration_20161110112233_AddStartedAtColumnAndIndexToTasks(),
     })
     .sorted(Comparator.comparing(m -> m.getVersion()))
     .collect(Collectors.toList());

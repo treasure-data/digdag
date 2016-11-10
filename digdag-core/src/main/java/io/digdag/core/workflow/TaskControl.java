@@ -242,7 +242,7 @@ public class TaskControl
 
     public boolean setReadyToRunning()
     {
-        if (store.setState(getId(), TaskStateCode.READY, TaskStateCode.RUNNING)) {
+        if (store.setStartedState(getId(), TaskStateCode.READY, TaskStateCode.RUNNING)) {
             state = TaskStateCode.RUNNING;
             return true;
         }
