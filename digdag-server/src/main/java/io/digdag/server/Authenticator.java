@@ -56,6 +56,8 @@ public interface Authenticator
 
         int getSiteId();
 
+        boolean isAdmin();
+
         @Nullable
         String getErrorMessage();
 
@@ -71,6 +73,7 @@ public interface Authenticator
             Builder siteId(int siteId);
             Builder userInfo(Config userInfo);
             Builder secrets(Supplier<Map<String, String>> secrets);
+            Builder isAdmin(boolean admin);
             Result build();
         }
     }

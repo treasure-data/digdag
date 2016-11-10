@@ -14,6 +14,8 @@ public abstract class UserConfig
 
     public abstract RestApiKey getApiKey();
 
+    public abstract boolean isAdmin();
+
     public static ImmutableUserConfig.Builder builder()
     {
         return ImmutableUserConfig.builder();

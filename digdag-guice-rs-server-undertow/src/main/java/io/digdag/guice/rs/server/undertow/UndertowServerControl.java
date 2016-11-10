@@ -32,7 +32,9 @@ public class UndertowServerControl
     private List<GracefulShutdownHandler> handlers = Collections.synchronizedList(new ArrayList<>());
     private XnioWorker worker = null;
     private Undertow server = null;
+    private boolean started = false;
     private List<InetSocketAddress> localAddresses = null;
+    private List<InetSocketAddress> localAdminAddresses = null;
     private ServerLifeCycleManager lifeCycleManager = null;
 
     UndertowServerControl()
@@ -63,14 +65,16 @@ public class UndertowServerControl
         this.server = server;
     }
 
-    void serverStarted(List<InetSocketAddress> localAddresses)
+    void serverStarted(List<InetSocketAddress> localAddresses, List<InetSocketAddress> localAdminAddresses)
     {
+        this.started = true;
         this.localAddresses = localAddresses;
+        this.localAdminAddresses = localAdminAddresses;
     }
 
     boolean isServerStarted()
     {
-        return localAddresses != null;
+        return started;
     }
 
     void postStart()
@@ -89,6 +93,11 @@ public class UndertowServerControl
     List<InetSocketAddress> getLocalAddresses()
     {
         return this.localAddresses;
+    }
+
+    List<InetSocketAddress> getLocalAdminAddresses()
+    {
+        return this.localAdminAddresses;
     }
 
     @Override

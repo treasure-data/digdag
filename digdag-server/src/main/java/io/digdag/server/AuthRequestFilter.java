@@ -1,6 +1,7 @@
 package io.digdag.server;
 
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -14,6 +15,7 @@ import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
 
 @Provider
+@PreMatching
 public class AuthRequestFilter
     implements ContainerRequestFilter
 {
@@ -42,6 +44,7 @@ public class AuthRequestFilter
             requestContext.setProperty("siteId", result.getSiteId());
             requestContext.setProperty("userInfo", result.getUserInfo().or(cf.create()));
             requestContext.setProperty("secrets", result.getSecrets().or(Suppliers.ofInstance(ImmutableMap.of())));
+            requestContext.setProperty("admin", result.isAdmin());
         }
         else {
             requestContext.abortWith(errorResultHandler.toResponse(result.getErrorMessage()));

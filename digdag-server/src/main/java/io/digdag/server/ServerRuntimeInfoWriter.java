@@ -38,6 +38,9 @@ public class ServerRuntimeInfoWriter
                     .addAllLocalAddresses(serverInfo.getLocalAddresses().stream()
                             .map(a -> ServerRuntimeInfo.Address.of(a.getHostString(), a.getPort()))
                             .collect(Collectors.toList()))
+                    .addAllLocalAdminAddresses(serverInfo.getLocalAdminAddresses().stream()
+                            .map(a -> ServerRuntimeInfo.Address.of(a.getHostString(), a.getPort()))
+                            .collect(Collectors.toList()))
                     .build();
             ObjectMapper mapper = new ObjectMapper();
             try {

@@ -1,28 +1,24 @@
 package io.digdag.server;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.security.Key;
-import javax.crypto.spec.SecretKeySpec;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Response;
-import com.google.inject.Inject;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.JwsHeader;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SigningKeyResolver;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.JwtException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.inject.Inject;
 import io.digdag.client.api.RestApiKey;
 import io.digdag.client.config.Config;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwsHeader;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.SigningKeyResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.crypto.spec.SecretKeySpec;
+import javax.ws.rs.container.ContainerRequestContext;
+
+import java.security.Key;
+import java.util.Map;
 
 public class JwtAuthenticator
     implements Authenticator
@@ -40,6 +36,7 @@ public class JwtAuthenticator
         if (apiKey.isPresent()) {
             UserConfig user = UserConfig.builder()
                 .siteId(0)
+                .isAdmin(true)
                 .apiKey(apiKey.get())
                 .build();
             this.userMap = ImmutableMap.of(user.getApiKey().getIdString(), user);
@@ -55,12 +52,14 @@ public class JwtAuthenticator
     public Result authenticate(ContainerRequestContext requestContext)
     {
         int siteId;
+        boolean admin;
 
         String auth = requestContext.getHeaderString("Authorization");
         if (auth == null) {
             if (allowPublicAccess) {
                 // OK
                 siteId = 0;
+                admin = true;
             }
             else {
                 return Result.reject("Authorization is required");
@@ -107,6 +106,7 @@ public class JwtAuthenticator
                 }
 
                 siteId = user.getSiteId();
+                admin = user.isAdmin();
             }
             catch (JwtException ex) {
                 logger.trace("Authentication failed: ", ex);
@@ -114,6 +114,9 @@ public class JwtAuthenticator
             }
         }
 
-        return Result.accept(siteId);
+        return Result.builder()
+                .siteId(siteId)
+                .isAdmin(admin)
+                .build();
     }
 }
