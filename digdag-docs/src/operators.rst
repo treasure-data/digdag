@@ -1715,9 +1715,9 @@ Parameters
 :command:`content_format: text | json | form`
   The serialization format of the content of the HTTP request. *Default:* Inferred from the ``content`` parameter value type. Objects and arrays use ``json`` by default. Other value types default to ``text``.
 
-  - ``text``: Send raw content as ``Content-Type: text/plain``. *Note*: This requires that the ``content`` parameter is _not_ array or an object.
+  - ``text``: Send raw content as ``Content-Type: text/plain``. *Note:* This requires that the ``content`` parameter is _not_ array or an object.
   - ``json``: Serialize the content as `JSON <http://json.org/>`_ and send it as ``Content-Type: application/json``. This format can handle any ``content`` parameter value type.
-  - ``form``: Encode content as an HTML form and send it as ``Content-Type: application/x-www-form-urlencoded``. *Note*: This requires the ``content`` parameter value to be an object.
+  - ``form``: Encode content as an HTML form and send it as ``Content-Type: application/x-www-form-urlencoded``. *Note:* This requires the ``content`` parameter value to be an object.
 
   .. code-block:: yaml
 
@@ -1753,7 +1753,7 @@ Parameters
     content_type: application/xml
 
 :command:`store_content: BOOLEAN`
-  Whether to store the content of the response. *Default*: ``false``.
+  Whether to store the content of the response. *Default:* ``false``.
 
 :command:`headers: LIST OF KEY-VALUE PAIRS`
   Additional custom headers to send with the HTTP request.
@@ -1764,3 +1764,9 @@ Parameters
       - Accept: application/json
       - X-Foo: bar
       - Baz: quux
+
+:command:`retry: BOOLEAN`
+  Whether to retry ephemeral errors. *Default:* ``true`` if the request method is ``GET``, ``HEAD``, ``OPTIONS`` or ``TRACE``. Otherwise ``false``.
+
+  *Note:* Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is *idempotent*.
+
