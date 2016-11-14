@@ -1,0 +1,9 @@
+"+for-0=%21%3F=0=1":
+  echo>: hello world
+  _export: {'!?': 1}
+"+for-0=%21%3F=1=2":
+  echo>: hello world
+  _export: {'!?': 2}
+"+for-0=%21%3F=2=3":
+  echo>: hello world
+  _export: {'!?': 3}

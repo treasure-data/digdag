@@ -1,0 +1,5 @@
+_command:
+  '!?': [1, 2, 3]
+
+_do:
+  echo>: hello world

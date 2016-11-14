@@ -73,6 +73,15 @@ public class ForEachOperatorFactoryTest
     }
 
     @Test
+    public void testDuplicateValues()
+        throws Exception
+    {
+        assertByResource(
+                "/io/digdag/standards/operator/for_each/duplicate_values.yml",
+                "/io/digdag/standards/operator/for_each/duplicate_values_expected.yml");
+    }
+
+    @Test
     public void parallelComplex()
         throws Exception
     {
@@ -106,5 +115,14 @@ public class ForEachOperatorFactoryTest
         assertByResource(
                 "/io/digdag/standards/operator/for_each/escape_values.yml",
                 "/io/digdag/standards/operator/for_each/escape_values_expected.yml");
+    }
+
+    @Test
+    public void escapeKeys()
+        throws Exception
+    {
+        assertByResource(
+                "/io/digdag/standards/operator/for_each/escape_keys.yml",
+                "/io/digdag/standards/operator/for_each/escape_keys_expected.yml");
     }
 }
