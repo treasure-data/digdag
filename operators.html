@@ -177,6 +177,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#id35">Output parameters</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#http-making-http-requests">http&gt;: Making HTTP requests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id36">Secrets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id37">Parameters</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command reference</a></li>
@@ -232,94 +237,99 @@
 <h1>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#call-calls-another-workflow" id="id36">call&gt;: Calls another workflow</a></li>
-<li><a class="reference internal" href="#require-depends-on-another-workflow" id="id37">require&gt;: Depends on another workflow</a></li>
-<li><a class="reference internal" href="#py-python-scripts" id="id38">py&gt;: Python scripts</a></li>
-<li><a class="reference internal" href="#rb-ruby-scripts" id="id39">rb&gt;: Ruby scripts</a></li>
-<li><a class="reference internal" href="#sh-shell-scripts" id="id40">sh&gt;: Shell scripts</a></li>
-<li><a class="reference internal" href="#loop-repeat-tasks" id="id41">loop&gt;: Repeat tasks</a></li>
-<li><a class="reference internal" href="#for-each-repeat-tasks" id="id42">for_each&gt;: Repeat tasks</a></li>
-<li><a class="reference internal" href="#if-conditional-execution" id="id43">if&gt;: Conditional execution</a></li>
-<li><a class="reference internal" href="#fail-make-the-workflow-failed" id="id44">fail&gt;: make the workflow failed</a></li>
-<li><a class="reference internal" href="#td-treasure-data-queries" id="id45">td&gt;: Treasure Data queries</a><ul>
-<li><a class="reference internal" href="#secrets" id="id46">Secrets</a></li>
-<li><a class="reference internal" href="#parameters" id="id47">Parameters</a></li>
-<li><a class="reference internal" href="#output-parameters" id="id48">Output parameters</a></li>
+<li><a class="reference internal" href="#call-calls-another-workflow" id="id38">call&gt;: Calls another workflow</a></li>
+<li><a class="reference internal" href="#require-depends-on-another-workflow" id="id39">require&gt;: Depends on another workflow</a></li>
+<li><a class="reference internal" href="#py-python-scripts" id="id40">py&gt;: Python scripts</a></li>
+<li><a class="reference internal" href="#rb-ruby-scripts" id="id41">rb&gt;: Ruby scripts</a></li>
+<li><a class="reference internal" href="#sh-shell-scripts" id="id42">sh&gt;: Shell scripts</a></li>
+<li><a class="reference internal" href="#loop-repeat-tasks" id="id43">loop&gt;: Repeat tasks</a></li>
+<li><a class="reference internal" href="#for-each-repeat-tasks" id="id44">for_each&gt;: Repeat tasks</a></li>
+<li><a class="reference internal" href="#if-conditional-execution" id="id45">if&gt;: Conditional execution</a></li>
+<li><a class="reference internal" href="#fail-make-the-workflow-failed" id="id46">fail&gt;: make the workflow failed</a></li>
+<li><a class="reference internal" href="#td-treasure-data-queries" id="id47">td&gt;: Treasure Data queries</a><ul>
+<li><a class="reference internal" href="#secrets" id="id48">Secrets</a></li>
+<li><a class="reference internal" href="#parameters" id="id49">Parameters</a></li>
+<li><a class="reference internal" href="#output-parameters" id="id50">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#td-run-treasure-data-saved-queries" id="id49">td_run&gt;: Treasure Data saved queries</a><ul>
-<li><a class="reference internal" href="#id1" id="id50">Secrets</a></li>
-<li><a class="reference internal" href="#id2" id="id51">Parameters</a></li>
-<li><a class="reference internal" href="#id3" id="id52">Output parameters</a></li>
+<li><a class="reference internal" href="#td-run-treasure-data-saved-queries" id="id51">td_run&gt;: Treasure Data saved queries</a><ul>
+<li><a class="reference internal" href="#id1" id="id52">Secrets</a></li>
+<li><a class="reference internal" href="#id2" id="id53">Parameters</a></li>
+<li><a class="reference internal" href="#id3" id="id54">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#td-load-treasure-data-bulk-loading" id="id53">td_load&gt;: Treasure Data bulk loading</a><ul>
-<li><a class="reference internal" href="#id4" id="id54">Secrets</a></li>
-<li><a class="reference internal" href="#id5" id="id55">Parameters</a></li>
-<li><a class="reference internal" href="#id6" id="id56">Output parameters</a></li>
+<li><a class="reference internal" href="#td-load-treasure-data-bulk-loading" id="id55">td_load&gt;: Treasure Data bulk loading</a><ul>
+<li><a class="reference internal" href="#id4" id="id56">Secrets</a></li>
+<li><a class="reference internal" href="#id5" id="id57">Parameters</a></li>
+<li><a class="reference internal" href="#id6" id="id58">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#td-ddl-treasure-data-operations" id="id57">td_ddl&gt;: Treasure Data operations</a><ul>
-<li><a class="reference internal" href="#id7" id="id58">Secrets</a></li>
-<li><a class="reference internal" href="#id8" id="id59">Parameters</a></li>
+<li><a class="reference internal" href="#td-ddl-treasure-data-operations" id="id59">td_ddl&gt;: Treasure Data operations</a><ul>
+<li><a class="reference internal" href="#id7" id="id60">Secrets</a></li>
+<li><a class="reference internal" href="#id8" id="id61">Parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#td-table-export-treasure-data-table-export-to-s3" id="id60">td_table_export&gt;: Treasure Data table export to S3</a><ul>
-<li><a class="reference internal" href="#id9" id="id61">Secrets</a></li>
-<li><a class="reference internal" href="#id10" id="id62">Parameters</a></li>
-<li><a class="reference internal" href="#id11" id="id63">Output parameters</a></li>
+<li><a class="reference internal" href="#td-table-export-treasure-data-table-export-to-s3" id="id62">td_table_export&gt;: Treasure Data table export to S3</a><ul>
+<li><a class="reference internal" href="#id9" id="id63">Secrets</a></li>
+<li><a class="reference internal" href="#id10" id="id64">Parameters</a></li>
+<li><a class="reference internal" href="#id11" id="id65">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#pg-postgresql-operations" id="id64">pg&gt;: PostgreSQL operations</a><ul>
-<li><a class="reference internal" href="#id12" id="id65">Secrets</a></li>
-<li><a class="reference internal" href="#id13" id="id66">Parameters</a></li>
+<li><a class="reference internal" href="#pg-postgresql-operations" id="id66">pg&gt;: PostgreSQL operations</a><ul>
+<li><a class="reference internal" href="#id12" id="id67">Secrets</a></li>
+<li><a class="reference internal" href="#id13" id="id68">Parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#mail-sending-email" id="id67">mail&gt;: Sending email</a><ul>
-<li><a class="reference internal" href="#id14" id="id68">Secrets</a></li>
-<li><a class="reference internal" href="#id15" id="id69">Parameters</a></li>
+<li><a class="reference internal" href="#mail-sending-email" id="id69">mail&gt;: Sending email</a><ul>
+<li><a class="reference internal" href="#id14" id="id70">Secrets</a></li>
+<li><a class="reference internal" href="#id15" id="id71">Parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#embulk-embulk-data-transfer" id="id70">embulk&gt;: Embulk data transfer</a></li>
-<li><a class="reference internal" href="#s3-wait-wait-for-a-file-in-amazon-s3" id="id71">s3_wait&gt;: Wait for a file in Amazon S3</a><ul>
-<li><a class="reference internal" href="#id16" id="id72">Secrets</a></li>
-<li><a class="reference internal" href="#id17" id="id73">Parameters</a></li>
-<li><a class="reference internal" href="#id18" id="id74">Output Parameters</a></li>
+<li><a class="reference internal" href="#embulk-embulk-data-transfer" id="id72">embulk&gt;: Embulk data transfer</a></li>
+<li><a class="reference internal" href="#s3-wait-wait-for-a-file-in-amazon-s3" id="id73">s3_wait&gt;: Wait for a file in Amazon S3</a><ul>
+<li><a class="reference internal" href="#id16" id="id74">Secrets</a></li>
+<li><a class="reference internal" href="#id17" id="id75">Parameters</a></li>
+<li><a class="reference internal" href="#id18" id="id76">Output Parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#bq-running-google-bigquery-queries" id="id75">bq&gt;: Running Google BigQuery queries</a><ul>
-<li><a class="reference internal" href="#id19" id="id76">Secrets</a></li>
-<li><a class="reference internal" href="#id20" id="id77">Parameters</a></li>
-<li><a class="reference internal" href="#id22" id="id78">Output parameters</a></li>
+<li><a class="reference internal" href="#bq-running-google-bigquery-queries" id="id77">bq&gt;: Running Google BigQuery queries</a><ul>
+<li><a class="reference internal" href="#id19" id="id78">Secrets</a></li>
+<li><a class="reference internal" href="#id20" id="id79">Parameters</a></li>
+<li><a class="reference internal" href="#id22" id="id80">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" id="id79">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a><ul>
-<li><a class="reference internal" href="#id23" id="id80">Secrets</a></li>
-<li><a class="reference internal" href="#id24" id="id81">Parameters</a></li>
+<li><a class="reference internal" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" id="id81">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a><ul>
+<li><a class="reference internal" href="#id23" id="id82">Secrets</a></li>
+<li><a class="reference internal" href="#id24" id="id83">Parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#bq-extract-exporting-data-from-google-bigquery" id="id82">bq_extract&gt;: Exporting Data from Google BigQuery</a><ul>
-<li><a class="reference internal" href="#id27" id="id83">Secrets</a></li>
-<li><a class="reference internal" href="#id28" id="id84">Parameters</a></li>
-<li><a class="reference internal" href="#id29" id="id85">Output parameters</a></li>
+<li><a class="reference internal" href="#bq-extract-exporting-data-from-google-bigquery" id="id84">bq_extract&gt;: Exporting Data from Google BigQuery</a><ul>
+<li><a class="reference internal" href="#id27" id="id85">Secrets</a></li>
+<li><a class="reference internal" href="#id28" id="id86">Parameters</a></li>
+<li><a class="reference internal" href="#id29" id="id87">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#bq-load-importing-data-into-google-bigquery" id="id86">bq_load&gt;: Importing Data into Google BigQuery</a><ul>
-<li><a class="reference internal" href="#id30" id="id87">Secrets</a></li>
-<li><a class="reference internal" href="#id31" id="id88">Parameters</a></li>
-<li><a class="reference internal" href="#id32" id="id89">Output parameters</a></li>
+<li><a class="reference internal" href="#bq-load-importing-data-into-google-bigquery" id="id88">bq_load&gt;: Importing Data into Google BigQuery</a><ul>
+<li><a class="reference internal" href="#id30" id="id89">Secrets</a></li>
+<li><a class="reference internal" href="#id31" id="id90">Parameters</a></li>
+<li><a class="reference internal" href="#id32" id="id91">Output parameters</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#gcs-wait-wait-for-a-file-in-google-cloud-storage" id="id90">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a><ul>
-<li><a class="reference internal" href="#id33" id="id91">Secrets</a></li>
-<li><a class="reference internal" href="#id34" id="id92">Parameters</a></li>
-<li><a class="reference internal" href="#id35" id="id93">Output parameters</a></li>
+<li><a class="reference internal" href="#gcs-wait-wait-for-a-file-in-google-cloud-storage" id="id92">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a><ul>
+<li><a class="reference internal" href="#id33" id="id93">Secrets</a></li>
+<li><a class="reference internal" href="#id34" id="id94">Parameters</a></li>
+<li><a class="reference internal" href="#id35" id="id95">Output parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#http-making-http-requests" id="id96">http&gt;: Making HTTP requests</a><ul>
+<li><a class="reference internal" href="#id36" id="id97">Secrets</a></li>
+<li><a class="reference internal" href="#id37" id="id98">Parameters</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="call-calls-another-workflow">
-<h2><a class="toc-backref" href="#id36">call&gt;: Calls another workflow</a><a class="headerlink" href="#call-calls-another-workflow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id38">call&gt;: Calls another workflow</a><a class="headerlink" href="#call-calls-another-workflow" title="Permalink to this headline">¶</a></h2>
 <p><strong>call&gt;:</strong> operator calls another workflow.</p>
 <p>This operator embeds another workflow as a subtask.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
@@ -343,7 +353,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="require-depends-on-another-workflow">
-<h2><a class="toc-backref" href="#id37">require&gt;: Depends on another workflow</a><a class="headerlink" href="#require-depends-on-another-workflow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id39">require&gt;: Depends on another workflow</a><a class="headerlink" href="#require-depends-on-another-workflow" title="Permalink to this headline">¶</a></h2>
 <p><strong>require&gt;:</strong> operator runs another workflow. Unlike <code class="docutils literal"><span class="pre">call&gt;</span></code> operator, the workflow is skipped if the workflow for the session time is already done successfully before.</p>
 <p>This operator submits a new session to digdag.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="c1"># workflow1.dig</span>
@@ -364,7 +374,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="py-python-scripts">
-<h2><a class="toc-backref" href="#id38">py&gt;: Python scripts</a><a class="headerlink" href="#py-python-scripts" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id40">py&gt;: Python scripts</a><a class="headerlink" href="#py-python-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>py&gt;:</strong> operator runs a Python script using <code class="docutils literal"><span class="pre">python</span></code> command.</p>
 <p>See <a class="reference external" href="python_api.html">Python API documents</a> for details including variable mappings to keyword arguments.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
@@ -383,7 +393,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="rb-ruby-scripts">
-<h2><a class="toc-backref" href="#id39">rb&gt;: Ruby scripts</a><a class="headerlink" href="#rb-ruby-scripts" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id41">rb&gt;: Ruby scripts</a><a class="headerlink" href="#rb-ruby-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>rb&gt;:</strong> operator runs a Ruby script using <code class="docutils literal"><span class="pre">ruby</span></code> command.</p>
 <p>See <a class="reference external" href="ruby_api.html">Ruby API documents</a> for details including best practices how to configure the workflow using <code class="docutils literal"><span class="pre">_export:</span> <span class="pre">require:</span></code>.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
@@ -412,7 +422,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="sh-shell-scripts">
-<h2><a class="toc-backref" href="#id40">sh&gt;: Shell scripts</a><a class="headerlink" href="#sh-shell-scripts" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id42">sh&gt;: Shell scripts</a><a class="headerlink" href="#sh-shell-scripts" title="Permalink to this headline">¶</a></h2>
 <p><strong>sh&gt;:</strong> operator runs a shell script.</p>
 <p>Run a shell command (<cite>/bin/sh</cite>)</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
@@ -442,7 +452,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </div>
 </div>
 <div class="section" id="loop-repeat-tasks">
-<h2><a class="toc-backref" href="#id41">loop&gt;: Repeat tasks</a><a class="headerlink" href="#loop-repeat-tasks" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id43">loop&gt;: Repeat tasks</a><a class="headerlink" href="#loop-repeat-tasks" title="Permalink to this headline">¶</a></h2>
 <p><strong>loop&gt;:</strong> operator runs subtasks multiple times.</p>
 <p>This operator exports <code class="docutils literal"><span class="pre">${i}</span></code> variable for the subtasks. Its value begins from 0. For example, if count is 3, a task runs with i=0, i=1, and i=2.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
@@ -477,7 +487,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="for-each-repeat-tasks">
-<h2><a class="toc-backref" href="#id42">for_each&gt;: Repeat tasks</a><a class="headerlink" href="#for-each-repeat-tasks" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id44">for_each&gt;: Repeat tasks</a><a class="headerlink" href="#for-each-repeat-tasks" title="Permalink to this headline">¶</a></h2>
 <p><strong>for_each&gt;:</strong> operator runs subtasks multiple times using sets of variables.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+repeat</span><span class="p p-Indicator">:</span>
@@ -516,7 +526,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="if-conditional-execution">
-<h2><a class="toc-backref" href="#id43">if&gt;: Conditional execution</a><a class="headerlink" href="#if-conditional-execution" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id45">if&gt;: Conditional execution</a><a class="headerlink" href="#if-conditional-execution" title="Permalink to this headline">¶</a></h2>
 <p><strong>if&gt;:</strong> operator runs subtasks if <code class="docutils literal"><span class="pre">true</span></code> is given.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+run_if_param_is_true</span><span class="p p-Indicator">:</span>
@@ -533,7 +543,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="fail-make-the-workflow-failed">
-<h2><a class="toc-backref" href="#id44">fail&gt;: make the workflow failed</a><a class="headerlink" href="#fail-make-the-workflow-failed" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id46">fail&gt;: make the workflow failed</a><a class="headerlink" href="#fail-make-the-workflow-failed" title="Permalink to this headline">¶</a></h2>
 <p><strong>fail&gt;:</strong> always fails and makes the workflow failed.</p>
 <p>(This operator is EXPERIMENTAL. Parameters may change in a future release)</p>
 <p>This operator is useful used with <strong>if&gt;</strong> operator to validate resuls of a previous task with <code class="docutils literal"><span class="pre">_check</span></code> directive so that a workflow fails when the validation doesn&#8217;t pass.</p>
@@ -549,7 +559,7 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </dl>
 </div>
 <div class="section" id="td-treasure-data-queries">
-<h2><a class="toc-backref" href="#id45">td&gt;: Treasure Data queries</a><a class="headerlink" href="#td-treasure-data-queries" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id47">td&gt;: Treasure Data queries</a><a class="headerlink" href="#td-treasure-data-queries" title="Permalink to this headline">¶</a></h2>
 <p><strong>td&gt;:</strong> operator runs a Hive or Presto query on Treasure Data.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
@@ -567,14 +577,14 @@ If called workflow is in a subdirectory, the workflow uses the subdirectory as t
 </pre></div>
 </div>
 <div class="section" id="secrets">
-<h3><a class="toc-backref" href="#id46">Secrets</a><a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id48">Secrets</a><a class="headerlink" href="#secrets" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when running Treasure Data queries.</dd>
 </dl>
 </div>
 <div class="section" id="parameters">
-<h3><a class="toc-backref" href="#id47">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id49">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td&gt;: FILE.sql</strong></dt>
 <dd><p class="first">Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
@@ -643,7 +653,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="output-parameters">
-<h3><a class="toc-backref" href="#id48">Output parameters</a><a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id50">Output parameters</a><a class="headerlink" href="#output-parameters" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.last_job_id</strong></dt>
 <dd><p class="first">The job id this task executed.</p>
@@ -661,7 +671,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="td-run-treasure-data-saved-queries">
-<h2><a class="toc-backref" href="#id49">td_run&gt;: Treasure Data saved queries</a><a class="headerlink" href="#td-run-treasure-data-saved-queries" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id51">td_run&gt;: Treasure Data saved queries</a><a class="headerlink" href="#td-run-treasure-data-saved-queries" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_run&gt;:</strong> operator runs a query saved on Treasure Data.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
@@ -676,14 +686,14 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id1">
-<h3><a class="toc-backref" href="#id50">Secrets</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id52">Secrets</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when running Treasure Data queries.</dd>
 </dl>
 </div>
 <div class="section" id="id2">
-<h3><a class="toc-backref" href="#id51">Parameters</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id53">Parameters</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td_run&gt;: NAME</strong></dt>
 <dd><p class="first">Name of a saved query.</p>
@@ -717,7 +727,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="id3">
-<h3><a class="toc-backref" href="#id52">Output parameters</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id54">Output parameters</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.last_job_id</strong></dt>
 <dd><p class="first">The job id this task executed.</p>
@@ -735,7 +745,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="td-load-treasure-data-bulk-loading">
-<h2><a class="toc-backref" href="#id53">td_load&gt;: Treasure Data bulk loading</a><a class="headerlink" href="#td-load-treasure-data-bulk-loading" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id55">td_load&gt;: Treasure Data bulk loading</a><a class="headerlink" href="#td-load-treasure-data-bulk-loading" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_load&gt;:</strong> operator loads data from storages, databases, or services.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
@@ -745,14 +755,14 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id4">
-<h3><a class="toc-backref" href="#id54">Secrets</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id56">Secrets</a><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when submitting Treasure Data bulk load jobs.</dd>
 </dl>
 </div>
 <div class="section" id="id5">
-<h3><a class="toc-backref" href="#id55">Parameters</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id57">Parameters</a><a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td_load&gt;: FILE.yml</strong></dt>
 <dd><p class="first">Path to a YAML template file. This configuration needs to be guessed using td command.</p>
@@ -779,7 +789,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="id6">
-<h3><a class="toc-backref" href="#id56">Output parameters</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id58">Output parameters</a><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.last_job_id</strong></dt>
 <dd><p class="first">The job id this task executed.</p>
@@ -791,7 +801,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="td-ddl-treasure-data-operations">
-<h2><a class="toc-backref" href="#id57">td_ddl&gt;: Treasure Data operations</a><a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id59">td_ddl&gt;: Treasure Data operations</a><a class="headerlink" href="#td-ddl-treasure-data-operations" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_ddl&gt;</strong> operator runs an operational task on Treasure Data.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
@@ -810,14 +820,14 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id7">
-<h3><a class="toc-backref" href="#id58">Secrets</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id60">Secrets</a><a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when performing Treasure Data operations.</dd>
 </dl>
 </div>
 <div class="section" id="id8">
-<h3><a class="toc-backref" href="#id59">Parameters</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id61">Parameters</a><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">create_tables: [ARRAY OF NAMES]</strong></dt>
 <dd><p class="first">Create new tables if not exists.</p>
@@ -863,7 +873,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="td-table-export-treasure-data-table-export-to-s3">
-<h2><a class="toc-backref" href="#id60">td_table_export&gt;: Treasure Data table export to S3</a><a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id62">td_table_export&gt;: Treasure Data table export to S3</a><a class="headerlink" href="#td-table-export-treasure-data-table-export-to-s3" title="Permalink to this headline">¶</a></h2>
 <p><strong>td_table_export&gt;:</strong> operator loads data from storages, databases, or services.</p>
 <p>TODO: add more description here</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+step1</span><span class="p p-Indicator">:</span>
@@ -878,7 +888,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id9">
-<h3><a class="toc-backref" href="#id61">Secrets</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id63">Secrets</a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.apikey: API_KEY</strong></dt>
 <dd>The Treasure Data API key to use when running Treasure Data table exports.</dd>
@@ -897,7 +907,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="id10">
-<h3><a class="toc-backref" href="#id62">Parameters</a><a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id64">Parameters</a><a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">database: NAME</strong></dt>
 <dd><p class="first">Name of the database.</p>
@@ -948,7 +958,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="id11">
-<h3><a class="toc-backref" href="#id63">Output parameters</a><a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id65">Output parameters</a><a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">td.last_job_id</strong></dt>
 <dd><p class="first">The job id this task executed.</p>
@@ -960,7 +970,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="pg-postgresql-operations">
-<h2><a class="toc-backref" href="#id64">pg&gt;: PostgreSQL operations</a><a class="headerlink" href="#pg-postgresql-operations" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id66">pg&gt;: PostgreSQL operations</a><a class="headerlink" href="#pg-postgresql-operations" title="Permalink to this headline">¶</a></h2>
 <p><strong>pg&gt;</strong> operator runs queries and/or DDLs on PostgreSQL</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">pg</span><span class="p p-Indicator">:</span>
@@ -983,14 +993,14 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id12">
-<h3><a class="toc-backref" href="#id65">Secrets</a><a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id67">Secrets</a><a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">pg.password: NAME</strong></dt>
 <dd>Optional user password to use when connecting to the postgres database (default: empty)</dd>
 </dl>
 </div>
 <div class="section" id="id13">
-<h3><a class="toc-backref" href="#id66">Parameters</a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id68">Parameters</a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">pg&gt;: FILE.sql</strong></dt>
 <dd><p class="first">Path of the query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
@@ -1059,7 +1069,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </div>
 </div>
 <div class="section" id="mail-sending-email">
-<h2><a class="toc-backref" href="#id67">mail&gt;: Sending email</a><a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id69">mail&gt;: Sending email</a><a class="headerlink" href="#mail-sending-email" title="Permalink to this headline">¶</a></h2>
 <p><strong>mail&gt;:</strong> operator sends an email.</p>
 <p>To use Gmail SMTP server, you need to do either of:</p>
 <blockquote>
@@ -1092,7 +1102,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </pre></div>
 </div>
 <div class="section" id="id14">
-<h3><a class="toc-backref" href="#id68">Secrets</a><a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id70">Secrets</a><a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">mail.host: HOST</strong></dt>
 <dd><p class="first">SMTP host name.</p>
@@ -1133,7 +1143,7 @@ td.last_results is a map of column name and a value. To access to a single value
 </dl>
 </div>
 <div class="section" id="id15">
-<h3><a class="toc-backref" href="#id69">Parameters</a><a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id71">Parameters</a><a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">mail&gt;: FILE</strong></dt>
 <dd><p class="first">Path to a mail body template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.
@@ -1224,7 +1234,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="embulk-embulk-data-transfer">
-<h2><a class="toc-backref" href="#id70">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id72">embulk&gt;: Embulk data transfer</a><a class="headerlink" href="#embulk-embulk-data-transfer" title="Permalink to this headline">¶</a></h2>
 <p><strong>embulk&gt;:</strong> operator runs <a class="reference external" href="http://www.embulk.org">Embulk</a> to transfer data across storages including local files.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+load</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">embulk&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">data/load.yml</span>
@@ -1240,14 +1250,14 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="s3-wait-wait-for-a-file-in-amazon-s3">
-<h2><a class="toc-backref" href="#id71">s3_wait&gt;: Wait for a file in Amazon S3</a><a class="headerlink" href="#s3-wait-wait-for-a-file-in-amazon-s3" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id73">s3_wait&gt;: Wait for a file in Amazon S3</a><a class="headerlink" href="#s3-wait-wait-for-a-file-in-amazon-s3" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>s3_wait&gt;:</strong> operator waits for file to appear in Amazon S3.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+wait</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">s3_wait&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bucket/my-key</span>
 </pre></div>
 </div>
 <div class="section" id="id16">
-<h3><a class="toc-backref" href="#id72">Secrets</a><a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id74">Secrets</a><a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">aws.s3.access-key-id, aws.access-key-id</strong></dt>
 <dd>The AWS Access Key ID to use when accessing S3.</dd>
@@ -1267,7 +1277,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <p>For more information about SSE-C, See the <a class="reference external" href="http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html">AWS S3 Documentation</a>.</p>
 </div>
 <div class="section" id="id17">
-<h3><a class="toc-backref" href="#id73">Parameters</a><a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id75">Parameters</a><a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">s3_wait&gt;: BUCKET/KEY</strong></dt>
 <dd><p class="first">Path to the file in Amazon S3 to wait for.</p>
@@ -1293,7 +1303,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id18">
-<h3><a class="toc-backref" href="#id74">Output Parameters</a><a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id76">Output Parameters</a><a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">s3.last_object</strong></dt>
 <dd><p class="first">Information about the detected file.</p>
@@ -1325,7 +1335,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="bq-running-google-bigquery-queries">
-<h2><a class="toc-backref" href="#id75">bq&gt;: Running Google BigQuery queries</a><a class="headerlink" href="#bq-running-google-bigquery-queries" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id77">bq&gt;: Running Google BigQuery queries</a><a class="headerlink" href="#bq-running-google-bigquery-queries" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>bq&gt;:</strong> operator can be used to run a query on Google BigQuery.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">bq</span><span class="p p-Indicator">:</span>
@@ -1346,7 +1356,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <p class="last">The <strong>bq&gt;:</strong> operator uses <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/index">standard SQL</a> by default, whereas the default in the BigQuery console is <a class="reference external" href="https://cloud.google.com/bigquery/query-reference">legacy SQL</a>. To run <em>legacy</em> SQL queries, please set <code class="docutils literal"><span class="pre">use_legacy_sql:</span> <span class="pre">true</span></code>. For more information about <em>standard</em> SQL on BigQuery, see <a class="reference external" href="https://cloud.google.com/bigquery/sql-reference/migrating-from-legacy-sql">Migrating from legacy SQL</a>.</p>
 </div>
 <div class="section" id="id19">
-<h3><a class="toc-backref" href="#id76">Secrets</a><a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id78">Secrets</a><a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils" id="gcp-credential">
 <dt><strong class="command">gcp.credential: CREDENTIAL</strong></dt>
 <dd><p class="first">The <a class="reference external" href="https://cloud.google.com/docs/authentication#user_accounts_and_service_accounts">Google Cloud Platform account</a> credential private key to use, in JSON format.</p>
@@ -1359,7 +1369,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id20">
-<h3><a class="toc-backref" href="#id77">Parameters</a><a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id79">Parameters</a><a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq&gt;: query.sql</strong></dt>
 <dd><p class="first">Path to a query template file. This file can contain <code class="docutils literal"><span class="pre">${...}</span></code> syntax to embed variables.</p>
@@ -1427,7 +1437,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id22">
-<h3><a class="toc-backref" href="#id78">Output parameters</a><a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id80">Output parameters</a><a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq.last_job_id</strong></dt>
 <dd>The id of the BigQuery job that executed this query.</dd>
@@ -1435,7 +1445,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="bq-ddl-managing-google-bigquery-datasets-and-tables">
-<h2><a class="toc-backref" href="#id79">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a><a class="headerlink" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id81">bq_ddl&gt;: Managing Google BigQuery Datasets and Tables</a><a class="headerlink" href="#bq-ddl-managing-google-bigquery-datasets-and-tables" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>bq_ddl&gt;:</strong> operator can be used to create, delete and clear Google BigQuery Datasets and Tables.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">bq</span><span class="p p-Indicator">:</span>
@@ -1458,14 +1468,14 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </pre></div>
 </div>
 <div class="section" id="id23">
-<h3><a class="toc-backref" href="#id80">Secrets</a><a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id82">Secrets</a><a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcp.credential: CREDENTIAL</strong></dt>
 <dd>See <a class="reference internal" href="#gcp-credential">gcp_credential</a>.</dd>
 </dl>
 </div>
 <div class="section" id="id24">
-<h3><a class="toc-backref" href="#id81">Parameters</a><a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id83">Parameters</a><a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">create_datasets: LIST</strong></dt>
 <dd><p class="first">Create new datasets.</p>
@@ -1630,7 +1640,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="bq-extract-exporting-data-from-google-bigquery">
-<h2><a class="toc-backref" href="#id82">bq_extract&gt;: Exporting Data from Google BigQuery</a><a class="headerlink" href="#bq-extract-exporting-data-from-google-bigquery" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id84">bq_extract&gt;: Exporting Data from Google BigQuery</a><a class="headerlink" href="#bq-extract-exporting-data-from-google-bigquery" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>bq_extract&gt;:</strong> operator can be used to export data from Google BigQuery tables.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">bq</span><span class="p p-Indicator">:</span>
@@ -1647,14 +1657,14 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </pre></div>
 </div>
 <div class="section" id="id27">
-<h3><a class="toc-backref" href="#id83">Secrets</a><a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id85">Secrets</a><a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcp.credential: CREDENTIAL</strong></dt>
 <dd>See <a class="reference internal" href="#gcp-credential">gcp_credential</a>.</dd>
 </dl>
 </div>
 <div class="section" id="id28">
-<h3><a class="toc-backref" href="#id84">Parameters</a><a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id86">Parameters</a><a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq_extract&gt;: TABLE</strong></dt>
 <dd><p class="first">A reference to the table that should be exported.</p>
@@ -1702,7 +1712,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id29">
-<h3><a class="toc-backref" href="#id85">Output parameters</a><a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id87">Output parameters</a><a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq.last_job_id</strong></dt>
 <dd>The id of the BigQuery job that performed this export.</dd>
@@ -1710,7 +1720,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="bq-load-importing-data-into-google-bigquery">
-<h2><a class="toc-backref" href="#id86">bq_load&gt;: Importing Data into Google BigQuery</a><a class="headerlink" href="#bq-load-importing-data-into-google-bigquery" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id88">bq_load&gt;: Importing Data into Google BigQuery</a><a class="headerlink" href="#bq-load-importing-data-into-google-bigquery" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>bq_load&gt;:</strong> operator can be used to import data into Google BigQuery tables.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">_export</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">bq</span><span class="p p-Indicator">:</span>
@@ -1726,14 +1736,14 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </pre></div>
 </div>
 <div class="section" id="id30">
-<h3><a class="toc-backref" href="#id87">Secrets</a><a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id89">Secrets</a><a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcp.credential: CREDENTIAL</strong></dt>
 <dd>See <a class="reference internal" href="#gcp-credential">gcp_credential</a>.</dd>
 </dl>
 </div>
 <div class="section" id="id31">
-<h3><a class="toc-backref" href="#id88">Parameters</a><a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id90">Parameters</a><a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq_load&gt;: URI | LIST</strong></dt>
 <dd><p class="first">A URI or list of URIs identifying files in GCS to import.</p>
@@ -1851,7 +1861,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id32">
-<h3><a class="toc-backref" href="#id89">Output parameters</a><a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id91">Output parameters</a><a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">bq.last_job_id</strong></dt>
 <dd>The id of the BigQuery job that performed this import.</dd>
@@ -1859,7 +1869,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </div>
 </div>
 <div class="section" id="gcs-wait-wait-for-a-file-in-google-cloud-storage">
-<h2><a class="toc-backref" href="#id90">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a><a class="headerlink" href="#gcs-wait-wait-for-a-file-in-google-cloud-storage" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id92">gcs_wait&gt;: Wait for a file in Google Cloud Storage</a><a class="headerlink" href="#gcs-wait-wait-for-a-file-in-google-cloud-storage" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>gcs_wait&gt;:</strong> operator can be used to wait for file to appear in Google Cloud Storage.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+wait</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">gcs_wait&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my_bucket/some/file</span>
@@ -1869,14 +1879,14 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </pre></div>
 </div>
 <div class="section" id="id33">
-<h3><a class="toc-backref" href="#id91">Secrets</a><a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id93">Secrets</a><a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcp.credential: CREDENTIAL</strong></dt>
 <dd>See <a class="reference internal" href="#gcp-credential">gcp_credential</a>.</dd>
 </dl>
 </div>
 <div class="section" id="id34">
-<h3><a class="toc-backref" href="#id92">Parameters</a><a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id94">Parameters</a><a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcs_wait&gt;: URI | BUCKET/OBJECT</strong></dt>
 <dd><p class="first">Google Cloud Storage URI or path of the file to wait for.</p>
@@ -1892,7 +1902,7 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 </dl>
 </div>
 <div class="section" id="id35">
-<h3><a class="toc-backref" href="#id93">Output parameters</a><a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id95">Output parameters</a><a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong class="command">gcs_wait.last_object</strong></dt>
 <dd><p class="first">Information about the detected file.</p>
@@ -1934,6 +1944,129 @@ Alternatively, you can set <code class="docutils literal"><span class="pre">{dat
 <p class="first admonition-title">Note</p>
 <p class="last">The <strong>gcs_wait&gt;:</strong> operator makes use of polling with <em>exponential backoff</em>. As such there might be some time interval between a file being created and the <strong>gcs_wait&gt;:</strong> operator detecting it.</p>
 </div>
+</div>
+</div>
+<div class="section" id="http-making-http-requests">
+<h2><a class="toc-backref" href="#id96">http&gt;: Making HTTP requests</a><a class="headerlink" href="#http-making-http-requests" title="Permalink to this headline">¶</a></h2>
+<p>The <strong>http&gt;:</strong> operator can be used to make HTTP requests.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+fetch</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">http&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://api.example.com/foobars</span>
+  <span class="l l-Scalar l-Scalar-Plain">store_content</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="l l-Scalar l-Scalar-Plain">+process</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">for_each&gt;</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">foobar</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${http.last_content}</span>
+  <span class="l l-Scalar l-Scalar-Plain">_do</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">bq&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">query.sql</span>
+</pre></div>
+</div>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">+notify</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">http&gt;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">https://api.example.com/data/sessions/{$session_uuid}</span>
+  <span class="l l-Scalar l-Scalar-Plain">method</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">POST</span>
+  <span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">status</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RUNNING</span>
+    <span class="l l-Scalar l-Scalar-Plain">time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${session_time}</span>
+</pre></div>
+</div>
+<div class="section" id="id36">
+<h3><a class="toc-backref" href="#id97">Secrets</a><a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">http.authorization: STRING</strong></dt>
+<dd>A string that should be included in the HTTP request as the value of the <code class="docutils literal"><span class="pre">Authorization</span></code> header. This can be used to authenticate using e.g. Oauth bearer tokens.</dd>
+<dt><strong class="command">http.user: STRING</strong></dt>
+<dd>A user that should be used to authenticate using <em>Basic Authentication</em>.</dd>
+<dt><strong class="command">http.password: STRING</strong></dt>
+<dd>A password that should be used to authenticate using <em>Basic Authentication</em>.</dd>
+<dt><strong class="command">http.uri: URI</strong></dt>
+<dd>The URI of the HTTP request. This can be used instead of putting the URI on the operator command line in case the URI contains sensitive information.</dd>
+</dl>
+</div>
+<div class="section" id="id37">
+<h3><a class="toc-backref" href="#id98">Parameters</a><a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong class="command">http&gt;: URI</strong></dt>
+<dd><p class="first">The URI of the HTTP request.</p>
+<ul class="last simple">
+<li><strong class="command">http&gt;: https://api.example.com/foobar</strong></li>
+<li><strong class="command">http&gt;: https://api.example.com/data/sessions/{$session_uuid}</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">method: STRING</strong></dt>
+<dd><p class="first">The method of the HTTP request. <em>Default:</em> <code class="docutils literal"><span class="pre">GET</span></code>.</p>
+<ul class="last simple">
+<li><strong class="command">method: POST</strong></li>
+<li><strong class="command">method: DELETE</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">content: STRING | INTEGER | BOOLEAN | OBJECT | ARRAY</strong></dt>
+<dd><p class="first">The content of the HTTP request. <em>Default:</em> No content.</p>
+<p>Scalars (i.e. strings, integers, booleans, etc) will by default be sent as plain text. Objects and arrays will by default be JSON serialized. The <code class="docutils literal"><span class="pre">content_format</span></code> parameter can be used to control the content serialization format.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span> <span class="s">&#39;hello</span><span class="nv"> </span><span class="s">world&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span> <span class="s">&#39;${session_time}&#39;</span>
+</pre></div>
+</div>
+<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">status</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RUNNING</span>
+  <span class="l l-Scalar l-Scalar-Plain">time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${session_time}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong class="command">content_format: text | json | form</strong></dt>
+<dd><p class="first">The serialization format of the content of the HTTP request. <em>Default:</em> Inferred from the <code class="docutils literal"><span class="pre">content</span></code> parameter value type. Objects and arrays use <code class="docutils literal"><span class="pre">json</span></code> by default. Other value types default to <code class="docutils literal"><span class="pre">text</span></code>.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">text</span></code>: Send raw content as <code class="docutils literal"><span class="pre">Content-Type:</span> <span class="pre">text/plain</span></code>. <em>Note:</em> This requires that the <code class="docutils literal"><span class="pre">content</span></code> parameter is _not_ array or an object.</li>
+<li><code class="docutils literal"><span class="pre">json</span></code>: Serialize the content as <a class="reference external" href="http://json.org/">JSON</a> and send it as <code class="docutils literal"><span class="pre">Content-Type:</span> <span class="pre">application/json</span></code>. This format can handle any <code class="docutils literal"><span class="pre">content</span></code> parameter value type.</li>
+<li><code class="docutils literal"><span class="pre">form</span></code>: Encode content as an HTML form and send it as <code class="docutils literal"><span class="pre">Content-Type:</span> <span class="pre">application/x-www-form-urlencoded</span></code>. <em>Note:</em> This requires the <code class="docutils literal"><span class="pre">content</span></code> parameter value to be an object.</li>
+</ul>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span> <span class="s">&#39;hello</span><span class="nv"> </span><span class="s">world</span><span class="nv"> </span><span class="s">@</span><span class="nv"> </span><span class="s">${session_time}&#39;</span>
+<span class="l l-Scalar l-Scalar-Plain">content_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+</pre></div>
+</div>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">status</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RUNNING</span>
+  <span class="l l-Scalar l-Scalar-Plain">time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${session_time}</span>
+<span class="l l-Scalar l-Scalar-Plain">content_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">json</span>
+</pre></div>
+</div>
+<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">status</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">RUNNING</span>
+  <span class="l l-Scalar l-Scalar-Plain">time</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">${session_time}</span>
+<span class="l l-Scalar l-Scalar-Plain">content_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">form</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong class="command">content_type: STRING</strong></dt>
+<dd><p class="first">Override the inferred <code class="docutils literal"><span class="pre">Content-Type</span></code> header.</p>
+<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">content</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">|</span>
+  <span class="no">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+  <span class="no">&lt;notification&gt;</span>
+    <span class="no">&lt;status&gt;RUNNING&lt;/status&gt;</span>
+    <span class="no">&lt;time&gt;${session_time}&lt;/time&gt;</span>
+  <span class="no">&lt;/notification&gt;</span>
+<span class="l l-Scalar l-Scalar-Plain">content_format</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">text</span>
+<span class="l l-Scalar l-Scalar-Plain">content_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">application/xml</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong class="command">store_content: BOOLEAN</strong></dt>
+<dd>Whether to store the content of the response. <em>Default:</em> <code class="docutils literal"><span class="pre">false</span></code>.</dd>
+<dt><strong class="command">headers: LIST OF KEY-VALUE PAIRS</strong></dt>
+<dd><p class="first">Additional custom headers to send with the HTTP request.</p>
+<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">headers</span><span class="p p-Indicator">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">Accept</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">application/json</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">X-Foo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">bar</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">Baz</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">quux</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong class="command">retry: BOOLEAN</strong></dt>
+<dd><p class="first">Whether to retry ephemeral errors. <em>Default:</em> <code class="docutils literal"><span class="pre">true</span></code> if the request method is <code class="docutils literal"><span class="pre">GET</span></code>, <code class="docutils literal"><span class="pre">HEAD</span></code>, <code class="docutils literal"><span class="pre">OPTIONS</span></code> or <code class="docutils literal"><span class="pre">TRACE</span></code>. Otherwise <code class="docutils literal"><span class="pre">false</span></code>.</p>
+<p>Client <code class="docutils literal"><span class="pre">4xx</span></code> errors (except for <code class="docutils literal"><span class="pre">408</span> <span class="pre">Request</span> <span class="pre">Timeout</span></code> and <code class="docutils literal"><span class="pre">429</span> <span class="pre">Too</span> <span class="pre">Many</span> <span class="pre">Requests</span></code>) will not be retried even if <code class="docutils literal"><span class="pre">retry</span></code> is set to <code class="docutils literal"><span class="pre">true</span></code>.</p>
+<p class="last"><em>Note:</em> Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is <em>idempotent</em>.</p>
+</dd>
+</dl>
 </div>
 </div>
 </div>
