@@ -1,0 +1,14 @@
++http:
+  http>: ${test_uri}
+  method: POST
+  content:
+    a: foo
+    b: 4711
+    c:
+      - c1
+      - c2
+      - true
+    d:
+      d1: [d1a, d1b]
+      d2: {}
+

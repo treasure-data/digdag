@@ -1,0 +1,6 @@
++http:
+  http>: ${test_uri}
+  headers:
+    - foo: foo-value-1
+    - bar: bar-value
+    - foo: foo-value-2

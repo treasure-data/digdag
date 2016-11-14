@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.BaseMatcher;
@@ -435,6 +436,12 @@ public class TestUtils
     public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config)
             throws IOException
     {
+        runWorkflow(folder, resource, params, config, 0);
+    }
+
+    public static void runWorkflow(TemporaryFolder folder, String resource, Map<String, String> params, Map<String, String> config, int expectedStatus)
+            throws IOException
+    {
         Path workflow = Paths.get(resource);
         Path tempdir = folder.newFolder().toPath();
         Path file = tempdir.resolve(workflow.getFileName());
@@ -452,7 +459,7 @@ public class TestUtils
         try {
             copyResource(resource, file);
             CommandStatus status = main(runCommand);
-            assertThat(status.errUtf8(), status.code(), is(0));
+            assertThat(status.errUtf8(), status.code(), is(expectedStatus));
         }
         finally {
             FileUtils.deleteQuietly(tempdir.toFile());
@@ -543,8 +550,16 @@ public class TestUtils
 
     public static MockWebServer startMockWebServer()
     {
+        return startMockWebServer(false);
+    }
+
+    public static MockWebServer startMockWebServer(boolean https)
+    {
         MockWebServer server = new MockWebServer();
         server.setDispatcher(new NopDispatcher());
+        if (https) {
+            server.useHttps(SslClient.localhost().socketFactory, false);
+        }
         try {
             server.start(0);
         }

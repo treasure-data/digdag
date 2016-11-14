@@ -1,0 +1,5 @@
++http:
+  http>: ${test_uri}
+  method: POST
+  content: [1, 2, hello, true]
+
