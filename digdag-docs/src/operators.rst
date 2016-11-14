@@ -1768,5 +1768,7 @@ Parameters
 :command:`retry: BOOLEAN`
   Whether to retry ephemeral errors. *Default:* ``true`` if the request method is ``GET``, ``HEAD``, ``OPTIONS`` or ``TRACE``. Otherwise ``false``.
 
+  Client ``4xx`` errors (except for ``408 Request Timeout`` and ``429 Too Many Requests``) will not be retried even if ``retry`` is set to ``true``.
+
   *Note:* Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is *idempotent*.
 
