@@ -10,7 +10,6 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +35,6 @@ import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.internal.ClientInvocation;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
@@ -59,7 +57,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -576,7 +573,7 @@ public class DigdagClient implements AutoCloseable
             Invocation request = client.target(UriBuilder.fromUri(handle.getDirect().get().getUrl()))
                     .request()
                     .buildGet();
-            return getLogFile(request);
+            return invokeWithRetry(request).readEntity(InputStream.class);
         }
         else {
             return getLogFile(attemptId, handle.getFileName());
@@ -592,12 +589,13 @@ public class DigdagClient implements AutoCloseable
                 .headers(this.headers.get())
                 .buildGet();
 
-        return getLogFile(request);
+        return invokeWithRetry(request)
+                .readEntity(InputStream.class);
     }
 
-    private InputStream getLogFile(Invocation request)
+    private Response invokeWithRetry(Invocation request)
     {
-        Retryer<InputStream> retryer = RetryerBuilder.<InputStream>newBuilder()
+        Retryer<Response> retryer = RetryerBuilder.<Response>newBuilder()
                 .retryIfException(not(DigdagClient::isDeterministicError))
                 .withWaitStrategy(exponentialWait())
                 .withStopStrategy(stopAfterAttempt(10))
@@ -610,7 +608,7 @@ public class DigdagClient implements AutoCloseable
                     res.close();
                     return handleErrorStatus(res);
                 }
-                return res.readEntity(InputStream.class);
+                return res;
             });
         }
         catch (ExecutionException | RetryException e) {
@@ -787,16 +785,16 @@ public class DigdagClient implements AutoCloseable
 
     private <T> T doGet(GenericType<T> type, WebTarget target)
     {
-        return target.request("application/json")
+        return invokeWithRetry(target.request("application/json")
             .headers(headers.get())
-            .get(type);
+            .buildGet()).readEntity(type);
     }
 
     private <T> T doGet(Class<T> type, WebTarget target)
     {
-        return target.request("application/json")
+        return invokeWithRetry(target.request("application/json")
             .headers(headers.get())
-            .get(type);
+            .buildGet()).readEntity(type);
     }
 
     private <T> T doPut(Class<T> type, String contentType, Object body, WebTarget target)
