@@ -70,6 +70,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.github.rholder.retry.StopStrategies.stopAfterAttempt;
 import static com.github.rholder.retry.WaitStrategies.exponentialWait;
@@ -627,7 +628,8 @@ public class DigdagClient implements AutoCloseable
             });
         }
         catch (ExecutionException | RetryException e) {
-            throw Throwables.propagate(e);
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw Throwables.propagate(cause);
         }
     }
 
