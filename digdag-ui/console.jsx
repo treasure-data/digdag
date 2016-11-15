@@ -1053,7 +1053,7 @@ const SessionView = withRouter(
                 disabled={loading}
                 onClick={this.retrySessionWithLatestRevision.bind(this)}
               >
-                RETRY_LATEST
+                RETRY LATEST
               </button>
             }
           </h2>
