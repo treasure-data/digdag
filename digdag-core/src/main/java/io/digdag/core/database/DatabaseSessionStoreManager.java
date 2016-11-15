@@ -63,6 +63,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -287,29 +288,29 @@ public class DatabaseSessionStoreManager
     }
 
     @Override
-    public List<StoredSessionAttempt> findAttemptsCreatedBeforeWithState(Instant createdBefore, int state, long lastId, int limit)
+    public List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit)
     {
-        return autoCommit((handle, dao) -> dao.findAttemptsCreatedBeforeWithState(sqlTimestampOf(createdBefore), state, lastId, limit));
+        return autoCommit((handle, dao) -> dao.findActiveAttemptsCreatedBefore(sqlTimestampOf(createdBefore), lastId, limit));
     }
 
     @Override
-    public List<TaskAttemptSummary> findTasksStartedBeforeWithStateAndType(TaskType type, TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
+    public List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
     {
         return autoCommit((handle, dao) ->
                 handle.createQuery(
                     "select id, attempt_id, state" +
                     " from tasks" +
-                    " where task_type = :type " +
-                    " and state in (" +
+                    " where state in (" +
                     Stream.of(states)
                             .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                    // exclude already cancel-requested tasks
+                    " and " + bitAnd("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) + " = 0" +
                     " and started_at < :startedBefore" +
                     " and id > :lastId" +
                     " order by id asc" +
                     " limit :limit"
                 )
                     .bind("startedBefore", sqlTimestampOf(startedBefore))
-                    .bind("type", type.get())
                     .bind("lastId", lastId)
                     .bind("limit", limit)
                     .map(tasm)
@@ -1505,12 +1506,12 @@ public class DatabaseSessionStoreManager
         StoredSessionAttemptWithSession getAttemptWithSessionByIdInternal(@Bind("attemptId") long attemptId);
 
         @SqlQuery("select * from session_attempts" +
-                " where state_flags = :state" +
+                " where state_flags = 0" +
                 " and created_at < :createdBefore" +
                 " and id > :lastId" +
-                " order by id desc" +
+                " order by id asc" +
                 " limit :limit")
-        List<StoredSessionAttempt> findAttemptsCreatedBeforeWithState(@Bind("createdBefore") java.sql.Timestamp createdBefore, @Bind("state") int state, @Bind("lastId") long lastId, @Bind("limit") int limit);
+        List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
 
         @SqlQuery("select site_id from tasks" +
                 " join session_attempts sa on sa.id = tasks.attempt_id" +

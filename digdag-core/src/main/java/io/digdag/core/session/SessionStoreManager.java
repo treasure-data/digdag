@@ -30,15 +30,15 @@ public interface SessionStoreManager
     List<Long> findAllReadyTaskIds(int maxEntries);
 
     // for AttemptTimeoutEnforcer.enforceAttemptTTLs
-    List<StoredSessionAttempt> findAttemptsCreatedBeforeWithState(Instant creationDeadline, int state, long lastId, int limit);
+    List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit);
+
+    // for AttemptTimeoutEnforcer.enforceTaskTTLs
+    List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit);
 
     interface AttemptLockAction <T>
     {
         T call(SessionAttemptControlStore store, SessionAttemptSummary summary);
     }
-
-    // for AttemptTimeoutEnforcer.enforceAttemptTTLs
-    List<TaskAttemptSummary> findTasksStartedBeforeWithStateAndType(TaskType type, TaskStateCode[] states, Instant startedBefore, long lastId, int limit);
 
     // for WorkflowExecutor.propagateSessionArchive
     <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func);

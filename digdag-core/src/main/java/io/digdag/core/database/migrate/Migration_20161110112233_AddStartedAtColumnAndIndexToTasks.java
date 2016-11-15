@@ -17,6 +17,10 @@ public class Migration_20161110112233_AddStartedAtColumnAndIndexToTasks
                     " add column started_at timestamp");
         }
 
-        handle.update("create index tasks_on_task_type_and_state_and_started_at on tasks (task_type, state, started_at, id desc)");
+        if (context.isPostgres()) {
+            handle.update("create index tasks_on_state_and_started_at on tasks (state, started_at, id asc) where started_at is not null");
+        } else {
+            handle.update("create index tasks_on_state_and_started_at on tasks (state, started_at, id asc)");
+        }
     }
 }

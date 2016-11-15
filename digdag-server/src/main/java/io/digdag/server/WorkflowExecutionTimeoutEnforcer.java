@@ -7,10 +7,8 @@ import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttempt;
-import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
-import io.digdag.core.session.TaskType;
 import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +19,14 @@ import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 public class WorkflowExecutionTimeoutEnforcer
 {
@@ -75,14 +77,14 @@ public class WorkflowExecutionTimeoutEnforcer
             enforceAttemptTTLs();
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception", t);
+            logger.error("Uncaught exception when enforcing attempt TTLs. Ignoring. Loop will be retried.", t);
         }
 
         try {
             enforceTaskTTLs();
         }
         catch (Throwable t) {
-            logger.error("Uncaught exception", t);
+            logger.error("Uncaught exception when enforcing task TTLs. Ignoring. Loop will be retried.", t);
         }
     }
 
@@ -92,7 +94,7 @@ public class WorkflowExecutionTimeoutEnforcer
         int state = 0;
         long lastId = 0;
 
-        List<StoredSessionAttempt> expiredAttempts = ssm.findAttemptsCreatedBeforeWithState(creationDeadline, state, lastId, 100);
+        List<StoredSessionAttempt> expiredAttempts = ssm.findActiveAttemptsCreatedBefore(creationDeadline, lastId, 100);
 
         for (StoredSessionAttempt attempt : expiredAttempts) {
             AttemptStateFlags stateFlags;
@@ -119,25 +121,14 @@ public class WorkflowExecutionTimeoutEnforcer
         Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
         long lastId = 0;
 
-        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithStateAndType(TaskType.of(0), TaskStateCode.notDoneStates(), startDeadline, lastId, 100);
+        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskStateCode.notDoneStates(), startDeadline, lastId, 100);
 
-        for (TaskAttemptSummary task : expiredTasks) {
-            AttemptStateFlags stateFlags;
-            try {
-                stateFlags = ssm.getAttemptStateFlags(task.getAttemptId());
-            }
-            catch (ResourceNotFoundException e) {
-                logger.debug("Session Attempt not found, ignoring: {}", task, e);
-                continue;
-            }
+        Map<Long, List<TaskAttemptSummary>> attempts = expiredTasks.stream()
+                .collect(groupingBy(TaskAttemptSummary::getAttemptId));
 
-            if (stateFlags.isCancelRequested()) {
-                logger.debug("Session Attempt already canceled, ignoring: {}", task);
-                continue;
-            }
-
-            logger.info("Task timed out, canceling Session Attempt: {}", task);
-            ssm.requestCancelAttempt(task.getAttemptId());
+        for (Map.Entry<Long, List<TaskAttemptSummary>> entry : attempts.entrySet()) {
+            logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", entry.getKey(), entry.getValue());
+            ssm.requestCancelAttempt(entry.getKey());
         }
     }
 
