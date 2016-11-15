@@ -31,7 +31,7 @@ public class ServerErrorStatusCodeIT
     );
 
     private List<String> UNKNOWN_METHODS = Arrays.asList(
-            "TRACE", "LOCK", "INVALID_METHOD_NAME"
+            "LOCK", "INVALID_METHOD_NAME"
     );
 
     @Rule
@@ -43,6 +43,17 @@ public class ServerErrorStatusCodeIT
     public void setUp()
     {
         client = new OkHttpClient();
+    }
+
+    @Test
+    public void verify200OkOnTrace()
+            throws Exception
+    {
+        Response response = client.newCall(new Request.Builder()
+                .url(server.endpoint() + "/api/no_such_api")
+                .method("TRACE", null)
+                .build()).execute();
+        assertThat(response.code(), is(200));
     }
 
     @Test

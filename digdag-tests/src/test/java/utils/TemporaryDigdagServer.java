@@ -109,6 +109,7 @@ public class TemporaryDigdagServer
     private DataSource adminDataSource;
 
     private int port = -1;
+    private int adminPort = -1;
 
     private boolean started;
     private boolean closed;
@@ -278,6 +279,8 @@ public class TemporaryDigdagServer
                 "server",
                 "--port", "0",
                 "--bind", host,
+                "--admin-port", "0",
+                "--admin-bind", host,
                 "--access-log", accessLog.toString(),
                 "-c", config.toString()));
         if (!configuration.stream().anyMatch(c -> c.contains("log-server.type"))) {
@@ -355,7 +358,9 @@ public class TemporaryDigdagServer
         }
 
         assert !serverRuntimeInfo.localAddresses().isEmpty();
+        assert !serverRuntimeInfo.localAdminAddresses().isEmpty();
         port = serverRuntimeInfo.localAddresses().get(0).port();
+        adminPort = serverRuntimeInfo.localAdminAddresses().get(0).port();
 
         // Poll and wait for server to respond
         boolean up = false;
@@ -364,7 +369,7 @@ public class TemporaryDigdagServer
                     .host(host)
                     .port(port)
                     .build()) {
-                client.getProjects();
+                client.getVersion();
                 up = true;
                 break;
             }
@@ -638,6 +643,14 @@ public class TemporaryDigdagServer
             throw new IllegalStateException("server not yet up");
         }
         return port;
+    }
+
+    public int adminPort()
+    {
+        if (adminPort == -1) {
+            throw new IllegalStateException("server not yet up");
+        }
+        return adminPort;
     }
 
     public String out(Charset charset)

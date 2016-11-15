@@ -2,10 +2,12 @@ package io.digdag.standards.operator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
-import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.Limits;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Path;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,15 +72,19 @@ public class ForEachOperatorFactory
 
             enforceTaskCountLimit(entries);
 
-            List<Config> combinations = buildCombinations(request.getConfig().getFactory(), entries);
+            List<Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>> combinations = buildCombinations(entries);
 
             boolean parallel = params.get("_parallel", boolean.class, false);
 
             Config generated = doConfig.getFactory().create();
-            for (Config combination : combinations) {
+            for (Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> combination : combinations) {
+                Config combinationConfig = params.getFactory().create();
+                for (Map.Entry<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> entry : combination.entrySet()) {
+                    combinationConfig.set(entry.getKey().getValue(), entry.getValue().getValue());
+                }
                 Config subtask = params.getFactory().create();
                 subtask.setAll(doConfig);
-                subtask.getNestedOrSetEmpty("_export").setAll(combination);
+                subtask.getNestedOrSetEmpty("_export").setAll(combinationConfig);
                 generated.set(
                         buildTaskName(combination),
                         subtask);
@@ -92,20 +99,30 @@ public class ForEachOperatorFactory
                 .build();
         }
 
-        private static List<Config> buildCombinations(ConfigFactory cf, Map<String, List<JsonNode>> entries)
+        private static List<Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>> buildCombinations(Map<String, List<JsonNode>> entries)
         {
-            List<Config> current = new ArrayList<>();
-            for (Map.Entry<String, List<JsonNode>> pair : entries.entrySet()) {
-                List<Config> next = new ArrayList<>();
+            List<Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>> current = new ArrayList<>();
+            ImmutableList<Map.Entry<String, List<JsonNode>>> entriesList = ImmutableList.copyOf(entries.entrySet());
+            for (int i = 0; i < entriesList.size(); i++) {
+                Map.Entry<String, List<JsonNode>> pair = entriesList.get(i);
+                List<Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>> next = new ArrayList<>();
+                List<JsonNode> items = pair.getValue();
                 if (current.isEmpty()) {
-                    for (JsonNode value : pair.getValue()) {
-                        next.add(cf.create().set(pair.getKey(), value));
+                    for (int j = 0; j < items.size(); j++) {
+                        Map.Entry<Integer, String> key = Maps.immutableEntry(i, pair.getKey());
+                        Map.Entry<Integer, JsonNode> value = Maps.immutableEntry(j, items.get(j));
+                        next.add(ImmutableMap.of(key, value));
                     }
                 }
                 else {
-                    for (Config seed : current) {
-                        for (JsonNode value : pair.getValue()) {
-                            next.add(seed.deepCopy().set(pair.getKey(), value));
+                    for (Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> seed : current) {
+                        for (int j = 0; j < items.size(); j++) {
+                            Map.Entry<Integer, String> key = Maps.immutableEntry(i, pair.getKey());
+                            Map.Entry<Integer, JsonNode> value = Maps.immutableEntry(j, items.get(j));
+                            next.add(ImmutableMap.<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>>builder()
+                                    .putAll(seed)
+                                    .put(key, value)
+                                    .build());
                         }
                     }
                 }
@@ -125,28 +142,29 @@ public class ForEachOperatorFactory
             }
         }
 
-        private static String buildTaskName(Config combination)
+        private static String buildTaskName(Map<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> combination)
         {
             StringBuilder sb = new StringBuilder();
             sb.append("+for-");
             boolean first = true;
-            for (String key : combination.getKeys()) {
+            for (Map.Entry<Map.Entry<Integer, String>, Map.Entry<Integer, JsonNode>> entry : combination.entrySet()) {
                 if (first) {
                     first = false;
                 }
                 else {
                     sb.append('&');
                 }
-                sb.append(key);
+                Map.Entry<Integer, String> key = entry.getKey();
+                sb.append(key.getKey()).append('=').append(nameTag(key.getValue()));
                 sb.append('=');
-                sb.append(encodeValue(combination, key));
+                Map.Entry<Integer, JsonNode> value = entry.getValue();
+                sb.append(value.getKey()).append('=').append(nameTag(value.getValue()));
             }
             return sb.toString();
         }
 
-        private static String encodeValue(Config map, String key)
+        private static String nameTag(JsonNode node)
         {
-            JsonNode node = map.get(key, JsonNode.class);
             String raw;
             if (node.isTextual()) {
                 raw = node.textValue();
@@ -154,8 +172,16 @@ public class ForEachOperatorFactory
             else {
                 raw = node.toString();
             }
+            return nameTag(raw);
+        }
+
+        private static String nameTag(String s)
+        {
+            if (s.length() > 8) {
+                s = s.substring(0, 8);
+            }
             try {
-                return URLEncoder.encode(raw, "UTF-8").replace("+", "%20");  // "+" is not allowed as a task name
+                return URLEncoder.encode(s, "UTF-8").replace("+", "%20");  // "+" is not allowed as a task name
             }
             catch (UnsupportedEncodingException ex) {
                 throw Throwables.propagate(ex);

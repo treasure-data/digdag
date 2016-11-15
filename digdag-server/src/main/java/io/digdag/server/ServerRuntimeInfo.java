@@ -15,6 +15,9 @@ public interface ServerRuntimeInfo
     @JsonProperty("local_addresses")
     List<Address> localAddresses();
 
+    @JsonProperty("local_admin_addresses")
+    List<Address> localAdminAddresses();
+
     static ImmutableServerRuntimeInfo.Builder builder() {
         return ImmutableServerRuntimeInfo.builder();
     }

@@ -15,6 +15,16 @@ public interface UndertowServerConfig
     String getBind();
 
     /**
+     * Local port to listen on.
+     */
+    int getAdminPort();
+
+    /**
+     * Local address to listen on.
+     */
+    String getAdminBind();
+
+    /**
      * Access log path. Null to disable logging.
      */
     Optional<String> getAccessLogPath();

@@ -1,24 +1,24 @@
-"+for-u=%21%3F":
+"+for-0=u=0=%21%3F":
   echo>: value is ${u}
   _export: {u: "!?"}
-"+for-u=%5E%24":
+"+for-0=u=1=%5E%24":
   echo>: value is ${u}
   _export: {u: "^$"}
-"+for-u=%25%3D%3D":
+"+for-0=u=2=%25%3D%3D":
   echo>: value is ${u}
   _export: {u: "%=="}
-"+for-u=%7C%7E":
+"+for-0=u=3=%7C%7E":
   echo>: value is ${u}
   _export: {u: "|~"}
-"+for-u=%5B%3C%7B%7D%3E%5D":
+"+for-0=u=4=%5B%3C%7B%7D%3E%5D":
   echo>: value is ${u}
   _export: {u: "[<{}>]"}
-"+for-u=%23%3A":
+"+for-0=u=5=%23%3A":
   echo>: value is ${u}
   _export: {u: "#:"}
-"+for-u=%2F%40":
+"+for-0=u=6=%2F%40":
   echo>: value is ${u}
   _export: {u: "/@"}
-"+for-u=%2B%20":
+"+for-0=u=7=%2B%20":
   echo>: value is ${u}
   _export: {u: "+ "}

@@ -1,0 +1,9 @@
++http:
+  http>: ${test_uri}
+  store_content: true
+
++for_each:
+  for_each>:
+    name: ${http.last_content}
+  _do:
+    echo>: Hello ${name}!

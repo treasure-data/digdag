@@ -22,6 +22,8 @@ import java.util.Properties;
 import static io.digdag.cli.Arguments.loadParams;
 import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.client.DigdagClient.objectMapper;
+import static io.digdag.server.ServerConfig.DEFAULT_ADMIN_BIND;
+import static io.digdag.server.ServerConfig.DEFAULT_ADMIN_PORT;
 import static io.digdag.server.ServerConfig.DEFAULT_BIND;
 import static io.digdag.server.ServerConfig.DEFAULT_PORT;
 
@@ -33,6 +35,12 @@ public class Server
 
     @Parameter(names = {"-b", "--bind"})
     String bind = null;
+
+    @Parameter(names = {"--admin-port"})
+    Integer adminPort = null;
+
+    @Parameter(names = {"--admin-bind"})
+    String adminBind = null;
 
     @Parameter(names = {"-m", "--memory"})
     boolean memoryDatabase = false;
@@ -91,6 +99,8 @@ public class Server
         err.println("  Options:");
         err.println("    -n, --port PORT                  port number to listen for web interface and api clients (default: " + DEFAULT_PORT + ")");
         err.println("    -b, --bind ADDRESS               IP address to listen HTTP clients (default: " + DEFAULT_BIND + ")");
+        err.println("    --admin-port PORT                port number to bind admin api on (default: " + DEFAULT_ADMIN_PORT + ")");
+        err.println("    --admin-bind ADDRESS             IP address to bind admin api on (default: " + DEFAULT_ADMIN_BIND + ")");
         err.println("    -m, --memory                     uses memory database");
         err.println("    -o, --database DIR               store status to this database");
         err.println("    -O, --task-log DIR               store task logs to this path");
@@ -137,6 +147,14 @@ public class Server
 
         if (bind != null) {
             props.setProperty("server.bind", bind);
+        }
+
+        if (adminPort != null) {
+            props.setProperty("server.admin.port", Integer.toString(adminPort));
+        }
+
+        if (adminBind != null) {
+            props.setProperty("server.admin.bind", adminBind);
         }
 
         if (taskLogPath != null) {
