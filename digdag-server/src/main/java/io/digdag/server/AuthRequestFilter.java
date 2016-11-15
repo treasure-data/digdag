@@ -1,18 +1,16 @@
 package io.digdag.server;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Response;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigFactory;
+
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 
 @Provider
 @PreMatching
@@ -35,6 +33,12 @@ public class AuthRequestFilter
     @Override
     public void filter(ContainerRequestContext requestContext)
     {
+        String method = requestContext.getMethod();
+
+        if (method.equals("OPTIONS") || method.equals("TRACE")) {
+            return;
+        }
+
         if (requestContext.getUriInfo().getPath().equals("/api/version")) {
             return;
         }

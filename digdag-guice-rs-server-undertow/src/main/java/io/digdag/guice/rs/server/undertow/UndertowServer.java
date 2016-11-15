@@ -12,6 +12,7 @@ import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.OpenListener;
 import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.HttpTraceHandler;
 import io.undertow.server.handlers.accesslog.AccessLogHandler;
 import io.undertow.server.handlers.accesslog.AccessLogReceiver;
 import io.undertow.server.handlers.accesslog.DefaultAccessLogReceiver;
@@ -153,8 +154,8 @@ public class UndertowServer
         }
         control.workerInitialized(worker);
 
-        HttpHandler apiHandler = exchange -> httpHandler.handleRequest(exchange);
-        HttpHandler adminHandler = exchange -> httpHandler.handleRequest(exchange);
+        HttpHandler apiHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
+        HttpHandler adminHandler = new HttpTraceHandler(exchange -> httpHandler.handleRequest(exchange));
 
         logger.info("Starting server on {}:{}", config.getBind(), config.getPort());
         Undertow server = Undertow.builder()

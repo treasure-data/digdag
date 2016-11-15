@@ -369,7 +369,7 @@ public class TemporaryDigdagServer
                     .host(host)
                     .port(port)
                     .build()) {
-                client.getProjects();
+                client.getVersion();
                 up = true;
                 break;
             }
