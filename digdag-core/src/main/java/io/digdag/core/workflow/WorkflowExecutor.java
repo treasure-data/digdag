@@ -1401,4 +1401,19 @@ public class WorkflowExecutor
             lockedTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
         }
     }
+
+    public void addFailureTasks(String message, TaskControl lockedTask)
+    {
+        Config alertConfig = cf.create();
+        alertConfig.set("_type", "notify");
+        alertConfig.set("_command", message);
+        WorkflowTaskList alertTasks = compiler.compileTasks(lockedTask.get().getFullName(), "^failure^alert", alertConfig);
+        lockedTask.addGeneratedSubtasksWithoutLimit(alertTasks, ImmutableList.of(), false);
+
+        Config failConfig = cf.create();
+        failConfig.set("_type", "fail");
+        failConfig.set("_command", message);
+        WorkflowTaskList tasks = compiler.compileTasks(lockedTask.get().getFullName(), "^failure^fail", failConfig);
+        lockedTask.addGeneratedSubtasksWithoutLimit(tasks, ImmutableList.of(), false);
+    }
 }

@@ -9,6 +9,10 @@ import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.TaskAttemptSummary;
 import io.digdag.core.session.TaskStateCode;
+import io.digdag.core.workflow.TaskControl;
+import io.digdag.core.workflow.Tasks;
+import io.digdag.core.workflow.WorkflowExecutor;
+import io.digdag.spi.Notifier;
 import io.digdag.util.DurationParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.joining;
 
 public class WorkflowExecutionTimeoutEnforcer
 {
@@ -39,12 +42,14 @@ public class WorkflowExecutionTimeoutEnforcer
     private final ScheduledExecutorService scheduledExecutorService;
     private final SessionStoreManager ssm;
 
+    private final WorkflowExecutor workflowExecutor;
+
     private final Duration attemptTTL;
     private final Duration reapingInterval;
     private final Duration taskTTL;
 
     @Inject
-    public WorkflowExecutionTimeoutEnforcer(ServerConfig serverConfig, SessionStoreManager ssm, Config systemConfig)
+    public WorkflowExecutionTimeoutEnforcer(ServerConfig serverConfig, SessionStoreManager ssm, Config systemConfig, Notifier notifier, WorkflowExecutor workflowExecutor)
     {
         this.attemptTTL = systemConfig.getOptional("executor.attempt_ttl", DurationParam.class)
                 .transform(DurationParam::getDuration)
@@ -59,6 +64,7 @@ public class WorkflowExecutionTimeoutEnforcer
                 .or(DEFAULT_REAPING_INTERVAL);
 
         this.ssm = ssm;
+        this.workflowExecutor = workflowExecutor;
 
         if (serverConfig.getExecutorEnabled()) {
             this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
@@ -91,45 +97,72 @@ public class WorkflowExecutionTimeoutEnforcer
     private void enforceAttemptTTLs()
     {
         Instant creationDeadline = ssm.getStoreTime().minus(attemptTTL);
-        int state = 0;
-        long lastId = 0;
 
-        List<StoredSessionAttempt> expiredAttempts = ssm.findActiveAttemptsCreatedBefore(creationDeadline, lastId, 100);
+        List<StoredSessionAttempt> expiredAttempts = ssm.findActiveAttemptsCreatedBefore(creationDeadline, (long) 0, 100);
 
         for (StoredSessionAttempt attempt : expiredAttempts) {
-            AttemptStateFlags stateFlags;
-            try {
-                stateFlags = ssm.getAttemptStateFlags(attempt.getId());
-            }
-            catch (ResourceNotFoundException e) {
-                logger.debug("Session Attempt not found, ignoring: {}", attempt, e);
-                continue;
-            }
-
-            if (stateFlags.isCancelRequested()) {
-                logger.debug("Session Attempt already canceled, ignoring: {}", attempt);
-                continue;
-            }
-
-            logger.info("Session Attempt timed out, canceling: {}", attempt);
-            ssm.requestCancelAttempt(attempt.getId());
+            logger.info("Session Attempt timed out, failing: {}", attempt.getId());
+            failAttempt("Attempt timeout", attempt.getId());
         }
     }
 
     private void enforceTaskTTLs()
     {
         Instant startDeadline = ssm.getStoreTime().minus(taskTTL);
-        long lastId = 0;
 
-        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskStateCode.notDoneStates(), startDeadline, lastId, 100);
+        List<TaskAttemptSummary> expiredTasks = ssm.findTasksStartedBeforeWithState(TaskStateCode.notDoneStates(), startDeadline, (long) 0, 100);
 
         Map<Long, List<TaskAttemptSummary>> attempts = expiredTasks.stream()
                 .collect(groupingBy(TaskAttemptSummary::getAttemptId));
 
         for (Map.Entry<Long, List<TaskAttemptSummary>> entry : attempts.entrySet()) {
-            logger.info("Task(s) timed out, canceling Session Attempt: {}, tasks={}", entry.getKey(), entry.getValue());
-            ssm.requestCancelAttempt(entry.getKey());
+            logger.info("Task(s) timed out, failing Session Attempt: {}, tasks={}", entry.getKey(), entry.getValue());
+            String taskIds = entry.getValue().stream().mapToLong(TaskAttemptSummary::getId).mapToObj(Long::toString).collect(joining(","));
+            failAttempt("Task timeout: " + taskIds, entry.getKey());
         }
+    }
+
+    private void failAttempt(String message, long attemptId)
+    {
+        AttemptStateFlags stateFlags;
+        try {
+            stateFlags = ssm.getAttemptStateFlags(attemptId);
+        }
+        catch (ResourceNotFoundException e) {
+            logger.debug("Session Attempt not found, ignoring: {}", attemptId, e);
+            return;
+        }
+
+        if (stateFlags.isCancelRequested()) {
+            logger.debug("Session Attempt already canceled, ignoring: {}", attemptId);
+            return;
+        }
+
+        ssm.lockAttemptIfExists(attemptId, (sessionAttemptControlStore, summary) -> {
+            if (!summary.getStateFlags().isDone()) {
+                try {
+                    return sessionAttemptControlStore.lockRootTask(summary.getId(), (store, storedTask) -> {
+                        if (!Tasks.isDone(storedTask.getState())) {
+                            workflowExecutor.addFailureTasks(message, new TaskControl(store, storedTask));
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    });
+                }
+                catch (ResourceNotFoundException ex) {
+                    logger.warn("Root task not found: attemptId={}", attemptId, ex);
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }).or(false);
+
+//         Mark attempt as canceled so it is excluded in future TTL checks
+//        ssm.requestCancelAttempt(attemptId);
     }
 
     @PostConstruct
