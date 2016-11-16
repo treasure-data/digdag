@@ -2,15 +2,13 @@ package io.digdag.standards.operator.pg;
 
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.jdbc.AbstractJdbcOperator;
-import java.nio.file.Path;
+import io.digdag.standards.operator.jdbc.AbstractJdbcJobOperator;
+
 
 public class PgOperatorFactory
         implements OperatorFactory
@@ -41,10 +39,10 @@ public class PgOperatorFactory
         return new PgOperator(context, templateEngine);
     }
 
-    public static class PgOperator
-        extends AbstractJdbcOperator<PgConnectionConfig>
+    static class PgOperator
+        extends AbstractJdbcJobOperator<PgConnectionConfig>
     {
-        public PgOperator(OperatorContext context, TemplateEngine templateEngine)
+        PgOperator(OperatorContext context, TemplateEngine templateEngine)
         {
             super(context, templateEngine);
         }
@@ -65,6 +63,12 @@ public class PgOperatorFactory
         protected String type()
         {
             return OPERATOR_TYPE;
+        }
+
+        @Override
+        protected SecretProvider getSecretsForConnectionConfig()
+        {
+            return context.getSecrets().getSecrets(type());
         }
     }
 }

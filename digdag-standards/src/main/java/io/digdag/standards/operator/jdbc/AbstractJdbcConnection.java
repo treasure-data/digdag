@@ -1,5 +1,7 @@
 package io.digdag.standards.operator.jdbc;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import java.sql.Connection;
@@ -93,7 +95,7 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    protected void skipResultSet(ResultSet rs)
+    private void skipResultSet(ResultSet rs)
         throws SQLException
     {
         while (rs.next())
@@ -113,7 +115,7 @@ public abstract class AbstractJdbcConnection
 
     @VisibleForTesting
     public void execute(String sql)
-        throws SQLException
+            throws SQLException
     {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(sql);
@@ -143,6 +145,14 @@ public abstract class AbstractJdbcConnection
         }
         catch (SQLException ex) {
             logger.warn("Failed to close a database connection. Ignoring.", ex);
+        }
+    }
+
+    private void setParameters(PreparedStatement stmt, List<Object> params)
+            throws SQLException
+    {
+        for(int i=0; i < params.size(); i++) {
+            stmt.setObject(i+1, params.get(i));
         }
     }
 }

@@ -1,0 +1,40 @@
+timezone: UTC
+
++run:
+  redshift_load>:
+  host: ${redshift_host}
+  database: ${redshift_database}
+  user: ${redshift_user}
+  table_name: ${table_name}
+  from: ${from_uri}
+  # column_list: 'name, age, email'
+  # readratio: 123
+  # manifest: true
+  # encrypted: true
+  region: "us-east-1"
+  csv: "`"
+  delimiter: "$"
+  # compression: "gzip"
+  acceptanydate: true
+  acceptinvchars: "&"
+  blanksasnull: true
+  dateformat: "yyyy-MM-dd"
+  emptyasnull: true
+  encoding: UTF8
+  escape: false
+  explicit_ids: true
+  fillrecord: true
+  ignoreblanklines: true
+  # ignoreheader: 42
+  null_as: "nULl"
+  removequotes: false
+  roundec: true
+  timeformat: "YYYY-MM-DD HH:MI:SS"
+  trimblanks: true
+  truncatecolumns: true
+  comprows: 12
+  compupdate: "ON"
+  maxerror: 34
+  # noload: true
+  statupdate: "OFF"
+

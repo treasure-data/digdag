@@ -1,12 +1,11 @@
 package io.digdag.standards.operator.redshift;
 
-import io.digdag.standards.operator.pg.PgConnectionConfig;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnectionConfig;
+import io.digdag.util.ConfigSelector;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
@@ -17,26 +16,32 @@ import java.util.Properties;
 public abstract class RedshiftConnectionConfig
     extends AbstractJdbcConnectionConfig
 {
-    // Note default port is different from postgresql.
-
     public abstract Optional<String> schema();
 
-    static RedshiftConnectionConfig configure(SecretProvider secrets, Config params)
+    static ConfigSelector getSecretAccessList()
+    {
+        return ConfigSelector.builderOfScope("redshift")
+            .addSecretAccess("user", "host", "port", "database", "ssl", "schema")
+            .addSecretOnlyAccess("password")
+            .build();
+    }
+
+    @VisibleForTesting
+    public static RedshiftConnectionConfig configure(SecretProvider secrets, Config params)
     {
         return ImmutableRedshiftConnectionConfig.builder()
                 .host(secrets.getSecretOptional("host").or(() -> params.get("host", String.class)))
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(() -> params.get("port", int.class, 5439)))
                 .user(secrets.getSecretOptional("user").or(() -> params.get("user", String.class)))
-                .password(secrets.getSecretOptional("password").or(params.getOptional("password", String.class)))
+                .password(secrets.getSecretOptional("password"))
                 .database(secrets.getSecretOptional("database").or(() -> params.get("database", String.class)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(() -> params.get("ssl", boolean.class, false)))
-                .connectTimeout(secrets.getSecretOptional("connect_timeout").transform(DurationParam::parse).or(() ->
-                        params.get("connect_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(30)))))
-                .socketTimeout(secrets.getSecretOptional("socket_timeout").transform(DurationParam::parse).or(() ->
-                        params.get("socket_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(1800)))))
+                .connectTimeout(params.get("connect_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(30))))
+                .socketTimeout(params.get("socket_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(1800))))
                 .schema(secrets.getSecretOptional("schema").or(params.getOptional("schema", String.class)))
                 .build();
     }
+
 
     @Override
     public String jdbcDriverName()

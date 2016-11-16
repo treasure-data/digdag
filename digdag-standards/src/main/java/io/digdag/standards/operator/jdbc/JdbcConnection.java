@@ -3,7 +3,7 @@ package io.digdag.standards.operator.jdbc;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-public interface JdbcConnection
+interface JdbcConnection
     extends AutoCloseable
 {
     String buildCreateTableStatement(String selectSql, TableReference targetTable);
