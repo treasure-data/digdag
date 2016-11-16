@@ -364,6 +364,10 @@ public class TestUtils
         return startWorkflow(endpoint, projectName, workflow, params);
     }
 
+    public static long startWorkflow(String endpoint, String projectName, String workflow) {
+        return startWorkflow(endpoint, projectName, workflow, ImmutableMap.of());
+    }
+
     public static long startWorkflow(String endpoint, String projectName, String workflow, Map<String, String> params)
     {
         List<String> startCommand = new ArrayList<>(asList("start",
