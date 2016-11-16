@@ -8,6 +8,7 @@ import io.digdag.spi.OperatorFactory;
 import io.digdag.standards.operator.aws.EmrOperatorFactory;
 import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
 import io.digdag.standards.operator.pg.PgOperatorFactory;
+import io.digdag.standards.operator.redshift.RedshiftLoadOperatorFactory;
 import io.digdag.standards.operator.redshift.RedshiftOperatorFactory;
 import io.digdag.standards.operator.td.TdDdlOperatorFactory;
 import io.digdag.standards.operator.td.TdForEachOperatorFactory;
@@ -47,6 +48,7 @@ public class OperatorModule
         addStandardOperatorFactory(binder, NotifyOperatorFactory.class);
         addStandardOperatorFactory(binder, PgOperatorFactory.class);
         addStandardOperatorFactory(binder, RedshiftOperatorFactory.class);
+        addStandardOperatorFactory(binder, RedshiftLoadOperatorFactory.class);
         addStandardOperatorFactory(binder, S3WaitOperatorFactory.class);
         addStandardOperatorFactory(binder, EmrOperatorFactory.class);
         addStandardOperatorFactory(binder, HttpOperatorFactory.class);

@@ -82,9 +82,15 @@ public class PgIT
     @After
     public void tearDown()
     {
-        if (props != null && database != null) {
-            removeTempDatabase(props, database);
-            removeRestrictedUser(props);
+        if (props != null) {
+            try {
+                if (database != null) {
+                    removeTempDatabase(props, database);
+                }
+            }
+            finally {
+                removeRestrictedUser(props);
+            }
         }
     }
 

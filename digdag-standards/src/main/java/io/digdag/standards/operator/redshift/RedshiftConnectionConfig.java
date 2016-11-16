@@ -17,17 +17,16 @@ import java.util.Properties;
 public abstract class RedshiftConnectionConfig
     extends AbstractJdbcConnectionConfig
 {
-    // Note default port is different from postgresql.
-
     public abstract Optional<String> schema();
 
-    static RedshiftConnectionConfig configure(SecretProvider secrets, Config params)
+    @VisibleForTesting
+    public static RedshiftConnectionConfig configure(SecretProvider secrets, Config params)
     {
         return ImmutableRedshiftConnectionConfig.builder()
                 .host(secrets.getSecretOptional("host").or(() -> params.get("host", String.class)))
                 .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(() -> params.get("port", int.class, 5439)))
                 .user(secrets.getSecretOptional("user").or(() -> params.get("user", String.class)))
-                .password(secrets.getSecretOptional("password").or(params.getOptional("password", String.class)))
+                .password(secrets.getSecretOptional("password"))
                 .database(secrets.getSecretOptional("database").or(() -> params.get("database", String.class)))
                 .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(() -> params.get("ssl", boolean.class, false)))
                 .connectTimeout(secrets.getSecretOptional("connect_timeout").transform(DurationParam::parse).or(() ->

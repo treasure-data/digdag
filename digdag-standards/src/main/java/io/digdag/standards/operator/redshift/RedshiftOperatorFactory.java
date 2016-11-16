@@ -3,12 +3,13 @@ package io.digdag.standards.operator.redshift;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.standards.operator.jdbc.AbstractJdbcOperator;
-import java.nio.file.Path;
+import io.digdag.standards.operator.jdbc.AbstractJdbcJobOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RedshiftOperatorFactory
         implements OperatorFactory
@@ -28,17 +29,19 @@ public class RedshiftOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new RedshiftOperator(projectPath, request, templateEngine);
+        return new RedshiftOperator(context, templateEngine);
     }
 
-    public static class RedshiftOperator
-        extends AbstractJdbcOperator<RedshiftConnectionConfig>
+    private static class RedshiftOperator
+        extends AbstractJdbcJobOperator<RedshiftConnectionConfig>
     {
-        public RedshiftOperator(Path projectPath, TaskRequest request, TemplateEngine templateEngine)
+        private final Logger logger = LoggerFactory.getLogger(getClass());
+
+        RedshiftOperator(OperatorContext context, TemplateEngine templateEngine)
         {
-            super(projectPath, request, templateEngine);
+            super(context, templateEngine);
         }
 
         @Override
@@ -57,6 +60,22 @@ public class RedshiftOperatorFactory
         protected String type()
         {
             return OPERATOR_TYPE;
+        }
+
+        @Override
+        protected boolean strictTransaction(Config params)
+        {
+            if (params.getOptional("strict_transaction", Boolean.class).isPresent()) {
+                // RedShift doesn't support "SELECT FOR UPDATE" statement
+                logger.warn("'strict_transaction' is ignored in 'redshift' operator");
+            }
+            return false;
+        }
+
+        @Override
+        protected SecretProvider getSecretsForConnectionConfig()
+        {
+            return context.getSecrets().getSecrets("aws.redshift");
         }
     }
 }
