@@ -1,4 +1,4 @@
-package io.digdag.standards.operator;
+package io.digdag.standards.operator.aws;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
@@ -18,6 +18,7 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import io.digdag.standards.operator.aws.S3WaitOperatorFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

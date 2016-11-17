@@ -1,0 +1,40 @@
++emr_job:
+  emr>:
+  cluster: ${test_cluster}
+  staging: s3://td-digdag-emr-test/staging/
+  steps:
+    - type: spark
+      application: s3://td-digdag-emr-test/applications/pi.py
+    - type: spark
+      application: hello.py
+      args: [1]
+    - type: spark
+      application: hello.py
+      args: [2]
+    - type: spark
+      application: simple.jar
+      class: SimpleApp
+      jars:
+        - libhello.jar
+        - s3://td-spark/td-spark-assembly-0.1.jar
+      conf:
+        spark.locality.wait: 5s
+        spark.memory.fraction: 0.5
+      args: [foo, bar]
+    - type: spark-sql
+      query: query.sql
+      result: s3://td-digdag-emr-test/results/${session_uuid}/
+    - type: script
+      script: s3://td-digdag-emr-test/scripts/hello.sh
+      args: [hello, world]
+    - type: script
+      script: hello.sh
+      args: [world]
+    - type: command
+      command: echo
+      args: [hello, world]
+
++post:
+  sh>: touch ${outfile}
+
+

@@ -1,8 +1,10 @@
 package io.digdag.standards.operator.state;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.standards.operator.DurationInterval;
 import org.slf4j.Logger;
@@ -125,13 +127,23 @@ public class PollingRetryExecutor
         });
     }
 
+    public <T> T runOnce(TypeReference<T> type, Operation<T> f)
+    {
+        return runOnce(TypeFactory.defaultInstance().constructType(type), f);
+    }
+
     public <T> T runOnce(Class<T> type, Operation<T> f)
+    {
+        return runOnce(TypeFactory.defaultInstance().constructType(type), f);
+    }
+
+    private <T> T runOnce(JavaType type, Operation<T> f)
     {
         TaskState retryState = state.nestedState(stateKey);
 
         boolean done = retryState.params().get(DONE, boolean.class, false);
 
-        T result = retryState.params().get(RESULT, type, null);
+        T result = get(type, retryState.params());
 
         if (done) {
             return result;
@@ -198,5 +210,11 @@ public class PollingRetryExecutor
             }
         }
         return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T get(JavaType type, Config config)
+    {
+        return (T) config.get(RESULT, type, null);
     }
 }

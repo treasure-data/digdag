@@ -1,0 +1,28 @@
+[
+  {
+    "Classification": "hadoop-env",
+    "Configurations": [
+      {
+        "Classification": "export",
+        "Configurations": [],
+        "Properties": {
+          "BAR": "FOO"
+        }
+      }
+    ],
+    "Properties": {}
+  },
+  {
+    "Classification": "spark-env",
+    "Configurations": [
+      {
+        "Classification": "export",
+        "Configurations": [],
+        "Properties": {
+          "BAZ": "QUUX"
+        }
+      }
+    ],
+    "Properties": {}
+  }
+]

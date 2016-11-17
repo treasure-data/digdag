@@ -1,4 +1,4 @@
-package io.digdag.standards.operator;
+package io.digdag.standards.operator.aws;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
@@ -30,6 +30,7 @@ import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
+import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
@@ -194,7 +196,7 @@ public class S3WaitOperatorFactory
                     .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                     .await(pollState -> pollingRetryExecutor(pollState, "POLL")
-                            .retryUnless(AmazonServiceException.class, S3WaitOperatorFactory::isDeterministicException)
+                            .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
                             .run(s -> {
                                 try {
                                     return Optional.of(s3Client.getObjectMetadata(req));
@@ -220,18 +222,6 @@ public class S3WaitOperatorFactory
             object.set("metadata", objectMetadata.getRawMetadata());
             object.set("user_metadata", objectMetadata.getUserMetadata());
             return params;
-        }
-    }
-
-    private static boolean isDeterministicException(AmazonServiceException ex)
-    {
-        int statusCode = ex.getStatusCode();
-        switch (statusCode) {
-            case HttpStatus.TOO_MANY_REQUESTS_429:
-            case HttpStatus.REQUEST_TIMEOUT_408:
-                return false;
-            default:
-                return statusCode >= 400 && statusCode < 500;
         }
     }
 
