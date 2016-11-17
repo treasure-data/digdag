@@ -313,7 +313,7 @@ public class HttpOperatorFactory
         private String requestStatus(Request request, ContentResponse r)
         {
             URI safeUri = safeUri(request);
-            return request.getMethod() + " " + safeUri + ": " + HttpStatus.getMessage(r.getStatus());
+            return request.getMethod() + " " + safeUri + ": " + r.getStatus() + " " + HttpStatus.getMessage(r.getStatus());
         }
 
         private URI safeUri(Request request)
