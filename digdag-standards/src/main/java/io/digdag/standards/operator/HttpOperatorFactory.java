@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -152,7 +151,9 @@ public class HttpOperatorFactory
 
             SecretProvider httpSecrets = ctx.secrets().getSecrets("http");
 
-            URI uri = URI.create(httpSecrets.getSecretOptional("uri").or(() -> params.get("_command", String.class)));
+            Optional<String> secretUri = httpSecrets.getSecretOptional("uri");
+            boolean uriIsSecret = secretUri.isPresent();
+            URI uri = URI.create(secretUri.or(() -> params.get("_command", String.class)));
 
             Optional<String> user = httpSecrets.getSecretOptional("user");
             Optional<String> authorization = httpSecrets.getSecretOptional("authorization");
@@ -188,7 +189,7 @@ public class HttpOperatorFactory
 
             ContentResponse response = PollingRetryExecutor.pollingRetryExecutor(state, "request")
                     .withErrorMessage("HTTP request failed")
-                    .run(s -> execute(request));
+                    .run(s -> execute(request, uriIsSecret));
 
             return result(response, storeContent);
         }
@@ -234,13 +235,13 @@ public class HttpOperatorFactory
             return headers;
         }
 
-        private ContentResponse execute(Request req)
+        private ContentResponse execute(Request req, boolean uriIsSecret)
         {
-            URI safeUri = safeUri(req);
+            String safeUri = safeUri(req, uriIsSecret);
 
-            logger.debug("Sending HTTP request: {} {}", req.getMethod(), safeUri);
+            logger.info("Sending HTTP request: {} {}", req.getMethod(), safeUri);
             ContentResponse res = send(req);
-            logger.debug("Received HTTP response: {} {}: {}", req.getMethod(), safeUri, res);
+            logger.info("Received HTTP response: {} {}: {}", req.getMethod(), safeUri, res);
 
             if (HttpStatus.isSuccess(res.getStatus())) {
                 // 2xx: Success, we're done.
@@ -255,19 +256,19 @@ public class HttpOperatorFactory
                     case HttpStatus.REQUEST_TIMEOUT_408:
                     case HttpStatus.TOO_MANY_REQUESTS_429:
                         // Retry these.
-                        throw new RuntimeException("Failed HTTP request: " + requestStatus(req, res));
+                        throw new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret));
                     default:
                         // 4xx: The request is invalid for this resource. Fail hard without retrying.
-                        throw new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res), ConfigElement.empty());
+                        throw new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret), ConfigElement.empty());
                 }
             }
             else if (res.getStatus() >= 500 && res.getStatus() < 600) {
                 // 5xx: Server Error. This is hopefully ephemeral.
-                throw ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res));
+                throw ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res, uriIsSecret));
             }
             else {
                 // Unknown status code. Treat as an ephemeral error.
-                throw ephemeralError("Unexpected HTTP status: " + requestStatus(req, res));
+                throw ephemeralError("Unexpected HTTP status: " + requestStatus(req, res, uriIsSecret));
             }
         }
 
@@ -310,15 +311,18 @@ public class HttpOperatorFactory
             return res;
         }
 
-        private String requestStatus(Request request, ContentResponse r)
+        private String requestStatus(Request request, ContentResponse r, boolean uriIsSecret)
         {
-            URI safeUri = safeUri(request);
+            String safeUri = safeUri(request, uriIsSecret);
             return request.getMethod() + " " + safeUri + ": " + r.getStatus() + " " + HttpStatus.getMessage(r.getStatus());
         }
 
-        private URI safeUri(Request request)
+        private String safeUri(Request request, boolean uriIsSecret)
         {
             URI uri = request.getURI();
+            if (uriIsSecret) {
+                return uri.getScheme() + "://***";
+            }
             URI safeUri;
             try {
                 safeUri = new URI(uri.getScheme(), null, uri.getHost(), uri.getPort(), uri.getRawPath(), uri.getRawQuery(), uri.getRawFragment());
@@ -326,7 +330,7 @@ public class HttpOperatorFactory
             catch (URISyntaxException e) {
                 throw Throwables.propagate(e);
             }
-            return safeUri;
+            return safeUri.toString();
         }
 
         private TaskResult result(ContentResponse response, boolean storeContent)
