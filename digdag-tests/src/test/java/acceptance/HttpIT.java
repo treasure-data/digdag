@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import okhttp3.Headers;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -30,6 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.google.common.io.Resources.getResource;
+import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
+import static io.netty.handler.codec.http.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
@@ -41,6 +44,7 @@ import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpMethod.PUT;
 import static org.eclipse.jetty.http.HttpMethod.TRACE;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
@@ -213,6 +217,26 @@ public class HttpIT
         assertThat(httpMockWebServer.getRequestCount(), is(1));
         assertThat(requests.get("GET " + uri), is(not(nullValue())));
         assertThat(requests.get("GET " + uri), is(not(empty())));
+    }
+
+    @Test
+    public void testProxy403ForbiddenOnCONNECTIsNotRetried()
+            throws Exception
+    {
+        proxy = TestUtils.startRequestFailingProxy(100, requests, FORBIDDEN);
+        String uri = "https://127.0.0.1:" + httpsMockWebServer.getPort() + "/";
+        runWorkflow(folder, "acceptance/http/http.dig",
+                ImmutableMap.of(
+                        "test_uri", uri,
+                        "http.proxy.enabled", "true",
+                        "http.proxy.host", "127.0.0.1",
+                        "http.proxy.port", Integer.toString(proxy.getListenAddress().getPort())
+                ),
+                ImmutableMap.of(),
+                1);
+        assertThat(httpsMockWebServer.getRequestCount(), is(0));
+        assertThat(requests.get("CONNECT " + uri), is(not(nullValue())));
+        assertThat(requests.get("CONNECT " + uri), hasSize(1));
     }
 
     @Test

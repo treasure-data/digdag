@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.FileUtils;
@@ -613,6 +614,14 @@ public class TestUtils
      */
     public static HttpProxyServer startRequestFailingProxy(final int failures, final ConcurrentMap<String, List<FullHttpRequest>> requests)
     {
+        return startRequestFailingProxy(failures, requests, INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
+     */
+    public static HttpProxyServer startRequestFailingProxy(final int failures, final ConcurrentMap<String, List<FullHttpRequest>> requests, final HttpResponseStatus error)
+    {
         return DefaultHttpProxyServer
                 .bootstrap()
                 .withPort(0)
@@ -642,8 +651,8 @@ public class TestUtils
                                     n = keyedRequests.size();
                                 }
                                 if (n % failures != 0) {
-                                    logger.info("Simulating 500 INTERNAL SERVER ERROR for request: {}", key);
-                                    HttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), INTERNAL_SERVER_ERROR);
+                                    logger.info("Simulating {} for request: {}", error, key);
+                                    HttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), error);
                                     response.headers().set(CONNECTION, CLOSE);
                                     return response;
                                 }
