@@ -64,17 +64,17 @@ class CheckedConfig
     }
 
     @Override
-    protected JsonNode get(String key)
+    protected JsonNode getNode(String key)
     {
         this.usedKeys.add(key);
-        return super.get(key);
+        return super.getNode(key);
     }
 
     @Override
-    protected void set(String key, JsonNode value)
+    protected void setNode(String key, JsonNode value)
     {
         this.usedKeys.add(key);
-        super.set(key, value);
+        super.setNode(key, value);
     }
 
     // getKeys doesn't set usedKeys.setAllUsed(true) because operator plugins
