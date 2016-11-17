@@ -235,8 +235,9 @@ public class HttpIT
                 ImmutableMap.of(),
                 1);
         assertThat(httpsMockWebServer.getRequestCount(), is(0));
-        assertThat(requests.get("CONNECT " + uri), is(not(nullValue())));
-        assertThat(requests.get("CONNECT " + uri), hasSize(1));
+        List<FullHttpRequest> proxyRequests = requests.get("CONNECT 127.0.0.1:" + httpsMockWebServer.getPort());
+        assertThat(proxyRequests, is(not(nullValue())));
+        assertThat(proxyRequests, hasSize(1));
     }
 
     @Test
