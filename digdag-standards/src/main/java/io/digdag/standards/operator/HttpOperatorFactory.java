@@ -31,11 +31,13 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
@@ -240,7 +242,14 @@ public class HttpOperatorFactory
             String safeUri = safeUri(req, uriIsSecret);
 
             logger.info("Sending HTTP request: {} {}", req.getMethod(), safeUri);
-            ContentResponse res = send(req);
+            ContentResponse res;
+            try {
+                res = send(req);
+            }
+            catch (HttpResponseException e) {
+                throw error(req, uriIsSecret, e.getResponse());
+            }
+
             logger.info("Received HTTP response: {} {}: {}", req.getMethod(), safeUri, res);
 
             if (HttpStatus.isSuccess(res.getStatus())) {
@@ -251,24 +260,31 @@ public class HttpOperatorFactory
                 // 3xx: Redirect. We can get here if following redirects is disabled. We're done.
                 return res;
             }
-            else if (HttpStatus.isClientError(res.getStatus())) {
+            else {
+                throw error(req, uriIsSecret, res);
+            }
+        }
+
+        private RuntimeException error(Request req, boolean uriIsSecret, Response res)
+        {
+            if (HttpStatus.isClientError(res.getStatus())) {
                 switch (res.getStatus()) {
                     case HttpStatus.REQUEST_TIMEOUT_408:
                     case HttpStatus.TOO_MANY_REQUESTS_429:
                         // Retry these.
-                        throw new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret));
+                        return new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret));
                     default:
                         // 4xx: The request is invalid for this resource. Fail hard without retrying.
-                        throw new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret), ConfigElement.empty());
+                        return new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret), ConfigElement.empty());
                 }
             }
             else if (res.getStatus() >= 500 && res.getStatus() < 600) {
                 // 5xx: Server Error. This is hopefully ephemeral.
-                throw ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res, uriIsSecret));
+                return ephemeralError("HTTP 5XX Server Error: " + requestStatus(req, res, uriIsSecret));
             }
             else {
                 // Unknown status code. Treat as an ephemeral error.
-                throw ephemeralError("Unexpected HTTP status: " + requestStatus(req, res, uriIsSecret));
+                return ephemeralError("Unexpected HTTP status: " + requestStatus(req, res, uriIsSecret));
             }
         }
 
@@ -311,7 +327,7 @@ public class HttpOperatorFactory
             return res;
         }
 
-        private String requestStatus(Request request, ContentResponse r, boolean uriIsSecret)
+        private String requestStatus(Request request, Response r, boolean uriIsSecret)
         {
             String safeUri = safeUri(request, uriIsSecret);
             return request.getMethod() + " " + safeUri + ": " + r.getStatus() + " " + HttpStatus.getMessage(r.getStatus());
@@ -457,7 +473,8 @@ public class HttpOperatorFactory
                 case "form":
                     if (content.isArray()) {
                         throw invalidContentFormat(format, nodeType);
-                    } else {
+                    }
+                    else {
                         return new FormContentProvider(formFields((ObjectNode) content));
                     }
                 default:
