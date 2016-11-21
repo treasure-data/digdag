@@ -1,15 +1,19 @@
 package io.digdag.client.config;
 
-import java.util.List;
-import java.util.Arrays;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Optional;
-import org.junit.Test;
-import org.junit.Before;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
+import java.util.List;
 import org.hamcrest.BaseMatcher;
+import org.junit.Before;
+import org.junit.Test;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static io.digdag.client.config.ConfigUtils.newConfig;
 
 public class ConfigTest
@@ -127,6 +131,38 @@ public class ConfigTest
         assertThat(config.deepCopy().parseListOrGetEmpty("nested", String.class), is(nested));
     }
 
+    @Test
+    public void verifyNullValueHandling()
+    {
+        config.set("null_value", JsonNodeFactory.instance.nullNode());
+
+        assertThat(config.getKeys(), is(Arrays.asList("null_value")));
+        assertThat(config.has("null_value"), is(true));
+        assertThat(config.isEmpty(), is(false));
+
+        assertConfigException(() -> config.get("null_value", String.class), "Parameter 'null_value' is required but null");
+        assertConfigException(() -> config.get("null_value", Integer.class), "Parameter 'null_value' is required but null");
+        assertThat(config.get("null_value", String.class, "default"), is("default"));
+        assertThat(config.get("null_value", Integer.class, 100), is(100));
+        assertThat(config.getOptional("null_value", String.class), is(Optional.<String>absent()));
+        assertThat(config.getOptional("null_value", Integer.class), is(Optional.<Integer>absent()));
+
+        assertThat(config.getListOrEmpty("null_value", String.class), is(ImmutableList.of()));
+        assertThat(config.parseListOrGetEmpty("null_value", String.class), is(ImmutableList.of()));
+        assertConfigException(() -> config.getList("null_value", String.class), "Parameter 'null_value' is required but null");
+        assertConfigException(() -> config.parseList("null_value", String.class), "Parameter 'null_value' is required but null");
+
+        assertThat(config.getMapOrEmpty("null_value", String.class, String.class), is(ImmutableMap.of()));
+        assertConfigException(() -> config.getMap("null_value", String.class, String.class), "Parameter 'null_value' is required but null");
+
+        assertThat(config.getNestedOrGetEmpty("null_value"), is(newConfig()));
+        assertThat(config.deepCopy().getNestedOrSetEmpty("null_value"), is(newConfig()));
+        assertThat(config.getOptionalNested("null_value"), is(Optional.absent()));
+        assertThat(config.parseNestedOrGetEmpty("null_value"), is(newConfig()));
+        assertConfigException(() -> config.getNested("null_value"), "Parameter 'null_value' must be an object");
+        assertConfigException(() -> config.parseNested("null_value"), "Parameter 'null_value' must be an object");
+    }
+
     private void assertConfigException(Runnable func)
     {
         try {
@@ -135,6 +171,17 @@ public class ConfigTest
         }
         catch (ConfigException ex) {
             assertTrue(true);
+        }
+    }
+
+    private void assertConfigException(Runnable func, String message)
+    {
+        try {
+            func.run();
+            fail();
+        }
+        catch (ConfigException ex) {
+            assertThat(ex.getMessage(), containsString(message));
         }
     }
 }

@@ -230,7 +230,7 @@ public class OperatorManager
                 return;
             }
             type = operatorKey.get().substring(0, operatorKey.get().length() - 1);
-            Object command = config.get(operatorKey.get(), Object.class);
+            Object command = config.getOptional(operatorKey.get(), Object.class).orNull();
             config.set("_type", type);
             config.set("_command", command);
             logger.info("{}>: {}", type, Optional.fromNullable(command).or(""));
@@ -243,7 +243,7 @@ public class OperatorManager
 
         Config localConfig = config.getFactory().create();
         for (String localKey : request.getLocalConfig().getKeys()) {
-            localConfig.set(localKey, config.get(localKey, JsonNode.class).deepCopy());
+            localConfig.set(localKey, config.getOptional(localKey, JsonNode.class).transform(JsonNode::deepCopy).orNull());
         }
 
         // Track accessed keys using UsedKeysSet class

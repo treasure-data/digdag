@@ -64,7 +64,7 @@ public class Config
         if (v == null) {
             remove(key);
         } else {
-            set(key, writeObject(v));
+            setNode(key, writeObject(v));
         }
         return this;
     }
@@ -81,7 +81,7 @@ public class Config
     {
         if (!has(key)) {
             if (v != null) {
-                set(key, writeObject(v));
+                setNode(key, writeObject(v));
             }
         }
         return this;
@@ -89,14 +89,14 @@ public class Config
 
     public Config setNested(String key, Config v)
     {
-        set(key, v.object);
+        setNode(key, v.object);
         return this;
     }
 
     public Config setAll(Config other)
     {
         for (Map.Entry<String, JsonNode> field : other.getEntries()) {
-            set(field.getKey(), field.getValue());
+            setNode(field.getKey(), field.getValue());
         }
         return this;
     }
@@ -228,18 +228,24 @@ public class Config
 
     public <E> E get(String key, Class<E> type)
     {
-        JsonNode value = get(key);
+        JsonNode value = getNode(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
+        }
+        else if (value.isNull()) {
+            throw new ConfigException("Parameter '"+key+"' is required but null");
         }
         return readObject(type, value, key);
     }
 
     public Object get(String key, JavaType type)
     {
-        JsonNode value = get(key);
+        JsonNode value = getNode(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
+        }
+        else if (value.isNull()) {
+            throw new ConfigException("Parameter '"+key+"' is required but null");
         }
         return readObject(type, value, key);
     }
@@ -252,8 +258,8 @@ public class Config
 
     public <E> E get(String key, Class<E> type, E defaultValue)
     {
-        JsonNode value = get(key);
-        if (value == null) {
+        JsonNode value = getNode(key);
+        if (value == null || value.isNull()) {
             return defaultValue;
         }
         return readObject(type, value, key);
@@ -261,8 +267,8 @@ public class Config
 
     public Object get(String key, JavaType type, Object defaultValue)
     {
-        JsonNode value = get(key);
-        if (value == null) {
+        JsonNode value = getNode(key);
+        if (value == null || value.isNull()) {
             return defaultValue;
         }
         return readObject(type, value, key);
@@ -336,7 +342,7 @@ public class Config
 
     public Config getNested(String key)
     {
-        JsonNode value = get(key);
+        JsonNode value = getNode(key);
         if (value == null) {
             throw new ConfigException("Parameter '"+key+"' is required but not set");
         }
@@ -395,10 +401,10 @@ public class Config
 
     public Config getNestedOrSetEmpty(String key)
     {
-        JsonNode value = get(key);
-        if (value == null) {
+        JsonNode value = getNode(key);
+        if (value == null || value.isNull()) {
             value = newObjectNode();
-            set(key, value);
+            setNode(key, value);
         }
         else if (!value.isObject()) {
             throw new ConfigException("Parameter '"+key+"' must be an object");
@@ -408,8 +414,8 @@ public class Config
 
     public Config getNestedOrGetEmpty(String key)
     {
-        JsonNode value = get(key);
-        if (value == null) {
+        JsonNode value = getNode(key);
+        if (value == null || value.isNull()) {
             value = newObjectNode();
         }
         else if (!value.isObject()) {
@@ -420,7 +426,7 @@ public class Config
 
     public Config getNestedOrderedOrGetEmpty(String key)
     {
-        JsonNode value = get(key);
+        JsonNode value = getNode(key);
         if (value == null) {
             value = newObjectNode();
         }
@@ -445,7 +451,8 @@ public class Config
 
     public Optional<Config> getOptionalNested(String key)
     {
-        if (!has(key)) {
+        JsonNode value = getNode(key);
+        if (value == null || value.isNull()) {
             return Optional.absent();
         }
         return Optional.of(getNested(key));
@@ -456,12 +463,12 @@ public class Config
         return object.objectNode();
     }
 
-    protected JsonNode get(String key)
+    protected JsonNode getNode(String key)
     {
         return object.get(key);
     }
 
-    protected void set(String key, JsonNode value)
+    protected void setNode(String key, JsonNode value)
     {
         object.set(key, value);
     }
