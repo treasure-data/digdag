@@ -3,6 +3,13 @@
   cluster: ${test_cluster}
   staging: s3://td-digdag-emr-test/staging/
   steps:
+    - type: hive
+      script: s3://us-east-1.elasticmapreduce.samples/cloudfront/code/Hive_CloudFront.q
+      vars:
+        INPUT: s3://us-east-1.elasticmapreduce.samples
+        OUTPUT: s3://td-digdag-emr-test/hive-output/
+      hiveconf:
+        hive.support.sql11.reserved.keywords: false
     - type: spark
       application: pi.scala
     - type: spark

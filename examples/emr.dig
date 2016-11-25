@@ -30,6 +30,13 @@ timezone: UTC
     - type: spark-sql
       query: queries/spark-query.sql
       result: s3://my-bucket/results/${session_uuid}/
+    - type: hive
+      script: hive/test.q
+      vars:
+        INPUT: s3://my-bucket/hive-input/
+        OUTPUT: s3://my-bucket/hive-output/
+      hiveconf:
+        hive.support.sql11.reserved.keywords: false
     - type: command
       command: [echo, hello, world]
     - type: command

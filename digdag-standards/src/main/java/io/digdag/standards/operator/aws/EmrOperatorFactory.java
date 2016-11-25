@@ -86,6 +86,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.LOCAL;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.S3;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
@@ -691,6 +692,9 @@ public class EmrOperatorFactory
                 int stepIndex = i + 1;
                 String type = step.get("type", String.class);
                 switch (type) {
+                    case "hive":
+                        hiveStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        break;
                     case "spark":
                         sparkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
                         break;
@@ -849,6 +853,33 @@ public class EmrOperatorFactory
             String[] args = step.getListOrEmpty("args", String.class).stream().toArray(String[]::new);
             StepConfig stepConfig = stepConfig("Run", "Script", tag, step)
                     .withHadoopJarStep(stepFactory().newScriptRunnerStep(remoteFile.s3Uri().toString(), args));
+            stepConfigs.add(stepConfig);
+        }
+
+        private void hiveStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        {
+            FileReference scriptReference = fileReference("script", step);
+            RemoteFile remoteScript = prepareRemoteFile(tag, stepIndex, scriptReference, staging, stagingFiles, false);
+
+            Config hiveConf = step.getNestedOrGetEmpty("hiveconf");
+            List<String> hiveconfArgs = hiveConf.getKeys().stream()
+                    .flatMap(key -> Stream.of("-hiveconf", key + "=" + hiveConf.get(key, String.class)))
+                    .collect(Collectors.toList());
+
+            Config varsConf = step.getNestedOrGetEmpty("vars");
+            List<String> varsArgs = varsConf.getKeys().stream()
+                    .flatMap(key -> Stream.of("-d", key + "=" + varsConf.get(key, String.class)))
+                    .collect(Collectors.toList());
+
+            StepConfig stepConfig = stepConfig("Run", "Hive Script", tag, step)
+                    .withHadoopJarStep(new HadoopJarStepConfig()
+                            .withJar("command-runner.jar")
+                            .withArgs(ImmutableList.<String>builder()
+                                    .add("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
+                                    .addAll(varsArgs)
+                                    .addAll(hiveconfArgs)
+                                    .build()));
+
             stepConfigs.add(stepConfig);
         }
 
