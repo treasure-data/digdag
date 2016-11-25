@@ -101,6 +101,7 @@ public class EmrIT
 
         addResource(projectDir, "acceptance/emr/bootstrap_foo.sh");
         addResource(projectDir, "acceptance/emr/bootstrap_hello.sh");
+        addResource(projectDir, "acceptance/emr/WordCount.jar");
         addResource(projectDir, "acceptance/emr/libhello.jar");
         addResource(projectDir, "acceptance/emr/simple.jar");
         addResource(projectDir, "acceptance/emr/hello.py");

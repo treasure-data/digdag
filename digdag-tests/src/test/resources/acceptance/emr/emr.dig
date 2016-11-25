@@ -3,6 +3,8 @@
   cluster: ${test_cluster}
   staging: s3://td-digdag-emr-test/staging/
   steps:
+    - type: flink
+      application: WordCount.jar
     - type: hive
       script: s3://us-east-1.elasticmapreduce.samples/cloudfront/code/Hive_CloudFront.q
       vars:

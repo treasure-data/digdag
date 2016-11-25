@@ -86,7 +86,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.LOCAL;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.S3;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
@@ -692,6 +691,9 @@ public class EmrOperatorFactory
                 int stepIndex = i + 1;
                 String type = step.get("type", String.class);
                 switch (type) {
+                    case "flink":
+                        flinkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        break;
                     case "hive":
                         hiveStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
                         break;
@@ -856,6 +858,30 @@ public class EmrOperatorFactory
             stepConfigs.add(stepConfig);
         }
 
+        private void flinkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        {
+            String name = "Flink Application";
+
+            FileReference fileReference = fileReference("application", step);
+            RemoteFile remoteFile = prepareRemoteFile(tag, stepIndex, fileReference, staging, stagingFiles, false);
+
+            // Download
+            downloadStep(tag, stepConfigs, step, remoteFile, name);
+
+            // Run
+            StepConfig runStep = stepConfig("Run", name, tag, step)
+                    .withHadoopJarStep(new HadoopJarStepConfig()
+                            .withJar("command-runner.jar")
+                            .withArgs(ImmutableList.<String>builder()
+                                    .add("flink", "run", "-m", "yarn-cluster")
+                                    .add("-yn", Integer.toString(step.get("yarn_containers", int.class, 2)))
+                                    .add(remoteFile.localPath())
+                                    .addAll(step.getListOrEmpty("args", String.class))
+                                    .build()));
+
+            stepConfigs.add(runStep);
+        }
+
         private void hiveStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
         {
             FileReference scriptReference = fileReference("script", step);
@@ -883,13 +909,13 @@ public class EmrOperatorFactory
             stepConfigs.add(stepConfig);
         }
 
-        private void downloadStep(String tag, List<StepConfig> stepConfigs, Config step, RemoteFile applicationFile, String name)
+        private void downloadStep(String tag, List<StepConfig> stepConfigs, Config step, RemoteFile file, String name)
         {
             // TODO: download staging files in one step using aws s3 cp --recursive
             StepConfig stepConfig = stepConfig("Download", name, tag, step)
                     .withHadoopJarStep(new HadoopJarStepConfig()
                             .withJar("command-runner.jar")
-                            .withArgs("aws", "s3", "cp", applicationFile.s3Uri().toString(), applicationFile.localPath()));
+                            .withArgs("aws", "s3", "cp", file.s3Uri().toString(), file.localPath()));
             stepConfigs.add(stepConfig);
         }
 
