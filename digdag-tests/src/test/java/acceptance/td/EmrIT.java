@@ -141,7 +141,7 @@ public class EmrIT
 
             RunJobFlowRequest request = new RunJobFlowRequest()
                     .withName("Digdag Test")
-                    .withReleaseLabel("emr-5.1.0")
+                    .withReleaseLabel("emr-5.2.0")
                     .withApplications(spark)
                     .withJobFlowRole("EMR_EC2_DefaultRole")
                     .withServiceRole("EMR_DefaultRole")
