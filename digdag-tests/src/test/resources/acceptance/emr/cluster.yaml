@@ -1,10 +1,8 @@
 name: digdag-test
 ec2:
   key: digdag-test
-  master_type: m3.xlarge
-  instances:
+  master:
     type: m3.xlarge
-    count: 1
 logs: s3://td-digdag-emr-test/logs/
 configurations:
   - classification: yarn-env

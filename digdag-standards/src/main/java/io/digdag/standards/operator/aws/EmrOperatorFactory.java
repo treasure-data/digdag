@@ -14,7 +14,10 @@ import com.amazonaws.services.elasticmapreduce.model.Configuration;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
 import com.amazonaws.services.elasticmapreduce.model.DescribeStepRequest;
+import com.amazonaws.services.elasticmapreduce.model.EbsBlockDeviceConfig;
+import com.amazonaws.services.elasticmapreduce.model.EbsConfiguration;
 import com.amazonaws.services.elasticmapreduce.model.HadoopJarStepConfig;
+import com.amazonaws.services.elasticmapreduce.model.InstanceGroupConfig;
 import com.amazonaws.services.elasticmapreduce.model.JobFlowInstancesConfig;
 import com.amazonaws.services.elasticmapreduce.model.ListStepsRequest;
 import com.amazonaws.services.elasticmapreduce.model.ListStepsResult;
@@ -26,6 +29,7 @@ import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepConfig;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import com.amazonaws.services.elasticmapreduce.model.Tag;
+import com.amazonaws.services.elasticmapreduce.model.VolumeSpecification;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
@@ -75,6 +79,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -375,7 +380,9 @@ public class EmrOperatorFactory
         private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, List<StepConfig> stepConfigs, Config cluster, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles)
         {
             Config ec2 = cluster.getNested("ec2");
-            Config instances = ec2.getNested("instances");
+            Config master = ec2.getNestedOrGetEmpty("master");
+            List<Config> core = ec2.getOptional("core", Config.class).transform(ImmutableList::of).or(ImmutableList.of());
+            List<Config> task = ec2.getListOrEmpty("task", Config.class);
 
             List<String> applications = cluster.getListOrEmpty("applications", String.class);
             if (applications.isEmpty()) {
@@ -397,7 +404,24 @@ public class EmrOperatorFactory
                     .map(node -> bootstrapAction(node, tag, staging, stagingFiles))
                     .collect(Collectors.toList());
 
-            // TODO: more configuration parameters
+            Optional<String> subnetId = ec2.getOptional("subnet_id", String.class);
+
+            String defaultMasterInstanceType;
+            String defaultCoreInstanceType;
+            String defaultTaskInstanceType;
+
+            if (subnetId.isPresent()) {
+                // m4 requires VPC (subnet id)
+                defaultMasterInstanceType = "m4.2xlarge";
+                defaultCoreInstanceType = "m4.xlarge";
+                defaultTaskInstanceType = "m4.xlarge";
+            }
+            else {
+                defaultMasterInstanceType = "m3.2xlarge";
+                defaultCoreInstanceType = "m3.xlarge";
+                defaultTaskInstanceType = "m3.xlarge";
+            }
+
             RunJobFlowRequest request = new RunJobFlowRequest()
                     .withName(cluster.get("name", String.class, "Digdag") + " (" + tag + ")")
                     .withReleaseLabel(cluster.get("release", String.class, "emr-5.2.0"))
@@ -411,19 +435,25 @@ public class EmrOperatorFactory
                     .withVisibleToAllUsers(cluster.get("visible", boolean.class, true))
                     .withConfigurations(configurations)
                     .withInstances(new JobFlowInstancesConfig()
-                            .withAdditionalMasterSecurityGroups(ec2.getList("additional_master_security_groups", String.class))
-                            .withAdditionalSlaveSecurityGroups(instances.getList("additional_security_groups", String.class))
+                            .withInstanceGroups(ImmutableList.<InstanceGroupConfig>builder()
+                                    // Master Node
+                                    .add(instanceGroupConfig("Master", master, "MASTER", defaultMasterInstanceType, 1))
+                                    // Core Group
+                                    .addAll(instanceGroupConfigs("Core", core, "CORE", defaultCoreInstanceType))
+                                    // Task Groups
+                                    .addAll(instanceGroupConfigs("Task %d", task, "TASK", defaultTaskInstanceType))
+                                    .build()
+                            )
+                            .withAdditionalMasterSecurityGroups(ec2.getListOrEmpty("additional_master_security_groups", String.class))
+                            .withAdditionalSlaveSecurityGroups(ec2.getListOrEmpty("additional_slave_security_groups", String.class))
                             .withEmrManagedMasterSecurityGroup(ec2.get("emr_managed_master_security_group", String.class, null))
-                            .withEmrManagedSlaveSecurityGroup(instances.get("emr_managed_security_group", String.class, null))
+                            .withEmrManagedSlaveSecurityGroup(ec2.get("emr_managed_slave_security_group", String.class, null))
                             .withServiceAccessSecurityGroup(ec2.get("service_access_security_group", String.class, null))
                             .withTerminationProtected(cluster.get("termination_protected", boolean.class, false))
                             .withPlacement(cluster.getOptional("availability_zone", String.class).transform(s -> new PlacementType().withAvailabilityZone(s)).orNull())
-                            .withEc2SubnetId(ec2.get("subnet_id", String.class, null))
+                            .withEc2SubnetId(subnetId.orNull())
                             .withEc2KeyName(ec2.get("key", String.class))
-                            .withInstanceCount(instances.get("count", int.class))
-                            .withKeepJobFlowAliveWhenNoSteps(!cluster.get("auto_terminate", boolean.class, true))
-                            .withMasterInstanceType(ec2.get("master_type", String.class, "m3.2xlarge"))
-                            .withSlaveInstanceType(instances.get("type", String.class, "m3.xlarge")));
+                            .withKeepJobFlowAliveWhenNoSteps(!cluster.get("auto_terminate", boolean.class, true)));
 
             // Only creating a cluster, with no steps?
             boolean createOnly = stepConfigs.isEmpty();
@@ -445,7 +475,11 @@ public class EmrOperatorFactory
                 List<String> stepIds = pollingRetryExecutor(this.state, "steps")
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                        .runOnce(new TypeReference<List<String>>() {}, s -> listSubmittedStepIds(emr, tag, clusterId, stepConfigs.size()));
+                        .runOnce(new TypeReference<List<String>>() {}, s -> {
+                            List<String> ids = listSubmittedStepIds(emr, tag, clusterId, stepConfigs.size());
+                            logger.info("EMR step ID's: {}: {}", clusterId, ids);
+                            return ids;
+                        });
 
                 // Log cluster status while waiting for it to come up
                 pollingWaiter(state, "bootstrap")
@@ -501,6 +535,62 @@ public class EmrOperatorFactory
             };
         }
 
+        private List<InstanceGroupConfig> instanceGroupConfigs(String defaultName, List<Config> configs, String role, String defaultInstanceType)
+        {
+            List<InstanceGroupConfig> instanceGroupConfigs = new ArrayList<>();
+            for (int i = 0; i < configs.size(); i++) {
+                Config config = configs.get(i);
+                instanceGroupConfigs.add(instanceGroupConfig(String.format(defaultName, i + 1), config, role, defaultInstanceType));
+            }
+            return instanceGroupConfigs;
+        }
+
+        private InstanceGroupConfig instanceGroupConfig(String defaultName, Config config, String role, String defaultInstanceType)
+        {
+            int instanceCount = config.get("count", int.class, 0);
+            return instanceGroupConfig(defaultName, config, role, defaultInstanceType, instanceCount);
+        }
+
+        private InstanceGroupConfig instanceGroupConfig(String defaultName, Config config, String role, String defaultInstanceType, int instanceCount)
+        {
+            return new InstanceGroupConfig()
+                    .withName(config.get("name", String.class, defaultName))
+                    .withInstanceRole(role)
+                    .withInstanceCount(instanceCount)
+                    .withInstanceType(config.get("type", String.class, defaultInstanceType))
+                    .withMarket(config.get("market", String.class, null))
+                    .withBidPrice(config.get("bid_price", String.class, null))
+                    .withEbsConfiguration(config.getOptional("ebs", Config.class).transform(this::ebsConfiguration).orNull())
+                    .withConfigurations(config.getListOrEmpty("configurations", JsonNode.class).stream()
+                            .map(this::clusterConfigurations)
+                            .flatMap(Collection::stream)
+                            .collect(Collectors.toList()));
+        }
+
+        private EbsConfiguration ebsConfiguration(Config config)
+        {
+            return new EbsConfiguration()
+                    .withEbsOptimized(config.get("optimized", Boolean.class, null))
+                    .withEbsBlockDeviceConfigs(config.getListOrEmpty("devices", Config.class).stream()
+                            .map(this::ebsBlockDeviceConfig)
+                            .collect(Collectors.toList()));
+        }
+
+        private EbsBlockDeviceConfig ebsBlockDeviceConfig(Config config)
+        {
+            return new EbsBlockDeviceConfig()
+                    .withVolumeSpecification(volumeSpecification(config.getNested("volume_specification")))
+                    .withVolumesPerInstance(config.get("volumes_per_instance", Integer.class, null));
+        }
+
+        private VolumeSpecification volumeSpecification(Config config)
+        {
+            return new VolumeSpecification()
+                    .withIops(config.get("iops", Integer.class, null))
+                    .withSizeInGB(config.get("size_in_gb", Integer.class))
+                    .withVolumeType(config.get("type", String.class));
+        }
+
         private List<String> listSubmittedStepIds(AmazonElasticMapReduce emr, String tag, String clusterId, int expectedSteps)
         {
             List<String> stepIds = new ArrayList<>();
@@ -517,6 +607,8 @@ public class EmrOperatorFactory
                 }
                 request.setMarker(result.getMarker());
             }
+            // The ListSteps api returns steps in reverse order. So reverse them to submission order.
+            Collections.reverse(stepIds);
             return stepIds;
         }
 
