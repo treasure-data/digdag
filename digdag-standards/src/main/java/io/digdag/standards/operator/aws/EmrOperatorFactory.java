@@ -437,16 +437,10 @@ public class EmrOperatorFactory
                         });
 
                 // Get submitted step IDs
-                // TODO: filter on tag to only include the steps we submitted
                 List<String> stepIds = pollingRetryExecutor(this.state, "steps")
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                        .runOnce(new TypeReference<List<String>>() {}, s -> {
-                            ListStepsResult stepsInfo = emr.listSteps(new ListStepsRequest().withClusterId(clusterId));
-                            return stepsInfo.getSteps().stream()
-                                    .map(StepSummary::getId)
-                                    .collect(Collectors.toList());
-                        });
+                        .runOnce(new TypeReference<List<String>>() {}, s -> listSubmittedStepIds(emr, tag, clusterId, stepConfigs.size()));
 
                 // Log cluster status while waiting for it to come up
                 pollingWaiter(state, "bootstrap")
@@ -500,6 +494,25 @@ public class EmrOperatorFactory
 
                 return SubmissionResult.ofNewCluster(clusterId, stepIds);
             };
+        }
+
+        private List<String> listSubmittedStepIds(AmazonElasticMapReduce emr, String tag, String clusterId, int expectedSteps)
+        {
+            List<String> stepIds = new ArrayList<>();
+            ListStepsRequest request = new ListStepsRequest().withClusterId(clusterId);
+            while (stepIds.size() < expectedSteps) {
+                ListStepsResult result = emr.listSteps(request);
+                for (StepSummary step : result.getSteps()) {
+                    if (step.getName().contains(tag)) {
+                        stepIds.add(step.getId());
+                    }
+                }
+                if (result.getMarker() == null) {
+                    break;
+                }
+                request.setMarker(result.getMarker());
+            }
+            return stepIds;
         }
 
         private BootstrapActionConfig bootstrapAction(JsonNode action, String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles)
