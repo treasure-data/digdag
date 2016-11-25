@@ -2031,3 +2031,128 @@ Parameters
 
   *Note:* Enabling retries might cause the target endpoint to receive multiple duplicate HTTP requests. Thus retries should only be enabled if duplicated requests are tolerable. E.g. when the outcome of the HTTP request is *idempotent*.
 
+
+
+emr>: Amazon Elastic Map Reduce
+-------------------------------
+
+The **emr>:** operator can be used to run EMR jobs, create clusters and submit steps to existing clusters.
+
+
+.. code-block:: yaml
+
+    +emr_job:
+      emr>:
+      cluster:
+        name: my-cluster
+        ec2:
+          key: my-ec2-key
+        logs: s3://my-bucket/logs/
+      steps:
+        - type: spark
+          application: pi.py
+        - type: spark-sql
+          query: queries/query.sql
+          result: s3://my-bucket/results/${session_uuid}/
+        - type: script
+          script: scripts/hello.sh
+          args: [hello, world]
+
+Secrets
+~~~~~~~
+
+:command:`aws.emr.access-key-id, aws.access-key-id`
+  The AWS Access Key ID to use when submitting EMR jobs.
+
+:command:`aws.emr.secret-access-key, aws.secret-access-key`
+  The AWS Secret Access Key to use when submitting EMR jobs.
+
+Parameters
+~~~~~~~~~~
+
+:command:`cluster: STRING | OBJECT`
+  Specifies either the ID of an existing cluster to submit steps to or the configuration of a new cluster to create.
+
+  .. code-block:: yaml
+
+    cluster: j-7KHU3VCWGNAFL
+
+  .. code-block:: yaml
+
+    cluster:
+      name: my-cluster
+      ec2:
+        key: my-ec2-key
+        master:
+          type: m4.2xlarge
+        core:
+          type: m4.xlarge
+          count: 10
+      logs: s3://my-bucket/logs/
+      bootstrap:
+        - install_foo.sh
+        - name: Install Bar
+          path: install_bar.sh
+          args: [baz, quux]
+
+:command:`staging: S3_URI`
+  A S3 folder to use for staging local files for execution on the EMR cluster.
+
+  * :command:`staging: s3://my-bucket/staging/`
+
+:command:`steps: LIST`
+  A list of steps to submit to the EMR cluster.
+
+  .. code-block:: yaml
+
+    steps:
+      - type: flink
+        application: flink/WordCount.jar
+
+      - type: hive
+        script: queries/hive-query.q
+        vars:
+          INPUT: s3://my-bucket/data/
+          OUTPUT: s3://my-bucket/output/
+        hiveconf:
+          hive.support.sql11.reserved.keywords: false
+
+      - type: spark
+        application: spark/pi.scala
+
+      - type: spark
+        application: s3://my-bucket/spark/hello.py
+        args: [foo, bar]
+
+      - type: spark
+        application: spark/hello.jar
+        class: com.example.Hello
+        jars:
+          - libhello.jar
+          - s3://td-spark/td-spark-assembly-0.1.jar
+        conf:
+          spark.locality.wait: 5s
+          spark.memory.fraction: 0.5
+        args: [foo, bar]
+
+      - type: spark-sql
+        query: spark/query.sql
+        result: s3://my-bucket/results/${session_uuid}/
+
+      - type: script
+        script: s3://my-bucket/scripts/hello.sh
+        args: [hello, world]
+
+      - type: script
+        script: scripts/hello.sh
+        args: [world]
+
+      - type: command
+        command: echo
+        args: [hello, world]
+
+Output parameters
+~~~~~~~~~~~~~~~~~
+
+:command:`emr.last_cluster_id`
+  The ID of the cluster created, if any.
