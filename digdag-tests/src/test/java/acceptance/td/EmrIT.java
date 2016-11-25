@@ -148,6 +148,7 @@ public class EmrIT
                     .withJobFlowRole("EMR_EC2_DefaultRole")
                     .withServiceRole("EMR_DefaultRole")
                     .withVisibleToAllUsers(true)
+                    .withLogUri("s3://td-digdag-emr-test/logs/")
                     .withInstances(new JobFlowInstancesConfig()
                             .withEc2KeyName("digdag-test")
                             .withInstanceCount(1)
@@ -164,7 +165,7 @@ public class EmrIT
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
-            expect(Duration.ofMinutes(15), attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(true));
         }
 
@@ -178,7 +179,7 @@ public class EmrIT
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
-            expect(Duration.ofMinutes(15), attemptSuccess(server.endpoint(), attemptId));
+            expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(true));
         }
     }
