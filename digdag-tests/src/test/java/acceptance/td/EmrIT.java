@@ -106,6 +106,7 @@ public class EmrIT
         addResource(projectDir, "acceptance/emr/hello.py");
         addResource(projectDir, "acceptance/emr/hello.sh");
         addResource(projectDir, "acceptance/emr/query.sql");
+        addResource(projectDir, "acceptance/emr/pi.scala");
         addResource(projectDir, "acceptance/emr/emr_configuration.json");
         addWorkflow(projectDir, "acceptance/emr/emr.dig");
     }

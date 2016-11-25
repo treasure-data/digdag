@@ -4,6 +4,8 @@
   staging: s3://td-digdag-emr-test/staging/
   steps:
     - type: spark
+      application: pi.scala
+    - type: spark
       application: s3://td-digdag-emr-test/applications/pi.py
     - type: spark
       application: hello.py

@@ -602,11 +602,11 @@ public class EmrOperatorFactory
 
         private void sparkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
         {
-            String name = "Spark Application";
-
             FileReference applicationReference = fileReference("application", step);
-            boolean template = applicationReference.filename().endsWith(".py");
-            RemoteFile applicationFile = prepareRemoteFile(tag, stepIndex, applicationReference, staging, stagingFiles, template);
+            boolean scala = applicationReference.filename().endsWith(".scala");
+            boolean python = applicationReference.filename().endsWith(".py");
+            boolean script = scala || python;
+            RemoteFile applicationFile = prepareRemoteFile(tag, stepIndex, applicationReference, staging, stagingFiles, script);
 
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
@@ -627,23 +627,72 @@ public class EmrOperatorFactory
                     .transform(s -> ImmutableList.of("--class", s))
                     .or(ImmutableList.of());
 
+            String name;
+            if (scala) {
+                name = "Spark Shell Script";
+            }
+            else if (python) {
+                name = "Spark Py Script";
+            }
+            else {
+                name = "Spark Application";
+            }
+
             // Download
             downloadStep(tag, stepConfigs, step, applicationFile, name);
             jarFiles.forEach(f -> downloadStep(tag, stepConfigs, step, f, "Jar"));
 
-            // Submit
+            // Run
+            String command;
+            List<String> applicationArgs;
+            String deployMode;
+            List<String> args = step.getListOrEmpty("args", String.class);
+            if (scala) {
+                // spark-shell needs the script to explicitly exit, otherwise it will wait forever for user input.
+                // Fortunately spark-shell accepts multiple scripts on the command line, so we append a helper script to run last and exit the shell.
+                // This could also have been accomplished by wrapping the spark-shell invocation in a bash session that concatenates the exit command onto the user script using
+                // anonymous fifo's etc but that seems a bit more brittle. Also, this way the actual names of the scripts appear in logs instead of /dev/fd/47 etc.
+                String exitHelperFilename = "__exit-helper.scala";
+                URL exitHelperResource = Resources.getResource(EmrOperatorFactory.class, exitHelperFilename);
+                FileReference exitHelperFileReference = ImmutableFileReference.builder()
+                        .reference(exitHelperResource.toString())
+                        .type(FileReference.Type.RESOURCE)
+                        .filename(exitHelperFilename)
+                        .build();
+                RemoteFile exitHelperFile = prepareRemoteFile(tag, stepIndex, exitHelperFileReference, staging, stagingFiles, false);
+                downloadStep(tag, stepConfigs, step, exitHelperFile, "Spark Shell Script Exit Helper");
+
+                command = "spark-shell";
+                applicationArgs = ImmutableList.of("-i", applicationFile.localPath(), exitHelperFile.localPath());
+                String requiredDeployMode = "client";
+                deployMode = step.get("deploy_mode", String.class, requiredDeployMode);
+                if (!deployMode.equals(requiredDeployMode)) {
+                    throw new ConfigException("Only '" + requiredDeployMode + "' deploy_mode is supported for Spark shell scala scripts, got: '" + deployMode + "'");
+                }
+                if (!args.isEmpty()) {
+                    throw new ConfigException("The 'args' parameter is not supported for Spark shell scala scripts, got: " + args);
+                }
+            }
+            else {
+                command = "spark-submit";
+                applicationArgs = ImmutableList.<String>builder()
+                        .add(applicationFile.localPath())
+                        .addAll(args)
+                        .build();
+                deployMode = step.get("deploy_mode", String.class, "cluster");
+            }
+
             StepConfig runStep = stepConfig("Run", name, tag, step)
                     .withHadoopJarStep(new HadoopJarStepConfig()
                             .withJar("command-runner.jar")
                             .withArgs(ImmutableList.<String>builder()
-                                    .add("spark-submit")
-                                    .add("--deploy-mode", step.get("deploy_mode", String.class, "cluster"))
+                                    .add(command)
+                                    .add("--deploy-mode", deployMode)
                                     .addAll(step.getListOrEmpty("submit_options", String.class))
                                     .addAll(jarArgs)
                                     .addAll(confArgs)
                                     .addAll(classArgs)
-                                    .add(applicationFile.localPath())
-                                    .addAll(step.getListOrEmpty("args", String.class))
+                                    .addAll(applicationArgs)
                                     .build()));
             stepConfigs.add(runStep);
         }
