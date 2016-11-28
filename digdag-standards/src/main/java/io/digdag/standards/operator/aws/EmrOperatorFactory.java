@@ -367,9 +367,9 @@ public class EmrOperatorFactory
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .runOnce(new TypeReference<List<String>>() {}, s -> {
-                            logger.info("Submitting {} EMR step(s)", request.getSteps().size());
+                            logger.info("Submitting {} EMR step(s): ", request.getSteps().size(), clusterId);
                             AddJobFlowStepsResult result = emr.addJobFlowSteps(request);
-                            logger.info("Submitted {} EMR step(s): {}", request.getSteps().size(), result.getStepIds());
+                            logger.info("Submitted {} EMR step(s): {}: {}", request.getSteps().size(), clusterId, result.getStepIds());
                             return ImmutableList.copyOf(result.getStepIds());
                         });
 
