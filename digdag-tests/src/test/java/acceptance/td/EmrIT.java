@@ -225,7 +225,7 @@ public class EmrIT
                     .withJobFlowRole("EMR_EC2_DefaultRole")
                     .withServiceRole("EMR_DefaultRole")
                     .withVisibleToAllUsers(true)
-                    .withLogUri(tmpS3FolderKey + "/logs/")
+                    .withLogUri(tmpS3FolderUri + "/logs/")
                     .withInstances(new JobFlowInstancesConfig()
                             .withEc2KeyName("digdag-test")
                             .withInstanceCount(1)
