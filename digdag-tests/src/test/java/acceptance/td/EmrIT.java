@@ -245,7 +245,7 @@ public class EmrIT
             clusterIds.add(clusterId);
 
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
-                    "test_s3_folder", tmpS3FolderKey,
+                    "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
