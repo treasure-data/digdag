@@ -1,5 +1,6 @@
 package acceptance.td;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
@@ -10,6 +11,12 @@ import com.amazonaws.services.elasticmapreduce.model.RunJobFlowResult;
 import com.amazonaws.services.elasticmapreduce.model.TerminateJobFlowsRequest;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
@@ -20,17 +27,27 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.TemporaryDigdagServer;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Stream;
 
+import static io.digdag.util.RetryExecutor.retryExecutor;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.ZoneOffset.UTC;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -47,12 +64,17 @@ import static utils.TestUtils.pushProject;
 
 public class EmrIT
 {
+    private static final Logger logger = LoggerFactory.getLogger(EmrIT.class);
+
     @Rule public TemporaryFolder folder = new TemporaryFolder();
 
     private static final String S3_TEMP_BUCKET = System.getenv().getOrDefault("EMR_IT_S3_TEMP_BUCKET", "");
 
     private static final String AWS_ACCESS_KEY_ID = System.getenv().getOrDefault("EMR_IT_AWS_ACCESS_KEY_ID", "");
     private static final String AWS_SECRET_ACCESS_KEY = System.getenv().getOrDefault("EMR_IT_AWS_SECRET_ACCESS_KEY", "");
+
+    protected String tmpS3FolderKey;
+    protected AmazonS3URI tmpS3FolderUri;
 
     protected final List<String> clusterIds = new ArrayList<>();
 
@@ -113,6 +135,59 @@ public class EmrIT
         addResource(projectDir, "acceptance/emr/pi.scala");
         addResource(projectDir, "acceptance/emr/emr_configuration.json");
         addWorkflow(projectDir, "acceptance/emr/emr.dig");
+
+        DateTimeFormatter f = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmssSSS", Locale.ROOT).withZone(UTC);
+        String now = f.format(Instant.now());
+        tmpS3FolderKey = "tmp/" + now + "-" + UUID.randomUUID();
+        tmpS3FolderUri = new AmazonS3URI("s3://" + S3_TEMP_BUCKET + "/" + tmpS3FolderKey);
+
+        putS3(S3_TEMP_BUCKET, tmpS3FolderKey + "/applications/pi.py", "acceptance/emr/pi.py");
+        putS3(S3_TEMP_BUCKET, tmpS3FolderKey + "/scripts/hello.sh", "acceptance/emr/hello.sh");
+    }
+
+    private void putS3(String bucket, String key, String resource)
+            throws IOException
+    {
+        logger.info("put {} -> s3://{}/{}", resource, bucket, key);
+        URL resourceUrl = Resources.getResource(resource);
+        byte[] bytes = Resources.toByteArray(resourceUrl);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(bytes.length);
+        s3.putObject(bucket, key, new ByteArrayInputStream(bytes), metadata);
+    }
+
+    @After
+    public void cleanUpS3()
+            throws Exception
+    {
+        if (tmpS3FolderKey == null) {
+            return;
+        }
+
+        ListObjectsRequest request = new ListObjectsRequest()
+                .withBucketName(S3_TEMP_BUCKET)
+                .withPrefix(tmpS3FolderKey);
+
+        while (true) {
+            ObjectListing listing = s3.listObjects(request);
+            String[] keys = listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey).toArray(String[]::new);
+            for (String key : keys) {
+                logger.info("delete s3://{}/{}", S3_TEMP_BUCKET, key);
+            }
+            retryExecutor()
+                    .retryIf(e -> e instanceof AmazonServiceException)
+                    .run(() -> s3.deleteObjects(new DeleteObjectsRequest(S3_TEMP_BUCKET).withKeys(keys)));
+            if (listing.getNextMarker() == null) {
+                break;
+            }
+        }
+    }
+
+    @Test
+    public void foo()
+            throws Exception
+    {
+
     }
 
     @After
@@ -150,7 +225,7 @@ public class EmrIT
                     .withJobFlowRole("EMR_EC2_DefaultRole")
                     .withServiceRole("EMR_DefaultRole")
                     .withVisibleToAllUsers(true)
-                    .withLogUri("s3://td-digdag-emr-test/logs/")
+                    .withLogUri(tmpS3FolderKey + "/logs/")
                     .withInstances(new JobFlowInstancesConfig()
                             .withEc2KeyName("digdag-test")
                             .withInstanceCount(1)
@@ -165,6 +240,7 @@ public class EmrIT
             clusterIds.add(clusterId);
 
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+                    "test_s3_folder", tmpS3FolderKey,
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
@@ -179,6 +255,7 @@ public class EmrIT
             assumeThat(clusterId, not(Matchers.isEmptyOrNullString()));
 
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+                    "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
@@ -195,6 +272,7 @@ public class EmrIT
         {
             String cluster = new YamlConfigLoader().loadString(Resources.toString(Resources.getResource("acceptance/emr/cluster.yaml"), UTF_8)).toString();
             long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+                    "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", cluster,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));

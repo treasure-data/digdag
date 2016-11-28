@@ -1,7 +1,7 @@
 +emr_job:
   emr>:
   cluster: ${test_cluster}
-  staging: s3://td-digdag-emr-test/staging/
+  staging: ${test_s3_folder}/staging/
   steps:
     - type: flink
       application: WordCount.jar
@@ -9,13 +9,13 @@
       script: s3://us-east-1.elasticmapreduce.samples/cloudfront/code/Hive_CloudFront.q
       vars:
         INPUT: s3://us-east-1.elasticmapreduce.samples
-        OUTPUT: s3://td-digdag-emr-test/hive-output/
+        OUTPUT: ${test_s3_folder}/hive-output/
       hiveconf:
         hive.support.sql11.reserved.keywords: false
     - type: spark
       application: pi.scala
     - type: spark
-      application: s3://td-digdag-emr-test/applications/pi.py
+      application: ${test_s3_folder}/applications/pi.py
     - type: spark
       application: hello.py
       args: [1]
@@ -34,9 +34,9 @@
       args: [foo, bar]
     - type: spark-sql
       query: query.sql
-      result: s3://td-digdag-emr-test/results/${session_uuid}/
+      result: ${test_s3_folder}/results/${session_uuid}/
     - type: script
-      script: s3://td-digdag-emr-test/scripts/hello.sh
+      script: ${test_s3_folder}/scripts/hello.sh
       args: [hello, world]
     - type: script
       script: hello.sh
