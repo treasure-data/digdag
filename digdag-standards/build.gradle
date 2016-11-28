@@ -23,6 +23,7 @@ dependencies {
     compile 'org.postgresql:postgresql:9.4.1211'
 
     // aws
+    compile 'com.amazonaws:aws-java-sdk-sts:1.10.65'
     compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
     compile 'com.amazonaws:aws-java-sdk-emr:1.10.65'
 

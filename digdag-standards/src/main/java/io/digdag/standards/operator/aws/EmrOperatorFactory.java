@@ -3,6 +3,7 @@ package io.digdag.standards.operator.aws;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduce;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.AddJobFlowStepsRequest;
@@ -37,6 +38,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
+import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -146,6 +150,24 @@ public class EmrOperatorFactory
         @Override
         public TaskResult run(TaskExecutionContext ctx)
         {
+            String tag = state.constant("tag", String.class, this::randomTag);
+
+            AWSCredentials credentials = credentials(tag, ctx);
+
+            AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
+            AmazonS3Client s3 = new AmazonS3Client(credentials);
+
+            try {
+                return run(tag, emr, s3);
+            }
+            finally {
+                s3.shutdown();
+                emr.shutdown();
+            }
+        }
+
+        private AWSCredentials credentials(String tag, TaskExecutionContext ctx)
+        {
             SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
             SecretProvider emrSecrets = awsSecrets.getSecrets("emr");
 
@@ -156,22 +178,33 @@ public class EmrOperatorFactory
                     .or(() -> awsSecrets.getSecret("secret-access-key"));
 
             AWSCredentials credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
-            AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
-            AmazonS3Client s3 = new AmazonS3Client(credentials);
 
-            try {
-                return run(emr, s3);
+            Optional<String> roleArn = emrSecrets.getSecretOptional("role-arn")
+                    .or(awsSecrets.getSecretOptional("role-arn"));
+
+            if (!roleArn.isPresent()) {
+                return credentials;
             }
-            finally {
-                s3.shutdown();
-                emr.shutdown();
-            }
+
+            // use STS to assume role
+            String roleSessionName = emrSecrets.getSecretOptional("role-session-name")
+                    .or(awsSecrets.getSecretOptional("role-session-name"))
+                    .or("digdag-emr-" + tag);
+
+            AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(credentials);
+            AssumeRoleResult assumeResult = stsClient.assumeRole(new AssumeRoleRequest()
+                    .withRoleArn(roleArn.get())
+                    .withDurationSeconds(3600)
+                    .withRoleSessionName(roleSessionName));
+
+            return new BasicSessionCredentials(
+                    assumeResult.getCredentials().getAccessKeyId(),
+                    assumeResult.getCredentials().getSecretAccessKey(),
+                    assumeResult.getCredentials().getSessionToken());
         }
 
-        private TaskResult run(AmazonElasticMapReduce emr, AmazonS3Client s3)
+        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3)
         {
-            String tag = state.constant("tag", String.class, this::randomTag);
-
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
 
             Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
@@ -224,7 +257,7 @@ public class EmrOperatorFactory
         {
             byte[] bytes = new byte[8];
             ThreadLocalRandom.current().nextBytes(bytes);
-            return BaseEncoding.base64Url().omitPadding().encode(bytes);
+            return BaseEncoding.base32().omitPadding().encode(bytes);
         }
 
         private void waitForSteps(AmazonElasticMapReduce emr, SubmissionResult submission)

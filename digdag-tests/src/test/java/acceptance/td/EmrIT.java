@@ -72,6 +72,7 @@ public class EmrIT
 
     private static final String AWS_ACCESS_KEY_ID = System.getenv().getOrDefault("EMR_IT_AWS_ACCESS_KEY_ID", "");
     private static final String AWS_SECRET_ACCESS_KEY = System.getenv().getOrDefault("EMR_IT_AWS_SECRET_ACCESS_KEY", "");
+    private static final String AWS_ROLE = System.getenv().getOrDefault("EMR_IT_AWS_ROLE", "");
 
     protected String tmpS3FolderKey;
     protected AmazonS3URI tmpS3FolderUri;
@@ -98,8 +99,11 @@ public class EmrIT
         assumeThat(S3_TEMP_BUCKET, not(isEmptyOrNullString()));
         assumeThat(AWS_ACCESS_KEY_ID, not(isEmptyOrNullString()));
         assumeThat(AWS_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
+        assumeThat(AWS_ROLE, not(isEmptyOrNullString()));
 
         AWSCredentials credentials = new BasicAWSCredentials(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY);
+
+        // TODO: assume the supplied role?
 
         emr = new AmazonElasticMapReduceClient(credentials);
         s3 = new AmazonS3Client(credentials);
@@ -121,8 +125,9 @@ public class EmrIT
                 .port(server.port())
                 .build();
 
-        digdagClient.setProjectSecret(projectId, "aws.access-key-id", AWS_ACCESS_KEY_ID);
-        digdagClient.setProjectSecret(projectId, "aws.secret-access-key", AWS_SECRET_ACCESS_KEY);
+        digdagClient.setProjectSecret(projectId, "aws.emr.access-key-id", AWS_ACCESS_KEY_ID);
+        digdagClient.setProjectSecret(projectId, "aws.emr.secret-access-key", AWS_SECRET_ACCESS_KEY);
+        digdagClient.setProjectSecret(projectId, "aws.emr.role-arn", AWS_ROLE);
 
         addResource(projectDir, "acceptance/emr/bootstrap_foo.sh");
         addResource(projectDir, "acceptance/emr/bootstrap_hello.sh");
