@@ -2038,6 +2038,8 @@ emr>: Amazon Elastic Map Reduce
 
 The **emr>:** operator can be used to run EMR jobs, create clusters and submit steps to existing clusters.
 
+For detailed information about EMR, see the `Amazon Elastic MapReduce Documentation <https://aws.amazon.com/documentation/elastic-mapreduce/>`_.
+
 
 .. code-block:: yaml
 
@@ -2047,7 +2049,13 @@ The **emr>:** operator can be used to run EMR jobs, create clusters and submit s
         name: my-cluster
         ec2:
           key: my-ec2-key
+          master:
+            type: m3.2xlarge
+          core:
+            type: m3.xlarge
+            count: 10
         logs: s3://my-bucket/logs/
+      staging: s3://my-bucket/staging/
       steps:
         - type: spark
           application: pi.py
@@ -2067,27 +2075,64 @@ Secrets
 :command:`aws.emr.secret-access-key, aws.secret-access-key`
   The AWS Secret Access Key to use when submitting EMR jobs.
 
+:command:`aws.emr.role-arn, aws.role-arn`
+  The AWS Role to assume when submitting EMR jobs.
+
 Parameters
 ~~~~~~~~~~
 
 :command:`cluster: STRING | OBJECT`
   Specifies either the ID of an existing cluster to submit steps to or the configuration of a new cluster to create.
 
+  **Using an existing cluster:**
+
   .. code-block:: yaml
 
     cluster: j-7KHU3VCWGNAFL
+
+  **Creating a new minimal ephemeral cluster with just one node:**
+
+  .. code-block:: yaml
+
+    cluster:
+      ec2:
+        key: my-ec2-key
+      logs: s3://my-bucket/logs/
+
+  **Creating a customized cluster with several hosts:**
 
   .. code-block:: yaml
 
     cluster:
       name: my-cluster
+      auto_terminate: false
+      release: emr-5.2.0
+      applications:
+        - hadoop
+        - spark
+        - hue
+        - zookeeper
       ec2:
         key: my-ec2-key
+        subnet_id: subnet-83047402b
         master:
           type: m4.2xlarge
         core:
           type: m4.xlarge
           count: 10
+          ebs:
+            optimized: true
+            devices:
+              volume_specifiation:
+                iops: 10000
+                size_in_gb: 1000
+                type: gp2
+              volumes_per_instance: 6
+        task:
+          - type: c4.4xlarge
+            count: 20
+          - type: g2.2xlarge
+            count: 6
       logs: s3://my-bucket/logs/
       bootstrap:
         - install_foo.sh
@@ -2096,7 +2141,7 @@ Parameters
           args: [baz, quux]
 
 :command:`staging: S3_URI`
-  A S3 folder to use for staging local files for execution on the EMR cluster.
+  A S3 folder to use for staging local files for execution on the EMR cluster. *Note:* the configured AWS credentials must have permission to put and get objects in this folder.
 
   * :command:`staging: s3://my-bucket/staging/`
 
@@ -2151,8 +2196,11 @@ Parameters
         command: echo
         args: [hello, world]
 
+:command:`action_on_failure: TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE`
+  The action EMR should take in response to a job step failing.
+
 Output parameters
 ~~~~~~~~~~~~~~~~~
 
 :command:`emr.last_cluster_id`
-  The ID of the cluster created, if any.
+  The ID of the cluster created. If a pre-existing cluster was used, this parameter will not be set.
