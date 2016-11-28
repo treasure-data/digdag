@@ -206,7 +206,6 @@ public class EmrOperatorFactory
 
             // Upload files to staging area
             if (!stagingFiles.isEmpty()) {
-                String bucket = staging.get().getBucket();
                 stageFiles(s3, stagingFiles);
             }
 
