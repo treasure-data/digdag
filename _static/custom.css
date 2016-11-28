@@ -70,6 +70,7 @@ a.icon {
 
 .wy-nav-content {
   box-shadow: inset 2px 0px 8px 0px rgba(0,0,0,0.35);
+  margin: 0;
 }
 
 .wy-side-nav-search .icon-home:before {
