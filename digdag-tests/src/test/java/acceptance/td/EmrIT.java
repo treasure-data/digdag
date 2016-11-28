@@ -27,8 +27,11 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
@@ -138,13 +141,12 @@ public class EmrIT
         public void test()
                 throws Exception
         {
-            Application spark = new Application()
-                    .withName("Spark");
-
             RunJobFlowRequest request = new RunJobFlowRequest()
                     .withName("Digdag Test")
                     .withReleaseLabel("emr-5.2.0")
-                    .withApplications(spark)
+                    .withApplications(Stream.of("Hadoop", "Hive", "Spark", "Flink")
+                            .map(s -> new Application().withName(s))
+                            .collect(toList()))
                     .withJobFlowRole("EMR_EC2_DefaultRole")
                     .withServiceRole("EMR_DefaultRole")
                     .withVisibleToAllUsers(true)

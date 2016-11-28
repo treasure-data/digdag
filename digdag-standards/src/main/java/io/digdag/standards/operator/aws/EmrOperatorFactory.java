@@ -386,7 +386,7 @@ public class EmrOperatorFactory
 
             List<String> applications = cluster.getListOrEmpty("applications", String.class);
             if (applications.isEmpty()) {
-                applications = ImmutableList.of("Hadoop", "Hive", "Mahout", "Pig", "Spark", "Flink");
+                applications = ImmutableList.of("Hadoop", "Hive", "Spark", "Flink");
             }
 
             // TODO: allow configuring additional application parameters
