@@ -2,7 +2,7 @@
 
 GH_PAGES_GIT_URL="https://github.com/treasure-data/digdag-docs.git"
 GH_PAGES_BRANCH="gh-pages"
-CNAME="www.digdag.io"
+CNAME="docs.digdag.io"
 DOCS_DIR="digdag-docs/build/html"
 REVISION="$(git rev-parse HEAD)"
 GIT_USER_NAME="Circle CI"
