@@ -32,6 +32,9 @@ import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import com.amazonaws.services.elasticmapreduce.model.Tag;
 import com.amazonaws.services.elasticmapreduce.model.VolumeSpecification;
 import com.amazonaws.services.elasticmapreduce.util.StepFactory;
+import com.amazonaws.services.kms.AWSKMSClient;
+import com.amazonaws.services.kms.model.EncryptRequest;
+import com.amazonaws.services.kms.model.EncryptResult;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -46,8 +49,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.api.client.repackaged.com.google.common.base.Splitter;
+import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.io.BaseEncoding;
@@ -78,23 +84,28 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.DIRECT;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.LOCAL;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.S3;
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 
 public class EmrOperatorFactory
         implements OperatorFactory
@@ -144,7 +155,27 @@ public class EmrOperatorFactory
         @Override
         public List<String> secretSelectors()
         {
-            return ImmutableList.of("aws.*");
+            return ImmutableList.<String>builder()
+                    .add("aws.*")
+                    .addAll(secretReferences())
+                    .build();
+        }
+
+        private List<String> secretReferences()
+        {
+            List<Config> steps = params.getListOrEmpty("steps", Config.class);
+            return steps.stream()
+                    .filter(c -> c.get("type", String.class, "").equals("spark"))
+                    .map(c -> c.getNestedOrderedOrGetEmpty("conf"))
+                    .flatMap(conf -> conf.getKeys().stream().flatMap(key -> {
+                        JsonNode n = conf.get(key, JsonNode.class);
+                        if (n.isObject()) {
+                            return Stream.of(n.get("secret").asText());
+                        }
+                        else {
+                            return Stream.of();
+                        }
+                    })).collect(Collectors.toList());
         }
 
         @Override
@@ -154,11 +185,15 @@ public class EmrOperatorFactory
 
             AWSCredentials credentials = credentials(tag, ctx);
 
+            AWSKMSClient kms = new AWSKMSClient(credentials);
             AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
             AmazonS3Client s3 = new AmazonS3Client(credentials);
 
             try {
-                return run(tag, emr, s3);
+                return run(tag, emr, s3, kms, ctx);
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
             }
             finally {
                 s3.shutdown();
@@ -203,7 +238,8 @@ public class EmrOperatorFactory
                     assumeResult.getCredentials().getSessionToken());
         }
 
-        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3)
+        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx)
+                throws IOException
         {
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
 
@@ -217,7 +253,7 @@ public class EmrOperatorFactory
 
             // Construct job steps
             List<StagingFile> stagingFiles = new ArrayList<>();
-            List<StepConfig> stepConfigs = stepConfigs(tag, steps, staging, stagingFiles);
+            List<StepConfig> stepConfigs = stepConfigs(tag, steps, staging, stagingFiles, kms, ctx);
 
             // Set up job submitter
             Submitter submitter;
@@ -361,7 +397,7 @@ public class EmrOperatorFactory
                 case RESOURCE: {
                     byte[] bytes;
                     try {
-                        bytes = Resources.toByteArray(new URL(reference.reference()));
+                        bytes = Resources.toByteArray(new URL(reference.reference().get()));
                     }
                     catch (IOException e) {
                         throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
@@ -370,6 +406,11 @@ public class EmrOperatorFactory
                     metadata.setContentLength(bytes.length);
                     return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
                 }
+                case DIRECT:
+                    byte[] bytes = reference.contents().get();
+                    ObjectMetadata metadata = new ObjectMetadata();
+                    metadata.setContentLength(bytes.length);
+                    return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
                 case S3:
                 default:
                     throw new AssertionError();
@@ -715,7 +756,8 @@ public class EmrOperatorFactory
             }
         }
 
-        private List<StepConfig> stepConfigs(String tag, List<Config> steps, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles)
+        private List<StepConfig> stepConfigs(String tag, List<Config> steps, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, AWSKMSClient kms, TaskExecutionContext ctx)
+                throws IOException
         {
             List<StepConfig> stepConfigs = new ArrayList<>();
             for (int i = 0; i < steps.size(); i++) {
@@ -730,7 +772,7 @@ public class EmrOperatorFactory
                         hiveStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
                         break;
                     case "spark":
-                        sparkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        sparkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, kms, ctx);
                         break;
                     case "spark-sql":
                         sparkSqlStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
@@ -748,7 +790,8 @@ public class EmrOperatorFactory
             return stepConfigs;
         }
 
-        private void sparkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        private void sparkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step, AWSKMSClient kms, TaskExecutionContext ctx)
+                throws IOException
         {
             FileReference applicationReference = fileReference("application", step);
             boolean scala = applicationReference.filename().endsWith(".scala");
@@ -767,8 +810,22 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<String> confArgs = conf.getKeys().stream()
-                    .flatMap(key -> Stream.of("--conf", key + "=" + conf.get(key, String.class)))
+            List<Parameter> confArgs = conf.getKeys().stream()
+                    .flatMap(key -> {
+                        JsonNode c = conf.get(key, JsonNode.class);
+                        if (c.isTextual()) {
+                            return Stream.of(Parameter.ofPlain("--conf"), Parameter.ofPlain(key + "=" + c.asText()));
+                        }
+                        else if (c.isObject()) {
+                            String secretKey = c.get("secret").asText();
+                            String secretValue = ctx.secrets().getSecret(secretKey);
+                            String value = key + "=" + secretValue;
+                            return Stream.of(Parameter.ofPlain("--conf"), Parameter.ofKmsEncrypted(kmsEncrypt(kms, ctx, value)));
+                        }
+                        else {
+                            throw new ConfigException("Invalid conf: " + key + ": +'" + c + '"');
+                        }
+                    })
                     .collect(Collectors.toList());
 
             List<String> classArgs = step.getOptional("class", String.class)
@@ -786,9 +843,15 @@ public class EmrOperatorFactory
                 name = "Spark Application";
             }
 
+            ImmutableCommandRunnerConfiguration.Builder configuration = CommandRunnerConfiguration.builder();
+
             // Download
-            downloadStep(tag, stepConfigs, step, applicationFile, name);
-            jarFiles.forEach(f -> downloadStep(tag, stepConfigs, step, f, "Jar"));
+//            downloadStep(tag, stepConfigs, step, applicationFile, name);
+//            jarFiles.forEach(f -> downloadStep(tag, stepConfigs, step, f, "Jar"));
+            configuration.addDownload(DownloadConfig.of(applicationFile.s3Uri().toString(), applicationFile.localPath()));
+            for (RemoteFile jarFile : jarFiles) {
+                configuration.addDownload(DownloadConfig.of(jarFile.s3Uri().toString(), jarFile.localPath()));
+            }
 
             // Run
             String command;
@@ -808,7 +871,8 @@ public class EmrOperatorFactory
                         .filename(exitHelperFilename)
                         .build();
                 RemoteFile exitHelperFile = prepareRemoteFile(tag, stepIndex, exitHelperFileReference, staging, stagingFiles, false);
-                downloadStep(tag, stepConfigs, step, exitHelperFile, "Spark Shell Script Exit Helper");
+//                downloadStep(tag, stepConfigs, step, exitHelperFile, "Spark Shell Script Exit Helper");
+                configuration.addDownload(DownloadConfig.of(exitHelperFile.s3Uri().toString(), exitHelperFile.localPath()));
 
                 command = "spark-shell";
                 applicationArgs = ImmutableList.of("-i", applicationFile.localPath(), exitHelperFile.localPath());
@@ -830,19 +894,49 @@ public class EmrOperatorFactory
                 deployMode = step.get("deploy_mode", String.class, "cluster");
             }
 
+            configuration.addAllCommand(Parameter.ofPlain(command, "--deploy-mode", deployMode));
+            configuration.addAllCommand(Parameter.ofPlain(step.getListOrEmpty("submit_options", String.class)));
+            configuration.addAllCommand(Parameter.ofPlain(jarArgs));
+            configuration.addAllCommand(confArgs);
+            configuration.addAllCommand(Parameter.ofPlain(classArgs));
+            configuration.addAllCommand(Parameter.ofPlain(applicationArgs));
+
+            // TODO: stage and share a single command runner script for all steps
+            URL commandRunnerResource = Resources.getResource(EmrOperatorFactory.class, "command-runner.py");
+            FileReference commandRunnerFileReference = ImmutableFileReference.builder()
+                    .reference(commandRunnerResource.toString())
+                    .type(FileReference.Type.RESOURCE)
+                    .filename("command-runner.py")
+                    .build();
+            RemoteFile remoteCommandRunnerFile = prepareRemoteFile(tag, stepIndex, commandRunnerFileReference, staging, stagingFiles, false);
+
+            String configFilename = "config-" + UUID.randomUUID() + ".json";
+            ImmutableCommandRunnerConfiguration c = configuration.build();
+            FileReference configurationFileReference = ImmutableFileReference.builder()
+                    .type(FileReference.Type.DIRECT)
+                    .contents(objectMapper.writeValueAsBytes(configuration.build()))
+                    .filename(configFilename)
+                    .build();
+            RemoteFile remoteConfigurationFile = prepareRemoteFile(tag, stepIndex, configurationFileReference, staging, stagingFiles, false);
+
             StepConfig runStep = stepConfig("Run", name, tag, step)
-                    .withHadoopJarStep(new HadoopJarStepConfig()
-                            .withJar("command-runner.jar")
-                            .withArgs(ImmutableList.<String>builder()
-                                    .add(command)
-                                    .add("--deploy-mode", deployMode)
-                                    .addAll(step.getListOrEmpty("submit_options", String.class))
-                                    .addAll(jarArgs)
-                                    .addAll(confArgs)
-                                    .addAll(classArgs)
-                                    .addAll(applicationArgs)
-                                    .build()));
+                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(remoteCommandRunnerFile.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
+
             stepConfigs.add(runStep);
+        }
+
+        private String kmsEncrypt(AWSKMSClient kms, TaskExecutionContext ctx, String value)
+        {
+            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
+            EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
+            return base64(result.getCiphertextBlob());
+        }
+
+        private String base64(ByteBuffer bb)
+        {
+            byte[] bytes = new byte[bb.remaining()];
+            bb.get(bytes);
+            return Base64.getEncoder().encodeToString(bytes);
         }
 
         private void sparkSqlStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
@@ -987,7 +1081,7 @@ public class EmrOperatorFactory
                 builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
             }
             else {
-                builder.s3Uri(new AmazonS3URI(reference.reference()));
+                builder.s3Uri(new AmazonS3URI(reference.reference().get()));
             }
 
             RemoteFile remoteFile = builder.build();
@@ -1106,6 +1200,7 @@ public class EmrOperatorFactory
             LOCAL,
             RESOURCE,
             S3,
+            DIRECT,
         }
 
         Type type();
@@ -1115,9 +1210,24 @@ public class EmrOperatorFactory
             return type() != S3;
         }
 
-        String reference();
+        Optional<String> reference();
+
+        Optional<byte[]> contents();
 
         String filename();
+
+        @Value.Check
+        default void validate()
+        {
+            if (type() == DIRECT) {
+                Preconditions.checkArgument(!reference().isPresent());
+                Preconditions.checkArgument(contents().isPresent());
+            }
+            else {
+                Preconditions.checkArgument(reference().isPresent());
+                Preconditions.checkArgument(!contents().isPresent());
+            }
+        }
     }
 
     @Value.Immutable
@@ -1160,6 +1270,81 @@ public class EmrOperatorFactory
                             .map(ConfigurationJson::toConfiguration)
                             .collect(Collectors.toList()))
                     .withProperties(properties());
+        }
+    }
+
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonDeserialize(as = ImmutableCommandRunnerConfiguration.class)
+    @JsonSerialize(as = ImmutableCommandRunnerConfiguration.class)
+    interface CommandRunnerConfiguration
+    {
+        List<DownloadConfig> download();
+
+        Map<String, Parameter> env();
+
+        List<Parameter> command();
+
+        static ImmutableCommandRunnerConfiguration.Builder builder()
+        {
+            return ImmutableCommandRunnerConfiguration.builder();
+        }
+    }
+
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonDeserialize(as = ImmutableParameter.class)
+    @JsonSerialize(as = ImmutableParameter.class)
+    interface Parameter
+    {
+        String type();
+
+        String value();
+
+        static Parameter ofPlain(String value)
+        {
+            return ImmutableParameter.builder().type("plain").value(value).build();
+        }
+
+        static List<Parameter> ofPlain(String... values)
+        {
+            return ofPlain(asList(values));
+        }
+
+        static List<Parameter> ofPlain(Collection<String> values)
+        {
+            return values.stream().map(Parameter::ofPlain).collect(Collectors.toList());
+        }
+
+        static Parameter ofKmsEncrypted(String value)
+        {
+            return ImmutableParameter.builder().type("kms_encrypted").value(value).build();
+        }
+
+        static List<Parameter> ofKmsEncrypted(String... values)
+        {
+            return Stream.of(values).map(Parameter::ofKmsEncrypted).collect(Collectors.toList());
+        }
+
+        static List<Parameter> ofKmsEncrypted(Collection<String> values)
+        {
+            return values.stream().map(Parameter::ofKmsEncrypted).collect(Collectors.toList());
+        }
+    }
+
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonSerialize(as = ImmutableDownloadConfig.class)
+    @JsonDeserialize(as = ImmutableDownloadConfig.class)
+    interface DownloadConfig
+    {
+        String src();
+
+        String dst();
+
+        static DownloadConfig of(String src, String dst)
+        {
+            return ImmutableDownloadConfig.builder().src(src).dst(dst).build();
         }
     }
 }

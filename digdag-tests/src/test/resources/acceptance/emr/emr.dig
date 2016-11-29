@@ -1,4 +1,7 @@
 +emr_job:
+  _secrets:
+    td:
+      apikey: true
   emr>:
   cluster: ${test_cluster}
   staging: ${test_s3_folder}/staging/
@@ -29,6 +32,7 @@
         - libhello.jar
         - s3://td-spark/td-spark-assembly-0.1.jar
       conf:
+        spark.td.apikey: {secret: td.apikey}
         spark.locality.wait: 5s
         spark.memory.fraction: 0.5
       args: [foo, bar]

@@ -45,6 +45,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static acceptance.td.Secrets.TD_API_KEY;
 import static io.digdag.util.RetryExecutor.retryExecutor;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
@@ -73,6 +74,7 @@ public class EmrIT
     private static final String AWS_ACCESS_KEY_ID = System.getenv().getOrDefault("EMR_IT_AWS_ACCESS_KEY_ID", "");
     private static final String AWS_SECRET_ACCESS_KEY = System.getenv().getOrDefault("EMR_IT_AWS_SECRET_ACCESS_KEY", "");
     private static final String AWS_ROLE = System.getenv().getOrDefault("EMR_IT_AWS_ROLE", "");
+    private static final String AWS_KMS_KEY_ID = System.getenv().getOrDefault("EMR_IT_AWS_KMS_KEY_ID", "");
 
     protected String tmpS3FolderKey;
     protected AmazonS3URI tmpS3FolderUri;
@@ -100,6 +102,8 @@ public class EmrIT
         assumeThat(AWS_ACCESS_KEY_ID, not(isEmptyOrNullString()));
         assumeThat(AWS_SECRET_ACCESS_KEY, not(isEmptyOrNullString()));
         assumeThat(AWS_ROLE, not(isEmptyOrNullString()));
+        assumeThat(TD_API_KEY, not(isEmptyOrNullString()));
+        assumeThat(AWS_KMS_KEY_ID, not(isEmptyOrNullString()));
 
         AWSCredentials credentials = new BasicAWSCredentials(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY);
 
@@ -128,6 +132,8 @@ public class EmrIT
         digdagClient.setProjectSecret(projectId, "aws.emr.access-key-id", AWS_ACCESS_KEY_ID);
         digdagClient.setProjectSecret(projectId, "aws.emr.secret-access-key", AWS_SECRET_ACCESS_KEY);
         digdagClient.setProjectSecret(projectId, "aws.emr.role-arn", AWS_ROLE);
+        digdagClient.setProjectSecret(projectId, "aws.emr.kms_key_id", AWS_KMS_KEY_ID);
+        digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
 
         addResource(projectDir, "acceptance/emr/bootstrap_foo.sh");
         addResource(projectDir, "acceptance/emr/bootstrap_hello.sh");
