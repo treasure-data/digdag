@@ -188,13 +188,6 @@ public class EmrIT
         }
     }
 
-    @Test
-    public void foo()
-            throws Exception
-    {
-
-    }
-
     @After
     public void tearDownDigdagServer()
             throws Exception
