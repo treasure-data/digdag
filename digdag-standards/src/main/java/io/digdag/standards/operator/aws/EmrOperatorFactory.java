@@ -93,8 +93,8 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -182,6 +182,13 @@ public class EmrOperatorFactory
             }
         }
 
+        private String randomTag()
+        {
+            byte[] bytes = new byte[8];
+            ThreadLocalRandom.current().nextBytes(bytes);
+            return BaseEncoding.base32().omitPadding().encode(bytes);
+        }
+
         private AWSCredentials credentials(String tag, TaskExecutionContext ctx)
         {
             SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
@@ -231,10 +238,12 @@ public class EmrOperatorFactory
                 }
                 return uri;
             });
+            Filer filer = new Filer(staging);
 
             // Construct job steps
-            List<StagingFile> stagingFiles = new ArrayList<>();
-            List<StepConfig> stepConfigs = stepConfigs(tag, steps, staging, stagingFiles, kms, ctx);
+            StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, kms, ctx, objectMapper, defaultActionOnFailure);
+            stepCompiler.compile();
+            List<StepConfig> stepConfigs = stepCompiler.stepConfigs();
 
             // Set up job submitter
             Submitter submitter;
@@ -246,7 +255,7 @@ public class EmrOperatorFactory
             }
             if (cluster != null) {
                 // Create a new cluster
-                submitter = newClusterSubmitter(emr, tag, stepConfigs, cluster, staging, stagingFiles);
+                submitter = newClusterSubmitter(emr, tag, stepConfigs, cluster, filer);
             }
             else {
                 // Cluster ID? Use existing cluster.
@@ -255,9 +264,7 @@ public class EmrOperatorFactory
             }
 
             // Upload files to staging area
-            if (!stagingFiles.isEmpty()) {
-                stageFiles(s3, stagingFiles);
-            }
+            stageFiles(s3, filer.files());
 
             // Submit EMR job
             SubmissionResult submission = submitter.submit();
@@ -268,13 +275,6 @@ public class EmrOperatorFactory
             }
 
             return result(submission);
-        }
-
-        private String randomTag()
-        {
-            byte[] bytes = new byte[8];
-            ThreadLocalRandom.current().nextBytes(bytes);
-            return BaseEncoding.base32().omitPadding().encode(bytes);
         }
 
         private void waitForSteps(AmazonElasticMapReduce emr, SubmissionResult submission)
@@ -319,85 +319,6 @@ public class EmrOperatorFactory
                     });
         }
 
-        private void stageFiles(AmazonS3Client s3, List<StagingFile> stagingFiles)
-        {
-            // TODO: break the list of files up into smaller and throw a polling exception in between to avoid blocking this this tread a long time and to allow for agent restarts during staging.
-            pollingRetryExecutor(state, "staging")
-                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                    .runOnce(s -> {
-                        TransferManager transferManager = new TransferManager(s3);
-                        try {
-                            List<PutObjectRequest> requests = new ArrayList<>();
-                            for (StagingFile f : stagingFiles) {
-                                logger.info("Staging {} -> {}", f.file().reference().filename(), f.file().s3Uri());
-                                requests.add(stagingFilePutRequest(f));
-                            }
-
-                            List<Upload> uploads = requests.stream()
-                                    .map(transferManager::upload)
-                                    .collect(Collectors.toList());
-
-                            for (Upload upload : uploads) {
-                                try {
-                                    upload.waitForCompletion();
-                                }
-                                catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                                }
-                            }
-                        }
-                        finally {
-                            transferManager.shutdownNow(false);
-                        }
-                    });
-        }
-
-        private PutObjectRequest stagingFilePutRequest(StagingFile stagingFile)
-        {
-            AmazonS3URI uri = stagingFile.file().s3Uri();
-            FileReference reference = stagingFile.file().reference();
-            switch (reference.type()) {
-                case LOCAL: {
-                    if (stagingFile.template()) {
-                        try {
-                            String content = workspace.templateFile(templateEngine, reference.filename(), UTF_8, params);
-                            byte[] bytes = content.getBytes(UTF_8);
-                            ObjectMetadata metadata = new ObjectMetadata();
-                            metadata.setContentLength(bytes.length);
-                            return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
-                        }
-                        catch (IOException | TemplateException e) {
-                            throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                        }
-                    }
-                    else {
-                        return new PutObjectRequest(uri.getBucket(), uri.getKey(), workspace.getFile(reference.filename()));
-                    }
-                }
-                case RESOURCE: {
-                    byte[] bytes;
-                    try {
-                        bytes = Resources.toByteArray(new URL(reference.reference().get()));
-                    }
-                    catch (IOException e) {
-                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                    }
-                    ObjectMetadata metadata = new ObjectMetadata();
-                    metadata.setContentLength(bytes.length);
-                    return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
-                }
-                case DIRECT:
-                    byte[] bytes = reference.contents().get();
-                    ObjectMetadata metadata = new ObjectMetadata();
-                    metadata.setContentLength(bytes.length);
-                    return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
-                case S3:
-                default:
-                    throw new AssertionError();
-            }
-        }
-
         private TaskResult result(SubmissionResult submission)
         {
             ImmutableTaskResult.Builder result = TaskResult.defaultBuilder(request);
@@ -431,7 +352,7 @@ public class EmrOperatorFactory
             };
         }
 
-        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, List<StepConfig> stepConfigs, Config cluster, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles)
+        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, List<StepConfig> stepConfigs, Config cluster, Filer filer)
         {
             Config ec2 = cluster.getNested("ec2");
             Config master = ec2.getNestedOrGetEmpty("master");
@@ -454,9 +375,11 @@ public class EmrOperatorFactory
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
 
-            List<BootstrapActionConfig> bootstrapActions = cluster.getListOrEmpty("bootstrap", JsonNode.class).stream()
-                    .map(node -> bootstrapAction(node, tag, staging, stagingFiles))
-                    .collect(Collectors.toList());
+            List<JsonNode> bootstrap = cluster.getListOrEmpty("bootstrap", JsonNode.class);
+            List<BootstrapActionConfig> bootstrapActions = new ArrayList<>();
+            for (int i = 0; i < bootstrap.size(); i++) {
+                bootstrapActions.add(bootstrapAction(i + 1, bootstrap.get(i), tag, filer));
+            }
 
             Optional<String> subnetId = ec2.getOptional("subnet_id", String.class);
 
@@ -666,7 +589,7 @@ public class EmrOperatorFactory
             return stepIds;
         }
 
-        private BootstrapActionConfig bootstrapAction(JsonNode action, String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles)
+        private BootstrapActionConfig bootstrapAction(int index, JsonNode action, String tag, Filer filer)
         {
             String script;
             String name;
@@ -690,7 +613,7 @@ public class EmrOperatorFactory
                 throw new ConfigException("Invalid bootstrap action: " + action);
             }
 
-            RemoteFile file = prepareRemoteFile(tag, 0, reference, staging, stagingFiles, false);
+            RemoteFile file = filer.prepareRemoteFile(tag, "bootstrap", Integer.toString(index), reference, false);
 
             return new BootstrapActionConfig()
                     .withName(name)
@@ -737,53 +660,244 @@ public class EmrOperatorFactory
             }
         }
 
-        private List<StepConfig> stepConfigs(String tag, List<Config> steps, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, AWSKMSClient kms, TaskExecutionContext ctx)
+        void stageFiles(AmazonS3Client s3, List<StagingFile> files)
+        {
+            if (files.isEmpty()) {
+                return;
+            }
+
+            // TODO: break the list of files up into smaller and throw a polling exception in between to avoid blocking this this tread a long time and to allow for agent restarts during staging.
+            pollingRetryExecutor(state, "staging")
+                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                    .runOnce(s -> {
+                        TransferManager transferManager = new TransferManager(s3);
+                        try {
+                            List<PutObjectRequest> requests = new ArrayList<>();
+                            for (StagingFile f : files) {
+                                logger.info("Staging {} -> {}", f.file().reference().filename(), f.file().s3Uri());
+                                requests.add(stagingFilePutRequest(f));
+                            }
+
+                            List<Upload> uploads = requests.stream()
+                                    .map(transferManager::upload)
+                                    .collect(Collectors.toList());
+
+                            for (Upload upload : uploads) {
+                                try {
+                                    upload.waitForCompletion();
+                                }
+                                catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                                }
+                            }
+                        }
+                        finally {
+                            transferManager.shutdownNow(false);
+                        }
+                    });
+        }
+
+        private PutObjectRequest stagingFilePutRequest(StagingFile file)
+        {
+            AmazonS3URI uri = file.file().s3Uri();
+            FileReference reference = file.file().reference();
+            switch (reference.type()) {
+                case LOCAL: {
+                    if (file.template()) {
+                        try {
+                            String content = workspace.templateFile(templateEngine, reference.filename(), UTF_8, params);
+                            byte[] bytes = content.getBytes(UTF_8);
+                            ObjectMetadata metadata = new ObjectMetadata();
+                            metadata.setContentLength(bytes.length);
+                            return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
+                        }
+                        catch (IOException | TemplateException e) {
+                            throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                        }
+                    }
+                    else {
+                        return new PutObjectRequest(uri.getBucket(), uri.getKey(), workspace.getFile(reference.filename()));
+                    }
+                }
+                case RESOURCE: {
+                    byte[] bytes;
+                    try {
+                        bytes = Resources.toByteArray(new URL(reference.reference().get()));
+                    }
+                    catch (IOException e) {
+                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                    }
+                    ObjectMetadata metadata = new ObjectMetadata();
+                    metadata.setContentLength(bytes.length);
+                    return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
+                }
+                case DIRECT:
+                    byte[] bytes = reference.contents().get();
+                    ObjectMetadata metadata = new ObjectMetadata();
+                    metadata.setContentLength(bytes.length);
+                    return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
+                case S3:
+                default:
+                    throw new AssertionError();
+            }
+        }
+    }
+
+    private static class Filer
+    {
+        private final Optional<AmazonS3URI> staging;
+
+        private final List<StagingFile> files = new ArrayList<>();
+
+        Filer(Optional<AmazonS3URI> staging)
+        {
+            this.staging = staging;
+        }
+
+        RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template)
+        {
+            String relativePath = tag + "/" + section + "/" + path + "/" + reference.filename();
+            String localPath = "/home/hadoop/digdag-staging/" + relativePath;
+
+            ImmutableRemoteFile.Builder builder =
+                    ImmutableRemoteFile.builder()
+                            .reference(reference)
+                            .relativePath(relativePath)
+                            .localPath(localPath);
+
+            if (reference.local()) {
+                // Local file? Then we need to upload it to S3.
+                if (!staging.isPresent()) {
+                    throw new ConfigException("Please configure a S3 'staging' directory");
+                }
+                String baseKey = staging.get().getKey();
+                String key = (baseKey != null ? baseKey : "") + relativePath;
+                builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
+            }
+            else {
+                builder.s3Uri(new AmazonS3URI(reference.reference().get()));
+            }
+
+            RemoteFile remoteFile = builder.build();
+
+            if (reference.local()) {
+                files.add(ImmutableStagingFile.builder()
+                        .template(template)
+                        .file(remoteFile)
+                        .build());
+            }
+
+            return remoteFile;
+        }
+
+        List<StagingFile> files()
+        {
+            return files;
+        }
+    }
+
+    private static class StepCompiler
+    {
+        private final String tag;
+        private final List<Config> steps;
+        private final AWSKMSClient kms;
+        private final TaskExecutionContext ctx;
+        private final Filer filer;
+        private final ObjectMapper objectMapper;
+        private final String defaultActionOnFailure;
+
+        private List<StepConfig> configs;
+
+        private int index;
+        private Config step;
+        private RemoteFile commandRunner;
+
+        StepCompiler(String tag, List<Config> steps, Filer filer, AWSKMSClient kms, TaskExecutionContext ctx, ObjectMapper objectMapper, String defaultActionOnFailure)
+        {
+            this.tag = Preconditions.checkNotNull(tag, "tag");
+            this.steps = Preconditions.checkNotNull(steps, "steps");
+            this.kms = Preconditions.checkNotNull(kms, "kms");
+            this.ctx = Preconditions.checkNotNull(ctx, "ctx");
+            this.filer = Preconditions.checkNotNull(filer, "filer");
+            this.objectMapper = Preconditions.checkNotNull(objectMapper, "objectMapper");
+            this.defaultActionOnFailure = Preconditions.checkNotNull(defaultActionOnFailure, "defaultActionOnFailure");
+            Preconditions.checkArgument(!steps.isEmpty(), "steps");
+        }
+
+        private void compile()
                 throws IOException
         {
-            List<StepConfig> stepConfigs = new ArrayList<>();
-            for (int i = 0; i < steps.size(); i++) {
-                Config step = steps.get(i);
-                int stepIndex = i + 1;
+            URL commandRunnerResource = Resources.getResource(EmrOperatorFactory.class, "command-runner.py");
+            FileReference commandRunnerFileReference = ImmutableFileReference.builder()
+                    .reference(commandRunnerResource.toString())
+                    .type(FileReference.Type.RESOURCE)
+                    .filename("command-runner.py")
+                    .build();
+            commandRunner = filer.prepareRemoteFile(tag, "steps", "shared", commandRunnerFileReference, false);
+
+            configs = new ArrayList<>();
+            index = 1;
+            for (int i = 0; i < steps.size(); i++, index++) {
+                step = steps.get(i);
                 String type = step.get("type", String.class);
                 switch (type) {
                     case "flink":
-                        flinkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        flinkStep();
                         break;
                     case "hive":
-                        hiveStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        hiveStep();
                         break;
                     case "spark":
-                        sparkStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, kms, ctx);
+                        sparkStep();
                         break;
                     case "spark-sql":
-                        sparkSqlStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, kms, ctx);
+                        sparkSqlStep();
                         break;
                     case "script":
-                        scriptStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step);
+                        scriptStep();
                         break;
                     case "command":
-                        commandStep(tag, stepConfigs, step);
+                        commandStep();
                         break;
                     default:
                         throw new ConfigException("Unsupported step type: " + type);
                 }
             }
-            return stepConfigs;
         }
 
-        private void sparkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step, AWSKMSClient kms, TaskExecutionContext ctx)
+        List<StepConfig> stepConfigs()
+        {
+            Preconditions.checkState(configs != null);
+            return configs;
+        }
+
+        enum StepFileType
+        {
+            CONFIG,
+            HELPERS,
+            APP,
+            JARS
+        }
+
+        private RemoteFile prepareRemoteFile(StepFileType type, FileReference reference, boolean template)
+        {
+            return filer.prepareRemoteFile(tag, "steps", index + "/" + type.name().toLowerCase(Locale.ROOT), reference, template);
+        }
+
+        private void sparkStep()
                 throws IOException
         {
             FileReference applicationReference = fileReference("application", step);
             boolean scala = applicationReference.filename().endsWith(".scala");
             boolean python = applicationReference.filename().endsWith(".py");
             boolean script = scala || python;
-            RemoteFile applicationFile = prepareRemoteFile(tag, stepIndex, applicationReference, staging, stagingFiles, script);
+            RemoteFile applicationFile = prepareRemoteFile(StepFileType.APP, applicationReference, script);
 
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
-                    .map(r -> prepareRemoteFile(tag, stepIndex, r, staging, stagingFiles, false))
+                    .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
                     .collect(Collectors.toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
@@ -829,7 +943,7 @@ public class EmrOperatorFactory
                         .type(FileReference.Type.RESOURCE)
                         .filename(exitHelperFilename)
                         .build();
-                RemoteFile exitHelperFile = prepareRemoteFile(tag, stepIndex, exitHelperFileReference, staging, stagingFiles, false);
+                RemoteFile exitHelperFile = prepareRemoteFile(StepFileType.HELPERS, exitHelperFileReference, false);
                 configuration.addDownload(exitHelperFile);
 
                 command = "spark-shell";
@@ -859,7 +973,7 @@ public class EmrOperatorFactory
             configuration.addAllCommand(classArgs);
             configuration.addAllCommand(applicationArgs);
 
-            commandStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, name, configuration.build());
+            commandStep(name, configuration.build());
         }
 
         private List<Parameter> sparkConfArgs(AWSKMSClient kms, TaskExecutionContext ctx, Config conf)
@@ -883,59 +997,36 @@ public class EmrOperatorFactory
                     .collect(Collectors.toList());
         }
 
-        private void commandStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step, String name, CommandRunnerConfiguration c)
+        private void commandStep(String name, CommandRunnerConfiguration c)
                 throws IOException
         {
-            // TODO: stage and share a single command runner script for all steps
-            URL commandRunnerResource = Resources.getResource(EmrOperatorFactory.class, "command-runner.py");
-            FileReference commandRunnerFileReference = ImmutableFileReference.builder()
-                    .reference(commandRunnerResource.toString())
-                    .type(FileReference.Type.RESOURCE)
-                    .filename("command-runner.py")
-                    .build();
-            RemoteFile remoteCommandRunnerFile = prepareRemoteFile(tag, stepIndex, commandRunnerFileReference, staging, stagingFiles, false);
-
-            String configFilename = "config-" + UUID.randomUUID() + ".json";
+            String configFilename = "config.json";
             FileReference configurationFileReference = ImmutableFileReference.builder()
                     .type(FileReference.Type.DIRECT)
                     .contents(objectMapper.writeValueAsBytes(c))
                     .filename(configFilename)
                     .build();
-            RemoteFile remoteConfigurationFile = prepareRemoteFile(tag, stepIndex, configurationFileReference, staging, stagingFiles, false);
+            RemoteFile remoteConfigurationFile = prepareRemoteFile(StepFileType.CONFIG, configurationFileReference, false);
 
             StepConfig runStep = stepConfig(name, tag, step)
-                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(remoteCommandRunnerFile.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
+                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(commandRunner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
 
-            stepConfigs.add(runStep);
+            configs.add(runStep);
         }
 
-        private String kmsEncrypt(AWSKMSClient kms, TaskExecutionContext ctx, String value)
-        {
-            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
-            EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
-            return base64(result.getCiphertextBlob());
-        }
-
-        private String base64(ByteBuffer bb)
-        {
-            byte[] bytes = new byte[bb.remaining()];
-            bb.get(bytes);
-            return Base64.getEncoder().encodeToString(bytes);
-        }
-
-        private void sparkSqlStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step, AWSKMSClient kms, TaskExecutionContext ctx)
+        private void sparkSqlStep()
                 throws IOException
         {
             FileReference wrapperFileReference = FileReference.ofResource("spark-sql-wrapper.py");
-            RemoteFile wrapperFile = prepareRemoteFile(tag, stepIndex, wrapperFileReference, staging, stagingFiles, false);
+            RemoteFile wrapperFile = prepareRemoteFile(StepFileType.HELPERS, wrapperFileReference, false);
 
             FileReference queryReference = fileReference("query", step);
-            RemoteFile queryFile = prepareRemoteFile(tag, stepIndex, queryReference, staging, stagingFiles, true);
+            RemoteFile queryFile = prepareRemoteFile(StepFileType.APP, queryReference, true);
 
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
-                    .map(r -> prepareRemoteFile(tag, stepIndex, r, staging, stagingFiles, false))
+                    .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
                     .collect(Collectors.toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
@@ -958,26 +1049,26 @@ public class EmrOperatorFactory
                     .addAllCommand(queryReference.filename(), step.get("result", String.class))
                     .build();
 
-            commandStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, "Spark Sql", configuration);
+            commandStep("Spark Sql", configuration);
         }
 
-        private void scriptStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        private void scriptStep()
         {
             FileReference fileReference = fileReference("script", step);
-            RemoteFile remoteFile = prepareRemoteFile(tag, stepIndex, fileReference, staging, stagingFiles, false);
+            RemoteFile remoteFile = prepareRemoteFile(StepFileType.APP, fileReference, false);
             String[] args = step.getListOrEmpty("args", String.class).stream().toArray(String[]::new);
             StepConfig stepConfig = stepConfig("Script", tag, step)
                     .withHadoopJarStep(stepFactory().newScriptRunnerStep(remoteFile.s3Uri().toString(), args));
-            stepConfigs.add(stepConfig);
+            configs.add(stepConfig);
         }
 
-        private void flinkStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        private void flinkStep()
                 throws IOException
         {
             String name = "Flink Application";
 
             FileReference fileReference = fileReference("application", step);
-            RemoteFile remoteFile = prepareRemoteFile(tag, stepIndex, fileReference, staging, stagingFiles, false);
+            RemoteFile remoteFile = prepareRemoteFile(StepFileType.APP, fileReference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addDownload(remoteFile)
@@ -988,13 +1079,13 @@ public class EmrOperatorFactory
                     .addAllCommand(step.getListOrEmpty("args", String.class))
                     .build();
 
-            commandStep(tag, staging, stagingFiles, stepConfigs, stepIndex, step, name, configuration);
+            commandStep(name, configuration);
         }
 
-        private void hiveStep(String tag, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, List<StepConfig> stepConfigs, int stepIndex, Config step)
+        private void hiveStep()
         {
             FileReference scriptReference = fileReference("script", step);
-            RemoteFile remoteScript = prepareRemoteFile(tag, stepIndex, scriptReference, staging, stagingFiles, false);
+            RemoteFile remoteScript = prepareRemoteFile(StepFileType.APP, scriptReference, false);
 
             Config hiveConf = step.getNestedOrGetEmpty("hiveconf");
             List<String> hiveconfArgs = hiveConf.getKeys().stream()
@@ -1015,7 +1106,32 @@ public class EmrOperatorFactory
                                     .addAll(hiveconfArgs)
                                     .build()));
 
-            stepConfigs.add(stepConfig);
+            configs.add(stepConfig);
+        }
+
+        private void commandStep()
+        {
+            String[] args = step.getListOrEmpty("args", String.class).toArray(new String[0]);
+            StepConfig stepConfig = stepConfig("Command", tag, step)
+                    .withHadoopJarStep(new HadoopJarStepConfig()
+                            .withJar("command-runner.jar")
+                            .withArgs(step.get("command", String.class))
+                            .withArgs(args));
+            configs.add(stepConfig);
+        }
+
+        private String kmsEncrypt(AWSKMSClient kms, TaskExecutionContext ctx, String value)
+        {
+            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
+            EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
+            return base64(result.getCiphertextBlob());
+        }
+
+        private String base64(ByteBuffer bb)
+        {
+            byte[] bytes = new byte[bb.remaining()];
+            bb.get(bytes);
+            return Base64.getEncoder().encodeToString(bytes);
         }
 
         private StepFactory stepFactory()
@@ -1032,89 +1148,39 @@ public class EmrOperatorFactory
                     // TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE
                     .withActionOnFailure(step.get("action_on_failure", String.class, defaultActionOnFailure));
         }
+    }
 
-        private RemoteFile prepareRemoteFile(String tag, int stepIndex, FileReference reference, Optional<AmazonS3URI> staging, List<StagingFile> stagingFiles, boolean template)
-        {
-            String relativePath = tag + "/" + stepIndex + "/" + reference.filename();
-            String localPath = "/home/hadoop/digdag-staging/" + relativePath;
+    private static FileReference fileReference(String key, Config config)
+    {
+        String reference = config.get(key, String.class);
+        return fileReference(key, reference);
+    }
 
-            ImmutableRemoteFile.Builder builder =
-                    ImmutableRemoteFile.builder()
-                            .reference(reference)
-                            .relativePath(relativePath)
-                            .localPath(localPath);
-
-            if (reference.local()) {
-                // Local file? Then we need to upload it to S3.
-                if (!staging.isPresent()) {
-                    throw new ConfigException("Please configure a S3 'staging' directory");
-                }
-                String baseKey = staging.get().getKey();
-                String key = (baseKey != null ? baseKey : "") + relativePath;
-                builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
+    private static FileReference fileReference(String key, String reference)
+    {
+        if (reference.startsWith("s3:")) {
+            // File on S3
+            AmazonS3URI uri;
+            try {
+                uri = new AmazonS3URI(reference);
+                Preconditions.checkArgument(uri.getKey() == null || uri.getKey().endsWith("/"), "path must be a folder");
             }
-            else {
-                builder.s3Uri(new AmazonS3URI(reference.reference().get()));
+            catch (IllegalArgumentException e) {
+                throw new ConfigException("Invalid " + key + ": '" + reference + "'", e);
             }
-
-            RemoteFile remoteFile = builder.build();
-
-            if (reference.local()) {
-                stagingFiles.add(ImmutableStagingFile.builder()
-                        .template(template)
-                        .file(remoteFile)
-                        .build());
-            }
-
-            return remoteFile;
+            return ImmutableFileReference.builder()
+                    .reference(reference)
+                    .filename(Iterables.getLast(Splitter.on('/').split(reference), ""))
+                    .type(S3)
+                    .build();
         }
-
-        private FileReference fileReference(String key, Config config)
-        {
-            String reference = config.get(key, String.class);
-            return fileReference(key, reference);
-        }
-
-        private FileReference fileReference(String key, String reference)
-        {
-            if (reference.startsWith("s3:")) {
-                // File on S3
-                AmazonS3URI uri;
-                String invalidMessage = "Invalid " + key + ": '" + reference + "'";
-                try {
-                    uri = new AmazonS3URI(reference);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new ConfigException(invalidMessage, e);
-                }
-                if (uri.getKey() == null || uri.getKey().endsWith("/")) {
-                    throw new ConfigException(invalidMessage);
-                }
-                return ImmutableFileReference.builder()
-                        .reference(reference)
-                        .filename(Iterables.getLast(Splitter.on('/').split(reference), ""))
-                        .type(S3)
-                        .build();
-            }
-            else {
-                // Local file
-                return ImmutableFileReference.builder()
-                        .reference(reference)
-                        .filename(Paths.get(reference).getFileName().toString())
-                        .type(LOCAL)
-                        .build();
-            }
-        }
-
-        private void commandStep(String tag, List<StepConfig> stepConfigs, Config step)
-        {
-            String[] args = step.getListOrEmpty("args", String.class).toArray(new String[0]);
-            StepConfig stepConfig = stepConfig("Command", tag, step)
-                    .withHadoopJarStep(new HadoopJarStepConfig()
-                            .withJar("command-runner.jar")
-                            .withArgs(step.get("command", String.class))
-                            .withArgs(args));
-            stepConfigs.add(stepConfig);
+        else {
+            // Local file
+            return ImmutableFileReference.builder()
+                    .reference(reference)
+                    .filename(Paths.get(reference).getFileName().toString())
+                    .type(LOCAL)
+                    .build();
         }
     }
 
