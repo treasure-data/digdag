@@ -17,7 +17,6 @@ import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
 import com.amazonaws.services.elasticmapreduce.model.DescribeStepRequest;
 import com.amazonaws.services.elasticmapreduce.model.EbsBlockDeviceConfig;
 import com.amazonaws.services.elasticmapreduce.model.EbsConfiguration;
-import com.amazonaws.services.elasticmapreduce.model.HadoopJarStepConfig;
 import com.amazonaws.services.elasticmapreduce.model.InstanceGroupConfig;
 import com.amazonaws.services.elasticmapreduce.model.JobFlowInstancesConfig;
 import com.amazonaws.services.elasticmapreduce.model.ListStepsRequest;
@@ -96,6 +95,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -242,6 +243,7 @@ public class EmrOperatorFactory
 
             // Construct job steps
             StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, kms, ctx, objectMapper, defaultActionOnFailure);
+            // TODO: only compile once when submitting (and especially avoid fetching and encrypting secrets each time)
             stepCompiler.compile();
             List<StepConfig> stepConfigs = stepCompiler.stepConfigs();
 
@@ -806,6 +808,7 @@ public class EmrOperatorFactory
         private final Filer filer;
         private final ObjectMapper objectMapper;
         private final String defaultActionOnFailure;
+        private final ConfigFactory cf;
 
         private List<StepConfig> configs;
 
@@ -822,6 +825,7 @@ public class EmrOperatorFactory
             this.filer = Preconditions.checkNotNull(filer, "filer");
             this.objectMapper = Preconditions.checkNotNull(objectMapper, "objectMapper");
             this.defaultActionOnFailure = Preconditions.checkNotNull(defaultActionOnFailure, "defaultActionOnFailure");
+            this.cf = new ConfigFactory(objectMapper);
             Preconditions.checkArgument(!steps.isEmpty(), "steps");
         }
 
@@ -877,7 +881,8 @@ public class EmrOperatorFactory
             CONFIG,
             HELPERS,
             APP,
-            JARS
+            JARS,
+            FILES
         }
 
         private RemoteFile prepareRemoteFile(StepFileType type, FileReference reference, boolean template)
@@ -894,6 +899,16 @@ public class EmrOperatorFactory
             boolean script = scala || python;
             RemoteFile applicationFile = prepareRemoteFile(StepFileType.APP, applicationReference, script);
 
+            List<String> files = step.getListOrEmpty("files", String.class);
+            List<RemoteFile> filesFiles = files.stream()
+                    .map(r -> fileReference("file", r))
+                    .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                    .collect(Collectors.toList());
+
+            List<String> filesArgs = filesFiles.isEmpty()
+                    ? ImmutableList.of()
+                    : ImmutableList.of("--files", filesFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
+
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
@@ -905,7 +920,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = sparkConfArgs(kms, ctx, conf);
+            List<Parameter> confArgs = parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
 
             List<String> classArgs = step.getOptional("class", String.class)
                     .transform(s -> ImmutableList.of("--class", s))
@@ -926,6 +941,7 @@ public class EmrOperatorFactory
 
             configuration.addDownload(applicationFile);
             configuration.addAllDownload(jarFiles);
+            configuration.addAllDownload(filesFiles);
 
             String command;
             List<String> applicationArgs;
@@ -969,49 +985,12 @@ public class EmrOperatorFactory
             configuration.addAllCommand(command, "--deploy-mode", deployMode);
             configuration.addAllCommand(step.getListOrEmpty("submit_options", String.class));
             configuration.addAllCommand(jarArgs);
+            configuration.addAllCommand(filesArgs);
             configuration.addAllCommand(confArgs);
             configuration.addAllCommand(classArgs);
             configuration.addAllCommand(applicationArgs);
 
-            commandStep(name, configuration.build());
-        }
-
-        private List<Parameter> sparkConfArgs(AWSKMSClient kms, TaskExecutionContext ctx, Config conf)
-        {
-            return conf.getKeys().stream()
-                    .flatMap(key -> {
-                        JsonNode c = conf.get(key, JsonNode.class);
-                        if (c.isTextual()) {
-                            return Stream.of(Parameter.ofPlain("--conf"), Parameter.ofPlain(key + "=" + c.asText()));
-                        }
-                        else if (c.isObject()) {
-                            String secretKey = c.get("secret").asText();
-                            String secretValue = ctx.secrets().getSecret(secretKey);
-                            String value = key + "=" + secretValue;
-                            return Stream.of(Parameter.ofPlain("--conf"), Parameter.ofKmsEncrypted(kmsEncrypt(kms, ctx, value)));
-                        }
-                        else {
-                            throw new ConfigException("Invalid conf: " + key + ": +'" + c + '"');
-                        }
-                    })
-                    .collect(Collectors.toList());
-        }
-
-        private void commandStep(String name, CommandRunnerConfiguration c)
-                throws IOException
-        {
-            String configFilename = "config.json";
-            FileReference configurationFileReference = ImmutableFileReference.builder()
-                    .type(FileReference.Type.DIRECT)
-                    .contents(objectMapper.writeValueAsBytes(c))
-                    .filename(configFilename)
-                    .build();
-            RemoteFile remoteConfigurationFile = prepareRemoteFile(StepFileType.CONFIG, configurationFileReference, false);
-
-            StepConfig runStep = stepConfig(name, tag, step)
-                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(commandRunner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
-
-            configs.add(runStep);
+            addStep(name, configuration.build());
         }
 
         private void sparkSqlStep()
@@ -1034,7 +1013,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = sparkConfArgs(kms, ctx, conf);
+            List<Parameter> confArgs = parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addDownload(wrapperFile)
@@ -1043,23 +1022,36 @@ public class EmrOperatorFactory
                     .addAllCommand("--deploy-mode", step.get("deploy_mode", String.class, "cluster"))
                     .addAllCommand("--files", queryFile.localPath())
                     .addAllCommand(confArgs)
-                    .addAllCommand(step.getListOrEmpty("submit_options", String.class))
+                    .addAllCommand(parameters(step, "submit_options"))
                     .addAllCommand(jarArgs)
                     .addAllCommand(wrapperFile.localPath())
                     .addAllCommand(queryReference.filename(), step.get("result", String.class))
                     .build();
 
-            commandStep("Spark Sql", configuration);
+            addStep("Spark Sql", configuration);
         }
 
         private void scriptStep()
+                throws IOException
         {
-            FileReference fileReference = fileReference("script", step);
-            RemoteFile remoteFile = prepareRemoteFile(StepFileType.APP, fileReference, false);
-            String[] args = step.getListOrEmpty("args", String.class).stream().toArray(String[]::new);
-            StepConfig stepConfig = stepConfig("Script", tag, step)
-                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(remoteFile.s3Uri().toString(), args));
-            configs.add(stepConfig);
+            FileReference scriptReference = fileReference("script", step);
+            RemoteFile scriptFile = prepareRemoteFile(StepFileType.APP, scriptReference, false);
+
+            List<String> files = step.getListOrEmpty("files", String.class);
+            List<RemoteFile> filesFiles = files.stream()
+                    .map(r -> fileReference("file", r))
+                    .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                    .collect(Collectors.toList());
+
+            CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .addDownload(scriptFile)
+                    .addAllDownload(filesFiles)
+                    .addAllCommand(scriptFile.localPath())
+                    .addAllCommand(parameters(step, "args"))
+                    .build();
+
+            addStep("Script", configuration);
         }
 
         private void flinkStep()
@@ -1076,51 +1068,105 @@ public class EmrOperatorFactory
                             "flink", "run", "-m", "yarn-cluster",
                             "-yn", Integer.toString(step.get("yarn_containers", int.class, 2)),
                             remoteFile.localPath())
-                    .addAllCommand(step.getListOrEmpty("args", String.class))
+                    .addAllCommand(parameters(step, "args"))
                     .build();
 
-            commandStep(name, configuration);
+            addStep(name, configuration);
         }
 
         private void hiveStep()
+                throws IOException
         {
             FileReference scriptReference = fileReference("script", step);
             RemoteFile remoteScript = prepareRemoteFile(StepFileType.APP, scriptReference, false);
 
-            Config hiveConf = step.getNestedOrGetEmpty("hiveconf");
-            List<String> hiveconfArgs = hiveConf.getKeys().stream()
-                    .flatMap(key -> Stream.of("-hiveconf", key + "=" + hiveConf.get(key, String.class)))
-                    .collect(Collectors.toList());
+            CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .addAllCommand("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
+                    .addAllCommand(parameters("-d", step.getNestedOrGetEmpty("vars"), "vars", (key, value) -> key + "=" + value))
+                    .addAllCommand(parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), "hiveconf", (key, value) -> key + "=" + value))
+                    .build();
 
-            Config varsConf = step.getNestedOrGetEmpty("vars");
-            List<String> varsArgs = varsConf.getKeys().stream()
-                    .flatMap(key -> Stream.of("-d", key + "=" + varsConf.get(key, String.class)))
-                    .collect(Collectors.toList());
-
-            StepConfig stepConfig = stepConfig("Hive Script", tag, step)
-                    .withHadoopJarStep(new HadoopJarStepConfig()
-                            .withJar("command-runner.jar")
-                            .withArgs(ImmutableList.<String>builder()
-                                    .add("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
-                                    .addAll(varsArgs)
-                                    .addAll(hiveconfArgs)
-                                    .build()));
-
-            configs.add(stepConfig);
+            addStep("Hive Script", configuration);
         }
 
         private void commandStep()
+                throws IOException
         {
-            String[] args = step.getListOrEmpty("args", String.class).toArray(new String[0]);
-            StepConfig stepConfig = stepConfig("Command", tag, step)
-                    .withHadoopJarStep(new HadoopJarStepConfig()
-                            .withJar("command-runner.jar")
-                            .withArgs(step.get("command", String.class))
-                            .withArgs(args));
-            configs.add(stepConfig);
+            CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .addAllDownload(step.getListOrEmpty("files", String.class).stream()
+                            .map(r -> fileReference("file", r))
+                            .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                            .collect(Collectors.toList()))
+                    .addAllCommand(step.get("command", String.class))
+                    .addAllCommand(parameters(step, "args"))
+                    .build();
+
+            addStep("Command", configuration);
         }
 
-        private String kmsEncrypt(AWSKMSClient kms, TaskExecutionContext ctx, String value)
+        private void addStep(String name, CommandRunnerConfiguration configuration)
+                throws IOException
+        {
+            String configFilename = "config.json";
+            FileReference configurationFileReference = ImmutableFileReference.builder()
+                    .type(FileReference.Type.DIRECT)
+                    .contents(objectMapper.writeValueAsBytes(configuration))
+                    .filename(configFilename)
+                    .build();
+            RemoteFile remoteConfigurationFile = prepareRemoteFile(StepFileType.CONFIG, configurationFileReference, false);
+
+            StepConfig runStep = stepConfig(name, tag, step)
+                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(commandRunner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
+
+            configs.add(runStep);
+        }
+
+        private List<Parameter> parameters(String flag, Config config, String name, BiFunction<String, String, String> f)
+        {
+            return parameters(config, name, f).values().stream()
+                    .flatMap(p -> Stream.of(Parameter.ofPlain(flag), p))
+                    .collect(Collectors.toList());
+        }
+
+        private List<Parameter> parameters(Config config, String key)
+        {
+            return config.getListOrEmpty(key, JsonNode.class).stream()
+                    .map(node -> parameter(key, node, Function.identity()))
+                    .collect(Collectors.toList());
+        }
+
+        private Map<String, Parameter> parameters(Config config, String name, BiFunction<String, String, String> f)
+        {
+            return config.getKeys().stream()
+                    .collect(Collectors.toMap(
+                            Function.identity(),
+                            key -> parameter(name, config, key, f)));
+        }
+
+        private Parameter parameter(String name, Config config, String key, BiFunction<String, String, String> f)
+        {
+            JsonNode node = config.get(key, JsonNode.class);
+            return parameter(name, node, value -> f.apply(key, value));
+        }
+
+        private Parameter parameter(String name, JsonNode value, Function<String, String> f)
+        {
+
+            if (value.isObject()) {
+                String secretKey = cf.create(value).get("secret", String.class);
+                String secretValue = ctx.secrets().getSecret(secretKey);
+                return Parameter.ofKmsEncrypted(kmsEncrypt(f.apply(secretValue)));
+            }
+            else if (value.isArray()) {
+                throw new ConfigException("Invalid '" + name + "' value: '" + value + "'");
+            }
+            else {
+                return Parameter.ofPlain(f.apply(value.asText()));
+            }
+        }
+
+        private String kmsEncrypt(String value)
         {
             String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
             EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
@@ -1163,7 +1209,7 @@ public class EmrOperatorFactory
             AmazonS3URI uri;
             try {
                 uri = new AmazonS3URI(reference);
-                Preconditions.checkArgument(uri.getKey() == null || uri.getKey().endsWith("/"), "path must be a folder");
+                Preconditions.checkArgument(uri.getKey() != null & !uri.getKey().endsWith("/"), "must be a file");
             }
             catch (IllegalArgumentException e) {
                 throw new ConfigException("Invalid " + key + ": '" + reference + "'", e);

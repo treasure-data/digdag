@@ -28,6 +28,8 @@
     - type: spark
       application: simple.jar
       class: SimpleApp
+      files:
+        - data.csv
       jars:
         - libhello.jar
       conf:

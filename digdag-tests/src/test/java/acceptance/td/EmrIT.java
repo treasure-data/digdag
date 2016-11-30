@@ -149,6 +149,7 @@ public class EmrIT
         addResource(projectDir, "acceptance/emr/query.sql");
         addResource(projectDir, "acceptance/emr/pi.scala");
         addResource(projectDir, "acceptance/emr/td-www_access.scala");
+        addResource(projectDir, "acceptance/emr/data.csv");
         addResource(projectDir, "acceptance/emr/emr_configuration.json");
         addWorkflow(projectDir, "acceptance/emr/emr.dig");
 
