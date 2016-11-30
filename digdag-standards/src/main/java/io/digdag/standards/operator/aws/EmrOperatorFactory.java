@@ -1047,7 +1047,7 @@ public class EmrOperatorFactory
                     .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addDownload(scriptFile)
                     .addAllDownload(filesFiles)
-                    .addAllCommand(scriptFile.localPath())
+                    .addAllCommand("bash", scriptFile.localPath())
                     .addAllCommand(parameters(step, "args"))
                     .build();
 
