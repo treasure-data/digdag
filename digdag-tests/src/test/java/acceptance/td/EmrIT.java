@@ -16,8 +16,11 @@ import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.config.YamlConfigLoader;
@@ -33,6 +36,7 @@ import utils.TemporaryDigdagServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -144,6 +148,7 @@ public class EmrIT
         addResource(projectDir, "acceptance/emr/hello.sh");
         addResource(projectDir, "acceptance/emr/query.sql");
         addResource(projectDir, "acceptance/emr/pi.scala");
+        addResource(projectDir, "acceptance/emr/td-www_access.scala");
         addResource(projectDir, "acceptance/emr/emr_configuration.json");
         addWorkflow(projectDir, "acceptance/emr/emr.dig");
 
@@ -248,6 +253,9 @@ public class EmrIT
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
+
+            validateTdSparkQueryOutput();
+
             assertThat(Files.exists(outfile), is(true));
         }
 
@@ -263,6 +271,9 @@ public class EmrIT
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
+
+            validateTdSparkQueryOutput();
+
             assertThat(Files.exists(outfile), is(true));
         }
     }
@@ -280,7 +291,27 @@ public class EmrIT
                     "test_cluster", cluster,
                     "outfile", outfile.toString()));
             expect(Duration.ofMinutes(30), attemptSuccess(server.endpoint(), attemptId));
+
+            validateTdSparkQueryOutput();
+
             assertThat(Files.exists(outfile), is(true));
         }
     }
+
+    protected void validateTdSparkQueryOutput()
+    {
+        AmazonS3URI resultUri = new AmazonS3URI(tmpS3FolderUri.toString() + "/result/");
+        ObjectListing resultListing = s3.listObjects(new ListObjectsRequest().withBucketName(resultUri.getBucket()).withPrefix(resultUri.getKey()));
+        List<String> resultLines = resultListing.getObjectSummaries().stream().flatMap(o -> {
+            try (S3Object object = s3.getObject(o.getBucketName(), o.getKey())) {
+                return CharStreams.readLines(new InputStreamReader(object.getObjectContent())).stream();
+            }
+            catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+        }).collect(toList());
+        assertThat(resultLines, Matchers.hasItem(",164.54.104.106,/item/games/4663,/category/electronics,404,Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0),121,GET,1412383598"));
+    }
+
+
 }

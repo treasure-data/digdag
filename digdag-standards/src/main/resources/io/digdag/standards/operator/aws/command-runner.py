@@ -99,7 +99,10 @@ def main():
     s3 = connect_s3(host='s3.amazonaws.com', **aws_credentials)
 
     # Fetch config json
-    config = json.loads(download_to_string(s3, args.config_uri))
+    config_filename = os.path.basename(args.config_uri)
+    download_to_filename(s3, args.config_uri, config_filename)
+    with open(config_filename, 'rb') as f:
+        config = json.load(f)
 
     # Compile environment variables
     env_parameters = {}
