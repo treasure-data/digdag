@@ -74,9 +74,9 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
-import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.Workspace;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +101,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.io.Closeables.closeQuietly;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.DIRECT;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.LOCAL;
 import static io.digdag.standards.operator.aws.EmrOperatorFactory.FileReference.Type.S3;
@@ -231,8 +232,7 @@ public class EmrOperatorFactory
         private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx)
                 throws IOException
         {
-            List<Config> steps = params.getListOrEmpty("steps", Config.class);
-
+            // Set up file stager
             Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
                 AmazonS3URI uri = new AmazonS3URI(s);
                 if (uri.getKey() != null && !uri.getKey().endsWith("/")) {
@@ -240,13 +240,11 @@ public class EmrOperatorFactory
                 }
                 return uri;
             });
-            Filer filer = new Filer(staging);
+            Filer filer = new Filer(s3, staging, workspace, templateEngine, params);
 
-            // Construct job steps
+            // Set up step compiler
+            List<Config> steps = params.getListOrEmpty("steps", Config.class);
             StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, kms, ctx, objectMapper, defaultActionOnFailure);
-            // TODO: only compile once when submitting (and especially avoid fetching and encrypting secrets each time)
-            stepCompiler.compile();
-            List<StepConfig> stepConfigs = stepCompiler.stepConfigs();
 
             // Set up job submitter
             Submitter submitter;
@@ -258,16 +256,13 @@ public class EmrOperatorFactory
             }
             if (cluster != null) {
                 // Create a new cluster
-                submitter = newClusterSubmitter(emr, tag, stepConfigs, cluster, filer);
+                submitter = newClusterSubmitter(emr, tag, stepCompiler, cluster, filer);
             }
             else {
                 // Cluster ID? Use existing cluster.
                 String clusterId = params.get("cluster", String.class);
-                submitter = existingClusterSubmitter(emr, stepConfigs, clusterId);
+                submitter = existingClusterSubmitter(emr, stepCompiler, clusterId, filer);
             }
-
-            // Upload files to staging area
-            stageFiles(s3, filer.files());
 
             // Submit EMR job
             SubmissionResult submission = submitter.submit();
@@ -334,17 +329,24 @@ public class EmrOperatorFactory
             return result.build();
         }
 
-        private Submitter existingClusterSubmitter(AmazonElasticMapReduce emr, List<StepConfig> stepConfigs, String clusterId)
+        private Submitter existingClusterSubmitter(AmazonElasticMapReduce emr, StepCompiler stepCompiler, String clusterId, Filer filer)
         {
             return () -> {
-                AddJobFlowStepsRequest request = new AddJobFlowStepsRequest()
-                        .withJobFlowId(clusterId)
-                        .withSteps(stepConfigs);
-
                 List<String> stepIds = pollingRetryExecutor(state, "submission")
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .runOnce(new TypeReference<List<String>>() {}, s -> {
+
+                            // Compile steps
+                            stepCompiler.compile();
+
+                            // Stage files to S3
+                            filer.stageFiles();
+
+                            AddJobFlowStepsRequest request = new AddJobFlowStepsRequest()
+                                    .withJobFlowId(clusterId)
+                                    .withSteps(stepCompiler.stepConfigs());
+
                             logger.info("Submitting {} EMR step(s): ", request.getSteps().size(), clusterId);
                             AddJobFlowStepsResult result = emr.addJobFlowSteps(request);
                             logger.info("Submitted {} EMR step(s): {}: {}", request.getSteps().size(), clusterId, result.getStepIds());
@@ -355,8 +357,95 @@ public class EmrOperatorFactory
             };
         }
 
-        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, List<StepConfig> stepConfigs, Config cluster, Filer filer)
+        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config clusterConfig, Filer filer)
         {
+
+            return () -> {
+                // Start cluster
+                NewCluster cluster = pollingRetryExecutor(state, "submission")
+                        .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
+                        // TODO: EMR requests are not idempotent, thus retrying might produce duplicate cluster submissions.
+                        .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                        .runOnce(NewCluster.class, s -> submitNewClusterRequest(emr, tag, stepCompiler, clusterConfig, filer));
+
+                // Get submitted step IDs
+                List<String> stepIds = pollingRetryExecutor(this.state, "steps")
+                        .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
+                        .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                        .runOnce(new TypeReference<List<String>>() {}, s -> {
+                            List<String> ids = listSubmittedStepIds(emr, tag, cluster);
+                            logger.info("EMR step ID's: {}: {}", cluster.id(), ids);
+                            return ids;
+                        });
+
+                // Log cluster status while waiting for it to come up
+                pollingWaiter(state, "bootstrap")
+                        .withWaitMessage("EMR cluster still booting")
+                        .withPollInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
+                        .awaitOnce(String.class, pollState -> checkClusterBootStatus(emr, cluster, pollState));
+
+                return SubmissionResult.ofNewCluster(cluster.id(), stepIds);
+            };
+        }
+
+        private Optional<String> checkClusterBootStatus(AmazonElasticMapReduce emr, NewCluster cluster, TaskState state)
+        {
+            // Only creating a cluster, with no steps?
+            boolean createOnly = cluster.steps() == 0;
+
+            DescribeClusterResult describeClusterResult = pollingRetryExecutor(state, "describe-cluster")
+                    .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
+                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                    .run(ds -> emr.describeCluster(new DescribeClusterRequest().withClusterId(cluster.id())));
+
+            ClusterStatus clusterStatus = describeClusterResult.getCluster().getStatus();
+            String clusterState = clusterStatus.getState();
+
+            switch (clusterState) {
+                case "STARTING":
+                    logger.info("EMR cluster starting: {}", cluster.id());
+                    return Optional.absent();
+                case "BOOTSTRAPPING":
+                    logger.info("EMR cluster bootstrapping: {}", cluster.id());
+                    return Optional.absent();
+
+                case "RUNNING":
+                case "WAITING":
+                    logger.info("EMR cluster up: {}", cluster.id());
+                    return Optional.of(clusterState);
+
+                case "TERMINATED_WITH_ERRORS":
+                    if (createOnly) {
+                        // TODO: log more information about the errors
+                        // TODO: inspect state change reason to figure out whether it was the boot that failed or e.g. steps submitted by another agent
+                        throw new TaskExecutionException("EMR boot failed: " + cluster.id(), ConfigElement.empty());
+                    }
+                    return Optional.of(clusterState);
+
+                case "TERMINATING":
+                    if (createOnly) {
+                        // Keep waiting for the final state
+                        // TODO: inspect state change reason and bail early here
+                        return Optional.absent();
+                    }
+                    return Optional.of(clusterState);
+
+                case "TERMINATED":
+                    return Optional.of(clusterState);
+
+                default:
+                    throw new RuntimeException("Unknown EMR cluster state: " + clusterState);
+            }
+        }
+
+        private NewCluster submitNewClusterRequest(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config cluster, Filer filer)
+                throws IOException
+        {
+            // Compile steps
+            stepCompiler.compile();
+
+            List<StepConfig> stepConfigs = stepCompiler.stepConfigs();
+
             Config ec2 = cluster.getNested("ec2");
             Config master = ec2.getNestedOrGetEmpty("master");
             List<Config> core = ec2.getOptional("core", Config.class).transform(ImmutableList::of).or(ImmutableList.of());
@@ -369,7 +458,7 @@ public class EmrOperatorFactory
 
             // TODO: allow configuring additional application parameters
             List<Application> applicationConfigs = applications.stream()
-                    .map(s -> new Application().withName(s))
+                    .map(application -> new Application().withName(application))
                     .collect(Collectors.toList());
 
             // TODO: merge configurations with the same classification?
@@ -383,6 +472,9 @@ public class EmrOperatorFactory
             for (int i = 0; i < bootstrap.size(); i++) {
                 bootstrapActions.add(bootstrapAction(i + 1, bootstrap.get(i), tag, filer));
             }
+
+            // Stage files to S3
+            filer.stageFiles();
 
             Optional<String> subnetId = ec2.getOptional("subnet_id", String.class);
 
@@ -430,89 +522,17 @@ public class EmrOperatorFactory
                             .withEmrManagedSlaveSecurityGroup(ec2.get("emr_managed_slave_security_group", String.class, null))
                             .withServiceAccessSecurityGroup(ec2.get("service_access_security_group", String.class, null))
                             .withTerminationProtected(cluster.get("termination_protected", boolean.class, false))
-                            .withPlacement(cluster.getOptional("availability_zone", String.class).transform(s -> new PlacementType().withAvailabilityZone(s)).orNull())
+                            .withPlacement(cluster.getOptional("availability_zone", String.class)
+                                    .transform(zone -> new PlacementType().withAvailabilityZone(zone)).orNull())
                             .withEc2SubnetId(subnetId.orNull())
                             .withEc2KeyName(ec2.get("key", String.class))
                             .withKeepJobFlowAliveWhenNoSteps(!cluster.get("auto_terminate", boolean.class, true)));
 
-            // Only creating a cluster, with no steps?
-            boolean createOnly = stepConfigs.isEmpty();
+            logger.info("Submitting EMR job with {} steps(s)", request.getSteps().size());
+            RunJobFlowResult result = emr.runJobFlow(request);
+            logger.info("Submitted EMR job with {} step(s): {}", request.getSteps().size(), result.getJobFlowId(), result);
 
-            return () -> {
-                // Start cluster
-                String clusterId = pollingRetryExecutor(state, "submission")
-                        .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
-                        // TODO: EMR requests are not idempotent, thus retrying might produce duplicate cluster submissions.
-                        .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                        .runOnce(String.class, s -> {
-                            logger.info("Submitting EMR job with {} steps(s)", request.getSteps().size());
-                            RunJobFlowResult result = emr.runJobFlow(request);
-                            logger.info("Submitted EMR job with {} step(s): {}", request.getSteps().size(), result.getJobFlowId(), result);
-                            return result.getJobFlowId();
-                        });
-
-                // Get submitted step IDs
-                List<String> stepIds = pollingRetryExecutor(this.state, "steps")
-                        .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
-                        .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                        .runOnce(new TypeReference<List<String>>() {}, s -> {
-                            List<String> ids = listSubmittedStepIds(emr, tag, clusterId, stepConfigs.size());
-                            logger.info("EMR step ID's: {}: {}", clusterId, ids);
-                            return ids;
-                        });
-
-                // Log cluster status while waiting for it to come up
-                pollingWaiter(state, "bootstrap")
-                        .withWaitMessage("EMR cluster still booting")
-                        .withPollInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
-                        .awaitOnce(String.class, s -> {
-                            DescribeClusterResult describeClusterResult = pollingRetryExecutor(s, "describe-cluster")
-                                    .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
-                                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                                    .run(ds -> emr.describeCluster(new DescribeClusterRequest().withClusterId(clusterId)));
-
-                            ClusterStatus clusterStatus = describeClusterResult.getCluster().getStatus();
-                            String clusterState = clusterStatus.getState();
-
-                            switch (clusterState) {
-                                case "STARTING":
-                                    logger.info("EMR cluster starting: {}", clusterId);
-                                    return Optional.absent();
-                                case "BOOTSTRAPPING":
-                                    logger.info("EMR cluster bootstrapping: {}", clusterId);
-                                    return Optional.absent();
-
-                                case "RUNNING":
-                                case "WAITING":
-                                    logger.info("EMR cluster up: {}", clusterId);
-                                    return Optional.of(clusterState);
-
-                                case "TERMINATED_WITH_ERRORS":
-                                    if (createOnly) {
-                                        // TODO: log more information about the errors
-                                        // TODO: inspect state change reason to figure out whether it was the boot that failed or e.g. steps submitted by another agent
-                                        throw new TaskExecutionException("EMR boot failed: " + clusterId, ConfigElement.empty());
-                                    }
-                                    return Optional.of(clusterState);
-
-                                case "TERMINATING":
-                                    if (createOnly) {
-                                        // Keep waiting for the final state
-                                        // TODO: inspect state change reason and bail early here
-                                        return Optional.absent();
-                                    }
-                                    return Optional.of(clusterState);
-
-                                case "TERMINATED":
-                                    return Optional.of(clusterState);
-
-                                default:
-                                    throw new RuntimeException("Unknown EMR cluster state: " + clusterState);
-                            }
-                        });
-
-                return SubmissionResult.ofNewCluster(clusterId, stepIds);
-            };
+            return NewCluster.of(result.getJobFlowId(), request.getSteps().size());
         }
 
         private List<InstanceGroupConfig> instanceGroupConfigs(String defaultName, List<Config> configs, String role, String defaultInstanceType)
@@ -571,11 +591,11 @@ public class EmrOperatorFactory
                     .withVolumeType(config.get("type", String.class));
         }
 
-        private List<String> listSubmittedStepIds(AmazonElasticMapReduce emr, String tag, String clusterId, int expectedSteps)
+        private List<String> listSubmittedStepIds(AmazonElasticMapReduce emr, String tag, NewCluster cluster)
         {
             List<String> stepIds = new ArrayList<>();
-            ListStepsRequest request = new ListStepsRequest().withClusterId(clusterId);
-            while (stepIds.size() < expectedSteps) {
+            ListStepsRequest request = new ListStepsRequest().withClusterId(cluster.id());
+            while (stepIds.size() < cluster.steps()) {
                 ListStepsResult result = emr.listSteps(request);
                 for (StepSummary step : result.getSteps()) {
                     if (step.getName().contains(tag)) {
@@ -662,49 +682,103 @@ public class EmrOperatorFactory
                 throw new ConfigException("Invalid EMR configuration: '" + node + "'");
             }
         }
+    }
 
-        void stageFiles(AmazonS3Client s3, List<StagingFile> files)
+    private static class Filer
+    {
+        private final AmazonS3Client s3;
+        private final Optional<AmazonS3URI> staging;
+        private final Workspace workspace;
+        private final TemplateEngine templateEngine;
+        private final Config params;
+
+        private final List<StagingFile> files = new ArrayList<>();
+
+        Filer(AmazonS3Client s3, Optional<AmazonS3URI> staging, Workspace workspace, TemplateEngine templateEngine, Config params)
+        {
+            this.s3 = s3;
+            this.staging = staging;
+            this.workspace = workspace;
+            this.templateEngine = templateEngine;
+            this.params = params;
+        }
+
+        RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template)
+        {
+            String relativePath = tag + "/" + section + "/" + path + "/" + reference.filename();
+            String localPath = "/home/hadoop/digdag-staging/" + relativePath;
+
+            ImmutableRemoteFile.Builder builder =
+                    ImmutableRemoteFile.builder()
+                            .reference(reference)
+                            .relativePath(relativePath)
+                            .localPath(localPath);
+
+            if (reference.local()) {
+                // Local file? Then we need to upload it to S3.
+                if (!staging.isPresent()) {
+                    throw new ConfigException("Please configure a S3 'staging' directory");
+                }
+                String baseKey = staging.get().getKey();
+                String key = (baseKey != null ? baseKey : "") + relativePath;
+                builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
+            }
+            else {
+                builder.s3Uri(new AmazonS3URI(reference.reference().get()));
+            }
+
+            RemoteFile remoteFile = builder.build();
+
+            if (reference.local()) {
+                files.add(ImmutableStagingFile.builder()
+                        .template(template)
+                        .file(remoteFile)
+                        .build());
+            }
+
+            return remoteFile;
+        }
+
+        void stageFiles()
         {
             if (files.isEmpty()) {
                 return;
             }
 
-            // TODO: break the list of files up into smaller and throw a polling exception in between to avoid blocking this this tread a long time and to allow for agent restarts during staging.
-            pollingRetryExecutor(state, "staging")
-                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                    .runOnce(s -> {
-                        TransferManager transferManager = new TransferManager(s3);
-                        try {
-                            List<PutObjectRequest> requests = new ArrayList<>();
-                            for (StagingFile f : files) {
-                                logger.info("Staging {} -> {}", f.file().reference().filename(), f.file().s3Uri());
-                                requests.add(stagingFilePutRequest(f));
-                            }
+            TransferManager transferManager = new TransferManager(s3);
+            List<PutObjectRequest> requests = new ArrayList<>();
 
-                            List<Upload> uploads = requests.stream()
-                                    .map(transferManager::upload)
-                                    .collect(Collectors.toList());
+            for (StagingFile f : files) {
+                logger.info("Staging {} -> {}", f.file().reference().filename(), f.file().s3Uri());
+                requests.add(stagingFilePutRequest(f));
+            }
 
-                            for (Upload upload : uploads) {
-                                try {
-                                    upload.waitForCompletion();
-                                }
-                                catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                    throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
-                                }
-                            }
-                        }
-                        finally {
-                            transferManager.shutdownNow(false);
-                        }
-                    });
+            try {
+                List<Upload> uploads = requests.stream()
+                        .map(transferManager::upload)
+                        .collect(Collectors.toList());
+
+                for (Upload upload : uploads) {
+                    try {
+                        upload.waitForCompletion();
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                    }
+                }
+            }
+            finally {
+                transferManager.shutdownNow(false);
+                requests.forEach(r -> closeQuietly(r.getInputStream()));
+            }
         }
 
         private PutObjectRequest stagingFilePutRequest(StagingFile file)
         {
             AmazonS3URI uri = file.file().s3Uri();
             FileReference reference = file.file().reference();
+
             switch (reference.type()) {
                 case LOCAL: {
                     if (file.template()) {
@@ -744,59 +818,6 @@ public class EmrOperatorFactory
                 default:
                     throw new AssertionError();
             }
-        }
-    }
-
-    private static class Filer
-    {
-        private final Optional<AmazonS3URI> staging;
-
-        private final List<StagingFile> files = new ArrayList<>();
-
-        Filer(Optional<AmazonS3URI> staging)
-        {
-            this.staging = staging;
-        }
-
-        RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template)
-        {
-            String relativePath = tag + "/" + section + "/" + path + "/" + reference.filename();
-            String localPath = "/home/hadoop/digdag-staging/" + relativePath;
-
-            ImmutableRemoteFile.Builder builder =
-                    ImmutableRemoteFile.builder()
-                            .reference(reference)
-                            .relativePath(relativePath)
-                            .localPath(localPath);
-
-            if (reference.local()) {
-                // Local file? Then we need to upload it to S3.
-                if (!staging.isPresent()) {
-                    throw new ConfigException("Please configure a S3 'staging' directory");
-                }
-                String baseKey = staging.get().getKey();
-                String key = (baseKey != null ? baseKey : "") + relativePath;
-                builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
-            }
-            else {
-                builder.s3Uri(new AmazonS3URI(reference.reference().get()));
-            }
-
-            RemoteFile remoteFile = builder.build();
-
-            if (reference.local()) {
-                files.add(ImmutableStagingFile.builder()
-                        .template(template)
-                        .file(remoteFile)
-                        .build());
-            }
-
-            return remoteFile;
-        }
-
-        List<StagingFile> files()
-        {
-            return files;
         }
     }
 
@@ -1499,6 +1520,25 @@ public class EmrOperatorFactory
         static DownloadConfig of(RemoteFile remoteFile, int mode)
         {
             return of(remoteFile.s3Uri().toString(), remoteFile.localPath(), mode);
+        }
+    }
+
+    @Value.Immutable
+    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonSerialize(as = ImmutableNewCluster.class)
+    @JsonDeserialize(as = ImmutableNewCluster.class)
+    interface NewCluster
+    {
+        String id();
+
+        int steps();
+
+        static NewCluster of(String id, int steps)
+        {
+            return ImmutableNewCluster.builder()
+                    .id(id)
+                    .steps(steps)
+                    .build();
         }
     }
 }
