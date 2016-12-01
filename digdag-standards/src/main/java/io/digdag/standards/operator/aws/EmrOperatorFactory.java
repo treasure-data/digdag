@@ -74,6 +74,7 @@ import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
+import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
 import org.immutables.value.Value;
@@ -1045,9 +1046,9 @@ public class EmrOperatorFactory
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
-                    .addDownload(scriptFile)
+                    .addDownload(DownloadConfig.of(scriptFile, 0777))
                     .addAllDownload(filesFiles)
-                    .addAllCommand("bash", scriptFile.localPath())
+                    .addAllCommand(scriptFile.localPath())
                     .addAllCommand(parameters(step, "args"))
                     .build();
 
@@ -1478,14 +1479,26 @@ public class EmrOperatorFactory
 
         String dst();
 
+        Optional<Integer> mode();
+
         static DownloadConfig of(String src, String dst)
         {
             return ImmutableDownloadConfig.builder().src(src).dst(dst).build();
         }
 
+        static DownloadConfig of(String src, String dst, int mode)
+        {
+            return ImmutableDownloadConfig.builder().src(src).dst(dst).mode(mode).build();
+        }
+
         static DownloadConfig of(RemoteFile remoteFile)
         {
             return of(remoteFile.s3Uri().toString(), remoteFile.localPath());
+        }
+
+        static DownloadConfig of(RemoteFile remoteFile, int mode)
+        {
+            return of(remoteFile.s3Uri().toString(), remoteFile.localPath(), mode);
         }
     }
 }

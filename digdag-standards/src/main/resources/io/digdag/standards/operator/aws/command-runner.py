@@ -31,11 +31,13 @@ def download_to_file(s3, src, f):
         copyfileobj(response, f, 16 * 1024)
 
 
-def download_to_filename(s3, src, dst):
+def download_to_filename(s3, src, dst, mode=None):
     dirname, os.path.dirname = os.path.split(dst)
     mkpath(dirname)
     with open(dst, 'wb') as f:
         download_to_file(s3, src, f)
+    if mode is not None:
+        os.chmod(dst, mode)
 
 
 def download_to_string(s3, src):
@@ -48,10 +50,10 @@ def download_to_string(s3, src):
     return s
 
 
-def download(s3, src=None, dst=None):
+def download(s3, src=None, dst=None, mode=None):
     assert src and dst
     logging.info('download: %s -> %s', src, dst)
-    download_to_filename(s3, src, dst)
+    download_to_filename(s3, src, dst, mode=mode)
 
 
 def process_parameter(kms, parameter):
