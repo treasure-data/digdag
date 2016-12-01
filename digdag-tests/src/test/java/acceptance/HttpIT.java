@@ -222,7 +222,7 @@ public class HttpIT
     public void testProxy403ForbiddenOnCONNECTIsNotRetried()
             throws Exception
     {
-        proxy = TestUtils.startRequestFailingProxy(request -> Optional.of(FORBIDDEN));
+        proxy = TestUtils.startRequestFailingProxy(100, requests, FORBIDDEN);
         String uri = "https://127.0.0.1:" + httpsMockWebServer.getPort() + "/";
         runWorkflow(folder, "acceptance/http/http.dig",
                 ImmutableMap.of(
