@@ -19,6 +19,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.api.client.repackaged.com.google.common.base.Throwables;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
@@ -30,9 +31,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.littleshoot.proxy.HttpProxyServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.TemporaryDigdagServer;
+import utils.TestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -47,10 +50,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static acceptance.td.Secrets.TD_API_KEY;
 import static io.digdag.util.RetryExecutor.retryExecutor;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
 import static java.util.stream.Collectors.toList;
@@ -98,6 +103,8 @@ public class EmrIT
 
     protected DigdagClient digdagClient;
 
+    private HttpProxyServer proxyServer;
+
     @Before
     public void setUp()
             throws Exception
@@ -111,12 +118,45 @@ public class EmrIT
 
         AWSCredentials credentials = new BasicAWSCredentials(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY);
 
+        AtomicInteger s3Requests = new AtomicInteger();
+        AtomicInteger kmsRequests = new AtomicInteger();
+        AtomicInteger emrRequests = new AtomicInteger();
+
+        proxyServer = TestUtils.startRequestFailingProxy(request -> {
+            String uri = request.getUri();
+            if (uri.contains("s3")) {
+                s3Requests.incrementAndGet();
+                if (s3Requests.get() < 2) {
+                    return Optional.of(INTERNAL_SERVER_ERROR);
+                }
+            }
+            else if (uri.contains("kms")) {
+                kmsRequests.incrementAndGet();
+                if (kmsRequests.get() < 2) {
+                    return Optional.of(INTERNAL_SERVER_ERROR);
+                }
+            }
+            else if (uri.contains("elasticmapreduce")) {
+                emrRequests.incrementAndGet();
+                if (emrRequests.get() % 2 == 0) {
+                    return Optional.absent();
+                }
+                else {
+                    return Optional.of(INTERNAL_SERVER_ERROR);
+                }
+            }
+            return Optional.absent();
+        });
+
         // TODO: assume the supplied role?
 
         emr = new AmazonElasticMapReduceClient(credentials);
         s3 = new AmazonS3Client(credentials);
 
         server = TemporaryDigdagServer.builder()
+                .environment(ImmutableMap.of(
+                        "https_proxy", "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort())
+                )
                 .withRandomSecretEncryptionKey()
                 .build();
         server.start();
@@ -171,6 +211,16 @@ public class EmrIT
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(bytes.length);
         s3.putObject(bucket, key, new ByteArrayInputStream(bytes), metadata);
+    }
+
+    @After
+    public void tearDownProxy()
+            throws Exception
+    {
+        if (proxyServer != null) {
+            proxyServer.stop();
+            proxyServer = null;
+        }
     }
 
     @After
@@ -313,6 +363,4 @@ public class EmrIT
         }).collect(toList());
         assertThat(resultLines, Matchers.hasItem(",164.54.104.106,/item/games/4663,/category/electronics,404,Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0),121,GET,1412383598"));
     }
-
-
 }

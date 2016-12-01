@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -624,7 +626,27 @@ public class TestUtils
     /**
      * Starts a proxy that fails all requests except every {@code failures}'th request per unique (method, uri) pair.
      */
-    public static HttpProxyServer startRequestFailingProxy(final int failures, final ConcurrentMap<String, List<FullHttpRequest>> requests, final HttpResponseStatus error)
+    public static HttpProxyServer startRequestFailingProxy(int failures, ConcurrentMap<String, List<FullHttpRequest>> requests, HttpResponseStatus error)
+    {
+        return startRequestFailingProxy(request -> {
+            String key = request.getMethod() + " " + request.getUri();
+            List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, k -> new ArrayList<>());
+            int n;
+            synchronized (keyedRequests) {
+                keyedRequests.add(request.copy());
+                n = keyedRequests.size();
+            }
+            boolean fail = n % failures != 0;
+            if (fail) {
+                return Optional.of(error);
+            }
+            else {
+                return Optional.absent();
+            }
+        });
+    }
+
+    public static HttpProxyServer startRequestFailingProxy(final Function<FullHttpRequest, Optional<HttpResponseStatus>> failer)
     {
         return DefaultHttpProxyServer
                 .bootstrap()
@@ -647,21 +669,15 @@ public class TestUtils
                             {
                                 assert httpObject instanceof FullHttpRequest;
                                 FullHttpRequest fullHttpRequest = (FullHttpRequest) httpObject;
-                                String key = fullHttpRequest.getMethod() + " " + fullHttpRequest.getUri();
-                                List<FullHttpRequest> keyedRequests = requests.computeIfAbsent(key, k -> new ArrayList<>());
-                                int n;
-                                synchronized (keyedRequests) {
-                                    keyedRequests.add(fullHttpRequest.copy());
-                                    n = keyedRequests.size();
-                                }
-                                if (n % failures != 0) {
-                                    logger.info("Simulating {} for request: {}", error, key);
-                                    HttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), error);
+                                Optional<HttpResponseStatus> error = failer.apply(fullHttpRequest);
+                                if (error.isPresent()) {
+                                    logger.info("Simulating {} for request: {} {}", error, fullHttpRequest.getMethod(), fullHttpRequest.getUri());
+                                    HttpResponse response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), error.get());
                                     response.headers().set(CONNECTION, CLOSE);
                                     return response;
                                 }
                                 else {
-                                    logger.info("Passing request: {}", key);
+                                    logger.info("Passing request: {} {}", fullHttpRequest.getMethod(), fullHttpRequest.getUri());
                                     return null;
                                 }
                             }

@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.aws;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
@@ -63,6 +64,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigKey;
+import io.digdag.core.Environment;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
@@ -123,13 +125,15 @@ public class EmrOperatorFactory
     private final TemplateEngine templateEngine;
     private final ObjectMapper objectMapper;
     private final ConfigFactory cf;
+    private final Map<String, String> environment;
 
     @Inject
-    public EmrOperatorFactory(TemplateEngine templateEngine, ObjectMapper objectMapper, ConfigFactory cf)
+    public EmrOperatorFactory(TemplateEngine templateEngine, ObjectMapper objectMapper, ConfigFactory cf, @Environment Map<String, String> environment)
     {
         this.templateEngine = templateEngine;
         this.objectMapper = objectMapper;
         this.cf = cf;
+        this.environment = environment;
     }
 
     @Override
@@ -169,9 +173,23 @@ public class EmrOperatorFactory
 
             AWSCredentials credentials = credentials(tag, ctx);
 
-            AWSKMSClient kms = new AWSKMSClient(credentials);
-            AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials);
-            AmazonS3Client s3 = new AmazonS3Client(credentials);
+            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+
+            Optional<String> emrEndpoint = awsSecrets.getSecretOptional("emr.endpoint");
+            Optional<String> s3Endpoint = awsSecrets.getSecretOptional("s3.endpoint");
+            Optional<String> kmsEndpoint = awsSecrets.getSecretOptional("kms.endpoint");
+
+            ClientConfiguration emrClientConfiguration = new ClientConfiguration();
+            ClientConfiguration s3ClientConfiguration = new ClientConfiguration();
+            ClientConfiguration kmsClientConfiguration = new ClientConfiguration();
+
+            Aws.configureProxy(emrClientConfiguration, emrEndpoint, environment);
+            Aws.configureProxy(s3ClientConfiguration, s3Endpoint, environment);
+            Aws.configureProxy(kmsClientConfiguration, kmsEndpoint, environment);
+
+            AmazonElasticMapReduce emr = new AmazonElasticMapReduceClient(credentials, emrClientConfiguration);
+            AmazonS3Client s3 = new AmazonS3Client(credentials, s3ClientConfiguration);
+            AWSKMSClient kms = new AWSKMSClient(credentials, kmsClientConfiguration);
 
             try {
                 return run(tag, emr, s3, kms, ctx);
