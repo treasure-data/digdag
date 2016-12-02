@@ -111,6 +111,8 @@ import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRet
 import static io.digdag.standards.operator.state.PollingWaiter.pollingWaiter;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class EmrOperatorFactory
         implements OperatorFactory
@@ -295,20 +297,38 @@ public class EmrOperatorFactory
 
         private void waitForSteps(AmazonElasticMapReduce emr, SubmissionResult submission)
         {
-            // Note: This currently only looks at the status of the "last" submitted step.
-            // TODO: check and log status of intermediate steps
             String lastStepId = Iterables.getLast(submission.stepIds());
             pollingWaiter(state, "result")
-                    .withWaitMessage("EMR steps still running")
+                    .withWaitMessage("EMR job still running")
                     .withPollInterval(DurationInterval.of(Duration.ofSeconds(15), Duration.ofMinutes(5)))
-                    .awaitOnce(Step.class, pollState -> {
-                        Step lastStep = pollingRetryExecutor(pollState, "poll")
-                                .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                                .withRetryInterval(DurationInterval.of(Duration.ofSeconds(15), Duration.ofMinutes(5)))
-                                .run(s -> emr.describeStep(new DescribeStepRequest()
-                                        .withClusterId(submission.clusterId())
-                                        .withStepId(lastStepId))
-                                        .getStep());
+                    .awaitOnce(Step.class, pollState -> checkStepCompletion(emr, submission, lastStepId, pollState));
+        }
+
+        private Optional<Step> checkStepCompletion(AmazonElasticMapReduce emr, SubmissionResult submission, String lastStepId, TaskState pollState)
+        {
+            return pollingRetryExecutor(pollState, "poll")
+                    .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
+                    .withRetryInterval(DurationInterval.of(Duration.ofSeconds(15), Duration.ofMinutes(5)))
+                    .run(s -> {
+
+                        ListStepsResult runningSteps = emr.listSteps(new ListStepsRequest()
+                                .withClusterId(submission.clusterId())
+                                .withStepStates("RUNNING"));
+
+                        runningSteps.getSteps().stream().findFirst()
+                                .ifPresent(step -> {
+                                    int stepIndex = submission.stepIds().indexOf(step.getId());
+                                    logger.info("Currently running EMR step: {} ({}/{}): {}",
+                                            step.getId(),
+                                            stepIndex == -1 ? "?" : Integer.toString(stepIndex),
+                                            submission.stepIds().size(),
+                                            step.getName());
+                                });
+
+                        Step lastStep = emr.describeStep(new DescribeStepRequest()
+                                .withClusterId(submission.clusterId())
+                                .withStepId(lastStepId))
+                                .getStep();
 
                         String stepState = lastStep.getStatus().getState();
 
@@ -323,6 +343,7 @@ public class EmrOperatorFactory
                             case "INTERRUPTED":
                                 // TODO: consider task done if action_on_failure == CONTINUE?
                                 // TODO: include & log failure information
+
                                 throw new TaskExecutionException("EMR failed", ConfigElement.empty());
 
                             case "COMPLETED":
@@ -477,13 +498,13 @@ public class EmrOperatorFactory
             // TODO: allow configuring additional application parameters
             List<Application> applicationConfigs = applications.stream()
                     .map(application -> new Application().withName(application))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             // TODO: merge configurations with the same classification?
             List<Configuration> configurations = cluster.getListOrEmpty("configurations", JsonNode.class).stream()
-                    .map(this::clusterConfigurations)
+                    .map(this::configurations)
                     .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             List<JsonNode> bootstrap = cluster.getListOrEmpty("bootstrap", JsonNode.class);
             List<BootstrapActionConfig> bootstrapActions = new ArrayList<>();
@@ -580,9 +601,9 @@ public class EmrOperatorFactory
                     .withBidPrice(config.get("bid_price", String.class, null))
                     .withEbsConfiguration(config.getOptional("ebs", Config.class).transform(this::ebsConfiguration).orNull())
                     .withConfigurations(config.getListOrEmpty("configurations", JsonNode.class).stream()
-                            .map(this::clusterConfigurations)
+                            .map(this::configurations)
                             .flatMap(Collection::stream)
-                            .collect(Collectors.toList()));
+                            .collect(toList()));
         }
 
         private EbsConfiguration ebsConfiguration(Config config)
@@ -591,7 +612,7 @@ public class EmrOperatorFactory
                     .withEbsOptimized(config.get("optimized", Boolean.class, null))
                     .withEbsBlockDeviceConfigs(config.getListOrEmpty("devices", Config.class).stream()
                             .map(this::ebsBlockDeviceConfig)
-                            .collect(Collectors.toList()));
+                            .collect(toList()));
         }
 
         private EbsBlockDeviceConfig ebsBlockDeviceConfig(Config config)
@@ -663,7 +684,7 @@ public class EmrOperatorFactory
                             .withArgs(args));
         }
 
-        private List<Configuration> clusterConfigurations(JsonNode node)
+        private List<Configuration> configurations(JsonNode node)
         {
             if (node.isTextual()) {
                 // File
@@ -683,16 +704,16 @@ public class EmrOperatorFactory
                 }
                 return values.stream()
                         .map(ConfigurationJson::toConfiguration)
-                        .collect(Collectors.toList());
+                        .collect(toList());
             }
             else if (node.isObject()) {
                 // Embedded configuration
                 Config config = cf.create(node);
                 return ImmutableList.of(new Configuration()
                         .withConfigurations(config.getListOrEmpty("configurations", JsonNode.class).stream()
-                                .map(this::clusterConfigurations)
+                                .map(this::configurations)
                                 .flatMap(Collection::stream)
-                                .collect(Collectors.toList()))
+                                .collect(toList()))
                         .withClassification(config.get("classification", String.class, null))
                         .withProperties(config.get("properties", new TypeReference<Map<String, String>>() {}, null)));
             }
@@ -774,7 +795,7 @@ public class EmrOperatorFactory
             try {
                 List<Upload> uploads = requests.stream()
                         .map(transferManager::upload)
-                        .collect(Collectors.toList());
+                        .collect(toList());
 
                 for (Upload upload : uploads) {
                     try {
@@ -943,7 +964,7 @@ public class EmrOperatorFactory
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
                     .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             List<String> filesArgs = filesFiles.isEmpty()
                     ? ImmutableList.of()
@@ -953,7 +974,7 @@ public class EmrOperatorFactory
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
                     .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
                     ? ImmutableList.of()
@@ -1046,7 +1067,7 @@ public class EmrOperatorFactory
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
                     .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
                     ? ImmutableList.of()
@@ -1081,7 +1102,7 @@ public class EmrOperatorFactory
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
                     .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
@@ -1137,7 +1158,7 @@ public class EmrOperatorFactory
                     .addAllDownload(step.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
                             .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
-                            .collect(Collectors.toList()))
+                            .collect(toList()))
                     .addAllCommand(step.get("command", String.class))
                     .addAllCommand(parameters(step, "args"))
                     .build();
@@ -1166,20 +1187,20 @@ public class EmrOperatorFactory
         {
             return parameters(config, name, f).values().stream()
                     .flatMap(p -> Stream.of(Parameter.ofPlain(flag), p))
-                    .collect(Collectors.toList());
+                    .collect(toList());
         }
 
         private List<Parameter> parameters(Config config, String key)
         {
             return config.getListOrEmpty(key, JsonNode.class).stream()
                     .map(node -> parameter(key, node, Function.identity()))
-                    .collect(Collectors.toList());
+                    .collect(toList());
         }
 
         private Map<String, Parameter> parameters(Config config, String name, BiFunction<String, String, String> f)
         {
             return config.getKeys().stream()
-                    .collect(Collectors.toMap(
+                    .collect(toMap(
                             Function.identity(),
                             key -> parameter(name, config, key, f)));
         }
@@ -1208,7 +1229,7 @@ public class EmrOperatorFactory
 
         private String kmsEncrypt(String value)
         {
-            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
+            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms-key-id");
             EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
             return base64(result.getCiphertextBlob());
         }
@@ -1408,7 +1429,7 @@ public class EmrOperatorFactory
                     .withClassification(classification().orNull())
                     .withConfigurations(configurations().stream()
                             .map(ConfigurationJson::toConfiguration)
-                            .collect(Collectors.toList()))
+                            .collect(toList()))
                     .withProperties(properties());
         }
     }
@@ -1447,7 +1468,7 @@ public class EmrOperatorFactory
             {
                 return addAllDownload(remoteFiles.stream()
                         .map(DownloadConfig::of)
-                        .collect(Collectors.toList()));
+                        .collect(toList()));
             }
 
             Builder addCommand(String command)
@@ -1489,7 +1510,7 @@ public class EmrOperatorFactory
 
         static List<Parameter> ofPlain(Collection<String> values)
         {
-            return values.stream().map(Parameter::ofPlain).collect(Collectors.toList());
+            return values.stream().map(Parameter::ofPlain).collect(toList());
         }
 
         static Parameter ofKmsEncrypted(String value)
@@ -1499,12 +1520,12 @@ public class EmrOperatorFactory
 
         static List<Parameter> ofKmsEncrypted(String... values)
         {
-            return Stream.of(values).map(Parameter::ofKmsEncrypted).collect(Collectors.toList());
+            return Stream.of(values).map(Parameter::ofKmsEncrypted).collect(toList());
         }
 
         static List<Parameter> ofKmsEncrypted(Collection<String> values)
         {
-            return values.stream().map(Parameter::ofKmsEncrypted).collect(Collectors.toList());
+            return values.stream().map(Parameter::ofKmsEncrypted).collect(toList());
         }
     }
 
