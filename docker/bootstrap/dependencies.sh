@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+
 apt-get -y update
 apt-get -y install software-properties-common apt-transport-https wget git sudo
 
@@ -19,8 +20,8 @@ sudo -u postgres createdb -O digdag_test digdag_test
 apt-get -y install python python-pip python-dev
 pip install sphinx recommonmark sphinx_rtd_theme
 
-# Fake S3
-apt-get -y install ruby
-sudo gem install fakes3
+# Minio (S3)
+wget -O /usr/local/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
+chmod 777 /usr/local/bin/minio
 
 rm -rf /var/lib/apt/lists/*

@@ -23,10 +23,10 @@ dependencies {
     compile 'org.postgresql:postgresql:9.4.1211'
 
     // aws
-    compile 'com.amazonaws:aws-java-sdk-kms:1.10.65'
-    compile 'com.amazonaws:aws-java-sdk-sts:1.10.65'
-    compile 'com.amazonaws:aws-java-sdk-s3:1.10.65'
-    compile 'com.amazonaws:aws-java-sdk-emr:1.10.65'
+    compile 'com.amazonaws:aws-java-sdk-kms:1.11.63'
+    compile 'com.amazonaws:aws-java-sdk-sts:1.11.63'
+    compile 'com.amazonaws:aws-java-sdk-s3:1.11.63'
+    compile 'com.amazonaws:aws-java-sdk-emr:1.11.63'
 
     // bigquery
     compile 'com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0'

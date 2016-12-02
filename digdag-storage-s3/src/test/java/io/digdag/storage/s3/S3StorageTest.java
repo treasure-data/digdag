@@ -6,6 +6,10 @@ import java.util.UUID;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +33,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class S3StorageTest
 {
-    private static final String FAKE_S3_ENDPOINT = System.getenv("FAKE_S3_ENDPOINT");
+    private static final String TEST_S3_ENDPOINT = System.getenv("TEST_S3_ENDPOINT");
+    private static final String TEST_S3_ACCESS_KEY_ID = System.getenv().getOrDefault("TEST_S3_ACCESS_KEY_ID", "test");
+    private static final String TEST_S3_SECRET_ACCESS_KEY = System.getenv().getOrDefault("TEST_S3_SECRET_ACCESS_KEY", "test");
 
     private Storage storage;
 
@@ -37,13 +43,21 @@ public class S3StorageTest
     public void setUp()
             throws Exception
     {
-        assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
+        assumeThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
+
+        AWSCredentials credentials = new BasicAWSCredentials(TEST_S3_ACCESS_KEY_ID, TEST_S3_SECRET_ACCESS_KEY);
+        AmazonS3Client s3 = new AmazonS3Client(credentials);
+        s3.setEndpoint(TEST_S3_ENDPOINT);
+
+        String bucket = UUID.randomUUID().toString();
+        s3.createBucket(bucket);
+
         ConfigFactory cf = new ConfigFactory(objectMapper());
         Config config = cf.create()
-            .set("endpoint", FAKE_S3_ENDPOINT)
-            .set("bucket", UUID.randomUUID().toString())  // use unique bucket name
-            .set("credentials.access-key-id", "fake-key-id")
-            .set("credentials.secret-access-key", "fake-access-key")
+            .set("endpoint", TEST_S3_ENDPOINT)
+            .set("bucket", bucket)  // use unique bucket name
+            .set("credentials.access-key-id", TEST_S3_ACCESS_KEY_ID)
+            .set("credentials.secret-access-key", TEST_S3_SECRET_ACCESS_KEY)
             ;
         storage = new S3StorageFactory().newStorage(config);
     }
@@ -94,7 +108,7 @@ public class S3StorageTest
     public void listWithPrefix()
         throws Exception
     {
-        storage.put("key1", 0, contents("0"));
+        storage.put("key1", 1, contents("0"));
         storage.put("test/file/1", 1, contents("1"));
         storage.put("test/file/2", 1, contents("1"));
 

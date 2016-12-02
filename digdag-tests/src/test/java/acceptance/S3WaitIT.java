@@ -40,7 +40,9 @@ import static utils.TestUtils.startWorkflow;
 
 public class S3WaitIT
 {
-    private static final String FAKE_S3_ENDPOINT = System.getenv("FAKE_S3_ENDPOINT");
+    private static final String TEST_S3_ENDPOINT = System.getenv("TEST_S3_ENDPOINT");
+    private static final String TEST_S3_ACCESS_KEY_ID = System.getenv().getOrDefault("TEST_S3_ACCESS_KEY_ID", "test");
+    private static final String TEST_S3_SECRET_ACCESS_KEY = System.getenv().getOrDefault("TEST_S3_SECRET_ACCESS_KEY", "test");
 
     private static final ObjectMapper MAPPER = DigdagClient.objectMapper();
 
@@ -52,12 +54,15 @@ public class S3WaitIT
     private Path projectDir;
     private DigdagClient client;
     private HttpProxyServer proxyServer;
+    private String bucket;
+
+    private AmazonS3Client s3;
 
     @Before
     public void setUp()
             throws Exception
     {
-        assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
+        assumeThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         proxyServer = TestUtils.startRequestFailingProxy(10);
 
@@ -77,6 +82,13 @@ public class S3WaitIT
                 .host(server.host())
                 .port(server.port())
                 .build();
+
+        bucket = UUID.randomUUID().toString();
+
+        AWSCredentials credentials = new BasicAWSCredentials(TEST_S3_ACCESS_KEY_ID, TEST_S3_SECRET_ACCESS_KEY);
+        s3 = new AmazonS3Client(credentials);
+        s3.setEndpoint(TEST_S3_ENDPOINT);
+        s3.createBucket(bucket);
     }
 
     @After
@@ -103,12 +115,8 @@ public class S3WaitIT
     public void testRun()
             throws Exception
     {
-        AWSCredentials credentials = new BasicAWSCredentials("test-access-key-id", "test-secret-access-key");
-        AmazonS3Client s3Client = new AmazonS3Client(credentials);
-        s3Client.setEndpoint(FAKE_S3_ENDPOINT);
-
-        String bucket = UUID.randomUUID().toString();
         String key = UUID.randomUUID().toString();
+
 
         Path outfile = folder.newFolder().toPath().resolve("out");
 
@@ -118,9 +126,9 @@ public class S3WaitIT
         int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         // Configure AWS credentials
-        client.setProjectSecret(projectId, "aws.s3.access-key-id", "test-access-key-id");
-        client.setProjectSecret(projectId, "aws.s3.secret-access-key", "test-secret-access-key");
-        client.setProjectSecret(projectId, "aws.s3.endpoint", FAKE_S3_ENDPOINT);
+        client.setProjectSecret(projectId, "aws.s3.access-key-id", TEST_S3_ACCESS_KEY_ID);
+        client.setProjectSecret(projectId, "aws.s3.secret-access-key", TEST_S3_SECRET_ACCESS_KEY);
+        client.setProjectSecret(projectId, "aws.s3.endpoint", TEST_S3_ENDPOINT);
 
         // Start workflow
         String projectName = projectDir.getFileName().toString();
@@ -144,7 +152,7 @@ public class S3WaitIT
 
         // Create the file that the workflow is waiting for
         String content = "hello world";
-        s3Client.putObject(bucket, key, new StringInputStream(content), new ObjectMetadata());
+        s3.putObject(bucket, key, new StringInputStream(content), new ObjectMetadata());
 
         // Expect the attempt to finish and the dependent task to be executed
         expect(Duration.ofMinutes(2), attemptSuccess(server.endpoint(), attemptId));
