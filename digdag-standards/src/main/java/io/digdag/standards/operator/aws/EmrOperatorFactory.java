@@ -18,6 +18,7 @@ import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
 import com.amazonaws.services.elasticmapreduce.model.DescribeStepRequest;
 import com.amazonaws.services.elasticmapreduce.model.EbsBlockDeviceConfig;
 import com.amazonaws.services.elasticmapreduce.model.EbsConfiguration;
+import com.amazonaws.services.elasticmapreduce.model.FailureDetails;
 import com.amazonaws.services.elasticmapreduce.model.InstanceGroupConfig;
 import com.amazonaws.services.elasticmapreduce.model.JobFlowInstancesConfig;
 import com.amazonaws.services.elasticmapreduce.model.ListStepsRequest;
@@ -28,6 +29,7 @@ import com.amazonaws.services.elasticmapreduce.model.RunJobFlowResult;
 import com.amazonaws.services.elasticmapreduce.model.ScriptBootstrapActionConfig;
 import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepConfig;
+import com.amazonaws.services.elasticmapreduce.model.StepStatus;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import com.amazonaws.services.elasticmapreduce.model.Tag;
 import com.amazonaws.services.elasticmapreduce.model.VolumeSpecification;
@@ -318,10 +320,10 @@ public class EmrOperatorFactory
                         runningSteps.getSteps().stream().findFirst()
                                 .ifPresent(step -> {
                                     int stepIndex = submission.stepIds().indexOf(step.getId());
-                                    logger.info("Currently running EMR step: {} ({}/{}): {}",
-                                            step.getId(),
-                                            stepIndex == -1 ? "?" : Integer.toString(stepIndex),
+                                    logger.info("Currently running EMR step {}/{}: {}: {}",
+                                            stepIndex == -1 ? "?" : Integer.toString(stepIndex + 1),
                                             submission.stepIds().size(),
+                                            step.getId(),
                                             step.getName());
                                 });
 
@@ -344,7 +346,21 @@ public class EmrOperatorFactory
                                 // TODO: consider task done if action_on_failure == CONTINUE?
                                 // TODO: include & log failure information
 
-                                throw new TaskExecutionException("EMR failed", ConfigElement.empty());
+                                ListStepsResult steps = emr.listSteps(new ListStepsRequest()
+                                        .withClusterId(submission.clusterId())
+                                        .withStepIds(submission.stepIds()));
+
+                                logger.error("EMR job failed");
+
+                                for (StepSummary step : steps.getSteps()) {
+                                    StepStatus status = step.getStatus();
+                                    FailureDetails details = status.getFailureDetails();
+                                    logger.info("EMR step {} state: {}, reason: {}, details: {}",
+                                            step.getId(), status.getState(), status.getStateChangeReason(),
+                                            details == null ? "" : details.toString());
+                                }
+
+                                throw new TaskExecutionException("EMR job failed", ConfigElement.empty());
 
                             case "COMPLETED":
                                 logger.info("EMR steps done");
