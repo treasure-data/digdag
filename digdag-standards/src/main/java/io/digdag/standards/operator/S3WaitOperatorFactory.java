@@ -137,11 +137,11 @@ public class S3WaitOperatorFactory
                     () -> awsSecrets.getSecretOptional("region"),
                     () -> params.getOptional("region", String.class));
 
-            String accessKey = s3Secrets.getSecretOptional("access-key-id")
-                    .or(() -> awsSecrets.getSecret("access-key-id"));
+            String accessKey = s3Secrets.getSecretOptional("access_key_id")
+                    .or(() -> awsSecrets.getSecret("access_key_id"));
 
-            String secretKey = s3Secrets.getSecretOptional("secret-access-key")
-                    .or(() -> awsSecrets.getSecret("secret-access-key"));
+            String secretKey = s3Secrets.getSecretOptional("secret_access_key")
+                    .or(() -> awsSecrets.getSecret("secret_access_key"));
 
             // Create S3 Client
             ClientConfiguration configuration = new ClientConfiguration();
@@ -176,10 +176,10 @@ public class S3WaitOperatorFactory
                 req.setVersionId(versionId.get());
             }
 
-            Optional<String> sseCustomerKey = s3Secrets.getSecretOptional("sse-c-key");
+            Optional<String> sseCustomerKey = s3Secrets.getSecretOptional("sse_c_key");
             if (sseCustomerKey.isPresent()) {
-                Optional<String> algorithm = s3Secrets.getSecretOptional("sse-c-key-algorithm");
-                Optional<String> md5 = s3Secrets.getSecretOptional("sse-c-key-md5");
+                Optional<String> algorithm = s3Secrets.getSecretOptional("sse_c_key_algorithm");
+                Optional<String> md5 = s3Secrets.getSecretOptional("sse_c_key_md5");
                 SSECustomerKey sseKey = new SSECustomerKey(sseCustomerKey.get());
                 if (algorithm.isPresent()) {
                     sseKey.setAlgorithm(algorithm.get());
