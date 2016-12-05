@@ -87,8 +87,8 @@ public class S3WaitIT
         int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         // Configure AWS credentials
-        client.setProjectSecret(projectId, "aws.s3.access-key-id", "test-access-key-id");
-        client.setProjectSecret(projectId, "aws.s3.secret-access-key", "test-secret-access-key");
+        client.setProjectSecret(projectId, "aws.s3.access_key_id", "test-access-key-id");
+        client.setProjectSecret(projectId, "aws.s3.secret_access_key", "test-secret-access-key");
         client.setProjectSecret(projectId, "aws.s3.endpoint", FAKE_S3_ENDPOINT);
 
         // Start workflow
