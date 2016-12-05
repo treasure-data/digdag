@@ -12,10 +12,12 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestSessionAttempt;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.littleshoot.proxy.HttpProxyServer;
 import utils.TemporaryDigdagServer;
 import utils.TestUtils;
 
@@ -42,17 +44,14 @@ public class S3WaitIT
 
     private static final ObjectMapper MAPPER = DigdagClient.objectMapper();
 
-    @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
-            .configuration(
-                    "digdag.secret-encryption-key = " + Base64.getEncoder().encodeToString(RandomUtils.nextBytes(16)))
-            .build();
+    public TemporaryDigdagServer server;
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     private Path projectDir;
     private DigdagClient client;
+    private HttpProxyServer proxyServer;
 
     @Before
     public void setUp()
@@ -60,12 +59,44 @@ public class S3WaitIT
     {
         assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
 
+        proxyServer = TestUtils.startRequestFailingProxy(10);
+
+        server = TemporaryDigdagServer.builder()
+                .environment(ImmutableMap.of(
+                        "http_proxy", "http://" + proxyServer.getListenAddress().getHostString() + ":" + proxyServer.getListenAddress().getPort())
+                )
+                .configuration(
+                        "digdag.secret-encryption-key = " + Base64.getEncoder().encodeToString(RandomUtils.nextBytes(16)))
+                .build();
+
+        server.start();
+
         projectDir = folder.getRoot().toPath().resolve("foobar");
 
         client = DigdagClient.builder()
                 .host(server.host())
                 .port(server.port())
                 .build();
+    }
+
+    @After
+    public void tearDownProxy()
+            throws Exception
+    {
+        if (proxyServer != null) {
+            proxyServer.stop();
+            proxyServer = null;
+        }
+    }
+
+    @After
+    public void tearDownServer()
+            throws Exception
+    {
+        if (server != null) {
+            server.close();
+            server = null;
+        }
     }
 
     @Test
@@ -116,7 +147,7 @@ public class S3WaitIT
         s3Client.putObject(bucket, key, new StringInputStream(content), new ObjectMetadata());
 
         // Expect the attempt to finish and the dependent task to be executed
-        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
+        expect(Duration.ofMinutes(2), attemptSuccess(server.endpoint(), attemptId));
         assertThat(Files.exists(outfile), is(true));
 
         JsonNode objectMetadata = MAPPER.readTree(Files.readAllBytes(outfile));
