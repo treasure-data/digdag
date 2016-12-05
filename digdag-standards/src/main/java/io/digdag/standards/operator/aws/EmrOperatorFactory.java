@@ -245,24 +245,24 @@ public class EmrOperatorFactory
             SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
             SecretProvider emrSecrets = awsSecrets.getSecrets("emr");
 
-            String accessKeyId = emrSecrets.getSecretOptional("access-key-id")
-                    .or(() -> awsSecrets.getSecret("access-key-id"));
+            String accessKeyId = emrSecrets.getSecretOptional("access_key_id")
+                    .or(() -> awsSecrets.getSecret("access_key_id"));
 
-            String secretAccessKey = emrSecrets.getSecretOptional("secret-access-key")
-                    .or(() -> awsSecrets.getSecret("secret-access-key"));
+            String secretAccessKey = emrSecrets.getSecretOptional("secret_access_key")
+                    .or(() -> awsSecrets.getSecret("secret_access_key"));
 
             AWSCredentials credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
 
-            Optional<String> roleArn = emrSecrets.getSecretOptional("role-arn")
-                    .or(awsSecrets.getSecretOptional("role-arn"));
+            Optional<String> roleArn = emrSecrets.getSecretOptional("role_arn")
+                    .or(awsSecrets.getSecretOptional("role_arn"));
 
             if (!roleArn.isPresent()) {
                 return credentials;
             }
 
             // use STS to assume role
-            String roleSessionName = emrSecrets.getSecretOptional("role-session-name")
-                    .or(awsSecrets.getSecretOptional("role-session-name"))
+            String roleSessionName = emrSecrets.getSecretOptional("role_session_name")
+                    .or(awsSecrets.getSecretOptional("role_session_name"))
                     .or("digdag-emr-" + tag);
 
             AWSSecurityTokenServiceClient stsClient = new AWSSecurityTokenServiceClient(credentials);
@@ -1296,7 +1296,7 @@ public class EmrOperatorFactory
 
         private String kmsEncrypt(String value)
         {
-            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms-key-id");
+            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
             EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
             return base64(result.getCiphertextBlob());
         }

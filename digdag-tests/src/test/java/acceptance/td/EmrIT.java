@@ -173,10 +173,10 @@ public class EmrIT
                 .port(server.port())
                 .build();
 
-        digdagClient.setProjectSecret(projectId, "aws.emr.access-key-id", AWS_ACCESS_KEY_ID);
-        digdagClient.setProjectSecret(projectId, "aws.emr.secret-access-key", AWS_SECRET_ACCESS_KEY);
-        digdagClient.setProjectSecret(projectId, "aws.emr.role-arn", AWS_ROLE);
-        digdagClient.setProjectSecret(projectId, "aws.emr.kms-key-id", AWS_KMS_KEY_ID);
+        digdagClient.setProjectSecret(projectId, "aws.emr.access_key_id", AWS_ACCESS_KEY_ID);
+        digdagClient.setProjectSecret(projectId, "aws.emr.secret_access_key", AWS_SECRET_ACCESS_KEY);
+        digdagClient.setProjectSecret(projectId, "aws.emr.role_arn", AWS_ROLE);
+        digdagClient.setProjectSecret(projectId, "aws.emr.kms_key_id", AWS_KMS_KEY_ID);
         digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
 
         addResource(projectDir, "acceptance/emr/bootstrap_foo.sh");
