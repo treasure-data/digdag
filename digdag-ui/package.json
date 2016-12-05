@@ -1,7 +1,7 @@
 {
   "name": "digdag-ui",
   "version": "1.0.0",
-  "description": "DigDag UI",
+  "description": "Digdag UI",
   "main": "console.jsx",
   "scripts": {
     "clean": "rimraf public",
