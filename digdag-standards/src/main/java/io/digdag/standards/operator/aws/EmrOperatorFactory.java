@@ -29,6 +29,7 @@ import com.amazonaws.services.elasticmapreduce.model.RunJobFlowResult;
 import com.amazonaws.services.elasticmapreduce.model.ScriptBootstrapActionConfig;
 import com.amazonaws.services.elasticmapreduce.model.Step;
 import com.amazonaws.services.elasticmapreduce.model.StepConfig;
+import com.amazonaws.services.elasticmapreduce.model.StepStateChangeReason;
 import com.amazonaws.services.elasticmapreduce.model.StepStatus;
 import com.amazonaws.services.elasticmapreduce.model.StepSummary;
 import com.amazonaws.services.elasticmapreduce.model.Tag;
@@ -39,8 +40,12 @@ import com.amazonaws.services.kms.model.EncryptRequest;
 import com.amazonaws.services.kms.model.EncryptResult;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
@@ -96,9 +101,10 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -173,7 +179,7 @@ public class EmrOperatorFactory
         @Override
         public TaskResult run(TaskExecutionContext ctx)
         {
-            String tag = state.constant("tag", String.class, this::randomTag);
+            String tag = state.constant("tag", String.class, EmrOperatorFactory::randomTag);
 
             AWSCredentials credentials = credentials(tag, ctx);
 
@@ -195,23 +201,43 @@ public class EmrOperatorFactory
             AmazonS3Client s3 = new AmazonS3Client(credentials, s3ClientConfiguration);
             AWSKMSClient kms = new AWSKMSClient(credentials, kmsClientConfiguration);
 
+            // Set up file stager
+            Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
+                AmazonS3URI uri = new AmazonS3URI(s);
+                if (uri.getKey() != null && !uri.getKey().endsWith("/")) {
+                    throw new ConfigException("Invalid staging uri: '" + s + "'");
+                }
+                return uri;
+            });
+            Filer filer = new Filer(s3, staging, workspace, templateEngine, params);
+
+            // TODO: make it possible for operators to _reliably_ clean up
+            boolean cleanup = false;
+
             try {
-                return run(tag, emr, s3, kms, ctx);
+                TaskResult result = run(tag, emr, s3, kms, ctx, filer);
+                cleanup = true;
+                return result;
             }
-            catch (IOException e) {
-                throw Throwables.propagate(e);
+            catch (Throwable t) {
+                boolean retry = t instanceof TaskExecutionException &&
+                        ((TaskExecutionException) t).getRetryInterval().isPresent();
+                cleanup = !retry;
+                throw Throwables.propagate(t);
             }
             finally {
+                if (cleanup) {
+                    // Best effort clean up of staging
+                    try {
+                        filer.tryCleanup();
+                    }
+                    catch (Throwable t) {
+                        logger.warn("Failed to clean up staging: {}", staging, t);
+                    }
+                }
                 s3.shutdown();
                 emr.shutdown();
             }
-        }
-
-        private String randomTag()
-        {
-            byte[] bytes = new byte[8];
-            ThreadLocalRandom.current().nextBytes(bytes);
-            return BaseEncoding.base32().omitPadding().encode(bytes);
         }
 
         private AWSCredentials credentials(String tag, TaskExecutionContext ctx)
@@ -251,19 +277,9 @@ public class EmrOperatorFactory
                     assumeResult.getCredentials().getSessionToken());
         }
 
-        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx)
+        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx, Filer filer)
                 throws IOException
         {
-            // Set up file stager
-            Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
-                AmazonS3URI uri = new AmazonS3URI(s);
-                if (uri.getKey() != null && !uri.getKey().endsWith("/")) {
-                    throw new ConfigException("Invalid staging uri: '" + s + "'");
-                }
-                return uri;
-            });
-            Filer filer = new Filer(s3, staging, workspace, templateEngine, params);
-
             // Set up step compiler
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
             StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, kms, ctx, objectMapper, defaultActionOnFailure);
@@ -301,7 +317,7 @@ public class EmrOperatorFactory
         {
             String lastStepId = Iterables.getLast(submission.stepIds());
             pollingWaiter(state, "result")
-                    .withWaitMessage("EMR job still running")
+                    .withWaitMessage("EMR job still running: %s", submission.clusterId())
                     .withPollInterval(DurationInterval.of(Duration.ofSeconds(15), Duration.ofMinutes(5)))
                     .awaitOnce(Step.class, pollState -> checkStepCompletion(emr, submission, lastStepId, pollState));
         }
@@ -350,14 +366,19 @@ public class EmrOperatorFactory
                                         .withClusterId(submission.clusterId())
                                         .withStepIds(submission.stepIds()));
 
-                                logger.error("EMR job failed");
+                                logger.error("EMR job failed: {}", submission.clusterId());
 
                                 for (StepSummary step : steps.getSteps()) {
                                     StepStatus status = step.getStatus();
                                     FailureDetails details = status.getFailureDetails();
-                                    logger.info("EMR step {} state: {}, reason: {}, details: {}",
-                                            step.getId(), status.getState(), status.getStateChangeReason(),
-                                            details == null ? "" : details.toString());
+                                    StepStateChangeReason reason = status.getStateChangeReason();
+                                    int stepIndex = submission.stepIds().indexOf(step.getId());
+                                    logger.error("EMR step {}/{}: {}: state: {}, reason: {}, details: {}",
+                                            stepIndex == -1 ? "?" : Integer.toString(stepIndex + 1),
+                                            submission.stepIds().size(),
+                                            step.getId(), status.getState(),
+                                            reason != null ? reason : "{}",
+                                            details != null ? details : "{}");
                                 }
 
                                 throw new TaskExecutionException("EMR job failed", ConfigElement.empty());
@@ -402,14 +423,23 @@ public class EmrOperatorFactory
                                     .withJobFlowId(clusterId)
                                     .withSteps(stepCompiler.stepConfigs());
 
-                            logger.info("Submitting {} EMR step(s): ", request.getSteps().size(), clusterId);
+                            int steps = request.getSteps().size();
+                            logger.info("Submitting {} EMR step(s) to {}", steps, clusterId);
                             AddJobFlowStepsResult result = emr.addJobFlowSteps(request);
-                            logger.info("Submitted {} EMR step(s): {}: {}", request.getSteps().size(), clusterId, result.getStepIds());
+                            logSubmittedSteps(clusterId, steps, i -> request.getSteps().get(i).getName(), i -> result.getStepIds().get(i));
                             return ImmutableList.copyOf(result.getStepIds());
                         });
 
                 return SubmissionResult.ofExistingCluster(clusterId, stepIds);
             };
+        }
+
+        private void logSubmittedSteps(String clusterId, int n, Function<Integer, String> names, Function<Integer, String> ids)
+        {
+            logger.info("Submitted {} EMR step(s) to {}", n, clusterId);
+            for (int i = 0; i < n; i++) {
+                logger.info("Step {}/{}: {}: {}", i + 1, n, names.apply(i), ids.apply(i));
+            }
         }
 
         private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config clusterConfig, Filer filer)
@@ -428,9 +458,9 @@ public class EmrOperatorFactory
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
                         .runOnce(new TypeReference<List<String>>() {}, s -> {
-                            List<String> ids = listSubmittedStepIds(emr, tag, cluster);
-                            logger.info("EMR step ID's: {}: {}", cluster.id(), ids);
-                            return ids;
+                            List<StepSummary> steps = listSubmittedSteps(emr, tag, cluster);
+                            logSubmittedSteps(cluster.id(), cluster.steps(), i -> steps.get(i).getName(), i -> steps.get(i).getId());
+                            return steps.stream().map(StepSummary::getId).collect(toList());
                         });
 
                 // Log cluster status while waiting for it to come up
@@ -646,15 +676,15 @@ public class EmrOperatorFactory
                     .withVolumeType(config.get("type", String.class));
         }
 
-        private List<String> listSubmittedStepIds(AmazonElasticMapReduce emr, String tag, NewCluster cluster)
+        private List<StepSummary> listSubmittedSteps(AmazonElasticMapReduce emr, String tag, NewCluster cluster)
         {
-            List<String> stepIds = new ArrayList<>();
+            List<StepSummary> steps = new ArrayList<>();
             ListStepsRequest request = new ListStepsRequest().withClusterId(cluster.id());
-            while (stepIds.size() < cluster.steps()) {
+            while (steps.size() < cluster.steps()) {
                 ListStepsResult result = emr.listSteps(request);
                 for (StepSummary step : result.getSteps()) {
                     if (step.getName().contains(tag)) {
-                        stepIds.add(step.getId());
+                        steps.add(step);
                     }
                 }
                 if (result.getMarker() == null) {
@@ -663,8 +693,8 @@ public class EmrOperatorFactory
                 request.setMarker(result.getMarker());
             }
             // The ListSteps api returns steps in reverse order. So reverse them to submission order.
-            Collections.reverse(stepIds);
-            return stepIds;
+            Collections.reverse(steps);
+            return steps;
         }
 
         private BootstrapActionConfig bootstrapAction(int index, JsonNode action, String tag, Filer filer)
@@ -749,6 +779,8 @@ public class EmrOperatorFactory
 
         private final List<StagingFile> files = new ArrayList<>();
 
+        private final Set<String> ids = new HashSet<>();
+
         Filer(AmazonS3Client s3, Optional<AmazonS3URI> staging, Workspace workspace, TemplateEngine templateEngine, Config params)
         {
             this.s3 = s3;
@@ -760,7 +792,11 @@ public class EmrOperatorFactory
 
         RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template)
         {
-            String relativePath = tag + "/" + section + "/" + path + "/" + reference.filename();
+            String id = randomTag(ids::contains);
+            ids.add(id);
+
+            String uniqueFilename = id + "/" + reference.filename();
+            String relativePath = tag + "/" + section + "/" + path + "/" + uniqueFilename;
             String localPath = "/home/hadoop/digdag-staging/" + relativePath;
 
             ImmutableRemoteFile.Builder builder =
@@ -874,6 +910,30 @@ public class EmrOperatorFactory
                     throw new AssertionError();
             }
         }
+
+        void tryCleanup()
+        {
+            if (!staging.isPresent()) {
+                return;
+            }
+
+            String bucket = staging.get().getBucket();
+            ListObjectsRequest req = new ListObjectsRequest()
+                    .withBucketName(bucket)
+                    .withPrefix(staging.get().getKey());
+            do {
+                ObjectListing res = s3.listObjects(req);
+                String[] keys = res.getObjectSummaries().stream()
+                        .map(S3ObjectSummary::getKey)
+                        .toArray(String[]::new);
+                for (String key : keys) {
+                    logger.info("Removing s3://{}/{}", bucket, key);
+                }
+                s3.deleteObjects(new DeleteObjectsRequest(bucket).withKeys(keys));
+                req.setMarker(res.getMarker());
+            }
+            while (req.getMarker() != null);
+        }
     }
 
     private static class StepCompiler
@@ -953,18 +1013,9 @@ public class EmrOperatorFactory
             return configs;
         }
 
-        enum StepFileType
+        private RemoteFile prepareRemoteFile(FileReference reference, boolean template)
         {
-            CONFIG,
-            HELPERS,
-            APP,
-            JARS,
-            FILES
-        }
-
-        private RemoteFile prepareRemoteFile(StepFileType type, FileReference reference, boolean template)
-        {
-            return filer.prepareRemoteFile(tag, "steps", index + "/" + type.name().toLowerCase(Locale.ROOT), reference, template);
+            return filer.prepareRemoteFile(tag, "steps", Integer.toString(index), reference, template);
         }
 
         private void sparkStep()
@@ -974,12 +1025,12 @@ public class EmrOperatorFactory
             boolean scala = applicationReference.filename().endsWith(".scala");
             boolean python = applicationReference.filename().endsWith(".py");
             boolean script = scala || python;
-            RemoteFile applicationFile = prepareRemoteFile(StepFileType.APP, applicationReference, script);
+            RemoteFile applicationFile = prepareRemoteFile(applicationReference, script);
 
             List<String> files = step.getListOrEmpty("files", String.class);
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
-                    .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                    .map(r -> prepareRemoteFile(r, false))
                     .collect(toList());
 
             List<String> filesArgs = filesFiles.isEmpty()
@@ -989,7 +1040,7 @@ public class EmrOperatorFactory
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
-                    .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
+                    .map(r -> prepareRemoteFile(r, false))
                     .collect(toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
@@ -1029,14 +1080,14 @@ public class EmrOperatorFactory
                 // Fortunately spark-shell accepts multiple scripts on the command line, so we append a helper script to run last and exit the shell.
                 // This could also have been accomplished by wrapping the spark-shell invocation in a bash session that concatenates the exit command onto the user script using
                 // anonymous fifo's etc but that seems a bit more brittle. Also, this way the actual names of the scripts appear in logs instead of /dev/fd/47 etc.
-                String exitHelperFilename = "__exit-helper.scala";
+                String exitHelperFilename = "exit-helper.scala";
                 URL exitHelperResource = Resources.getResource(EmrOperatorFactory.class, exitHelperFilename);
                 FileReference exitHelperFileReference = ImmutableFileReference.builder()
                         .reference(exitHelperResource.toString())
                         .type(FileReference.Type.RESOURCE)
                         .filename(exitHelperFilename)
                         .build();
-                RemoteFile exitHelperFile = prepareRemoteFile(StepFileType.HELPERS, exitHelperFileReference, false);
+                RemoteFile exitHelperFile = prepareRemoteFile(exitHelperFileReference, false);
                 configuration.addDownload(exitHelperFile);
 
                 command = "spark-shell";
@@ -1074,15 +1125,15 @@ public class EmrOperatorFactory
                 throws IOException
         {
             FileReference wrapperFileReference = FileReference.ofResource("spark-sql-wrapper.py");
-            RemoteFile wrapperFile = prepareRemoteFile(StepFileType.HELPERS, wrapperFileReference, false);
+            RemoteFile wrapperFile = prepareRemoteFile(wrapperFileReference, false);
 
             FileReference queryReference = fileReference("query", step);
-            RemoteFile queryFile = prepareRemoteFile(StepFileType.APP, queryReference, true);
+            RemoteFile queryFile = prepareRemoteFile(queryReference, true);
 
             List<String> jars = step.getListOrEmpty("jars", String.class);
             List<RemoteFile> jarFiles = jars.stream()
                     .map(r -> fileReference("jar", r))
-                    .map(r -> prepareRemoteFile(StepFileType.JARS, r, false))
+                    .map(r -> prepareRemoteFile(r, false))
                     .collect(toList());
 
             List<String> jarArgs = jarFiles.isEmpty()
@@ -1112,12 +1163,12 @@ public class EmrOperatorFactory
                 throws IOException
         {
             FileReference scriptReference = fileReference("script", step);
-            RemoteFile scriptFile = prepareRemoteFile(StepFileType.APP, scriptReference, false);
+            RemoteFile scriptFile = prepareRemoteFile(scriptReference, false);
 
             List<String> files = step.getListOrEmpty("files", String.class);
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
-                    .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                    .map(r -> prepareRemoteFile(r, false))
                     .collect(toList());
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
@@ -1137,7 +1188,7 @@ public class EmrOperatorFactory
             String name = "Flink Application";
 
             FileReference fileReference = fileReference("application", step);
-            RemoteFile remoteFile = prepareRemoteFile(StepFileType.APP, fileReference, false);
+            RemoteFile remoteFile = prepareRemoteFile(fileReference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addDownload(remoteFile)
@@ -1155,7 +1206,7 @@ public class EmrOperatorFactory
                 throws IOException
         {
             FileReference scriptReference = fileReference("script", step);
-            RemoteFile remoteScript = prepareRemoteFile(StepFileType.APP, scriptReference, false);
+            RemoteFile remoteScript = prepareRemoteFile(scriptReference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addAllCommand("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
@@ -1173,7 +1224,7 @@ public class EmrOperatorFactory
                     .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addAllDownload(step.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
-                            .map(r -> prepareRemoteFile(StepFileType.FILES, r, false))
+                            .map(r -> prepareRemoteFile(r, false))
                             .collect(toList()))
                     .addAllCommand(step.get("command", String.class))
                     .addAllCommand(parameters(step, "args"))
@@ -1191,7 +1242,7 @@ public class EmrOperatorFactory
                     .contents(objectMapper.writeValueAsBytes(configuration))
                     .filename(configFilename)
                     .build();
-            RemoteFile remoteConfigurationFile = prepareRemoteFile(StepFileType.CONFIG, configurationFileReference, false);
+            RemoteFile remoteConfigurationFile = prepareRemoteFile(configurationFileReference, false);
 
             StepConfig runStep = stepConfig(name, tag, step)
                     .withHadoopJarStep(stepFactory().newScriptRunnerStep(commandRunner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
@@ -1304,6 +1355,23 @@ public class EmrOperatorFactory
                     .filename(Paths.get(reference).getFileName().toString())
                     .type(LOCAL)
                     .build();
+        }
+    }
+
+    private static String randomTag()
+    {
+        byte[] bytes = new byte[8];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        return BaseEncoding.base32().omitPadding().encode(bytes);
+    }
+
+    private static String randomTag(Function<String, Boolean> seen)
+    {
+        while (true) {
+            String tag = randomTag();
+            if (!seen.apply(tag)) {
+                return tag;
+            }
         }
     }
 
