@@ -440,7 +440,7 @@ Starts a new session. This command requires project name, workflow name, and ses
 
   If ``daily`` is set, today's 00:00:00 is used.
 
-  If ``hourly`` is set, this hour's 00:00:00 is used.
+  If ``hourly`` is set, this hour's 00:00 is used.
 
   If a time is set in "yyyy-MM-dd" or "yyyy-MM-dd HH:mm:ss" format, this time is used.
 
