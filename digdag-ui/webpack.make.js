@@ -10,7 +10,7 @@ module.exports = function buildWebpackConfig ({ build = false }) {
   const BUILD_PATH = path.resolve(__dirname, 'public')
   const OUTPUT_PATH = path.join(sha, '/')
   const timestamp = new Date().toISOString()
-  console.log('=== DigDag ===')
+  console.log('=== Digdag ===')
   console.log('Config: ', build ? 'Release' : 'Development')
   console.log('Build path: ', BUILD_PATH)
   console.log('Output path: ', OUTPUT_PATH)
@@ -131,7 +131,7 @@ function getHtmlPlugin ({ build, filename, sha, timestamp }) {
   const data = {
     sha,
     timestamp,
-    title: process.env.CONSOLE_TITLE || 'DigDag'
+    title: process.env.CONSOLE_TITLE || 'Digdag'
   }
   return new HtmlWebpackPlugin({
     build,
