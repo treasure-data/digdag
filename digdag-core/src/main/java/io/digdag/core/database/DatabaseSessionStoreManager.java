@@ -1,17 +1,16 @@
 package io.digdag.core.database;
 
-import java.util.AbstractMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigKey;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.client.config.ConfigKey;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
-import io.digdag.core.session.ResumingTask;
+import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.ImmutableArchivedTask;
 import io.digdag.core.session.ImmutableResumingTask;
 import io.digdag.core.session.ImmutableSession;
@@ -26,13 +25,13 @@ import io.digdag.core.session.ImmutableTaskAttemptSummary;
 import io.digdag.core.session.ImmutableTaskRelation;
 import io.digdag.core.session.ImmutableTaskStateSummary;
 import io.digdag.core.session.ParameterUpdate;
+import io.digdag.core.session.ResumingTask;
 import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionAttempt;
 import io.digdag.core.session.SessionAttemptControlStore;
 import io.digdag.core.session.SessionAttemptSummary;
 import io.digdag.core.session.SessionControlStore;
 import io.digdag.core.session.SessionMonitor;
-import io.digdag.core.session.AttemptStateFlags;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSession;
@@ -64,6 +63,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -286,6 +286,38 @@ public class DatabaseSessionStoreManager
     {
         return autoCommit((handle, dao) -> dao.findAllTaskIdsByState(TaskStateCode.READY.get(), maxEntries));
     }
+
+    @Override
+    public List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit)
+    {
+        return autoCommit((handle, dao) -> dao.findActiveAttemptsCreatedBefore(sqlTimestampOf(createdBefore), lastId, limit));
+    }
+
+    @Override
+    public List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit)
+    {
+        return autoCommit((handle, dao) ->
+                handle.createQuery(
+                    "select id, attempt_id, state" +
+                    " from tasks" +
+                    " where state in (" +
+                    Stream.of(states)
+                            .map(it -> Short.toString(it.get())).collect(Collectors.joining(", ")) + ")" +
+                    // exclude already cancel-requested tasks
+                    " and " + bitAnd("state_flags", Integer.toString(TaskStateFlags.CANCEL_REQUESTED)) + " = 0" +
+                    " and started_at < :startedBefore" +
+                    " and id > :lastId" +
+                    " order by id asc" +
+                    " limit :limit"
+                )
+                    .bind("startedBefore", sqlTimestampOf(startedBefore))
+                    .bind("lastId", lastId)
+                    .bind("limit", limit)
+                    .map(tasm)
+                    .list()
+        );
+    }
+
 
     @Override
     public <T> Optional<T> lockAttemptIfExists(long attemptId, AttemptLockAction<T> func)
@@ -730,13 +762,6 @@ public class DatabaseSessionStoreManager
             return taskId;
         }
 
-        private java.sql.Timestamp sqlTimestampOf(Instant instant)
-        {
-            java.sql.Timestamp t = new java.sql.Timestamp(instant.getEpochSecond() * 1000);
-            t.setNanos(instant.getNano());
-            return t;
-        }
-
         @Override
         public void addResumingTasks(long attemptId, List<ResumingTask> tasks)
         {
@@ -860,6 +885,13 @@ public class DatabaseSessionStoreManager
         public boolean setState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
         {
             long n = dao.setState(taskId, beforeState.get(), afterState.get());
+            return n > 0;
+        }
+
+        @Override
+        public boolean setStartedState(long taskId, TaskStateCode beforeState, TaskStateCode afterState)
+        {
+            long n = dao.setStartedState(taskId, beforeState.get(), afterState.get());
             return n > 0;
         }
 
@@ -1473,6 +1505,14 @@ public class DatabaseSessionStoreManager
                 " where sa.id = :attemptId limit 1")
         StoredSessionAttemptWithSession getAttemptWithSessionByIdInternal(@Bind("attemptId") long attemptId);
 
+        @SqlQuery("select * from session_attempts" +
+                " where state_flags = 0" +
+                " and created_at < :createdBefore" +
+                " and id > :lastId" +
+                " order by id asc" +
+                " limit :limit")
+        List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(@Bind("createdBefore") Timestamp createdBefore, @Bind("lastId") long lastId, @Bind("limit") int limit);
+
         @SqlQuery("select site_id from tasks" +
                 " join session_attempts sa on sa.id = tasks.attempt_id" +
                 " where tasks.id = :taskId")
@@ -1602,6 +1642,12 @@ public class DatabaseSessionStoreManager
                 " where id = :id" +
                 " and state = :oldState")
         long setState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
+
+        @SqlUpdate("update tasks" +
+                " set started_at = coalesce(started_at, now()), updated_at = now(), state = :newState" +
+                " where id = :id" +
+                " and state = :oldState")
+        long setStartedState(@Bind("id") long taskId, @Bind("oldState") short oldState, @Bind("newState") short newState);
 
         @SqlUpdate("update tasks" +
                 " set updated_at = now(), state = :newState, state_params = NULL" +  // always set state_params = NULL
@@ -1853,6 +1899,7 @@ public class DatabaseSessionStoreManager
                 .upstreams(getLongIdList(r, "upstream_ids"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
+                .startedAt(getOptionalTimestampInstant(r, "started_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
                 .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))
@@ -2105,5 +2152,12 @@ public class DatabaseSessionStoreManager
             .set("in", report.getInputs())
             .set("out", report.getOutputs())
             ;
+    }
+
+    private static java.sql.Timestamp sqlTimestampOf(Instant instant)
+    {
+        java.sql.Timestamp t = new java.sql.Timestamp(instant.getEpochSecond() * 1000);
+        t.setNanos(instant.getNano());
+        return t;
     }
 }

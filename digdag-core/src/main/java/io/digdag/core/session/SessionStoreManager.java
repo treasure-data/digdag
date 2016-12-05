@@ -4,7 +4,6 @@ import java.util.List;
 import java.time.Instant;
 import com.google.common.base.*;
 import io.digdag.client.config.Config;
-import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionStoreManager
@@ -29,6 +28,12 @@ public interface SessionStoreManager
 
     // for WorkflowExecutor.enqueueReadyTasks
     List<Long> findAllReadyTaskIds(int maxEntries);
+
+    // for AttemptTimeoutEnforcer.enforceAttemptTTLs
+    List<StoredSessionAttempt> findActiveAttemptsCreatedBefore(Instant createdBefore, long lastId, int limit);
+
+    // for AttemptTimeoutEnforcer.enforceTaskTTLs
+    List<TaskAttemptSummary> findTasksStartedBeforeWithState(TaskStateCode[] states, Instant startedBefore, long lastId, int limit);
 
     interface AttemptLockAction <T>
     {

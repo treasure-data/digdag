@@ -24,6 +24,8 @@ public abstract class StoredTask
 
     public abstract Optional<Instant> getRetryAt();
 
+    public abstract Optional<Instant> getStartedAt();
+
     public abstract Config getStateParams();
 
     public abstract int getRetryCount();

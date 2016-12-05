@@ -197,6 +197,7 @@ public final class RestModels
             .stateParams(task.getStateParams())
             .updatedAt(task.getUpdatedAt())
             .retryAt(task.getRetryAt())
+            .startedAt(task.getStartedAt())
             .build();
     }
 

@@ -1131,6 +1131,10 @@ public class WorkflowExecutor
             return false;
         }
 
+        if (lockedTask.get().getStateFlags().isCancelRequested()) {
+            return lockedTask.setToCanceled();
+        }
+
         // task failed. add ^error tasks
         boolean errorTaskAdded;
         try {
@@ -1174,6 +1178,10 @@ public class WorkflowExecutor
             logger.debug("Ignoring taskSucceeded callback to a {} task",
                     lockedTask.getState());
             return false;
+        }
+
+        if (lockedTask.get().getStateFlags().isCancelRequested()) {
+            return lockedTask.setToCanceled();
         }
 
         // task successfully finished. add ^sub and ^check tasks

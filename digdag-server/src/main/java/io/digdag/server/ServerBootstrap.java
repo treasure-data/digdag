@@ -1,6 +1,5 @@
 package io.digdag.server;
 
-import com.google.inject.Binder;
 import com.google.inject.Scopes;
 
 import io.digdag.core.DigdagEmbed;
@@ -56,6 +55,7 @@ public class ServerBootstrap
                 binder.bind(ServerRuntimeInfoWriter.class).asEagerSingleton();
                 binder.bind(ServerConfig.class).toInstance(serverConfig);
                 binder.bind(WorkflowExecutorLoop.class).asEagerSingleton();
+                binder.bind(WorkflowExecutionTimeoutEnforcer.class).asEagerSingleton();
 
                 binder.bind(ErrorReporter.class).to(JmxErrorReporter.class).in(Scopes.SINGLETON);
                 newExporter(binder).export(ErrorReporter.class).withGeneratedName();

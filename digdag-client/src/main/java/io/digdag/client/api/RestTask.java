@@ -37,6 +37,8 @@ public interface RestTask
 
     Optional<Instant> getRetryAt();
 
+    Optional<Instant> getStartedAt();
+
     // TODO in out Report
 
     static ImmutableRestTask.Builder builder()
