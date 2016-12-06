@@ -19,5 +19,8 @@ environment:
 install:
   - ps: Install-Product node '6.9.1'
   - npm install -g npm
+  - node --version
+  - npm --version
+  - cd digdag-ui && npm install
 
 test: off
