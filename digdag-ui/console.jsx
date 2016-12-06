@@ -857,7 +857,7 @@ function resolveTaskFile (taskType:string, command:string, task:Object, projectA
 }
 
 function enumerateTaskFiles (node:Object, files:Array<TaskFile>, projectArchive:ProjectArchive) {
-  if (typeof node.constructor === 'object') {
+  if (typeof node === 'object') {
     let {taskType, command} = task(node)
     const taskFile = resolveTaskFile(taskType, command, node, projectArchive)
     if (taskFile) {
