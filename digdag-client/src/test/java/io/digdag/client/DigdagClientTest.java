@@ -8,9 +8,14 @@ import io.digdag.client.api.RestLogFileHandle;
 import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.QueueDispatcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import javax.ws.rs.InternalServerErrorException;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,6 +28,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class DigdagClientTest
 {
@@ -192,5 +198,29 @@ public class DigdagClientTest
         assertThat(mockWebServer.getRequestCount(), is(2));
         assertThat(mockWebServer.takeRequest().getPath(), is(logFilePath));
         assertThat(mockWebServer.takeRequest().getPath(), is(logFilePath));
+    }
+
+    @Test
+    public void getLogFileFailsAfter10Attempts()
+            throws Exception
+    {
+        QueueDispatcher dispatcher = new QueueDispatcher();
+        dispatcher.setFailFast(new MockResponse().setResponseCode(500));
+        mockWebServer.setDispatcher(dispatcher);
+
+        try {
+            client.getLogFile(17, RestLogFileHandle.builder()
+                    .agentId("test-agent")
+                    .fileName("test-task-1.log")
+                    .fileSize(4711)
+                    .fileTime(Instant.now().truncatedTo(SECONDS))
+                    .taskName("test-task-1")
+                    .build());
+            fail();
+        }
+        catch (InternalServerErrorException ignore) {
+        }
+
+        assertThat(mockWebServer.getRequestCount(), is(10));
     }
 }
