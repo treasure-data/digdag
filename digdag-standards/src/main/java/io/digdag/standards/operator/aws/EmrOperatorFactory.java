@@ -128,6 +128,8 @@ public class EmrOperatorFactory
 {
     private static final int LIST_STEPS_MAX_IDS = 10;
 
+    private static final String LOCAL_STAGING_DIR = "/home/hadoop/digdag-staging";
+
     private static Logger logger = LoggerFactory.getLogger(EmrOperatorFactory.class);
 
     public String getType()
@@ -736,8 +738,13 @@ public class EmrOperatorFactory
             RemoteFile file = filer.prepareRemoteFile(tag, "bootstrap", Integer.toString(index), reference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(bootstrapWorkingDirectory(index))
                     .env(parameterCompiler.parameters(config.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addDownload(DownloadConfig.of(file, 0777))
+                    .addAllDownload(config.getListOrEmpty("files", String.class).stream()
+                            .map(r -> fileReference("file", r))
+                            .map(r -> filer.prepareRemoteFile(tag, "bootstrap", Integer.toString(index), r, false, bootstrapWorkingDirectory(index)))
+                            .collect(toList()))
                     .addCommand(file.localPath())
                     .addAllCommand(parameterCompiler.parameters(config, "args"))
                     .build();
@@ -754,6 +761,11 @@ public class EmrOperatorFactory
                     .withScriptBootstrapAction(new ScriptBootstrapActionConfig()
                             .withPath(runner.s3Uri().toString())
                             .withArgs(remoteConfigurationFile.s3Uri().toString()));
+        }
+
+        private String bootstrapWorkingDirectory(int index)
+        {
+            return LOCAL_STAGING_DIR + "/bootstrap/" + index + "/wd";
         }
 
         private List<Configuration> configurations(JsonNode node)
@@ -818,18 +830,23 @@ public class EmrOperatorFactory
 
         RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template)
         {
-            String id = randomTag(ids::contains);
-            ids.add(id);
+            return prepareRemoteFile(tag, section, path, reference, template, null);
+        }
 
-            String uniqueFilename = id + "/" + reference.filename();
-            String relativePath = tag + "/" + section + "/" + path + "/" + uniqueFilename;
-            String localPath = "/home/hadoop/digdag-staging/" + relativePath;
+        RemoteFile prepareRemoteFile(String tag, String section, String path, FileReference reference, boolean template, String localDir)
+        {
+            String id = randomTag(s -> !ids.add(s));
+
+            String prefix = tag + "/" + section + "/" + path + "/" + id;
+
+            if (localDir == null) {
+                localDir = LOCAL_STAGING_DIR + "/" + prefix;
+            }
 
             ImmutableRemoteFile.Builder builder =
                     ImmutableRemoteFile.builder()
                             .reference(reference)
-                            .relativePath(relativePath)
-                            .localPath(localPath);
+                            .localPath(localDir + "/" + reference.filename());
 
             if (reference.local()) {
                 // Local file? Then we need to upload it to S3.
@@ -837,7 +854,7 @@ public class EmrOperatorFactory
                     throw new ConfigException("Please configure a S3 'staging' directory");
                 }
                 String baseKey = staging.get().getKey();
-                String key = (baseKey != null ? baseKey : "") + relativePath;
+                String key = (baseKey != null ? baseKey : "") + prefix + "/" + reference.filename();
                 builder.s3Uri(new AmazonS3URI("s3://" + staging.get().getBucket() + "/" + key));
             }
             else {
@@ -1028,6 +1045,16 @@ public class EmrOperatorFactory
             return configs;
         }
 
+        private String localWorkingDirectory()
+        {
+            return LOCAL_STAGING_DIR + "/" + tag + "/steps/" + index + "/wd";
+        }
+
+        private RemoteFile prepareRemoteFile(FileReference reference, boolean template, String localDir)
+        {
+            return filer.prepareRemoteFile(tag, "steps", Integer.toString(index), reference, template, localDir);
+        }
+
         private RemoteFile prepareRemoteFile(FileReference reference, boolean template)
         {
             return filer.prepareRemoteFile(tag, "steps", Integer.toString(index), reference, template);
@@ -1045,7 +1072,7 @@ public class EmrOperatorFactory
             List<String> files = step.getListOrEmpty("files", String.class);
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
-                    .map(r -> prepareRemoteFile(r, false))
+                    .map(r -> prepareRemoteFile(r, false, localWorkingDirectory()))
                     .collect(toList());
 
             List<String> filesArgs = filesFiles.isEmpty()
@@ -1080,7 +1107,8 @@ public class EmrOperatorFactory
                 name = "Spark Application";
             }
 
-            CommandRunnerConfiguration.Builder configuration = CommandRunnerConfiguration.builder();
+            CommandRunnerConfiguration.Builder configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory());
 
             configuration.addDownload(applicationFile);
             configuration.addAllDownload(jarFiles);
@@ -1159,6 +1187,7 @@ public class EmrOperatorFactory
             List<Parameter> confArgs = pc.parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory())
                     .addDownload(wrapperFile)
                     .addDownload(queryFile)
                     .addAllCommand("spark-submit")
@@ -1183,10 +1212,11 @@ public class EmrOperatorFactory
             List<String> files = step.getListOrEmpty("files", String.class);
             List<RemoteFile> filesFiles = files.stream()
                     .map(r -> fileReference("file", r))
-                    .map(r -> prepareRemoteFile(r, false))
+                    .map(r -> prepareRemoteFile(r, false, localWorkingDirectory()))
                     .collect(toList());
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory())
                     .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addDownload(DownloadConfig.of(scriptFile, 0777))
                     .addAllDownload(filesFiles)
@@ -1206,6 +1236,7 @@ public class EmrOperatorFactory
             RemoteFile remoteFile = prepareRemoteFile(fileReference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory())
                     .addDownload(remoteFile)
                     .addAllCommand(
                             "flink", "run", "-m", "yarn-cluster",
@@ -1224,6 +1255,7 @@ public class EmrOperatorFactory
             RemoteFile remoteScript = prepareRemoteFile(scriptReference, false);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory())
                     .addAllCommand("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
                     .addAllCommand(pc.parameters("-d", step.getNestedOrGetEmpty("vars"), "vars", (key, value) -> key + "=" + value))
                     .addAllCommand(pc.parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), "hiveconf", (key, value) -> key + "=" + value))
@@ -1236,10 +1268,11 @@ public class EmrOperatorFactory
                 throws IOException
         {
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .workingDirectory(localWorkingDirectory())
                     .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addAllDownload(step.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
-                            .map(r -> prepareRemoteFile(r, false))
+                            .map(r -> prepareRemoteFile(r, false, localWorkingDirectory()))
                             .collect(toList()))
                     .addAllCommand(step.get("command", String.class))
                     .addAllCommand(pc.parameters(step, "args"))
@@ -1522,8 +1555,6 @@ public class EmrOperatorFactory
 
         AmazonS3URI s3Uri();
 
-        String relativePath();
-
         String localPath();
     }
 
@@ -1564,6 +1595,8 @@ public class EmrOperatorFactory
     interface CommandRunnerConfiguration
     {
         List<DownloadConfig> download();
+
+        @JsonProperty("working_directory") String workingDirectory();
 
         Map<String, Parameter> env();
 

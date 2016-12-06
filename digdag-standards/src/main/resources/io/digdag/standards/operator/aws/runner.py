@@ -111,6 +111,10 @@ def main():
     kms = KMSConnection(**aws_credentials)
     env_parameters = process_env(kms, config.get('env', {}))
 
+    # Create working directory
+    working_directory = config['working_directory']
+    mkpath(working_directory)
+
     # Download staging files
     for item in config.get('download', []):
         download(s3, **item)
@@ -122,7 +126,7 @@ def main():
     command = [process_parameter(kms, parameter) for parameter in config['command']]
     logging.info('executing command: %s', debug_command)
     logging.debug('Popen: command=%s, env=%s', command, env)
-    process = subprocess.Popen(command, env=env)
+    process = subprocess.Popen(command, env=env, cwd=working_directory)
     return process.wait()
 
 

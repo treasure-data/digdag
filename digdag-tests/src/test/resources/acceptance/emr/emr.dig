@@ -44,10 +44,17 @@
       args: [hello, world]
     - type: script
       script: hello.sh
-      args: [world]
+      files:
+        - data.csv
+      args: [data.csv]
     - type: command
       command: echo
       args: [hello, world]
+    - type: command
+      command: cat
+      files:
+        - data.csv
+      args: [data.csv]
     - type: spark
       application: td-www_access.scala
       jars:
