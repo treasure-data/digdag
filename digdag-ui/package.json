@@ -5,11 +5,11 @@
   "main": "console.jsx",
   "scripts": {
     "clean": "rimraf public",
-    "build:js": "NODE_ENV=production webpack --config webpack.build.js -p --bail",
+    "build:js": "cross-env NODE_ENV=production webpack --config webpack.build.js -p --bail",
     "build:copy": "node prepare-release.js",
     "build": "npm run clean && npm run build:js && npm run build:copy",
-    "dev": "NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000",
-    "dev:https": "NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000 --https",
+    "dev": "cross-env NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000",
+    "dev:https": "cross-env NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000 --https",
     "flow": "flow; test $? -eq 0 -o $? -eq 2",
     "lint": "standard"
   },
@@ -50,6 +50,7 @@
     "babel-preset-react": "6.5.0",
     "bootstrap-loader": "1.2.1",
     "bootstrap-sass": "3.3.6",
+    "cross-env": "3.1.3",
     "css-loader": "0.23.1",
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "0.8.5",
