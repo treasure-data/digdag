@@ -6,7 +6,9 @@ apt-get -y install software-properties-common apt-transport-https wget git sudo
 apt-get -y install maven
 
 # npm
-apt-get -y install nodejs npm
+apt-get -y install curl
+curl -sL https://deb.nodesource.com/setup_6.x | bash -
+apt-get -y install nodejs
 
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
