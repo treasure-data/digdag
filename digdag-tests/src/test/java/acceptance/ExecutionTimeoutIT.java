@@ -116,13 +116,13 @@ public class ExecutionTimeoutIT
         long attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
         // Expect the attempt to get canceled
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+        expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
 
         // And then the attempt should be done pretty soon
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getDone());
+        expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getDone());
 
         // Expect a notification to be sent
-        expectNotification(attemptId, Duration.ofMinutes(1), "Workflow execution timeout"::equals);
+        expectNotification(attemptId, Duration.ofMinutes(2), "Workflow execution timeout"::equals);
 
         RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
         assertThat(attempt.getDone(), is(true));
@@ -144,10 +144,10 @@ public class ExecutionTimeoutIT
 
 
         // Expect the attempt to get canceled when the task times out
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+        expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
 
         // Expect a notification to be sent
-        expectNotification(attemptId, Duration.ofMinutes(1), message -> Pattern.matches("Task execution timeout: \\d+", message));
+        expectNotification(attemptId, Duration.ofMinutes(2), message -> Pattern.matches("Task execution timeout: \\d+", message));
 
         // TODO: implement termination of blocking tasks
         // TODO: verify that blocking tasks are terminated when the attempt is canceled
