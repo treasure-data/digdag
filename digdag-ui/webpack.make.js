@@ -73,7 +73,9 @@ module.exports = function buildWebpackConfig ({ build = false }) {
     plugins: [
       // Only include the english locale for momentjs
       // This shrinks our output bundle size by a couple hundred KB
+      /* eslint-disable */
       new webpack.ContextReplacementPlugin(/moment[\\\/]locale$/, /^\.\/(en)$/),
+      /* eslint-enable */
       getHtmlPlugin({ build, timestamp, filename: 'index.html', sha }),
       new ExtractTextPlugin('[name].css', {
         allChunks: true,
