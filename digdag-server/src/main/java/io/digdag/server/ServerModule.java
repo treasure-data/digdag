@@ -63,7 +63,7 @@ public class ServerModule
         bindAuthenticator();
         bindExceptionhandlers(builder);
         bindSecrets();
-        bindDefaultServlet();
+        bindUiApplication();
     }
 
     protected void bindSecrets()
@@ -108,7 +108,7 @@ public class ServerModule
             ;
     }
 
-    protected void bindDefaultServlet()
+    protected void bindUiApplication()
     {
         bindApplication()
             .matches("/*")
