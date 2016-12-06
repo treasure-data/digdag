@@ -15,10 +15,12 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Environment;
 import io.digdag.core.agent.ConfigEvalEngine;
+import io.digdag.core.agent.GrantedPrivilegedVariables;
 import io.digdag.core.agent.OperatorRegistry;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.ImmutableTaskRequest;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TemplateEngine;
@@ -78,17 +80,27 @@ public class OperatorTestingUtils
 
     public static TestingTaskExecutionContext newContext()
     {
-        return new TestingTaskExecutionContext(TestingSecretProvider.empty());
+        return new TestingTaskExecutionContext(
+                GrantedPrivilegedVariables.empty(),
+                TestingSecretProvider.empty());
     }
 
     public static class TestingTaskExecutionContext
             implements TaskExecutionContext
     {
+        private final PrivilegedVariables privilegedVariables;
         private final SecretProvider secrets;
 
-        public TestingTaskExecutionContext(SecretProvider secrets)
+        public TestingTaskExecutionContext(PrivilegedVariables privilegedVariables, SecretProvider secrets)
         {
+            this.privilegedVariables = privilegedVariables;
             this.secrets = secrets;
+        }
+
+        @Override
+        public PrivilegedVariables privilegedVariables()
+        {
+            return privilegedVariables;
         }
 
         @Override
@@ -100,7 +112,15 @@ public class OperatorTestingUtils
         public TestingTaskExecutionContext withSecrets(Properties secretsProps)
         {
             return new TestingTaskExecutionContext(
+                    privilegedVariables,
                     TestingSecretProvider.fromProperties(secretsProps));
+        }
+
+        public TestingTaskExecutionContext withPrivilegedVariables(Config grants, Config params)
+        {
+            return new TestingTaskExecutionContext(
+                    GrantedPrivilegedVariables.build(grants, params, secrets),
+                    secrets);
         }
     }
 

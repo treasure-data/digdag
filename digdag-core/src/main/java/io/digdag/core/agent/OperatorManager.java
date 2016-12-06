@@ -14,6 +14,7 @@ import io.digdag.core.workflow.WorkflowCompiler;
 import io.digdag.core.ErrorReporter;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretSelector;
@@ -308,7 +309,13 @@ public class OperatorManager
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
                 secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
-        TaskExecutionContext taskExecutionContext = new DefaultTaskExecutionContext(secretProvider);
+        PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
+                mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
+                mergedRequest.getConfig(),
+                GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
+
+        TaskExecutionContext taskExecutionContext = new DefaultTaskExecutionContext(
+                privilegedVariables, secretProvider);
 
         return operator.run(taskExecutionContext);
     }
