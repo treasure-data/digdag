@@ -4,9 +4,9 @@ build:
   verbosity: detailed
 
 build_script:
-  - gradlew.bat cleanTest test --info --no-daemon
+  - ps: gradlew.bat cleanTest test --info --stacktrace --no-daemon
   # TODO: come up with a better way to list tests that we want to run on appveyor
-  - gradlew.bat :digdag-test:test --info --no-daemon -Dtest.single=InitIT
+  - ps: gradlew.bat :digdag-test:test --info --stacktrace --no-daemon -Dtest.single=InitIT
 
 cache:
   - C:\Users\appveyor\.gradle
@@ -21,6 +21,7 @@ install:
   - npm install -g npm
   - node --version
   - npm --version
-  - cd digdag-ui && npm install
+  - echo %PATH%
+  - ps: echo $env:PATH
 
 test: off

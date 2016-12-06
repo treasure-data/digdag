@@ -307,7 +307,6 @@ project(':digdag-ui') {
             exec {
                 executable "npm"
                 args "install"
-                ignoreExitValue true
             }
             exec {
                 executable "npm"
