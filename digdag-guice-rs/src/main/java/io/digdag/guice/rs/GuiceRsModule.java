@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
-import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
@@ -18,10 +18,10 @@ import com.google.inject.internal.UniqueAnnotations;
 public abstract class GuiceRsModule
         extends AbstractModule
 {
-    protected ServletBindingBuilder bindServlet(Class<Servlet> servlet)
+    protected <T extends HttpServlet> ServletBindingBuilder bindServlet(Class<T> servlet)
     {
         Annotation annotation = UniqueAnnotations.create();
-        Key<Servlet> servletKey = Key.get(servlet, UniqueAnnotations.create());
+        Key<T> servletKey = Key.get(servlet, UniqueAnnotations.create());
         binder().bind(servletKey).to(servlet).in(Scopes.SINGLETON);
         return new ServletBindingBuilder(binder(), servletKey);
     }
@@ -83,7 +83,7 @@ public abstract class GuiceRsModule
     public static class ServletBindingBuilder
             extends AbstractServletBindingBuilder<ServletBindingBuilder, ServletInitializer>
     {
-        public ServletBindingBuilder(Binder binder, Key<Servlet> servletKey)
+        public ServletBindingBuilder(Binder binder, Key<? extends HttpServlet> servletKey)
         {
             super(binder, new ServletInitializer(servletKey));
         }
@@ -161,15 +161,15 @@ public abstract class GuiceRsModule
     private static class ServletInitializer
             extends GuiceRsServletInitializer
     {
-        private final Key<Servlet> servletKey;
+        private final Key<? extends HttpServlet> servletKey;
 
-        public ServletInitializer(Key<Servlet> servletKey)
+        public ServletInitializer(Key<? extends HttpServlet> servletKey)
         {
             this.servletKey = servletKey;
         }
 
         @Override
-        protected Servlet initializeServlet(Injector injector)
+        protected HttpServlet initializeServlet(Injector injector)
         {
             return injector.getInstance(servletKey);
         }
@@ -192,7 +192,7 @@ public abstract class GuiceRsModule
         }
 
         @Override
-        protected Servlet initializeServlet(Injector injector)
+        protected HttpServlet initializeServlet(Injector injector)
         {
             return new GuiceRsApplicationServlet(injector, resources, providers);
         }
