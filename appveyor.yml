@@ -6,6 +6,7 @@ build:
 build_script:
   - node --version
   - npm --version
+  - ps: Get-Command npm
   - gradlew.bat cleanTest test --info --stacktrace --no-daemon
   # TODO: come up with a better way to list tests that we want to run on appveyor
   - gradlew.bat :digdag-test:test --info --stacktrace --no-daemon -Dtest.single=InitIT
@@ -14,6 +15,7 @@ cache:
   - C:\Users\appveyor\.gradle
 
 environment:
+  NPM: C:\Users\appveyor\AppData\Roaming\npm
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
   - JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0

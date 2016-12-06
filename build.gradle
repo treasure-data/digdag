@@ -305,10 +305,10 @@ project(':digdag-ui') {
 
         doFirst {
             exec {
-                commandLine "npm", "install"
+                commandLine System.env.NPM ?: "npm", "install"
             }
             exec {
-                commandLine "npm", "run", "build"
+                commandLine System.env.NPM ?: "npm", "run", "build"
                 environment "SHA", "assets"
             }
         }
