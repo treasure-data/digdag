@@ -15,4 +15,6 @@ bootstrap:
   - bootstrap_foo.sh
   - name: Hello!
     path: bootstrap_hello.sh
-    args: [baz, quux]
+    env:
+      FOOBAR: foo.bar
+    args: [baz, quux, {secret: foo.bar}]

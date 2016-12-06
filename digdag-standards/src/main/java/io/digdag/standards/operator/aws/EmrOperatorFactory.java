@@ -63,6 +63,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
@@ -125,6 +126,8 @@ import static java.util.stream.Collectors.toMap;
 public class EmrOperatorFactory
         implements OperatorFactory
 {
+    private static final int LIST_STEPS_MAX_IDS = 10;
+
     private static Logger logger = LoggerFactory.getLogger(EmrOperatorFactory.class);
 
     public String getType()
@@ -280,9 +283,11 @@ public class EmrOperatorFactory
         private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx, Filer filer)
                 throws IOException
         {
+            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, ctx, cf);
+
             // Set up step compiler
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
-            StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, kms, ctx, objectMapper, defaultActionOnFailure);
+            StepCompiler stepCompiler = new StepCompiler(tag, steps, filer, parameterCompiler, objectMapper, defaultActionOnFailure);
 
             // Set up job submitter
             Submitter submitter;
@@ -294,12 +299,12 @@ public class EmrOperatorFactory
             }
             if (cluster != null) {
                 // Create a new cluster
-                submitter = newClusterSubmitter(emr, tag, stepCompiler, cluster, filer);
+                submitter = newClusterSubmitter(emr, tag, stepCompiler, cluster, filer, parameterCompiler);
             }
             else {
                 // Cluster ID? Use existing cluster.
                 String clusterId = params.get("cluster", String.class);
-                submitter = existingClusterSubmitter(emr, stepCompiler, clusterId, filer);
+                submitter = existingClusterSubmitter(emr, tag, stepCompiler, clusterId, filer);
             }
 
             // Submit EMR job
@@ -362,13 +367,15 @@ public class EmrOperatorFactory
                                 // TODO: consider task done if action_on_failure == CONTINUE?
                                 // TODO: include & log failure information
 
-                                ListStepsResult steps = emr.listSteps(new ListStepsRequest()
-                                        .withClusterId(submission.clusterId())
-                                        .withStepIds(submission.stepIds()));
+                                List<StepSummary> steps = Lists.partition(submission.stepIds(), LIST_STEPS_MAX_IDS).stream()
+                                        .flatMap(ids -> emr.listSteps(new ListStepsRequest()
+                                                .withClusterId(submission.clusterId())
+                                                .withStepIds(ids)).getSteps().stream())
+                                        .collect(toList());
 
                                 logger.error("EMR job failed: {}", submission.clusterId());
 
-                                for (StepSummary step : steps.getSteps()) {
+                                for (StepSummary step : steps) {
                                     StepStatus status = step.getStatus();
                                     FailureDetails details = status.getFailureDetails();
                                     StepStateChangeReason reason = status.getStateChangeReason();
@@ -405,7 +412,7 @@ public class EmrOperatorFactory
             return result.build();
         }
 
-        private Submitter existingClusterSubmitter(AmazonElasticMapReduce emr, StepCompiler stepCompiler, String clusterId, Filer filer)
+        private Submitter existingClusterSubmitter(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, String clusterId, Filer filer)
         {
             return () -> {
                 List<String> stepIds = pollingRetryExecutor(state, "submission")
@@ -413,8 +420,10 @@ public class EmrOperatorFactory
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         .runOnce(new TypeReference<List<String>>() {}, s -> {
 
+                            RemoteFile runner = prepareRunner(filer, tag);
+
                             // Compile steps
-                            stepCompiler.compile();
+                            stepCompiler.compile(runner);
 
                             // Stage files to S3
                             filer.stageFiles();
@@ -442,7 +451,7 @@ public class EmrOperatorFactory
             }
         }
 
-        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config clusterConfig, Filer filer)
+        private Submitter newClusterSubmitter(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config clusterConfig, Filer filer, ParameterCompiler parameterCompiler)
         {
 
             return () -> {
@@ -451,7 +460,7 @@ public class EmrOperatorFactory
                         .withRetryInterval(DurationInterval.of(Duration.ofSeconds(30), Duration.ofMinutes(5)))
                         // TODO: EMR requests are not idempotent, thus retrying might produce duplicate cluster submissions.
                         .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
-                        .runOnce(NewCluster.class, s -> submitNewClusterRequest(emr, tag, stepCompiler, clusterConfig, filer));
+                        .runOnce(NewCluster.class, s -> submitNewClusterRequest(emr, tag, stepCompiler, clusterConfig, filer, parameterCompiler));
 
                 // Get submitted step IDs
                 List<String> stepIds = pollingRetryExecutor(this.state, "steps")
@@ -523,11 +532,14 @@ public class EmrOperatorFactory
             }
         }
 
-        private NewCluster submitNewClusterRequest(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler, Config cluster, Filer filer)
+        private NewCluster submitNewClusterRequest(AmazonElasticMapReduce emr, String tag, StepCompiler stepCompiler,
+                Config cluster, Filer filer, ParameterCompiler parameterCompiler)
                 throws IOException
         {
+            RemoteFile runner = prepareRunner(filer, tag);
+
             // Compile steps
-            stepCompiler.compile();
+            stepCompiler.compile(runner);
 
             List<StepConfig> stepConfigs = stepCompiler.stepConfigs();
 
@@ -555,7 +567,7 @@ public class EmrOperatorFactory
             List<JsonNode> bootstrap = cluster.getListOrEmpty("bootstrap", JsonNode.class);
             List<BootstrapActionConfig> bootstrapActions = new ArrayList<>();
             for (int i = 0; i < bootstrap.size(); i++) {
-                bootstrapActions.add(bootstrapAction(i + 1, bootstrap.get(i), tag, filer));
+                bootstrapActions.add(bootstrapAction(i + 1, bootstrap.get(i), tag, filer, runner, parameterCompiler));
             }
 
             // Stage files to S3
@@ -697,25 +709,25 @@ public class EmrOperatorFactory
             return steps;
         }
 
-        private BootstrapActionConfig bootstrapAction(int index, JsonNode action, String tag, Filer filer)
+        private BootstrapActionConfig bootstrapAction(int index, JsonNode action, String tag, Filer filer, RemoteFile runner, ParameterCompiler parameterCompiler)
+                throws IOException
         {
             String script;
             String name;
-            List<String> args;
             FileReference reference;
 
+            Config config;
             if (action.isTextual()) {
                 script = action.asText();
                 reference = fileReference("bootstrap", script);
                 name = reference.filename();
-                args = ImmutableList.of();
+                config = request.getConfig().getFactory().create();
             }
             else if (action.isObject()) {
-                Config config = request.getConfig().getFactory().create(action);
+                config = request.getConfig().getFactory().create(action);
                 script = config.get("path", String.class);
                 reference = fileReference("bootstrap", script);
                 name = config.get("name", String.class, reference.filename());
-                args = config.getListOrEmpty("args", String.class);
             }
             else {
                 throw new ConfigException("Invalid bootstrap action: " + action);
@@ -723,11 +735,25 @@ public class EmrOperatorFactory
 
             RemoteFile file = filer.prepareRemoteFile(tag, "bootstrap", Integer.toString(index), reference, false);
 
+            CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
+                    .env(parameterCompiler.parameters(config.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .addDownload(DownloadConfig.of(file, 0777))
+                    .addCommand(file.localPath())
+                    .addAllCommand(parameterCompiler.parameters(config, "args"))
+                    .build();
+
+            FileReference configurationFileReference = ImmutableFileReference.builder()
+                    .type(FileReference.Type.DIRECT)
+                    .contents(objectMapper.writeValueAsBytes(configuration))
+                    .filename("config.json")
+                    .build();
+            RemoteFile remoteConfigurationFile = filer.prepareRemoteFile(tag, "bootstrap", Integer.toString(index), configurationFileReference, false);
+
             return new BootstrapActionConfig()
                     .withName(name)
                     .withScriptBootstrapAction(new ScriptBootstrapActionConfig()
-                            .withPath(file.s3Uri().toString())
-                            .withArgs(args));
+                            .withPath(runner.s3Uri().toString())
+                            .withArgs(remoteConfigurationFile.s3Uri().toString()));
         }
 
         private List<Configuration> configurations(JsonNode node)
@@ -938,45 +964,34 @@ public class EmrOperatorFactory
 
     private static class StepCompiler
     {
+        private final ParameterCompiler pc;
         private final String tag;
         private final List<Config> steps;
-        private final AWSKMSClient kms;
-        private final TaskExecutionContext ctx;
         private final Filer filer;
         private final ObjectMapper objectMapper;
         private final String defaultActionOnFailure;
-        private final ConfigFactory cf;
 
         private List<StepConfig> configs;
 
         private int index;
         private Config step;
-        private RemoteFile commandRunner;
+        private RemoteFile runner;
 
-        StepCompiler(String tag, List<Config> steps, Filer filer, AWSKMSClient kms, TaskExecutionContext ctx, ObjectMapper objectMapper, String defaultActionOnFailure)
+        StepCompiler(String tag, List<Config> steps, Filer filer, ParameterCompiler pc, ObjectMapper objectMapper, String defaultActionOnFailure)
         {
             this.tag = Preconditions.checkNotNull(tag, "tag");
             this.steps = Preconditions.checkNotNull(steps, "steps");
-            this.kms = Preconditions.checkNotNull(kms, "kms");
-            this.ctx = Preconditions.checkNotNull(ctx, "ctx");
             this.filer = Preconditions.checkNotNull(filer, "filer");
+            this.pc = Preconditions.checkNotNull(pc, "pc");
             this.objectMapper = Preconditions.checkNotNull(objectMapper, "objectMapper");
             this.defaultActionOnFailure = Preconditions.checkNotNull(defaultActionOnFailure, "defaultActionOnFailure");
-            this.cf = new ConfigFactory(objectMapper);
             Preconditions.checkArgument(!steps.isEmpty(), "steps");
         }
 
-        private void compile()
+        private void compile(RemoteFile runner)
                 throws IOException
         {
-            URL commandRunnerResource = Resources.getResource(EmrOperatorFactory.class, "command-runner.py");
-            FileReference commandRunnerFileReference = ImmutableFileReference.builder()
-                    .reference(commandRunnerResource.toString())
-                    .type(FileReference.Type.RESOURCE)
-                    .filename("command-runner.py")
-                    .build();
-            commandRunner = filer.prepareRemoteFile(tag, "steps", "shared", commandRunnerFileReference, false);
-
+            this.runner = runner;
             configs = new ArrayList<>();
             index = 1;
             for (int i = 0; i < steps.size(); i++, index++) {
@@ -1048,7 +1063,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
+            List<Parameter> confArgs = pc.parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
 
             List<String> classArgs = step.getOptional("class", String.class)
                     .transform(s -> ImmutableList.of("--class", s))
@@ -1141,7 +1156,7 @@ public class EmrOperatorFactory
                     : ImmutableList.of("--jars", jarFiles.stream().map(RemoteFile::localPath).collect(Collectors.joining(",")));
 
             Config conf = step.getNestedOrderedOrGetEmpty("conf");
-            List<Parameter> confArgs = parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
+            List<Parameter> confArgs = pc.parameters("--conf", conf, "conf", (key, value) -> key + "=" + value);
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addDownload(wrapperFile)
@@ -1150,7 +1165,7 @@ public class EmrOperatorFactory
                     .addAllCommand("--deploy-mode", step.get("deploy_mode", String.class, "cluster"))
                     .addAllCommand("--files", queryFile.localPath())
                     .addAllCommand(confArgs)
-                    .addAllCommand(parameters(step, "submit_options"))
+                    .addAllCommand(pc.parameters(step, "submit_options"))
                     .addAllCommand(jarArgs)
                     .addAllCommand(wrapperFile.localPath())
                     .addAllCommand(queryReference.filename(), step.get("result", String.class))
@@ -1172,11 +1187,11 @@ public class EmrOperatorFactory
                     .collect(toList());
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
-                    .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addDownload(DownloadConfig.of(scriptFile, 0777))
                     .addAllDownload(filesFiles)
                     .addAllCommand(scriptFile.localPath())
-                    .addAllCommand(parameters(step, "args"))
+                    .addAllCommand(pc.parameters(step, "args"))
                     .build();
 
             addStep("Script", configuration);
@@ -1196,7 +1211,7 @@ public class EmrOperatorFactory
                             "flink", "run", "-m", "yarn-cluster",
                             "-yn", Integer.toString(step.get("yarn_containers", int.class, 2)),
                             remoteFile.localPath())
-                    .addAllCommand(parameters(step, "args"))
+                    .addAllCommand(pc.parameters(step, "args"))
                     .build();
 
             addStep(name, configuration);
@@ -1210,8 +1225,8 @@ public class EmrOperatorFactory
 
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
                     .addAllCommand("hive-script", "--run-hive-script", "--args", "-f", remoteScript.s3Uri().toString())
-                    .addAllCommand(parameters("-d", step.getNestedOrGetEmpty("vars"), "vars", (key, value) -> key + "=" + value))
-                    .addAllCommand(parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), "hiveconf", (key, value) -> key + "=" + value))
+                    .addAllCommand(pc.parameters("-d", step.getNestedOrGetEmpty("vars"), "vars", (key, value) -> key + "=" + value))
+                    .addAllCommand(pc.parameters("-hiveconf", step.getNestedOrGetEmpty("hiveconf"), "hiveconf", (key, value) -> key + "=" + value))
                     .build();
 
             addStep("Hive Script", configuration);
@@ -1221,13 +1236,13 @@ public class EmrOperatorFactory
                 throws IOException
         {
             CommandRunnerConfiguration configuration = CommandRunnerConfiguration.builder()
-                    .env(parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
+                    .env(pc.parameters(step.getNestedOrGetEmpty("env"), "env", (key, value) -> value))
                     .addAllDownload(step.getListOrEmpty("files", String.class).stream()
                             .map(r -> fileReference("file", r))
                             .map(r -> prepareRemoteFile(r, false))
                             .collect(toList()))
                     .addAllCommand(step.get("command", String.class))
-                    .addAllCommand(parameters(step, "args"))
+                    .addAllCommand(pc.parameters(step, "args"))
                     .build();
 
             addStep("Command", configuration);
@@ -1236,18 +1251,46 @@ public class EmrOperatorFactory
         private void addStep(String name, CommandRunnerConfiguration configuration)
                 throws IOException
         {
-            String configFilename = "config.json";
             FileReference configurationFileReference = ImmutableFileReference.builder()
                     .type(FileReference.Type.DIRECT)
                     .contents(objectMapper.writeValueAsBytes(configuration))
-                    .filename(configFilename)
+                    .filename("config.json")
                     .build();
             RemoteFile remoteConfigurationFile = prepareRemoteFile(configurationFileReference, false);
 
             StepConfig runStep = stepConfig(name, tag, step)
-                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(commandRunner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
+                    .withHadoopJarStep(stepFactory().newScriptRunnerStep(runner.s3Uri().toString(), remoteConfigurationFile.s3Uri().toString()));
 
             configs.add(runStep);
+        }
+
+        private StepFactory stepFactory()
+        {
+            // TODO: configure region
+            return new StepFactory();
+        }
+
+        private StepConfig stepConfig(String defaultName, String tag, Config step)
+        {
+            String name = step.get("name", String.class, defaultName);
+            return new StepConfig()
+                    .withName(name + " (" + tag + ")")
+                    // TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE
+                    .withActionOnFailure(step.get("action_on_failure", String.class, defaultActionOnFailure));
+        }
+    }
+
+    private static class ParameterCompiler
+    {
+        private final AWSKMSClient kms;
+        private final TaskExecutionContext ctx;
+        private final ConfigFactory cf;
+
+        ParameterCompiler(AWSKMSClient kms, TaskExecutionContext ctx, ConfigFactory cf)
+        {
+            this.kms = Preconditions.checkNotNull(kms, "kms");
+            this.ctx = Preconditions.checkNotNull(ctx, "ctx");
+            this.cf = Preconditions.checkNotNull(cf, "cf");
         }
 
         private List<Parameter> parameters(String flag, Config config, String name, BiFunction<String, String, String> f)
@@ -1307,21 +1350,6 @@ public class EmrOperatorFactory
             bb.get(bytes);
             return Base64.getEncoder().encodeToString(bytes);
         }
-
-        private StepFactory stepFactory()
-        {
-            // TODO: configure region
-            return new StepFactory();
-        }
-
-        private StepConfig stepConfig(String defaultName, String tag, Config step)
-        {
-            String name = step.get("name", String.class, defaultName);
-            return new StepConfig()
-                    .withName(name + " (" + tag + ")")
-                    // TERMINATE_JOB_FLOW | TERMINATE_CLUSTER | CANCEL_AND_WAIT | CONTINUE
-                    .withActionOnFailure(step.get("action_on_failure", String.class, defaultActionOnFailure));
-        }
     }
 
     private static FileReference fileReference(String key, Config config)
@@ -1373,6 +1401,17 @@ public class EmrOperatorFactory
                 return tag;
             }
         }
+    }
+
+    private static RemoteFile prepareRunner(Filer filer, String tag)
+    {
+        URL commandRunnerResource = Resources.getResource(EmrOperatorFactory.class, "runner.py");
+        FileReference commandRunnerFileReference = ImmutableFileReference.builder()
+                .reference(commandRunnerResource.toString())
+                .type(FileReference.Type.RESOURCE)
+                .filename("runner.py")
+                .build();
+        return filer.prepareRemoteFile(tag, "shared", "scripts", commandRunnerFileReference, false);
     }
 
     @Value.Immutable

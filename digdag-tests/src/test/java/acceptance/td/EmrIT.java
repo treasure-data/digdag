@@ -178,6 +178,7 @@ public class EmrIT
         digdagClient.setProjectSecret(projectId, "aws.emr.role_arn", AWS_ROLE);
         digdagClient.setProjectSecret(projectId, "aws.emr.kms_key_id", AWS_KMS_KEY_ID);
         digdagClient.setProjectSecret(projectId, "td.apikey", TD_API_KEY);
+        digdagClient.setProjectSecret(projectId, "foo.bar", "foobar");
 
         addResource(projectDir, "acceptance/emr/bootstrap_foo.sh");
         addResource(projectDir, "acceptance/emr/bootstrap_hello.sh");
