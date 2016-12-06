@@ -5,6 +5,9 @@ apt-get -y install software-properties-common apt-transport-https wget git sudo
 # Maven
 apt-get -y install maven
 
+# npm
+apt-get -y install nodejs npm
+
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
 wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
