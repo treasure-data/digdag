@@ -686,7 +686,7 @@ Creates a project archive and upload it to the server. This command uploads work
     $ digdag push myproj -r "$(date +%Y-%m-%dT%H:%M:%S%z)"
     $ digdag push default -r "$(git show --pretty=format:'%T' | head -n 1)"
 
-:command:`---project DIR`
+:command:`--project DIR`
   Use this directory as the project directory (default: current directory).
 
   Example: --project workflow/
@@ -700,6 +700,32 @@ Creates a project archive and upload it to the server. This command uploads work
   Start schedules from this time. If this is not set, system time of the server is used. Parameter must include time zone offset. You can run ``date \"+%Y-%m-%d %H:%M:%S %z\"`` command to get current local time.
 
   Example: --schedule-from "2017-07-29 00:00:00 +0200"
+
+
+download
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: console
+
+    $ digdag download <project>
+
+Downloads a project archive and extract to a local directory.
+
+.. code-block:: console
+
+    $ digdag download myproj
+    $ digdag download myproj -o output
+    $ digdag download myproj -r rev20161106
+
+:command:`-o, --output DIR`
+  Extract contents to this directory (default: same with project name).
+
+  Example: -o output
+
+:command:`-r, --revision REVISION`
+  Download project archive of this revision (default: latest revision).
+
+  Example: -r f40172ebc58f58087b6132085982147efa9e81fb
 
 
 delete
