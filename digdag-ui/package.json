@@ -7,7 +7,7 @@
     "clean": "rimraf public",
     "build:js": "cross-env NODE_ENV=production webpack --config webpack.build.js -p --bail",
     "build:copy": "node prepare-release.js",
-    "build": "npm run clean && npm run build:js && npm run build:copy",
+    "build": "yarn run clean && yarn run build:js && yarn run build:copy",
     "dev": "cross-env NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000",
     "dev:https": "cross-env NODE_ENV=development webpack-dev-server --hot --inline --progress --port 9000 --https",
     "flow": "flow; test $? -eq 0 -o $? -eq 2",
