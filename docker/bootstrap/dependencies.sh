@@ -9,7 +9,6 @@ apt-get -y install maven
 apt-get -y install curl
 curl -sL https://deb.nodesource.com/setup_6.x | bash -
 apt-get -y install nodejs
-npm install -g yarn
 
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
