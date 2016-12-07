@@ -9,10 +9,7 @@ apt-get -y install maven
 apt-get -y install curl
 curl -sL https://deb.nodesource.com/setup_6.x | bash -
 apt-get -y install nodejs
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb http://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-sudo apt-get update && sudo apt-get install yarn
-
+npm install -g yarn
 
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
