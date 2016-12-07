@@ -395,13 +395,21 @@ public class TestUtils
         return pushProject(endpoint, project, projectName);
     }
 
-    public static Id pushProject(String endpoint, Path project, String projectName)
+    public static Id pushProject(String endpoint, Path project, String projectName) {
+        return pushProject(endpoint, project, projectName, ImmutableMap.of());
+    }
+
+    public static Id pushProject(String endpoint, Path project, String projectName, Map<String, String> params)
     {
-        CommandStatus pushStatus = main("push",
+        List<String> command = new ArrayList<>();
+        command.addAll(asList(
+                "push",
                 "--project", project.toString(),
                 projectName,
                 "-c", "/dev/null",
-                "-e", endpoint);
+                "-e", endpoint));
+        params.forEach((k, v) -> command.addAll(asList("-p", k + "=" + v)));
+        CommandStatus pushStatus = main(command);
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
         Matcher matcher = PROJECT_ID_PATTERN.matcher(pushStatus.outUtf8());
         boolean found = matcher.find();

@@ -327,6 +327,7 @@ public class DatabaseScheduleStoreManager
                 .createdAt(getTimestampInstant(r, "created_at"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .disabledAt(getOptionalTimestampInstant(r, "disabled_at"))
+                .lastSessionTime(getOptionalLong(r, "last_session_time").transform(Instant::ofEpochSecond))
                 .build();
         }
     }
