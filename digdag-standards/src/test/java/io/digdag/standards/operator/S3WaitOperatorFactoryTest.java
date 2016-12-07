@@ -116,8 +116,8 @@ public class S3WaitOperatorFactoryTest
 
         when(secretProvider.getSecrets("aws")).thenReturn(awsSecrets);
         when(awsSecrets.getSecrets("s3")).thenReturn(s3Secrets);
-        when(s3Secrets.getSecretOptional("access-key-id")).thenReturn(Optional.of(ACCESS_KEY_ID));
-        when(s3Secrets.getSecretOptional("secret-access-key")).thenReturn(Optional.of(SECRET_ACCESS_KEY));
+        when(s3Secrets.getSecretOptional("access_key_id")).thenReturn(Optional.of(ACCESS_KEY_ID));
+        when(s3Secrets.getSecretOptional("secret_access_key")).thenReturn(Optional.of(SECRET_ACCESS_KEY));
 
         when(s3ClientFactory.create(any(AWSCredentials.class), any(ClientConfiguration.class))).thenReturn(s3Client);
         when(taskExecutionContext.secrets()).thenReturn(secretProvider);
@@ -284,7 +284,7 @@ public class S3WaitOperatorFactoryTest
         config.set("_command", BUCKET + "/" + KEY);
         when(taskRequest.getConfig()).thenReturn(config);
 
-        when(s3Secrets.getSecretOptional("sse-c-key")).thenReturn(Optional.of(SSE_C_KEY));
+        when(s3Secrets.getSecretOptional("sse_c_key")).thenReturn(Optional.of(SSE_C_KEY));
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
@@ -311,9 +311,9 @@ public class S3WaitOperatorFactoryTest
         config.set("_command", BUCKET + "/" + KEY);
         when(taskRequest.getConfig()).thenReturn(config);
 
-        when(s3Secrets.getSecretOptional("sse-c-key")).thenReturn(Optional.of(SSE_C_KEY));
-        when(s3Secrets.getSecretOptional("sse-c-key-algorithm")).thenReturn(Optional.of(SSE_C_KEY_ALGORITM));
-        when(s3Secrets.getSecretOptional("sse-c-key-md5")).thenReturn(Optional.of(SSE_C_KEY_MD5));
+        when(s3Secrets.getSecretOptional("sse_c_key")).thenReturn(Optional.of(SSE_C_KEY));
+        when(s3Secrets.getSecretOptional("sse_c_key_algorithm")).thenReturn(Optional.of(SSE_C_KEY_ALGORITM));
+        when(s3Secrets.getSecretOptional("sse_c_key_md5")).thenReturn(Optional.of(SSE_C_KEY_MD5));
 
         when(s3Client.getObjectMetadata(objectMetadataRequestCaptor.capture())).thenThrow(NOT_FOUND_EXCEPTION);
 
