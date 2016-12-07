@@ -72,17 +72,17 @@ public class ServerErrorStatusCodeIT
     }
 
     @Test
-    public void verify404NotFoundOnUnmatchingServlet()
+    public void verify405MethodNotAllowedOnUiServlet()
             throws Exception
     {
-        for (String httpMethod : Iterables.concat(READ_METHODS, WRITE_METHODS, UNKNOWN_METHODS)) {
+        for (String httpMethod : Iterables.concat(WRITE_METHODS, UNKNOWN_METHODS)) {
             Response response = client.newCall(new Request.Builder()
-                    .url(server.endpoint() + "/no_such_api")
+                    .url(server.endpoint() + "/ui")
                     .method(httpMethod,
                         WRITE_METHODS.contains(httpMethod) ?
                             RequestBody.create(MediaType.parse("text/plain"), "") : null)
                     .build()).execute();
-            assertThat(httpMethod, response.code(), is(404));
+            assertThat(httpMethod, response.code(), is(405));
         }
     }
 

@@ -23,6 +23,7 @@ import io.digdag.server.rs.LogResource;
 import io.digdag.server.rs.ProjectResource;
 import io.digdag.server.rs.ScheduleResource;
 import io.digdag.server.rs.SessionResource;
+import io.digdag.server.rs.UiResource;
 import io.digdag.server.rs.VersionResource;
 import io.digdag.server.rs.WorkflowResource;
 import io.digdag.spi.SecretAccessPolicy;
@@ -62,6 +63,7 @@ public class ServerModule
         bindAuthenticator();
         bindExceptionhandlers(builder);
         bindSecrets();
+        bindUiApplication();
     }
 
     protected void bindSecrets()
@@ -103,6 +105,14 @@ public class ServerModule
             .addProviderInstance(new GenericJsonExceptionHandler<ConfigException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<IllegalArgumentException>(Response.Status.BAD_REQUEST) { })
             .addProviderInstance(new GenericJsonExceptionHandler<ResourceLimitExceededException>(Response.Status.BAD_REQUEST) { })
+            ;
+    }
+
+    protected void bindUiApplication()
+    {
+        bindApplication()
+            .matches("/*")
+            .addResources(UiResource.class)
             ;
     }
 
