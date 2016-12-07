@@ -17,6 +17,7 @@ import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Delete;
 import io.digdag.cli.client.DisableSchedule;
+import io.digdag.cli.client.Download;
 import io.digdag.cli.client.EnableSchedule;
 import io.digdag.cli.client.Kill;
 import io.digdag.cli.client.Push;
@@ -131,6 +132,7 @@ public class Main
         jc.addCommand("push", injector.getInstance(Push.class));
         jc.addCommand("archive", injector.getInstance(Archive.class));
         jc.addCommand("upload", injector.getInstance(Upload.class));
+        jc.addCommand("download", injector.getInstance(Download.class));
 
         jc.addCommand("workflow", injector.getInstance(ShowWorkflow.class), "workflows");
         jc.addCommand("start", injector.getInstance(Start.class));
@@ -303,6 +305,7 @@ public class Main
         err.println("");
         err.println("  Client-mode commands:");
         err.println("    push <project-name>                create and upload a new revision");
+        err.println("    download <project-name>            pull an uploaded revision");
         err.println("    start <project-name> <name>        start a new session attempt of a workflow");
         err.println("    retry <attempt-id>                 retry a session");
         err.println("    kill <attempt-id>                  kill a running session attempt");
