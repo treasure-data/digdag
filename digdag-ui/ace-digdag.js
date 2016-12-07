@@ -12,19 +12,19 @@ global.ace.define('ace/mode/digdag_rules', [
   'module',
   'ace/lib/oop',
   'ace/mode/yaml_highlight_rules'
-], function(require, exports, module) {
+], function (require, exports, module) {
   const oop = require('ace/lib/oop')
   const YamlMODE = require('ace/mode/yaml_highlight_rules').YamlHighlightRules
-  const DigdagRules = function() {
+  const DigdagRules = function () {
     this.$rules = new YamlMODE().getRules()
     this.$rules.start = [
       {
         token: TD_LOAD_TOKEN,
-        regex:  /^\s*td_load>:/,
+        regex: /^\s*td_load>:/,
         next: 'td-load-value'
       }, {
         token: TD_RUN_TOKEN,
-        regex:  /^\s*td_run>:/,
+        regex: /^\s*td_run>:/,
         next: 'td-run-value'
       },
       ...this.$rules.start

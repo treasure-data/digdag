@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -26,6 +27,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import io.digdag.util.BaseOperator;
+import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
 public class PyOperatorFactory
         implements OperatorFactory
@@ -86,7 +88,7 @@ public class PyOperatorFactory
 
             Config data;
             try {
-                data = runCode(params);
+                data = runCode(params, ctx);
             }
             catch (IOException | InterruptedException ex) {
                 throw Throwables.propagate(ex);
@@ -99,7 +101,7 @@ public class PyOperatorFactory
                 .build();
         }
 
-        private Config runCode(Config params)
+        private Config runCode(Config params, TaskExecutionContext ctx)
                 throws IOException, InterruptedException
         {
             String inFile = workspace.createTempFile("digdag-py-in-", ".tmp");
@@ -126,9 +128,15 @@ public class PyOperatorFactory
                 .add("python").add("-")  // script is fed from stdin
                 .addAll(args)
                 .build();
+
             ProcessBuilder pb = new ProcessBuilder(cmdline);
             pb.directory(workspace.getPath().toFile());
             pb.redirectErrorStream(true);
+
+            // Set up process environment according to env config. This can also refer to secrets.
+            Map<String, String> env = pb.environment();
+            collectEnvironmentVariables(env, ctx.privilegedVariables());
+
             Process p = exec.start(workspace.getPath(), request, pb);
 
             // feed script to stdin
