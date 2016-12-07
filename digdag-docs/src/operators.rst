@@ -2069,13 +2069,13 @@ For detailed information about EMR, see the `Amazon Elastic MapReduce Documentat
 Secrets
 ~~~~~~~
 
-:command:`aws.emr.access-key-id, aws.access-key-id`
+:command:`aws.emr.access_key_id, aws.access_key_id`
   The AWS Access Key ID to use when submitting EMR jobs.
 
-:command:`aws.emr.secret-access-key, aws.secret-access-key`
+:command:`aws.emr.secret_access_key, aws.secret_access_key`
   The AWS Secret Access Key to use when submitting EMR jobs.
 
-:command:`aws.emr.role-arn, aws.role-arn`
+:command:`aws.emr.role_arn, aws.role_arn`
   The AWS Role to assume when submitting EMR jobs.
 
 Parameters
