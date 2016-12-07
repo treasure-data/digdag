@@ -11,13 +11,12 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigKey;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.ConfigSelector;
 
-import java.nio.file.Path;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,9 +44,18 @@ class GcsWaitOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new GcsWaitOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("gcp")
+            .addSecretAccess("project")
+            .addSecretOnlyAccess("credential")
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new GcsWaitOperator(context);
     }
 
     private static final Pattern URI_PATTERN = Pattern.compile("(?:gs://)?(?<bucket>[^/]+)/(?<object>.+)");
@@ -57,14 +65,14 @@ class GcsWaitOperatorFactory
     {
         private final TaskState state;
 
-        GcsWaitOperator(Path projectPath, TaskRequest request)
+        GcsWaitOperator(OperatorContext context)
         {
-            super(projectPath, request, clientFactory, credentialProvider);
+            super(context, clientFactory, credentialProvider);
             this.state = TaskState.of(request);
         }
 
         @Override
-        protected TaskResult run(TaskExecutionContext ctx, GcsClient gcs, String projectId)
+        protected TaskResult run(GcsClient gcs, String projectId)
         {
             Optional<String> command = params.getOptional("_command", String.class);
 

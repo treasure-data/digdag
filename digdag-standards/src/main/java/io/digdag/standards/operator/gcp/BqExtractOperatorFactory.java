@@ -7,8 +7,10 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.SecretAccessList;
+import io.digdag.util.ConfigSelector;
 
 import java.nio.file.Path;
 
@@ -35,17 +37,26 @@ class BqExtractOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new BqExtractOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("gcp")
+            .addSecretAccess("project")
+            .addSecretOnlyAccess("credential")
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new BqExtractOperator(context);
     }
 
     private class BqExtractOperator
             extends BaseBqJobOperator
     {
-        BqExtractOperator(Path projectPath, TaskRequest request)
+        BqExtractOperator(OperatorContext context)
         {
-            super(projectPath, request, clientFactory, credentialProvider);
+            super(context, clientFactory, credentialProvider);
         }
 
         @Override

@@ -33,8 +33,8 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.TaskState;
-import org.eclipse.jetty.http.HttpStatus;
 import io.digdag.util.ConfigSelector;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +102,7 @@ public class S3WaitOperatorFactory
 
         public S3WaitOperator(OperatorContext context)
         {
-            this.request = context.getRequest();
+            this.request = context.getTaskRequest();
             this.state = TaskState.of(request);
             this.secrets = context.getSecrets();
         }

@@ -85,8 +85,17 @@ public class OperatorTestingUtils
         return new TestingOperatorContext(
                 projectPath,
                 request,
-                GrantedPrivilegedVariables.empty(),
-                TestingSecretProvider.empty());
+                TestingSecretProvider.empty(),
+                GrantedPrivilegedVariables.empty());
+    }
+
+    public static TestingOperatorContext newContext(Path projectPath, TaskRequest request, SecretProvider secrets)
+    {
+        return new TestingOperatorContext(
+                projectPath,
+                request,
+                secrets,
+                GrantedPrivilegedVariables.empty());
     }
 
     public static class TestingOperatorContext
@@ -94,19 +103,19 @@ public class OperatorTestingUtils
     {
         private final Path projectPath;
         private final TaskRequest taskRequest;
-        private final PrivilegedVariables privilegedVariables;
         private final SecretProvider secrets;
+        private final PrivilegedVariables privilegedVariables;
 
         public TestingOperatorContext(
                 Path projectPath,
                 TaskRequest taskRequest,
-                PrivilegedVariables privilegedVariables,
-                SecretProvider secrets)
+                SecretProvider secrets,
+                PrivilegedVariables privilegedVariables)
         {
             this.projectPath = projectPath;
             this.taskRequest = taskRequest;
-            this.privilegedVariables = privilegedVariables;
             this.secrets = secrets;
+            this.privilegedVariables = privilegedVariables;
         }
 
         @Override
@@ -122,15 +131,15 @@ public class OperatorTestingUtils
         }
 
         @Override
-        public PrivilegedVariables getPrivilegedVariables()
-        {
-            return privilegedVariables;
-        }
-
-        @Override
         public SecretProvider getSecrets()
         {
             return secrets;
+        }
+
+        @Override
+        public PrivilegedVariables getPrivilegedVariables()
+        {
+            return privilegedVariables;
         }
 
         public TestingOperatorContext withSecrets(Properties secretsProps)
@@ -138,8 +147,8 @@ public class OperatorTestingUtils
             return new TestingOperatorContext(
                     projectPath,
                     taskRequest,
-                    privilegedVariables,
-                    TestingSecretProvider.fromProperties(secretsProps));
+                    TestingSecretProvider.fromProperties(secretsProps),
+                    privilegedVariables);
         }
 
         public TestingOperatorContext withPrivilegedVariables(Config grants, Config params)
@@ -147,8 +156,8 @@ public class OperatorTestingUtils
             return new TestingOperatorContext(
                     projectPath,
                     taskRequest,
-                    GrantedPrivilegedVariables.build(grants, params, secrets),
-                    secrets);
+                    secrets,
+                    GrantedPrivilegedVariables.build(grants, params, secrets));
         }
     }
 
