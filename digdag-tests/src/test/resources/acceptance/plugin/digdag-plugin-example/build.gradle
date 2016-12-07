@@ -5,18 +5,14 @@ apply plugin: 'maven-publish'
 group = 'io.digdag.plugin'
 version = '0.1.0'
 
-def digdagVersion = '0.8.14'
+def digdagVersion = '0.8.18-SNAPSHOT'
 
 repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
     maven {
-        url 's3://digdag-beta-release/maven'
-        credentials(AwsCredentials) {
-            accessKey "${System.env.AWS_ACCESS_KEY_ID}"
-            secretKey "${System.env.AWS_SECRET_ACCESS_KEY}"
-        }
+        url  "http://dl.bintray.com/digdag/maven"
     }
 }
 
@@ -26,7 +22,7 @@ configurations {
 
 dependencies {
     provided 'io.digdag:digdag-spi:' + digdagVersion
-    provided 'io.digdag:digdag-plugin-utils:' + digdagVersion  // this should be 'compile' once digdag 0.8.2 is released to a built-in repository
+    provided 'io.digdag:digdag-plugin-utils:' + digdagVersion  // this should be 'compile' instead of 'provided' once digdag 0.8.18 is released to one of the built-in repositories (maven central or jcenter)
 }
 sourceSets {
     main {

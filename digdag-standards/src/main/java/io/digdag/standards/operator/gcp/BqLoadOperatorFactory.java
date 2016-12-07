@@ -14,13 +14,15 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
+import io.digdag.util.ConfigSelector;
 import io.digdag.standards.operator.td.YamlLoader;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
 import static io.digdag.standards.operator.gcp.Bq.tableReference;
@@ -54,17 +56,26 @@ class BqLoadOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new BqLoadOperator(projectPath, request);
+        return new BqLoadOperator(context);
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return ConfigSelector.builderOfScope("gcp")
+            .addSecretAccess("project")
+            .addSecretOnlyAccess("credential")
+            .build();
     }
 
     private class BqLoadOperator
             extends BaseBqJobOperator
     {
-        BqLoadOperator(Path projectPath, TaskRequest request)
+        BqLoadOperator(OperatorContext context)
         {
-            super(projectPath, request, clientFactory, credentialProvider);
+            super(context, clientFactory, credentialProvider);
         }
 
         @Override

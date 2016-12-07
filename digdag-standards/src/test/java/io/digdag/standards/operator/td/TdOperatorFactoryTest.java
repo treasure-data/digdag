@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static io.digdag.client.config.ConfigUtils.newConfig;
+import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static io.digdag.core.workflow.OperatorTestingUtils.newOperatorFactory;
 import static io.digdag.core.workflow.OperatorTestingUtils.newTaskRequest;
 
@@ -121,6 +122,6 @@ public class TdOperatorFactoryTest
         exception.expectMessage("File name must not be outside of project path");
 
         newOperatorFactory(TdOperatorFactory.class)
-            .newOperator(projectPath, newTaskRequest().withConfig(config));
+            .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
     }
 }

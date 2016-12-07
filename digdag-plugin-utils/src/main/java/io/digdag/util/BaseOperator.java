@@ -4,51 +4,36 @@ import java.util.List;
 import java.util.ArrayList;
 import java.nio.file.Path;
 
-import io.digdag.spi.TaskExecutionContext;
-import io.digdag.spi.TaskResult;
-import io.digdag.spi.TaskRequest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
+import io.digdag.spi.TaskRequest;
+import io.digdag.spi.TaskResult;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public abstract class BaseOperator
         implements Operator
 {
-    protected final Path projectPath;
-    protected final Workspace workspace;
+    protected final OperatorContext context;
     protected final TaskRequest request;
+    protected final Workspace workspace;
 
-    protected final List<Config> inputs;
-    protected final List<Config> outputs;
-
-    public BaseOperator(Path projectPath, TaskRequest request)
+    public BaseOperator(OperatorContext context)
     {
-        this.projectPath = projectPath;
-        this.workspace = Workspace.ofTaskRequest(projectPath, request);
-        this.request = request;
-        this.inputs = new ArrayList<>();
-        this.outputs = new ArrayList<>();
-    }
-
-    public void addInput(Config input)
-    {
-        inputs.add(input);
-    }
-
-    public void addOutput(Config output)
-    {
-        outputs.add(output);
+        this.context = context;
+        this.request = context.getTaskRequest();
+        this.workspace = Workspace.ofTaskRequest(context.getProjectPath(), request);
     }
 
     @Override
-    public TaskResult run(TaskExecutionContext ctx)
+    public TaskResult run()
     {
         RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
         try {
             try {
-                return runTask(ctx);
+                return runTask();
             }
             finally {
                 workspace.close();
@@ -78,13 +63,5 @@ public abstract class BaseOperator
         }
     }
 
-    // TODO: scrap backwards compatibility?
-    @Deprecated
-    public TaskResult runTask() {
-        throw new UnsupportedOperationException();
-    }
-
-    public TaskResult runTask(TaskExecutionContext ctx) {
-        return runTask();
-    }
+    public abstract TaskResult runTask();
 }

@@ -16,6 +16,7 @@ import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 class DefaultSecretProvider
         implements SecretProvider
@@ -23,11 +24,11 @@ class DefaultSecretProvider
     private final SecretAccessContext context;
     private final SecretAccessPolicy secretAccessPolicy;
     private final Config grants;
-    private final SecretFilter operatorSecretFilter;
+    private final Predicate<String> operatorSecretFilter;
     private final SecretStore secretStore;
 
     DefaultSecretProvider(
-            SecretAccessContext context, SecretAccessPolicy secretAccessPolicy, Config grants, SecretFilter operatorSecretFilter, SecretStore secretStore)
+            SecretAccessContext context, SecretAccessPolicy secretAccessPolicy, Config grants, Predicate<String> operatorSecretFilter, SecretStore secretStore)
     {
         this.context = context;
         this.secretAccessPolicy = secretAccessPolicy;
@@ -47,7 +48,7 @@ class DefaultSecretProvider
         segments.forEach(segment -> Preconditions.checkArgument(!Strings.isNullOrEmpty(segment)));
 
         // Only allow operatorType to access pre-declared secrets
-        if (!operatorSecretFilter.match(key)) {
+        if (!operatorSecretFilter.test(key)) {
             throw new SecretAccessDeniedException(key);
         }
 

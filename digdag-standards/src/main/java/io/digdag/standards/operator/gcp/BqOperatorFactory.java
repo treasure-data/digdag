@@ -10,10 +10,11 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TemplateEngine;
+import io.digdag.util.ConfigSelector;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -44,9 +45,18 @@ class BqOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new BqOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("gcp")
+            .addSecretAccess("project")
+            .addSecretOnlyAccess("credential")
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new BqOperator(context);
     }
 
     private class BqOperator
@@ -54,9 +64,9 @@ class BqOperatorFactory
     {
         private final String query;
 
-        BqOperator(Path projectPath, TaskRequest request)
+        BqOperator(OperatorContext context)
         {
-            super(projectPath, request, clientFactory, credentialProvider);
+            super(context, clientFactory, credentialProvider);
             this.query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
         }
 

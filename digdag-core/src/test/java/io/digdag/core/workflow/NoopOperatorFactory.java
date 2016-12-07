@@ -2,7 +2,7 @@ package io.digdag.core.workflow;
 
 import java.nio.file.Path;
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -21,9 +21,9 @@ public class NoopOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new NoopOperator(request);
+        return new NoopOperator(context);
     }
 
     private static class NoopOperator
@@ -31,13 +31,13 @@ public class NoopOperatorFactory
     {
         private final TaskRequest request;
 
-        public NoopOperator(TaskRequest request)
+        public NoopOperator(OperatorContext context)
         {
-            this.request = request;
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             return TaskResult.empty(request);
         }

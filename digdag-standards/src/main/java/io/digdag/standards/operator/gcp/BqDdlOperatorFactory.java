@@ -17,16 +17,16 @@ import com.google.inject.Inject;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.operator.TimestampParam;
 import io.digdag.standards.operator.state.TaskState;
+import io.digdag.util.ConfigSelector;
 import io.digdag.util.DurationParam;
 import org.immutables.value.Value;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,9 +59,18 @@ class BqDdlOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new BqDdlOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("gcp")
+            .addSecretAccess("project")
+            .addSecretOnlyAccess("credential")
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new BqDdlOperator(context);
     }
 
     private class BqDdlOperator
@@ -70,9 +79,9 @@ class BqDdlOperatorFactory
         private final TaskState state;
         private final Optional<DatasetReference> defaultDataset;
 
-        BqDdlOperator(Path projectPath, TaskRequest request)
+        BqDdlOperator(OperatorContext context)
         {
-            super(projectPath, request, clientFactory, credentialProvider);
+            super(context, clientFactory, credentialProvider);
             this.state = TaskState.of(request);
             this.defaultDataset = params.getOptional("dataset", String.class)
                     .transform(Bq::datasetReference);
@@ -189,13 +198,7 @@ class BqDdlOperatorFactory
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("gcp.*");
-        }
-
-        @Override
-        protected TaskResult run(TaskExecutionContext ctx, BqClient bq, String projectId)
+        protected TaskResult run(BqClient bq, String projectId)
 
         {
             List<BqOperation> operations = Stream.of(

@@ -9,12 +9,14 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigSelector;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +67,18 @@ public class MailOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new MailOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("mail")
+            .addSecretAccess("host", "port", "tls", "ssl", "username")
+            .addSecretOnlyAccess("password")
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new MailOperator(context);
     }
 
     @Value.Immutable
@@ -103,21 +114,15 @@ public class MailOperatorFactory
     private class MailOperator
             extends BaseOperator
     {
-        public MailOperator(Path projectPath, TaskRequest request)
+        public MailOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public List<String> secretSelectors()
+        public TaskResult runTask()
         {
-            return ImmutableList.of("mail.*");
-        }
-
-        @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
-        {
-            SecretProvider secrets = ctx.secrets().getSecrets("mail");
+            SecretProvider secrets = context.getSecrets().getSecrets("mail");
 
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("mail"));

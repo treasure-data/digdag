@@ -33,7 +33,7 @@ public class PluginIT
 
         copyResource("acceptance/plugin/plugin.dig", root().resolve("plugin.dig"));
         copyResource("acceptance/plugin/template.txt", root().resolve("template.txt"));
-        CommandStatus cmd = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "plugin.dig", "-p", "repository_path=" + pluginPath.resolve("build").resolve("repo"));
+        CommandStatus cmd = TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "plugin.dig", "-p", "repository_path=" + pluginPath.resolve("build").resolve("repo"), "-X", "plugin.local-path=" + root().resolve(".digdag/plugins").toString());
         assertThat(cmd.errUtf8(), cmd.code(), is(0));
         assertThat(Files.exists(root().resolve("example.out")), is(true));
         assertThat(

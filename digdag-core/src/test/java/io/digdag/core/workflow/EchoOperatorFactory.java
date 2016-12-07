@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -30,9 +30,9 @@ public class EchoOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new EchoOperator(projectPath, request);
+        return new EchoOperator(context);
     }
 
     private static class EchoOperator
@@ -41,14 +41,14 @@ public class EchoOperatorFactory
         private final Path projectPath;
         private final TaskRequest request;
 
-        public EchoOperator(Path projectPath, TaskRequest request)
+        public EchoOperator(OperatorContext context)
         {
-            this.projectPath = projectPath;
-            this.request = request;
+            this.projectPath = context.getProjectPath();
+            this.request = context.getTaskRequest();
         }
 
         @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult run()
         {
             Config params = request.getConfig();
 

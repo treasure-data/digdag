@@ -7,7 +7,8 @@ import io.digdag.client.config.Config;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildResetStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.buildStoreParams;
 import static io.digdag.standards.operator.td.TdOperatorFactory.downloadJobResult;
@@ -42,9 +44,16 @@ public class TdRunOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new TdRunOperator(projectPath, request);
+        return configSelectorBuilder()
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new TdRunOperator(context);
     }
 
     private class TdRunOperator
@@ -57,9 +66,9 @@ public class TdRunOperatorFactory
         private final boolean storeLastResults;
         private final boolean preview;
 
-        private TdRunOperator(Path projectPath, TaskRequest request)
+        private TdRunOperator(OperatorContext context)
         {
-            super(projectPath, request, env, systemConfig);
+            super(context, env, systemConfig);
 
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -72,7 +81,7 @@ public class TdRunOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
             TDSavedQueryStartRequest req = TDSavedQueryStartRequest.builder()
                     .name(name)
@@ -86,7 +95,7 @@ public class TdRunOperatorFactory
         }
 
         @Override
-        protected TaskResult processJobResult(TaskExecutionContext ctx, TDOperator op, TDJobOperator job)
+        protected TaskResult processJobResult(TDOperator op, TDJobOperator job)
         {
             downloadJobResult(job, workspace, downloadFile, state, retryInterval);
 

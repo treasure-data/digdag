@@ -10,8 +10,10 @@ import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
+import io.digdag.util.ConfigSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.util.Locale.ENGLISH;
 
 public class TdTableExportOperatorFactory
@@ -45,9 +48,21 @@ public class TdTableExportOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new TdTableExportOperator(projectPath, request);
+        return configSelectorBuilder()
+            .build()
+            .withExtraSecretAccessList(
+                    ConfigSelector.builderOfScope("aws")
+                    .addSecretOnlyAccess("access-key-id", "secret-access-key", "s3.access-key-id", "s3.secret-access-key")
+                    .build()
+            );
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new TdTableExportOperator(context);
     }
 
     private class TdTableExportOperator
@@ -57,15 +72,10 @@ public class TdTableExportOperatorFactory
         private final TableParam table;
         private final TDExportFileFormatType fileFormat;
 
-        @Override
-        public List<String> secretSelectors()
+        private TdTableExportOperator(OperatorContext context)
         {
-            return ImmutableList.of("td.*", "aws.*");
-        }
+            super(context, env, systemConfig);
 
-        private TdTableExportOperator(Path projectPath, TaskRequest request)
-        {
-            super(projectPath, request, env, systemConfig);
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
 
@@ -82,9 +92,9 @@ public class TdTableExportOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
-            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider awsSecrets = context.getSecrets().getSecrets("aws");
             SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
 
             TDExportJobRequest req = TDExportJobRequest.builder()

@@ -5,10 +5,12 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
+import java.nio.file.Path;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +32,6 @@ public class BaseOperatorTest
     @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Mock TaskRequest request;
-    @Mock TaskExecutionContext taskExecutionContext;
 
     private final ConfigFactory configFactory = new ConfigFactory(new ObjectMapper());
     private Config config;
@@ -53,17 +54,17 @@ public class BaseOperatorTest
     {
         TaskExecutionException ex = TaskExecutionException.ofNextPolling(INTERVAL, ConfigElement.empty());
 
-        BaseOperator op = new BaseOperator(temporaryFolder.getRoot().toPath(), request)
+        BaseOperator op = new BaseOperator(newContext(temporaryFolder.getRoot().toPath(), request))
         {
             @Override
-            public TaskResult runTask(TaskExecutionContext ctx)
+            public TaskResult runTask()
             {
                 throw ex;
             }
         };
 
         try {
-            op.run(taskExecutionContext);
+            op.run();
             fail();
         }
         catch (TaskExecutionException e) {
@@ -81,17 +82,17 @@ public class BaseOperatorTest
 
         TaskExecutionException ex = TaskExecutionException.ofNextPolling(INTERVAL, ConfigElement.empty());
 
-        BaseOperator op = new BaseOperator(temporaryFolder.getRoot().toPath(), request)
+        BaseOperator op = new BaseOperator(newContext(temporaryFolder.getRoot().toPath(), request))
         {
             @Override
-            public TaskResult runTask(TaskExecutionContext ctx)
+            public TaskResult runTask()
             {
                 throw ex;
             }
         };
 
         try {
-            op.run(taskExecutionContext);
+            op.run();
             fail();
         }
         catch (TaskExecutionException e) {
@@ -99,5 +100,35 @@ public class BaseOperatorTest
             assertThat(e.isError(), is(false));
             assertThat(e.getRetryInterval().get(), is(INTERVAL));
         }
+    }
+
+    private OperatorContext newContext(final Path projectPath, final TaskRequest taskRequest)
+    {
+        return new OperatorContext()
+        {
+            @Override
+            public Path getProjectPath()
+            {
+                return projectPath;
+            }
+
+            @Override
+            public TaskRequest getTaskRequest()
+            {
+                return taskRequest;
+            }
+
+            @Override
+            public SecretProvider getSecrets()
+            {
+                return null;
+            }
+
+            @Override
+            public PrivilegedVariables getPrivilegedVariables()
+            {
+                return null;
+            }
+        };
     }
 }
