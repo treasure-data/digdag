@@ -1151,6 +1151,12 @@ public class DatabaseSessionStoreManager
         }
 
         @Override
+        public List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(long workflowDefinitionId, int pageSize, Optional<Long> lastId)
+        {
+            return autoCommit((handle, dao) -> dao.getActiveAttemptsOfWorkflow(siteId, workflowDefinitionId, pageSize, lastId.or(Long.MAX_VALUE)));
+        }
+
+        @Override
         public List<StoredSessionAttempt> getAttemptsOfSession(long sessionId, int pageSize, Optional<Long> lastId)
         {
             return autoCommit((handle, dao) -> dao.getAttemptsOfSessionWithRetries(siteId, sessionId, pageSize, lastId.or(Long.MAX_VALUE)));
@@ -1440,6 +1446,17 @@ public class DatabaseSessionStoreManager
                 " order by sa.id desc" +
                 " limit :limit")
         List<StoredSessionAttemptWithSession> getAttemptsOfWorkflowWithRetries(@Bind("siteId") int siteId, @Bind("wfId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.last_attempt_id = sa.id" +
+                " where sa.workflow_definition_id = :wfId" +
+                " and sa.state_flags = 0" +
+                " and sa.site_id = :siteId" +
+                " and sa.id < :lastId" +
+                " order by sa.id desc" +
+                " limit :limit")
+        List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(@Bind("siteId") int siteId, @Bind("wfId") long wfId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
         @SqlQuery("select * from session_attempts" +
                 " where session_id = :sessionId" +

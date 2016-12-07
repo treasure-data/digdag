@@ -23,6 +23,8 @@ public interface SessionStore
 
     List<StoredSessionAttemptWithSession> getAttemptsOfWorkflow(boolean withRetriedAttempts, long workflowDefinitionId, int pageSize, Optional<Long> lastId);
 
+    List<StoredSessionAttemptWithSession> getActiveAttemptsOfWorkflow(long workflowDefinitionId, int pageSize, Optional<Long> lastId);
+
     List<StoredSessionAttempt> getAttemptsOfSession(long sessionId, int pageSize, Optional<Long> lastId);
 
     StoredSessionAttemptWithSession getAttemptById(long attemptId)

@@ -162,7 +162,8 @@ public class AttemptResource
                 ScheduleTime.runNow(request.getSessionTime()),
                 request.getRetryAttemptName(),
                 resumingAttemptId,
-                resumingTasks);
+                resumingTasks,
+                Optional.absent());
 
         try {
             StoredSessionAttemptWithSession attempt = executor.submitWorkflow(getSiteId(), ar, def);

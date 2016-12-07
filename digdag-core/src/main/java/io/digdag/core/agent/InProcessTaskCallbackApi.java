@@ -180,7 +180,8 @@ public class InProcessTaskCallbackApi
                 ScheduleTime.runNow(instant),
                 retryAttemptName,
                 Optional.absent(),
-                ImmutableList.of());
+                ImmutableList.of(),
+                Optional.absent());
 
         // TODO FIXME SessionMonitor monitors is not set
         try {

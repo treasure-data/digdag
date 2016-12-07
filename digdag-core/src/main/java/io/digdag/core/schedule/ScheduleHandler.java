@@ -1,24 +1,17 @@
 package io.digdag.core.schedule;
 
-import java.util.List;
-import java.util.TimeZone;
-import java.util.Locale;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.text.SimpleDateFormat;
+
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.Config;
-import io.digdag.client.config.ConfigException;
+import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
-import io.digdag.core.repository.WorkflowDefinition;
-import io.digdag.core.session.Session;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.core.workflow.SessionAttemptConflictException;
 import io.digdag.core.workflow.AttemptRequest;
@@ -46,7 +39,7 @@ public class ScheduleHandler
     }
 
     public StoredSessionAttemptWithSession start(StoredWorkflowDefinitionWithProject def,
-            ScheduleTime time, Optional<String> retryAttemptName)
+            ScheduleTime time, Optional<String> retryAttemptName, Optional<Instant> lastExecutedSessionTime)
             throws ResourceNotFoundException, ResourceLimitExceededException, SessionAttemptConflictException
     {
         AttemptRequest ar = attemptBuilder.buildFromStoredWorkflow(
@@ -55,7 +48,8 @@ public class ScheduleHandler
                 time,
                 retryAttemptName,
                 Optional.absent(),
-                ImmutableList.of());
+                ImmutableList.of(),
+                lastExecutedSessionTime);
 
         return exec.submitWorkflow(def.getProject().getSiteId(),
                 ar, def);
