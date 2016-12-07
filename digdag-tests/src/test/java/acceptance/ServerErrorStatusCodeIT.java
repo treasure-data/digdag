@@ -111,4 +111,14 @@ public class ServerErrorStatusCodeIT
             assertThat(httpMethod, response.code(), is(405));
         }
     }
+
+    @Test
+    public void verify404NotFoundOnMalformedId()
+            throws Exception
+    {
+        Response response = client.newCall(new Request.Builder()
+                .url(server.endpoint() + "/api/projects/no_such_id")
+                .build()).execute();
+        assertThat(response.code(), is(404));
+    }
 }
