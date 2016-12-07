@@ -35,6 +35,7 @@ public abstract class StoredSessionAttemptWithSession
             .params(attempt.getParams())
             .stateFlags(attempt.getStateFlags())
             .sessionId(attempt.getSessionId())
+            .index(attempt.getIndex())
             .createdAt(attempt.getCreatedAt())
             .siteId(siteId)
             .sessionUuid(sessionUuid)

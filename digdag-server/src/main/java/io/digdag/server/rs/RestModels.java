@@ -282,6 +282,7 @@ public final class RestModels
     {
         return RestSessionAttempt.builder()
             .id(id(attempt.getId()))
+            .index(attempt.getIndex())
             .project(IdAndName.of(id(session.getProjectId()), projectName))
             .workflow(NameOptionalId.of(session.getWorkflowName(), attempt.getWorkflowDefinitionId().transform(w -> id(w))))
             .sessionId(id(attempt.getSessionId()))

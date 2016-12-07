@@ -6,7 +6,7 @@ import org.skife.jdbi.v2.Handle;
 
 public interface Migration
 {
-    static Pattern MIGRATION_NAME_PATTERN = Pattern.compile("Migration_([0-9]{14})_([A-Za-z]+)");
+    static Pattern MIGRATION_NAME_PATTERN = Pattern.compile("Migration_([0-9]{14})_([A-Za-z0-9]+)");
 
     default String getVersion()
     {

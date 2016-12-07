@@ -399,6 +399,10 @@ public class DatabaseSessionStoreManagerTest
                 is(store.getAttemptsOfSession(session2.getId(), 100, Optional.of(rawAttempt3.getId()))));
         assertEmpty(anotherSite.getAttemptsOfSession(session2.getId(), 100, Optional.absent()));
 
+        assertThat(attempt1.getIndex(), is(1));
+        assertThat(attempt2.getIndex(), is(1));
+        assertThat(attempt3.getIndex(), is(2));
+
         ////
         // public getters
         //

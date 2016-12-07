@@ -1508,7 +1508,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select now() as date")
         Instant now();
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id in (select id from projects where site_id = :siteId)" +
@@ -1517,14 +1517,14 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessions(@Bind("siteId") int siteId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.id = :id" +
                 " and sa.site_id = :siteId")
         StoredSessionWithLastAttempt getSession(@Bind("siteId") int siteId, @Bind("id") long id);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
@@ -1534,7 +1534,7 @@ public class DatabaseSessionStoreManager
                 " limit :limit")
         List<StoredSessionWithLastAttempt> getSessionsOfProject(@Bind("siteId") int siteId, @Bind("projId") int projId, @Bind("limit") int limit, @Bind("lastId") long lastId);
 
-        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at" +
+        @SqlQuery("select s.*, sa.site_id, sa.attempt_name, sa.workflow_definition_id, sa.state_flags, sa.timezone, sa.params, sa.created_at, sa.finished_at, sa.index" +
                 " from sessions s" +
                 " join session_attempts sa on sa.id = s.last_attempt_id" +
                 " where s.project_id = :projId" +
@@ -1661,7 +1661,8 @@ public class DatabaseSessionStoreManager
                     " where id = :id" +
                     " and site_id = :siteId" +
                 ")" +
-                " and s.last_attempt_id is not null")
+                " and s.last_attempt_id is not null" +
+                " order by index")
         List<StoredSessionAttemptWithSession> getOtherAttempts(@Bind("siteId") int siteId, @Bind("id") long id);
 
         @SqlQuery("select * from session_attempts sa" +
@@ -1710,8 +1711,10 @@ public class DatabaseSessionStoreManager
                 " limit 1")
         Long getLastExecutedSessionTime(@Bind("projectId") int projectId, @Bind("workflowName") String workflowName, @Bind("beforeThisSessionTime") long beforeThisSessionTime);
 
-        @SqlUpdate("insert into session_attempts (session_id, site_id, project_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at)" +
-                " values (:sessionId, :siteId, :projectId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now())")
+        @SqlUpdate("insert into session_attempts (session_id, site_id, project_id, attempt_name, workflow_definition_id, state_flags, timezone, params, created_at, index)" +
+                " values (:sessionId, :siteId, :projectId, :attemptName, :workflowDefinitionId, :stateFlags, :timezone, :params, now(), " +
+                    "(select coalesce(max(index), 0) + 1 from session_attempts where session_id = :sessionId)" +
+                ")")
         @GetGeneratedKeys
         long insertAttempt(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
 
@@ -1740,7 +1743,7 @@ public class DatabaseSessionStoreManager
         @SqlQuery("select id from tasks where state = :state limit :limit")
         List<Long> findAllTaskIdsByState(@Bind("state") short state, @Bind("limit") int limit);
 
-        @SqlQuery("select id, session_id, state_flags from session_attempts where id = :attemptId for update")
+        @SqlQuery("select id, session_id, state_flags, index from session_attempts where id = :attemptId for update")
         SessionAttemptSummary lockAttempt(@Bind("attemptId") long attemptId);
 
         @SqlUpdate("insert into tasks (attempt_id, parent_id, task_type, state, state_flags, updated_at)" +
@@ -1976,6 +1979,7 @@ public class DatabaseSessionStoreManager
             return ImmutableStoredSessionAttempt.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
+                .index(r.getInt("index"))  // this may return 0 (which means index was null) until Migration_20161207220744_AddAttemptIndexColumn2 is applied
                 .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
                 .stateFlags(AttemptStateFlags.of(r.getInt("state_flags")))
@@ -2005,6 +2009,7 @@ public class DatabaseSessionStoreManager
             return ImmutableStoredSessionAttemptWithSession.builder()
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
+                .index(r.getInt("index"))
                 .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                 .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
                 .stateFlags(AttemptStateFlags.of(r.getInt("state_flags")))
@@ -2045,6 +2050,7 @@ public class DatabaseSessionStoreManager
                     .lastAttemptId(r.getLong("last_attempt_id"))
                     .lastAttempt(ImmutableStoredSessionAttempt.builder()
                             .id(r.getLong("last_attempt_id"))
+                            .index(r.getInt("index"))
                             .retryAttemptName(DEFAULT_ATTEMPT_NAME.equals(attemptName) ? Optional.absent() : Optional.of(attemptName))
                             .workflowDefinitionId(getOptionalLong(r, "workflow_definition_id"))
                             .sessionId(r.getLong("id"))
@@ -2073,6 +2079,7 @@ public class DatabaseSessionStoreManager
                 .id(r.getLong("id"))
                 .sessionId(r.getLong("session_id"))
                 .stateFlags(AttemptStateFlags.of(r.getInt("state_flags")))
+                .index(r.getInt("index"))  // this may return 0 (which means index was null) until Migration_20161207220744_AddAttemptIndexColumn2 is applied
                 .build();
         }
     }

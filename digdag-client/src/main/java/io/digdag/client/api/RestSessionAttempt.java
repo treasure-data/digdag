@@ -14,6 +14,8 @@ public interface RestSessionAttempt
 {
     Id getId();
 
+    int getIndex();
+
     IdAndName getProject();
 
     //Optional<String> getRevision();
