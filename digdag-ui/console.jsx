@@ -456,7 +456,7 @@ class ScheduleListView extends React.Component {
 
   props:{
     workflowName: string;
-    projectId: number;
+    projectId: string;
   };
 
   state: {
@@ -1272,7 +1272,7 @@ class LogFileView extends React.Component {
   ignoreLastFetch:boolean;
 
   props:{
-    attemptId: number;
+    attemptId: string;
     file: LogFileHandle;
   };
 
@@ -1472,7 +1472,7 @@ const WorkflowsPage = () =>
 
 const ProjectPage = (props:{params: {projectId: string}}) =>
   <div className='container-fluid'>
-    <ProjectView projectId={parseInt(props.params.projectId)} />
+    <ProjectView projectId={props.params.projectId} />
   </div>
 
 class WorkflowPage extends React.Component {
@@ -1512,7 +1512,7 @@ class WorkflowPage extends React.Component {
   }
 
   fetchWorkflow () {
-    model().fetchProjectWorkflow(parseInt(this.props.params.projectId), this.props.params.workflowName).then(workflow => {
+    model().fetchProjectWorkflow(this.props.params.projectId, this.props.params.workflowName).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({workflow})
       }
@@ -1568,7 +1568,7 @@ class WorkflowRevisionPage extends React.Component {
   }
 
   fetchWorkflow () {
-    model().fetchWorkflow(parseInt(this.props.params.workflowId)).then(workflow => {
+    model().fetchWorkflow(this.props.params.workflowId).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({workflow})
       }
@@ -1590,9 +1590,9 @@ class WorkflowRevisionPage extends React.Component {
 
 const AttemptPage = (props:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
-    <AttemptView attemptId={parseInt(props.params.attemptId)} />
-    <AttemptTasksView attemptId={parseInt(props.params.attemptId)} />
-    <AttemptLogsView attemptId={parseInt(props.params.attemptId)} />
+    <AttemptView attemptId={props.params.attemptId} />
+    <AttemptTasksView attemptId={props.params.attemptId} />
+    <AttemptLogsView attemptId={props.params.attemptId} />
   </div>
 
 class SessionPage extends React.Component {
@@ -1635,12 +1635,12 @@ class SessionPage extends React.Component {
   }
 
   fetchSession () {
-    model().fetchSession(parseInt(this.props.params.sessionId)).then(session => {
+    model().fetchSession(this.props.params.sessionId).then(session => {
       if (!this.ignoreLastFetch) {
         this.setState({session})
       }
     })
-    model().fetchSessionAttempts(parseInt(this.props.params.sessionId)).then(attemptCollection => {
+    model().fetchSessionAttempts(this.props.params.sessionId).then(attemptCollection => {
       if (!this.ignoreLastFetch) {
         this.setState({attempts: attemptCollection.attempts})
       }

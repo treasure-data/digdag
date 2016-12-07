@@ -294,7 +294,7 @@ export class Model {
     return this.get(`logs/${attemptId}/files?task=${encodeURIComponent(taskName)}`)
   }
 
-  fetchLogFile (attemptId: number, file: LogFileHandle) {
+  fetchLogFile (attemptId: string, file: LogFileHandle) {
     if (!file.direct) {
       return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${file.fileName}`)
     }
@@ -356,15 +356,15 @@ export class Model {
     )
   }
 
-  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<ScheduleCollection> {
+  fetchProjectWorkflowSchedule (projectId: string, workflowName: string): Promise<ScheduleCollection> {
     return this.get(`projects/${projectId}/schedules?workflow=${workflowName}`)
   }
 
-  enableSchedule (scheduleId: number) : Promise<*> {
+  enableSchedule (scheduleId: string) : Promise<*> {
     return this.post(`schedules/${scheduleId}/enable`)
   }
 
-  disableSchedule (scheduleId: number) : Promise<*> {
+  disableSchedule (scheduleId: string) : Promise<*> {
     return this.post(`schedules/${scheduleId}/disable`)
   }
 
