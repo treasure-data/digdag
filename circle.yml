@@ -24,7 +24,6 @@ dependencies:
     - sudo apt-get update -qq
     - sudo apt-get install -y -qq yarn
   override:
-    - yarn
     - | # download and cache dependencies
       docker run \
       -w /digdag \
