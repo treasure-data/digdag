@@ -93,11 +93,11 @@ public class DisableSchedule
         }
     }
 
-    private void disableSchedule(int scheduleId)
+    private void disableSchedule(Id scheduleId)
             throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
-        client.disableSchedule(id(scheduleId));
-        ln("Disabled schedule id: %d", scheduleId);
+        client.disableSchedule(scheduleId);
+        ln("Disabled schedule id: %s", scheduleId);
     }
 }

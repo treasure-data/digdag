@@ -742,7 +742,7 @@ public class DigdagClient implements AutoCloseable
                 .get(RestSecretList.class);
     }
 
-    public Config adminGetAttemptUserInfo(long attemptId) {
+    public Config adminGetAttemptUserInfo(Id attemptId) {
         return doGet(Config.class,
                 target("/api/admin/attempts/{id}/userinfo")
                         .resolveTemplate("id", attemptId));

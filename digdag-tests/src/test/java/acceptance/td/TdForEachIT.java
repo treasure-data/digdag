@@ -2,6 +2,7 @@ package acceptance.td;
 
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import org.littleshoot.proxy.HttpProxyServer;
 import utils.CommandStatus;
 import org.junit.Before;
@@ -43,7 +44,7 @@ public class TdForEachIT
     private Path projectDir;
     private Path outDir;
     private String projectName;
-    private int projectId;
+    private Id projectId;
 
     private HttpProxyServer proxyServer;
 
@@ -89,7 +90,7 @@ public class TdForEachIT
             throws Exception
     {
         addWorkflow(projectDir, "acceptance/td/td_for_each/td_for_each.dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, "td_for_each", ImmutableMap.of("outdir", outDir.toString()));
+        Id attemptId = pushAndStart(server.endpoint(), projectDir, "td_for_each", ImmutableMap.of("outdir", outDir.toString()));
 
         expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
 

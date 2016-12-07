@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.config.Config;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -57,7 +58,7 @@ public class AdminIT
             throws Exception
     {
         TestUtils.addWorkflow(projectDir, "acceptance/basic.dig");
-        long attemptId = TestUtils.pushAndStart(server.endpoint(), projectDir, "basic");
+        Id attemptId = TestUtils.pushAndStart(server.endpoint(), projectDir, "basic");
 
         Config userinfo = adminClient.adminGetAttemptUserInfo(attemptId);
         assertThat(userinfo, is(not(Matchers.nullValue())));

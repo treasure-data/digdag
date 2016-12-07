@@ -93,11 +93,11 @@ public class EnableSchedule
         }
     }
 
-    private void enableSchedule(int scheduleId)
+    private void enableSchedule(Id scheduleId)
             throws IOException, SystemExitException
     {
         DigdagClient client = buildClient();
-        client.enableSchedule(id(scheduleId));
-        ln("Enabled schedule id: %d", scheduleId);
+        client.enableSchedule(scheduleId);
+        ln("Enabled schedule id: %s", scheduleId);
     }
 }

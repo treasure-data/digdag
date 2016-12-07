@@ -14,6 +14,7 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +57,7 @@ public class GcsWaitIT
 
     private Path projectDir;
     private String projectName;
-    private int projectId;
+    private Id projectId;
 
     private Path outfile;
 
@@ -203,7 +204,7 @@ public class GcsWaitIT
 
         // Start waiting
         addWorkflow(projectDir, "acceptance/gcs_wait/" + workflow + ".dig");
-        long attemptId = pushAndStart(server.endpoint(), projectDir, workflow, ImmutableMap.of(
+        Id attemptId = pushAndStart(server.endpoint(), projectDir, workflow, ImmutableMap.of(
                 "test_bucket", GCS_TEST_BUCKET,
                 "test_object", objectName,
                 "outfile", outfile.toString()));
