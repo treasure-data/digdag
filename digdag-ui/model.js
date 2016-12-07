@@ -18,6 +18,10 @@ export type LogFileHandle = {
   direct: ?string;
 }
 
+export type LogFileHandleCollection = {
+  files: Array<LogFileHandle>;
+}
+
 export type TarEntry = {
   name: string;
   buffer: ArrayBuffer;
@@ -43,6 +47,10 @@ export type Workflow = {
   config: Object;
 };
 
+export type WorkflowCollection = {
+  workflows: Array<Workflow>;
+}
+
 export type Project = {
   id: string;
   name: string;
@@ -51,6 +59,10 @@ export type Project = {
   updatedAt: string;
   archiveType: string;
   archiveMd5: string;
+}
+
+export type ProjectCollection = {
+  projects: Array<Project>;
 }
 
 export type Task = {
@@ -68,6 +80,10 @@ export type Task = {
   retryAt: ?string;
 };
 
+export type TaskCollection = {
+  tasks: Array<Task>;
+}
+
 export type Attempt = {
   id: string;
   project: IdName;
@@ -83,6 +99,10 @@ export type Attempt = {
   createdAt: string;
   finishedAt: string;
 };
+
+export type AttemptCollection = {
+  attempts: Array<Attempt>;
+}
 
 export type Session = {
   id: string;
@@ -101,6 +121,28 @@ export type Session = {
     finishedAt: string;
   };
 };
+
+export type IdAndName = {
+  id: string;
+  name: string;
+}
+
+export type Schedule = {
+  id: string;
+  project: IdAndName;
+  workflow: IdAndName;
+  nextRunTime: string;
+  nextScheduleTime: string;
+  disabledAt: ?string;
+}
+
+export type ScheduleCollection = {
+  schedules: Array<Schedule>;
+}
+
+export type SessionCollection = {
+  sessions: Array<Session>;
+}
 
 export class ProjectArchive {
   files: Array<TarEntry>;
@@ -169,11 +211,11 @@ export class Model {
     this.queriesCache = LRU({ max: 10000 })
   }
 
-  fetchProjects (): Promise<Array<Project>> {
+  fetchProjects (): Promise<ProjectCollection> {
     return this.get(`projects/`)
   }
 
-  fetchWorkflows (): Promise<Array<Project>> {
+  fetchWorkflows (): Promise<WorkflowCollection> {
     return this.get(`workflows/`)
   }
 
@@ -196,7 +238,7 @@ export class Model {
     return workflow
   }
 
-  fetchProjectWorkflows (projectId: string): Promise<Array<Workflow>> {
+  fetchProjectWorkflows (projectId: string): Promise<WorkflowCollection> {
     return this.get(`projects/${projectId}/workflows`)
   }
 
@@ -204,27 +246,27 @@ export class Model {
     return this.get(`projects/${projectId}/workflows/${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectWorkflowAttempts (projectName: string, workflowName: string): Promise<Array<Attempt>> {
+  fetchProjectWorkflowAttempts (projectName: string, workflowName: string): Promise<AttemptCollection> {
     return this.get(`attempts?project=${encodeURIComponent(projectName)}&workflow=${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectWorkflowSessions (projectId: string, workflowName: string): Promise<Array<Session>> {
+  fetchProjectWorkflowSessions (projectId: string, workflowName: string): Promise<SessionCollection> {
     return this.get(`projects/${projectId}/sessions?workflow=${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectSessions (projectId: string): Promise<Array<Session>> {
+  fetchProjectSessions (projectId: string): Promise<SessionCollection> {
     return this.get(`projects/${projectId}/sessions`)
   }
 
-  fetchProjectAttempts (projectName: string): Promise<Array<Attempt>> {
+  fetchProjectAttempts (projectName: string): Promise<AttemptCollection> {
     return this.get(`attempts?project=${encodeURIComponent(projectName)}`)
   }
 
-  fetchAttempts (): Promise<Array<Attempt>> {
+  fetchAttempts (): Promise<AttemptCollection> {
     return this.get(`attempts`)
   }
 
-  fetchSessions (): Promise<Array<Session>> {
+  fetchSessions (): Promise<SessionCollection> {
     return this.get(`sessions`)
   }
 
@@ -236,19 +278,19 @@ export class Model {
     return this.get(`sessions/${sessionId}`)
   }
 
-  fetchSessionAttempts (sessionId: string): Promise<Array<Attempt>> {
+  fetchSessionAttempts (sessionId: string): Promise<AttemptCollection> {
     return this.get(`sessions/${sessionId}/attempts?include_retried=true`)
   }
 
-  fetchAttemptTasks (attemptId: string): Promise<Array<Task>> {
+  fetchAttemptTasks (attemptId: string): Promise<TaskCollection> {
     return this.get(`attempts/${attemptId}/tasks`)
   }
 
-  fetchAttemptLogFileHandles (attemptId: string): Promise<Array<LogFileHandle>> {
+  fetchAttemptLogFileHandles (attemptId: string): Promise<LogFileHandleCollection> {
     return this.get(`logs/${attemptId}/files`)
   }
 
-  fetchAttemptTaskLogFileHandles (attemptId: string, taskName: string): Promise<Array<LogFileHandle>> {
+  fetchAttemptTaskLogFileHandles (attemptId: string, taskName: string): Promise<LogFileHandleCollection> {
     return this.get(`logs/${attemptId}/files?task=${encodeURIComponent(taskName)}`)
   }
 
@@ -314,7 +356,7 @@ export class Model {
     )
   }
 
-  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
+  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<ScheduleCollection> {
     return this.get(`projects/${projectId}/schedules?workflow=${workflowName}`)
   }
 

@@ -478,9 +478,9 @@ class ScheduleListView extends React.Component {
 
   fetchSchedule () {
     this.setState({loading: true})
-    model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(schedules => {
+    model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(scheduleCollection => {
       this.setState({
-        schedules,
+        schedules: scheduleCollection.schedules,
         loading: false
       })
     })
@@ -571,8 +571,8 @@ class ProjectsView extends React.Component {
   };
 
   componentDidMount () {
-    model().fetchProjects().then(projects => {
-      this.setState({projects})
+    model().fetchProjects().then(projectCollection => {
+      this.setState({projects: projectCollection.projects})
     })
   }
 
@@ -593,8 +593,8 @@ class SessionsView extends React.Component {
   };
 
   componentDidMount () {
-    model().fetchSessions().then(sessions => {
-      this.setState({sessions})
+    model().fetchSessions().then(sessionCollection => {
+      this.setState({sessions: sessionCollection.sessions})
     })
   }
 
@@ -645,16 +645,16 @@ class ProjectView extends React.Component {
       return project
     }).then(project => {
       if (!this.ignoreLastFetch) {
-        model().fetchProjectSessions(project.id).then(sessions => {
+        model().fetchProjectSessions(project.id).then(sessionCollection => {
           if (!this.ignoreLastFetch) {
-            this.setState({sessions})
+            this.setState({sessions: sessionCollection.sessions})
           }
         })
       }
     })
-    model().fetchProjectWorkflows(this.props.projectId).then(workflows => {
+    model().fetchProjectWorkflows(this.props.projectId).then(workflowCollection => {
       if (!this.ignoreLastFetch) {
-        this.setState({workflows: workflows})
+        this.setState({workflows: workflowCollection.workflows})
       }
     })
   }
@@ -731,9 +731,9 @@ class WorkflowView extends React.Component {
   }
 
   fetchWorkflow () {
-    model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name).then(sessions => {
+    model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name).then(sessionCollection => {
       if (!this.ignoreLastFetch) {
-        this.setState({sessions})
+        this.setState({sessions: sessionCollection.sessions})
       }
     })
     model().fetchProjectArchiveWithRevision(this.props.workflow.project.id, this.props.workflow.revision).then(projectArchive => {
@@ -943,9 +943,9 @@ class AttemptView extends React.Component {
         this.setState({attempt: attempt})
       }
     })
-    model().fetchAttemptTasks(this.props.attemptId).then(tasks => {
+    model().fetchAttemptTasks(this.props.attemptId).then(taskCollection => {
       if (!this.ignoreLastFetch) {
-        this.setState({tasks: tasks})
+        this.setState({tasks: taskCollection.tasks})
       }
     })
   }
@@ -1251,9 +1251,9 @@ class AttemptTasksView extends React.Component {
   }
 
   fetchTasks () {
-    model().fetchAttemptTasks(this.props.attemptId).then(tasks => {
+    model().fetchAttemptTasks(this.props.attemptId).then(taskCollection => {
       if (!this.ignoreLastFetch) {
-        this.setState({tasks})
+        this.setState({tasks: taskCollection.tasks})
       }
     })
   }
@@ -1337,9 +1337,9 @@ class AttemptLogsView extends React.Component {
   }
 
   fetchLogs () {
-    model().fetchAttemptLogFileHandles(this.props.attemptId).then(files => {
+    model().fetchAttemptLogFileHandles(this.props.attemptId).then(fileCollection => {
       if (!this.ignoreLastFetch) {
-        const sortedFiles = _.sortBy(files, 'fileTime')
+        const sortedFiles = _.sortBy(fileCollection.files, 'fileTime')
         this.setState({ files: sortedFiles })
       }
     })
@@ -1640,9 +1640,9 @@ class SessionPage extends React.Component {
         this.setState({session})
       }
     })
-    model().fetchSessionAttempts(parseInt(this.props.params.sessionId)).then(attempts => {
+    model().fetchSessionAttempts(parseInt(this.props.params.sessionId)).then(attemptCollection => {
       if (!this.ignoreLastFetch) {
-        this.setState({attempts})
+        this.setState({attempts: attemptCollection.attempts})
       }
     })
   }
@@ -1779,8 +1779,8 @@ class WorkflowsView extends React.Component {
   };
 
   componentDidMount () {
-    model().fetchWorkflows().then(workflows => {
-      this.setState({workflows})
+    model().fetchWorkflows().then(workflowCollection => {
+      this.setState({workflows: workflowCollection.workflows})
     })
   }
 
