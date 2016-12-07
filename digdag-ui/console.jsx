@@ -1779,8 +1779,8 @@ class WorkflowsView extends React.Component {
   };
 
   componentDidMount () {
-    model().fetchWorkflows().then(workflowCollection => {
-      this.setState({workflows: workflowCollection.workflows})
+    model().fetchWorkflows().then(({ workflows }) => {
+      this.setState({workflows})
     })
   }
 
