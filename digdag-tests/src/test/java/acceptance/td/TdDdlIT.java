@@ -252,7 +252,7 @@ public class TdDdlIT
         assertThat(databases, not(hasItem(dropDb2)));
 
         List<String> tables = client.listTables(database).stream().map(TDTable::getName).collect(toList());
-        assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2"));
+        assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
     }
 
     private void runDdlWorkflow()
@@ -269,6 +269,15 @@ public class TdDdlIT
                 "empty_db_2=" + emptyDb2);
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
         assertThat(Files.exists(outfile), is(true));
+    }
+
+    @Test
+    public void testDdlFailIfRenameFromNotExists()
+            throws IOException
+    {
+        addWorkflow(projectDir, "acceptance/td/td_ddl/rename_not_exists.dig");
+        CommandStatus runStatus = runWorkflow("rename_not_exists");
+        assertThat(runStatus.errUtf8(), runStatus.code(), not(0));
     }
 
     private CommandStatus runWorkflow(String workflow, String... params)

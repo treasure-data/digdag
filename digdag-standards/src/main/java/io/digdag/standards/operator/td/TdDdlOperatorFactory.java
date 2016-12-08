@@ -120,7 +120,8 @@ public class TdDdlOperatorFactory
                 TableParam from = r.getFromTable();
                 String to = r.getToTable();
                 if (to.contains(".")) {
-                    throw new ConfigException("'to' option of rename_tables must not include database name");
+                    // renaming a table across databases is not supported by the td's rest api itself
+                    throw new ConfigException("'to' option of rename_tables can't include database name");
                 }
                 operations.add(op -> {
                     logger.info("Renaming TD table {}.{} -> {}", op.getDatabase(), from, to);
@@ -138,7 +139,7 @@ public class TdDdlOperatorFactory
                         String database = from.getDatabase().or(op.getDatabase());
                         if (!op.withDatabase(database).tableExists(from.getTable())) {
                             throw new ConfigException(String.format(ENGLISH,
-                                        "Renaming table %s doesn't exist", database, r.getFromTable().getTable()));
+                                        "Renaming table %s.%s doesn't exist", database, from.getTable()));
                         }
                     }
                     state.params().set("rename_from_checked", true);
