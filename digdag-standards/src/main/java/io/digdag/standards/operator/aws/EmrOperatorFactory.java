@@ -86,6 +86,7 @@ import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.RetryExecutor;
 import io.digdag.util.Workspace;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -971,7 +972,17 @@ public class EmrOperatorFactory
                 for (String key : keys) {
                     logger.info("Removing s3://{}/{}", bucket, key);
                 }
-                s3.deleteObjects(new DeleteObjectsRequest(bucket).withKeys(keys));
+                try {
+                    RetryExecutor.retryExecutor()
+                            .withRetryLimit(3)
+                            .withInitialRetryWait(100)
+                            .retryIf(e -> !(e instanceof AmazonServiceException) || !Aws.isDeterministicException((AmazonServiceException) e))
+                            .run(() -> s3.deleteObjects(new DeleteObjectsRequest(bucket).withKeys(keys)));
+                }
+                catch (RetryExecutor.RetryGiveupException e) {
+                    logger.info("Failed to delete staging files in {}", staging.get(), e.getCause());
+                }
+
                 req.setMarker(res.getMarker());
             }
             while (req.getMarker() != null);
