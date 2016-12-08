@@ -75,17 +75,18 @@ import io.digdag.client.config.ConfigKey;
 import io.digdag.core.Environment;
 import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigSelector;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.Workspace;
 import org.immutables.value.Value;
@@ -96,7 +97,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -153,9 +153,19 @@ public class EmrOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new EmrOperator(projectPath, request);
+        return ConfigSelector.builderOfScope("aws")
+                .addSecretOnlyAccess("emr.endpoint", "s3.endpoint", "kms.endpoint")
+                .addSecretOnlyAccess("access_key_id", "secret_access_key", "role_arn", "role_session_name")
+                .addSecretOnlyAccess("emr.access_key_id", "emr.secret_access_key", "emr.role_arn", "emr.role_session_name")
+                .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new EmrOperator(context);
     }
 
     private class EmrOperator
@@ -165,9 +175,9 @@ public class EmrOperatorFactory
         private final Config params;
         private final String defaultActionOnFailure;
 
-        EmrOperator(Path projectPath, TaskRequest request)
+        public EmrOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
             this.state = TaskState.of(request);
             this.params = request.getConfig()
                     .mergeDefault(request.getConfig().getNestedOrGetEmpty("aws").getNestedOrGetEmpty("emr"))
@@ -176,20 +186,13 @@ public class EmrOperatorFactory
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            // TODO: extract secret references from step configurations
-            return ImmutableList.of("*");
-        }
-
-        @Override
-        public TaskResult run(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             String tag = state.constant("tag", String.class, EmrOperatorFactory::randomTag);
 
-            AWSCredentials credentials = credentials(tag, ctx);
+            AWSCredentials credentials = credentials(tag);
 
-            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider awsSecrets = context.getSecrets().getSecrets("aws");
 
             Optional<String> emrEndpoint = awsSecrets.getSecretOptional("emr.endpoint");
             Optional<String> s3Endpoint = awsSecrets.getSecretOptional("s3.endpoint");
@@ -222,7 +225,7 @@ public class EmrOperatorFactory
             boolean cleanup = false;
 
             try {
-                TaskResult result = run(tag, emr, s3, kms, ctx, filer);
+                TaskResult result = run(tag, emr, s3, kms, filer);
                 cleanup = true;
                 return result;
             }
@@ -247,9 +250,9 @@ public class EmrOperatorFactory
             }
         }
 
-        private AWSCredentials credentials(String tag, TaskExecutionContext ctx)
+        private AWSCredentials credentials(String tag)
         {
-            SecretProvider awsSecrets = ctx.secrets().getSecrets("aws");
+            SecretProvider awsSecrets = context.getSecrets().getSecrets("aws");
             SecretProvider emrSecrets = awsSecrets.getSecrets("emr");
 
             String accessKeyId = emrSecrets.getSecretOptional("access_key_id")
@@ -284,10 +287,10 @@ public class EmrOperatorFactory
                     assumeResult.getCredentials().getSessionToken());
         }
 
-        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, TaskExecutionContext ctx, Filer filer)
+        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, Filer filer)
                 throws IOException
         {
-            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, ctx, cf);
+            ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context, cf);
 
             // Set up step compiler
             List<Config> steps = params.getListOrEmpty("steps", Config.class);
@@ -1326,13 +1329,13 @@ public class EmrOperatorFactory
     private static class ParameterCompiler
     {
         private final AWSKMSClient kms;
-        private final TaskExecutionContext ctx;
+        private final OperatorContext context;
         private final ConfigFactory cf;
 
-        ParameterCompiler(AWSKMSClient kms, TaskExecutionContext ctx, ConfigFactory cf)
+        ParameterCompiler(AWSKMSClient kms, OperatorContext context, ConfigFactory cf)
         {
             this.kms = Preconditions.checkNotNull(kms, "kms");
-            this.ctx = Preconditions.checkNotNull(ctx, "ctx");
+            this.context = Preconditions.checkNotNull(context, "context");
             this.cf = Preconditions.checkNotNull(cf, "cf");
         }
 
@@ -1369,7 +1372,7 @@ public class EmrOperatorFactory
 
             if (value.isObject()) {
                 String secretKey = cf.create(value).get("secret", String.class);
-                String secretValue = ctx.secrets().getSecret(secretKey);
+                String secretValue = context.getSecrets().getSecret(secretKey);
                 return Parameter.ofKmsEncrypted(kmsEncrypt(f.apply(secretValue)));
             }
             else if (value.isArray()) {
@@ -1382,7 +1385,7 @@ public class EmrOperatorFactory
 
         private String kmsEncrypt(String value)
         {
-            String kmsKeyId = ctx.secrets().getSecret("aws.emr.kms_key_id");
+            String kmsKeyId = context.getSecrets().getSecret("aws.emr.kms_key_id");
             EncryptResult result = kms.encrypt(new EncryptRequest().withKeyId(kmsKeyId).withPlaintext(UTF_8.encode(value)));
             return base64(result.getCiphertextBlob());
         }
