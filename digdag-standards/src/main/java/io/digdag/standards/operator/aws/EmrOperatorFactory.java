@@ -865,10 +865,7 @@ public class EmrOperatorFactory
             RemoteFile remoteFile = builder.build();
 
             if (reference.local()) {
-                files.add(ImmutableStagingFile.builder()
-                        .template(template)
-                        .file(remoteFile)
-                        .build());
+                files.add(StagingFile.of(template, remoteFile));
             }
 
             return remoteFile;
