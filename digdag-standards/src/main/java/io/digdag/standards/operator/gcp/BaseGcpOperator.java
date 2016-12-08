@@ -3,9 +3,9 @@ package io.digdag.standards.operator.gcp;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.ConfigElement;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
 
@@ -17,31 +17,25 @@ abstract class BaseGcpOperator
 {
     private final GcpCredentialProvider credentialProvider;
 
-    protected BaseGcpOperator(Path projectPath, TaskRequest request, GcpCredentialProvider credentialProvider)
+    protected BaseGcpOperator(OperatorContext context, GcpCredentialProvider credentialProvider)
     {
-        super(projectPath, request);
+        super(context);
         this.credentialProvider = credentialProvider;
     }
 
     @Override
-    public List<String> secretSelectors()
+    public TaskResult runTask()
     {
-        return ImmutableList.of("gcp.*");
+        GcpCredential credential = credentialProvider.credential(context.getSecrets());
+        String projectId = projectId(credential);
+        return run(credential, projectId);
     }
 
-    @Override
-    public TaskResult runTask(TaskExecutionContext ctx)
-    {
-        GcpCredential credential = credentialProvider.credential(ctx.secrets());
-        String projectId = projectId(ctx, credential);
-        return run(ctx, credential, projectId);
-    }
+    protected abstract TaskResult run(GcpCredential credential, String projectId);
 
-    protected abstract TaskResult run(TaskExecutionContext ctx, GcpCredential credential, String projectId);
-
-    private String projectId(TaskExecutionContext ctx, GcpCredential credential)
+    private String projectId(GcpCredential credential)
     {
-        Optional<String> projectId = ctx.secrets().getSecretOptional("gcp.project")
+        Optional<String> projectId = context.getSecrets().getSecretOptional("gcp.project")
                 .or(credential.projectId());
         if (!projectId.isPresent()) {
             throw new TaskExecutionException("Missing 'gcp.project' secret", ConfigElement.empty());

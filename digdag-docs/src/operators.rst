@@ -842,15 +842,15 @@ Secrets
 :command:`td.apikey: API_KEY`
   The Treasure Data API key to use when running Treasure Data table exports.
 
-:command:`aws.s3.access-key-id: ACCESS_KEY_ID`
+:command:`aws.s3.access_key_id: ACCESS_KEY_ID`
   The AWS Access Key ID to use when writing to S3.
 
-  * :command:`aws.s3.access-key-id: ABCDEFGHJKLMNOPQRSTU`
+  * :command:`aws.s3.access_key_id: ABCDEFGHJKLMNOPQRSTU`
 
-:command:`aws.s3.secret-access-key: SECRET_ACCESS_KEY`
+:command:`aws.s3.secret_access_key: SECRET_ACCESS_KEY`
   The AWS Secret Access Key to use when writing to S3.
 
-  * :command:`aws.s3.secret-access-key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
+  * :command:`aws.s3.secret_access_key: QUtJ/QUpJWTQ3UkhZTERNUExTUEEQUtJQUpJWTQ3`
 
 
 Parameters
@@ -1176,10 +1176,10 @@ The **s3_wait>:** operator waits for file to appear in Amazon S3.
 Secrets
 ~~~~~~~
 
-:command:`aws.s3.access-key-id, aws.access-key-id`
+:command:`aws.s3.access_key_id, aws.access-key-id`
   The AWS Access Key ID to use when accessing S3.
 
-:command:`aws.s3.secret-access-key, aws.secret-access-key`
+:command:`aws.s3.secret_access_key, aws.secret_access_key`
   The AWS Secret Access Key to use when accessing S3.
 
 :command:`aws.s3.region, aws.region`

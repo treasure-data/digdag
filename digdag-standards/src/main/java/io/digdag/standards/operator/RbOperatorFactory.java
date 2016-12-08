@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -16,7 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.CommandExecutor;
@@ -27,6 +28,7 @@ import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.client.config.Config;
 import io.digdag.util.BaseOperator;
+import static io.digdag.standards.operator.ShOperatorFactory.collectEnvironmentVariables;
 
 public class RbOperatorFactory
         implements OperatorFactory
@@ -65,21 +67,21 @@ public class RbOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new RbOperator(projectPath, request);
+        return new RbOperator(context);
     }
 
     private class RbOperator
             extends BaseOperator
     {
-        public RbOperator(Path projectPath, TaskRequest request)
+        public RbOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("rb"))
@@ -137,6 +139,11 @@ public class RbOperatorFactory
             ProcessBuilder pb = new ProcessBuilder(cmdline.build());
             pb.directory(workspace.getPath().toFile());
             pb.redirectErrorStream(true);
+
+            // Set up process environment according to env config. This can also refer to secrets.
+            Map<String, String> env = pb.environment();
+            collectEnvironmentVariables(env, context.getPrivilegedVariables());
+
             Process p = exec.start(workspace.getPath(), request, pb);
 
             // feed script to stdin

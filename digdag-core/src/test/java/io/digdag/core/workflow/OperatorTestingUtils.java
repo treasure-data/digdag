@@ -15,14 +15,18 @@ import io.digdag.client.config.ConfigFactory;
 import io.digdag.client.config.ConfigUtils;
 import io.digdag.core.Environment;
 import io.digdag.core.agent.ConfigEvalEngine;
+import io.digdag.core.agent.GrantedPrivilegedVariables;
 import io.digdag.core.agent.OperatorRegistry;
 import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.ImmutableTaskRequest;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.PrivilegedVariables;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.Map;
 import java.util.UUID;
@@ -76,31 +80,84 @@ public class OperatorTestingUtils
             .build();
     }
 
-    public static TestingTaskExecutionContext newContext()
+    public static TestingOperatorContext newContext(Path projectPath, TaskRequest request)
     {
-        return new TestingTaskExecutionContext(TestingSecretProvider.empty());
+        return new TestingOperatorContext(
+                projectPath,
+                request,
+                TestingSecretProvider.empty(),
+                GrantedPrivilegedVariables.empty());
     }
 
-    public static class TestingTaskExecutionContext
-            implements TaskExecutionContext
+    public static TestingOperatorContext newContext(Path projectPath, TaskRequest request, SecretProvider secrets)
     {
-        private final SecretProvider secrets;
+        return new TestingOperatorContext(
+                projectPath,
+                request,
+                secrets,
+                GrantedPrivilegedVariables.empty());
+    }
 
-        public TestingTaskExecutionContext(SecretProvider secrets)
+    public static class TestingOperatorContext
+            implements OperatorContext
+    {
+        private final Path projectPath;
+        private final TaskRequest taskRequest;
+        private final SecretProvider secrets;
+        private final PrivilegedVariables privilegedVariables;
+
+        public TestingOperatorContext(
+                Path projectPath,
+                TaskRequest taskRequest,
+                SecretProvider secrets,
+                PrivilegedVariables privilegedVariables)
         {
+            this.projectPath = projectPath;
+            this.taskRequest = taskRequest;
             this.secrets = secrets;
+            this.privilegedVariables = privilegedVariables;
         }
 
         @Override
-        public SecretProvider secrets()
+        public Path getProjectPath()
+        {
+            return projectPath;
+        }
+
+        @Override
+        public TaskRequest getTaskRequest()
+        {
+            return taskRequest;
+        }
+
+        @Override
+        public SecretProvider getSecrets()
         {
             return secrets;
         }
 
-        public TestingTaskExecutionContext withSecrets(Properties secretsProps)
+        @Override
+        public PrivilegedVariables getPrivilegedVariables()
         {
-            return new TestingTaskExecutionContext(
-                    TestingSecretProvider.fromProperties(secretsProps));
+            return privilegedVariables;
+        }
+
+        public TestingOperatorContext withSecrets(Properties secretsProps)
+        {
+            return new TestingOperatorContext(
+                    projectPath,
+                    taskRequest,
+                    TestingSecretProvider.fromProperties(secretsProps),
+                    privilegedVariables);
+        }
+
+        public TestingOperatorContext withPrivilegedVariables(Config grants, Config params)
+        {
+            return new TestingOperatorContext(
+                    projectPath,
+                    taskRequest,
+                    secrets,
+                    GrantedPrivilegedVariables.build(grants, params, secrets));
         }
     }
 

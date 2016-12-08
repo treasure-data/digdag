@@ -78,7 +78,8 @@ public class TaskExecutionException
         return error.transform(it -> it.toConfig(cf));
     }
 
-    public boolean isError() {
+    public boolean isError()
+    {
         return error.isPresent();
     }
 

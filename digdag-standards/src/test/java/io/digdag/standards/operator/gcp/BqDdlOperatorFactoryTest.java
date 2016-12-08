@@ -15,7 +15,7 @@ import io.digdag.client.DigdagClient;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import org.junit.Before;
@@ -35,6 +35,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static io.digdag.client.config.ConfigUtils.newConfig;
+import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -54,7 +55,6 @@ public class BqDdlOperatorFactoryTest
 
     @Mock TemplateEngine templateEngine;
     @Mock TaskRequest taskRequest;
-    @Mock TaskExecutionContext taskExecutionContext;
     @Mock SecretProvider secrets;
 
     @Mock BqClient bqClient;
@@ -71,8 +71,9 @@ public class BqDdlOperatorFactoryTest
     @Captor ArgumentCaptor<Table> createTableCaptor;
     @Captor ArgumentCaptor<Table> emptyTableCaptor;
 
-    private BqDdlOperatorFactory factory;
     private Path projectPath;
+    private OperatorContext operatorContext;
+    private BqDdlOperatorFactory factory;
 
     @Before
     public void setUp()
@@ -82,13 +83,13 @@ public class BqDdlOperatorFactoryTest
         when(gcpCredential.projectId()).thenReturn(Optional.of(PROJECT_ID));
         when(gcpCredentialProvider.credential(secrets)).thenReturn(gcpCredential);
 
-        when(taskExecutionContext.secrets()).thenReturn(secrets);
         when(secrets.getSecretOptional("gcp.project")).thenReturn(Optional.of(PROJECT_ID));
 
         when(bqClientFactory.create(googleCredential)).thenReturn(bqClient);
         when(taskRequest.getLastStateParams()).thenReturn(newConfig());
 
         projectPath = temporaryFolder.newFolder().toPath();
+        operatorContext = newContext(projectPath, taskRequest, secrets);
         factory = new BqDdlOperatorFactory(OBJECT_MAPPER, bqClientFactory, gcpCredentialProvider);
     }
 
@@ -98,8 +99,8 @@ public class BqDdlOperatorFactoryTest
         Config config = newConfig();
         config.set("_command", "");
         when(taskRequest.getConfig()).thenReturn(config);
-        Operator operator = factory.newOperator(projectPath, taskRequest);
-        operator.run(taskExecutionContext);
+        Operator operator = factory.newOperator(operatorContext);
+        operator.run();
         verify(bqClient).close();
         verifyNoMoreInteractions(bqClient);
     }
@@ -116,8 +117,8 @@ public class BqDdlOperatorFactoryTest
         config.set("empty_tables", ImmutableList.of());
         config.set("delete_tables", ImmutableList.of());
         when(taskRequest.getConfig()).thenReturn(config);
-        Operator operator = factory.newOperator(projectPath, taskRequest);
-        operator.run(taskExecutionContext);
+        Operator operator = factory.newOperator(operatorContext);
+        operator.run();
         verify(bqClient).close();
         verifyNoMoreInteractions(bqClient);
     }
@@ -227,9 +228,9 @@ public class BqDdlOperatorFactoryTest
 
         when(taskRequest.getConfig()).thenReturn(config);
 
-        Operator operator = factory.newOperator(projectPath, taskRequest);
+        Operator operator = factory.newOperator(operatorContext);
 
-        operator.run(taskExecutionContext);
+        operator.run();
 
         InOrder inOrder = Mockito.inOrder(bqClient);
 

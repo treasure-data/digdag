@@ -7,9 +7,9 @@ import java.util.HashMap;
 import com.google.inject.Key;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration;
+import javax.servlet.http.HttpServlet;
 
 public abstract class GuiceRsServletInitializer
 {
@@ -44,14 +44,14 @@ public abstract class GuiceRsServletInitializer
         this.runAsRole = runAsRole;
     }
 
-    protected abstract Servlet initializeServlet(Injector injector);
+    protected abstract HttpServlet initializeServlet(Injector injector);
 
     public void register(Injector injector, ServletContext context)
     {
-        Servlet servlet = initializeServlet(injector);
+        HttpServlet servlet = initializeServlet(injector);
         String servletName = name;
         if (servletName == null) {
-            servletName = servlet.getClass().getName();
+            servletName = servlet.toString();  // all servlets must have unique names
         }
         ServletRegistration.Dynamic reg = context.addServlet(servletName, servlet);
         reg.setAsyncSupported(asyncSupported);

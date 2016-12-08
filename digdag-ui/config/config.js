@@ -1,5 +1,5 @@
 var DIGDAG_CONFIG = {
-  url: 'http://localhost:65432/api/',
+  url: '/api/',
   td: {
     useTD: false,
     apiV4: 'https://api-console.treasuredata.com/v4',
@@ -18,38 +18,7 @@ var DIGDAG_CONFIG = {
   },
   auth: {
     title: 'Authentication',
-    items: [
-      {
-        key: 'username',
-        name: 'Username',
-        type: 'text',
-        validate: function (args) {
-          if (args.value && args.value.trim()) {
-            args.valid(args.key)
-          } else {
-            args.invalid(args.key, args.key + ' must not be empty')
-          }
-        },
-        scrub: function (args) {
-          return args.value.trim()
-        }
-      },
-      {
-        key: 'password',
-        name: 'Password',
-        type: 'password',
-        validate: function (args) {
-          if (args.value && args.value.trim()) {
-            args.valid(args.key)
-          } else {
-            args.invalid(args.key, args.key + ' must not be empty')
-          }
-        },
-        scrub: function (args) {
-          return args.value.trim()
-        }
-      }
-    ]
+    items: []
   },
   headers: function (args) {
     return {}

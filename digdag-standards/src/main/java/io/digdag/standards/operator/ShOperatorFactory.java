@@ -13,7 +13,8 @@ import io.digdag.spi.CommandExecutor;
 import io.digdag.spi.CommandLogger;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.PrivilegedVariables;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.util.BaseOperator;
@@ -57,51 +58,21 @@ public class ShOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public ShOperator newOperator(OperatorContext context)
     {
-        return new ShOperator(projectPath, request);
+        return new ShOperator(context);
     }
 
-    private class ShOperator
+    class ShOperator
             extends BaseOperator
     {
-        public ShOperator(Path projectPath, TaskRequest request)
+        public ShOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            // Return the secret keys referred to in the env config
-            Set<String> selectors = new HashSet<>();
-            Config envConfig = this.request.getConfig().getNestedOrGetEmpty("_env");
-            for (String name : envConfig.getKeys()) {
-                if (!VALID_ENV_KEY.matcher(name).matches()) {
-                    throw new ConfigException("Invalid _env");
-                }
-                JsonNode value = envConfig.get(name, JsonNode.class);
-                switch(value.getNodeType()) {
-                    case OBJECT:
-                        ObjectNode ref = (ObjectNode) value;
-                        JsonNode secret = ref.get("secret");
-                        if (ref.size() != 1 || secret == null || !secret.isTextual()) {
-                            throw new ConfigException("Invalid _env");
-                        }
-                        String secretKey = secret.textValue();
-                        selectors.add(secretKey);
-                        break;
-                    case STRING:
-                        break;
-                    default:
-                        throw new ConfigException("Invalid _env");
-                }
-            }
-            return ImmutableList.copyOf(selectors);
-        }
-
-        @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig()
                 .mergeDefault(request.getConfig().getNestedOrGetEmpty("sh"));
@@ -135,30 +106,7 @@ public class ShOperatorFactory
                 });
 
             // Set up process environment according to env config. This can also refer to secrets.
-            Config envConfig = this.request.getConfig().getNestedOrGetEmpty("_env");
-            for (String name : envConfig.getKeys()) {
-                if (!VALID_ENV_KEY.matcher(name).matches()) {
-                    throw new ConfigException("Invalid _env");
-                }
-                JsonNode value = envConfig.get(name, JsonNode.class);
-                switch(value.getNodeType()) {
-                    case OBJECT:
-                        ObjectNode ref = (ObjectNode) value;
-                        JsonNode secret = ref.get("secret");
-                        if (ref.size() != 1 || secret == null || !secret.isTextual()) {
-                            throw new ConfigException("Invalid _env");
-                        }
-                        String secretKey = secret.textValue();
-                        String secretValue = ctx.secrets().getSecret(secretKey);
-                        env.put(name, secretValue);
-                        break;
-                    case STRING:
-                        env.put(name, value.textValue());
-                        break;
-                    default:
-                        throw new ConfigException("Invalid _env");
-                }
-            }
+            collectEnvironmentVariables(env, context.getPrivilegedVariables());
 
             // add workspace path to the end of $PATH so that bin/cmd works without ./ at the beginning
             String pathEnv = System.getenv("PATH");
@@ -194,6 +142,16 @@ public class ShOperatorFactory
             }
 
             return TaskResult.empty(request);
+        }
+    }
+
+    static void collectEnvironmentVariables(Map<String, String> env, PrivilegedVariables variables)
+    {
+        for (String name : variables.getKeys()) {
+            if (!VALID_ENV_KEY.matcher(name).matches()) {
+                throw new ConfigException("Invalid _env key name: " + name);
+            }
+            env.put(name, variables.get(name));
         }
     }
 

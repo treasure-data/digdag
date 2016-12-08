@@ -19,14 +19,15 @@ import io.digdag.spi.ImmutableTaskResult;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
-import io.digdag.spi.TaskRequest;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskResult;
 import io.digdag.standards.Proxies;
 import io.digdag.standards.operator.state.PollingRetryExecutor;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.BaseOperator;
+import io.digdag.util.ConfigSelector;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.eclipse.jetty.client.HttpClient;
@@ -105,9 +106,18 @@ public class HttpOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new HttpOperator(projectPath, request);
+        return new HttpOperator(context);
+    }
+
+    @Override
+    public SecretAccessList getSecretAccessList()
+    {
+        return ConfigSelector.builderOfScope("http")
+            .addSecretAccess("authorization")
+            .addSecretOnlyAccess("uri", "user", "password", "authorization")
+            .build();
     }
 
     private class HttpOperator
@@ -118,9 +128,9 @@ public class HttpOperatorFactory
         private final String method;
         private final boolean retry;
 
-        private HttpOperator(Path projectPath, TaskRequest request)
+        private HttpOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
             this.state = TaskState.of(request);
             this.params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("http"));
@@ -130,28 +140,22 @@ public class HttpOperatorFactory
         }
 
         @Override
-        public List<String> secretSelectors()
-        {
-            return ImmutableList.of("http.*");
-        }
-
-        @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             HttpClient client = client();
             try {
-                return run(ctx, client);
+                return run(client);
             }
             finally {
                 stop(client);
             }
         }
 
-        private TaskResult run(TaskExecutionContext ctx, HttpClient httpClient)
+        private TaskResult run(HttpClient httpClient)
         {
             // TODO: support secrets in headers, uri fragments, payload fragments, etc
 
-            SecretProvider httpSecrets = ctx.secrets().getSecrets("http");
+            SecretProvider httpSecrets = context.getSecrets().getSecrets("http");
 
             Optional<String> secretUri = httpSecrets.getSecretOptional("uri");
             boolean uriIsSecret = secretUri.isPresent();
@@ -220,7 +224,7 @@ public class HttpOperatorFactory
         private LinkedHashMultimap<String, String> headers()
         {
             List<JsonNode> entries = params.getListOrEmpty("headers", JsonNode.class);
-            LinkedHashMultimap headers = LinkedHashMultimap.create();
+            LinkedHashMultimap<String, String> headers = LinkedHashMultimap.create();
             for (JsonNode entry : entries) {
                 if (!entry.isObject()) {
                     throw new ConfigException("Invalid header: " + entry);

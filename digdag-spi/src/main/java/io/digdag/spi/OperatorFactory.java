@@ -1,10 +1,29 @@
 package io.digdag.spi;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Set;
 
 public interface OperatorFactory
 {
     String getType();
 
-    Operator newOperator(Path projectPath, TaskRequest request);
+    /**
+     * Get a list of secret secret keys that this intends to access.
+     * An attempt to access a secret using a key not covered by
+     * one of these keys will result in a {@link SecretAccessDeniedException}.
+     */
+    default SecretAccessList getSecretAccessList()
+    {
+        return new SecretAccessList()
+        {
+            @Override
+            public Set<String> getSecretKeys()
+            {
+                return Collections.emptySet();
+            }
+        };
+    }
+
+    Operator newOperator(OperatorContext context);
 }

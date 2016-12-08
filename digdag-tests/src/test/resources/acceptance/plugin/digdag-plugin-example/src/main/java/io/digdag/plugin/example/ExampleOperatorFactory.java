@@ -1,17 +1,17 @@
 package io.digdag.plugin.example;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import com.google.common.base.Throwables;
 import io.digdag.client.config.Config;
 import io.digdag.spi.Operator;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
-import io.digdag.spi.TaskExecutionContext;
 import io.digdag.util.BaseOperator;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ExampleOperatorFactory
@@ -30,21 +30,21 @@ public class ExampleOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new ExampleOperator(projectPath, request);
+        return new ExampleOperator(context);
     }
 
     private class ExampleOperator
             extends BaseOperator
     {
-        public ExampleOperator(Path projectPath, TaskRequest request)
+        public ExampleOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("example"));

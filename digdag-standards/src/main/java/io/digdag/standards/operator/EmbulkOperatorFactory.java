@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.digdag.spi.CommandExecutor;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
 import io.digdag.spi.TaskRequest;
@@ -52,21 +52,21 @@ public class EmbulkOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public Operator newOperator(OperatorContext context)
     {
-        return new EmbulkOperator(projectPath, request);
+        return new EmbulkOperator(context);
     }
 
     private class EmbulkOperator
             extends BaseOperator
     {
-        public EmbulkOperator(Path projectPath, TaskRequest request)
+        public EmbulkOperator(OperatorContext context)
         {
-            super(projectPath, request);
+            super(context);
         }
 
         @Override
-        public TaskResult runTask(TaskExecutionContext ctx)
+        public TaskResult runTask()
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("embulk"));

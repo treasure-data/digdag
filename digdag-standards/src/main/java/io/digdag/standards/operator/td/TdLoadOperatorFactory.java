@@ -13,7 +13,8 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
+import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TemplateEngine;
 import io.digdag.spi.TemplateException;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TdLoadOperatorFactory
@@ -50,9 +52,16 @@ public class TdLoadOperatorFactory
     }
 
     @Override
-    public Operator newOperator(Path projectPath, TaskRequest request)
+    public SecretAccessList getSecretAccessList()
     {
-        return new TdLoadOperator(projectPath, request);
+        return configSelectorBuilder()
+            .build();
+    }
+
+    @Override
+    public Operator newOperator(OperatorContext context)
+    {
+        return new TdLoadOperator(context);
     }
 
     private class TdLoadOperator
@@ -66,9 +75,9 @@ public class TdLoadOperatorFactory
         private final Optional<String> sessionName;
         private final Optional<ObjectNode> embulkConfig;
 
-        protected TdLoadOperator(Path projectPath, TaskRequest request)
+        protected TdLoadOperator(OperatorContext context)
         {
-            super(projectPath, request, env, systemConfig);
+            super(context, env, systemConfig);
 
             params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -109,7 +118,7 @@ public class TdLoadOperatorFactory
         }
 
         @Override
-        protected String startJob(TaskExecutionContext ctx, TDOperator op, String domainKey)
+        protected String startJob(TDOperator op, String domainKey)
         {
             assert Stream.of(embulkConfig, sessionName).filter(Optional::isPresent).count() == 1;
 

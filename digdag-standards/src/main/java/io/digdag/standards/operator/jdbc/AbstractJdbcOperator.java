@@ -7,7 +7,7 @@ import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.SecretProvider;
-import io.digdag.spi.TaskExecutionContext;
+import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -39,9 +39,9 @@ public abstract class AbstractJdbcOperator <C>
 
     private static final String QUERY_ID = "queryId";
 
-    public AbstractJdbcOperator(Path projectPath, TaskRequest request, TemplateEngine templateEngine)
+    public AbstractJdbcOperator(OperatorContext context, TemplateEngine templateEngine)
     {
-        super(projectPath, request);
+        super(context);
         this.templateEngine = checkNotNull(templateEngine, "templateEngine");
     }
 
@@ -52,20 +52,14 @@ public abstract class AbstractJdbcOperator <C>
     protected abstract String type();
 
     @Override
-    public List<String> secretSelectors()
-    {
-        return ImmutableList.of(type() + ".*");
-    }
-
-    @Override
-    public TaskResult runTask(TaskExecutionContext ctx)
+    public TaskResult runTask()
     {
         Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
         Config state = request.getLastStateParams().deepCopy();
 
         String query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
 
-        C connectionConfig = configure(ctx.secrets().getSecrets(type()), params);
+        C connectionConfig = configure(context.getSecrets().getSecrets(type()), params);
 
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);

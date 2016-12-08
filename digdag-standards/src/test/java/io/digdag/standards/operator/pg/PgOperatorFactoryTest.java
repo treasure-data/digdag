@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
+import static io.digdag.core.workflow.OperatorTestingUtils.newContext;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -42,7 +43,7 @@ public class PgOperatorFactoryTest
                 "database", "database0"
         );
         TaskRequest taskRequest = testHelper.createTaskRequest(configInput, Optional.absent());
-        Operator operator = operatorFactory.newOperator(testHelper.projectPath(), taskRequest);
+        Operator operator = operatorFactory.newOperator(newContext(testHelper.projectPath(), taskRequest));
         assertThat(operator, is(instanceOf(PgOperatorFactory.PgOperator.class)));
     }
 }
