@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import java.time.Instant;
@@ -78,6 +79,7 @@ public interface RestSessionAttemptRequest
     }
 
     @Value.Immutable
+    @JsonSerialize(as = RestSessionAttemptRequest.ResumeFrom.class)
     @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.ResumeFrom.class)
     interface ResumeFrom
             extends Resume
@@ -106,6 +108,7 @@ public interface RestSessionAttemptRequest
     }
 
     @Value.Immutable
+    @JsonSerialize(as = RestSessionAttemptRequest.ResumeFailed.class)
     @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.ResumeFailed.class)
     interface ResumeFailed
             extends Resume
