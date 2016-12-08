@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static java.util.Locale.ENGLISH;
+
 public final class RestModels
 {
     private RestModels()
@@ -253,11 +255,11 @@ public final class RestModels
                         return session(session, projs.get(session.getProjectId()).getName());
                     }
                     catch (ResourceNotFoundException ex) {
-                        // must not happen
-                        return null;
+                        throw new IllegalStateException(String.format(ENGLISH,
+                                    "An session id=%d references a nonexistent project id=%d",
+                                    session.getId(), session.getProjectId()));
                     }
                 })
-                .filter(a -> a != null)
                 .collect(Collectors.toList());
 
         return RestSessionCollection.builder()
@@ -362,11 +364,11 @@ public final class RestModels
                     return attempt(attempt, projs.get(attempt.getSession().getProjectId()).getName());
                 }
                 catch (ResourceNotFoundException ex) {
-                    // must not happen
-                    return null;
+                    throw new IllegalStateException(String.format(ENGLISH,
+                                "An attempt id=%d references a nonexistent project id=%d",
+                                attempt.getId(), attempt.getSession().getProjectId()));
                 }
             })
-            .filter(a -> a != null)
             .collect(Collectors.toList());
 
         return attemptCollection(collection);
