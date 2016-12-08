@@ -917,16 +917,17 @@ public class EmrOperatorFactory
             switch (reference.type()) {
                 case LOCAL: {
                     if (file.template()) {
+                        String content;
                         try {
-                            String content = workspace.templateFile(templateEngine, reference.filename(), UTF_8, params);
-                            byte[] bytes = content.getBytes(UTF_8);
-                            ObjectMetadata metadata = new ObjectMetadata();
-                            metadata.setContentLength(bytes.length);
-                            return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
+                            content = workspace.templateFile(templateEngine, reference.filename(), UTF_8, params);
                         }
                         catch (IOException | TemplateException e) {
-                            throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                            throw new ConfigException("Failed to load file: " + file.file().reference().filename(), e);
                         }
+                        byte[] bytes = content.getBytes(UTF_8);
+                        ObjectMetadata metadata = new ObjectMetadata();
+                        metadata.setContentLength(bytes.length);
+                        return new PutObjectRequest(uri.getBucket(), uri.getKey(), new ByteArrayInputStream(bytes), metadata);
                     }
                     else {
                         return new PutObjectRequest(uri.getBucket(), uri.getKey(), workspace.getFile(reference.filename()));
