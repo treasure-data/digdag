@@ -13,14 +13,13 @@ cache:
   - "%LOCALAPPDATA%/Yarn"
 
 environment:
-  YARN: C:\Program Files (x86)\Yarn\bin\yarn
+  YARN: C:\Program Files (x86)\Yarn\bin\yarn.cmd  # use "ps: Get-Command yarn" to know this path
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
   - JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
 
 install:
   - ps: Install-Product node '6.9.1'
-  - ps: Get-Command yarn
   - node --version
   - yarn --version
 
