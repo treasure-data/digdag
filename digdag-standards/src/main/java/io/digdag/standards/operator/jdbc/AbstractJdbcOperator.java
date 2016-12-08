@@ -54,10 +54,11 @@ public abstract class AbstractJdbcOperator <C>
     @Override
     public TaskResult runTask()
     {
-        Config params = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
+        Config params = request.getLocalConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
+        Config globalParams = request.getConfig().mergeDefault(request.getConfig().getNestedOrGetEmpty(type()));
         Config state = request.getLastStateParams().deepCopy();
 
-        String query = workspace.templateCommand(templateEngine, params, "query", UTF_8);
+        String query = workspace.templateCommand(templateEngine, globalParams, "query", UTF_8);
 
         C connectionConfig = configure(context.getSecrets().getSecrets(type()), params);
 

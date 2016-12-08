@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,10 +32,7 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assume.assumeThat;
 import static utils.TestUtils.configFactory;
 import static utils.TestUtils.copyResource;
@@ -109,10 +108,42 @@ public class PgIT
     }
 
     @Test
-    public void createTable()
+    public void selectAndDownloadUsingSessionTime()
             throws Exception
     {
-        copyResource("acceptance/pg/create_table.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_download.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_session_time.sql", root().resolve("select_table.sql"));
+        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+
+        List<String> lines = Files.readAllLines(root().resolve("pg_test.csv"));
+        assertThat(lines.size(), is(2));
+        assertThat(lines.get(0), is("session_time"));
+        assertThat(ZonedDateTime.parse(lines.get(1)), is(notNullValue()));
+    }
+
+    @Test
+    public void createTableWithNestedParams()
+            throws Exception
+    {
+        copyResource("acceptance/pg/create_table_nested.dig", root().resolve("pg.dig"));
+        copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
+
+        setupDestTable(props, database);
+
+        TestUtils.main("run", "-o", root().toString(), "--project", root().toString(), "-p", "pg_database=" + database, "pg.dig");
+
+        assertTableContents(props, database, DEST_TABLE, Arrays.asList(
+                ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
+        ));
+    }
+
+    @Test
+    public void createTableWithLocalParams()
+            throws Exception
+    {
+        copyResource("acceptance/pg/create_table_local.dig", root().resolve("pg.dig"));
         copyResource("acceptance/pg/select_table.sql", root().resolve("select_table.sql"));
 
         setupDestTable(props, database);
