@@ -12,6 +12,8 @@ import org.immutables.value.Value;
 import java.time.Duration;
 import java.util.Properties;
 
+import static io.digdag.standards.operator.jdbc.AbstractJdbcOperator.ParamName.*;
+
 @Value.Immutable
 public abstract class PgConnectionConfig
     extends AbstractJdbcConnectionConfig
@@ -30,17 +32,17 @@ public abstract class PgConnectionConfig
     public static PgConnectionConfig configure(SecretProvider secrets, Config params)
     {
         return ImmutablePgConnectionConfig.builder()
-                .host(secrets.getSecretOptional("host").or(() -> params.get("host", String.class)))
-                .port(secrets.getSecretOptional("port").transform(Integer::parseInt).or(() -> params.get("port", int.class, 5432)))
-                .user(secrets.getSecretOptional("user").or(() -> params.get("user", String.class)))
-                .password(secrets.getSecretOptional("password"))
-                .database(secrets.getSecretOptional("database").or(() -> params.get("database", String.class)))
-                .ssl(secrets.getSecretOptional("ssl").transform(Boolean::parseBoolean).or(() -> params.get("ssl", boolean.class, false)))
-                .connectTimeout(secrets.getSecretOptional("connect_timeout").transform(DurationParam::parse).or(() ->
-                        params.get("connect_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(30)))))
-                .socketTimeout(secrets.getSecretOptional("socket_timeout").transform(DurationParam::parse).or(() ->
-                        params.get("socket_timeout", DurationParam.class, DurationParam.of(Duration.ofSeconds(1800)))))
-                .schema(secrets.getSecretOptional("schema").or(params.getOptional("schema", String.class)))
+                .host(secrets.getSecretOptional(HOST.get()).or(() -> params.get(HOST.get(), String.class)))
+                .port(secrets.getSecretOptional(PORT.get()).transform(Integer::parseInt).or(() -> params.get(PORT.get(), int.class, 5432)))
+                .user(secrets.getSecretOptional(USER.get()).or(() -> params.get(USER.get(), String.class)))
+                .password(secrets.getSecretOptional(PASSWORD.get()))
+                .database(secrets.getSecretOptional(DATABASE.get()).or(() -> params.get(DATABASE.get(), String.class)))
+                .ssl(secrets.getSecretOptional(SSL.get()).transform(Boolean::parseBoolean).or(() -> params.get(SSL.get(), boolean.class, false)))
+                .connectTimeout(secrets.getSecretOptional(CONNECT_TIMEOUT.get()).transform(DurationParam::parse).or(() ->
+                        params.get(CONNECT_TIMEOUT.get(), DurationParam.class, DurationParam.of(Duration.ofSeconds(30)))))
+                .socketTimeout(secrets.getSecretOptional(SOCKET_TIMEOUT.get()).transform(DurationParam::parse).or(() ->
+                        params.get(SOCKET_TIMEOUT.get(), DurationParam.class, DurationParam.of(Duration.ofSeconds(1800)))))
+                .schema(secrets.getSecretOptional(SCHEMA.get()).or(params.getOptional(SCHEMA.get(), String.class)))
                 .build();
     }
 

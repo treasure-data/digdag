@@ -26,18 +26,50 @@ import java.util.stream.Collectors;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static io.digdag.standards.operator.jdbc.AbstractJdbcOperator.ParamName.*;
 
 public abstract class AbstractJdbcOperator <C>
     extends BaseOperator
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final String QUERY_ID = "queryId";
     private static final String POLL_INTERVAL = "pollInterval";
     private static final int INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 1200;
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TemplateEngine templateEngine;
 
-    private static final String QUERY_ID = "queryId";
+
+    public enum ParamName {
+        HOST("host"),
+        PORT("port"),
+        DATABASE("database"),
+        USER("user"),
+        PASSWORD("password"),
+        SSL("ssl"),
+        CONNECT_TIMEOUT("connect_timeout"),
+        SOCKET_TIMEOUT("socket_timeout"),
+        SCHEMA("schema"),
+        INSERT_INTO("insert_into"),
+        CREATE_TABLE("create_table"),
+        DOWNLOAD_FILE("download_file"),
+        STRICT_TRANSACTION("strict_transaction"),
+        STATUS_TABLE("status_table"),
+        STATUS_TABLE_CLEANUP("status_table_cleanup"),
+        ;
+
+        private final String key;
+
+        ParamName(String key)
+        {
+            this.key = key;
+        }
+
+        public String get()
+        {
+            return key;
+        }
+    }
 
     public AbstractJdbcOperator(OperatorContext context, TemplateEngine templateEngine)
     {
@@ -61,8 +93,8 @@ public abstract class AbstractJdbcOperator <C>
 
         C connectionConfig = configure(context.getSecrets().getSecrets(type()), params);
 
-        Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
-        Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);
+        Optional<TableReference> insertInto = params.getOptional(INSERT_INTO.get(), TableReference.class);
+        Optional<TableReference> createTable = params.getOptional(CREATE_TABLE.get(), TableReference.class);
 
         int queryModifier = 0;
         if (insertInto.isPresent()) queryModifier++;
@@ -71,7 +103,7 @@ public abstract class AbstractJdbcOperator <C>
             throw new ConfigException("Can't use both of insert_into and create_table");
         }
 
-        Optional<String> downloadFile = params.getOptional("download_file", String.class);
+        Optional<String> downloadFile = params.getOptional(DOWNLOAD_FILE.get(), String.class);
         if (downloadFile.isPresent() && queryModifier > 0) {
             throw new ConfigException("Can't use download_file with insert_into or create_table");
         }
@@ -80,13 +112,13 @@ public abstract class AbstractJdbcOperator <C>
 
         boolean readOnlyMode = downloadFile.isPresent();  // or store_last_results == true
 
-        boolean strictTransaction = params.get("strict_transaction", Boolean.class, true);
+        boolean strictTransaction = params.get(STRICT_TRANSACTION.get(), Boolean.class, true);
 
         String statusTableName;
         DurationParam statusTableCleanupDuration;
         if (strictTransaction) {
-            statusTableName = params.get("status_table", String.class, "__digdag_status");
-            statusTableCleanupDuration = params.get("status_table_cleanup", DurationParam.class,
+            statusTableName = params.get(STATUS_TABLE.get(), String.class, "__digdag_status");
+            statusTableCleanupDuration = params.get(STATUS_TABLE_CLEANUP.get(), DurationParam.class,
                     DurationParam.of(Duration.ofHours(24)));
         }
         else {
