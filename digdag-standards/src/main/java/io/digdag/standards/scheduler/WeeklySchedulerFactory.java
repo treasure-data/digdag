@@ -11,14 +11,17 @@ import java.time.ZoneId;
 import static io.digdag.standards.scheduler.DailySchedulerFactory.parseAt;
 
 public class WeeklySchedulerFactory
-        implements SchedulerFactory {
+        implements SchedulerFactory
+{
     @Override
-    public String getType() {
+    public String getType()
+    {
         return "weekly";
     }
 
     @Override
-    public Scheduler newScheduler(Config config, ZoneId timeZone) {
+    public Scheduler newScheduler(Config config, ZoneId timeZone)
+    {
         String desc = config.getOptional("_command", String.class).or(() -> config.get("at", String.class));
 
         String[] fragments = desc.split(",", 2);
