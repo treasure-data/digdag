@@ -317,9 +317,9 @@ public class OperatorManager
         OperatorContext context = new DefaultOperatorContext(
                 projectPath, mergedRequest, secretProvider, privilegedVariables);
 
-        Operator operator = factory.newOperator(context);
-
-        return operator.run();
+        try (Operator operator = factory.newOperator(context)) {
+            return operator.run();
+        }
     }
 
     private void heartbeat()

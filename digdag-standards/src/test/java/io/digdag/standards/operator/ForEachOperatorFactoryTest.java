@@ -48,9 +48,11 @@ public class ForEachOperatorFactoryTest
     private void assertByResource(String configResource, String expectedResource)
         throws Exception
     {
-        ForEachOperator op = factory.newOperator(newContext(
-                    tempPath, newTaskRequest().withConfig(loadYamlResource(configResource))));
-        TaskResult result = op.run();
+        TaskResult result;
+        try (ForEachOperator op = factory.newOperator(newContext(
+                        tempPath, newTaskRequest().withConfig(loadYamlResource(configResource))))) {
+            result = op.run();
+        }
         Config subtasks = result.getSubtaskConfig();
         assertThat(subtasks, is(loadYamlResource(expectedResource)));
 

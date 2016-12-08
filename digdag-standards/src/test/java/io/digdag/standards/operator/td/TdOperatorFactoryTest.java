@@ -122,6 +122,7 @@ public class TdOperatorFactoryTest
         exception.expectMessage("File name must not be outside of project path");
 
         newOperatorFactory(TdOperatorFactory.class)
-            .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)));
+            .newOperator(newContext(projectPath, newTaskRequest().withConfig(config)))
+            .close();
     }
 }

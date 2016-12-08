@@ -99,8 +99,9 @@ public class BqDdlOperatorFactoryTest
         Config config = newConfig();
         config.set("_command", "");
         when(taskRequest.getConfig()).thenReturn(config);
-        Operator operator = factory.newOperator(operatorContext);
-        operator.run();
+        try (Operator operator = factory.newOperator(operatorContext)) {
+            operator.run();
+        }
         verify(bqClient).close();
         verifyNoMoreInteractions(bqClient);
     }
@@ -117,8 +118,9 @@ public class BqDdlOperatorFactoryTest
         config.set("empty_tables", ImmutableList.of());
         config.set("delete_tables", ImmutableList.of());
         when(taskRequest.getConfig()).thenReturn(config);
-        Operator operator = factory.newOperator(operatorContext);
-        operator.run();
+        try (Operator operator = factory.newOperator(operatorContext)) {
+            operator.run();
+        }
         verify(bqClient).close();
         verifyNoMoreInteractions(bqClient);
     }
@@ -228,9 +230,9 @@ public class BqDdlOperatorFactoryTest
 
         when(taskRequest.getConfig()).thenReturn(config);
 
-        Operator operator = factory.newOperator(operatorContext);
-
-        operator.run();
+        try (Operator operator = factory.newOperator(operatorContext)) {
+            operator.run();
+        }
 
         InOrder inOrder = Mockito.inOrder(bqClient);
 

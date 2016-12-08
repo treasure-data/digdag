@@ -28,16 +28,17 @@ public abstract class BaseOperator
     }
 
     @Override
+    public void close()
+    {
+        workspace.close();
+    }
+
+    @Override
     public TaskResult run()
     {
         RetryControl retry = RetryControl.prepare(request.getConfig(), request.getLastStateParams(), false);
         try {
-            try {
-                return runTask();
-            }
-            finally {
-                workspace.close();
-            }
+            return runTask();
         }
         catch (RuntimeException ex) {
             // Propagate polling TaskExecutionException instances
