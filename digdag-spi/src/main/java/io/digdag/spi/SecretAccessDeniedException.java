@@ -5,9 +5,9 @@ public class SecretAccessDeniedException
 {
     private String key;
 
-    public SecretAccessDeniedException(String key)
+    public SecretAccessDeniedException(String key, String message)
     {
-        super("Access denied for key: '" + key + "'");
+        super(message);
         this.key = key;
     }
 

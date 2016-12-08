@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -292,11 +293,6 @@ public class OperatorManager
 
         SecretStore secretStore = secretStoreManager.getSecretStore(mergedRequest.getSiteId());
 
-        Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
-
-        SecretAccessList secretAccessList = factory.getSecretAccessList();
-        final Set<String> declaredSecretKeys = ImmutableSet.copyOf(secretAccessList.getSecretKeys());
-
         SecretAccessContext secretContext = SecretAccessContext.builder()
                 .siteId(mergedRequest.getSiteId())
                 .projectId(mergedRequest.getProjectId())
@@ -306,8 +302,14 @@ public class OperatorManager
                 .operatorType(type)
                 .build();
 
+        // Users can grant access to secrets explicitly
+        Config grants = mergedRequest.getConfig().getNestedOrGetEmpty("_secrets");
+
+        // Operator can drop access to access to unnecessary secrets
+        OperatorSecretFilter operatorSecretFilter = new OperatorSecretFilter(factory);
+
         DefaultSecretProvider secretProvider = new DefaultSecretProvider(
-                secretContext, secretAccessPolicy, grants, (key) -> declaredSecretKeys.contains(key), secretStore);
+                secretContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
@@ -318,8 +320,33 @@ public class OperatorManager
                 projectPath, mergedRequest, secretProvider, privilegedVariables);
 
         Operator operator = factory.newOperator(context);
+        operatorSecretFilter.allowUserSecretAccess(operator);
 
         return operator.run();
+    }
+
+    private static class OperatorSecretFilter
+            implements Predicate<String>
+    {
+        private final Set<String> predeclaredSecretKeys;
+        private Predicate<String> userSecretAccessFilter = (key) -> false;
+
+        OperatorSecretFilter(OperatorFactory factory)
+        {
+            this.predeclaredSecretKeys = ImmutableSet.copyOf(
+                    factory.getSecretAccessList().getSecretKeys());
+        }
+
+        void allowUserSecretAccess(Operator operator)
+        {
+            this.userSecretAccessFilter = (key) -> operator.testUserSecretAccess(key);
+        }
+
+        @Override
+        public boolean test(String key)
+        {
+            return predeclaredSecretKeys.contains(key) || userSecretAccessFilter.test(key);
+        }
     }
 
     private void heartbeat()
