@@ -25,11 +25,13 @@ dependencies:
 test:
   pre:
   override:
+    - CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_test.sh:
+        parallel: true
 #    - CI_NODE_TOTAL=$CIRCLE_NODE_TOTAL CI_NODE_INDEX=$CIRCLE_NODE_INDEX ci/run_td_tests.sh:
 #        parallel: true
   post:
-#    - ci/circle_gather_test_reports.sh:
-#        parallel: true
+    - ci/circle_gather_test_reports.sh:
+        parallel: true
 
 deployment:
   docs:
