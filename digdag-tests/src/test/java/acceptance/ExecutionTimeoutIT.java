@@ -171,7 +171,7 @@ public class ExecutionTimeoutIT
         String notificationJson = recordedRequest.getBody().readUtf8();
         Notification notification = mapper.readValue(notificationJson, Notification.class);
         assertThat(notification.getMessage(), messageMatcher.test(notification.getMessage()), is(true));
-        assertThat(notification.getAttemptId().get(), is(attemptId));
+        assertThat(Id.of(Long.toString(notification.getAttemptId().get())), is(attemptId));
         assertThat(notification.getWorkflowName().get(), is(WORKFLOW_NAME));
         assertThat(notification.getProjectName().get(), is(PROJECT_NAME));
     }

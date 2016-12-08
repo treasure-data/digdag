@@ -326,7 +326,7 @@ public class DigdagClient implements AutoCloseable
             .getWorkflows();
         if (defs.isEmpty()) {
             throw new NotFoundException(String.format(ENGLISH,
-                        "workflow not found in the latest revision of project id = %d: %s",
+                        "workflow not found in the latest revision of project id = %s: %s",
                         projId, name));
         }
         else {
@@ -344,7 +344,7 @@ public class DigdagClient implements AutoCloseable
             .getWorkflows();
         if (defs.isEmpty()) {
             throw new NotFoundException(String.format(ENGLISH,
-                        "workflow not found in revision = %s of project id = %d: %s",
+                        "workflow not found in revision = %s of project id = %s: %s",
                         revision, projId, name));
         }
         else {
@@ -449,7 +449,7 @@ public class DigdagClient implements AutoCloseable
             .getSchedules();
         if (scheds.isEmpty()) {
             throw new NotFoundException(String.format(ENGLISH,
-                        "schedule not found in the latest revision of project id = %d: %s",
+                        "schedule not found in the latest revision of project id = %s: %s",
                         projectId, workflowName));
         }
         else {

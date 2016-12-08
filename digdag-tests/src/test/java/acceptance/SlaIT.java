@@ -251,7 +251,7 @@ public class SlaIT
         String notificationJson = recordedRequest.getBody().readUtf8();
         Notification notification = mapper.readValue(notificationJson, Notification.class);
         assertThat(notification.getMessage(), is("SLA violation"));
-        assertThat(notification.getAttemptId().get(), is(attemptId));
+        assertThat(Id.of(Long.toString(notification.getAttemptId().get())), is(attemptId));
         assertThat(notification.getWorkflowName().get(), is(WORKFLOW_NAME));
         assertThat(notification.getProjectName().get(), is(PROJECT_NAME));
     }
