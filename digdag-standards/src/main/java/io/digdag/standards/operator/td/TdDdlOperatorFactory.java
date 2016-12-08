@@ -132,25 +132,33 @@ public class TdDdlOperatorFactory
             try (TDOperator op = TDOperator.fromConfig(env, params, context.getSecrets().getSecrets("td"))) {
                 // make sure that all "from" tables exist so that ignoring 404 Not Found in
                 // op.ensureExistentTableRenamed is valid.
-                boolean renameFromChecked = state.params().get("rename_from_checked", boolean.class, false);
-                if (!renameFromChecked && !renameTableList.isEmpty()) {
-                    for (RenameTableConfig r : renameTableList) {
+                if (!renameTableList.isEmpty()) {
+                    int checkOperation = state.params().get("rename_check_operation", int.class, 0);
+                    for (int i = checkOperation; i < renameTableList.size(); i++) {
+                        state.params().set("rename_check_operation", i);
+
+                        RenameTableConfig r = renameTableList.get(i);
                         TableParam from = r.getFromTable();
                         String database = from.getDatabase().or(op.getDatabase());
-                        if (!op.withDatabase(database).tableExists(from.getTable())) {
+
+                        boolean exists = pollingRetryExecutor(state, "rename_check_retry")
+                                .retryUnless(TDOperator::isDeterministicClientException)
+                                .withRetryInterval(retryInterval)
+                                .withErrorMessage("Failed check existance of table %s.%s", database, from.getTable())
+                                .runOnce(boolean.class, s -> {
+                                    return !op.withDatabase(database).tableExists(from.getTable());
+                                });
+                        if (!exists) {
                             throw new ConfigException(String.format(ENGLISH,
                                         "Renaming table %s.%s doesn't exist", database, from.getTable()));
                         }
                     }
-                    state.params().set("rename_from_checked", true);
                 }
 
                 int operation = state.params().get("operation", int.class, 0);
                 for (int i = operation; i < operations.size(); i++) {
                     state.params().set("operation", i);
-                    if (i < operation) {
-                        continue;
-                    }
+
                     Consumer<TDOperator> o = operations.get(i);
                     pollingRetryExecutor(state, "retry")
                             .retryUnless(TDOperator::isDeterministicClientException)
