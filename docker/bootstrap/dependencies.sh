@@ -13,7 +13,7 @@ apt-get -y install nodejs
 # yarn
 curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 echo "deb http://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-apt-get -y update && apt-get -y install yarn
+apt-get -y update && apt-get -y install yarn libelf-dev
 
 # Postgres
 add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main"
