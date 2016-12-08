@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static io.digdag.util.UserSecrets.userSecretTemplate;
+
 public class GrantedPrivilegedVariables
     implements PrivilegedVariables
 {
@@ -47,7 +49,7 @@ public class GrantedPrivilegedVariables
 
     private interface VariableAccessor
     {
-        String get(boolean required);
+        String get();
     }
 
     public static GrantedPrivilegedVariables empty()
@@ -55,61 +57,18 @@ public class GrantedPrivilegedVariables
         return new GrantedPrivilegedVariables(new LinkedHashMap<>());
     }
 
-    public static GrantedPrivilegedVariables build(
-            Config grants,
-            Config params,
-            SecretProvider secretProvider)
+    public static GrantedPrivilegedVariables build(Config source, SecretProvider secretProvider)
     {
         Map<String, VariableAccessor> variables = new LinkedHashMap<>();
-        for (String key : grants.getKeys()) {
-            variables.put(key, buildAccessor(grants, key, params, secretProvider));
+        for (String key : source.getKeys()) {
+            variables.put(key, buildAccessor(source.get(key, String.class), secretProvider));
         }
         return new GrantedPrivilegedVariables(variables);
     }
 
-    private static VariableAccessor buildAccessor(
-            Config grants, String key,
-            Config params,
-            SecretProvider secretProvider)
+    private static VariableAccessor buildAccessor(String template, SecretProvider secretProvider)
     {
-        if (grants.get(key, JsonNode.class).isObject()) {
-            ConfigKey secretOnlyKey = grants.getNested(key).convert(SecretOnlyGrant.class).secret;
-            return (required) -> {
-                Optional<String> secret = secretProvider.getSecretOptional(secretOnlyKey.toString());
-                if (required && !secret.isPresent()) {
-                    throw new SecretNotFoundException(secretOnlyKey.toString());
-                }
-                return secret.orNull();
-            };
-        }
-        else {
-            ConfigKey secretKey = grants.get(key, ConfigKey.class);
-            return (required) -> {
-                Optional<String> secret = secretProvider.getSecretOptional(secretKey.toString());
-                if (secret.isPresent()) {
-                    return secret.get();
-                }
-
-                Config nested = params;
-                for (String nestName : secretKey.getNestNames()) {
-                    Optional<Config> optionalNested = nested.getOptionalNested(nestName);
-                    if (!optionalNested.isPresent()) {
-                        if (required) {
-                            throw new ConfigException("Nested object '" + nestName + "' out of " + secretKey + " is required but not set");
-                        }
-                        else {
-                            return null;
-                        }
-                    }
-                    nested = optionalNested.get();
-                }
-                String value = nested.get(secretKey.getLastName(), String.class, null);
-                if (required && value == null) {
-                    throw new ConfigException("Nested object '" + secretKey.getLastName() + "' out of " + secretKey + " is required but not set");
-                }
-                return value;
-            };
-        }
+        return () -> userSecretTemplate(template, secretProvider);
     }
 
     private final Map<String, VariableAccessor> variables;
@@ -125,10 +84,14 @@ public class GrantedPrivilegedVariables
     {
         VariableAccessor var = variables.get(key);
         if (var == null) {
-            return null;
+            throw new ConfigException("_env variable '" + key + "' is required but not set");
         }
         else {
-            return var.get(true);
+            String value = var.get();
+            if (value == null) {
+                throw new ConfigException("_env variable '" + key + "' is required but null");
+            }
+            return value;
         }
     }
 
@@ -140,7 +103,7 @@ public class GrantedPrivilegedVariables
             return Optional.absent();
         }
         else {
-            return Optional.fromNullable(var.get(false));
+            return Optional.fromNullable(var.get());
         }
     }
 

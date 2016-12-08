@@ -151,13 +151,13 @@ public class OperatorTestingUtils
                     privilegedVariables);
         }
 
-        public TestingOperatorContext withPrivilegedVariables(Config grants, Config params)
+        public TestingOperatorContext withPrivilegedVariables(Config grants)
         {
             return new TestingOperatorContext(
                     projectPath,
                     taskRequest,
                     secrets,
-                    GrantedPrivilegedVariables.build(grants, params, secrets));
+                    GrantedPrivilegedVariables.build(grants, secrets));
         }
     }
 
