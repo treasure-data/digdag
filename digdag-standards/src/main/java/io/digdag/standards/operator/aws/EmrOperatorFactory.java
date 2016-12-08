@@ -208,11 +208,12 @@ public class EmrOperatorFactory
 
             // Set up file stager
             Optional<AmazonS3URI> staging = params.getOptional("staging", String.class).transform(s -> {
-                AmazonS3URI uri = new AmazonS3URI(s);
-                if (uri.getKey() != null && !uri.getKey().endsWith("/")) {
-                    throw new ConfigException("Invalid staging uri: '" + s + "'");
+                try {
+                    return new AmazonS3URI(s);
                 }
-                return uri;
+                catch (IllegalArgumentException ex) {
+                    throw new ConfigException("Invalid staging uri: '" + s + "'", ex);
+                }
             });
             Filer filer = new Filer(s3, staging, workspace, templateEngine, params);
 
@@ -1596,7 +1597,8 @@ public class EmrOperatorFactory
     {
         List<DownloadConfig> download();
 
-        @JsonProperty("working_directory") String workingDirectory();
+        @JsonProperty("working_directory")
+        String workingDirectory();
 
         Map<String, Parameter> env();
 
