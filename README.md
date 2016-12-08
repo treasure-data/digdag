@@ -47,14 +47,22 @@ If major version is incremented, also update `version =` and `release =` at [dig
 
 
 ### Building digdag-ui
+Requirements:
+[Node.JS](https://nodejs.org/en/download/current/)
+[Yarn](https://yarnpkg.com/en/docs/install)
 
 ```
 $ cd digdag-ui/
-$ npm install
-$ npm run dev    # starts dev server on http://localhost:9000/
-$ npm run build  # build files on public/
+$ yarn
+$ yarn run build  # build files on public/
 ```
 
+Development build
+```
+$ cd digdag-ui/
+$ yarn
+$ yarn run dev  # starts dev server on http://localhost:9000/
+```
 
 ### Updating documents
 

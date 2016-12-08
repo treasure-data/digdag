@@ -10,6 +10,7 @@ build_script:
 
 cache:
   - C:\Users\appveyor\.gradle
+  - "%LOCALAPPDATA%/Yarn"
 
 environment:
   NPM: C:\Program Files (x86)\nodejs\npm.cmd
@@ -21,5 +22,6 @@ install:
   - ps: Install-Product node '6.9.1'
   - node --version
   - npm --version
+  - yarn --version
 
 test: off
