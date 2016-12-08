@@ -4,7 +4,7 @@ machine:
     version: oraclejdk8
   environment:
     TERM: dumb  # don't let gradle use fancy ansi seq code
-    BUILD_IMAGE: digdag/digdag-build:20161208T175858-9e5cbcc4669e0d5875c0cdce9d16e0fa4f7548a1
+    BUILD_IMAGE: digdag/digdag-build:20161208T181850-4eebaeb325bcd72ae318c543e582d61ee035ee86
   services:
     - docker
 
