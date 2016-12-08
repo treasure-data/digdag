@@ -23,7 +23,7 @@ import static java.util.Locale.ENGLISH;
 
 public class Config
 {
-    protected final ObjectMapper mapper;
+    protected ObjectMapper mapper;
     protected final ObjectNode object;
 
     Config(ObjectMapper mapper)

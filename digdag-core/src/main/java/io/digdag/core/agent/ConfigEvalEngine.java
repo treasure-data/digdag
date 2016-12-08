@@ -2,6 +2,8 @@ package io.digdag.core.agent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -16,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
@@ -39,6 +42,11 @@ public class ConfigEvalEngine
     };
 
     private static final List<String> RUNTIME_JS_CONTENTS;
+
+    private static final Pattern NO_TEMPLATE_REGEXP = Pattern.compile("\\$\\{([\\s\\S]+?)}");
+
+    private static final String TEMPLATE_JS_FUNCTION = "template";
+    private static final String JSON_EVALUATE_JS_FUNCTION = "jsonEvaluate";
 
     private static String readResource(String resourceName)
     {
@@ -98,7 +106,7 @@ public class ConfigEvalEngine
         return (Invocable) jsEngine;
     }
 
-    private String invokeTemplate(Invocable templateInvocable, String code, Config params)
+    private JsonNode invokeTemplate(Invocable templateInvocable, String code, Config params)
         throws TemplateException
     {
         String context;
@@ -109,7 +117,27 @@ public class ConfigEvalEngine
             throw new TemplateException("Failed to serialize parameters to JSON", ex);
         }
         try {
-            return (String) templateInvocable.invokeFunction("template", code, context);
+            Matcher m = NO_TEMPLATE_REGEXP.matcher(code);
+            if (m.matches()) {
+                String expression = m.group(1);
+                String json = (String) templateInvocable.invokeFunction(JSON_EVALUATE_JS_FUNCTION, expression, context);
+                if (json == null) {
+                    return JsonNodeFactory.instance.nullNode();
+                }
+                try {
+                    return jsonMapper.readTree(json);
+                }
+                catch (IOException ex) {
+                    throw new TemplateException("Malformed JSON result: " + code, ex);
+                }
+            }
+            else {
+                String text = (String) templateInvocable.invokeFunction(TEMPLATE_JS_FUNCTION, code, context);
+                if (text == null) {
+                    return JsonNodeFactory.instance.nullNode();
+                }
+                return JsonNodeFactory.instance.textNode(text);
+            }
         }
         catch (ScriptException ex) {
             String message;
@@ -202,13 +230,7 @@ public class ConfigEvalEngine
             for (Map.Entry<String, JsonNode> pair : ImmutableList.copyOf(local.fields())) {
                 scopedParams.set(pair.getKey(), pair.getValue());
             }
-            String resultText = invokeTemplate(templateInvocable, code, scopedParams);
-            if (resultText == null) {
-                return jsonMapper.getNodeFactory().nullNode();
-            }
-            else {
-                return jsonMapper.getNodeFactory().textNode(resultText);
-            }
+            return invokeTemplate(templateInvocable, code, scopedParams);
         }
     }
 
@@ -217,12 +239,20 @@ public class ConfigEvalEngine
         throws TemplateException
     {
         Invocable templateInvocable = newTemplateInvocable(params);
-        String resultText = invokeTemplate(templateInvocable, content, params);
-        if (resultText == null) {
+        JsonNode value = invokeTemplate(templateInvocable, content, params);
+        if (value.isNull()) {
             return "";
         }
+        else if (value.isTextual()) {
+            return value.textValue();
+        }
         else {
-            return resultText;
+            try {
+                return jsonMapper.writeValueAsString(value);
+            }
+            catch (IOException ex) {
+                throw new TemplateException("Failed to format JSON" , ex);
+            }
         }
     }
 }
