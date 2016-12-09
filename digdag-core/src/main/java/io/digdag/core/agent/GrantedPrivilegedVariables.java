@@ -14,12 +14,11 @@ import io.digdag.spi.SecretNotFoundException;
 import io.digdag.spi.SecretProvider;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
+import io.digdag.util.UserSecretTemplate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import static io.digdag.util.UserSecrets.userSecretTemplate;
 
 public class GrantedPrivilegedVariables
     implements PrivilegedVariables
@@ -68,7 +67,7 @@ public class GrantedPrivilegedVariables
 
     private static VariableAccessor buildAccessor(String template, SecretProvider secretProvider)
     {
-        return () -> userSecretTemplate(template, secretProvider);
+        return () -> UserSecretTemplate.of(template).format(secretProvider);
     }
 
     private final Map<String, VariableAccessor> variables;
