@@ -65,6 +65,7 @@ public class OperatorTestingUtils
             .siteId(1)
             .projectId(2)
             .workflowName("wf")
+            .revision(Optional.of("rev"))
             .taskId(3)
             .attemptId(4)
             .sessionId(5)
