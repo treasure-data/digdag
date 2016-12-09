@@ -407,17 +407,16 @@ public class DigdagClient implements AutoCloseable
         }
     }
 
-    // TODO getArchive with streaming
     public InputStream getProjectArchive(int projId, String revision)
     {
-        Response res = target("/api/projects/{id}/archive")
+        Invocation request = target("/api/projects/{id}/archive")
             .resolveTemplate("id", projId)
             .queryParam("revision", revision)
             .request()
             .headers(headers.get())
-            .get();
-        // TODO check status code
-        return res.readEntity(InputStream.class);
+            .buildGet();
+        return invokeWithRetry(request)
+            .readEntity(InputStream.class);
     }
 
     public List<RestSchedule> getSchedules()
