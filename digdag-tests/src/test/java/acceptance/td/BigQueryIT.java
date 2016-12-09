@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,7 +71,7 @@ public class BigQueryIT
 
     protected Path projectDir;
     protected String projectName;
-    protected int projectId;
+    protected Id projectId;
 
     protected Path outfile;
 
@@ -197,7 +198,7 @@ public class BigQueryIT
                 throws Exception
         {
             addWorkflow(projectDir, "acceptance/bigquery/query.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "query", ImmutableMap.of("outfile", outfile.toString()));
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "query", ImmutableMap.of("outfile", outfile.toString()));
             expect(Duration.ofMinutes(5), attemptSuccess(server.endpoint(), attemptId));
             assertThat(Files.exists(outfile), is(true));
         }
@@ -234,7 +235,7 @@ public class BigQueryIT
             // Run load
             String tableId = "data";
             addWorkflow(projectDir, "acceptance/bigquery/load.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "load", ImmutableMap.of(
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "load", ImmutableMap.of(
                     "source_bucket", GCS_TEST_BUCKET,
                     "source_object", objectName,
                     "target_dataset", datasetId,
@@ -292,7 +293,7 @@ public class BigQueryIT
             // Run extract
             String objectName = GCS_PREFIX + "test.csv";
             addWorkflow(projectDir, "acceptance/bigquery/extract.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "extract", ImmutableMap.of(
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "extract", ImmutableMap.of(
                     "src_dataset", datasetId,
                     "src_table", tableId,
                     "dst_bucket", GCS_TEST_BUCKET,
@@ -379,7 +380,7 @@ public class BigQueryIT
                     ));
 
             addWorkflow(projectDir, "acceptance/bigquery/ddl.dig");
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "ddl", ImmutableMap.<String, String>builder()
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "ddl", ImmutableMap.<String, String>builder()
                     .put("test_default_dataset", testDefaultDataset)
                     .put("test_create_dataset_1", testCreateDataset1)
                     .put("test_create_dataset_2", testCreateDataset2)

@@ -4,6 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
@@ -29,10 +30,10 @@ public class ShowLog
     {
         switch (args.size()) {
         case 1:
-            showLogs(parseLongOrUsage(args.get(0)), Optional.absent());
+            showLogs(parseAttemptIdOrUsage(args.get(0)), Optional.absent());
             break;
         case 2:
-            showLogs(parseLongOrUsage(args.get(0)), Optional.of(args.get(1)));
+            showLogs(parseAttemptIdOrUsage(args.get(0)), Optional.of(args.get(1)));
             break;
         default:
             throw usage(null);
@@ -49,7 +50,7 @@ public class ShowLog
         return systemExit(error);
     }
 
-    private void showLogs(long attemptId, Optional<String> taskName)
+    private void showLogs(Id attemptId, Optional<String> taskName)
         throws Exception
     {
         DigdagClient client = buildClient();
@@ -78,28 +79,28 @@ public class ShowLog
     }
 
     private boolean update(DigdagClient client, TaskLogWatcher watcher,
-            long attemptId, Optional<String> taskName)
+            Id attemptId, Optional<String> taskName)
         throws IOException
     {
         List<RestLogFileHandle> handles;
         if (taskName.isPresent()) {
-            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get());
+            handles = client.getLogFileHandlesOfTask(attemptId, taskName.get()).getFiles();
         }
         else {
-            handles = client.getLogFileHandlesOfAttempt(attemptId);
+            handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         }
 
         return watcher.update(handles);
     }
 
-    private boolean isFinished(DigdagClient client, long attemptId, Optional<String> taskName)
+    private boolean isFinished(DigdagClient client, Id attemptId, Optional<String> taskName)
     {
         if (taskName.isPresent()) {
             RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
             if (attempt.getDone()) {
                 return true;
             }
-            for (RestTask task : client.getTasks(attemptId)) {
+            for (RestTask task : client.getTasks(attemptId).getTasks()) {
                 if (task.getFullName().startsWith(taskName.get())) {
                     switch (task.getState()) {
                     case "blocked":

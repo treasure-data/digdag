@@ -1,14 +1,12 @@
 package io.digdag.client.api;
 
-import java.time.Instant;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Optional;
+import java.time.Instant;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRestScheduleSkipRequest.class)
 @JsonDeserialize(as = ImmutableRestScheduleSkipRequest.class)
 public interface RestScheduleSkipRequest
 {

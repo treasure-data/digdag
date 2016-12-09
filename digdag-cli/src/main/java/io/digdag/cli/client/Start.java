@@ -184,8 +184,8 @@ public class Start
                                     truncatedTime.getSessionTime()));
                     }
                     throw systemExit(String.format(ENGLISH,
-                                "A session for the requested session_time already exists (session_id=%d, attempt_id=%d, session_time=%s)" +
-                                "\nhint: use `" + programName + " retry %d --latest-revision --all` command to run the session again for the same session_time",
+                                "A session for the requested session_time already exists (session_id=%s, attempt_id=%s, session_time=%s)" +
+                                "\nhint: use `" + programName + " retry %s --latest-revision --all` command to run the session again for the same session_time",
                                 conflictedAttempt.getSessionId(),
                                 conflictedAttempt.getId(),
                                 truncatedTime.getSessionTime(),
@@ -197,8 +197,8 @@ public class Start
             }
 
             ln("Started a session attempt:");
-            ln("  session id: %d", newAttempt.getSessionId());
-            ln("  attempt id: %d", newAttempt.getId());
+            ln("  session id: %s", newAttempt.getSessionId());
+            ln("  attempt id: %s", newAttempt.getId());
             ln("  uuid: %s", newAttempt.getSessionUuid());
             ln("  project: %s", newAttempt.getProject().getName());
             ln("  workflow: %s", newAttempt.getWorkflow().getName());
@@ -208,9 +208,9 @@ public class Start
             ln("  created at: %s", TimeUtil.formatTime(newAttempt.getCreatedAt()));
             ln("");
 
-            err.printf("* Use `" + programName + " session %d` to show session status.%n", newAttempt.getSessionId());
+            err.printf("* Use `" + programName + " session %s` to show session status.%n", newAttempt.getSessionId());
             err.println(String.format(ENGLISH,
-                    "* Use `" + this.programName + " task %d` and `" + programName + " log %d` to show task status and logs.",
+                    "* Use `" + this.programName + " task %s` and `" + programName + " log %s` to show task status and logs.",
                         newAttempt.getId(), newAttempt.getId()));
         }
     }

@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
@@ -246,11 +247,11 @@ public class SecretsIT
             Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
             Path outfileParameterized = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out-parameterized");
 
-            long attemptId = startWorkflow(
+            Id attemptId = startWorkflow(
                     server.endpoint(), projectName, "echo_secret",
                     ImmutableMap.of("OUTFILE", outfile.toString()));
 
-            long attemptIdParameterized = startWorkflow(
+            Id attemptIdParameterized = startWorkflow(
                     server.endpoint(), projectName, "echo_secret_parameterized",
                     ImmutableMap.of("secret_key", "key2",
                             "OUTFILE", outfileParameterized.toString()));
@@ -280,7 +281,7 @@ public class SecretsIT
         {
             Path outfile = folder.newFolder().toPath().toAbsolutePath().normalize().resolve("out");
 
-            long attemptId = startWorkflow(
+            Id attemptId = startWorkflow(
                     server.endpoint(), projectName, "echo_secret",
                     ImmutableMap.of("OUTFILE", outfile.toString()));
 
@@ -316,7 +317,7 @@ public class SecretsIT
                 "--set", key1 + '=' + value1, key2 + '=' + value2);
         assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
 
-        long attemptId = startWorkflow(server.endpoint(), projectName, "invalid_secret_use", ImmutableMap.of());
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "invalid_secret_use", ImmutableMap.of());
 
         expect(Duration.ofMinutes(5), attemptFailure(server.endpoint(), attemptId));
 

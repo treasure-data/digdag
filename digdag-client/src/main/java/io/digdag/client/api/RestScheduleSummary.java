@@ -1,20 +1,18 @@
 package io.digdag.client.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import com.google.common.base.Optional;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRestScheduleSummary.class)
 @JsonDeserialize(as = ImmutableRestScheduleSummary.class)
 public interface RestScheduleSummary
 {
-    int getId();
+    Id getId();
 
-    NameLongId getWorkflow();
+    IdAndName getWorkflow();
 
     Instant getNextRunTime();
 

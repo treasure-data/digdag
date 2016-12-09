@@ -40,13 +40,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestProjectCollection;
 import io.digdag.client.api.RestRevision;
+import io.digdag.client.api.RestRevisionCollection;
 import io.digdag.client.api.RestSchedule;
+import io.digdag.client.api.RestScheduleCollection;
 import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSecretMetadata;
 import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSessionCollection;
 import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestWorkflowDefinition;
+import io.digdag.client.api.RestWorkflowDefinitionCollection;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.TempFileManager;
@@ -111,7 +116,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.digdag.server.rs.RestModels.sessionModels;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -208,24 +212,25 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects")
-    public List<RestProject> getProjects(@QueryParam("name") String name)
+    public RestProjectCollection getProjects(@QueryParam("name") String name)
         throws ResourceNotFoundException
     {
         ProjectStore ps = rm.getProjectStore(getSiteId());
 
+        List<RestProject> collection;
         if (name != null) {
             try {
                 StoredProject proj = ensureNotDeletedProject(ps.getProjectByName(name));
                 StoredRevision rev = ps.getLatestRevision(proj.getId());
-                return ImmutableList.of(RestModels.project(proj, rev));
+                collection = ImmutableList.of(RestModels.project(proj, rev));
             }
             catch (ResourceNotFoundException ex) {
-                return ImmutableList.of();
+                collection = ImmutableList.of();
             }
         }
         else {
             // TODO fix n-m db access
-            return ps.getProjects(100, Optional.absent())
+            collection = ps.getProjects(100, Optional.absent())
                 .stream()
                 .map(proj -> {
                     try {
@@ -239,6 +244,8 @@ public class ProjectResource
                 .filter(proj -> proj != null)
                 .collect(Collectors.toList());
         }
+
+        return RestModels.projectCollection(collection);
     }
 
     @GET
@@ -254,15 +261,13 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects/{id}/revisions")
-    public List<RestRevision> getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
+    public RestRevisionCollection getRevisions(@PathParam("id") int projId, @QueryParam("last_id") Integer lastId)
         throws ResourceNotFoundException
     {
         ProjectStore ps = rm.getProjectStore(getSiteId());
         StoredProject proj = ensureNotDeletedProject(ps.getProjectById(projId));
         List<StoredRevision> revs = ps.getRevisions(proj.getId(), 100, Optional.fromNullable(lastId));
-        return revs.stream()
-            .map(rev -> RestModels.revision(proj, rev))
-            .collect(Collectors.toList());
+        return RestModels.revisionCollection(proj, revs);
     }
 
     @GET
@@ -297,7 +302,7 @@ public class ProjectResource
 
     @GET
     @Path("/api/projects/{id}/workflows")
-    public List<RestWorkflowDefinition> getWorkflows(
+    public RestWorkflowDefinitionCollection getWorkflows(
             @PathParam("id") int projId,
             @QueryParam("revision") String revName,
             @QueryParam("name") String name)
@@ -314,28 +319,26 @@ public class ProjectResource
             rev = ps.getRevisionByName(proj.getId(), revName);
         }
 
+        List<StoredWorkflowDefinition> collection;
         if (name != null) {
             try {
                 StoredWorkflowDefinition def = ps.getWorkflowDefinitionByName(rev.getId(), name);
-                return ImmutableList.of(RestModels.workflowDefinition(proj, rev, def));
+                collection = ImmutableList.of(def);
             }
             catch (ResourceNotFoundException ex) {
-                return ImmutableList.of();
+                collection = ImmutableList.of();
             }
         }
         else {
             // TODO should here support pagination?
-            List<StoredWorkflowDefinition> defs = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
-
-            return defs.stream()
-                .map(def -> RestModels.workflowDefinition(proj, rev, def))
-                .collect(Collectors.toList());
+            collection = ps.getWorkflowDefinitions(rev.getId(), Integer.MAX_VALUE, Optional.absent());
         }
+        return RestModels.workflowDefinitionCollection(proj, rev, collection);
     }
 
     @GET
     @Path("/api/projects/{id}/schedules")
-    public List<RestSchedule> getSchedules(
+    public RestScheduleCollection getSchedules(
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Integer lastId)
@@ -351,22 +354,22 @@ public class ProjectResource
             StoredSchedule sched;
             try {
                 sched = scheduleStore.getScheduleByProjectIdAndWorkflowName(projectId, workflowName);
+                scheds = ImmutableList.of(sched);
             }
             catch (ResourceNotFoundException e) {
-                return ImmutableList.of();
+                scheds = ImmutableList.of();
             }
-            scheds = ImmutableList.of(sched);
         }
         else {
             scheds = scheduleStore.getSchedulesByProjectId(projectId, 100, Optional.fromNullable(lastId));
         }
 
-        return ScheduleResource.restSchedules(projectStore, scheds);
+        return RestModels.scheduleCollection(projectStore, scheds);
     }
 
     @GET
     @Path("/api/projects/{id}/sessions")
-    public List<RestSession> getSessions(
+    public RestSessionCollection getSessions(
             @PathParam("id") int projectId,
             @QueryParam("workflow") String workflowName,
             @QueryParam("last_id") Long lastId)
@@ -384,7 +387,7 @@ public class ProjectResource
             sessions = ss.getSessionsOfProject(proj.getId(), 100, Optional.fromNullable(lastId));
         }
 
-        return sessionModels(ps, sessions);
+        return RestModels.sessionCollection(ps, sessions);
     }
 
     @GET
@@ -562,7 +565,10 @@ public class ProjectResource
                     });
 
             SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
+            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(
+                        RestModels.parseProjectId(restProject.getId()),
+                        SecretScopes.PROJECT_DEFAULT,
+                        k, v));
             return restProject;
         }
     }

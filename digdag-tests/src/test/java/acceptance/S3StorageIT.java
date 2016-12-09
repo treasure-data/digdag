@@ -2,6 +2,7 @@ package acceptance;
 
 import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
@@ -95,8 +96,8 @@ public class S3StorageIT
         }
 
         // Start the workflow
-        long sessionId;
-        long attemptId;
+        Id sessionId;
+        Id attemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -122,7 +123,7 @@ public class S3StorageIT
         }
 
         // Fetch archive
-        RestProject proj = client.getProjects().get(0);
+        RestProject proj = client.getProjects().getProjects().get(0);
         byte[] data;
         try (InputStream in = client.getProjectArchive(proj.getId(), proj.getRevision())) {
             data = ByteStreams.toByteArray(in);
@@ -132,7 +133,7 @@ public class S3StorageIT
         assertThat(data[1], is((byte) 0x8b));
 
         // Fetch logs
-        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId);
+        List<RestLogFileHandle> handles = client.getLogFileHandlesOfAttempt(attemptId).getFiles();
         assertThat(handles.size(), is(not(0)));
 
         for (RestLogFileHandle handle : handles) {

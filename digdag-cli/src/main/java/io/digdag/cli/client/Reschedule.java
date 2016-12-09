@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestScheduleSummary;
 
 import java.time.Instant;
@@ -34,7 +35,7 @@ public class Reschedule
         if (args.size() != 1) {
             throw usage(null);
         }
-        int schedId = parseIntOrUsage(args.get(0));
+        Id schedId = parseScheduleIdOrUsage(args.get(0));
 
         if (toTime != null && skipCount > 0) {
             throw systemExit("-s and -t can't be set together");
@@ -57,7 +58,7 @@ public class Reschedule
         return systemExit(error);
     }
 
-    private void reschedule(int schedId)
+    private void reschedule(Id schedId)
         throws Exception
     {
         Instant now = Instant.now();
@@ -81,7 +82,7 @@ public class Reschedule
                     dryRun);
         }
 
-        ln("  id: %d", updated.getId());
+        ln("  id: %s", updated.getId());
         ln("  workflow: %s", updated.getWorkflow().getName());
         ln("  disabled at: " + updated.getDisabledAt().transform(ts -> formatTimeWithDiff(now, ts)).or(""));
         ln("  next session time: %s", TimeUtil.formatTime(updated.getNextScheduleTime()));

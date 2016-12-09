@@ -2,6 +2,7 @@ package acceptance;
 
 import acceptance.td.Secrets;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -91,7 +92,7 @@ public class ServerModeMailIT
                 "-r", "4711");
         assertThat(pushStatus.code(), is(0));
 
-        int projectId = TestUtils.getProjectId(pushStatus);
+        Id projectId = TestUtils.getProjectId(pushStatus);
         client.setProjectSecret(projectId, "mail.password", PASSWORD);
 
         // Start the workflow

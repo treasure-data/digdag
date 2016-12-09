@@ -12,6 +12,7 @@ import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.core.plugin.PluginSet;
 import io.digdag.spi.DigdagClientConfigurator;
 import io.digdag.standards.Proxies;
@@ -199,22 +200,40 @@ public abstract class ClientCommand
         Main.showCommonOptions(env, err);
     }
 
-    protected long parseLongOrUsage(String arg)
+    protected Id parseAttemptIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Long.toString(parseLongOrUsage(arg)));
+    }
+
+    protected Id parseSessionIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Long.toString(parseLongOrUsage(arg)));
+    }
+
+    protected Id parseScheduleIdOrUsage(String arg)
+            throws SystemExitException
+    {
+        return Id.of(Integer.toString(parseIntOrUsage(arg)));
+    }
+
+    private long parseLongOrUsage(String arg)
             throws SystemExitException
     {
         try {
-            return Long.parseLong(args.get(0));
+            return Long.parseLong(arg);
         }
         catch (NumberFormatException ex) {
             throw usage(ex.getMessage());
         }
     }
 
-    protected int parseIntOrUsage(String arg)
+    private int parseIntOrUsage(String arg)
             throws SystemExitException
     {
         try {
-            return Integer.parseInt(args.get(0));
+            return Integer.parseInt(arg);
         }
         catch (NumberFormatException ex) {
             throw usage(ex.getMessage());

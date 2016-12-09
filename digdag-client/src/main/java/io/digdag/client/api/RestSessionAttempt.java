@@ -1,28 +1,26 @@
 package io.digdag.client.api;
 
-import java.util.UUID;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Optional;
+import io.digdag.client.config.Config;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import com.google.common.base.Optional;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.UUID;
 import org.immutables.value.Value;
-import io.digdag.client.config.Config;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableRestSessionAttempt.class)
 @JsonDeserialize(as = ImmutableRestSessionAttempt.class)
 public interface RestSessionAttempt
 {
-    long getId();
+    Id getId();
 
-    IdName getProject();
+    IdAndName getProject();
 
     //Optional<String> getRevision();
 
     NameOptionalId getWorkflow();
 
-    long getSessionId();
+    Id getSessionId();
 
     UUID getSessionUuid();
 

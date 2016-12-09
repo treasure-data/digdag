@@ -73,7 +73,7 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts")
-    public List<RestSessionAttempt> getAttempts(
+    public RestSessionAttemptCollection getAttempts(
             @QueryParam("project") String projName,
             @QueryParam("workflow") String wfName,
             @QueryParam("include_retried") boolean includeRetried,
@@ -101,7 +101,7 @@ public class AttemptResource
             attempts = ss.getAttempts(includeRetried, 100, Optional.fromNullable(lastId));
         }
 
-        return RestModels.attemptModels(rm, getSiteId(), attempts);
+        return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
     }
 
     @GET
@@ -119,24 +119,22 @@ public class AttemptResource
 
     @GET
     @Path("/api/attempts/{id}/retries")
-    public List<RestSessionAttempt> getAttemptRetries(@PathParam("id") long id)
+    public RestSessionAttemptCollection getAttemptRetries(@PathParam("id") long id)
         throws ResourceNotFoundException
     {
         List<StoredSessionAttemptWithSession> attempts = sm.getSessionStore(getSiteId())
             .getOtherAttempts(id);
 
-        return RestModels.attemptModels(rm, getSiteId(), attempts);
+        return RestModels.attemptCollection(rm.getProjectStore(getSiteId()), attempts);
     }
 
     @GET
     @Path("/api/attempts/{id}/tasks")
-    public List<RestTask> getTasks(@PathParam("id") long id)
+    public RestTaskCollection getTasks(@PathParam("id") long id)
     {
-        return sm.getSessionStore(getSiteId())
-            .getTasksOfAttempt(id)
-            .stream()
-            .map(task -> RestModels.task(task))
-            .collect(Collectors.toList());
+        List<ArchivedTask> tasks = sm.getSessionStore(getSiteId())
+            .getTasksOfAttempt(id);
+        return RestModels.taskCollection(tasks);
     }
 
     @PUT
@@ -147,10 +145,11 @@ public class AttemptResource
     {
         ProjectStore rs = rm.getProjectStore(getSiteId());
 
-        StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(request.getWorkflowId());
+        StoredWorkflowDefinitionWithProject def = rs.getWorkflowDefinitionById(
+                RestModels.parseWorkflowId(request.getWorkflowId()));
 
         Optional<Long> resumingAttemptId = request.getResume()
-            .transform(r -> r.getAttemptId());
+            .transform(r -> RestModels.parseAttemptId(r.getAttemptId()));
         List<Long> resumingTasks = request.getResume()
             .transform(r -> collectResumingTasks(r))
             .or(ImmutableList.of());
@@ -181,10 +180,12 @@ public class AttemptResource
         switch (resume.getMode()) {
         case FAILED:
             return collectResumingTasksForResumeFailedMode(
-                    ((RestSessionAttemptRequest.ResumeFailed) resume).getAttemptId());
+                    RestModels.parseAttemptId(
+                        ((RestSessionAttemptRequest.ResumeFailed) resume).getAttemptId()));
         case FROM:
             return collectResumingTasksForResumeFromMode(
-                    ((RestSessionAttemptRequest.ResumeFrom) resume).getAttemptId(),
+                    RestModels.parseAttemptId(
+                        ((RestSessionAttemptRequest.ResumeFrom) resume).getAttemptId()),
                     ((RestSessionAttemptRequest.ResumeFrom) resume).getFromTaskNamePattern());
         default:
             throw new IllegalArgumentException("Unknown resuming mode: " + resume.getMode());

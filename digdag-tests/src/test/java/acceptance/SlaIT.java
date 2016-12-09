@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.spi.Notification;
 import okhttp3.mockwebserver.MockResponse;
@@ -115,7 +116,7 @@ public class SlaIT
         public void testTimeFailDefault()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_fail_default.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_fail_default.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
@@ -123,7 +124,7 @@ public class SlaIT
         public void testTimeFailEnabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_fail_enabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_fail_enabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptFailure(server.endpoint(), attemptId));
         }
 
@@ -131,7 +132,7 @@ public class SlaIT
         public void testTimeFailDisabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_fail_disabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_fail_disabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
@@ -139,7 +140,7 @@ public class SlaIT
         public void testTimeAlertDefault()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_alert_default.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_alert_default.dig", Duration.ofSeconds(5));
             expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
@@ -147,7 +148,7 @@ public class SlaIT
         public void testTimeAlertEnabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_alert_enabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_alert_enabled.dig", Duration.ofSeconds(5));
             expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
@@ -155,7 +156,7 @@ public class SlaIT
         public void testTimeAlertDisabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("time_alert_disabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("time_alert_disabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
             assertThat(mockWebServer.getRequestCount(), is(0));
         }
@@ -176,7 +177,7 @@ public class SlaIT
         public void testDurationFailDefault()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_fail_default.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_fail_default.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
@@ -184,7 +185,7 @@ public class SlaIT
         public void testDurationFailEnabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_fail_enabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_fail_enabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptFailure(server.endpoint(), attemptId));
         }
 
@@ -192,7 +193,7 @@ public class SlaIT
         public void testDurationFailDisabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_fail_disabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_fail_disabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
         }
 
@@ -200,7 +201,7 @@ public class SlaIT
         public void testDurationAlertDefault()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_alert_default.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_alert_default.dig", Duration.ofSeconds(5));
             expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
@@ -208,7 +209,7 @@ public class SlaIT
         public void testDurationAlertEnabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
             expectNotification(attemptId, Duration.ofMinutes(5));
         }
 
@@ -216,7 +217,7 @@ public class SlaIT
         public void testDurationAlertDisabled()
                 throws Exception
         {
-            long attemptId = pushAndStart("duration_alert_disabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_alert_disabled.dig", Duration.ofSeconds(5));
             expect(Duration.ofMinutes(5), TestUtils.attemptSuccess(server.endpoint(), attemptId));
             assertThat(mockWebServer.getRequestCount(), is(0));
         }
@@ -228,7 +229,7 @@ public class SlaIT
             mockWebServer.setDispatcher(new QueueDispatcher());
             mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("FAIL"));
             mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-            long attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
+            Id attemptId = pushAndStart("duration_alert_enabled.dig", Duration.ofSeconds(5));
             RecordedRequest recordedRequest1 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
             RecordedRequest recordedRequest2 = mockWebServer.takeRequest(30, TimeUnit.SECONDS);
             verifyNotification(attemptId, recordedRequest1);
@@ -236,7 +237,7 @@ public class SlaIT
         }
     }
 
-    protected void expectNotification(long attemptId, Duration duration)
+    protected void expectNotification(Id attemptId, Duration duration)
             throws InterruptedException, IOException
     {
         RecordedRequest recordedRequest = mockWebServer.takeRequest(duration.getSeconds(), TimeUnit.SECONDS);
@@ -244,18 +245,18 @@ public class SlaIT
         verifyNotification(attemptId, recordedRequest);
     }
 
-    protected void verifyNotification(long attemptId, RecordedRequest recordedRequest)
+    protected void verifyNotification(Id attemptId, RecordedRequest recordedRequest)
             throws IOException
     {
         String notificationJson = recordedRequest.getBody().readUtf8();
         Notification notification = mapper.readValue(notificationJson, Notification.class);
         assertThat(notification.getMessage(), is("SLA violation"));
-        assertThat(notification.getAttemptId().get(), is(attemptId));
+        assertThat(Id.of(Long.toString(notification.getAttemptId().get())), is(attemptId));
         assertThat(notification.getWorkflowName().get(), is(WORKFLOW_NAME));
         assertThat(notification.getProjectName().get(), is(PROJECT_NAME));
     }
 
-    protected long pushAndStart(String workflow, TemporalAmount timeout)
+    protected Id pushAndStart(String workflow, TemporalAmount timeout)
             throws IOException
     {
         try (InputStream input = Resources.getResource("acceptance/sla/" + workflow).openStream()) {

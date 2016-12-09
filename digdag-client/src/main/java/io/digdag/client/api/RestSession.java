@@ -1,7 +1,6 @@
 package io.digdag.client.api;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import io.digdag.client.config.Config;
 import org.immutables.value.Value;
@@ -12,13 +11,12 @@ import java.util.UUID;
 
 @Value.Immutable
 @Value.Enclosing
-@JsonSerialize(as = ImmutableRestSession.class)
 @JsonDeserialize(as = ImmutableRestSession.class)
 public interface RestSession
 {
-    long getId();
+    Id getId();
 
-    IdName getProject();
+    IdAndName getProject();
 
     NameOptionalId getWorkflow();
 
@@ -29,11 +27,10 @@ public interface RestSession
     Optional<Attempt> getLastAttempt();
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableRestSession.Attempt.class)
     @JsonDeserialize(as = ImmutableRestSession.Attempt.class)
     interface Attempt
     {
-        long getId();
+        Id getId();
 
         Optional<String> getRetryAttemptName();
 

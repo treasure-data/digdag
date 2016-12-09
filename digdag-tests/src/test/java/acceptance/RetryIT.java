@@ -1,6 +1,7 @@
 package acceptance;
 
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,7 +55,7 @@ public class RetryIT
         pushRevision("acceptance/retry/retry-1.dig", "retry");
 
         // Start the workflow
-        long originalAttemptId;
+        Id originalAttemptId;
         {
             CommandStatus startStatus = main("start",
                     "-c", config.toString(),
@@ -75,7 +76,7 @@ public class RetryIT
         pushRevision("acceptance/retry/retry-2.dig", "retry");
 
         // Retry without updating the revision: --keep-revision
-        long retry1;
+        Id retry1;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
@@ -95,7 +96,7 @@ public class RetryIT
         assertOutputExists("2-2b", false);
 
         // Retry with the latest fixed revision & resume failed
-        long retry2;
+        Id retry2;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
@@ -115,7 +116,7 @@ public class RetryIT
         assertOutputExists("2-2b", true);
 
         // Retry with the latest fixed revision & resume all
-        long retry3;
+        Id retry3;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
@@ -138,7 +139,7 @@ public class RetryIT
         pushRevision("acceptance/retry/retry-3.dig", "retry");
 
         // Retry with the latest fixed revision & resume from
-        long retry4;
+        Id retry4;
         {
             CommandStatus retryStatus = main("retry",
                     "-c", config.toString(),
@@ -171,7 +172,7 @@ public class RetryIT
         assertThat(pushStatus.errUtf8(), pushStatus.code(), is(0));
     }
 
-    private RestSessionAttempt joinAttempt(DigdagClient client, long attemptId)
+    private RestSessionAttempt joinAttempt(DigdagClient client, Id attemptId)
             throws InterruptedException
     {
         RestSessionAttempt attempt = null;
