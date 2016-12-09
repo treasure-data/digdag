@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.td;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
@@ -174,6 +175,7 @@ public class TdDdlOperatorFactory
 
     @Value.Immutable
     @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @JsonDeserialize(as = ImmutableRenameTableConfig.class)
     interface RenameTableConfig
     {
         @JsonProperty("from")
