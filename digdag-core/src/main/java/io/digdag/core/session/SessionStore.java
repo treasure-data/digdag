@@ -2,11 +2,12 @@ package io.digdag.core.session;
 
 import java.util.List;
 import java.time.Instant;
-import com.google.common.base.*;
+import com.google.common.base.Optional;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 
 public interface SessionStore
+        extends SessionTransaction
 {
     List<StoredSessionWithLastAttempt> getSessions(int pageSize, Optional<Long> lastId);
 
@@ -41,14 +42,12 @@ public interface SessionStore
 
     List<ArchivedTask> getTasksOfAttempt(long attemptId);
 
-    long getActiveAttemptCount();
-
-    interface SessionLockAction <T>
+    interface SessionTransactionAction <T>
     {
-        T call(SessionControlStore store, StoredSession storedSession)
-            throws ResourceConflictException, ResourceNotFoundException;
+        T call(SessionTransaction transaction)
+            throws Exception;
     }
 
-    <T> T putAndLockSession(Session session, SessionLockAction<T> func)
-        throws ResourceConflictException, ResourceNotFoundException;
+    <T> T sessionTransaction(SessionTransactionAction<T> func)
+            throws Exception;
 }

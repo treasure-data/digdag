@@ -206,6 +206,28 @@ public class WorkflowExecutor
     private static final DateTimeFormatter SESSION_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx", ENGLISH);
 
+    public static interface WorkflowSubmitterAction <T>
+    {
+        T call(WorkflowSubmitter submitter)
+            throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException;
+    };
+
+    public <T> T submitTransaction(int siteId, WorkflowSubmitterAction<T> func)
+        throws ResourceNotFoundException, AttemptLimitExceededException, SessionAttemptConflictException
+    {
+        try {
+            return sm.getSessionStore(siteId).sessionTransaction((transaction) -> {
+                return func.call(new WorkflowSubmitter(siteId, transaction, rm.getProjectStore(siteId), sm.getSessionStore(siteId)));
+            });
+        }
+        catch (Exception ex) {
+            Throwables.propagateIfInstanceOf(ex, ResourceNotFoundException.class);
+            Throwables.propagateIfInstanceOf(ex, AttemptLimitExceededException.class);
+            Throwables.propagateIfInstanceOf(ex, SessionAttemptConflictException.class);
+            throw Throwables.propagate(ex);
+        }
+    }
+
     public StoredSessionAttemptWithSession submitTasks(int siteId, AttemptRequest ar,
             WorkflowTaskList tasks)
         throws ResourceNotFoundException, AttemptLimitExceededException, TaskLimitExceededException, SessionAttemptConflictException
