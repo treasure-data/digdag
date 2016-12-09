@@ -45,7 +45,7 @@ public class DefaultSecretProviderTest
 
     @Mock SecretAccessPolicy secretAccessPolicy;
     @Mock SecretStore secretStore;
-    @Mock Predicate<String> secretFilter;
+    @Mock Predicate<String> operatorSecretFilter;
 
     private final SecretAccessContext secretAccessContext = SecretAccessContext.builder()
             .siteId(SITE_ID)
@@ -67,12 +67,18 @@ public class DefaultSecretProviderTest
     public void verifyUndeclaredAccessIsDenied()
             throws Exception
     {
+        // system acl doesn't allow.
+        // user doesn't grant explicitly.
+        // operator accepts.
+        // -> reject (no permission by system or user)
+
         String key = "foo";
         Config grants = createConfig();
 
-        when(secretFilter.test(anyString())).thenReturn(false);
+        when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(false);
+        when(operatorSecretFilter.test(key)).thenReturn(true);
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, secretFilter, secretStore);
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         try {
             provider.getSecret(key);
@@ -82,30 +88,35 @@ public class DefaultSecretProviderTest
             assertThat(e.getKey(), is(key));
         }
 
-        verify(secretFilter).test(key);
+        verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
+        verify(operatorSecretFilter).test(key);
 
         verifyNoMoreInteractions(secretStore);
-        verifyNoMoreInteractions(secretAccessPolicy);
     }
 
     @Test
     public void testDefaultAccessibleSecret()
             throws Exception
     {
+        // system acl allows.
+        // user doesn't grant explicitly.
+        // operator accepts.
+        // -> allow (system-default trusted access)
+
         String expectedSecret = "foo-secret";
         String key = "foo";
         Config grants = createConfig();
 
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(expectedSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(secretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key)).thenReturn(true);
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, secretFilter, secretStore);
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(secretFilter).test(key);
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
+        verify(operatorSecretFilter).test(key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
 
         assertThat(secret, is(expectedSecret));
@@ -120,26 +131,61 @@ public class DefaultSecretProviderTest
             "foo.a.b    | foo: {a: true}             | foo.a.b",
             "foo.a.b    | foo: {a: bar.a\\, b: quux} | bar.a.b"
     })
-    public void testGrantedSecret(String key, String grantsYaml, String expectedKey)
+    public void testUserGrantedSecret(String key, String grantsYaml, String expectedKey)
             throws Exception
     {
+        // system acl doesn't allow.
+        // user grants explicitly.
+        // operator accepts.
+        // -> allow (user-granted access)
+
         String expectedSecret = "the-secret";
 
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, expectedKey)).thenReturn(Optional.of(expectedSecret));
         when(secretAccessPolicy.isSecretAccessible(any(SecretAccessContext.class), anyString())).thenReturn(false);
-        when(secretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key)).thenReturn(true);
 
         Config grants = YAML_CONFIG_LOADER.loadString(grantsYaml).toConfig(CONFIG_FACTORY);
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, secretFilter, secretStore);
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(secretFilter).test(key);
         verifyNoMoreInteractions(secretAccessPolicy);
+        verify(operatorSecretFilter).test(key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, expectedKey);
 
         assertThat(secret, is(expectedSecret));
+    }
+
+    @Test
+    public void testOperatorFilteredSecret()
+            throws Exception
+    {
+        // system acl allows.
+        // user doesn't allow explicitly.
+        // operator doesn't accept.
+        // -> reject (operator-filtered access)
+
+        String key = "foo";
+        Config grants = createConfig();
+
+        when(operatorSecretFilter.test(key)).thenReturn(false);
+
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
+
+        try {
+            provider.getSecret(key);
+            fail("Expected " + SecretAccessFilteredException.class.getName());
+        }
+        catch (SecretAccessFilteredException e) {
+            assertThat(e.getKey(), is(key));
+        }
+
+        verifyNoMoreInteractions(secretAccessPolicy);
+
+        verify(operatorSecretFilter).test(key);
+        verifyNoMoreInteractions(secretStore);
     }
 
     @Test
@@ -154,19 +200,18 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.of(projectSecret));
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(secretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key)).thenReturn(true);
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, secretFilter, secretStore);
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(secretFilter).test(key);
+        verify(operatorSecretFilter).test(key);
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
         verify(secretStore, never()).getSecret(PROJECT_ID, key, SecretScopes.PROJECT_DEFAULT);
 
         assertThat(secret, is(projectSecret));
-
     }
 
     @Test
@@ -180,18 +225,17 @@ public class DefaultSecretProviderTest
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT, key)).thenReturn(Optional.absent());
         when(secretStore.getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key)).thenReturn(Optional.of(projectDefaultSecret));
         when(secretAccessPolicy.isSecretAccessible(secretAccessContext, key)).thenReturn(true);
-        when(secretFilter.test(key)).thenReturn(true);
+        when(operatorSecretFilter.test(key)).thenReturn(true);
 
-        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, secretFilter, secretStore);
+        DefaultSecretProvider provider = new DefaultSecretProvider(secretAccessContext, secretAccessPolicy, grants, operatorSecretFilter, secretStore);
 
         String secret = provider.getSecret(key);
 
-        verify(secretFilter).test(key);
+        verify(operatorSecretFilter).test(key);
         verify(secretAccessPolicy).isSecretAccessible(secretAccessContext, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT, key);
         verify(secretStore).getSecret(PROJECT_ID, SecretScopes.PROJECT_DEFAULT, key);
 
         assertThat(secret, is(projectDefaultSecret));
-
     }
 }

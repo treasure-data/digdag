@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.core.database.DatabaseTestingUtils.cleanDatabase;
@@ -50,7 +51,12 @@ public class WorkflowTestingUtils
 
     public static DigdagEmbed setupEmbed()
     {
-        DigdagEmbed embed = new DigdagEmbed.Bootstrap()
+        return setupEmbed(bootstrap -> bootstrap);
+    }
+
+    public static DigdagEmbed setupEmbed(Function<DigdagEmbed.Bootstrap, DigdagEmbed.Bootstrap> customizer)
+    {
+        DigdagEmbed.Bootstrap bootstrap = new DigdagEmbed.Bootstrap()
             .withExtensionLoader(false)
             .addModules((binder) -> {
                 binder.bind(CommandExecutor.class).to(SimpleCommandExecutor.class).in(Scopes.SINGLETON);
@@ -71,7 +77,8 @@ public class WorkflowTestingUtils
             .overrideModulesWith((binder) -> {
                 binder.bind(DatabaseConfig.class).toInstance(getEnvironmentDatabaseConfig());
             })
-            .initializeWithoutShutdownHook();
+            ;
+        DigdagEmbed embed = customizer.apply(bootstrap).initializeWithoutShutdownHook();
         cleanDatabase(embed);
         return embed;
     }

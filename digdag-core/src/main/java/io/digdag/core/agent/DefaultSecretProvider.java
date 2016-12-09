@@ -44,14 +44,23 @@ class DefaultSecretProvider
         String errorMessage = "Illegal key: '" + key + "'";
         Preconditions.checkArgument(!Strings.isNullOrEmpty(key), errorMessage);
         Preconditions.checkArgument(key.indexOf('*') == -1, errorMessage);
+
+        //// Secret access control:
+        // 1. Reject if the operator doesn't need the access to the secret (operatorSecretFilter).
+        // 2. Allow if users explicitly grant access using _secret directive (Config grants).
+        // 3. Allow if system access policy (SecretAccessPolicy) allows.
+        // 4. Reject.
+
         List<String> segments = Splitter.on('.').splitToList(key);
         segments.forEach(segment -> Preconditions.checkArgument(!Strings.isNullOrEmpty(segment)));
 
-        // Only allow operatorType to access pre-declared secrets
+        //// Step 1.
+        // Operator can drop access privilege to a key because it knows whether the secret is necessary or not.
         if (!operatorSecretFilter.test(key)) {
-            throw new SecretAccessDeniedException(key);
+            throw new SecretAccessFilteredException(key, "Unexpected access to a secret key: '" + key + "'");
         }
 
+        //// Step 2.
         // If the key falls under the scope of an explicit grant, then fetch the secret identified by remounting the key path into the grant path.
         JsonNode scope = grants.getInternalObjectNode();
         int i = 0;
@@ -91,12 +100,13 @@ class DefaultSecretProvider
             }
         }
 
+        //// Step 3.
         // No explicit grant. Check key against system acl to see if access is granted by default.
-        if (!secretAccessPolicy.isSecretAccessible(context, key)) {
-            throw new SecretAccessDeniedException(key);
+        if (secretAccessPolicy.isSecretAccessible(context, key)) {
+            return fetchSecret(key);
         }
 
-        return fetchSecret(key);
+        throw new SecretAccessDeniedException(key, "Access not granted for secret key: '" + key + "'");
     }
 
     private Optional<String> fetchSecret(String key)
