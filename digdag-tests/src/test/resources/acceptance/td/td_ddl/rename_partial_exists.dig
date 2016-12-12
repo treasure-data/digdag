@@ -1,0 +1,16 @@
+timezone: UTC
+
++drop:
+  td_ddl>:
+  drop_tables: ["rename_table_from_1", "rename_table_from_2"]
+
++create:
+  td_ddl>:
+  create_tables: ["rename_table_from_1"]
+
++rename:
+  td_ddl>:
+  rename_tables:
+    - {from: "rename_table_from_1", to: "rename_table_to_1"}
+    - {from: "rename_table_from_2", to: "rename_table_to_2"}
+

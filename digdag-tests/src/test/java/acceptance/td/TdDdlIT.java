@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableSet;
 import com.treasuredata.client.TDClient;
 import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDTable;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -43,10 +45,12 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaders.Values.CLOSE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -190,7 +194,22 @@ public class TdDdlIT
                                 }
                                 else {
                                     logger.info("Simulation 200 OK for request: {}", key);
-                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), OK);
+                                    ByteBuf body;
+                                    if (fullHttpRequest.getUri().contains("v3/table/list")) {
+                                        // response body for listTables used by rename_tables
+                                        body = Unpooled.wrappedBuffer(
+                                                (
+                                                "{\"tables\": [" +
+                                                    "{\"name\":\"rename_table_1_from\",\"schema\":\"[]\"}," +
+                                                    "{\"name\":\"rename_table_2_from\",\"schema\":\"[]\"}" +
+                                                "]}"
+                                                ).getBytes(UTF_8));
+                                    }
+                                    else {
+                                        // empty object is good enough for most of apis
+                                        body = Unpooled.wrappedBuffer("{}".getBytes(UTF_8));
+                                    }
+                                    response = new DefaultFullHttpResponse(httpRequest.getProtocolVersion(), OK, body);
                                 }
                                 response.headers().set(CONNECTION, CLOSE);
                                 return response;
@@ -216,6 +235,11 @@ public class TdDdlIT
         String createTables[] = {"create_table_1", "create_table_2"};
         String emptyTables[] = {"empty_table_1", "empty_table_2"};
 
+        String renameTables[][] = {
+            {"rename_table_1_from", "rename_table_1_to"},
+            {"rename_table_2_from", "rename_table_2_to"},
+        };
+
         String endpoint = "http://api.treasuredata.com/";
 
         for (String table : concat(dropTables, emptyTables, String.class)) {
@@ -235,6 +259,11 @@ public class TdDdlIT
             String key = "POST " + endpoint + "v3/database/create/" + db;
             assertThat(requests.get(key).get(), is(failures));
         }
+
+        for (String[] pair : renameTables) {
+            String key = "POST " + endpoint + "v3/table/rename/" + database + "/" + pair[0] + "/" + pair[1];
+            assertThat(requests.get(key).get(), is(failures));
+        }
     }
 
     @Test
@@ -252,7 +281,7 @@ public class TdDdlIT
         assertThat(databases, not(hasItem(dropDb2)));
 
         List<String> tables = client.listTables(database).stream().map(TDTable::getName).collect(toList());
-        assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2"));
+        assertThat(tables, containsInAnyOrder("create_table_1", "create_table_2", "empty_table_1", "empty_table_2", "rename_table_1_to", "rename_table_2_to"));
     }
 
     private void runDdlWorkflow()
@@ -269,6 +298,26 @@ public class TdDdlIT
                 "empty_db_2=" + emptyDb2);
         assertThat(runStatus.errUtf8(), runStatus.code(), is(0));
         assertThat(Files.exists(outfile), is(true));
+    }
+
+    @Test
+    public void testDdlFailIfRenameFromNotExists()
+            throws IOException
+    {
+        addWorkflow(projectDir, "acceptance/td/td_ddl/rename_not_exists.dig");
+        CommandStatus runStatus = runWorkflow("rename_not_exists", "database=" + database);
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(not(0)));
+        assertThat(runStatus.errUtf8(), containsString("Renaming table " + database + ".rename_table_from doesn't exist"));
+    }
+
+    @Test
+    public void testDdlFailIfSomeRenameFromNotExists()
+            throws IOException
+    {
+        addWorkflow(projectDir, "acceptance/td/td_ddl/rename_partial_exists.dig");
+        CommandStatus runStatus = runWorkflow("rename_partial_exists", "database=" + database);
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(not(0)));
+        assertThat(runStatus.errUtf8(), containsString("Renaming table " + database + ".rename_table_from_2 doesn't exist"));
     }
 
     private CommandStatus runWorkflow(String workflow, String... params)

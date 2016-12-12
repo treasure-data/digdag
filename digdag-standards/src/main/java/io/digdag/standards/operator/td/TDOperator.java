@@ -177,6 +177,21 @@ public class TDOperator
         }
     }
 
+    public void ensureExistentTableRenamed(String existentTable, String toName)
+            throws TDClientException
+    {
+        try {
+            defaultRetryExecutor.run(() -> client.renameTable(database, existentTable, toName, true));
+        }
+        catch (RetryGiveupException ex) {
+            if (ex.getCause() instanceof TDClientHttpNotFoundException) {
+                // ignore
+                return;
+            }
+            throw Throwables.propagate(ex.getCause());
+        }
+    }
+
     public boolean tableExists(String table)
     {
         try {
