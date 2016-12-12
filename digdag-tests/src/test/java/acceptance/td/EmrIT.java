@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.core.config.YamlConfigLoader;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -97,7 +98,7 @@ public class EmrIT
 
     protected Path projectDir;
     protected String projectName;
-    protected int projectId;
+    protected Id projectId;
 
     protected Path outfile;
 
@@ -300,7 +301,7 @@ public class EmrIT
 
             clusterIds.add(clusterId);
 
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
                     "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
@@ -318,7 +319,7 @@ public class EmrIT
             String clusterId = System.getenv("EMR_TEST_CLUSTER_ID");
             assumeThat(clusterId, not(Matchers.isEmptyOrNullString()));
 
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
                     "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", clusterId,
                     "outfile", outfile.toString()));
@@ -338,7 +339,7 @@ public class EmrIT
                 throws Exception
         {
             String cluster = new YamlConfigLoader().loadString(Resources.toString(Resources.getResource("acceptance/emr/cluster.yaml"), UTF_8)).toString();
-            long attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
+            Id attemptId = pushAndStart(server.endpoint(), projectDir, "emr", ImmutableMap.of(
                     "test_s3_folder", tmpS3FolderUri.toString(),
                     "test_cluster", cluster,
                     "outfile", outfile.toString()));
