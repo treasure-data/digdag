@@ -145,7 +145,7 @@ public class TdDdlOperatorFactory
                         boolean exists = pollingRetryExecutor(state, "rename_check_retry")
                                 .retryUnless(TDOperator::isDeterministicClientException)
                                 .withRetryInterval(retryInterval)
-                                .withErrorMessage("Failed check existance of table %s.%s", database, from.getTable())
+                                .withErrorMessage("Failed check existence of table %s.%s", database, from.getTable())
                                 .runOnce(boolean.class, s -> {
                                     return op.withDatabase(database).tableExists(from.getTable());
                                 });
