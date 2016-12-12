@@ -3,6 +3,7 @@ package io.digdag.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.client.api.RestLogFileHandle;
 import okhttp3.internal.tls.SslClient;
@@ -90,7 +91,7 @@ public class DigdagClientTest
                 .setBody(objectMapper.writeValueAsString(expectedLogFileHandles))
                 .setHeader(CONTENT_TYPE, APPLICATION_JSON));
 
-        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfAttempt(17);
+        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfAttempt(Id.of("17")).getFiles();
 
         assertThat(receivedLogFileHandles, is(expectedLogFileHandles));
 
@@ -126,7 +127,7 @@ public class DigdagClientTest
                 .setBody(objectMapper.writeValueAsString(expectedLogFileHandles))
                 .setHeader(CONTENT_TYPE, APPLICATION_JSON));
 
-        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfTask(17, "test-task");
+        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfTask(Id.of("17"), "test-task").getFiles();
 
         assertThat(receivedLogFileHandles, is(expectedLogFileHandles));
 
@@ -139,7 +140,7 @@ public class DigdagClientTest
     public void getLogFileDirect()
             throws Exception
     {
-        int attemptId = 17;
+        Id attemptId = Id.of("17");
         String logFileContents = "foo\nbar";
         String logFilePath = "/logs/test-task-1.log";
         String logFileUrl = "https://" + mockWebServer.getHostName() + ":" + mockWebServer.getPort() + logFilePath;
@@ -183,7 +184,7 @@ public class DigdagClientTest
                 .setBody(logFileContents)
                 .setHeader(CONTENT_TYPE, TEXT_PLAIN));
 
-        InputStream logFileStream = client.getLogFile(17, RestLogFileHandle.builder()
+        InputStream logFileStream = client.getLogFile(Id.of("17"), RestLogFileHandle.builder()
                 .agentId("test-agent")
                 .fileName(logFileName)
                 .fileSize(4711)
@@ -209,7 +210,7 @@ public class DigdagClientTest
         mockWebServer.setDispatcher(dispatcher);
 
         try {
-            client.getLogFile(17, RestLogFileHandle.builder()
+            client.getLogFile(Id.of("17"), RestLogFileHandle.builder()
                     .agentId("test-agent")
                     .fileName("test-task-1.log")
                     .fileSize(4711)
