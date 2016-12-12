@@ -1067,9 +1067,12 @@ td.last_results is a map of column name and a value. To access to a single value
 <span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">drop_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
-<span class="l l-Scalar l-Scalar-Plain">+step2</span><span class="p p-Indicator">:</span>
+<span class="l l-Scalar l-Scalar-Plain">+step3</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">empty_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">]</span>
+<span class="l l-Scalar l-Scalar-Plain">+step4</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">td_ddl&gt;</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">rename_tables</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[{</span><span class="nv">from</span><span class="p p-Indicator">:</span> <span class="s">&quot;my_table_${session_date_compact}&quot;</span><span class="p p-Indicator">,</span> <span class="nv">to</span><span class="p p-Indicator">:</span> <span class="s">&quot;my_table&quot;</span><span class="p p-Indicator">}]</span>
 </pre></div>
 </div>
 <div class="section" id="id15">
@@ -1098,6 +1101,12 @@ td.last_results is a map of column name and a value. To access to a single value
 <dd><p class="first">Drop tables if exists.</p>
 <ul class="last simple">
 <li><strong class="command">drop_tables: [my_table1, my_table2]</strong></li>
+</ul>
+</dd>
+<dt><strong class="command">rename_tables: [ARRAY OF {to:, from:}]</strong></dt>
+<dd><p class="first">Rename a table to another name (override the destination table if it already exists).</p>
+<ul class="last simple">
+<li><strong class="command">rename_tables: [{from: my_table1, to: my_table2}]</strong></li>
 </ul>
 </dd>
 <dt><strong class="command">create_databases: [ARRAY OF NAMES]</strong></dt>
