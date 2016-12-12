@@ -1,13 +1,11 @@
-package io.digdag.client.api;
+package io.digdag.core.database;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableIdName.class)
 @JsonDeserialize(as = ImmutableIdName.class)
-public interface IdName
+interface IdName
 {
     int getId();
 

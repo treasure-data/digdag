@@ -1,26 +1,25 @@
 package io.digdag.client.api;
 
-import java.util.List;
-import java.time.Instant;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
-import org.immutables.value.Value;
 import io.digdag.client.config.Config;
+import java.time.Instant;
+import java.util.List;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Enclosing
-@JsonSerialize(as = ImmutableRestSessionAttemptRequest.class)
 @JsonDeserialize(as = ImmutableRestSessionAttemptRequest.class)
 public interface RestSessionAttemptRequest
 {
-    long getWorkflowId();
+    Id getWorkflowId();
 
     Instant getSessionTime();
 
@@ -73,7 +72,7 @@ public interface RestSessionAttemptRequest
     interface Resume
     {
         @JsonProperty("attemptId")
-        public long getAttemptId();
+        public Id getAttemptId();
 
         @JsonProperty("mode")
         public Mode getMode();
@@ -94,7 +93,7 @@ public interface RestSessionAttemptRequest
         @JsonProperty("from")
         String getFromTaskNamePattern();
 
-        static ResumeFrom of(long attemptId, String fromTaskNamePattern)
+        static ResumeFrom of(Id attemptId, String fromTaskNamePattern)
         {
             return builder()
                 .attemptId(attemptId)
@@ -120,7 +119,7 @@ public interface RestSessionAttemptRequest
             return Mode.FAILED;
         }
 
-        static ResumeFailed of(long attemptId)
+        static ResumeFailed of(Id attemptId)
         {
             return builder()
                 .attemptId(attemptId)

@@ -1176,7 +1176,7 @@ The **s3_wait>:** operator waits for file to appear in Amazon S3.
 Secrets
 ~~~~~~~
 
-:command:`aws.s3.access_key_id, aws.access-key-id`
+:command:`aws.s3.access_key_id, aws.access_key_id`
   The AWS Access Key ID to use when accessing S3.
 
 :command:`aws.s3.secret_access_key, aws.secret_access_key`
@@ -1188,13 +1188,13 @@ Secrets
 :command:`aws.s3.endpoint`
   An optional explicit API endpoint to use when accessing S3. This overrides the `region` secret.
 
-:command:`aws.s3.sse-c-key`
+:command:`aws.s3.sse_c_key`
   An optional Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
 
-:command:`aws.s3.sse-c-key-algorithm`
+:command:`aws.s3.sse_c_key_algorithm`
   An optional Customer-Provided Server-Side Encryption (SSE-C) key algorithm to use when accessing S3.
 
-:command:`aws.s3.sse-c-key-md5`
+:command:`aws.s3.sse_c_key_md5`
   An optional MD5 digest of the Customer-Provided Server-Side Encryption (SSE-C) key to use when accessing S3. Must be Base64 encoded.
 
 For more information about SSE-C, See the `AWS S3 Documentation <http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html>`_.

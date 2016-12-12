@@ -3,6 +3,7 @@ package acceptance;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.spi.Notification;
@@ -113,7 +114,7 @@ public class ExecutionTimeoutIT
 
         addWorkflow(projectDir, "acceptance/attempt_timeout/attempt_timeout.dig", WORKFLOW_NAME + ".dig");
         pushProject(server.endpoint(), projectDir, PROJECT_NAME);
-        long attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
+        Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
         // Expect the attempt to get canceled
         expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
@@ -140,7 +141,7 @@ public class ExecutionTimeoutIT
 
         addWorkflow(projectDir, "acceptance/attempt_timeout/task_timeout.dig", WORKFLOW_NAME + ".dig");
         pushProject(server.endpoint(), projectDir, PROJECT_NAME);
-        long attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
+        Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
 
         // Expect the attempt to get canceled when the task times out
@@ -156,7 +157,7 @@ public class ExecutionTimeoutIT
         assertThat(attempt.getCancelRequested(), is(true));
     }
 
-    private void expectNotification(long attemptId, Duration duration, Predicate<String> messageMatcher)
+    private void expectNotification(Id attemptId, Duration duration, Predicate<String> messageMatcher)
             throws InterruptedException, IOException
     {
         RecordedRequest recordedRequest = notificationServer.takeRequest(duration.getSeconds(), TimeUnit.SECONDS);
@@ -164,13 +165,13 @@ public class ExecutionTimeoutIT
         verifyNotification(attemptId, recordedRequest, messageMatcher);
     }
 
-    private void verifyNotification(long attemptId, RecordedRequest recordedRequest, Predicate<String> messageMatcher)
+    private void verifyNotification(Id attemptId, RecordedRequest recordedRequest, Predicate<String> messageMatcher)
             throws IOException
     {
         String notificationJson = recordedRequest.getBody().readUtf8();
         Notification notification = mapper.readValue(notificationJson, Notification.class);
         assertThat(notification.getMessage(), messageMatcher.test(notification.getMessage()), is(true));
-        assertThat(notification.getAttemptId().get(), is(attemptId));
+        assertThat(Id.of(Long.toString(notification.getAttemptId().get())), is(attemptId));
         assertThat(notification.getWorkflowName().get(), is(WORKFLOW_NAME));
         assertThat(notification.getProjectName().get(), is(PROJECT_NAME));
     }

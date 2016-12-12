@@ -97,16 +97,14 @@ public class WorkflowResource
 
     @GET
     @Path("/api/workflows")
-    public List<RestWorkflowDefinition> getWorkflowDefinitions(
+    public RestWorkflowDefinitionCollection getWorkflowDefinitions(
             @QueryParam("last_id") Long lastId)
         throws ResourceNotFoundException
     {
         List<StoredWorkflowDefinitionWithProject> defs =
             rm.getProjectStore(getSiteId())
             .getLatestActiveWorkflowDefinitions(100, Optional.fromNullable(lastId));
-        return defs.stream()
-            .map(def -> RestModels.workflowDefinition(def))
-            .collect(Collectors.toList());
+        return RestModels.workflowDefinitionCollection(defs);
     }
 
     @GET

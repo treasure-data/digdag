@@ -18,33 +18,41 @@ export type LogFileHandle = {
   direct: ?string;
 }
 
+export type LogFileHandleCollection = {
+  files: Array<LogFileHandle>;
+}
+
 export type TarEntry = {
   name: string;
   buffer: ArrayBuffer;
 }
 
 export type IdName = {
-  id: number;
+  id: string;
   name: string;
 }
 
 export type NameOptionalId = {
   name: string;
-  id: ?number;
+  id: ?string;
 };
 
 export type UUID = string;
 
 export type Workflow = {
-  id: number;
+  id: string;
   name: string;
   project: IdName;
   revision: string;
   config: Object;
 };
 
+export type WorkflowCollection = {
+  workflows: Array<Workflow>;
+}
+
 export type Project = {
-  id: number;
+  id: string;
   name: string;
   revision: string;
   createdAt: string;
@@ -53,12 +61,16 @@ export type Project = {
   archiveMd5: string;
 }
 
+export type ProjectCollection = {
+  projects: Array<Project>;
+}
+
 export type Task = {
-  id: number;
+  id: string;
   fullName: string;
-  parentId: ?number;
+  parentId: ?string;
   config: Object;
-  upstreams: Array<number>;
+  upstreams: Array<string>;
   isGroup: boolean;
   state: string;
   exportParams: Object;
@@ -68,11 +80,15 @@ export type Task = {
   retryAt: ?string;
 };
 
+export type TaskCollection = {
+  tasks: Array<Task>;
+}
+
 export type Attempt = {
-  id: number;
+  id: string;
   project: IdName;
   workflow: NameOptionalId;
-  sessionId: number;
+  sessionId: string;
   sessionUuid: UUID;
   sessionTime: string;
   retryAttemptName: ?string;
@@ -84,14 +100,18 @@ export type Attempt = {
   finishedAt: string;
 };
 
+export type AttemptCollection = {
+  attempts: Array<Attempt>;
+}
+
 export type Session = {
-  id: number;
+  id: string;
   project: IdName;
   workflow: NameOptionalId;
   sessionUuid: UUID;
   sessionTime: string;
   lastAttempt: ?{
-    id: number;
+    id: string;
     retryAttemptName: ?string;
     done: boolean;
     success: boolean;
@@ -101,6 +121,28 @@ export type Session = {
     finishedAt: string;
   };
 };
+
+export type IdAndName = {
+  id: string;
+  name: string;
+}
+
+export type Schedule = {
+  id: string;
+  project: IdAndName;
+  workflow: IdAndName;
+  nextRunTime: string;
+  nextScheduleTime: string;
+  disabledAt: ?string;
+}
+
+export type ScheduleCollection = {
+  schedules: Array<Schedule>;
+}
+
+export type SessionCollection = {
+  sessions: Array<Session>;
+}
 
 export class ProjectArchive {
   files: Array<TarEntry>;
@@ -169,19 +211,19 @@ export class Model {
     this.queriesCache = LRU({ max: 10000 })
   }
 
-  fetchProjects (): Promise<Array<Project>> {
+  fetchProjects (): Promise<ProjectCollection> {
     return this.get(`projects/`)
   }
 
-  fetchWorkflows (): Promise<Array<Project>> {
+  fetchWorkflows (): Promise<WorkflowCollection> {
     return this.get(`workflows/`)
   }
 
-  fetchProject (projectId: number): Promise<Project> {
+  fetchProject (projectId: string): Promise<Project> {
     return this.get(`projects/${projectId}`)
   }
 
-  fetchWorkflow (workflowId: number): Promise<Workflow> {
+  fetchWorkflow (workflowId: string): Promise<Workflow> {
     const id = workflowId.toString()
     let workflow = this.workflowCache.get(id)
     if (workflow) {
@@ -196,70 +238,70 @@ export class Model {
     return workflow
   }
 
-  fetchProjectWorkflows (projectId: number): Promise<Array<Workflow>> {
+  fetchProjectWorkflows (projectId: string): Promise<WorkflowCollection> {
     return this.get(`projects/${projectId}/workflows`)
   }
 
-  fetchProjectWorkflow (projectId: number, workflowName: string): Promise<Workflow> {
+  fetchProjectWorkflow (projectId: string, workflowName: string): Promise<Workflow> {
     return this.get(`projects/${projectId}/workflows/${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectWorkflowAttempts (projectName: string, workflowName: string): Promise<Array<Attempt>> {
+  fetchProjectWorkflowAttempts (projectName: string, workflowName: string): Promise<AttemptCollection> {
     return this.get(`attempts?project=${encodeURIComponent(projectName)}&workflow=${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectWorkflowSessions (projectId: number, workflowName: string): Promise<Array<Session>> {
+  fetchProjectWorkflowSessions (projectId: string, workflowName: string): Promise<SessionCollection> {
     return this.get(`projects/${projectId}/sessions?workflow=${encodeURIComponent(workflowName)}`)
   }
 
-  fetchProjectSessions (projectId: number): Promise<Array<Session>> {
+  fetchProjectSessions (projectId: string): Promise<SessionCollection> {
     return this.get(`projects/${projectId}/sessions`)
   }
 
-  fetchProjectAttempts (projectName: string): Promise<Array<Attempt>> {
+  fetchProjectAttempts (projectName: string): Promise<AttemptCollection> {
     return this.get(`attempts?project=${encodeURIComponent(projectName)}`)
   }
 
-  fetchAttempts (): Promise<Array<Attempt>> {
+  fetchAttempts (): Promise<AttemptCollection> {
     return this.get(`attempts`)
   }
 
-  fetchSessions (): Promise<Array<Session>> {
+  fetchSessions (): Promise<SessionCollection> {
     return this.get(`sessions`)
   }
 
-  fetchAttempt (attemptId: number): Promise<Attempt> {
+  fetchAttempt (attemptId: string): Promise<Attempt> {
     return this.get(`attempts/${attemptId}`)
   }
 
-  fetchSession (sessionId: number): Promise<Session> {
+  fetchSession (sessionId: string): Promise<Session> {
     return this.get(`sessions/${sessionId}`)
   }
 
-  fetchSessionAttempts (sessionId: number): Promise<Array<Attempt>> {
+  fetchSessionAttempts (sessionId: string): Promise<AttemptCollection> {
     return this.get(`sessions/${sessionId}/attempts?include_retried=true`)
   }
 
-  fetchAttemptTasks (attemptId: number): Promise<Array<Task>> {
+  fetchAttemptTasks (attemptId: string): Promise<TaskCollection> {
     return this.get(`attempts/${attemptId}/tasks`)
   }
 
-  fetchAttemptLogFileHandles (attemptId: number): Promise<Array<LogFileHandle>> {
+  fetchAttemptLogFileHandles (attemptId: string): Promise<LogFileHandleCollection> {
     return this.get(`logs/${attemptId}/files`)
   }
 
-  fetchAttemptTaskLogFileHandles (attemptId: number, taskName: string): Promise<Array<LogFileHandle>> {
+  fetchAttemptTaskLogFileHandles (attemptId: string, taskName: string): Promise<LogFileHandleCollection> {
     return this.get(`logs/${attemptId}/files?task=${encodeURIComponent(taskName)}`)
   }
 
-  fetchLogFile (attemptId: number, file: LogFileHandle) {
+  fetchLogFile (attemptId: string, file: LogFileHandle) {
     if (!file.direct) {
       return this.fetchArrayBuffer(`${this.config.url}logs/${attemptId}/files/${file.fileName}`)
     }
     return this.fetchArrayBuffer(file.direct)
   }
 
-  fetchProjectArchiveLatest (projectId: number): Promise<ProjectArchive> {
+  fetchProjectArchiveLatest (projectId: string): Promise<ProjectArchive> {
     return fetch(this.config.url + `projects/${projectId}/archive`, {
       credentials: 'include',
       headers: this.headers()
@@ -275,7 +317,7 @@ export class Model {
     })
   }
 
-  fetchProjectArchiveWithRevision (projectId: number, revisionName: string): Promise<ProjectArchive> {
+  fetchProjectArchiveWithRevision (projectId: string, revisionName: string): Promise<ProjectArchive> {
     return fetch(this.config.url + `projects/${projectId}/archive?revision=${encodeURIComponent(revisionName)}`, {
       credentials: 'include',
       headers: this.headers()
@@ -314,15 +356,15 @@ export class Model {
     )
   }
 
-  fetchProjectWorkflowSchedule (projectId: number, workflowName: string): Promise<*> {
+  fetchProjectWorkflowSchedule (projectId: string, workflowName: string): Promise<ScheduleCollection> {
     return this.get(`projects/${projectId}/schedules?workflow=${workflowName}`)
   }
 
-  enableSchedule (scheduleId: number) : Promise<*> {
+  enableSchedule (scheduleId: string) : Promise<*> {
     return this.post(`schedules/${scheduleId}/enable`)
   }
 
-  disableSchedule (scheduleId: number) : Promise<*> {
+  disableSchedule (scheduleId: string) : Promise<*> {
     return this.post(`schedules/${scheduleId}/disable`)
   }
 

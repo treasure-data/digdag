@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -16,7 +17,7 @@ public class ShowAttempt
     {
         switch (args.size()) {
             case 1:
-                long attemptId = parseLongOrUsage(args.get(0));
+                Id attemptId = parseAttemptIdOrUsage(args.get(0));
                 showSessionAttempt(attemptId);
                 break;
             default:
@@ -24,7 +25,7 @@ public class ShowAttempt
         }
     }
 
-    private void showSessionAttempt(long attemptId) throws Exception {
+    private void showSessionAttempt(Id attemptId) throws Exception {
         DigdagClient client = buildClient();
 
         RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
@@ -53,8 +54,8 @@ public class ShowAttempt
         else {
             status = "running";
         }
-        ln("  session id: %d", attempt.getSessionId());
-        ln("  attempt id: %d", attempt.getId());
+        ln("  session id: %s", attempt.getSessionId());
+        ln("  attempt id: %s", attempt.getId());
         ln("  uuid: %s", attempt.getSessionUuid());
         ln("  project: %s", attempt.getProject().getName());
         ln("  workflow: %s", attempt.getWorkflow().getName());

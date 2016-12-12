@@ -1,7 +1,6 @@
 package io.digdag.client.api;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
@@ -9,7 +8,6 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-@JsonSerialize(as = ImmutableRestSetSecretRequest.class)
 @JsonDeserialize(as = ImmutableRestSetSecretRequest.class)
 public interface RestSetSecretRequest
 {

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.google.common.io.CharStreams;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSecretList;
 
@@ -67,7 +68,7 @@ public class Secrets
         }
     }
 
-    private void deleteProjectSecrets(DigdagClient client, int projectId, List<String> delete)
+    private void deleteProjectSecrets(DigdagClient client, Id projectId, List<String> delete)
             throws SystemExitException
     {
         Map<String, Boolean> deleteSecrets = new LinkedHashMap<>();
@@ -94,7 +95,7 @@ public class Secrets
         }
     }
 
-    private void setProjectSecrets(DigdagClient client, int projectId, List<String> set)
+    private void setProjectSecrets(DigdagClient client, Id projectId, List<String> set)
             throws Exception
     {
         Map<String, String> setSecrets = new LinkedHashMap<>();
@@ -220,7 +221,7 @@ public class Secrets
         }
     }
 
-    private void listProjectSecrets(DigdagClient client, int projectId)
+    private void listProjectSecrets(DigdagClient client, Id projectId)
     {
         RestSecretList secretList = client.listProjectSecrets(projectId);
         secretList.secrets().forEach(s -> out.println(s.key()));

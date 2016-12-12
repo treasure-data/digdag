@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.DigdagClient;
+import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSessionAttempt;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
@@ -123,7 +124,7 @@ public class S3WaitIT
         createProject(projectDir);
         addWorkflow(projectDir, "acceptance/s3/s3_wait.dig");
 
-        int projectId = TestUtils.pushProject(server.endpoint(), projectDir);
+        Id projectId = TestUtils.pushProject(server.endpoint(), projectDir);
 
         // Configure AWS credentials
         client.setProjectSecret(projectId, "aws.s3.access_key_id", TEST_S3_ACCESS_KEY_ID);
@@ -132,7 +133,7 @@ public class S3WaitIT
 
         // Start workflow
         String projectName = projectDir.getFileName().toString();
-        long attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait", ImmutableMap.of(
+        Id attemptId = startWorkflow(server.endpoint(), projectName, "s3_wait", ImmutableMap.of(
                 "path", bucket + "/" + key,
                 "outfile", outfile.toString()
         ));

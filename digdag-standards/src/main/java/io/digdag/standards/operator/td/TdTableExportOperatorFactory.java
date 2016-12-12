@@ -54,7 +54,7 @@ public class TdTableExportOperatorFactory
             .build()
             .withExtraSecretAccessList(
                     ConfigSelector.builderOfScope("aws")
-                    .addSecretOnlyAccess("access-key-id", "secret-access-key", "s3.access-key-id", "s3.secret-access-key")
+                    .addSecretOnlyAccess("access_key_id", "secret_access_key", "s3.access_key_id", "s3.secret_access_key")
                     .build()
             );
     }
