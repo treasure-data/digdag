@@ -313,7 +313,6 @@ public class OperatorManager
 
         PrivilegedVariables privilegedVariables = GrantedPrivilegedVariables.build(
                 mergedRequest.getLocalConfig().getNestedOrGetEmpty("_env"),
-                mergedRequest.getConfig(),
                 GrantedPrivilegedVariables.privilegedSecretProvider(secretContext, secretAccessPolicy, secretStore));
 
         OperatorContext context = new DefaultOperatorContext(

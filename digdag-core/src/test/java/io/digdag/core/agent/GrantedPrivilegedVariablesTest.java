@@ -27,74 +27,59 @@ public class GrantedPrivilegedVariablesTest
     public void testExistance()
     {
         Config grants = newConfig()
-            .set("params_exists", "param1")
-            .set("params_not_exists", "param2")
-            .set("shared_secret_exists", "shared1")
-            .set("shared_secret_not_exists", "shared2")
-            .set("only_secret_exists", newConfig().set("secret", "only1"))
-            .set("only_secret_not_exists", newConfig().set("secret", "only2"));
-
-        Config params = newConfig()
-            .set("param1", "param1-value");
+            .set("simple", "${secret:secret1}")
+            .set("concat", "${secret:secret1}-${secret:secret1}")
+            .set("no_secret", "${secret:no_such_secret}")
+            ;
 
         Config secrets = newConfig()
-            .set("shared1", "shared1-value")
-            .set("only1", "only1-value");
+            .set("secret1", "secv")
+            ;
 
         PrivilegedVariables vars = GrantedPrivilegedVariables.build(
-                grants, params, (key) -> secrets.getOptional(key, String.class));
+                grants, (key) -> secrets.getOptional(key, String.class));
 
         assertThat(vars.getKeys(),
-                is(asList("params_exists", "params_not_exists", "shared_secret_exists", "shared_secret_not_exists", "only_secret_exists", "only_secret_not_exists")));
+                is(asList("simple", "concat", "no_secret")));
 
-        assertThat(vars.getOptional("params_exists"), is(Optional.of("param1-value")));
-        assertThat(vars.getOptional("params_not_exists"), is(Optional.absent()));
-        assertThat(vars.getOptional("shared_secret_exists"), is(Optional.of("shared1-value")));
-        assertThat(vars.getOptional("shared_secret_not_exists"), is(Optional.absent()));
-        assertThat(vars.getOptional("only_secret_exists"), is(Optional.of("only1-value")));
-        assertThat(vars.getOptional("only_secret_not_exists"), is(Optional.absent()));
-        assertThat(vars.getOptional("no_such_key"), is(Optional.absent()));
+        assertThat(vars.get("simple"), is("secv"));
+        assertThat(vars.get("concat"), is("secv-secv"));
+        assertThat(vars.getOptional("simple"), is(Optional.of("secv")));
+        assertThat(vars.getOptional("concat"), is(Optional.of("secv-secv")));
 
-        assertThat(vars.get("params_exists"), is("param1-value"));
-        assertException(() -> vars.get("params_not_exists"), ConfigException.class, "param2");
-        assertThat(vars.get("shared_secret_exists"), is("shared1-value"));
-        assertException(() -> vars.get("shared_secret_not_exists"), ConfigException.class, "shared2");
-        assertThat(vars.get("only_secret_exists"), is("only1-value"));
-        assertException(() -> vars.get("only_secret_not_exists"), SecretNotFoundException.class, "only2");
-        assertNull(vars.get("no_such_key"));
+        assertException(() -> vars.get("no_secret"), SecretNotFoundException.class, "no_such_secret");
+        assertException(() -> vars.getOptional("no_secret"), SecretNotFoundException.class, "no_such_secret");
+
+        assertException(() -> vars.get("not_exists"), ConfigException.class, "not_exists");
+        assertThat(vars.getOptional("not_exists"), is(Optional.absent()));
     }
 
     @Test
     public void testNested()
     {
         Config grants = newConfig()
-            .set("exists", "nest.param1")
-            .set("key_not_exists", "nest.param2")
-            .set("nest_not_exists", "no.param3")
-            .set("secret_shared_exists", "nest.shared1")
-            .set("secret_only_exists", "nest.only1");
-
-        Config params = newConfig()
-            .set("nest", newConfig().set("param1", "param1-value"));
+            .set("simple", "${secret:nested.secret1}")
+            .set("concat", "${secret:nested.secret1}-${secret:nested.secret1}")
+            .set("no_secret", "${secret:nested.no_such_secret}")
+            ;
 
         Config secrets = newConfig()
-            .set("nest.shared1", "shared1-value")
-            .set("nest.only1", "only1-value");
+            .set("nested.secret1", "secv")
+            ;
 
         PrivilegedVariables vars = GrantedPrivilegedVariables.build(
-                grants, params, (key) -> secrets.getOptional(key, String.class));
+                grants, (key) -> secrets.getOptional(key, String.class));
 
-        assertThat(vars.getOptional("exists"), is(Optional.of("param1-value")));
-        assertThat(vars.getOptional("key_not_exists"), is(Optional.absent()));
-        assertThat(vars.getOptional("nest_not_exists"), is(Optional.absent()));
-        assertThat(vars.getOptional("secret_shared_exists"), is(Optional.of("shared1-value")));
-        assertThat(vars.getOptional("secret_only_exists"), is(Optional.of("only1-value")));
+        assertThat(vars.getKeys(),
+                is(asList("simple", "concat", "no_secret")));
 
-        assertThat(vars.get("exists"), is("param1-value"));
-        assertException(() -> vars.get("key_not_exists"), ConfigException.class, "nest.param2");
-        assertException(() -> vars.get("nest_not_exists"), ConfigException.class, "no.param3");
-        assertThat(vars.get("secret_shared_exists"), is("shared1-value"));
-        assertThat(vars.get("secret_only_exists"), is("only1-value"));
+        assertThat(vars.get("simple"), is("secv"));
+        assertThat(vars.get("concat"), is("secv-secv"));
+        assertThat(vars.getOptional("simple"), is(Optional.of("secv")));
+        assertThat(vars.getOptional("concat"), is(Optional.of("secv-secv")));
+
+        assertException(() -> vars.get("no_secret"), SecretNotFoundException.class, "nested.no_such_secret");
+        assertException(() -> vars.getOptional("no_secret"), SecretNotFoundException.class, "nested.no_such_secret");
     }
 
     private void assertException(Runnable func, Class<? extends Exception> expected, String message)
