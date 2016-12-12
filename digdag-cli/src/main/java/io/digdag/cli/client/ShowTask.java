@@ -1,6 +1,7 @@
 package io.digdag.cli.client;
 
 import io.digdag.cli.SystemExitException;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestTask;
@@ -38,6 +39,8 @@ public class ShowTask
             ln("   id: %s", task.getId());
             ln("   name: %s", task.getFullName());
             ln("   state: %s", task.getState());
+            ln("   started: %s", task.getStartedAt().transform(TimeUtil::formatTime).or(""));
+            ln("   updated: %s", TimeUtil.formatTime(task.getUpdatedAt()));
             ln("   config: %s", task.getConfig());
             ln("   parent: %s", task.getParentId().orNull());
             ln("   upstreams: %s", task.getUpstreams());
