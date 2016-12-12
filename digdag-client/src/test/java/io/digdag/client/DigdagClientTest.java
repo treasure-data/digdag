@@ -1,27 +1,24 @@
 package io.digdag.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestDirectDownloadHandle;
 import io.digdag.client.api.RestLogFileHandle;
+import io.digdag.client.api.RestLogFileHandleCollection;
 import okhttp3.internal.tls.SslClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.QueueDispatcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import javax.ws.rs.InternalServerErrorException;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
-import java.util.List;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -68,22 +65,23 @@ public class DigdagClientTest
     public void getLogFileHandlesOfAttempt()
             throws Exception
     {
-        List<RestLogFileHandle> expectedLogFileHandles = ImmutableList.of(
-                RestLogFileHandle.builder()
-                        .agentId("test-agent")
-                        .fileName("test-task-1.log")
-                        .fileSize(4711)
-                        .fileTime(Instant.now().truncatedTo(SECONDS))
-                        .taskName("test-task-1")
-                        .build(),
-                RestLogFileHandle.builder()
-                        .agentId("test-agent")
-                        .fileName("test-task-2.log")
-                        .fileSize(4712)
-                        .fileTime(Instant.now().truncatedTo(SECONDS))
-                        .taskName("test-task-2")
-                        .build()
-        );
+        RestLogFileHandleCollection expectedLogFileHandles = RestLogFileHandleCollection.builder()
+                .addFiles(
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-1.log")
+                                .fileSize(4711)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-1")
+                                .build(),
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-2.log")
+                                .fileSize(4712)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-2")
+                                .build()
+                ).build();
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
@@ -91,7 +89,7 @@ public class DigdagClientTest
                 .setBody(objectMapper.writeValueAsString(expectedLogFileHandles))
                 .setHeader(CONTENT_TYPE, APPLICATION_JSON));
 
-        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfAttempt(Id.of("17")).getFiles();
+        RestLogFileHandleCollection receivedLogFileHandles = client.getLogFileHandlesOfAttempt(Id.of("17"));
 
         assertThat(receivedLogFileHandles, is(expectedLogFileHandles));
 
@@ -104,22 +102,23 @@ public class DigdagClientTest
     public void getLogFileHandlesOfTask()
             throws Exception
     {
-        List<RestLogFileHandle> expectedLogFileHandles = ImmutableList.of(
-                RestLogFileHandle.builder()
-                        .agentId("test-agent")
-                        .fileName("test-task-1.log")
-                        .fileSize(4711)
-                        .fileTime(Instant.now().truncatedTo(SECONDS))
-                        .taskName("test-task-1")
-                        .build(),
-                RestLogFileHandle.builder()
-                        .agentId("test-agent")
-                        .fileName("test-task-2.log")
-                        .fileSize(4712)
-                        .fileTime(Instant.now().truncatedTo(SECONDS))
-                        .taskName("test-task-2")
-                        .build()
-        );
+        RestLogFileHandleCollection expectedLogFileHandles = RestLogFileHandleCollection.builder()
+                .addFiles(
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-1.log")
+                                .fileSize(4711)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-1")
+                                .build(),
+                        RestLogFileHandle.builder()
+                                .agentId("test-agent")
+                                .fileName("test-task-2.log")
+                                .fileSize(4712)
+                                .fileTime(Instant.now().truncatedTo(SECONDS))
+                                .taskName("test-task-2")
+                                .build()
+                ).build();
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
@@ -127,7 +126,7 @@ public class DigdagClientTest
                 .setBody(objectMapper.writeValueAsString(expectedLogFileHandles))
                 .setHeader(CONTENT_TYPE, APPLICATION_JSON));
 
-        List<RestLogFileHandle> receivedLogFileHandles = client.getLogFileHandlesOfTask(Id.of("17"), "test-task").getFiles();
+        RestLogFileHandleCollection receivedLogFileHandles = client.getLogFileHandlesOfTask(Id.of("17"), "test-task");
 
         assertThat(receivedLogFileHandles, is(expectedLogFileHandles));
 
