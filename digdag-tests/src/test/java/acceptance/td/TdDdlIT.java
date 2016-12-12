@@ -310,6 +310,16 @@ public class TdDdlIT
         assertThat(runStatus.errUtf8(), containsString("Renaming table " + database + ".rename_table_from doesn't exist"));
     }
 
+    @Test
+    public void testDdlFailIfSomeRenameFromNotExists()
+            throws IOException
+    {
+        addWorkflow(projectDir, "acceptance/td/td_ddl/rename_partial_exists.dig");
+        CommandStatus runStatus = runWorkflow("rename_partial_exists", "database=" + database);
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(not(0)));
+        assertThat(runStatus.errUtf8(), containsString("Renaming table " + database + ".rename_table_from_2 doesn't exist"));
+    }
+
     private CommandStatus runWorkflow(String workflow, String... params)
     {
         List<String> args = new ArrayList<>();
