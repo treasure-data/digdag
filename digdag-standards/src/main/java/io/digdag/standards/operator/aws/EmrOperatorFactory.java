@@ -225,7 +225,7 @@ public class EmrOperatorFactory
             boolean cleanup = false;
 
             try {
-                TaskResult result = run(tag, emr, s3, kms, filer);
+                TaskResult result = run(tag, emr, kms, filer);
                 cleanup = true;
                 return result;
             }
@@ -287,7 +287,7 @@ public class EmrOperatorFactory
                     assumeResult.getCredentials().getSessionToken());
         }
 
-        private TaskResult run(String tag, AmazonElasticMapReduce emr, AmazonS3Client s3, AWSKMSClient kms, Filer filer)
+        private TaskResult run(String tag, AmazonElasticMapReduce emr, AWSKMSClient kms, Filer filer)
                 throws IOException
         {
             ParameterCompiler parameterCompiler = new ParameterCompiler(kms, context, cf);
