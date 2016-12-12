@@ -50,6 +50,7 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -304,8 +305,9 @@ public class TdDdlIT
             throws IOException
     {
         addWorkflow(projectDir, "acceptance/td/td_ddl/rename_not_exists.dig");
-        CommandStatus runStatus = runWorkflow("rename_not_exists");
-        assertThat(runStatus.errUtf8(), runStatus.code(), not(0));
+        CommandStatus runStatus = runWorkflow("rename_not_exists", "database=" + database);
+        assertThat(runStatus.errUtf8(), runStatus.code(), is(not(0)));
+        assertThat(runStatus.errUtf8(), containsString("Renaming table " + database + ".rename_table_from doesn't exist"));
     }
 
     private CommandStatus runWorkflow(String workflow, String... params)
