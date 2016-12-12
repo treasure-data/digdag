@@ -1939,6 +1939,7 @@ public class DatabaseSessionStoreManager
                 .upstreams(getLongIdList(r, "upstream_ids"))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .retryAt(getOptionalTimestampInstant(r, "retry_at"))
+                .startedAt(getOptionalTimestampInstant(r, "started_at"))
                 .stateParams(cfm.fromResultSetOrEmpty(r, "state_params"))
                 .retryCount(r.getInt("retry_count"))
                 .attemptId(r.getLong("attempt_id"))

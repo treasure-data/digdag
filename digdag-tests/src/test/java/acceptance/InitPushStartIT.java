@@ -1,11 +1,15 @@
 package acceptance;
 
 import com.google.common.base.Optional;
+import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
+import io.digdag.client.api.RestTask;
+import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,19 +20,23 @@ import utils.TemporaryDigdagServer;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertThat;
 import static utils.TestUtils.copyResource;
 import static utils.TestUtils.getAttemptId;
 import static utils.TestUtils.getSessionId;
 import static utils.TestUtils.main;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
 
 public class InitPushStartIT
 {
@@ -59,6 +67,7 @@ public class InitPushStartIT
     public void initPushStart()
             throws Exception
     {
+
         // Create new project
         CommandStatus initStatus = main("init",
                 "-c", config.toString(),
@@ -95,11 +104,9 @@ public class InitPushStartIT
 
         assertThat(project.getName(), is("foobar"));
         assertThat(project.getRevision(), is("4711"));
-        long now = Instant.now().toEpochMilli();
-        long error = MINUTES.toMillis(1);
-        assertThat(project.getCreatedAt().toEpochMilli(), is(both(
-                greaterThan(now - error))
-                .and(lessThan(now + error))));
+        assertThat((double) project.getCreatedAt().toEpochMilli(), is(closeTo(Instant.now().toEpochMilli(), MINUTES.toMillis(1))));
+
+        Instant startTime = Instant.now();
 
         // Start the workflow
         Id sessionId;
@@ -240,6 +247,38 @@ public class InitPushStartIT
                 assertThat(done.getLastAttempt().get().getSuccess(), is(true));
                 assertThat(done.getLastAttempt().get().getFinishedAt().isPresent(), is(true));
             }
+        }
+
+        // Fetch tasks and check task execution times
+        {
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+
+            // Client
+            Map<String, RestTask> tasks = client.getTasks(attemptId)
+                    .getTasks().stream().collect(Collectors.toMap(RestTask::getFullName, t -> t));
+            assertThat(tasks, hasKey("+foobar"));
+            assertThat(tasks, hasKey("+foobar+foo"));
+            assertThat(tasks, hasKey("+foobar+bar"));
+            Instant fooStart = tasks.get("+foobar+foo").getStartedAt().get();
+            Instant fooEnd = tasks.get("+foobar+foo").getUpdatedAt();
+            Instant barStart = tasks.get("+foobar+bar").getStartedAt().get();
+            Instant barEnd = tasks.get("+foobar+bar").getUpdatedAt();
+            assertThat(fooStart, is(both(greaterThanOrEqualTo(startTime)).and(lessThanOrEqualTo(fooEnd))));
+            assertThat(fooEnd, is(both(greaterThanOrEqualTo(fooStart)).and(lessThanOrEqualTo(barStart))));
+            assertThat(barStart, is(both(greaterThanOrEqualTo(fooEnd)).and(lessThanOrEqualTo(barEnd))));
+            assertThat(barEnd, is(both(greaterThanOrEqualTo(barStart)).and(lessThanOrEqualTo(attempt.getFinishedAt().get()))));
+
+            // cli
+            CommandStatus tasksStatus = main("tasks",
+                    "-c", config.toString(),
+                    "-e", server.endpoint(),
+                    String.valueOf(attemptId));
+            String out = tasksStatus.outUtf8();
+            assertThat(StringUtils.countMatches(out, "state: success"), is(3));
+            assertThat(out, Matchers.containsString("started: " + TimeUtil.formatTime(fooStart)));
+            assertThat(out, Matchers.containsString("updated: " + TimeUtil.formatTime(fooEnd)));
+            assertThat(out, Matchers.containsString("started: " + TimeUtil.formatTime(barStart)));
+            assertThat(out, Matchers.containsString("updated: " + TimeUtil.formatTime(barEnd)));
         }
 
         // Verify that the success is reflected in the cli
