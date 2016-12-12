@@ -146,9 +146,7 @@ public class TdDdlOperatorFactory
                                 .retryUnless(TDOperator::isDeterministicClientException)
                                 .withRetryInterval(retryInterval)
                                 .withErrorMessage("Failed check existence of table %s.%s", database, from.getTable())
-                                .runOnce(boolean.class, s -> {
-                                    return op.withDatabase(database).tableExists(from.getTable());
-                                });
+                                .run(s -> op.withDatabase(database).tableExists(from.getTable()));
                         if (!exists) {
                             throw new ConfigException(String.format(ENGLISH,
                                         "Renaming table %s.%s doesn't exist", database, from.getTable()));
