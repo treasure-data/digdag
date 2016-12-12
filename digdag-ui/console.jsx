@@ -1197,6 +1197,7 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
           <th>Job</th>
           <th>Name</th>
           <th>Parent ID</th>
+          <th>Started</th>
           <th>Updated</th>
           <th>State</th>
           <th>Retry</th>
@@ -1212,6 +1213,7 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
               <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
               <td>{task.fullName}</td>
               <td>{task.parentId}</td>
+              <td>{formatTimestamp(task.startedAt)}</td>
               <td>{formatTimestamp(task.updatedAt)}</td>
               <td>{formatTaskState(task.state)}</td>
               <td>{formatTimestamp(task.retryAt)}</td>

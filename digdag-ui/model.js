@@ -78,6 +78,7 @@ export type Task = {
   stateParams: Object;
   updatedAt: string;
   retryAt: ?string;
+  startedAt: ?string;
 };
 
 export type TaskCollection = {
