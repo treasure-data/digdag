@@ -1,16 +1,20 @@
 package io.digdag.cli.client;
 
 import com.beust.jcommander.Parameter;
+import com.google.common.io.ByteStreams;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.core.archive.ProjectArchives.ExtractListener;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import javax.ws.rs.NotFoundException;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -67,19 +71,39 @@ public class Download
         final Path destDir = Paths.get(output);
         Files.createDirectories(destDir);
 
-        extractTarArchive(destDir, client.getProjectArchive(project.getId(), revision), new ExtractListener() {
-            @Override
-            public void file(Path file)
-            {
-                ln("  %s", destDir.resolve(file));
+        // create a local temp file in the destination dir
+        Path tempFile = Files.createTempFile(destDir, "digdag.archive-", ".tar.gz");
+        try {
+            // download the archive to the temp file
+            try (InputStream in = client.getProjectArchive(project.getId(), revision)) {
+                try (OutputStream out = Files.newOutputStream(tempFile)) {
+                    ByteStreams.copy(in, out);
+                }
+            }
+            catch (NotFoundException ex) {
+                throw systemExit("Project archive of revision '" + revision + "' does not exist.");
             }
 
-            @Override
-            public void symlink(Path file, String dest)
-            {
-                ln("  %s -> %s", destDir.resolve(file), dest);
+            // extract the temp file
+            try (InputStream in = Files.newInputStream(tempFile)) {
+                extractTarArchive(destDir, in, new ExtractListener() {
+                    @Override
+                    public void file(Path file)
+                    {
+                        ln("  %s", destDir.resolve(file));
+                    }
+
+                    @Override
+                    public void symlink(Path file, String dest)
+                    {
+                        ln("  %s -> %s", destDir.resolve(file), dest);
+                    }
+                });
             }
-        });
+        }
+        finally {
+            Files.delete(tempFile);
+        }
 
         ln("Extracted project '%s' revision '%s' to %s.", projName, revision, output);
     }
