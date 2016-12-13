@@ -21,10 +21,11 @@ spark = SparkSession\
     .appName("spark-sql")\
     .getOrCreate()
 
-print >> sys.stderr, 'Running query: %s' % (query_file, )
-result = spark.sql(query)
+try:
+    print >> sys.stderr, 'Running query: %s' % (query_file, )
+    result = spark.sql(query)
 
-print >> sys.stderr, 'Writing result: %s' % (result_uri, )
-result.write.csv(result_uri)
-
-spark.stop()
+    print >> sys.stderr, 'Writing result: %s' % (result_uri, )
+    result.write.csv(result_uri)
+finally:
+    spark.stop()
