@@ -11,7 +11,7 @@ dependencies {
 
 test {
     forkEvery = 1
-    maxParallelForks = 1
+    maxParallelForks = 2
     minHeapSize = "256m"
     maxHeapSize = "256m"
     environment "DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "false"
