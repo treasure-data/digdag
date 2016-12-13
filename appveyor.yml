@@ -10,9 +10,10 @@ build_script:
 
 cache:
   - C:\Users\appveyor\.gradle
+  - "%LOCALAPPDATA%/Yarn"
 
 environment:
-  NPM: C:\Program Files (x86)\nodejs\npm.cmd
+  YARN: C:\Program Files (x86)\Yarn\bin\yarn.cmd  # use "ps: Get-Command yarn" to know this path
   matrix:
   - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
   - JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
@@ -20,6 +21,6 @@ environment:
 install:
   - ps: Install-Product node '6.9.1'
   - node --version
-  - npm --version
+  - yarn --version
 
 test: off
