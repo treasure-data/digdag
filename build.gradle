@@ -322,6 +322,30 @@ project(':digdag-ui') {
     processResources.dependsOn('buildUi')
 }
 
+project(':digdag-ui') {
+    task buildUi {
+        inputs.file fileTree(dir: ".", include: ["*.js", "*.jsx", "config/*"])
+        outputs.dir "public"
+
+        doFirst {
+            exec {
+                commandLine System.env.NPM ?: "npm", "install"
+            }
+            exec {
+                commandLine System.env.NPM ?: "npm", "run", "build"
+                environment "SHA", "assets"
+            }
+        }
+    }
+
+    // include public/* in the jar file
+    processResources {
+        from '.'
+        include 'public/**/*'
+    }
+    processResources.dependsOn('buildUi')
+}
+
 project(':digdag-cli') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
