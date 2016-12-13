@@ -37,34 +37,19 @@ public class RuntimeParams
             // skip last_session_time
         }
 
-        // last_processed_session_*
+        // last_executed_session_*
         try {
-            // last_processed_session_time is set by AttemptBuilder
-            String sat = request.getConfig().get("last_processed_session_time", String.class, null);
+            // last_executed_session_time is set by AttemptBuilder
+            String sat = request.getConfig().get("last_executed_session_time", String.class, null);
             if (sat != null) {
                 Instant instant = Instant.from(TIME_FORMAT.parse(sat));
-                setTimeParameters(params, "last_processed_session_", timeZone, instant);
+                setTimeParameters(params, "last_executed_session_", timeZone, instant);
             } else {
-                setEmptyTimeParameters(params, "last_processed_session_", timeZone);
+                setEmptyTimeParameters(params, "last_executed_session_", timeZone);
             }
         }
         catch (ConfigException | DateTimeParseException ex) {
-            // skip last_processed_session_time
-        }
-
-        // first_unprocessed_session_*
-        try {
-            // first_unprocessed_session_time is set by AttemptBuilder
-            String sat = request.getConfig().get("first_unprocessed_session_time", String.class, null);
-            if (sat != null) {
-                Instant instant = Instant.from(TIME_FORMAT.parse(sat));
-                setTimeParameters(params, "first_unprocessed_session_", timeZone, instant);
-            } else {
-                setEmptyTimeParameters(params, "first_unprocessed_session_", timeZone);
-            }
-        }
-        catch (ConfigException | DateTimeParseException ex) {
-            // skip last_processed_session_time
+            // skip last_executed_session_time
         }
 
         // next_session_*

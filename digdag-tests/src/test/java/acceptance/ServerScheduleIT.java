@@ -387,7 +387,7 @@ public class ServerScheduleIT
                 "outfile", outfile.toPath().toAbsolutePath().toString()));
 
         TestUtils.expect(Duration.ofMinutes(1),
-                () -> Files.readAllLines(outfile.toPath()).size() >= 8);
+                () -> Files.readAllLines(outfile.toPath()).size() >= 6);
 
         List<String> lines = Files.readAllLines(outfile.toPath()).stream()
                 .limit(8)
@@ -397,18 +397,15 @@ public class ServerScheduleIT
         String lastUnixtime1 = lines.get(1).split(": ")[1];
 
         // These lines will be empty as there are no preceding processed / skipped sessions
-        assertThat(lines.get(2).trim(), is("last_processed_session_unixtime:"));
-        assertThat(lines.get(3).trim(), is("first_unprocessed_session_unixtime:"));
+        assertThat(lines.get(2).trim(), is("last_executed_session_unixtime:"));
 
-        String unixtime2 = lines.get(4).split(": ")[1];
-        String lastUnixtime2 = lines.get(5).split(": ")[1];
-        String lastProcessedUnixTime2 = lines.get(6).split(": ")[1];
-        String firstUnprocessedUnixTime2 = lines.get(7).split(": ")[1];
+        String unixtime2 = lines.get(3).split(": ")[1];
+        String lastUnixtime2 = lines.get(4).split(": ")[1];
+        String lastProcessedUnixTime2 = lines.get(5).split(": ")[1];
 
         long lastUnixtime1Epoch = Long.parseLong(lastUnixtime1);
         long lastUnixtime2Epoch = Long.parseLong(lastUnixtime2);
         long lastProcessedUnixTime2Epoch = Long.parseLong(lastProcessedUnixTime2);
-        long firstUnprocessedUnixTime2Epoch = Long.parseLong(firstUnprocessedUnixTime2);
         long unixtime1Epoch = Long.parseLong(unixtime1);
         long unixtime2Epoch = Long.parseLong(unixtime2);
 
@@ -416,7 +413,6 @@ public class ServerScheduleIT
         assertThat(lastUnixtime1Epoch, is(unixtime1Epoch - 2));
         assertThat(lastUnixtime2Epoch, is(unixtime2Epoch - 2));
         assertThat(unixtime2Epoch, Matchers.greaterThanOrEqualTo(unixtime1Epoch + 10));
-        assertThat(firstUnprocessedUnixTime2Epoch, is(unixtime1Epoch + 2));
 
         List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent()).getAttempts();
 
@@ -428,15 +424,10 @@ public class ServerScheduleIT
                 .filter(a -> a.getSessionTime().toEpochSecond() == unixtime2Epoch)
                 .findAny().get();
 
-        assertThat(attempt1.getParams().has("last_processed_session_time"), is(false));
-        assertThat(attempt1.getParams().has("first_unprocessed_session_time"), is(false));
+        assertThat(attempt1.getParams().has("last_executed_session_time"), is(false));
 
         assertThat(Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(attempt2.getParams()
-                        .get("last_processed_session_time", String.class))),
+                        .get("last_executed_session_time", String.class))),
                 is(Instant.ofEpochSecond(lastProcessedUnixTime2Epoch)));
-
-        assertThat(Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(attempt2.getParams()
-                        .get("first_unprocessed_session_time", String.class))),
-                is(Instant.ofEpochSecond(firstUnprocessedUnixTime2Epoch)));
     }
 }
