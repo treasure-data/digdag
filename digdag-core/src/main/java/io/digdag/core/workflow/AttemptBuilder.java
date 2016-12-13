@@ -50,7 +50,7 @@ public class AttemptBuilder
             List<Long> resumingTasks)
     {
         ZoneId timeZone = def.getTimeZone();
-        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone);
+        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(rev, def), time.getTime(), timeZone, Optional.absent());
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(rev, def))
             .workflowName(def.getName())
@@ -71,7 +71,7 @@ public class AttemptBuilder
     {
         return buildFromStoredWorkflow(
                 def, overrideParams, time,
-                Optional.absent(), Optional.absent(), ImmutableList.of());
+                Optional.absent(), Optional.absent(), ImmutableList.of(), Optional.absent());
     }
 
     public AttemptRequest buildFromStoredWorkflow(
@@ -80,10 +80,11 @@ public class AttemptBuilder
             ScheduleTime time,
             Optional<String> retryAttemptName,
             Optional<Long> resumingAttemptId,
-            List<Long> resumingTasks)
+            List<Long> resumingTasks,
+            Optional<Instant> lastSessionTime)
     {
         ZoneId timeZone = def.getTimeZone();
-        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone);
+        Config sessionParams = buildSessionParameters(overrideParams, schedulerManager.tryGetScheduler(def), time.getTime(), timeZone, lastSessionTime);
         return ImmutableAttemptRequest.builder()
             .stored(AttemptRequest.Stored.of(def))
             .workflowName(def.getName())
@@ -110,7 +111,7 @@ public class AttemptBuilder
         return monitors.build();
     }
 
-    private Config buildSessionParameters(Config overrideParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone)
+    private Config buildSessionParameters(Config overrideParams, Optional<Scheduler> sr, Instant sessionTime, ZoneId timeZone, Optional<Instant> lastExecutedSessionTime)
     {
         Config params = overrideParams.deepCopy();
         if (sr.isPresent()) {
@@ -118,6 +119,9 @@ public class AttemptBuilder
             Instant nextSessionTime = sr.get().nextScheduleTime(sessionTime).getTime();
             params.set("last_session_time", formatSessionTime(lastSessionTime, timeZone));
             params.set("next_session_time", formatSessionTime(nextSessionTime, timeZone));
+            if (lastExecutedSessionTime.isPresent()) {
+                params.set("last_executed_session_time", formatSessionTime(lastExecutedSessionTime.get(), timeZone));
+            }
         }
         return params;
     }

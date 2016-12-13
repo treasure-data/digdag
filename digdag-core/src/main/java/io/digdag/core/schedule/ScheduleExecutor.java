@@ -1,38 +1,41 @@
 package io.digdag.core.schedule;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Collections;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.time.Instant;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import com.google.inject.Inject;
-import com.google.common.base.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.digdag.core.ErrorReporter;
-import io.digdag.spi.ScheduleTime;
-import io.digdag.spi.Scheduler;
+import com.google.inject.Inject;
+import io.digdag.client.config.Config;
 import io.digdag.core.BackgroundExecutor;
+import io.digdag.core.ErrorReporter;
 import io.digdag.core.repository.ProjectStoreManager;
 import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceLimitExceededException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.repository.StoredWorkflowDefinitionWithProject;
-import io.digdag.core.workflow.AttemptLimitExceededException;
-import io.digdag.core.workflow.SessionAttemptConflictException;
-import io.digdag.core.session.Session;
 import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.ImmutableStoredSessionAttempt;
+import io.digdag.core.session.Session;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
-import io.digdag.core.session.ImmutableStoredSessionAttempt;
+import io.digdag.core.workflow.SessionAttemptConflictException;
+import io.digdag.spi.ScheduleTime;
+import io.digdag.spi.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Locale.ENGLISH;
 
 public class ScheduleExecutor
@@ -99,8 +102,14 @@ public class ScheduleExecutor
 
     public void run()
     {
+        run(Instant.now());
+    }
+
+    @VisibleForTesting
+    void run(Instant now)
+    {
         try {
-            sm.lockReadySchedules(Instant.now(), (store, storedSchedule) -> {
+            sm.lockReadySchedules(now, (store, storedSchedule) -> {
                 runSchedule(new ScheduleControl(store, storedSchedule));
             });
         }
@@ -123,21 +132,35 @@ public class ScheduleExecutor
 
         try {
             StoredWorkflowDefinitionWithProject def = rm.getWorkflowDetailsById(sched.getWorkflowDefinitionId());
+
+            SessionStore ss = sessionStoreManager.getSessionStore(def.getProject().getSiteId());
+            List<StoredSessionAttemptWithSession> activeAttempts = ss.getActiveAttemptsOfWorkflow(def.getId(), 1, Optional.absent());
+
             Scheduler sr = srm.getScheduler(def);
-            try {
-                nextSchedule = startSchedule(sched, sr, def);
-                successfulSessionTime = sched.getNextScheduleTime();
-            }
-            catch (ResourceLimitExceededException ex) {
-                logger.info("Number of attempts or tasks exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
-                nextSchedule = ScheduleTime.of(
-                        sched.getNextScheduleTime(),
-                        ScheduleTime.alignedNow().plusSeconds(600));
-            }
-            catch (ResourceConflictException ex) {
-                Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
-                logger.error("Database state error during scheduling. Skipping this schedule: {}", sched, error);
+
+            Config scheduleConfig = SchedulerManager.getScheduleConfig(def);
+            boolean skipOnOvertime = scheduleConfig.get("skip_on_overtime", boolean.class, false);
+
+            if (!activeAttempts.isEmpty() && skipOnOvertime) {
+                logger.info("An attempt of the scheduled workflow is still running and skip_on_overtime = true. Skipping this schedule: {}", sched);
                 nextSchedule = sr.nextScheduleTime(sched.getNextScheduleTime());
+            }
+            else {
+                try {
+                    nextSchedule = startSchedule(sched, sr, def);
+                    successfulSessionTime = sched.getNextScheduleTime();
+                }
+                catch (ResourceLimitExceededException ex) {
+                    logger.info("Number of attempts or tasks exceed limit. Pending this schedule for 10 minutes: {}", sched, ex);
+                    nextSchedule = ScheduleTime.of(
+                            sched.getNextScheduleTime(),
+                            ScheduleTime.alignedNow().plusSeconds(600));
+                }
+                catch (ResourceConflictException ex) {
+                    Exception error = new IllegalStateException("Detected duplicated excution of a scheduled workflow for the same scheduling time.", ex);
+                    logger.error("Database state error during scheduling. Skipping this schedule: {}", sched, error);
+                    nextSchedule = sr.nextScheduleTime(sched.getNextScheduleTime());
+                }
             }
         }
         catch (ResourceNotFoundException ex) {
@@ -176,7 +199,8 @@ public class ScheduleExecutor
         try {
             handler.start(def,
                     ScheduleTime.of(scheduleTime, runTime),
-                    Optional.absent());
+                    Optional.absent(),
+                    sched.getLastSessionTime());
         }
         catch (SessionAttemptConflictException ex) {
             logger.debug("Scheduled attempt {} is already executed. Skipping", ex.getConflictedSession());
@@ -335,7 +359,7 @@ public class ScheduleExecutor
                     try {
                         StoredSessionAttemptWithSession attempt = handler.start(def,
                                 ScheduleTime.of(instant, sched.getNextScheduleTime()),
-                                Optional.of(attemptName));
+                                Optional.of(attemptName), sched.getLastSessionTime());
                         attempts.add(attempt);
                         // TODO this may throw ResourceLimitExceededException. But some sessions are already committed. To be able to rollback everything, inserting all sessions needs to be in a single transaction.
                     }

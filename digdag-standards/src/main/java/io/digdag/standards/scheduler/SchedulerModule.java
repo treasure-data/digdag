@@ -24,6 +24,7 @@ public class SchedulerModule
         addStandardSchedulerFactory(binder, DailySchedulerFactory.class);
         addStandardSchedulerFactory(binder, HourlySchedulerFactory.class);
         addStandardSchedulerFactory(binder, MinutesIntervalSchedulerFactory.class);
+        addStandardSchedulerFactory(binder, SecondsIntervalSchedulerFactory.class);
     }
 
     protected void addStandardSchedulerFactory(Binder binder, Class<? extends SchedulerFactory> factory)

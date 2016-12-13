@@ -1,0 +1,19 @@
+timezone: UTC
+
+schedule:
+  seconds_interval>: 2
+  skip_on_overtime: true
+
++echo_session_unixtime:
+  sh>: "echo session_unixtime: ${session_unixtime} >> ${outfile}"
+
++echo_last_session_time:
+  sh>: "echo last_session_time: ${last_session_unixtime} >> ${outfile}"
+
++echo_last_executed_session_unixtime:
+  sh>: "echo last_executed_session_unixtime: ${last_executed_session_unixtime} >> ${outfile}"
+
++foo:
+  sh>: sleep 10
+
+

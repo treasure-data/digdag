@@ -1,11 +1,13 @@
 package acceptance;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSessionAttempt;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -19,11 +21,15 @@ import utils.TestUtils;
 
 import javax.ws.rs.NotFoundException;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -368,5 +374,60 @@ public class ServerScheduleIT
         exception.expectMessage(not(containsString("HTTP 404 Not Found")));
         exception.expect(NotFoundException.class);
         client.getSchedule(projectId, "hieizanenryakuzi");
+    }
+
+    @Test
+    public void testSkipOnOvertime()
+            throws Exception
+    {
+        File outfile = folder.newFile();
+        Files.createDirectories(projectDir);
+        addWorkflow(projectDir, "acceptance/schedule/skip_on_overtime.dig", "schedule.dig");
+        pushProject(server.endpoint(), projectDir, "schedule", ImmutableMap.of(
+                "outfile", outfile.toPath().toAbsolutePath().toString()));
+
+        TestUtils.expect(Duration.ofMinutes(1),
+                () -> Files.readAllLines(outfile.toPath()).size() >= 6);
+
+        List<String> lines = Files.readAllLines(outfile.toPath()).stream()
+                .limit(8)
+                .collect(Collectors.toList());
+
+        String unixtime1 = lines.get(0).split(": ")[1];
+        String lastUnixtime1 = lines.get(1).split(": ")[1];
+
+        // These lines will be empty as there are no preceding processed / skipped sessions
+        assertThat(lines.get(2).trim(), is("last_executed_session_unixtime:"));
+
+        String unixtime2 = lines.get(3).split(": ")[1];
+        String lastUnixtime2 = lines.get(4).split(": ")[1];
+        String lastProcessedUnixTime2 = lines.get(5).split(": ")[1];
+
+        long lastUnixtime1Epoch = Long.parseLong(lastUnixtime1);
+        long lastUnixtime2Epoch = Long.parseLong(lastUnixtime2);
+        long lastProcessedUnixTime2Epoch = Long.parseLong(lastProcessedUnixTime2);
+        long unixtime1Epoch = Long.parseLong(unixtime1);
+        long unixtime2Epoch = Long.parseLong(unixtime2);
+
+        assertThat(lastProcessedUnixTime2, is(unixtime1));
+        assertThat(lastUnixtime1Epoch, is(unixtime1Epoch - 2));
+        assertThat(lastUnixtime2Epoch, is(unixtime2Epoch - 2));
+        assertThat(unixtime2Epoch, Matchers.greaterThanOrEqualTo(unixtime1Epoch + 10));
+
+        List<RestSessionAttempt> attempts = client.getSessionAttempts(Optional.absent()).getAttempts();
+
+        RestSessionAttempt attempt1 = attempts.stream()
+                .filter(a -> a.getSessionTime().toEpochSecond() == unixtime1Epoch)
+                .findAny().get();
+
+        RestSessionAttempt attempt2 = attempts.stream()
+                .filter(a -> a.getSessionTime().toEpochSecond() == unixtime2Epoch)
+                .findAny().get();
+
+        assertThat(attempt1.getParams().has("last_executed_session_time"), is(false));
+
+        assertThat(Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(attempt2.getParams()
+                        .get("last_executed_session_time", String.class))),
+                is(Instant.ofEpochSecond(lastProcessedUnixTime2Epoch)));
     }
 }

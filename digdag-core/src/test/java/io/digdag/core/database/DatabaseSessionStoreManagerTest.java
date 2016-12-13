@@ -4,6 +4,7 @@ import java.util.*;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import org.hamcrest.Matchers;
 import org.junit.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -14,6 +15,8 @@ import io.digdag.core.workflow.*;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.client.config.ConfigFactory;
 import static io.digdag.core.database.DatabaseTestingUtils.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
@@ -246,6 +249,8 @@ public class DatabaseSessionStoreManagerTest
         assertThat(ImmutableList.of(session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
         assertThat(ImmutableList.of(session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
         assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
 
         // session + different session time
         AttemptRequest ar2 = attemptBuilder.buildFromStoredWorkflow(
@@ -261,6 +266,8 @@ public class DatabaseSessionStoreManagerTest
         assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
         assertThat(ImmutableList.of(session2, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
         assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt2));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
 
         // session + different retry attempt name
         String retryAttemptName = "attempt3";
@@ -281,6 +288,8 @@ public class DatabaseSessionStoreManagerTest
         assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfProject(proj.getId(), 100, Optional.absent())));
         assertThat(ImmutableList.of(session2AfterRetry, session1), is(store.getSessionsOfWorkflowByName(proj.getId(), wf1.getName(), 100, Optional.absent())));
         assertEmpty(store.getSessionsOfWorkflowByName(proj.getId(), wf2.getName(), 100, Optional.absent()));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf1.getId(), 100, Optional.absent()), containsInAnyOrder(attempt1, attempt3));
+        assertThat(store.getActiveAttemptsOfWorkflow(wf2.getId(), 100, Optional.absent()), is(Matchers.empty()));
 
         SessionStore anotherSite = manager.getSessionStore(1);
 

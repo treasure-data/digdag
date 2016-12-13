@@ -37,6 +37,21 @@ public class RuntimeParams
             // skip last_session_time
         }
 
+        // last_executed_session_*
+        try {
+            // last_executed_session_time is set by AttemptBuilder
+            String sat = request.getConfig().get("last_executed_session_time", String.class, null);
+            if (sat != null) {
+                Instant instant = Instant.from(TIME_FORMAT.parse(sat));
+                setTimeParameters(params, "last_executed_session_", timeZone, instant);
+            } else {
+                setEmptyTimeParameters(params, "last_executed_session_", timeZone);
+            }
+        }
+        catch (ConfigException | DateTimeParseException ex) {
+            // skip last_executed_session_time
+        }
+
         // next_session_*
         try {
             // next_session_time is set by AttemptBuilder
@@ -84,6 +99,17 @@ public class RuntimeParams
         //params.set(prefix + "local_time_compact", DATETIME_COMPACT_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "tz_offset", TZ_OFFSET_FORMAT.withZone(timeZone).format(instant));
         params.set(prefix + "unixtime", instant.getEpochSecond());
+    }
+
+    private static void setEmptyTimeParameters(Config params, String prefix, ZoneId timeZone)
+    {
+        params.set(prefix + "time", "");
+        params.set(prefix + "date", "");
+        params.set(prefix + "date_compact", "");
+        params.set(prefix + "local_time", "");
+        //params.set(prefix + "local_time_compact", ");
+        params.set(prefix + "tz_offset", TZ_OFFSET_FORMAT.withZone(timeZone).format(Instant.ofEpochSecond(0)));
+        params.set(prefix + "unixtime", "");
     }
 
     // also used by AttemptBuilder to set last_session_time and next_session_time
