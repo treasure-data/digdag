@@ -392,7 +392,20 @@ public class TDOperator
                 case HttpStatus.REQUEST_TIMEOUT_408:
                     return false;
                 default:
+                    // return true if 4xx
                     return statusCode >= 400 && statusCode < 500;
+            }
+        }
+        else if (ex instanceof TDClientException) {
+            // failed before sending HTTP request or receiving HTTP response
+            TDClientException.ErrorType errorType = ((TDClientException) ex).getErrorType();
+            switch (errorType) {
+                case INVALID_CONFIGURATION:  // failed to read td.conf, failed to pares integer in properties set to TDClientBuilder, etc.
+                case INVALID_INPUT:          // early table name validation fails, failed to format request body in json, etc.
+                    return true;
+                default:
+                    // other cases such as PROXY_AUTHENTICATION_FAILURE, SSL_ERROR, REQUEST_TIMEOUT, INTERRUPTED, etc.
+                    break;  // pass-through
             }
         }
         return false;

@@ -345,6 +345,26 @@ public class TDOperatorTest
     }
 
     @Test
+    public void verifyNoRetryInvalidTableName()
+            throws Exception
+    {
+        TDOperator operator = new TDOperator(client, "foobar");
+
+        String jobStateKey = "fooJob";
+
+        Config state = configFactory.create();
+
+        // Create domain key
+        runJobIteration(operator, state, jobStateKey, pollInterval, retryInterval, jobStarter);
+
+        // Start job: Fail with TDClientException with TDClientException.ErrorType.INVALID_INPUT
+        when(jobStarter.startJob(any(TDOperator.class), anyString()))
+                .thenThrow(new TDClientException(TDClientException.ErrorType.INVALID_INPUT, "Table name must follow this pattern ^([a-z0-9_]+)$: InsertIntoHere"));
+        exception.expect(TDClientException.class);
+        operator.runJob(TaskState.of(state), jobStateKey, pollInterval, retryInterval, jobStarter);
+    }
+
+    @Test
     public void testRunJobMigrateState()
             throws Exception
     {
