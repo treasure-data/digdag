@@ -399,7 +399,7 @@ task release() {
     dependsOn subprojects.publish
     dependsOn bintrayUpload
     doLast {
-        println("done.")
+        println "Released ${project.version}."
     }
 }
 check.dependsOn('releaseCheck')
