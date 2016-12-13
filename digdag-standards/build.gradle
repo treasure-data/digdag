@@ -29,20 +29,21 @@ dependencies {
     compile 'com.amazonaws:aws-java-sdk-emr:1.11.63'
 
     // bigquery
-    compile 'com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0'
+    compile ('com.google.apis:google-api-services-bigquery:v2-rev325-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
 
     // gcs
-    compile 'com.google.apis:google-api-services-storage:v1-rev88-1.22.0'
+    compile ('com.google.apis:google-api-services-storage:v1-rev88-1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
 
     // dependency conflict resolution
     compile 'joda-time:joda-time:2.9.4'
-    compile 'com.google.auth:google-auth-library-credentials:0.4.0'
-    compile 'com.google.auth:google-auth-library-oauth2-http:0.4.0'
-    compile 'com.google.http-client:google-http-client:1.22.0'
-    compile 'com.google.http-client:google-http-client-jackson2:1.22.0'
-    compile 'com.google.oauth-client:google-oauth-client:1.22.0'
+
+    compile ('com.google.auth:google-auth-library-credentials:0.4.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ('com.google.auth:google-auth-library-oauth2-http:0.4.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ('com.google.http-client:google-http-client:1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ('com.google.http-client:google-http-client-jackson2:1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+    compile ('com.google.oauth-client:google-oauth-client:1.22.0') { exclude group: 'com.google.guava', module: 'guava-jdk5' }
+
     compile 'com.google.code.findbugs:jsr305:3.0.1'
-    compile 'com.google.guava:guava-jdk5:17.0'
 
     // Newer version of jetty-client with some important bugfixes.
     // jetty-client is used by td-client-java, and ideally we would bump the version there but

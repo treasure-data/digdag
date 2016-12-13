@@ -2,8 +2,7 @@
 function template(code, variables)
 {
   var matcher = RegExp([
-    (/\$(?!\$){%([\s\S]+?)%}/g).source,
-    (/\$(?!\$){([\s\S]+?)}/g).source
+    (/\${(?![a-z]+:)([\s\S]+?)}/g).source  // exclude operator-defined templates such as ${secret:sec.ret.key}
   ].join('|') + '|$', 'g');
 
   var escapes = {
@@ -23,13 +22,11 @@ function template(code, variables)
 
   var index = 0;
   var source = "__p+='";
-  code.replace(matcher, function(match, statement, expression, offset) {
+  code.replace(matcher, function(match, expression, offset) {
     source += code.slice(index, offset).replace(/\$\$/g, "$").replace(escaper, escapeChar);
     index = offset + match.length;
 
-    if (statement) {
-      source += "';\n" + evaluate + "\n__p+='";
-    } else if (expression) {
+    if (expression) {
       source += "'+\n((__t=(" + expression + "))==null?'':(typeof __t==\"string\"?__t:JSON.stringify(__t)))+\n'";
     }
 

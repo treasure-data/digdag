@@ -706,9 +706,12 @@ td_ddl>: Treasure Data operations
     +step2:
       td_ddl>:
       drop_tables: ["my_table_${session_date_compact}"]
-    +step2:
+    +step3:
       td_ddl>:
       empty_tables: ["my_table_${session_date_compact}"]
+    +step4:
+      td_ddl>:
+      rename_tables: [{from: "my_table_${session_date_compact}", to: "my_table"}]
 
 Secrets
 ~~~~~~~
@@ -733,6 +736,11 @@ Parameters
   Drop tables if exists.
 
   * :command:`drop_tables: [my_table1, my_table2]`
+
+:command:`rename_tables: [ARRAY OF {to:, from:}]`
+  Rename a table to another name (override the destination table if it already exists).
+
+  * :command:`rename_tables: [{from: my_table1, to: my_table2}]`
 
 :command:`create_databases: [ARRAY OF NAMES]`
   Create new databases if not exists.
