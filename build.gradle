@@ -58,7 +58,7 @@ allprojects {
         }
 
         dryRun = false
-        publish = false  // TODO: once the first release worked well, this should be changed to true
+        publish = true
 
         pkg {
             userOrg = 'digdag'
