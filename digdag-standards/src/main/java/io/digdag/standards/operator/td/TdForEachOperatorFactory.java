@@ -156,7 +156,7 @@ public class TdForEachOperatorFactory
                                 rows.add(row(columnNames, ite.next().asArrayValue()));
                                 if (rows.size() > Limits.maxWorkflowTasks()) {
                                     TaskLimitExceededException cause = new TaskLimitExceededException("Too many tasks. Limit: " + Limits.maxWorkflowTasks());
-                                    throw new TaskExecutionException(cause, TaskExecutionException.buildExceptionErrorConfig(cause));
+                                    throw new TaskExecutionException(cause);
                                 }
                             }
                             return rows;

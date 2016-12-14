@@ -183,7 +183,7 @@ public class PollingRetryExecutor
 
             if (!retry(e)) {
                 logger.warn("{}: giving up", formattedErrorMessage, e);
-                throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                throw new TaskExecutionException(e);
             }
 
             int retryIteration = retryState.params().get(RETRY, int.class, 0);

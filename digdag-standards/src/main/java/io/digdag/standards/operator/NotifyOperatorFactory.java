@@ -76,7 +76,8 @@ public class NotifyOperatorFactory
                 notifier.sendNotification(notification);
             }
             catch (NotificationException e) {
-                throw new TaskExecutionException(e, ConfigElement.copyOf(params));
+                // notification failed
+                throw new TaskExecutionException(e);
             }
 
             return TaskResult.empty(request);

@@ -3,6 +3,7 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.treasuredata.client.TDClientException;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
@@ -33,6 +34,7 @@ import java.util.Map;
 
 import static io.digdag.standards.operator.state.PollingRetryExecutor.pollingRetryExecutor;
 import static io.digdag.standards.operator.td.BaseTdJobOperator.configSelectorBuilder;
+import static io.digdag.standards.operator.td.BaseTdJobOperator.propagateTDClientException;
 import static io.digdag.standards.operator.td.TDOperator.isDeterministicClientException;
 
 public class TdWaitTableOperatorFactory
@@ -148,6 +150,9 @@ public class TdWaitTableOperatorFactory
                 // The row count condition was fulfilled. We're done.
                 return TaskResult.empty(request);
             }
+            catch (TDClientException ex) {
+                throw propagateTDClientException(ex);
+            }
         }
 
         private boolean tableExists(TDOperator op)
@@ -172,11 +177,11 @@ public class TdWaitTableOperatorFactory
                                     : Optional.absent()));
 
             if (!firstRow.isPresent()) {
-                throw new TaskExecutionException("Got unexpected empty result for count job: " + job.getJobId(), ConfigElement.empty());
+                throw new TaskExecutionException("Got unexpected empty result for count job: " + job.getJobId());
             }
             ArrayValue row = firstRow.get();
             if (row.size() != 1) {
-                throw new TaskExecutionException("Got unexpected result row size for count job: " + row.size(), ConfigElement.empty());
+                throw new TaskExecutionException("Got unexpected result row size for count job: " + row.size());
             }
             Value count = row.get(0);
             IntegerValue actualRows;
@@ -184,7 +189,7 @@ public class TdWaitTableOperatorFactory
                 actualRows = count.asIntegerValue();
             }
             catch (MessageTypeCastException e) {
-                throw new TaskExecutionException("Got unexpected value type count job: " + count.getValueType(), ConfigElement.empty());
+                throw new TaskExecutionException("Got unexpected value type count job: " + count.getValueType());
             }
 
             return BigInteger.valueOf(rows).compareTo(actualRows.asBigInteger()) <= 0;

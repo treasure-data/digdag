@@ -356,7 +356,7 @@ public class TDOperator
                 throw errorPollingException(state, key, jobState, retryInterval);
             }
             String message = jobInfo.getCmdOut() + "\n" + jobInfo.getStdErr();
-            throw new TaskExecutionException(message, ConfigElement.empty());
+            throw new TaskExecutionException(message);
         }
 
         return job;

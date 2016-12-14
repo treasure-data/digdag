@@ -11,7 +11,6 @@ import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
 public abstract class BaseOperator
         implements Operator
@@ -52,8 +51,7 @@ public abstract class BaseOperator
 
             boolean doRetry = retry.evaluate();
             if (doRetry) {
-                throw new TaskExecutionException(ex,
-                        buildExceptionErrorConfig(ex),
+                throw TaskExecutionException.ofNextPollingWithCause(ex,
                         retry.getNextRetryInterval(),
                         ConfigElement.copyOf(retry.getNextRetryStateParams()));
             }

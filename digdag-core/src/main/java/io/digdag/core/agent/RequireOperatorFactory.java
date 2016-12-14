@@ -90,8 +90,7 @@ public class RequireOperatorFactory
                 throw new ConfigException(ex);
             }
             catch (ResourceLimitExceededException ex) {
-                throw new TaskExecutionException(ex,
-                        TaskExecutionException.buildExceptionErrorConfig(ex));
+                throw new TaskExecutionException(ex);
             }
         }
     }

@@ -38,7 +38,7 @@ abstract class BaseGcpOperator
         Optional<String> projectId = context.getSecrets().getSecretOptional("gcp.project")
                 .or(credential.projectId());
         if (!projectId.isPresent()) {
-            throw new TaskExecutionException("Missing 'gcp.project' secret", ConfigElement.empty());
+            throw new TaskExecutionException("Missing 'gcp.project' secret");
         }
 
         return projectId.get();

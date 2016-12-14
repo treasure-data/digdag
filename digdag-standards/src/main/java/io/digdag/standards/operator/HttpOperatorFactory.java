@@ -279,7 +279,7 @@ public class HttpOperatorFactory
                         return new RuntimeException("Failed HTTP request: " + requestStatus(req, res, uriIsSecret));
                     default:
                         // 4xx: The request is invalid for this resource. Fail hard without retrying.
-                        return new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret), ConfigElement.empty());
+                        return new TaskExecutionException("HTTP 4XX Client Error: " + requestStatus(req, res, uriIsSecret));
                 }
             }
             else if (res.getStatus() >= 500 && res.getStatus() < 600) {
@@ -301,7 +301,7 @@ public class HttpOperatorFactory
             }
             else {
                 // No, so fail hard.
-                return new TaskExecutionException(message, ConfigElement.empty());
+                return new TaskExecutionException(message);
             }
         }
 
@@ -366,7 +366,7 @@ public class HttpOperatorFactory
             if (storeContent) {
                 String content = response.getContentAsString();
                 if (content.length() > maxStoredResponseContentSize) {
-                    throw new TaskExecutionException("Response content too large: " + content.length() + " > " + maxStoredResponseContentSize, ConfigElement.empty());
+                    throw new TaskExecutionException("Response content too large: " + content.length() + " > " + maxStoredResponseContentSize);
                 }
                 http.set("last_content", content);
                 builder.addResetStoreParams(ConfigKey.of("http", "last_content"));
@@ -397,7 +397,7 @@ public class HttpOperatorFactory
                 httpClient.start();
             }
             catch (Exception e) {
-                throw new TaskExecutionException(e, TaskExecutionException.buildExceptionErrorConfig(e));
+                throw new TaskExecutionException(e);
             }
             return httpClient;
         }
