@@ -142,9 +142,9 @@ subprojects {
         }
 
         // Shard test classes over CI workers
-        if (System.env.CI_NODE_INDEX != null) {
-            def n = Integer.parseInt(System.env.CI_NODE_TOTAL)
-            def i = Integer.parseInt(System.env.CI_NODE_INDEX)
+        if (System.env.CI_NODE_INDEX) {
+            def n = System.env.CI_NODE_TOTAL as Integer
+            def i = System.env.CI_NODE_INDEX as Integer
             include {
                 // Recurse into all packages
                 if (it.file.isDirectory()) {
@@ -153,7 +153,7 @@ subprojects {
 
                 // Include test class based on worker index
                 def included = Math.abs(it.file.hashCode()) % n == i
-                if (Boolean.parseBoolean(System.env.CI_DEBUG ?: 'false')) {
+                if (System.env.CI_DEBUG?.toBoolean()) {
                     logger.info("test '" + it.file + '" included: ' + included)
                 }
                 return included

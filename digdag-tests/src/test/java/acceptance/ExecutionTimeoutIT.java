@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.addWorkflow;
 import static utils.TestUtils.expect;
-import static utils.TestUtils.pushAndStart;
 import static utils.TestUtils.pushProject;
 import static utils.TestUtils.startMockWebServer;
 import static utils.TestUtils.startWorkflow;
@@ -46,10 +45,10 @@ public class ExecutionTimeoutIT
             .registerModule(new JacksonTimeModule())
             .registerModule(new GuavaModule());
 
-    private TemporaryDigdagServer server;
+    protected TemporaryDigdagServer server;
 
-    private Path projectDir;
-    private DigdagClient client;
+    protected Path projectDir;
+    protected DigdagClient client;
 
     private MockWebServer notificationServer;
 
@@ -64,7 +63,7 @@ public class ExecutionTimeoutIT
         notificationUrl = "http://localhost:" + notificationServer.getPort() + "/notification";
     }
 
-    private void setup(String... configuration)
+    protected void setup(String... configuration)
             throws Exception
     {
         server = TemporaryDigdagServer.builder()
@@ -104,60 +103,68 @@ public class ExecutionTimeoutIT
         }
     }
 
-    @Test
-    public void testAttemptTimeout()
-            throws Exception
+    public static class AttemptTimeoutIT
+            extends ExecutionTimeoutIT
     {
-        setup("executor.attempt_ttl = 10s",
-                "executor.task_ttl = 1d",
-                "executor.ttl_reaping_interval = 1s");
 
-        addWorkflow(projectDir, "acceptance/attempt_timeout/attempt_timeout.dig", WORKFLOW_NAME + ".dig");
-        pushProject(server.endpoint(), projectDir, PROJECT_NAME);
-        Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
+        @Test
+        public void testAttemptTimeout()
+                throws Exception
+        {
+            setup("executor.attempt_ttl = 10s",
+                    "executor.task_ttl = 1d",
+                    "executor.ttl_reaping_interval = 1s");
 
-        // Expect the attempt to get canceled
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+            addWorkflow(projectDir, "acceptance/attempt_timeout/attempt_timeout.dig", WORKFLOW_NAME + ".dig");
+            pushProject(server.endpoint(), projectDir, PROJECT_NAME);
+            Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
-        // And then the attempt should be done pretty soon
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getDone());
+            // Expect the attempt to get canceled
+            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
 
-        // Expect a notification to be sent
-        expectNotification(attemptId, Duration.ofMinutes(1), "Workflow execution timeout"::equals);
+            // And then the attempt should be done pretty soon
+            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getDone());
 
-        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
-        assertThat(attempt.getDone(), is(true));
-        assertThat(attempt.getCancelRequested(), is(true));
-        assertThat(attempt.getSuccess(), is(false));
+            // Expect a notification to be sent
+            expectNotification(attemptId, Duration.ofMinutes(2), "Workflow execution timeout"::equals);
+
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            assertThat(attempt.getDone(), is(true));
+            assertThat(attempt.getCancelRequested(), is(true));
+            assertThat(attempt.getSuccess(), is(false));
+        }
     }
 
-    @Test
-    public void testTaskTimeout()
-            throws Exception
+    public static class TaskTimeoutIT
+            extends ExecutionTimeoutIT
     {
-        setup("executor.attempt_ttl = 1d",
-                "executor.task_ttl = 10s",
-                "executor.ttl_reaping_interval = 1s");
+        @Test
+        public void testTaskTimeout()
+                throws Exception
+        {
+            setup("executor.attempt_ttl = 1d",
+                    "executor.task_ttl = 10s",
+                    "executor.ttl_reaping_interval = 1s");
 
-        addWorkflow(projectDir, "acceptance/attempt_timeout/task_timeout.dig", WORKFLOW_NAME + ".dig");
-        pushProject(server.endpoint(), projectDir, PROJECT_NAME);
-        Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
+            addWorkflow(projectDir, "acceptance/attempt_timeout/task_timeout.dig", WORKFLOW_NAME + ".dig");
+            pushProject(server.endpoint(), projectDir, PROJECT_NAME);
+            Id attemptId = startWorkflow(server.endpoint(), PROJECT_NAME, WORKFLOW_NAME);
 
+            // Expect the attempt to get canceled when the task times out
+            expect(Duration.ofMinutes(2), () -> client.getSessionAttempt(attemptId).getCancelRequested());
 
-        // Expect the attempt to get canceled when the task times out
-        expect(Duration.ofMinutes(1), () -> client.getSessionAttempt(attemptId).getCancelRequested());
+            // Expect a notification to be sent
+            expectNotification(attemptId, Duration.ofMinutes(2), message -> Pattern.matches("Task execution timeout: \\d+", message));
 
-        // Expect a notification to be sent
-        expectNotification(attemptId, Duration.ofMinutes(1), message -> Pattern.matches("Task execution timeout: \\d+", message));
+            // TODO: implement termination of blocking tasks
+            // TODO: verify that blocking tasks are terminated when the attempt is canceled
 
-        // TODO: implement termination of blocking tasks
-        // TODO: verify that blocking tasks are terminated when the attempt is canceled
-
-        RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
-        assertThat(attempt.getCancelRequested(), is(true));
+            RestSessionAttempt attempt = client.getSessionAttempt(attemptId);
+            assertThat(attempt.getCancelRequested(), is(true));
+        }
     }
 
-    private void expectNotification(Id attemptId, Duration duration, Predicate<String> messageMatcher)
+    protected void expectNotification(Id attemptId, Duration duration, Predicate<String> messageMatcher)
             throws InterruptedException, IOException
     {
         RecordedRequest recordedRequest = notificationServer.takeRequest(duration.getSeconds(), TimeUnit.SECONDS);
@@ -165,7 +172,7 @@ public class ExecutionTimeoutIT
         verifyNotification(attemptId, recordedRequest, messageMatcher);
     }
 
-    private void verifyNotification(Id attemptId, RecordedRequest recordedRequest, Predicate<String> messageMatcher)
+    protected void verifyNotification(Id attemptId, RecordedRequest recordedRequest, Predicate<String> messageMatcher)
             throws IOException
     {
         String notificationJson = recordedRequest.getBody().readUtf8();

@@ -1,4 +1,4 @@
-package io.digdag.standards.operator;
+package io.digdag.standards.operator.aws;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.ClientConfiguration;
@@ -15,10 +15,8 @@ import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.treasuredata.client.ProxyConfig;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
 import io.digdag.client.config.ConfigKey;
@@ -31,7 +29,7 @@ import io.digdag.spi.SecretAccessList;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.standards.Proxies;
+import io.digdag.standards.operator.DurationInterval;
 import io.digdag.standards.operator.state.TaskState;
 import io.digdag.util.ConfigSelector;
 import org.eclipse.jetty.http.HttpStatus;
@@ -138,11 +136,11 @@ public class S3WaitOperatorFactory
             SecretProvider awsSecrets = secrets.getSecrets("aws");
             SecretProvider s3Secrets = awsSecrets.getSecrets("s3");
 
-            Optional<String> endpoint = first(
+            Optional<String> endpoint = Aws.first(
                     () -> s3Secrets.getSecretOptional("endpoint"),
                     () -> params.getOptional("endpoint", String.class));
 
-            Optional<String> regionName = first(
+            Optional<String> regionName = Aws.first(
                     () -> s3Secrets.getSecretOptional("region"),
                     () -> awsSecrets.getSecretOptional("region"),
                     () -> params.getOptional("region", String.class));
@@ -155,7 +153,7 @@ public class S3WaitOperatorFactory
 
             // Create S3 Client
             ClientConfiguration configuration = new ClientConfiguration();
-            configureProxy(endpoint, configuration);
+            Aws.configureProxy(configuration, endpoint, environment);
             AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
             AmazonS3Client s3Client = s3ClientFactory.create(credentials, configuration);
 
@@ -204,7 +202,7 @@ public class S3WaitOperatorFactory
                     .withPollInterval(POLL_INTERVAL)
                     .withWaitMessage("Object '%s/%s' does not yet exist", bucket.get(), key.get())
                     .await(pollState -> pollingRetryExecutor(pollState, "POLL")
-                            .retryUnless(AmazonServiceException.class, S3WaitOperatorFactory::isDeterministicException)
+                            .retryUnless(AmazonServiceException.class, Aws::isDeterministicException)
                             .run(s -> {
                                 try {
                                     return Optional.of(s3Client.getObjectMetadata(req));
@@ -231,52 +229,6 @@ public class S3WaitOperatorFactory
             object.set("user_metadata", objectMetadata.getUserMetadata());
             return params;
         }
-    }
-
-    private static boolean isDeterministicException(AmazonServiceException ex)
-    {
-        int statusCode = ex.getStatusCode();
-        switch (statusCode) {
-            case HttpStatus.TOO_MANY_REQUESTS_429:
-            case HttpStatus.REQUEST_TIMEOUT_408:
-                return false;
-            default:
-                return statusCode >= 400 && statusCode < 500;
-        }
-    }
-
-    private void configureProxy(Optional<String> endpoint, ClientConfiguration configuration)
-    {
-        String scheme = "https";
-        if (endpoint.isPresent() && endpoint.get().startsWith("http://")) {
-            scheme = "http";
-        }
-        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, environment);
-        if (proxyConfig.isPresent()) {
-            ProxyConfig cfg = proxyConfig.get();
-            configuration.setProxyHost(cfg.getHost());
-            configuration.setProxyPort(cfg.getPort());
-            Optional<String> user = cfg.getUser();
-            if (user.isPresent()) {
-                configuration.setProxyUsername(user.get());
-            }
-            Optional<String> password = cfg.getPassword();
-            if (password.isPresent()) {
-                configuration.setProxyPassword(password.get());
-            }
-        }
-    }
-
-    @SafeVarargs
-    private static <T> Optional<T> first(Supplier<Optional<T>>... suppliers)
-    {
-        for (Supplier<Optional<T>> supplier : suppliers) {
-            Optional<T> optional = supplier.get();
-            if (optional.isPresent()) {
-                return optional;
-            }
-        }
-        return Optional.absent();
     }
 
     interface AmazonS3ClientFactory

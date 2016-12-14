@@ -1,11 +1,15 @@
 package acceptance;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.Id;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSessionAttempt;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +35,12 @@ import static org.junit.Assume.assumeThat;
 
 public class S3StorageIT
 {
-    private static final String FAKE_S3_ENDPOINT = System.getenv("FAKE_S3_ENDPOINT");
+    private static final String TEST_S3_ENDPOINT = System.getenv("TEST_S3_ENDPOINT");
+    private static final String TEST_S3_ACCESS_KEY_ID = System.getenv().getOrDefault("TEST_S3_ACCESS_KEY_ID", "test");
+    private static final String TEST_S3_SECRET_ACCESS_KEY = System.getenv().getOrDefault("TEST_S3_SECRET_ACCESS_KEY", "test");
+
+    private final String archiveBucket = "archive-storage-" + UUID.randomUUID();
+    private final String logStorageBucket = "log-storage-" + UUID.randomUUID();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
@@ -40,16 +49,16 @@ public class S3StorageIT
     public TemporaryDigdagServer server = TemporaryDigdagServer.builder()
             .configuration(
                     "archive.type = s3",
-                    "archive.s3.endpoint = " + FAKE_S3_ENDPOINT,
-                    "archive.s3.bucket = archive-storage-" + UUID.randomUUID(),
-                    "archive.s3.credentials.access-key-id = fake-key-id",
-                    "archive.s3.credentials.secret-access-key = fake-access-key",
+                    "archive.s3.endpoint = " + TEST_S3_ENDPOINT,
+                    "archive.s3.bucket = " + archiveBucket,
+                    "archive.s3.credentials.access-key-id = " + TEST_S3_ACCESS_KEY_ID,
+                    "archive.s3.credentials.secret-access-key = " + TEST_S3_SECRET_ACCESS_KEY,
                     "log-server.type = s3",
-                    "log-server.s3.endpoint = " + FAKE_S3_ENDPOINT,
-                    "log-server.s3.bucket = log-storage-" + UUID.randomUUID(),
+                    "log-server.s3.endpoint = " + TEST_S3_ENDPOINT,
+                    "log-server.s3.bucket = " + logStorageBucket,
                     "log-server.s3.path = storage-log-test",
-                    "log-server.s3.credentials.access-key-id = fake-key-id",
-                    "log-server.s3.credentials.secret-access-key = fake-access-key",
+                    "log-server.s3.credentials.access-key-id = " + TEST_S3_ACCESS_KEY_ID,
+                    "log-server.s3.credentials.secret-access-key = " + TEST_S3_SECRET_ACCESS_KEY,
                     ""
             )
             .build();
@@ -57,12 +66,13 @@ public class S3StorageIT
     private Path config;
     private Path projectDir;
     private DigdagClient client;
+    private AmazonS3Client s3;
 
     @Before
     public void setUp()
             throws Exception
     {
-        assumeThat(FAKE_S3_ENDPOINT, not(isEmptyOrNullString()));
+        assumeThat(TEST_S3_ENDPOINT, not(isEmptyOrNullString()));
 
         projectDir = folder.getRoot().toPath().resolve("foobar");
         config = folder.newFile().toPath();
@@ -71,6 +81,13 @@ public class S3StorageIT
                 .host(server.host())
                 .port(server.port())
                 .build();
+
+        AWSCredentials credentials = new BasicAWSCredentials(TEST_S3_ACCESS_KEY_ID, TEST_S3_SECRET_ACCESS_KEY);
+        s3 = new AmazonS3Client(credentials);
+        s3.setEndpoint(TEST_S3_ENDPOINT);
+
+        s3.createBucket(archiveBucket);
+        s3.createBucket(logStorageBucket);
     }
 
     @Test

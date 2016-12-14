@@ -1,0 +1,68 @@
++emr_job:
+  _secrets:
+    td:
+      apikey: true
+  emr>:
+  cluster: ${test_cluster}
+  staging: ${test_s3_folder}/staging/
+  steps:
+    - type: flink
+      application: WordCount.jar
+    - type: hive
+      script: s3://us-east-1.elasticmapreduce.samples/cloudfront/code/Hive_CloudFront.q
+      vars:
+        INPUT: s3://us-east-1.elasticmapreduce.samples
+        OUTPUT: ${test_s3_folder}/hive-output/
+      hiveconf:
+        hive.support.sql11.reserved.keywords: false
+    - type: spark
+      application: pi.scala
+    - type: spark
+      application: ${test_s3_folder}/applications/pi.py
+    - type: spark
+      application: hello.py
+      args: [1]
+    - type: spark
+      application: hello.py
+      args: [2]
+    - type: spark
+      application: simple.jar
+      class: SimpleApp
+      files:
+        - data.csv
+      jars:
+        - libhello.jar
+      conf:
+        spark.locality.wait: 5s
+        spark.memory.fraction: 0.5
+      args: [foo, bar]
+    - type: spark-sql
+      query: query.sql
+      result: ${test_s3_folder}/results/${session_uuid}/
+    - type: script
+      script: ${test_s3_folder}/scripts/hello.sh
+      args: [hello, world]
+    - type: script
+      script: hello.sh
+      files:
+        - data.csv
+      args: [data.csv]
+    - type: command
+      command: echo
+      args: [hello, world]
+    - type: command
+      command: cat
+      files:
+        - data.csv
+      args: [data.csv]
+    - type: spark
+      application: td-www_access.scala
+      jars:
+        - s3://td-spark/td-spark-assembly-0.1.jar
+      conf:
+        spark.td.apikey: {secret: td.apikey}
+
++post:
+  sh>: touch ${outfile}
+
+

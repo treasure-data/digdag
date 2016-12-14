@@ -1,5 +1,6 @@
 package io.digdag.standards.operator.state;
 
+import com.google.common.base.Supplier;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.TaskExecutionException;
@@ -58,5 +59,28 @@ public interface TaskState
     default TaskExecutionException pollingTaskExecutionException(int interval)
     {
         return TaskExecutionException.ofNextPolling(interval, ConfigElement.copyOf(root()));
+    }
+
+    /**
+     * Store a constant value (once) in the {@link TaskState}. If the value is not yet present in
+     * the {@link TaskState}, a value is retrieved from the supplier, inserted into the state and
+     * a polling {@link TaskExecutionException} is thrown to immediately persist it. Note that the
+     * supplier might be called more than once in case of system failure.
+     *
+     * @param key The key of the constant value.
+     * @param type The type of the constant value.
+     * @param supplier A supplier that will be called to get a value to store in the state if not yet present.
+     * @param <T> The type of the constant value.
+     * @return The constant value.
+     */
+    default <T> T constant(String key, Class<T> type, Supplier<T> supplier)
+    {
+        T value = root().get(key, type, null);
+        if (value != null) {
+            return value;
+        }
+        value = supplier.get();
+        root().set(key, value);
+        throw pollingTaskExecutionException(0);
     }
 }

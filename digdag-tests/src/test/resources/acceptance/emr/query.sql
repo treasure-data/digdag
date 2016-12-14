@@ -1,0 +1,1 @@
+select "${session_uuid}"

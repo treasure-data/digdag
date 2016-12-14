@@ -16,7 +16,7 @@ import static org.immutables.value.Value.Style.ImplementationVisibility.PACKAGE;
 @JsonDeserialize(as = ImmutableSecretSelector.class)
 public interface SecretSelector
 {
-    Pattern VALID_PATTERN = Pattern.compile("^(\\w+\\.)*\\w+(\\.\\*)?$");
+    Pattern VALID_PATTERN = Pattern.compile("^(\\w+\\.)*(\\w+|\\*)$");
 
     String pattern();
 
@@ -29,7 +29,7 @@ public interface SecretSelector
     default boolean match(String key)
     {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(key), "key");
-        if (pattern().endsWith(".*")) {
+        if (pattern().endsWith("*")) {
             String prefix = pattern().substring(0, pattern().length() - 1);
             return key.startsWith(prefix);
         }
@@ -40,7 +40,12 @@ public interface SecretSelector
 
     static SecretSelector of(String pattern)
     {
-        return builder().pattern(pattern).build();
+        try {
+            return builder().pattern(pattern).build();
+        }
+        catch (IllegalStateException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     static Builder builder()
