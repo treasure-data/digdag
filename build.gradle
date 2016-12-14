@@ -420,7 +420,7 @@ task setVersion << {
 
     files.each() { path ->
         File doc = file(path)
-        doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
+        doc.write(doc.getText().replaceAll("0\\.[1-9][0-9]*\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
     }
 
     if (!to.endsWith('-SNAPSHOT')) {
@@ -429,7 +429,7 @@ task setVersion << {
             'digdag-docs/src/command_reference.rst',
         ].each() { path ->
             File doc = file(path)
-            doc.write(doc.getText().replaceAll("0\\.[2-8]\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
+            doc.write(doc.getText().replaceAll("0\\.[1-9][0-9]*\\.(\\d+)(-[\\d\\w]+)?", "${to}"))
         }
 
         // releases.rst
