@@ -105,6 +105,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#server-mode-changes">Server mode changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#workflow-changes">Workflow changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#general-changes">General changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plugin-api-changes">Plugin API changes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#release-date">Release Date</a></li>
 </ul>
 </li>
@@ -219,28 +220,49 @@
 <h2>Client mode changes<a class="headerlink" href="#client-mode-changes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li>Added a <code class="docutils literal"><span class="pre">download</span></code> command that can be used to download projects from the server.</li>
+<li>Commands automatically retry HTTP GET requests when one fails with server-side errors.</li>
 </ul>
 </div>
 <div class="section" id="server-mode-changes">
 <h2>Server mode changes<a class="headerlink" href="#server-mode-changes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
+<li>The UI is now integrated to the server. Opening the server&#8217;s HTTP endpoint with a browser shows the UI.</li>
 <li>The UI now visualizes the workflow task execution timeline.</li>
-<li>The REST API now wraps collections in JSON objects.</li>
 </ul>
 </div>
 <div class="section" id="workflow-changes">
 <h2>Workflow changes<a class="headerlink" href="#workflow-changes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Added an <code class="docutils literal"><span class="pre">emr&gt;</span></code> operator that can be used to run AWS EMR jobs.</li>
+<li>Added an <code class="docutils literal"><span class="pre">emr&gt;</span></code> operator that can be used to run Amazon EMR jobs.</li>
 <li>Added a <code class="docutils literal"><span class="pre">rename_tables</span></code> option to the <code class="docutils literal"><span class="pre">td_ddl&gt;</span></code> operator that can be used to rename TD tables.</li>
 <li>Added a <code class="docutils literal"><span class="pre">skip_on_overtime:</span> <span class="pre">true</span> <span class="pre">|</span> <span class="pre">false</span></code> schedule option that can be used to control whether scheduled session execution should be skipped if another session is already running.</li>
-<li>Scheduled workflow sessions now have a <code class="docutils literal"><span class="pre">last_executed_session_time</span></code> variable which contains the previously executed session time.</li>
+<li>Scheduled workflow sessions now have a <code class="docutils literal"><span class="pre">last_executed_session_time</span></code> variable which contains the previously executed session time. It is usually same with <code class="docutils literal"><span class="pre">last_session_time</span></code> but has different value when <code class="docutils literal"><span class="pre">skip_on_overtime:</span> <span class="pre">true</span></code> is set or the session is the first execution.</li>
 </ul>
 </div>
 <div class="section" id="general-changes">
 <h2>General changes<a class="headerlink" href="#general-changes" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Secrets now use <code class="docutils literal"><span class="pre">_</span></code> (underscore) in names instead of <code class="docutils literal"><span class="pre">-</span></code> (dash).</li>
+<li><strong>IMPORTANT</strong>: Secrets now use <code class="docutils literal"><span class="pre">_</span></code> (underscore) in names instead of <code class="docutils literal"><span class="pre">-</span></code> (dash). Following secret names are changed:<ul>
+<li>aws.access_key_id, aws.s3.access_key_id</li>
+<li>aws.secret_access_key, aws.s3.secret_access_key</li>
+<li>aws.s3.sse_c_key, aws.s3.sse_c_key_algorithm, aws.s3.sse_c_key_md5</li>
+</ul>
+</li>
+<li><strong>IMPORTANT</strong>: REST API includes backward incompatible changes.<ul>
+<li>The REST API now wraps collections in JSON objects. This is intended for future improvements to add additional fields without breaking clients again.</li>
+<li>Type of ID fields are changed from integer to string. This is intended for future improvements to update the encoding of ID fields without breaking clients again.</li>
+</ul>
+</li>
+<li><strong>IMPORTANT</strong>: An undocumented functionality in <code class="docutils literal"><span class="pre">sh&gt;</span></code>, <code class="docutils literal"><span class="pre">py&gt;</span></code>, and <code class="docutils literal"><span class="pre">rb&gt;</span></code> operators includes backward incompatible changes.<ul>
+<li>It affects only if workflow definition includes <code class="docutils literal"><span class="pre">_env</span></code> directive.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="plugin-api-changes">
+<h2>Plugin API changes<a class="headerlink" href="#plugin-api-changes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Operator interface is updated.</li>
 </ul>
 </div>
 <div class="section" id="release-date">
