@@ -19,6 +19,7 @@ import yaml from 'js-yaml'
 import Duration from 'duration'
 import uuid from 'node-uuid'
 import jQuery from 'jquery'
+import ReactInterval from 'react-interval';
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -45,6 +46,8 @@ import {
 /* eslint-enable */
 
 type Scrubber = (args:{key: string, value: string}) => string
+
+const refreshIntervalMillis = 5000
 
 const isDevelopmentEnv = process.env.NODE_ENV !== 'production'
 
@@ -477,10 +480,10 @@ class ScheduleListView extends React.Component {
   }
 
   componentDidMount () {
-    this.fetchSchedule()
+    this.fetch()
   }
 
-  fetchSchedule () {
+  fetch () {
     this.setState({loading: true})
     model().fetchProjectWorkflowSchedule(this.props.projectId, this.props.workflowName).then(({ schedules }) => {
       this.setState({
@@ -496,7 +499,7 @@ class ScheduleListView extends React.Component {
     model()
       .disableSchedule(schedules[0].id)
       .then(() => this.setState({loading: false}))
-      .then(() => this.fetchSchedule())
+      .then(() => this.fetch())
   }
 
   enableSchedule () {
@@ -505,7 +508,7 @@ class ScheduleListView extends React.Component {
     model()
       .enableSchedule(schedule.id)
       .then(() => this.setState({loading: false}))
-      .then(() => this.fetchSchedule())
+      .then(() => this.fetch())
   }
 
   render () {
@@ -563,6 +566,7 @@ class ScheduleListView extends React.Component {
             </tbody>
           </table>
         </div>
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -575,6 +579,10 @@ class ProjectsView extends React.Component {
   };
 
   componentDidMount () {
+    this.fetch()
+  }
+
+  fetch () {
     model().fetchProjects().then(({ projects }) => {
       this.setState({projects})
     })
@@ -585,6 +593,7 @@ class ProjectsView extends React.Component {
       <div className='projects'>
         <h2>Projects</h2>
         <ProjectListView projects={this.state.projects} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -597,6 +606,10 @@ class SessionsView extends React.Component {
   };
 
   componentDidMount () {
+    this.fetch()
+  }
+
+  fetch () {
     model().fetchSessions().then(({ sessions }) => {
       this.setState({sessions})
     })
@@ -607,6 +620,7 @@ class SessionsView extends React.Component {
       <div>
         <h2>Sessions</h2>
         <SessionListView sessions={this.state.sessions} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -627,7 +641,7 @@ class ProjectView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchProject()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -638,10 +652,10 @@ class ProjectView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchProject()
+    this.fetch()
   }
 
-  fetchProject () {
+  fetch () {
     model().fetchProject(this.props.projectId).then(project => {
       if (!this.ignoreLastFetch) {
         this.setState({project: project})
@@ -702,6 +716,7 @@ class ProjectView extends React.Component {
           <h2>Sessions</h2>
           <SessionListView sessions={this.state.sessions} />
         </div>
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -720,7 +735,7 @@ class WorkflowView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchWorkflow()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -731,10 +746,10 @@ class WorkflowView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchWorkflow()
+    this.fetch()
   }
 
-  fetchWorkflow () {
+  fetch () {
     model().fetchProjectWorkflowSessions(this.props.workflow.project.id, this.props.workflow.name).then(({ sessions }) => {
       if (!this.ignoreLastFetch) {
         this.setState({sessions})
@@ -809,6 +824,7 @@ class WorkflowView extends React.Component {
           <h2>Files</h2>
           <WorkflowFilesView workflow={wf} projectArchive={this.state.projectArchive} />
         </div>
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -927,7 +943,7 @@ class AttemptView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchAttempt()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -938,10 +954,10 @@ class AttemptView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchAttempt()
+    this.fetch()
   }
 
-  fetchAttempt () {
+  fetch () {
     model().fetchAttempt(this.props.attemptId).then(attempt => {
       if (!this.ignoreLastFetch) {
         this.setState({attempt: attempt})
@@ -1000,6 +1016,7 @@ class AttemptView extends React.Component {
             </tr>
           </tbody>
         </table>
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1363,7 +1380,7 @@ class AttemptTasksView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchTasks()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -1374,10 +1391,10 @@ class AttemptTasksView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchTasks()
+    this.fetch()
   }
 
-  fetchTasks () {
+  fetch () {
     model().fetchAttemptTasks(this.props.attemptId).then(({ tasks }) => {
       if (!this.ignoreLastFetch) {
         this.setState({tasks})
@@ -1390,6 +1407,7 @@ class AttemptTasksView extends React.Component {
       <div className='row'>
         <h2>Tasks</h2>
         <TaskListView tasks={this.state.tasks} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1421,7 +1439,7 @@ class AttemptTimelineView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchTasks()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -1432,10 +1450,10 @@ class AttemptTimelineView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchTasks()
+    this.fetch()
   }
 
-  fetchTasks () {
+  fetch () {
     model().fetchAttemptTasks(this.props.attemptId).then(({ tasks }) => {
       if (!this.ignoreLastFetch) {
         this.setState({tasks})
@@ -1452,6 +1470,7 @@ class AttemptTimelineView extends React.Component {
       <div className='row'>
         <h2>Timeline</h2>
         <TaskTimelineView tasks={this.state.tasks} rootTask={this.rootTask()} startTime={firstStartedAt(this.state.tasks)} endTime={lastUpdatedAt(this.state.tasks)} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1466,7 +1485,7 @@ class LogFileView extends React.Component {
   };
 
   state = {
-    data: ''
+    data: null
   };
 
   componentDidMount () {
@@ -1482,6 +1501,10 @@ class LogFileView extends React.Component {
       return
     }
     this.fetchFile()
+  }
+
+  shouldComponentUpdate (nextProps, nextState) {
+    return this.state.data == null
   }
 
   fetchFile () {
@@ -1511,7 +1534,7 @@ class AttemptLogsView extends React.Component {
   };
 
   componentDidMount () {
-    this.fetchLogs()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -1522,10 +1545,10 @@ class AttemptLogsView extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchLogs()
+    this.fetch()
   }
 
-  fetchLogs () {
+  fetch () {
     model().fetchAttemptLogFileHandles(this.props.attemptId).then(({ files }) => {
       if (!this.ignoreLastFetch) {
         const sortedFiles = _.sortBy(files, 'fileTime')
@@ -1548,6 +1571,7 @@ class AttemptLogsView extends React.Component {
       <div className='row'>
         <h2>Logs</h2>
         <pre>{this.logFiles()}</pre>
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1686,7 +1710,7 @@ class WorkflowPage extends React.Component {
   }
 
   componentDidMount () {
-    this.fetchWorkflow()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -1697,10 +1721,10 @@ class WorkflowPage extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchWorkflow()
+    this.fetch()
   }
 
-  fetchWorkflow () {
+  fetch () {
     model().fetchProjectWorkflow(this.props.params.projectId, this.props.params.workflowName).then(workflow => {
       if (!this.ignoreLastFetch) {
         this.setState({workflow})
@@ -1716,6 +1740,7 @@ class WorkflowPage extends React.Component {
     return (
       <div className='container-fluid'>
         {this.workflow()}
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1810,7 +1835,7 @@ class SessionPage extends React.Component {
   }
 
   componentDidMount () {
-    this.fetchSession()
+    this.fetch()
   }
 
   componentWillUnmount () {
@@ -1821,10 +1846,10 @@ class SessionPage extends React.Component {
     if (_.isEqual(prevProps, this.props)) {
       return
     }
-    this.fetchSession()
+    this.fetch()
   }
 
-  fetchSession () {
+  fetch () {
     model().fetchSession(this.props.params.sessionId).then(session => {
       if (!this.ignoreLastFetch) {
         this.setState({session})
@@ -1875,6 +1900,7 @@ class SessionPage extends React.Component {
         {this.timeline()}
         {this.logs()}
         {this.attempts()}
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1976,6 +2002,10 @@ class WorkflowsView extends React.Component {
   };
 
   componentDidMount () {
+    this.fetch()
+  }
+
+  fetch() {
     model().fetchWorkflows().then(({ workflows }) => {
       this.setState({workflows})
     })
@@ -1986,6 +2016,7 @@ class WorkflowsView extends React.Component {
       <div className='workflows'>
         <h2>Workflows</h2>
         <WorkflowListView workflows={this.state.workflows} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
       </div>
     )
   }
