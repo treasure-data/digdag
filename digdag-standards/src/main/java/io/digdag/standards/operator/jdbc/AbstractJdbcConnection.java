@@ -60,9 +60,7 @@ public abstract class AbstractJdbcConnection
         // if JDBC or DBMS does not use server-side prepared statements by default,
         // subclass needs to override this method.
         try {
-            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-                pstmt.getMetaData();
-            }
+            connection.nativeSQL(sql);
             return null;
         }
         catch (SQLException ex) {
