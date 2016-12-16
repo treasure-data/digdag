@@ -11,10 +11,12 @@ import io.digdag.core.repository.ResourceConflictException;
 import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.core.session.ArchivedTask;
 import io.digdag.core.session.AttemptStateFlags;
+import io.digdag.core.session.DelayedAttemptControlStore;
 import io.digdag.core.session.ImmutableArchivedTask;
 import io.digdag.core.session.ImmutableResumingTask;
 import io.digdag.core.session.ImmutableSession;
 import io.digdag.core.session.ImmutableSessionAttemptSummary;
+import io.digdag.core.session.ImmutableStoredDelayedSessionAttempt;
 import io.digdag.core.session.ImmutableStoredSession;
 import io.digdag.core.session.ImmutableStoredSessionAttempt;
 import io.digdag.core.session.ImmutableStoredSessionAttemptWithSession;
@@ -35,6 +37,7 @@ import io.digdag.core.session.SessionMonitor;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.SessionTransaction;
+import io.digdag.core.session.StoredDelayedSessionAttempt;
 import io.digdag.core.session.StoredSession;
 import io.digdag.core.session.StoredSessionAttempt;
 import io.digdag.core.session.StoredSessionAttemptWithSession;
@@ -140,6 +143,7 @@ public class DatabaseSessionStoreManager
         dbi.registerMapper(new TaskAttemptSummaryMapper());
         dbi.registerMapper(new SessionAttemptSummaryMapper());
         dbi.registerMapper(new StoredSessionMonitorMapper(cfm));
+        dbi.registerMapper(new StoredDelayedSessionAttemptMapper());
         dbi.registerMapper(new TaskRelationMapper());
         dbi.registerMapper(new InstantMapper());
         dbi.registerArgumentFactory(cfm.getArgumentFactory());
@@ -607,6 +611,33 @@ public class DatabaseSessionStoreManager
         }
         catch (IOException ex) {
             throw new RuntimeException("Failed to load task archive", ex);
+        }
+    }
+
+    @Override
+    public void lockReadyDelayedAttempts(Instant currentTime, DelayedAttemptAction func)
+    {
+        List<RuntimeException> exceptions = transaction((handle, dao) -> {
+            return dao.lockReadyDelayedAttempts(currentTime.getEpochSecond(), 10)  // TODO 10 should be configurable?
+                .stream()
+                .map(delayedAttempt -> {
+                    try {
+                        func.submit(new DatabaseDelayedAttemptControlStore(handle), delayedAttempt);
+                        return null;
+                    }
+                    catch (RuntimeException ex) {
+                        return ex;
+                    }
+                })
+                .filter(exception -> exception != null)
+                .collect(Collectors.toList());
+        });
+        if (!exceptions.isEmpty()) {
+            RuntimeException first = exceptions.get(0);
+            for (RuntimeException ex : exceptions.subList(1, exceptions.size())) {
+                first.addSuppressed(ex);
+            }
+            throw first;
         }
     }
 
@@ -1351,6 +1382,39 @@ public class DatabaseSessionStoreManager
         }
     }
 
+    private class DatabaseDelayedAttemptControlStore
+            implements DelayedAttemptControlStore
+    {
+        private final Handle handle;
+        private final Dao dao;
+
+        public DatabaseDelayedAttemptControlStore(Handle handle)
+        {
+            this.handle = handle;
+            this.dao = handle.attach(Dao.class);
+        }
+
+        @Override
+        public <T> T lockSessionOfAttempt(long attemptId, DelayedSessionLockAction<T> func)
+            throws ResourceConflictException, ResourceNotFoundException
+        {
+            StoredSessionAttemptWithSession attempt = dao.lockSessionByAttemptId(attemptId);
+            return func.call(new DatabaseSessionControlStore(handle, 0), attempt);
+        }
+
+        @Override
+        public void delayDelayedAttempt(long attemptId, Instant nextRunTime)
+        {
+            dao.updateNextDelayedAttemptRunTime(attemptId, nextRunTime.getEpochSecond());
+        }
+
+        @Override
+        public void completeDelayedAttempt(long attemptId)
+        {
+            dao.deleteDelayedAttempt(attemptId);
+        }
+    }
+
     public interface H2Dao
             extends Dao
     {
@@ -1581,8 +1645,8 @@ public class DatabaseSessionStoreManager
         @GetGeneratedKeys
         long insertAttempt(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
 
-        @SqlUpdate("insert into delayed_sssion_attempts (id, dependent_session_id, next_run_time)" +
-                " values (:attemptId, :dependentSessionId, :nextRunTime)")
+        @SqlUpdate("insert into delayed_sssion_attempts (id, dependent_session_id, next_run_time, updated_at)" +
+                " values (:attemptId, :dependentSessionId, :nextRunTime, now())")
         void insertDelayedAttempt(@Bind("attemptId") long attemptId, @Bind("dependentSessionId") Long dependentSessionId, @Bind("nextRunTime") long nextRunTime);
 
         @SqlUpdate("update sessions" +
@@ -1736,6 +1800,18 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         void updateNextSessionMonitorRunTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime);
 
+        @SqlQuery("select da.* from delayed_sssion_attempts da" +
+                " where not exists (select * from sessions s where s.id = da.dependent_session_id)" +
+                " and next_run_time <= :currentTime" +
+                " limit :limit" +
+                " for update")
+        List<StoredDelayedSessionAttempt> lockReadyDelayedAttempts(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
+
+        @SqlUpdate("update delayed_sssion_attempts" +
+                " set next_run_time = :nextRunTime, updated_at = now()" +
+                " where id = :attemptId")
+        void updateNextDelayedAttemptRunTime(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime);
+
         @SqlQuery("select tasks" +
                 " from task_archives ta" +
                 " join session_attempts sa on sa.id = ta.id" +
@@ -1771,6 +1847,17 @@ public class DatabaseSessionStoreManager
         @SqlUpdate("delete from resuming_tasks" +
                 " where attempt_id = :attemptId")
         int deleteResumingTasks(@Bind("attemptId") long attemptId);
+
+        @SqlUpdate("delete from delayed_sssion_attempts" +
+                " where id = :attemptId")
+        void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
+
+        @SqlQuery("select sa.*, s.session_uuid, s.workflow_name, s.session_time" +
+                " from session_attempts sa" +
+                " join sessions s on s.id = sa.session_id" +
+                " where sa.id = :attemptId limit 1" +
+                " for update of sessions")
+        StoredSessionAttemptWithSession lockSessionByAttemptId(@Bind("attemptId") long attemptId);
     }
 
     private static class InstantMapper
@@ -2120,6 +2207,22 @@ public class DatabaseSessionStoreManager
                 .type(r.getString("type"))
                 .config(cfm.fromResultSetOrEmpty(r, "config"))
                 .createdAt(getTimestampInstant(r, "created_at"))
+                .updatedAt(getTimestampInstant(r, "updated_at"))
+                .build();
+        }
+    }
+
+    private static class StoredDelayedSessionAttemptMapper
+            implements ResultSetMapper<StoredDelayedSessionAttempt>
+    {
+        @Override
+        public StoredDelayedSessionAttempt map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return ImmutableStoredDelayedSessionAttempt.builder()
+                .attemptId(r.getLong("id"))
+                .dependentSessionId(getOptionalLong(r, "dependent_session_id"))
+                .nextRunTime(Instant.ofEpochSecond(r.getLong("next_run_time")))
                 .updatedAt(getTimestampInstant(r, "updated_at"))
                 .build();
         }

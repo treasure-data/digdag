@@ -13,6 +13,7 @@ public class Migration_20161209001857_CreateDelayedSessionAttempts
                 .addLongIdNoAutoIncrement("id", "references session_attempts (id)")
                 .addLong("dependent_session_id", "")
                 .addLong("next_run_time", "not null")
+                .addTimestamp("updated_at", "not null")
                 .build());
         handle.update("create index delayed_sssion_attempts_on_next_run_time on delayed_sssion_attempts (next_run_time)");
     }
