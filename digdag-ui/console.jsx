@@ -701,11 +701,11 @@ class ProjectView extends React.Component {
               </tr>
               <tr>
                 <td>Created</td>
-                <td><FullTimestamp t={project.createdAt} /></td>
+                <td><FullTimestamp showAgo={Boolean(true)} t={project.createdAt} /></td>
               </tr>
               <tr>
                 <td>Updated</td>
-                <td><FullTimestamp t={project.updatedAt} /></td>
+                <td><FullTimestamp showAgo={Boolean(true)} t={project.updatedAt} /></td>
               </tr>
             </tbody>
           </table>
@@ -963,7 +963,7 @@ class AttemptView extends React.Component {
   fetch () {
     model().fetchAttempt(this.props.attemptId).then(attempt => {
       if (!this.ignoreLastFetch) {
-        this.setState({attempt: attempt, done:attempt.done})
+        this.setState({attempt: attempt, done: attempt.done})
       }
     })
   }
@@ -1006,7 +1006,7 @@ class AttemptView extends React.Component {
             </tr>
             <tr>
               <td>Created</td>
-              <td><Timestamp t={attempt.createdAt} /></td>
+              <td><FullTimestamp showAgo={Boolean(true)} t={attempt.createdAt} /></td>
             </tr>
             <tr>
               <td>Status</td>
@@ -1014,7 +1014,7 @@ class AttemptView extends React.Component {
             </tr>
           </tbody>
         </table>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={!this.state.done} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1108,7 +1108,7 @@ const SessionView = withRouter(
               </tr>
               <tr>
                 <td>Last Attempt</td>
-                <td><FullTimestamp t={lastAttempt && lastAttempt.createdAt} /></td>
+                <td><FullTimestamp showAgo={Boolean(true)} t={lastAttempt && lastAttempt.createdAt} /></td>
               </tr>
               <tr>
                 <td>Last Attempt Duration:</td>
@@ -1147,19 +1147,38 @@ class Timestamp extends React.Component {
 
 class FullTimestamp extends React.Component {
   props:{
-    t: ?string
+    t: ?string,
+    showAgo: boolean
+  }
+
+  timestamp: any;
+
+  componentDidMount () {
+    jQuery(this.timestamp).tooltip({html: true})
+  }
+
+  tooltipText (t, m) {
+    return `${t}<br/>${m.fromNow()}`
+  }
+
+  updateTime (t, m) {
+    jQuery(this.timestamp)
+      .attr('data-original-title', this.tooltipText(t, m))
+      .show()
+    this.forceUpdate()
   }
 
   render () {
-    const { t } = this.props
+    const { t, showAgo } = this.props
     if (!t) {
       return <span />
     }
     const m = moment(t)
+    const duration = showAgo ? <span className='text-muted'> ({m.fromNow()})</span> : <span />
     return (
       <span>
-        <span>{t}<span className='text-muted'> ({m.fromNow()})</span></span>
-        <ReactInterval timeout={1000} enabled={Boolean(true)} callback={() => this.forceUpdate()} />
+        <span ref={(el) => { this.timestamp = el }} data-toggle='tooltip' data-placement='bottom' title={this.tooltipText(t, m)}>{m.format('YYYY-MM-DD HH:mm:ss')}{duration}</span>
+        <ReactInterval timeout={1000} enabled={Boolean(true)} callback={() => this.updateTime(t, m)} />
       </span>
     )
   }
@@ -1259,8 +1278,8 @@ class TaskListView extends React.Component {
                   <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
                   <td>{task.fullName}</td>
                   <td>{task.parentId}</td>
-                  <td><Timestamp t={task.startedAt} /></td>
-                  <td><Timestamp t={task.updatedAt} /></td>
+                  <td><FullTimestamp showAgo={false} t={task.startedAt} /></td>
+                  <td><FullTimestamp showAgo={false} t={task.updatedAt} /></td>
                   <td><TaskState state={task.state} /></td>
                   <td><Timestamp t={task.retryAt} /></td>
                   <td><ParamsView params={task.stateParams} /></td>
@@ -1307,7 +1326,7 @@ class TaskTimelineRow extends React.Component {
   progressBar: any;
 
   componentDidMount () {
-    jQuery(this.progressBar).tooltip()
+    jQuery(this.progressBar).tooltip({html: true})
   }
 
   progressBarClasses () {
@@ -1389,7 +1408,7 @@ class TaskTimelineRow extends React.Component {
         transform: 'translateZ(0)'
       }
       duration = taskDuration.format('d[d] h[h] mm[m] ss[s]')
-      tooltip = `${taskStartedAt.format()} - ${taskUpdatedAt.format()}`
+      tooltip = `${task.startedAt || ''} -<br/>${task.updatedAt || ''}`
     }
     return (
       <tr>
