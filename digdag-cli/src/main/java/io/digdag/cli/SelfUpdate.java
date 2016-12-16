@@ -2,6 +2,7 @@ package io.digdag.cli;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Resources;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 
 import javax.ws.rs.client.Client;
@@ -13,6 +14,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.digdag.cli.SystemExitException.systemExit;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.UriBuilder.fromUri;
@@ -100,28 +104,79 @@ public class SelfUpdate
                         version, res.getStatus(), res.getStatusInfo(), res.readEntity(String.class)));
         }
 
+        boolean backgroundMove = false;
         Path path = Files.createTempFile("digdag-", ".bat");
-        try (InputStream in = res.readEntity(InputStream.class)) {
-            try (OutputStream out = Files.newOutputStream(path)) {
-                ByteStreams.copy(in, out);
+        try {
+            try (InputStream in = res.readEntity(InputStream.class)) {
+                try (OutputStream out = Files.newOutputStream(path)) {
+                    ByteStreams.copy(in, out);
+                }
+            }
+            path.toFile().setExecutable(true, false);
+            path.toFile().setReadable(true, false);
+
+            // try to move the file to make sure that the file is on the same file system
+            // with the destination so that enable move more likely works. This is also
+            // helpful if /tmp file system is mounted with noexec option on Linux.
+            Path near = dest.getParent().resolve(".digdag.selfupdate.bat");
+            try {
+                Files.move(path, near, REPLACE_EXISTING);
+                path = near;
+            }
+            catch (AccessDeniedException ex) {
+                // ignore failure with AccessDeniedException
+            }
+
+            out.println("Verifying...");
+            verify(path, version);
+
+            try {
+                try {
+                    Files.move(path, dest, ATOMIC_MOVE);
+                }
+                catch (AccessDeniedException | AtomicMoveNotSupportedException noAtomic) {
+                    Files.move(path, dest, REPLACE_EXISTING);
+                }
+            }
+            catch (AccessDeniedException ex) {
+                throw systemExit(String.format(ENGLISH,
+                            "%s: permission denied\nhint: don't you need \"sudo\"?",
+                            ex.getMessage()));
+            }
+            catch (FileSystemException ex) {
+                String osName = System.getProperty("os.name");
+                if (osName != null && osName.toLowerCase(ENGLISH).contains("windows")) {
+                    // Windows can't change or delete a file if the file is still executing.
+                    // To avoid this limitation, here creates a background process that
+                    // repeats the move operation until it succeeds. The process deletes
+                    // itself at the end (bat script can delete itself even if it's running).
+                    backgroundMoveOnWindows(path, dest);
+                    backgroundMove = true;
+                }
+                else {
+                    throw ex;
+                }
             }
         }
-        path.toFile().setExecutable(true, false);
-        path.toFile().setReadable(true, false);
-
-        out.println("Verifying...");
-        verify(path, version);
-
-        try {
-            Files.move(path, dest, REPLACE_EXISTING);
-        }
-        catch (AccessDeniedException ex) {
-            throw systemExit(String.format(ENGLISH,
-                        "%s: permission denied\nhint: don't you need \"sudo\"?",
-                        ex.getMessage()));
+        finally {
+            if (!backgroundMove) {
+                try {
+                    if (Files.exists(path)) {
+                        Files.delete(path);
+                    }
+                }
+                catch (IOException ex) {
+                    // ignore errors and allow keeping the garbage temp file
+                }
+            }
         }
 
-        out.println("Upgraded to " + version);
+        if (backgroundMove) {
+            out.println("Upgrading to " + version + " is in progress in background.");
+        }
+        else {
+            out.println("Upgraded to " + version);
+        }
     }
 
     private void verify(Path path, String expectedVersion)
@@ -163,5 +218,24 @@ public class SelfUpdate
                 .request()
                 .buildGet();
         }
+    }
+
+    private void backgroundMoveOnWindows(Path src, Path dest)
+        throws IOException
+    {
+        // move the file in background using a bat script that also deletes itself at the end
+        Path selfCopy = Files.createTempFile("digdag-selfcopy-", ".bat");
+        Files.write(selfCopy, Resources.toByteArray(Resources.getResource("digdag/cli/selfcopy.bat")));
+        selfCopy.toFile().setExecutable(true, false);
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "cmd.exe",
+                "/c",
+                selfCopy.toAbsolutePath().toString(),
+                src.toAbsolutePath().toString(),
+                dest.toAbsolutePath().toString(),
+                ">NUL",
+                "2>NUL");
+        pb.start();
     }
 }
