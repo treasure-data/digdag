@@ -283,7 +283,7 @@ class WorkflowListView extends React.Component {
   }
 }
 
-function attemptStatus (attempt) {
+const AttemptStatusView = ({attempt}) => {
   if (attempt.done) {
     if (attempt.success) {
       return <span><span className='glyphicon glyphicon-ok text-success' /> Success</span>
@@ -315,7 +315,7 @@ function attemptCanRetry (attempt) {
 const SessionStatusView = ({session}:{session: Session}) => {
   const attempt = session.lastAttempt
   return attempt
-    ? <Link to={`/attempts/${attempt.id}`}>{attemptStatus(attempt)}</Link>
+    ? <Link to={`/attempts/${attempt.id}`}><AttemptStatusView attempt={attempt} /></Link>
     : <span><span className='glyphicon glyphicon-refresh text-info' /> Pending</span>
 }
 
@@ -383,7 +383,7 @@ class AttemptListView extends React.Component {
           <td><Timestamp t={attempt.createdAt} /></td>
           <td><SessionTime t={attempt.sessionTime} /></td>
           <td><DurationView start={attempt.createdAt} end={attempt.finishedAt} /></td>
-          <td>{attemptStatus(attempt)}</td>
+          <td><AttemptStatusView attempt={attempt} /></td>
         </tr>
       )
     })
@@ -941,7 +941,8 @@ class AttemptView extends React.Component {
   };
 
   state = {
-    attempt: null
+    attempt: null,
+    done: false
   };
 
   componentDidMount () {
@@ -962,7 +963,7 @@ class AttemptView extends React.Component {
   fetch () {
     model().fetchAttempt(this.props.attemptId).then(attempt => {
       if (!this.ignoreLastFetch) {
-        this.setState({attempt: attempt})
+        this.setState({attempt: attempt, done:attempt.done})
       }
     })
   }
@@ -1009,11 +1010,11 @@ class AttemptView extends React.Component {
             </tr>
             <tr>
               <td>Status</td>
-              <td>{attemptStatus(attempt)}</td>
+              <td><AttemptStatusView attempt={attempt} /></td>
             </tr>
           </tbody>
         </table>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1620,7 +1621,8 @@ class AttemptLogsView extends React.Component {
   };
 
   state = {
-    files: []
+    files: [],
+    done: false
   };
 
   componentDidMount () {
@@ -1639,7 +1641,13 @@ class AttemptLogsView extends React.Component {
   }
 
   fetch () {
-    model().fetchAttemptLogFileHandles(this.props.attemptId).then(({ files }) => {
+    const { attemptId } = this.props
+    model().fetchAttempt(attemptId).then(attempt => {
+      if (!this.ignoreLastFetch) {
+        this.setState({ done: attempt.done })
+      }
+    })
+    model().fetchAttemptLogFileHandles(attemptId).then(({ files }) => {
       if (!this.ignoreLastFetch) {
         const sortedFiles = _.sortBy(files, 'fileTime')
         this.setState({ files: sortedFiles })
@@ -1657,11 +1665,12 @@ class AttemptLogsView extends React.Component {
   }
 
   render () {
+    const { done } = this.state
     return (
       <div className='row'>
         <h2>Logs</h2>
         <pre>{this.logFiles()}</pre>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={!done} callback={() => this.fetch()} />
       </div>
     )
   }
