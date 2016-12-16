@@ -1645,7 +1645,7 @@ public class DatabaseSessionStoreManager
         @GetGeneratedKeys
         long insertAttempt(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("sessionId") long sessionId, @Bind("attemptName") String attemptName, @Bind("workflowDefinitionId") Long workflowDefinitionId, @Bind("stateFlags") int stateFlags, @Bind("timezone") String timezone, @Bind("params") Config params);
 
-        @SqlUpdate("insert into delayed_sssion_attempts (id, dependent_session_id, next_run_time, updated_at)" +
+        @SqlUpdate("insert into delayed_session_attempts (id, dependent_session_id, next_run_time, updated_at)" +
                 " values (:attemptId, :dependentSessionId, :nextRunTime, now())")
         void insertDelayedAttempt(@Bind("attemptId") long attemptId, @Bind("dependentSessionId") Long dependentSessionId, @Bind("nextRunTime") long nextRunTime);
 
@@ -1800,14 +1800,14 @@ public class DatabaseSessionStoreManager
                 " where id = :id")
         void updateNextSessionMonitorRunTime(@Bind("id") long id, @Bind("nextRunTime") long nextRunTime);
 
-        @SqlQuery("select da.* from delayed_sssion_attempts da" +
+        @SqlQuery("select da.* from delayed_session_attempts da" +
                 " where not exists (select * from sessions s where s.id = da.dependent_session_id)" +
                 " and next_run_time <= :currentTime" +
                 " limit :limit" +
                 " for update")
         List<StoredDelayedSessionAttempt> lockReadyDelayedAttempts(@Bind("currentTime") long currentTime, @Bind("limit") int limit);
 
-        @SqlUpdate("update delayed_sssion_attempts" +
+        @SqlUpdate("update delayed_session_attempts" +
                 " set next_run_time = :nextRunTime, updated_at = now()" +
                 " where id = :attemptId")
         void updateNextDelayedAttemptRunTime(@Bind("attemptId") long attemptId, @Bind("nextRunTime") long nextRunTime);
@@ -1848,7 +1848,7 @@ public class DatabaseSessionStoreManager
                 " where attempt_id = :attemptId")
         int deleteResumingTasks(@Bind("attemptId") long attemptId);
 
-        @SqlUpdate("delete from delayed_sssion_attempts" +
+        @SqlUpdate("delete from delayed_session_attempts" +
                 " where id = :attemptId")
         void deleteDelayedAttempt(@Bind("attemptId") long attemptId);
 

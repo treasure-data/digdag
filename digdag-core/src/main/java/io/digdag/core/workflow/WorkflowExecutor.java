@@ -330,6 +330,7 @@ public class WorkflowExecutor
             WorkflowDefinition def,
             List<ResumingTask> resumingTasks,
             List<SessionMonitor> sessionMonitors)
+        throws WorkflowTaskLimitExceededException
     {
         Workflow workflow = compiler.compile(def.getName(), def.getConfig());
         WorkflowTaskList tasks = workflow.getTasks();
