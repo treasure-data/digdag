@@ -21,7 +21,7 @@ If `digdag --help` command works, Digdag is installed successfully.
 On Windows, please open cmd.exe or PowerShell.exe and type following command exactly:
 
 ```
-PowerShell -Command "& {mkdir -Force %USERPROFILE%\bin; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile %USERPROFILE%\bin\digdag.bat}"
+PowerShell -Command "& {mkdir -Force $env:USERPROFILE\bin; Invoke-WebRequest http://dl.digdag.io/digdag-latest.jar -OutFile $env:USERPROFILE\bin\digdag.bat}"
 ```
 
 Above command downloads a file named `digdag.bat` to a folder named `bin` at your home folder (`C:\Users\YOUR_NAME\bin`).
