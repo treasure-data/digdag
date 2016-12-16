@@ -34,7 +34,7 @@ if "%overwrite_optimize%" == "true" (
 if "%optimize%" == "true" (
     set java_args=-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC %java_args%
 ) else (
-    set java_args=-XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
+    set java_args=-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none %java_args%
 )
 
 java %java_args% -jar "%this%" %args%
@@ -132,7 +132,7 @@ done
 if test "$overwrite_optimize" = "true" -o "$default_optimize" -a "$overwrite_optimize" != "false"; then
     java_args="-XX:+AggressiveOpts -XX:+UseConcMarkSweepGC $java_args"
 else
-    java_args="-XX:+AggressiveOpts -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xverify:none $java_args"
+    java_args="-XX:+AggressiveOpts -XX:TieredStopAtLevel=1 -Xverify:none $java_args"
 fi
 
 exec java $java_args -jar "$0" "$@"
