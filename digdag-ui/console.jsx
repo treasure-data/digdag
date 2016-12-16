@@ -19,7 +19,7 @@ import yaml from 'js-yaml'
 import Duration from 'duration'
 import uuid from 'node-uuid'
 import jQuery from 'jquery'
-import ReactInterval from 'react-interval';
+import ReactInterval from 'react-interval'
 
 // noinspection ES6UnusedImports
 import { TD_LOAD_VALUE_TOKEN, TD_RUN_VALUE_TOKEN } from './ace-digdag'
@@ -566,7 +566,7 @@ class ScheduleListView extends React.Component {
             </tbody>
           </table>
         </div>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -593,7 +593,7 @@ class ProjectsView extends React.Component {
       <div className='projects'>
         <h2>Projects</h2>
         <ProjectListView projects={this.state.projects} />
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -620,7 +620,7 @@ class SessionsView extends React.Component {
       <div>
         <h2>Sessions</h2>
         <SessionListView sessions={this.state.sessions} />
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -716,7 +716,7 @@ class ProjectView extends React.Component {
           <h2>Sessions</h2>
           <SessionListView sessions={this.state.sessions} />
         </div>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -824,7 +824,7 @@ class WorkflowView extends React.Component {
           <h2>Files</h2>
           <WorkflowFilesView workflow={wf} projectArchive={this.state.projectArchive} />
         </div>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -963,11 +963,6 @@ class AttemptView extends React.Component {
         this.setState({attempt: attempt})
       }
     })
-    model().fetchAttemptTasks(this.props.attemptId).then(({ tasks }) => {
-      if (!this.ignoreLastFetch) {
-        this.setState({tasks})
-      }
-    })
   }
 
   render () {
@@ -1016,7 +1011,7 @@ class AttemptView extends React.Component {
             </tr>
           </tbody>
         </table>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1209,7 +1204,7 @@ const JobLink = ({storeParams, stateParams}:{storeParams: Object, stateParams: O
   return <a href={link} target='_blank'>{jobId}</a>
 }
 
-const TaskListView = (props:{tasks: Array<Task>}) =>
+const TaskListView = (props:{tasks: Map<string, Task>}) =>
   <div className='table-responsive'>
     <table className='table table-striped table-hover table-condensed'>
       <thead>
@@ -1228,7 +1223,7 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
       </thead>
       <tbody>
         {
-          props.tasks.map(task =>
+          Array.from(props.tasks.values()).map(task =>
             <tr key={task.id}>
               <td>{task.id}</td>
               <td><JobLink storeParams={task.storeParams} stateParams={task.stateParams} /></td>
@@ -1247,11 +1242,25 @@ const TaskListView = (props:{tasks: Array<Task>}) =>
     </table>
   </div>
 
+function taskDone (task: Task): boolean {
+  switch (task.state) {
+
+    case 'success':
+    case 'group_error':
+    case 'error':
+    case 'canceled':
+      return true
+
+    default:
+      return false
+  }
+}
+
 class TaskTimelineRow extends React.Component {
 
   props:{
     task: Task;
-    rootTask: ?Task;
+    tasks: Map<string, Task>;
     startTime: ?Object;
     endTime: ?Object;
   };
@@ -1295,45 +1304,56 @@ class TaskTimelineRow extends React.Component {
     }
   }
 
-  taskName () {
-    const rootTask = this.props.rootTask
-    if (rootTask == null) {
-      return this.props.task.fullName
-    } else {
-      return this.props.task.fullName.substring(rootTask.fullName.length)
+  taskLevel () {
+    let task = this.props.task
+    const tasks = this.props.tasks
+    let level = 0
+    while (task != null && task.parentId != null) {
+      level++
+      task = tasks.get(task.parentId)
     }
+    return level
   }
 
   render () {
-    const { startTime, endTime, task } = this.props
+    const { startTime, endTime, task, tasks } = this.props
+    const parentTask = tasks.get(task.parentId)
+    const taskName = task.fullName.substring(parentTask.fullName.length)
     let style = {}
     let duration = ''
     let tooltip = ''
     if (startTime == null || endTime == null || task.startedAt == null || task.updatedAt == null) {
       style = { width: 0 }
     } else {
-      const totalSecs = endTime.unix() - startTime.unix()
+      const totalMillis = endTime.valueOf() - startTime.valueOf()
       const taskStartedAt = moment(task.startedAt)
       const taskUpdatedAt = moment(task.updatedAt)
-      const taskDuration = moment.duration(taskUpdatedAt.diff(taskStartedAt))
-      const taskRelStartSecs = taskStartedAt.unix() - startTime.unix()
-      const taskRelEndSecs = taskUpdatedAt.unix() - startTime.unix()
-      const taskStartPct = 100.0 * (taskRelStartSecs / totalSecs)
-      const taskEndPct = 100.0 * (taskRelEndSecs / totalSecs)
+      const taskEndTime = taskDone(task) ? taskUpdatedAt : moment()
+      const taskDuration = moment.duration(taskEndTime.diff(taskStartedAt))
+      const taskRelStartMillis = 1.0 * (taskStartedAt.valueOf() - startTime.valueOf())
+      const taskRelEndMillis = 1.0 * (taskEndTime.valueOf() - startTime.valueOf())
+      const taskStartPct = 100.0 * (taskRelStartMillis / totalMillis)
+      const taskEndPct = 100.0 * (taskRelEndMillis / totalMillis)
       const marginLeft = taskStartPct
       const marginRight = 100.0 - taskEndPct
       const width = taskEndPct - taskStartPct
       style = {
         marginLeft: `${marginLeft}%`,
         width: `${width}%`,
-        marginRight: `${marginRight}%`
+        marginRight: `${marginRight}%`,
+        // http://stackoverflow.com/a/13293044
+        // ¯\_(ツ)_/¯
+        transform: 'translateZ(0)'
       }
+      // if (!taskDone(task) && task.fullName.includes("^sub")) {
+      //   console.log(`marginLeft: ${style.marginLeft}, width: ${style.width}, marginRight: ${style.marginRight}`)
+      // }
       duration = taskDuration.format('d[d] h[h] mm[m] ss[s]')
       tooltip = `${taskStartedAt.format()} - ${taskUpdatedAt.format()}`
     }
     return (
       <tr>
-        <td style={{whiteSpace: 'nowrap'}}>{this.taskName()}</td>
+        <td style={{whiteSpace: 'nowrap', paddingLeft: `${this.taskLevel() * 0.5}em`}}>{taskName}</td>
         <td style={{width: '100%'}}>
           <div className='progress' style={{marginBottom: 0}}>
             <div ref={(em) => { this.progressBar = em }} data-toggle='tooltip' data-placement='bottom' title={tooltip}
@@ -1346,8 +1366,7 @@ class TaskTimelineRow extends React.Component {
 }
 
 const TaskTimelineView = (props:{
-  tasks: Array<Task>;
-  rootTask: ?Task;
+  tasks: Map<string, Task>;
   startTime: ?Object;
   endTime: ?Object;
 }) =>
@@ -1360,10 +1379,14 @@ const TaskTimelineView = (props:{
         </tr>
       </thead>
       <tbody>
-        { props.tasks
-          .filter(task => task !== props.rootTask)
-          .map(task =>
-            <TaskTimelineRow key={task.id} task={task} rootTask={props.rootTask} startTime={props.startTime} endTime={props.endTime} />) }
+        { Array.from(props.tasks.values())
+          .filter(task => task.parentId != null)
+          .filter(task => !task.fullName.endsWith("^sub"))
+          .map(task => {
+            let parentId: string = task.parentId == null ? '' : task.parentId
+            return <TaskTimelineRow key={task.id} task={task} tasks={props.tasks} startTime={props.startTime} endTime={props.endTime} />
+          })
+        }
       </tbody>
     </table>
   </div>
@@ -1376,7 +1399,7 @@ class AttemptTasksView extends React.Component {
   };
 
   state = {
-    tasks: []
+    tasks: new Map()
   };
 
   componentDidMount () {
@@ -1395,7 +1418,7 @@ class AttemptTasksView extends React.Component {
   }
 
   fetch () {
-    model().fetchAttemptTasks(this.props.attemptId).then(({ tasks }) => {
+    model().fetchAttemptTasks(this.props.attemptId).then(tasks => {
       if (!this.ignoreLastFetch) {
         this.setState({tasks})
       }
@@ -1407,24 +1430,10 @@ class AttemptTasksView extends React.Component {
       <div className='row'>
         <h2>Tasks</h2>
         <TaskListView tasks={this.state.tasks} />
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
-}
-
-function firstStartedAt (tasks: Array<Task>): ?Object {
-  return tasks
-    .filter(task => task.startedAt !== null)
-    .map(task => moment(task.startedAt))
-    .reduce((first, startedAt) => first === null || startedAt.isBefore(first) ? startedAt : first, null)
-}
-
-function lastUpdatedAt (tasks: Array<Task>): ?Object {
-  return tasks
-    .filter(task => task.updatedAt !== null)
-    .map(task => moment(task.updatedAt))
-    .reduce((last, updatedAt) => last === null || updatedAt.isAfter(last) ? updatedAt : last, null)
 }
 
 class AttemptTimelineView extends React.Component {
@@ -1435,7 +1444,11 @@ class AttemptTimelineView extends React.Component {
   };
 
   state = {
-    tasks: []
+    tasks: new Map(),
+    done: false,
+    firstStartedAt: null,
+    lastUpdatedAt: null,
+    endTime: null
   };
 
   componentDidMount () {
@@ -1453,24 +1466,59 @@ class AttemptTimelineView extends React.Component {
     this.fetch()
   }
 
+  firstStartedAt (tasks: Array<Task>): ?Object {
+    return tasks
+      .filter(task => task.startedAt !== null)
+      .map(task => moment(task.startedAt))
+      .reduce((first, startedAt) => first === null || startedAt.isBefore(first) ? startedAt : first, null)
+  }
+
+  lastUpdatedAt (tasks: Array<Task>): ?Object {
+    return tasks
+      .filter(task => task.updatedAt !== null)
+      .map(task => moment(task.updatedAt))
+      .reduce((last, updatedAt) => last === null || updatedAt.isAfter(last) ? updatedAt : last, null)
+  }
+
   fetch () {
-    model().fetchAttemptTasks(this.props.attemptId).then(({ tasks }) => {
+    model().fetchAttemptTasks(this.props.attemptId).then(taskMap => {
       if (!this.ignoreLastFetch) {
-        this.setState({tasks})
+        const tasks = Array.from(taskMap.values())
+        const done = tasks.every(task => taskDone(task))
+        const lastUpdatedAt = this.lastUpdatedAt(tasks)
+        const firstStartedAt = this.firstStartedAt(tasks)
+        const endTime = this.endTime(done, lastUpdatedAt)
+        this.setState({
+          tasks: taskMap,
+          done,
+          firstStartedAt,
+          lastUpdatedAt,
+          endTime
+        })
       }
     })
   }
 
-  rootTask (): ?Task {
-    return this.state.tasks.find(task => task.parentId == null)
+  updateTime () {
+    const { done, lastUpdatedAt } = this.state
+    this.setState({endTime: this.endTime(done, lastUpdatedAt)})
+  }
+
+  endTime (done: boolean, lastUpdatedAt: ?Object) {
+    if (this.state.done) {
+      return this.state.lastUpdatedAt
+    } else {
+      return moment().add(1, 'minute').startOf('minute')
+    }
   }
 
   render () {
     return (
       <div className='row'>
         <h2>Timeline</h2>
-        <TaskTimelineView tasks={this.state.tasks} rootTask={this.rootTask()} startTime={firstStartedAt(this.state.tasks)} endTime={lastUpdatedAt(this.state.tasks)} />
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <TaskTimelineView tasks={this.state.tasks} startTime={this.state.firstStartedAt} endTime={this.state.endTime} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
+        <ReactInterval timeout={500} enabled={Boolean(true)} callback={() => this.updateTime()} />
       </div>
     )
   }
@@ -1571,7 +1619,7 @@ class AttemptLogsView extends React.Component {
       <div className='row'>
         <h2>Logs</h2>
         <pre>{this.logFiles()}</pre>
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1740,7 +1788,7 @@ class WorkflowPage extends React.Component {
     return (
       <div className='container-fluid'>
         {this.workflow()}
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -1805,8 +1853,8 @@ class WorkflowRevisionPage extends React.Component {
 const AttemptPage = (props:{params: {attemptId: string}}) =>
   <div className='container-fluid'>
     <AttemptView attemptId={props.params.attemptId} />
-    <AttemptTasksView attemptId={props.params.attemptId} />
     <AttemptTimelineView attemptId={props.params.attemptId} />
+    <AttemptTasksView attemptId={props.params.attemptId} />
     <AttemptLogsView attemptId={props.params.attemptId} />
   </div>
 
@@ -1821,7 +1869,6 @@ class SessionPage extends React.Component {
 
   state:{
     session: ?Session;
-    tasks: Array<Task>;
     attempts: Array<Attempt>;
   };
 
@@ -1896,11 +1943,11 @@ class SessionPage extends React.Component {
     return (
       <div className='container-fluid'>
         {this.session()}
-        {this.tasks()}
         {this.timeline()}
+        {this.tasks()}
         {this.logs()}
         {this.attempts()}
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }
@@ -2005,7 +2052,7 @@ class WorkflowsView extends React.Component {
     this.fetch()
   }
 
-  fetch() {
+  fetch () {
     model().fetchWorkflows().then(({ workflows }) => {
       this.setState({workflows})
     })
@@ -2016,7 +2063,7 @@ class WorkflowsView extends React.Component {
       <div className='workflows'>
         <h2>Workflows</h2>
         <WorkflowListView workflows={this.state.workflows} />
-        <ReactInterval timeout={refreshIntervalMillis} enabled={true} callback={() => this.fetch()} />
+        <ReactInterval timeout={refreshIntervalMillis} enabled={Boolean(true)} callback={() => this.fetch()} />
       </div>
     )
   }

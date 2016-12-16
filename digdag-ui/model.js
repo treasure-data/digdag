@@ -283,8 +283,9 @@ export class Model {
     return this.get(`sessions/${sessionId}/attempts?include_retried=true`)
   }
 
-  fetchAttemptTasks (attemptId: string): Promise<TaskCollection> {
+  fetchAttemptTasks (attemptId: string): Promise<Map<string, Task>> {
     return this.get(`attempts/${attemptId}/tasks`)
+      .then(taskCollection => new Map(taskCollection.tasks.map(task => [task.id, task])))
   }
 
   fetchAttemptLogFileHandles (attemptId: string): Promise<LogFileHandleCollection> {
