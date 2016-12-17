@@ -209,10 +209,9 @@ Runs a workflow scheduler that runs schedules periodically. This picks up all wo
   Example: -P params.dig
 
 :command:`-c, --config PATH`
-  Server configuration property path. This is same with server command. See `Digdag server <digdag_server.html>`_ for details.
+  Configuration file to load. (default: ~/.config/digdag/config)
 
-  Example: -c digdag.properties
-
+  Example: -c digdag-server/server.properties
 
 selfupdate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
