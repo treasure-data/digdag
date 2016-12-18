@@ -146,7 +146,7 @@ public class PgConnectionTest
         AtomicBoolean called = new AtomicBoolean(false);
         assertThat(txHelper.lockedTransaction(queryId, () -> called.set(true)), is(true));
         verify(pgConnection).execute(eq("BEGIN"));
-        verify(pgConnection).execute(eq("UPDATE \"__digdag_status\" SET completed_at = now() WHERE query_id = '" + queryId + "'"));
+        verify(pgConnection).execute(eq("UPDATE \"__digdag_status\" SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '" + queryId + "'"));
         verify(pgConnection).execute(eq("COMMIT"));
     }
 
