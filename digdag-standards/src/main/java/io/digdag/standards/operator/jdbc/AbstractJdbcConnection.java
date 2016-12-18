@@ -57,8 +57,11 @@ public abstract class AbstractJdbcConnection
     @Override
     public SQLException validateStatement(String sql)
     {
-        // if JDBC or DBMS does not use server-side prepared statements by default,
-        // subclass needs to override this method.
+        // Here uses nativeSQL() instead of Connection#prepareStatement because
+        // prepareStatement() validates a SQL by creating a server-side prepared statement
+        // and RDBMS wrongly decides that the SQL is broken in this case:
+        //   * the SQL includes multiple statements
+        //   * a statement creates a table and a later statement uses it in the SQL
         try {
             connection.nativeSQL(sql);
             return null;
