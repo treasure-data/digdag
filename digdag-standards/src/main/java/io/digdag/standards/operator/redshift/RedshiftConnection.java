@@ -32,6 +32,8 @@ import io.digdag.standards.operator.jdbc.DatabaseException;
 import io.digdag.standards.operator.jdbc.JdbcResultSet;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 import io.digdag.standards.operator.jdbc.NotReadOnlyException;
+import org.postgresql.core.Utils;
+
 import static java.util.Locale.ENGLISH;
 import static org.postgresql.core.Utils.escapeIdentifier;
 
@@ -57,8 +59,13 @@ public class RedshiftConnection
 
     private static String escapeParam(String param)
     {
-        // TODO: Implement!
-        return param;
+        StringBuilder sb = new StringBuilder();
+        try {
+            return Utils.escapeLiteral(sb, param, false).toString();
+        }
+        catch (SQLException e) {
+            throw new ConfigException("Failed to escape a parameter in configuration file: param=" + param, e);
+        }
     }
 
     private <T> void appendOption(StringBuilder sb, String name, Optional<T> param)
@@ -99,7 +106,7 @@ public class RedshiftConnection
 
         sb.append(
                 String.format("COPY %s FROM '%s'\n",
-                        escapeParam(copyConfig.tableName),
+                        escapeIdent(copyConfig.tableName),
                         escapeParam(copyConfig.from)));
 
         // credentials
@@ -121,7 +128,7 @@ public class RedshiftConnection
             String s = copyConfig.csv.get();
             sb.append("CSV");
             if (!s.isEmpty()) {
-                sb.append(String.format(" QUOTE '%s'", s));
+                sb.append(String.format(" QUOTE '%s'", escapeParam(s)));
             }
             sb.append("\n");
         }

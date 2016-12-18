@@ -94,9 +94,25 @@ public class RedshiftLoadOperatorFactoryTest
         );
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                 "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                 "CSV\n"));
+    }
+
+    @Test
+    public void createCopyConfigWithSimpleCsvOptionWithQuotesInParams()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "table_name", "my_\"table",
+                "from", "s3://my-'bucket/my-''path",
+                "csv", "'"
+        );
+        String sql = getCopyConfig(configInput);
+        assertThat(sql,
+                is("COPY \"my_\"\"table\" FROM 's3://my-''bucket/my-''''path'\n" +
+                "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
+                "CSV QUOTE ''''\n"));
     }
 
     @Test
@@ -139,7 +155,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "READRATIO 123\n" +
                         "MANIFEST\n" +
@@ -208,7 +224,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .build();
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "READRATIO 123\n" +
                         "REGION 'us-east-1'\n" +
@@ -238,7 +254,7 @@ public class RedshiftLoadOperatorFactoryTest
         );
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FIXEDWIDTH 'col1:11,col2:222,col3:333,col4:4444'\n"));
     }
@@ -254,7 +270,7 @@ public class RedshiftLoadOperatorFactoryTest
         );
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FORMAT AS JSON 's3://source-bucket/jsonpaths_file'\n"));
     }
@@ -270,7 +286,7 @@ public class RedshiftLoadOperatorFactoryTest
         );
         String sql = getCopyConfig(configInput);
         assertThat(sql,
-                is("COPY my_table FROM 's3://my-bucket/my-path'\n" +
+                is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FORMAT AS AVRO 'auto'\n"));
     }
