@@ -138,7 +138,7 @@ public abstract class AbstractJdbcJobOperator<C>
                     txHelper = new NoTransactionHelper();
                 }
 
-                txHelper.prepare();
+                txHelper.prepare(queryId);
 
                 boolean executed = txHelper.lockedTransaction(queryId, () -> {
                     if (statementMayReturnResults) {

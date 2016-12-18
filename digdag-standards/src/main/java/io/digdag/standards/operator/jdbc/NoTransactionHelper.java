@@ -6,7 +6,7 @@ public class NoTransactionHelper
     implements TransactionHelper
 {
     @Override
-    public void prepare()
+    public void prepare(UUID queryId)
     { }
 
     @Override

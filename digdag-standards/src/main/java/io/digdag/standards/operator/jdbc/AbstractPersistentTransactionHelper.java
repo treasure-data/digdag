@@ -55,7 +55,7 @@ public abstract class AbstractPersistentTransactionHelper
         } while (true);
     }
 
-    protected static enum StatusRow
+    protected enum StatusRow
     {
         LOCKED_COMPLETED,
         LOCKED_NOT_COMPLETED,

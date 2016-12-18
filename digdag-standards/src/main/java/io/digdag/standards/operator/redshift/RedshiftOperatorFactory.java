@@ -72,11 +72,7 @@ public class RedshiftOperatorFactory
         @Override
         protected boolean strictTransaction(Config params)
         {
-            if (params.getOptional("strict_transaction", Boolean.class).isPresent()) {
-                // RedShift doesn't support "SELECT FOR UPDATE" statement
-                logger.warn("'strict_transaction' is ignored in 'redshift' operator");
-            }
-            return false;
+            return params.get("strict_transaction", Boolean.class, true);
         }
 
         @Override

@@ -114,7 +114,8 @@ public class PgConnectionTest
             throws SQLException
     {
         TransactionHelper txHelper = pgConnection.getStrictTransactionHelper("__digdag_status", Duration.ofDays(1));
-        txHelper.prepare();
+        UUID queryId = UUID.randomUUID();
+        txHelper.prepare(queryId);
         verify(pgConnection).execute(eq(
                 "CREATE TABLE IF NOT EXISTS \"__digdag_status\"" +
                         " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)"));

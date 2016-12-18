@@ -5,37 +5,19 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.standards.operator.pg.PgConnection;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import io.digdag.client.config.Config;
 import io.digdag.standards.operator.jdbc.LockConflictException;
-import io.digdag.util.DurationParam;
-import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;
-import io.digdag.standards.operator.jdbc.AbstractPersistentTransactionHelper;
 import io.digdag.standards.operator.jdbc.DatabaseException;
-import io.digdag.standards.operator.jdbc.JdbcResultSet;
-import io.digdag.standards.operator.jdbc.TransactionHelper;
-import io.digdag.standards.operator.jdbc.NotReadOnlyException;
 import org.postgresql.core.Utils;
 
 import static java.util.Locale.ENGLISH;
-import static org.postgresql.core.Utils.escapeIdentifier;
 
 public class RedshiftConnection
     extends PgConnection
@@ -46,7 +28,7 @@ public class RedshiftConnection
         return new RedshiftConnection(config.openConnection());
     }
 
-    protected RedshiftConnection(Connection connection)
+    RedshiftConnection(Connection connection)
     {
         super(connection);
     }
@@ -166,7 +148,7 @@ public class RedshiftConnection
         return sb.toString();
     }
 
-    public class RedshiftPersistentTransactionHelper
+    private class RedshiftPersistentTransactionHelper
             extends PgPersistentTransactionHelper
     {
         RedshiftPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
@@ -175,13 +157,59 @@ public class RedshiftConnection
         }
 
         @Override
-        protected String buildCreateTable()
+        public void cleanup()
+        {
+            // TODO: Implement!!!
+        }
+
+        @Override
+        protected String statusTableName(UUID queryId)
+        {
+            return String.format("%s_%s", statusTableName, queryId);
+        }
+
+        @Override
+        protected String buildCreateTable(UUID queryId)
         {
             // Redshift doesn't support timestamptz type. Timestamp type is always UTC.
             return String.format(ENGLISH,
                     "CREATE TABLE IF NOT EXISTS %s" +
-                    " (query_id text NOT NULL UNIQUE, created_at timestamp NOT NULL, completed_at timestamp)",
-                    escapeIdent(statusTableName));
+                            " (query_id text NOT NULL UNIQUE, created_at timestamp NOT NULL, completed_at timestamp)",
+                    escapeIdent(statusTableName(queryId)));
+        }
+
+        @Override
+        protected StatusRow lockStatusRow(UUID queryId)
+                throws LockConflictException
+        {
+            try (Statement stmt = connection.createStatement()) {
+                String escapedStatusTableName = escapeIdent(statusTableName(queryId));
+
+                stmt.executeUpdate(String.format(ENGLISH, "LOCK TABLE %s", escapedStatusTableName));
+
+                ResultSet rs = stmt.executeQuery(
+                        String.format(ENGLISH, "SELECT completed_at FROM %s WHERE query_id = '%s'",
+                                escapedStatusTableName, queryId.toString())
+                );
+                if (rs.next()) {
+                    // status row exists and locked. get status of it.
+                    rs.getTimestamp(1);
+                    if (rs.wasNull()) {
+                        return StatusRow.LOCKED_NOT_COMPLETED;
+                    }
+                    else {
+                        return StatusRow.LOCKED_COMPLETED;
+                    }
+                }
+                else {
+                    return StatusRow.NOT_EXISTS;
+                }
+            }
+            catch (SQLException ex) {
+                // Redshift doesn't support "LOCK TABLE NOWAIT",
+                // so "55P03 lock_not_available" shouldn't happen here
+                throw new DatabaseException("Failed to lock a status row", ex);
+            }
         }
     }
 

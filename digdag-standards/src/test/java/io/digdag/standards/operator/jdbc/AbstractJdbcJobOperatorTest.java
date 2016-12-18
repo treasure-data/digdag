@@ -1,7 +1,6 @@
 package io.digdag.standards.operator.jdbc;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.digdag.client.config.Config;
 import io.digdag.spi.SecretProvider;
@@ -12,10 +11,8 @@ import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.TemplateEngine;
 import org.immutables.value.Value;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -23,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -233,7 +229,7 @@ public class AbstractJdbcJobOperatorTest
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -267,7 +263,7 @@ public class AbstractJdbcJobOperatorTest
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildCreateTableStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -330,7 +326,7 @@ public class AbstractJdbcJobOperatorTest
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }
@@ -365,7 +361,7 @@ public class AbstractJdbcJobOperatorTest
         verify(operator).connect(any(TestConnectionConfig.class));
         verify(connection).validateStatement(eq(sql));
         verify(connection).buildInsertStatement(eq(sql), eq(ImmutableTableReference.builder().name("desttbl").build()));
-        verify(txHelper).prepare();
+        verify(txHelper).prepare(queryId);
         verify(txHelper).lockedTransaction(eq(queryId), anyObject());
         verify(txHelper).cleanup();
     }

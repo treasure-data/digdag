@@ -83,12 +83,7 @@ public class RedshiftLoadOperatorFactory
         @Override
         protected boolean strictTransaction(Config params)
         {
-            // TODO: DRY
-            if (params.getOptional("strict_transaction", Boolean.class).isPresent()) {
-                // RedShift doesn't support "SELECT FOR UPDATE" statement
-                logger.warn("'strict_transaction' is ignored in 'redshift' operator");
-            }
-            return false;
+            return params.get("strict_transaction", Boolean.class, true);
         }
 
         @Override
@@ -250,7 +245,7 @@ public class RedshiftLoadOperatorFactory
                     txHelper = new NoTransactionHelper();
                 }
 
-                txHelper.prepare();
+                txHelper.prepare(queryId);
 
                 boolean executed = txHelper.lockedTransaction(queryId, () -> {
                     connection.executeUpdate(query);

@@ -6,14 +6,10 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import io.digdag.client.config.Config;
 import io.digdag.standards.operator.jdbc.LockConflictException;
-import io.digdag.util.DurationParam;
 import io.digdag.standards.operator.jdbc.AbstractJdbcConnection;
 import io.digdag.standards.operator.jdbc.AbstractPersistentTransactionHelper;
 import io.digdag.standards.operator.jdbc.DatabaseException;
@@ -90,7 +86,12 @@ public class PgConnection
             super(statusTableName, cleanupDuration);
         }
 
-        protected String buildCreateTable()
+        protected String statusTableName(UUID queryId)
+        {
+            return statusTableName;
+        }
+
+        protected String buildCreateTable(UUID queryId)
         {
             return String.format(ENGLISH,
                     "CREATE TABLE IF NOT EXISTS %s" +
@@ -99,11 +100,15 @@ public class PgConnection
         }
 
         @Override
-        public void prepare()
+        public void prepare(UUID queryId)
         {
-            String sql = buildCreateTable();
-            executeStatement("create a status table " + escapeIdent(statusTableName) + ".\nhint: if you don't have permission to create tables, please add \"strict_transaction: false\" option to disable exactly-once transaction control that depends on this table.\nOr please ask system administrator to create this table using following command: " + sql + ";",
-                   sql);
+            String sql = buildCreateTable(queryId);
+            executeStatement("create a status table " + escapeIdent(statusTableName(queryId))
+                            + ".\nhint: if you don't have permission to create tables, "
+                            + "please add \"strict_transaction: false\" option to disable "
+                            + "exactly-once transaction control that depends on this table.\n"
+                            + "Or please ask system administrator to create this table using following command: "
+                            + sql + ";", sql);
         }
 
         @Override
@@ -159,12 +164,11 @@ public class PgConnection
         {
             executeStatement("update status row",
                     String.format(ENGLISH,
-                        "UPDATE %s SET completed_at = now() WHERE query_id = '%s'",
-                        escapeIdent(statusTableName),
+                        "UPDATE %s SET completed_at = CURRENT_TIMESTAMP WHERE query_id = '%s'",
+                        escapeIdent(statusTableName(queryId)),
                         queryId.toString())
                     );
-            executeStatement("commit updated status row",
-                    "COMMIT");
+            executeStatement("commit updated status row", "COMMIT");
         }
 
         @Override
@@ -172,8 +176,8 @@ public class PgConnection
         {
             try {
                 execute(String.format(ENGLISH,
-                            "INSERT INTO %s (query_id, created_at) VALUES ('%s', now())",
-                            escapeIdent(statusTableName), queryId.toString()));
+                            "INSERT INTO %s (query_id, created_at) VALUES ('%s', CURRENT_TIMESTAMP)",
+                            escapeIdent(statusTableName(queryId)), queryId.toString()));
                 // succeeded to insert a status row.
                 execute("COMMIT");
             }
@@ -189,7 +193,7 @@ public class PgConnection
             }
         }
 
-        private boolean isConflictException(SQLException ex)
+        protected boolean isConflictException(SQLException ex)
         {
             return "23505".equals(ex.getSQLState());
         }
