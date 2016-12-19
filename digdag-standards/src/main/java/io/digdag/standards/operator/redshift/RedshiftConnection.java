@@ -1,6 +1,7 @@
 package io.digdag.standards.operator.redshift;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import io.digdag.client.config.ConfigException;
 import io.digdag.standards.operator.pg.PgConnection;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
@@ -311,6 +312,8 @@ public class RedshiftConnection
         {
         }
 
+        private static final List<String> ACCEPTED_FLAGS_FOR_XXXDATE = ImmutableList.of("ON", "OFF", "TRUE", "FALSE");
+
         private void validate()
         {
             if (accessKeyId == null || secretAccessKey == null) {
@@ -346,8 +349,17 @@ public class RedshiftConnection
             }
             // As for FIXEDWIDTH, combinations with other format are already validated
 
-            // TODO: Take care of "READRATIO argument is only supported for DynamoDB based COPY"
-            // TODO: Check if STATUPDATE/COMPUPDATE should be in ON/OFF/TRUE/FALSE
+            if (statupdate.isPresent()) {
+                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(statupdate.get().toUpperCase())) {
+                    throw new ConfigException("STATUPDATE should be in ON/OFF/TRUE/FALSE: " + statupdate.get());
+                }
+            }
+
+            if (compupdate.isPresent()) {
+                if (!ACCEPTED_FLAGS_FOR_XXXDATE.contains(compupdate.get().toUpperCase())) {
+                    throw new ConfigException("COMPUPDATE should be in ON/OFF/TRUE/FALSE: " + compupdate.get());
+                }
+            }
         }
 
         public static CopyConfig configure(CopyConfigConfigurator configurator)

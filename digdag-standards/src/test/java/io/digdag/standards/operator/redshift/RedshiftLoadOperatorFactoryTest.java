@@ -2,16 +2,22 @@ package io.digdag.standards.operator.redshift;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.standards.operator.jdbc.JdbcOpTestHelper;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -24,6 +30,9 @@ public class RedshiftLoadOperatorFactoryTest
 {
     private JdbcOpTestHelper testHelper = new JdbcOpTestHelper();
     private RedshiftLoadOperatorFactory operatorFactory;
+
+    @Rule
+    public ExpectedException thrown= ExpectedException.none();
 
     @Before
     public void setUp()
@@ -151,7 +160,7 @@ public class RedshiftLoadOperatorFactoryTest
                 .put("compupdate", "ON")
                 .put("maxerror", 34)
                 .put("noload", true)
-                .put("statupdate", "OFF")
+                .put("statupdate", "on")
                 .build();
         String sql = getCopyConfig(configInput);
         assertThat(sql,
@@ -182,7 +191,7 @@ public class RedshiftLoadOperatorFactoryTest
                         "COMPUPDATE ON\n" +
                         "MAXERROR 34\n" +
                         "NOLOAD\n" +
-                        "STATUPDATE OFF\n"));
+                        "STATUPDATE on\n"));
     }
 
     @Test
@@ -289,5 +298,162 @@ public class RedshiftLoadOperatorFactoryTest
                 is("COPY \"my_table\" FROM 's3://my-bucket/my-path'\n" +
                         "CREDENTIALS 'aws_access_key_id=my-access-key-id;aws_secret_access_key=my-secret-access-key'\n" +
                         "FORMAT AS AVRO 'auto'\n"));
+    }
+
+    @Test
+    public void invalidStatupdate()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "table_name", "my_table",
+                "from", "s3://my-bucket/my-path",
+                "csv", "",
+                "statupdate", "YES"
+        );
+
+        this.thrown.expect(ConfigException.class);
+        getCopyConfig(configInput);
+        assertTrue(false);
+    }
+
+    @Test
+    public void invalidCompupdate()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "table_name", "my_table",
+                "from", "s3://my-bucket/my-path",
+                "csv", "",
+                "compupdate", "YES"
+        );
+
+        this.thrown.expect(ConfigException.class);
+        getCopyConfig(configInput);
+        assertTrue(false);
+    }
+
+    @Test
+    public void noTableName()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "from", "s3://my-bucket/my-path",
+                "csv", ""
+        );
+
+        this.thrown.expect(ConfigException.class);
+        getCopyConfig(configInput);
+        assertTrue(false);
+    }
+
+    @Test
+    public void noFrom()
+            throws IOException
+    {
+        Map<String, Object> configInput = ImmutableMap.of(
+                "table_name", "my_table",
+                "csv", ""
+        );
+
+        this.thrown.expect(ConfigException.class);
+        getCopyConfig(configInput);
+        assertTrue(false);
+    }
+
+    @Test
+    public void wrongCombinationWithCsv()
+            throws IOException
+    {
+        ImmutableMap<String, Object> kvs = ImmutableMap.<String, Object>builder()
+                .put("removequotes", true)
+                .put("escape", true)
+                .build();
+        for (Map.Entry<String, Object> kv : kvs.entrySet()) {
+            Map<String, Object> configInput = ImmutableMap.of(
+                    "table_name", "my_table",
+                    "from", "s3://my-bucket/my-path",
+                    "csv", "",
+                    kv.getKey(), kv.getValue()
+            );
+
+            this.thrown.expect(ConfigException.class);
+            getCopyConfig(configInput);
+            assertTrue(kv.toString(), false);
+        }
+    }
+
+    @Test
+    public void wrongCombinationWithDelimiter()
+            throws IOException
+    {
+        ImmutableMap<String, Object> kvs = ImmutableMap.<String, Object>builder()
+                .put("csv", "")
+                .put("delimiter", "'")
+                .put("json", "auto")
+                .put("avro", "auto")
+                .build();
+        for (Map.Entry<String, Object> kv : kvs.entrySet()) {
+            Map<String, Object> configInput = ImmutableMap.of(
+                    "table_name", "my_table",
+                    "from", "s3://my-bucket/my-path",
+                    "fixedwidth", "col0:42",
+                    kv.getKey(), kv.getValue()
+            );
+
+            this.thrown.expect(ConfigException.class);
+            getCopyConfig(configInput);
+            assertTrue(kv.toString(), false);
+        }
+    }
+
+    @Test
+    public void wrongCombinationWithJson()
+            throws IOException
+    {
+        ImmutableMap<String, Object> kvs = ImmutableMap.<String, Object>builder()
+                .put("csv", "")
+                .put("delimiter", "'")
+                .put("avro", "auto")
+                .put("escape", true)
+                .put("filerecord", true)
+                .put("null_as", "X")
+                .put("readratio", 150)
+                .put("removequotes", true)
+                .build();
+        for (Map.Entry<String, Object> kv : kvs.entrySet()) {
+            Map<String, Object> configInput = ImmutableMap.of(
+                    "table_name", "my_table",
+                    "from", "s3://my-bucket/my-path",
+                    "json", "auto",
+                    kv.getKey(), kv.getValue()
+            );
+
+            this.thrown.expect(ConfigException.class);
+            getCopyConfig(configInput);
+            assertTrue(kv.toString(), false);
+        }
+    }
+
+    @Test
+    public void wrongCombinationWithAvro()
+            throws IOException
+    {
+        ImmutableMap<String, Object> kvs = ImmutableMap.<String, Object>builder()
+                .put("csv", "")
+                .put("delimiter", "'")
+                .put("json", "auto")
+                .build();
+        for (Map.Entry<String, Object> kv : kvs.entrySet()) {
+            Map<String, Object> configInput = ImmutableMap.of(
+                    "table_name", "my_table",
+                    "from", "s3://my-bucket/my-path",
+                    "avro", "auto",
+                    kv.getKey(), kv.getValue()
+            );
+
+            this.thrown.expect(ConfigException.class);
+            getCopyConfig(configInput);
+            assertTrue(kv.toString(), false);
+        }
     }
 }
