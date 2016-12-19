@@ -7,11 +7,13 @@ public class NoTransactionHelper
 {
     @Override
     public void prepare(UUID queryId)
-    { }
+    {
+    }
 
     @Override
     public void cleanup()
-    { }
+    {
+    }
 
     @Override
     public boolean lockedTransaction(UUID queryId, TransactionAction action)

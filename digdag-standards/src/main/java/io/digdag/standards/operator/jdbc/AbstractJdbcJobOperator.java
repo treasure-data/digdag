@@ -31,7 +31,7 @@ public abstract class AbstractJdbcJobOperator<C>
 
     private static final String QUERY_ID = "queryId";
 
-    public AbstractJdbcJobOperator(OperatorContext context, TemplateEngine templateEngine)
+    protected AbstractJdbcJobOperator(OperatorContext context, TemplateEngine templateEngine)
     {
         super(context, templateEngine);
     }

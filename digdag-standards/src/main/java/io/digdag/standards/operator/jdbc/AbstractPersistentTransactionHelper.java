@@ -9,7 +9,7 @@ public abstract class AbstractPersistentTransactionHelper
     protected final String statusTableName;
     protected final Duration cleanupDuration;
 
-    public AbstractPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
+    protected AbstractPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
     {
         this.statusTableName = statusTableName;
         this.cleanupDuration = cleanupDuration;
@@ -36,7 +36,7 @@ public abstract class AbstractPersistentTransactionHelper
         }
     }
 
-    protected boolean beginTransactionAndLockStatusRow(UUID queryId)
+    private boolean beginTransactionAndLockStatusRow(UUID queryId)
             throws LockConflictException
     {
         do {
@@ -65,7 +65,7 @@ public abstract class AbstractPersistentTransactionHelper
     protected abstract StatusRow lockStatusRow(UUID queryId)
             throws LockConflictException;
 
-    protected void beginTransaction()
+    private void beginTransaction()
     {
         executeStatement("begin a transaction", "BEGIN");
     }

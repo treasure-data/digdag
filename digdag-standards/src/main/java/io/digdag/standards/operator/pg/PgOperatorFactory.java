@@ -22,6 +22,7 @@ public class PgOperatorFactory
         this.templateEngine = templateEngine;
     }
 
+    @Override
     public String getType()
     {
         return OPERATOR_TYPE;

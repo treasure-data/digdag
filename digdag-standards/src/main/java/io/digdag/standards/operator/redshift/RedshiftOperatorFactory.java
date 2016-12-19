@@ -24,6 +24,7 @@ public class RedshiftOperatorFactory
         this.templateEngine = templateEngine;
     }
 
+    @Override
     public String getType()
     {
         return OPERATOR_TYPE;
@@ -67,12 +68,6 @@ public class RedshiftOperatorFactory
         protected String type()
         {
             return OPERATOR_TYPE;
-        }
-
-        @Override
-        protected boolean strictTransaction(Config params)
-        {
-            return params.get("strict_transaction", Boolean.class, true);
         }
 
         @Override

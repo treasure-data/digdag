@@ -362,7 +362,7 @@ public class RedshiftConnection
             }
         }
 
-        public static CopyConfig configure(CopyConfigConfigurator configurator)
+        static CopyConfig configure(CopyConfigConfigurator configurator)
         {
             CopyConfig copyConfig = new CopyConfig();
             configurator.config(copyConfig);

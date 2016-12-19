@@ -78,7 +78,7 @@ public class PgConnection
         return new PgPersistentTransactionHelper(statusTableName, cleanupDuration);
     }
 
-    public class PgPersistentTransactionHelper
+    protected class PgPersistentTransactionHelper
             extends AbstractPersistentTransactionHelper
     {
         protected PgPersistentTransactionHelper(String statusTableName, Duration cleanupDuration)
@@ -193,7 +193,7 @@ public class PgConnection
             }
         }
 
-        protected boolean isConflictException(SQLException ex)
+        boolean isConflictException(SQLException ex)
         {
             return "23505".equals(ex.getSQLState());
         }

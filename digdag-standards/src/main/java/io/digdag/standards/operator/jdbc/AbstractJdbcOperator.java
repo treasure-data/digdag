@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public abstract class AbstractJdbcOperator<C>
+abstract class AbstractJdbcOperator<C>
     extends BaseOperator
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final TemplateEngine templateEngine;
 
-    public AbstractJdbcOperator(OperatorContext context, TemplateEngine templateEngine)
+    AbstractJdbcOperator(OperatorContext context, TemplateEngine templateEngine)
     {
         super(context);
         this.templateEngine = checkNotNull(templateEngine, "templateEngine");

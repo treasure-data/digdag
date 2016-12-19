@@ -1,19 +1,14 @@
 package io.digdag.standards.operator.jdbc;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
 import java.util.regex.Pattern;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static java.util.Locale.ENGLISH;
@@ -27,7 +22,7 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
-    public AbstractJdbcConnection(Connection connection)
+    protected AbstractJdbcConnection(Connection connection)
     {
         this.connection = connection;
         try {
@@ -145,14 +140,6 @@ public abstract class AbstractJdbcConnection
         }
         catch (SQLException ex) {
             logger.warn("Failed to close a database connection. Ignoring.", ex);
-        }
-    }
-
-    private void setParameters(PreparedStatement stmt, List<Object> params)
-            throws SQLException
-    {
-        for(int i=0; i < params.size(); i++) {
-            stmt.setObject(i+1, params.get(i));
         }
     }
 }
