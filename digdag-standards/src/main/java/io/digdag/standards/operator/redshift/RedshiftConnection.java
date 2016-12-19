@@ -5,6 +5,8 @@ import io.digdag.client.config.ConfigException;
 import io.digdag.standards.operator.pg.PgConnection;
 import io.digdag.standards.operator.jdbc.TransactionHelper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -16,12 +18,16 @@ import com.google.common.annotations.VisibleForTesting;
 import io.digdag.standards.operator.jdbc.LockConflictException;
 import io.digdag.standards.operator.jdbc.DatabaseException;
 import org.postgresql.core.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Locale.ENGLISH;
 
 public class RedshiftConnection
     extends PgConnection
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @VisibleForTesting
     public static RedshiftConnection open(RedshiftConnectionConfig config)
     {
@@ -159,7 +165,43 @@ public class RedshiftConnection
         @Override
         public void cleanup()
         {
-            // TODO: Implement!!!
+            try (Statement stmt = connection.createStatement()) {
+                // List up status tables
+                List<String> statusTables = new ArrayList<>();
+                {
+                    ResultSet rs = stmt.executeQuery(
+                            String.format(ENGLISH,
+                                    "SELECT tablename FROM pg_tables WHERE tablename LIKE '%s_%%'",
+                                    escapeParam(statusTableName))
+                    );
+                    while (rs.next()) {
+                        statusTables.add(rs.getString(1));
+                    }
+                }
+
+                // Drop a status table if it is expired
+                statusTables.forEach(
+                        statusTable -> {
+                            try {
+                                ResultSet rs = stmt.executeQuery(
+                                        String.format(ENGLISH,
+                                                "SELECT query_id FROM %s WHERE created_at IS NOT NULL AND completed_at < CURRENT_TIMESTAMP - INTERVAL '%d SECOND'",
+                                                escapeIdent(statusTable),
+                                                cleanupDuration.getSeconds())
+                                );
+                                if (rs.next()) {
+                                    stmt.executeUpdate(String.format("DROP TABLE %s", escapeIdent(statusTable)));
+                                }
+                            }
+                            catch (SQLException e) {
+                                logger.warn("Failed to drop expired status table: {}. Ignoring...", statusTable, e);
+                            }
+                        }
+                );
+            }
+            catch (SQLException ex) {
+                throw new DatabaseException("Failed to list up expired status tables", ex);
+            }
         }
 
         @Override

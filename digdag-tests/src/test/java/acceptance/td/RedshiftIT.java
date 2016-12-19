@@ -198,6 +198,54 @@ public class RedshiftIT
                 ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
                 ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f)
         ));
+
+        List<String> statusTables = listStatusTables();
+        assertThat(statusTables.size(), is(1));
+
+        String statusTable = statusTables.get(0);
+        assertThat(statusTable, notNullValue());
+    }
+
+    @Test
+    public void createTableWithShortTTLStatusTable()
+            throws Exception
+    {
+        copyResource("acceptance/redshift/create_table_with_short_ttl_status_table.dig", projectDir.resolve("redshift.dig"));
+        copyResource("acceptance/redshift/select_table.sql", projectDir.resolve("select_table.sql"));
+
+        setupDestTable();
+
+        TestUtils.main("run", "-o", projectDir.toString(), "--project", projectDir.toString(),
+                "-p", "redshift_database=" + database,
+                "-p", "redshift_host=" + redshiftHost,
+                "-p", "redshift_user=" + redshiftUser,
+                "-c", configFile.toString(),
+                "redshift.dig");
+
+        List<String> statusTables = listStatusTables();
+        assertThat(statusTables.size(), is(0));
+    }
+
+    private List<String> listStatusTables()
+            throws NotReadOnlyException
+    {
+        SecretProvider secrets = getDatabaseSecrets();
+
+        List<String> statusTables = new ArrayList<>();
+        try (RedshiftConnection conn = RedshiftConnection.open(RedshiftConnectionConfig.configure(secrets, EMPTY_CONFIG))) {
+            conn.executeReadOnlyQuery(
+                    "SELECT tablename FROM pg_tables WHERE tablename LIKE '__digdag_status_%%'",
+                    rs -> {
+                        List<Object> row = null;
+                        while ((row = rs.next()) != null) {
+                            assertThat(row, notNullValue());
+                            assertThat(row.size(), is(1));
+                            statusTables.add((String) row.get(0));
+                        }
+                    }
+            );
+        }
+        return statusTables;
     }
 
     @Test
@@ -391,6 +439,43 @@ public class RedshiftIT
                         ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
                 )
         );
+
+        List<String> statusTables = listStatusTables();
+        assertThat(statusTables.size(), is(1));
+
+        String statusTable = statusTables.get(0);
+        assertThat(statusTable, notNullValue());
+    }
+
+    @Test
+    public void loadCSVFileFromS3WithShortTTLStatusTable()
+            throws Exception
+    {
+        loadFromS3AndAssert(
+                Arrays.asList(
+                        new Content<>(
+                                "testdata0.data",
+                                f -> buildContentAsBufferedWriter(f, w -> {
+                                    w.write("0,foo,3.14");
+                                    w.newLine();
+                                    w.write("1,bar,1.23");
+                                    w.newLine();
+                                    w.write("2,baz,5.0");
+                                    w.newLine();
+                                })
+                        )
+                ),
+                "acceptance/redshift/load_from_s3_csv_with_short_ttl_status_table.dig",
+                Arrays.asList(
+                        ImmutableMap.of("id", 0, "name", "foo", "score", 3.14f),
+                        ImmutableMap.of("id", 1, "name", "bar", "score", 1.23f),
+                        ImmutableMap.of("id", 2, "name", "baz", "score", 5.0f),
+                        ImmutableMap.of("id", 9, "name", "zzz", "score", 9.99f)
+                )
+        );
+
+        List<String> statusTables = listStatusTables();
+        assertThat(statusTables.size(), is(0));
     }
 
     @Test

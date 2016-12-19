@@ -1,0 +1,9 @@
+timezone: UTC
+
++run:
+  redshift>: select_table.sql
+  host: ${redshift_host}
+  database: ${redshift_database}
+  user: ${redshift_user}
+  create_table: dest_tbl
+  status_table_cleanup: 1s
