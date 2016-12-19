@@ -1007,6 +1007,98 @@ Parameters
   * :command:`schema: my_schema`
 
 
+redshift>: Redshift operations
+----------------------------------
+
+**redshift>** operator runs queries and/or DDLs on Redshift
+
+.. code-block:: yaml
+
+
+    _export:
+      redshift:
+        host: 192.0.2.1
+        port: 6439
+        database: production_db
+        user: app_user
+        ssl: true
+
+    +replace_deduplicated_master_table:
+      redshift>: queries/dedup_master_table.sql
+      create_table: dedup_master
+
+    +prepare_summary_table:
+      redshift>: queries/create_summary_table_ddl.sql
+
+    +insert_to_summary_table:
+      redshift>: queries/join_log_with_master.sql
+      insert_into: summary_table
+
+
+Secrets
+~~~~~~~
+
+:command:`redshift.password: NAME`
+  Optional user password to use when connecting to the Redshift database (default: empty)
+
+Parameters
+~~~~~~~~~~
+
+:command:`redshift>: FILE.sql`
+  Path of the query template file. This file can contain ``${...}`` syntax to embed variables.
+
+  * :command:`redshift>: queries/complex_queries.sql`
+
+:command:`create_table: NAME`
+  Table name to create from the results. This option deletes the table if it already exists.
+
+  This option adds DROP TABLE IF EXISTS; CREATE TABLE AS before the statements written in the query template file. Also, CREATE TABLE statement can be written in the query template file itself without this command.
+
+  * :command:`create_table: dest_table`
+
+:command:`insert_into: NAME`
+  Table name to append results into.
+
+  This option adds INSERT INTO before the statements written in the query template file. Also, INSERT INTO statement can be written in the query template file itself without this command.
+
+  * :command:`insert_into: dest_table`
+
+:command:`download_file: NAME`
+  Local CSV file name to be downloaded. The file includes the result of query.
+
+  * :command:`download_file: output.csv`
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database (default: 5439).
+
+  * :command:`port: 2345`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database (default: false).
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name (default: public)
+
+  * :command:`schema: my_schema`
+
+
 mail>: Sending email
 ----------------------------------
 
