@@ -96,7 +96,7 @@ public class PgConnection
             return String.format(ENGLISH,
                     "CREATE TABLE IF NOT EXISTS %s" +
                     " (query_id text NOT NULL UNIQUE, created_at timestamptz NOT NULL, completed_at timestamptz)",
-                    escapeIdent(statusTableName));
+                    escapeIdent(statusTableName(queryId)));
         }
 
         @Override

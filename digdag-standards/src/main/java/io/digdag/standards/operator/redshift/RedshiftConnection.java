@@ -212,16 +212,6 @@ public class RedshiftConnection
         }
 
         @Override
-        protected String buildCreateTable(UUID queryId)
-        {
-            // Redshift doesn't support timestamptz type. Timestamp type is always UTC.
-            return String.format(ENGLISH,
-                    "CREATE TABLE IF NOT EXISTS %s" +
-                            " (query_id text NOT NULL UNIQUE, created_at timestamp NOT NULL, completed_at timestamp)",
-                    escapeIdent(statusTableName(queryId)));
-        }
-
-        @Override
         protected StatusRow lockStatusRow(UUID queryId)
                 throws LockConflictException
         {
