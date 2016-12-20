@@ -922,7 +922,6 @@ pg>: PostgreSQL operations
 
 .. code-block:: yaml
 
-
     _export:
       pg:
         host: 192.0.2.1
@@ -1014,11 +1013,10 @@ redshift>: Redshift operations
 
 .. code-block:: yaml
 
-
     _export:
       redshift:
-        host: 192.0.2.1
-        port: 6439
+        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+        # port: 5439
         database: production_db
         user: app_user
         ssl: true
@@ -1097,6 +1095,302 @@ Parameters
   Default schema name (default: public)
 
   * :command:`schema: my_schema`
+
+
+redshift_load>: Redshift load operations
+----------------------------------
+
+**redshift_load>** operator runs queries and/or DDLs on Redshift
+
+.. code-block:: yaml
+
+    _export:
+      redshift_load:
+        host: my-redshift.1234abcd.us-east-1.redshift.amazonaws.com
+        # port: 5439
+        database: production_db
+        user: app_user
+        ssl: true
+
+    +load_from_s3_with_many_options:
+        redshift_load>:
+        table: access_logs
+        from: s3://my-app-bucket/access_logs/today
+        column_list: host, path, referer, code, agent, size, method
+        manifest: true
+        encrypted: true
+        region: us-east-1
+        csv: "'"
+        delimiter: "$"
+        # json: s3://my-app-bucket/access_logs/jsonpathfile
+        # avro: auto
+        # fixedwidth: host:15,code:3,method:15
+        gzip: true
+        # bzip2: true
+        # lzop: true
+        acceptanydate: true
+        acceptinvchars: "&"
+        blanksasnull: true
+        dateformat: yyyy-MM-dd
+        emptyasnull: true
+        encoding: UTF8
+        escape: false
+        explicit_ids: true
+        fillrecord: true
+        ignoreblanklines: true
+        ignoreheader: 2
+        null_as: nULl
+        removequotes: false
+        roundec: true
+        timeformat: YYYY-MM-DD HH:MI:SS
+        trimblanks: true
+        truncatecolumns: true
+        comprows: 12
+        compupdate: ON
+        maxerror: 34
+        # noload: true
+        statupdate: false
+
+    +load_from_dynamodb_simple:
+        redshift_load>:
+        table: transactions
+        from: dynamodb://transaction-table
+        readratio: 123
+
+
+Secrets
+~~~~~~~
+
+:command:`redshift.password: NAME`
+  Optional user password to use when connecting to the Redshift database (default: empty)
+
+:command:`aws.redshift_load.access_key_id, aws.redshift.access_key_id, aws.access_key_id`
+  The AWS Access Key ID to use when accessing data source.
+
+:command:`aws.redshift.secret_access_key, aws.redshift.secret_access_key, aws.secret_access_key`
+  The AWS Secret Access Key to use when accessing data source.
+
+
+Parameters
+~~~~~~~~~~
+
+:command:`database: NAME`
+  Database name.
+
+  * :command:`database: my_db`
+
+:command:`host: NAME`
+  Hostname or IP address of the database.
+
+  * :command:`host: db.foobar.com`
+
+:command:`port: NUMBER`
+  Port number to connect to the database (default: 5439).
+
+  * :command:`port: 2345`
+
+:command:`user: NAME`
+  User to connect to the database
+
+  * :command:`user: app_user`
+
+:command:`ssl: BOOLEAN`
+  Enable SSL to connect to the database (default: false).
+
+  * :command:`ssl: true`
+
+:command:`schema: NAME`
+  Default schema name (default: public)
+
+  * :command:`schema: my_schema`
+
+:command:`table: NAME`
+  Table name in Redshift database to be loaded data
+
+  * :command:`table: access_logs`
+
+:command:`from: URI`
+  Mapped to `FROM` parameter of Redshift`s `COPY` statement
+
+  * :command:`from: s3://my-app-bucket/access_logs/today`
+
+:command:`column_list: CSV`
+  Mapped to `COLUMN_LIST` parameter of Redshift`s `COPY` statement
+
+  * :command:`column_list: host, path, referer, code, agent, size, method`
+
+:command:`manifest: BOOLEAN`
+  Mapped to `MANIFEST` parameter of Redshift`s `COPY` statement
+
+  * :command:`manifest: true`
+
+:command:`encrypted: BOOLEAN`
+  Mapped to `ENCRYPTED` parameter of Redshift`s `COPY` statement
+
+  * :command:`encrypted: true`
+
+:command:`readratio: NUMBER`
+  Mapped to `READRATIO` parameter of Redshift`s `COPY` statement
+
+  * :command:`readratio: 150`
+
+:command:`region: NAME`
+  Mapped to `REGION` parameter of Redshift`s `COPY` statement
+
+  * :command:`region: us-east-1`
+
+:command:`csv: CHARACTER`
+  Mapped to `CSV` parameter of Redshift`s `COPY` statement.
+  If you want to just use default quote charactor of `CSV` parameter, set empty string like `csv: ''`
+
+  * :command:`csv: "'"`
+
+:command:`delimiter: CHARACTER`
+  Mapped to `DELIMITER` parameter of Redshift`s `COPY` statement
+
+  * :command:`delimiter: "$"`
+
+:command:`json: URI`
+  Mapped to `JSON` parameter of Redshift`s `COPY` statement
+
+  * :command:`json: auto`
+  * :command:`json: s3://my-app-bucket/access_logs/jsonpathfile`
+
+:command:`avro: URI`
+  Mapped to `AVRO` parameter of Redshift`s `COPY` statement
+
+  * :command:`avro: auto`
+  * :command:`avro: s3://my-app-bucket/access_logs/jsonpathfile`
+
+:command:`fixedwidth: CSV`
+  Mapped to `FIXEDWIDTH` parameter of Redshift`s `COPY` statement
+
+  * :command:`fixedwidth: host:15,code:3,method:15`
+
+:command:`gzip: BOOLEAN`
+  Mapped to `GZIP` parameter of Redshift`s `COPY` statement
+
+  * :command:`gzip: true`
+
+:command:`bzip2: BOOLEAN`
+  Mapped to `BZIP2` parameter of Redshift`s `COPY` statement
+
+  * :command:`bzip2: true`
+
+:command:`lzop: BOOLEAN`
+  Mapped to `LZOP` parameter of Redshift`s `COPY` statement
+
+  * :command:`lzop: true`
+
+:command:`acceptanydate: BOOLEAN`
+  Mapped to `ACCEPTANYDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`acceptanydate: true`
+
+:command:`acceptinvchars: CHARACTER`
+  Mapped to `ACCEPTINVCHARS` parameter of Redshift`s `COPY` statement
+
+  * :command:`acceptinvchars: "&"`
+
+:command:`blanksasnull: BOOLEAN`
+  Mapped to `BLANKSASNULL` parameter of Redshift`s `COPY` statement
+
+  * :command:`blanksasnull: true`
+
+:command:`dateformat: STRING`
+  Mapped to `DATEFORMAT` parameter of Redshift`s `COPY` statement
+
+  * :command:`dateformat: yyyy-MM-dd`
+
+:command:`emptyasnull: BOOLEAN`
+  Mapped to `EMPTYASNULL` parameter of Redshift`s `COPY` statement
+
+  * :command:`emptyasnull: true`
+
+:command:`encoding: TYPE`
+  Mapped to `ENCODING` parameter of Redshift`s `COPY` statement
+
+  * :command:`encoding: UTF8`
+
+:command:`escape: BOOLEAN`
+  Mapped to `ESCAPE` parameter of Redshift`s `COPY` statement
+
+  * :command:`escape: false`
+
+:command:`explicit_ids: BOOLEAN`
+  Mapped to `EXPLICIT_IDS` parameter of Redshift`s `COPY` statement
+
+  * :command:`explicit_ids: true`
+
+:command:`fillrecord: BOOLEAN`
+  Mapped to `FILLRECORD` parameter of Redshift`s `COPY` statement
+
+  * :command:`fillrecord: true`
+
+:command:`ignoreblanklines: BOOLEAN`
+  Mapped to `IGNOREBLANKLINES` parameter of Redshift`s `COPY` statement
+
+  * :command:`ignoreblanklines: true`
+
+:command:`ignoreheader: NUMBER`
+  Mapped to `IGNOREHEADER` parameter of Redshift`s `COPY` statement
+
+  * :command:`ignoreheader: 2`
+
+:command:`null_as: STRING`
+  Mapped to `NULL AS` parameter of Redshift`s `COPY` statement
+
+  * :command:`null_as: nULl`
+
+:command:`removequotes: BOOLEAN`
+  Mapped to `REMOVEQUOTES` parameter of Redshift`s `COPY` statement
+
+  * :command:`removequotes: false`
+
+:command:`roundec: BOOLEAN`
+  Mapped to `ROUNDEC` parameter of Redshift`s `COPY` statement
+
+  * :command:`roundec: true`
+
+:command:`timeformat: STRING`
+  Mapped to `TIMEFORMAT` parameter of Redshift`s `COPY` statement
+
+  * :command:`timeformat: YYYY-MM-DD HH:MI:SS`
+
+:command:`trimblanks: BOOLEAN`
+  Mapped to `TRIMBLANKS` parameter of Redshift`s `COPY` statement
+
+  * :command:`trimblanks: true`
+
+:command:`truncatecolumns: BOOLEAN`
+  Mapped to `TRUNCATECOLUMNS` parameter of Redshift`s `COPY` statement
+
+  * :command:`truncatecolumns: true`
+
+:command:`comprows: NUMBER`
+  Mapped to `COMPROWS` parameter of Redshift`s `COPY` statement
+
+  * :command:`comprows: 12`
+
+:command:`compupdate: TYPE`
+  Mapped to `COMPUPDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`compupdate: ON`
+
+:command:`maxerror: NUMBER`
+  Mapped to `MAXERROR` parameter of Redshift`s `COPY` statement
+
+  * :command:`maxerror: 34`
+
+:command:`noload: BOOLEAN`
+  Mapped to `NOLOAD` parameter of Redshift`s `COPY` statement
+
+  * :command:`noload: true`
+
+:command:`statupdate: TYPE`
+  Mapped to `STATUPDATE` parameter of Redshift`s `COPY` statement
+
+  * :command:`statupdate: off`
 
 
 mail>: Sending email
